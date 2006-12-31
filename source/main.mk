@@ -59,7 +59,7 @@ showlayout:
 	@echo '  logfilebase: $(LOGFILEBASE)'
 	@echo '  setupdir:    $(SETUPDIR)'
 	@echo '  jsdir:       $(JSDIR)'
-	@echo '  swatdir:     $(SWATDIR)'
+	@echo '  webappsdir:  $(WEBAPPSDIR)'
 	@echo '  servicesdir: $(SERVICESDIR)'
 	@echo '  mandir:      $(MANDIR)'
 	@echo '  torturedir:  $(TORTUREDIR)'
@@ -84,7 +84,7 @@ showflags:
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install: showlayout installbin installdat installswat installmisc installlib \
+install: showlayout installbin installdat installwebapps installmisc installlib \
 	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -145,8 +145,8 @@ installheader: headers installdirs
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
 
-installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
+installwebapps: installdirs
+	@$(SHELL) $(srcdir)/script/installwebapps.sh $(DESTDIR)$(WEBAPPSDIR) $(srcdir)
 	@$(SHELL) $(srcdir)/script/installjsonrpc.sh $(DESTDIR)$(SERVICESDIR) $(srcdir)
 
 installman: manpages installdirs
