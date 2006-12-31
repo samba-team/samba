@@ -36,6 +36,7 @@ RCSID("$Id$");
 
 #include <hxtool-commands.h>
 #include <sl.h>
+#include <parse_time.h>
 
 static hx509_context context;
 
@@ -1215,6 +1216,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     hx509_private_key private_key = NULL;
     hx509_name subject = NULL;
     SubjectPublicKeyInfo spki;
+    int delta = 0;
 
     memset(&spki, 0, sizeof(spki));
 
@@ -1230,6 +1232,12 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     } else {
 	if (opt->ca_private_key_string)
 	    errx(1, "both --req and --ca-private-key used");
+    }
+
+    if (opt->lifetime_string) {
+	delta = parse_time(opt->lifetime_string, "day");
+	if (delta < 0)
+	    errx(1, "Invalid lifetime: %s", opt->lifetime_string);
     }
 
     if (opt->ca_certificate_string) {
@@ -1340,6 +1348,12 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_proxy");
     }
+
+    if (delta) {
+	ret = hx509_ca_tbs_set_notAfter_lifetime(context, tbs, delta);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_notAfter_lifetime");
+    }	
 
     if (opt->self_signed_flag) {
 	ret = hx509_ca_sign_self(context, tbs, private_key, &cert);

@@ -467,6 +467,11 @@ command = {
 		help = "Type of certificate to issue"
 	}
 	option = {
+		long = "lifetime"
+		type = "string"
+		help = "Lifetime of certificate"
+	}
+	option = {
 		long = "hostname"
 		type = "strings"
 		help = "DNS names this certificate is allowed to serve"
