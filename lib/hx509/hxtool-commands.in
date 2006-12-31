@@ -472,6 +472,11 @@ command = {
 		help = "Lifetime of certificate"
 	}
 	option = {
+		long = "path-length"
+		type = "integer"
+		help = "Maximum path length (for CA or proxy certificates)"
+	}
+	option = {
 		long = "hostname"
 		type = "strings"
 		help = "DNS names this certificate is allowed to serve"

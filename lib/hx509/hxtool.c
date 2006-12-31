@@ -1339,12 +1339,12 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     eval_types(context, tbs, opt);
 
     if (opt->issue_ca_flag) {
-	ret = hx509_ca_tbs_set_ca(context, tbs, -1);
+	ret = hx509_ca_tbs_set_ca(context, tbs, opt->path_length_integer);
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_ca");
     }
     if (opt->issue_proxy_flag) {
-	ret = hx509_ca_tbs_set_proxy(context, tbs, 1);
+	ret = hx509_ca_tbs_set_proxy(context, tbs, opt->path_length_integer);
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_proxy");
     }
