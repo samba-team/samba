@@ -33,10 +33,10 @@
 #include "lib/tls/tls.h"
 #include "scripting/ejs/smbcalls.h"
 
-#define SWAT_SESSION_KEY "SwatSessionId"
-#define HTTP_PREAUTH_URI "/scripting/preauth.esp"
-#define JSONRPC_REQUEST "/services"
-#define JSONRPC_SERVER "/request.esp"
+#define SAMBA_SESSION_KEY "SambaSessionId"
+#define HTTP_PREAUTH_URI  "/scripting/preauth.esp"
+#define JSONRPC_REQUEST   "/services"
+#define JSONRPC_SERVER    "/request.esp"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -126,7 +126,7 @@ static const char *http_local_path(struct websrv_context *web,
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
-		path = talloc_asprintf_append(path, "/index.esp");
+		path = talloc_asprintf_append(path, "/index.html");
 	}
 	return path;
 }
@@ -170,12 +170,12 @@ failed:
 	return -1;
 }
 
-static int http_readFileFromSwatDir(EspHandle handle,
-                                    char **buf,
-                                    int *len,
-                                    const char *path)
+static int http_readFileFromWebappsDir(EspHandle handle,
+                                       char **buf,
+                                       int *len,
+                                       const char *path)
 {
-    return http_readFile(handle, buf, len, path, lp_swat_directory());
+    return http_readFile(handle, buf, len, path, lp_webapps_directory());
 }
 
 
@@ -325,7 +325,7 @@ static void http_createSession(EspHandle handle, int timeout)
 	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
 	if (web->session) {
 		web->session->lifetime = timeout;
-		http_setCookie(web, SWAT_SESSION_KEY, web->session->id, 
+		http_setCookie(web, SAMBA_SESSION_KEY, web->session->id, 
 			       web->session->lifetime, "/", 0);
 	}
 }
@@ -390,7 +390,7 @@ static void http_simple_request(struct websrv_context *web)
 	const char *path;
 	struct stat st;
 
-	path = http_local_path(web, url, lp_swat_directory());
+	path = http_local_path(web, url, lp_webapps_directory());
 	if (path == NULL) goto invalid;
 
 	/* looks ok */
@@ -472,9 +472,9 @@ static void http_setup_arrays(struct esp_state *esp)
 		       talloc_asprintf(esp, "%u", socket_address->port));
 	}
 
-	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
+	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_webapps_directory());
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
-	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
+	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SAMBA");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
 	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"True":"False");
 }
@@ -518,7 +518,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 	int res;
 	char *emsg = NULL, *buf;
 
-	if (http_readFile(web, &buf, &size, url, lp_swat_directory()) != 0) {
+	if (http_readFile(web, &buf, &size, url, lp_webapps_directory()) != 0) {
 		http_error_unix(web, url);
 		return;
 	}
@@ -622,7 +622,7 @@ static BOOL http_preauth(struct esp_state *esp)
 {
 	const char *path = http_local_path(esp->web,
                                            HTTP_PREAUTH_URI,
-                                           lp_swat_directory());
+                                           lp_webapps_directory());
 	int i;
 	if (path == NULL) {
 		http_error(esp->web, 500, "Internal server error");
@@ -674,7 +674,7 @@ static const char *http_unescape(TALLOC_CTX *mem_ctx, const char *p)
 */
 static void esp_putvar(struct esp_state *esp, const char *var, const char *value)
 {
-	if (strcasecmp(var, SWAT_SESSION_KEY) == 0) {
+	if (strcasecmp(var, SAMBA_SESSION_KEY) == 0) {
 		/* special case support for browsers without cookie
 		 support */
 		esp->web->input.session_key = talloc_strdup(esp, value);
@@ -773,7 +773,7 @@ static int session_destructor(struct session_data *s)
 */
 static void http_setup_session(struct esp_state *esp)
 {
-	const char *session_key = SWAT_SESSION_KEY;
+	const char *session_key = SAMBA_SESSION_KEY;
 	char *p;
 	const char *cookie = esp->web->input.cookie;
 	const char *key = NULL;
@@ -835,7 +835,7 @@ static const struct Esp esp_control = {
 	.setHeader       = http_setHeader,
 	.redirect        = http_redirect,
 	.setResponseCode = http_setResponseCode,
-	.readFile        = http_readFileFromSwatDir,
+	.readFile        = http_readFileFromWebappsDir,
 	.mapToStorage    = http_mapToStorage,
 	.setCookie       = http_setCookie,
 	.createSession   = http_createSession,
