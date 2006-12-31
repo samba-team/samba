@@ -1498,7 +1498,7 @@ hx509_verify_path(hx509_context context,
 		int j;
 
 		if (info.pCPathLenConstraint != NULL &&
-		    *info.pCPathLenConstraint < i + 1)
+		    *info.pCPathLenConstraint < i)
 		{
 		    free_ProxyCertInfo(&info);
 		    ret = HX509_PATH_TOO_LONG;
