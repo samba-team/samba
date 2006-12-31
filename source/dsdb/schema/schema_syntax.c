@@ -482,6 +482,84 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(const struct dsdb_schema *sch
 	return WERR_OK;
 }
 
+static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_schema *schema,
+						  const struct dsdb_attribute *attr,
+						  const struct drsuapi_DsReplicaAttribute *in,
+						  TALLOC_CTX *mem_ctx,
+						  struct ldb_message_element *out)
+{
+	uint32_t i;
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		uint32_t v;
+		const struct dsdb_class *c;
+		const char *str;
+
+		if (in->value_ctr.object_class_id.values[i].objectClassId == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		v = *in->value_ctr.object_class_id.values[i].objectClassId;
+
+		c = dsdb_class_by_governsID_id(schema, v);
+		if (!c) {
+			return WERR_FOOBAR;
+		}
+
+		str = talloc_strdup(out->values, c->lDAPDisplayName);
+		W_ERROR_HAVE_NO_MEMORY(str);
+
+		/* the values need to be reversed */
+		out->values[out->num_values - (i + 1)] = data_blob_string_const(str);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_schema *schema,
+						  const struct dsdb_attribute *attr,
+						  const struct drsuapi_DsReplicaAttribute *in,
+						  TALLOC_CTX *mem_ctx,
+						  struct ldb_message_element *out)
+{
+	uint32_t i;
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		uint32_t v;
+		WERROR status;
+		char *str;
+
+		if (in->value_ctr.oid.values[i].value == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		v = *in->value_ctr.oid.values[i].value;
+
+		status = dsdb_map_int2oid(schema, v, out->values, &str);
+		W_ERROR_NOT_OK_RETURN(status);
+
+		out->values[i] = data_blob_string_const(str);
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_OID_drsuapi_to_ldb(const struct dsdb_schema *schema,
 					     const struct dsdb_attribute *attr,
 					     const struct drsuapi_DsReplicaAttribute *in,
@@ -490,13 +568,14 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(const struct dsdb_schema *schema,
 {
 	uint32_t i;
 
-switch (attr->attributeID_id) {
-case DRSUAPI_ATTRIBUTE_objectClass:
-case DRSUAPI_ATTRIBUTE_governsID:
-case DRSUAPI_ATTRIBUTE_attributeID:
-case DRSUAPI_ATTRIBUTE_attributeSyntax:
-	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
-}
+	switch (attr->attributeID_id) {
+	case DRSUAPI_ATTRIBUTE_objectClass:
+		return _dsdb_syntax_OID_obj_drsuapi_to_ldb(schema, attr, in, mem_ctx, out);
+	case DRSUAPI_ATTRIBUTE_governsID:
+	case DRSUAPI_ATTRIBUTE_attributeID:
+	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+		return _dsdb_syntax_OID_oid_drsuapi_to_ldb(schema, attr, in, mem_ctx, out);
+	}
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -546,6 +625,14 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_schema *schema,
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
+	}
+
+	switch (attr->attributeID_id) {
+	case DRSUAPI_ATTRIBUTE_objectClass:
+	case DRSUAPI_ATTRIBUTE_governsID:
+	case DRSUAPI_ATTRIBUTE_attributeID:
+	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+		return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema, attr, in, mem_ctx, out);
 	}
 
 	out->attid				= attr->attributeID_id;
