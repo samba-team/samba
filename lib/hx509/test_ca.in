@@ -59,6 +59,14 @@ ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-ee.der \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "issue certificate (10years 1 month)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+          --lifetime="10years 1 month" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
+
 echo "issue certificate (with https ekus)"
 ${hxtool} issue-certificate \
 	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
