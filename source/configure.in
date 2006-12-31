@@ -3951,29 +3951,33 @@ if test x"$with_dnsupdate_support" != x"no"; then
 fi
 
 if test x"$with_dnsupdate_support" != x"no"; then
-  ac_save_LIBS=$LIBS
 
   ########################################################
-  # now see if we can find the uuid libs in standard paths
-  AC_CHECK_LIB_EXT(uuid, UUID_LIBS, uuid_generate)
-
-  LIBS="$LIBS $UUID_LIBS"
+  # Now see if we can find the uuid libs in standard paths
+  # On some systems, the uuid API is in libc, so we have to
+  # be careful not to insert a spurious -luuid.
   
-  if test x"$ac_cv_lib_ext_uuid_uuid_generate" = x"yes"; then
-    with_dnsupdate_support=yes
-    AC_DEFINE(WITH_DNS_UPDATES,1,[Whether to enable DNS Update support])
-    AC_MSG_CHECKING(whether UUID support is used)
-    AC_MSG_RESULT(yes)
-  else
-    if test x"$with_dnsupdate_support" = x"yes"; then
-	AC_MSG_ERROR(libuuid is needed to enable DNS Updates support)
-    else
-	AC_MSG_WARN(libuuid is needed to enable DNS Updates support)
-    fi
-    UUID_LIBS=""
-    with_dnsupdate_support=no
-  fi
-  LIBS=$ac_save_LIBS
+  UUID_LIBS=""
+  AC_LIBTESTFUNC(uuid, uuid_generate,
+	  [
+	    case " $LIBS " in
+		*\ -luuid\ *)
+		UUID_LIBS="-luuid"
+		SMB_REMOVE_LIB(uuid)
+		;;
+	    esac
+
+	    with_dnsupdate_support=yes
+	    AC_DEFINE(WITH_DNS_UPDATES,1,[Whether to enable DNS Update support])
+	],
+	[
+	    if test x"$with_dnsupdate_support" = x"yes"; then
+		AC_MSG_ERROR(libuuid is needed to enable DNS Updates support)
+	    else
+		AC_MSG_WARN(libuuid is needed to enable DNS Updates support)
+	    fi
+	    with_dnsupdate_support=no
+	])
 fi
 
 #################################################
@@ -6030,13 +6034,13 @@ CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 AC_MSG_RESULT([Using libraries:])
 AC_MSG_RESULT([    LIBS = $LIBS])
 if test x"$with_ads_support" != x"no"; then
-   AC_MSG_RESULT([    KRB5_LIBS = $KRB5_LIBS])
+    AC_MSG_RESULT([    KRB5_LIBS = $KRB5_LIBS])
 fi
 if test x"$with_ldap_support" != x"no"; then
-   AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
+    AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
 if test x"$with_dnsupdate_support" != x"no"; then
-	AC_MSG_RESULT([	  UUID_LIBS = $UUID_LIBS])
+    AC_MSG_RESULT([    UUID_LIBS = $UUID_LIBS])
 fi
 AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 
