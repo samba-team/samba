@@ -61,55 +61,59 @@ dnl adding libraries for symbols that are in libc.
 dnl
 dnl On success, the default actions ensure that HAVE_FOO is defined. The lib
 dnl is always added to $LIBS if it was found to be necessary. The caller
-dnl can use SMB_LIB_REMOVE to strp this if necessary.
+dnl can use SMB_REMOVE_LIB to strp this if necessary.
 AC_DEFUN([AC_LIBTESTFUNC],
 [
   AC_CHECK_FUNCS($2,
       [
         # $2 was found in libc or existing $LIBS
-	ifelse($3, [],
+	m4_ifval([$3],
+	    [
+		$3
+	    ],
 	    [
 		AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
 		    [Whether $2 is available])
-	    ],
-	    [
-		$3
 	    ])
       ],
       [
         # $2 was not found, try adding lib$1
 	case " $LIBS " in
           *\ -l$1\ *)
-	    ifelse($4, [],
+	    m4_ifval([$4],
+		[
+		    $4
+		],
 		[
 		    # $2 was not found and we already had lib$1
 		    # nothing to do here by default
 		    true
-		],
-		[ $4 ])
+		])
 	    ;;
           *)
 	    # $2 was not found, try adding lib$1
 	    AC_CHECK_LIB($1, $2,
 	      [
 		LIBS="-l$1 $LIBS"
-		ifelse($3, [],
+		m4_ifval([$3],
+		    [
+			$3
+		    ],
 		    [
 			AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
 			    [Whether $2 is available])
-		    ],
-		    [
-			$3
 		    ])
 	      ],
 	      [
-		ifelse($4, [],
+		m4_ifval([$4],
+		    [
+			$4
+		    ],
 		    [
 			# $2 was not found in lib$1
 			# nothing to do here by default
 			true
-		    ],
-		    [ $4 ])
+		    ])
 	      ])
 	  ;;
         esac
@@ -543,9 +547,9 @@ AC_DEFUN([SMB_IS_LIBPTHREAD_LINKED],
 
 dnl SMB_REMOVE_LIB(lib)
 dnl Remove the given library from $LIBS
-AC_DEFUN([SMB_REMOVELIB],
+AC_DEFUN([SMB_REMOVE_LIB],
 [
-    LIBS=`echo $LIBS | sed -es/-l$1//g`
+    LIBS=`echo $LIBS | sed '-es/-l$1//g'`
 ])
 
 dnl SMB_CHECK_DMAPI([actions if true], [actions if false])
