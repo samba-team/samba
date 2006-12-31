@@ -1112,7 +1112,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-void construct_reply_common(char *inbuf,char *outbuf)
+void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	set_message(outbuf,0,0,False);
 	
