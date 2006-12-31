@@ -1,6 +1,17 @@
 2006-12-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Allow setting path length
+
+	* cert.c: Fix test for proxy certs chain length, it was too
+	restrictive.
+	
+	* data: regen
+	
+	* data/openssl.cnf: (proxy_cert) make length 0
+
 	* test_ca.in: Issue a long living cert.
+
+	* hxtool.c: add --lifetime to ca command.
 
 	* hxtool-commands.in: add --lifetime to ca command.
 
