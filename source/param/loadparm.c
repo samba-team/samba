@@ -132,7 +132,7 @@ typedef struct
 	char *szWinbindSeparator;
 	char *szWinbinddSocketDirectory;
 	int bWinbindSealedPipes;
-	char *swat_directory;
+	char *webapps_directory;
 	int tls_enabled;
 	char *tls_keyfile;
 	char *tls_certfile;
@@ -442,7 +442,7 @@ static struct parm_struct parm_table[] = {
 	{"tls cafile", P_STRING, P_GLOBAL, &Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls crlfile", P_STRING, P_GLOBAL, &Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls dh params file", P_STRING, P_GLOBAL, &Globals.tls_dhpfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"swat directory", P_STRING, P_GLOBAL, &Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"web application directory", P_STRING, P_GLOBAL, &Globals.webapps_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"server max protocol", P_ENUM, P_GLOBAL, &Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"server min protocol", P_ENUM, P_GLOBAL, &Globals.srv_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -694,7 +694,7 @@ static void init_globals(void)
 	do_parameter("krb5 port", "88", NULL);
 	do_parameter("kpasswd port", "464", NULL);
 	do_parameter("web port", "901", NULL);
-	do_parameter("swat directory", dyn_SWATDIR, NULL);
+	do_parameter("web application directory", dyn_WEBAPPSDIR, NULL);
 	do_parameter("jsonrpc services directory", dyn_SERVICESDIR, NULL);
 
 	do_parameter("nt status support", "True", NULL);
@@ -821,7 +821,7 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &Globals.krb5_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &Globals.kpasswd_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
 _PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, &Globals.swat_directory)
+_PUBLIC_ FN_GLOBAL_STRING(lp_webapps_directory, &Globals.webapps_directory)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &Globals.tls_enabled)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &Globals.tls_keyfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &Globals.tls_certfile)

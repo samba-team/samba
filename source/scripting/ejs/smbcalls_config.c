@@ -67,7 +67,7 @@ static int ejs_lpCategories(MprVarHandle eid, int argc, char **argv)
 
 
 /*
-  allow access to loadparm variables from inside ejs scripts in swat
+  allow access to loadparm variables from inside ejs scripts in web apps
   
   can be called in 4 ways:
 

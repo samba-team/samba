@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+
+  <title>@@global.page.title</title>
+
+<link rel="stylesheet" href="/style/common.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/columns.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/swat.css" type="text/css" media="all" />
+</head>
+
+
+<body>
+
+<div id="banner">
+  <div class="stripe"></div>
+</div>
+
+<div class="slogan">
+  <h4>Samba Web Administration Tool</h4>
+</div>
+
+<div id="content">
+  <div class="center">

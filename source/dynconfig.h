@@ -35,7 +35,7 @@ extern const char *dyn_MODULESDIR;
 extern const char *dyn_LOCKDIR; 
 extern const char *dyn_PIDDIR;
 extern const char *dyn_PRIVATE_DIR;
-extern const char *dyn_SWATDIR;
+extern const char *dyn_WEBAPPSDIR;
 extern const char *dyn_SERVICESDIR;
 extern const char *dyn_JSDIR;
 extern const char *dyn_SETUPDIR;

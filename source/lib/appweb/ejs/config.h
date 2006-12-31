@@ -1,5 +1,5 @@
 #define BLD_PRODUCT "Samba4"
-#define BLD_NAME "Samba4 SWAT"
+#define BLD_NAME "Samba4 WEB Applications"
 #define BLD_VERSION "4"
 #define BLD_NUMBER "1"
 #define BLD_TYPE "DEBUG"
