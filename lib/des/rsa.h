@@ -59,6 +59,7 @@
 #define RSA_private_decrypt hc_RSA_private_decrypt
 #define RSA_sign hc_RSA_sign
 #define RSA_verify hc_RSA_verify
+#define RSA_generate_key_ex hc_RSA_generate_key_ex
 #define d2i_RSAPrivateKey hc_d2i_RSAPrivateKey
 #define i2d_RSAPublicKey hc_i2d_RSAPublicKey
 
@@ -162,6 +163,8 @@ int RSA_sign(int, const unsigned char *, unsigned int,
 	     unsigned char *, unsigned int *, RSA *);
 int RSA_verify(int, const unsigned char *, unsigned int,
 	       unsigned char *, unsigned int, RSA *);
+
+int	RSA_generate_key_ex(RSA *, int, BIGNUM *, BN_GENCB *);
 
 RSA *	d2i_RSAPrivateKey(RSA *, const unsigned char **, size_t);
 int	i2d_RSAPublicKey(RSA *, unsigned char **);

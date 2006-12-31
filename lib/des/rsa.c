@@ -231,7 +231,6 @@ RSA_verify(int type, const unsigned char *from, unsigned int flen,
     return -1;
 }
 
-
 /*
  * A NULL RSA_METHOD that returns failure for all operations. This is
  * used as the default RSA method is we don't have any native
@@ -242,6 +241,23 @@ static RSAFUNC(null_rsa_public_encrypt, -1)
 static RSAFUNC(null_rsa_public_decrypt, -1)
 static RSAFUNC(null_rsa_private_encrypt, -1)
 static RSAFUNC(null_rsa_private_decrypt, -1)
+
+/*
+ *
+ */
+
+int
+RSA_generate_key_ex(RSA *r, int bits, BIGNUM *e, BN_GENCB *cb)
+{
+    if (r->meth->rsa_keygen)
+	return (*r->meth->rsa_keygen)(r, bits, e, cb);
+    return 0;
+}
+
+
+/*
+ *
+ */
 
 static int 
 null_rsa_init(RSA *rsa)
