@@ -86,6 +86,32 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
 }
 
 int
+hx509_ca_tbs_set_notBefore(hx509_context context,
+			   hx509_ca_tbs tbs,
+			   time_t t)
+{
+    tbs->notBefore = t;
+    return 0;
+}
+
+int
+hx509_ca_tbs_set_notAfter(hx509_context context,
+			   hx509_ca_tbs tbs,
+			   time_t t)
+{
+    tbs->notAfter = t;
+    return 0;
+}
+
+int
+hx509_ca_tbs_set_notAfter_lifetime(hx509_context context,
+				   hx509_ca_tbs tbs,
+				   time_t delta)
+{
+    return hx509_ca_tbs_set_notAfter(context, tbs, time(NULL) + delta);
+}
+
+int
 hx509_ca_tbs_set_ca(hx509_context context,
 		    hx509_ca_tbs tbs,
 		    int pathLenConstraint)
@@ -380,13 +406,14 @@ ca_sign(hx509_context context,
     memset(&c, 0, sizeof(c));
 
     /*
-     * Default values are, valid since 24h ago, valid one year into
-     * the future.
+     * Default values are: Valid since 24h ago, valid one year into
+     * the future, KeyUsage digitalSignature and keyEncipherment set,
+     * and keyCertSign for CA certificates.
      */
     notBefore = tbs->notBefore;
     if (notBefore == 0)
 	notBefore = time(NULL) - 3600 * 24;
-    notAfter = tbs->notBefore;
+    notAfter = tbs->notAfter;
     if (notAfter == 0)
 	notAfter = time(NULL) + 3600 * 24 * 365;
 
