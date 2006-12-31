@@ -543,7 +543,7 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_schema *sche
 	for (i=0; i < out->num_values; i++) {
 		uint32_t v;
 		WERROR status;
-		char *str;
+		const char *str;
 
 		if (in->value_ctr.oid.values[i].value == NULL) {
 			return WERR_FOOBAR;
@@ -632,7 +632,7 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	case DRSUAPI_ATTRIBUTE_governsID:
 	case DRSUAPI_ATTRIBUTE_attributeID:
 	case DRSUAPI_ATTRIBUTE_attributeSyntax:
-		return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema, attr, in, mem_ctx, out);
+		return dsdb_syntax_FOOBAR_ldb_to_drsuapi(schema, attr, in, mem_ctx, out);
 	}
 
 	out->attid				= attr->attributeID_id;
