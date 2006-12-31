@@ -218,7 +218,7 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	err = dns_open( servername, DNS_TCP, mem_ctx, &conn );
+	err = dns_open_connection( servername, DNS_TCP, mem_ctx, &conn );
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	if (!(upcaserealm = talloc_strdup(mem_ctx, target_realm))) {

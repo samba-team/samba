@@ -48,7 +48,7 @@ DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
 		return ERROR_DNS_NO_MEMORY;
 	}
 		
-	err = dns_open( pszServerName, DNS_TCP, mem_ctx, &conn );
+	err = dns_open_connection( pszServerName, DNS_TCP, mem_ctx, &conn );
 	if (!ERR_DNS_IS_OK(err)) {
 		goto error;
 	}
@@ -176,7 +176,7 @@ DNS_ERROR do_gethostbyname(const char *server, const char *host)
 	struct dns_request *req, *resp;
 	DNS_ERROR err;
 
-	err = dns_open(server, DNS_UDP, NULL, &conn);
+	err = dns_open_connection(server, DNS_UDP, NULL, &conn);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_create_query(conn, host, QTYPE_A, DNS_CLASS_IN, &req);

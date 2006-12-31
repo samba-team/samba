@@ -427,7 +427,7 @@ DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 
 /* from dnssock.c */
 
-DNS_ERROR dns_open( const char *nameserver, int32 dwType,
+DNS_ERROR dns_open_connection( const char *nameserver, int32 dwType,
 		    TALLOC_CTX *mem_ctx,
 		    struct dns_connection **conn );
 DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf);

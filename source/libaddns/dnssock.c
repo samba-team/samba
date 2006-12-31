@@ -134,7 +134,7 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 /********************************************************************
 ********************************************************************/
 
-DNS_ERROR dns_open( const char *nameserver, int32 dwType,
+DNS_ERROR dns_open_connection( const char *nameserver, int32 dwType,
 		    TALLOC_CTX *mem_ctx,
 		    struct dns_connection **conn )
 {
