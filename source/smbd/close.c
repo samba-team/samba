@@ -416,7 +416,8 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 		process_pending_change_notify_queue((time_t)0);
 	} else {
 		TALLOC_FREE(lck);
-		remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_CANCELLED);
+		remove_pending_change_notify_requests_by_fid(
+			fsp, NT_STATUS_OK);
 	}
 
 	/*

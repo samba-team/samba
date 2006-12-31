@@ -2020,6 +2020,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 	
 	if (!has_wild) {
+		char *dir;
+		const char *fname;
+
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
 		error = can_delete(conn,directory,dirtype,bad_path,False);
@@ -2029,6 +2032,14 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
 		}
+
+		if (parent_dirname_talloc(tmp_talloc_ctx(), orig_name,
+					  &dir, &fname)) {
+			notify_action(conn, dir, fname,
+				      NOTIFY_ACTION_REMOVED);
+			TALLOC_FREE(dir); /* not strictly necessary */
+		}
+
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
@@ -2086,6 +2097,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				}
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
 					count++;
+				notify_action(conn, directory, dname, NOTIFY_ACTION_REMOVED);
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dir_hnd);
@@ -2094,18 +2106,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	
 	if (count == 0 && NT_STATUS_IS_OK(error)) {
 		error = map_nt_error_from_unix(errno);
-	}
-
-	{
-		char *dir;
-		const char *fname;
-
-		if (parent_dirname_talloc(tmp_talloc_ctx(), orig_name,
-					  &dir, &fname)) {
-			notify_action(conn, dir, fname,
-				      NOTIFY_ACTION_REMOVED);
-			TALLOC_FREE(dir); /* not strictly necessary */
-		}
 	}
 
 	return error;
