@@ -428,14 +428,46 @@ struct vfs_fsp_data {
      */
 };
 
+/* the basic packet size, assuming no words or bytes */
+#define smb_size 39
+
 struct notify_change {
 	uint32_t action;
 	char *name;
 };
 
-struct notify_changes {
-	uint32_t num_changes;
+struct notify_change_request {
+	struct notify_change_request *prev, *next;
+	struct files_struct *fsp;	/* backpointer for cancel by mid */
+	char request_buf[smb_size];
+	uint32 max_param_count;
+	struct notify_mid_map *mid_map;
+};
+
+/*
+ * For NTCancel, we need to find the notify_change_request indexed by
+ * mid. Separate list here.
+ */
+
+struct notify_mid_map {
+	struct notify_mid_map *prev, *next;
+	struct notify_change_request *req;
+	uint16 mid;
+};
+
+struct notify_change_buf {
+	/*
+	 * If no requests are pending, changes are queued here. Simple array,
+	 * we only append.
+	 */
+	unsigned num_changes;
 	struct notify_change *changes;
+
+	/*
+	 * If no changes are around requests are queued here. Using a linked
+	 * list, because we have to append at the end and delete from the top.
+	 */
+	struct notify_change_request *requests;
 };
 
 typedef struct files_struct {
@@ -481,7 +513,7 @@ typedef struct files_struct {
 	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
 
-	struct notify_changes *notify;
+	struct notify_change_buf *notify;
 } files_struct;
 
 #include "ntquotas.h"
@@ -890,9 +922,6 @@ struct bitmap {
 	uint32 *b;
 	unsigned int n;
 };
-
-/* the basic packet size, assuming no words or bytes */
-#define smb_size 39
 
 /* offsets into message for common items */
 #define smb_com 8

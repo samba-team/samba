@@ -100,12 +100,6 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 
 	ZERO_STRUCTP(fsp->fh);
 
-	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_changes))) {
-		SAFE_FREE(fsp->fh);
-		SAFE_FREE(fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
 
@@ -367,33 +361,48 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	return NULL;
 }
 
-/****************************************************************************
- Find the directory fsp given a device and inode with the lowest
- file_id. First use is for notify actions.
-****************************************************************************/
+/*
+ * Same as file_find_di_first/next, but also finds non-fd opens.
+ *
+ * Jeremy, do we really need the fsp->fh->fd != -1 ??
+ */
 
-files_struct *file_find_dir_lowest_id(SMB_DEV_T dev, SMB_INO_T inode)
+struct files_struct *fsp_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	files_struct *fsp;
-	files_struct *min_fsp = NULL;
 
-	for (fsp = Files; fsp; fsp = fsp->next) {
-		if (!fsp->is_directory
-		    || fsp->dev != dev || fsp->inode != inode) {
-			continue;
-		}
+	if (fsp_fi_cache.dev == dev && fsp_fi_cache.inode == inode) {
+		/* Positive or negative cache hit. */
+		return fsp_fi_cache.fsp;
+	}
 
-		if (min_fsp == NULL) {
-			min_fsp = fsp;
-			continue;
-		}
+	fsp_fi_cache.dev = dev;
+	fsp_fi_cache.inode = inode;
 
-		if (fsp->fh->file_id < min_fsp->fh->file_id) {
-			min_fsp = fsp;
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		if ((fsp->dev == dev) && (fsp->inode == inode)) {
+			/* Setup positive cache. */
+			fsp_fi_cache.fsp = fsp;
+			return fsp;
 		}
 	}
 
-	return min_fsp;
+	/* Setup negative cache. */
+	fsp_fi_cache.fsp = NULL;
+	return NULL;
+}
+
+struct files_struct *fsp_find_di_next(files_struct *start_fsp)
+{
+	files_struct *fsp;
+
+	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
+		if ( (fsp->dev == start_fsp->dev)
+		     && (fsp->inode == start_fsp->inode) )
+			return fsp;
+	}
+
+	return NULL;
 }
 
 /****************************************************************************

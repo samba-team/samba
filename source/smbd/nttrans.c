@@ -1826,6 +1826,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
 	uint32 flags;
+	NTSTATUS status;
 
 	if(setup_count < 6) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
@@ -1847,9 +1848,27 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
+	if (fsp->notify == NULL) {
+		if (!(fsp->notify = TALLOC_ZERO_P(
+			      NULL, struct notify_change_buf))) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+	}
+
 	if (fsp->notify->num_changes > 0) {
 
-		change_notify_reply(inbuf, max_param_count, fsp);
+		/*
+		 * We've got changes pending, respond immediately
+		 */
+
+		SMB_ASSERT(fsp->notify->requests == NULL);
+
+		change_notify_reply(inbuf, max_param_count,
+				    fsp->notify->num_changes,
+				    fsp->notify->changes);
+
+		TALLOC_FREE(fsp->notify->changes);
+		fsp->notify->num_changes = 0;
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1858,8 +1877,13 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return -1;
 	}
 
-	if (!change_notify_set(inbuf, fsp, conn, flags, max_param_count)) {
-		return(UNIXERROR(ERRDOS,ERRbadfid));
+	/*
+	 * No changes pending, queue the request
+	 */
+
+	status = change_notify_add_request(inbuf, max_param_count, fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
 
 	return -1;
