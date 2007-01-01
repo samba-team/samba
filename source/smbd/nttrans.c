@@ -1825,7 +1825,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
-	uint32 flags;
+	uint32 filter;
 	NTSTATUS status;
 
 	if(setup_count < 6) {
@@ -1833,7 +1833,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	}
 
 	fsp = file_fsp((char *)setup,4);
-	flags = IVAL(setup, 0);
+	filter = IVAL(setup, 0);
 
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
@@ -1861,6 +1861,11 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 * We've got changes pending, respond immediately
 		 */
 
+		/*
+		 * TODO: write a torture test to check the filtering behaviour
+		 * here.
+		 */
+
 		SMB_ASSERT(fsp->notify->requests == NULL);
 
 		change_notify_reply(inbuf, max_param_count,
@@ -1881,7 +1886,8 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(inbuf, max_param_count, fsp);
+	status = change_notify_add_request(inbuf, max_param_count, filter,
+					   fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}

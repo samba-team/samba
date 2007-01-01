@@ -171,7 +171,7 @@ static void change_notify_remove(struct change_notify *cnbp)
 }
 
 NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
-				   struct files_struct *fsp)
+				   uint32 filter, struct files_struct *fsp)
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
@@ -187,6 +187,7 @@ NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
 
 	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
 	request->max_param_count = max_param_count;
+	request->filter = filter;
 	request->fsp = fsp;
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
@@ -406,16 +407,18 @@ int change_notify_fd(void)
 Offset  Data			length.
 0	SMB_DEV_T dev		8
 8	SMB_INO_T inode		8
-16	uint32 action		4
-20..	name
+16	uint32 filter           4
+20	uint32 action		4
+24..	name
 */
 
-#define MSG_NOTIFY_MESSAGE_SIZE 21 /* Includes at least the '\0' terminator */
+#define MSG_NOTIFY_MESSAGE_SIZE 25 /* Includes at least the '\0' terminator */
 
 struct notify_message {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
-	uint32_t action;
+	uint32 filter;
+	uint32 action;
 	char *name;
 };
 
@@ -433,8 +436,9 @@ static DATA_BLOB notify_message_to_buf(const struct notify_message *msg)
 
 	SDEV_T_VAL(result.data, 0, msg->dev);
 	SINO_T_VAL(result.data, 8, msg->inode);
-	SIVAL(result.data, 16, msg->action);
-	memcpy(result.data+20, msg->name, len+1);
+	SIVAL(result.data, 16, msg->filter);
+	SIVAL(result.data, 20, msg->action);
+	memcpy(result.data+24, msg->name, len+1);
 
 	return result;
 }
@@ -450,13 +454,14 @@ static BOOL buf_to_notify_message(void *buf, size_t len,
 
 	msg->dev     = DEV_T_VAL(buf, 0);
 	msg->inode   = INO_T_VAL(buf, 8);
-	msg->action  = IVAL(buf, 16);
-	msg->name    = ((char *)buf)+20;
+	msg->filter  = IVAL(buf, 16);
+	msg->action  = IVAL(buf, 20);
+	msg->name    = ((char *)buf)+24;
 	return True;
 }
 
 void notify_action(connection_struct *conn, const char *parent,
-		   const char *name, uint32_t action)
+		   const char *name, uint32 filter, uint32_t action)
 {
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
@@ -484,6 +489,7 @@ void notify_action(connection_struct *conn, const char *parent,
 
 	msg.dev = sbuf.st_dev;
 	msg.inode = sbuf.st_ino;
+	msg.filter = filter;
 	msg.action = action;
 	msg.name = CONST_DISCARD(char *, name);
 
@@ -546,10 +552,13 @@ static void notify_fsp(files_struct *fsp, struct notify_message *msg)
 		return;
 	}
 
-	if (fsp->notify->requests != NULL) {
+	if ((fsp->notify->requests != NULL)
+	    && (fsp->notify->requests->filter & msg->filter)) {
 		/*
 		 * Someone is waiting for the change, trigger the reply
-		 * immediately
+		 * immediately.
+		 *
+		 * TODO: do we have to walk the lists of requests pending?
 		 */
 
 		struct notify_change_request *req = fsp->notify->requests;
@@ -560,15 +569,14 @@ static void notify_fsp(files_struct *fsp, struct notify_message *msg)
 
 		change_notify_reply(req->request_buf, req->max_param_count,
 				    1, &onechange);
-
-		DLIST_REMOVE(fsp->notify->requests, req);
-		SAFE_FREE(req);
+		change_notify_remove_request(req);
 		return;
 	}
 
 	/*
 	 * Someone has triggered a notify previously, queue the change for
-	 * later. TODO: Limit the number of changes queued.
+	 * later. TODO: Limit the number of changes queued, test how filters
+	 * apply here. Do we have to store them?
 	 */
 
 	if (!(changes = TALLOC_REALLOC_ARRAY(
