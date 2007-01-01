@@ -856,6 +856,104 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *schema,
+						   const struct dsdb_attribute *attr,
+						   const struct drsuapi_DsReplicaAttribute *in,
+						   TALLOC_CTX *mem_ctx,
+						   struct ldb_message_element *out)
+{
+	uint32_t i;
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
+		char *binary;
+		char *str;
+		NTSTATUS status;
+
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+			return WERR_FOOBAR;
+		}
+
+		status = ndr_pull_struct_blob(in->value_ctr.data_blob.values[i].data,
+						  out->values, &id3b,
+						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		/* TODO: handle id3.guid and id3.sid */
+		binary = data_blob_hex_string(out->values, &id3b.binary);
+		W_ERROR_HAVE_NO_MEMORY(binary);
+
+		str = talloc_asprintf(out->values, "B:%u:%s:%s",
+				      id3b.binary.length * 2, /* because of 2 hex chars per byte */
+				      binary,
+				      id3b.dn);
+		W_ERROR_HAVE_NO_MEMORY(str);
+
+		/* TODO: handle id3.guid and id3.sid */
+		out->values[i] = data_blob_string_const(str);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *schema,
+						   const struct dsdb_attribute *attr,
+						   const struct ldb_message_element *in,
+						   TALLOC_CTX *mem_ctx,
+						   struct drsuapi_DsReplicaAttribute *out)
+{
+	uint32_t i;
+	DATA_BLOB *blobs;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	out->attid				= attr->attributeID_id;
+	out->value_ctr.data_blob.num_values	= in->num_values;
+	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
+							       struct drsuapi_DsAttributeValueDataBlob,
+							       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+
+	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(blobs);
+
+	for (i=0; i < in->num_values; i++) {
+		NTSTATUS status;
+		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
+
+		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+
+		/* TODO: handle id3b.guid and id3b.sid, id3.binary */
+		ZERO_STRUCT(id3b);
+		id3b.dn		= (const char *)in->values[i].data;
+		id3b.binary	= data_blob(NULL, 0);
+
+		status = ndr_push_struct_blob(&blobs[i], blobs, &id3b,
+					      (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+	}
+
+	return WERR_OK;
+}
+
 #define OMOBJECTCLASS(val) { .length = sizeof(val) - 1, .data = discard_const_p(uint8_t, val) }
 
 static const struct dsdb_syntax dsdb_syntaxes[] = {
@@ -991,8 +1089,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0b"),
 		.attributeSyntax_oid	= "2.5.5.7",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
 	},{
 	/* not used in w2k3 forest */
 		.name			= "Object(OR-Name)",
