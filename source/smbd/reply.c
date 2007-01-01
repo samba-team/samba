@@ -2035,7 +2035,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		if (parent_dirname_talloc(tmp_talloc_ctx(), orig_name,
 					  &dir, &fname)) {
-			notify_action(conn, dir, fname,
+			notify_action(conn, dir, fname, -1,
 				      NOTIFY_ACTION_REMOVED);
 			TALLOC_FREE(dir); /* not strictly necessary */
 		}
@@ -2097,7 +2097,8 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				}
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
 					count++;
-				notify_action(conn, directory, dname, NOTIFY_ACTION_REMOVED);
+				notify_action(conn, directory, dname,
+					      -1, NOTIFY_ACTION_REMOVED);
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dir_hnd);
@@ -3964,7 +3965,7 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 
 		if (parent_dirname_talloc(tmp_talloc_ctx(), directory,
 					  &parent_dir, &dirname)) {
-			notify_action(conn, parent_dir, dirname,
+			notify_action(conn, parent_dir, dirname, -1,
 				      NOTIFY_ACTION_REMOVED);
 			TALLOC_FREE(parent_dir); /* Not strictly necessary */
 		}
