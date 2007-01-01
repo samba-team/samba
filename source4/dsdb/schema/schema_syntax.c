@@ -21,10 +21,11 @@
 */
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
-#include "librpc/gen_ndr/drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
 #include "lib/charset/charset.h"
+#include "librpc/ndr/libndr.h"
 
 static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,
@@ -756,6 +757,105 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schem
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
+					    const struct dsdb_attribute *attr,
+					    const struct drsuapi_DsReplicaAttribute *in,
+					    TALLOC_CTX *mem_ctx,
+					    struct ldb_message_element *out)
+{
+	uint32_t i;
+
+switch (attr->attributeID_id) {
+case DRSUAPI_ATTRIBUTE_member:
+case DRSUAPI_ATTRIBUTE_objectCategory:
+case DRSUAPI_ATTRIBUTE_hasMasterNCs:
+case DRSUAPI_ATTRIBUTE_dMDLocation:
+case DRSUAPI_ATTRIBUTE_fSMORoleOwner:
+case DRSUAPI_ATTRIBUTE_wellKnownObjects:
+case DRSUAPI_ATTRIBUTE_serverReference:
+case DRSUAPI_ATTRIBUTE_serverReferenceBL:
+case DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs:
+case DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs:
+	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
+}
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		struct drsuapi_DsReplicaObjectIdentifier3 id3;
+		NTSTATUS status;
+
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+			return WERR_FOOBAR;
+		}
+
+		status = ndr_pull_struct_blob_all(in->value_ctr.data_blob.values[i].data,
+						  out->values, &id3,
+						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		/* TODO: handle id3.guid and id3.sid */
+		out->values[i] = data_blob_string_const(id3.dn);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
+					    const struct dsdb_attribute *attr,
+					    const struct ldb_message_element *in,
+					    TALLOC_CTX *mem_ctx,
+					    struct drsuapi_DsReplicaAttribute *out)
+{
+	uint32_t i;
+	DATA_BLOB *blobs;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	out->attid				= attr->attributeID_id;
+	out->value_ctr.data_blob.num_values	= in->num_values;
+	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
+							       struct drsuapi_DsAttributeValueDataBlob,
+							       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+
+	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(blobs);
+
+	for (i=0; i < in->num_values; i++) {
+		NTSTATUS status;
+		struct drsuapi_DsReplicaObjectIdentifier3 id3;
+
+		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+
+		/* TODO: handle id3.guid and id3.sid */
+		ZERO_STRUCT(id3);
+		id3.dn = (const char *)in->values[i].data;
+
+		status = ndr_push_struct_blob(&blobs[i], blobs, &id3,
+					      (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+	}
+
+	return WERR_OK;
+}
+
 #define OMOBJECTCLASS(val) { .length = sizeof(val) - 1, .data = discard_const_p(uint8_t, val) }
 
 static const struct dsdb_syntax dsdb_syntaxes[] = {
@@ -883,8 +983,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x4a"),
 		.attributeSyntax_oid	= "2.5.5.1",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_DN_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DN_ldb_to_drsuapi,
 	},{
 		.name			= "Object(DN-Binary)",
 		.ldap_oid		= "1.2.840.113556.1.4.903",
