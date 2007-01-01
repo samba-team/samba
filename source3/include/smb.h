@@ -440,6 +440,7 @@ struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
 	char request_buf[smb_size];
+	uint32 filter;
 	uint32 max_param_count;
 	struct notify_mid_map *mid_map;
 };
