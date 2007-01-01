@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/drsuapi.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
+#include "lib/charset/charset.h"
 
 static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,
@@ -661,6 +662,100 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_schema *schema,
+						 const struct dsdb_attribute *attr,
+						 const struct drsuapi_DsReplicaAttribute *in,
+						 TALLOC_CTX *mem_ctx,
+						 struct ldb_message_element *out)
+{
+	uint32_t i;
+
+switch (attr->attributeID_id) {
+case DRSUAPI_ATTRIBUTE_description:
+case DRSUAPI_ATTRIBUTE_adminDisplayName:
+case DRSUAPI_ATTRIBUTE_adminDescription:
+case DRSUAPI_ATTRIBUTE_lDAPDisplayName:
+case DRSUAPI_ATTRIBUTE_name:
+case DRSUAPI_ATTRIBUTE_sAMAccountName:
+case DRSUAPI_ATTRIBUTE_gPLink:
+	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
+}
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		ssize_t ret;
+		char *str;
+
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+			return WERR_FOOBAR;
+		}
+
+		ret = convert_string_talloc(out->values, CH_UTF16, CH_UNIX,
+					    in->value_ctr.data_blob.values[i].data->data,
+					    in->value_ctr.data_blob.values[i].data->length,
+					    (void **)&str);
+		if (ret == -1) {
+			return WERR_FOOBAR;
+		}
+
+		out->values[i] = data_blob_string_const(str);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schema,
+						 const struct dsdb_attribute *attr,
+						 const struct ldb_message_element *in,
+						 TALLOC_CTX *mem_ctx,
+						 struct drsuapi_DsReplicaAttribute *out)
+{
+	uint32_t i;
+	DATA_BLOB *blobs;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	out->attid				= attr->attributeID_id;
+	out->value_ctr.data_blob.num_values	= in->num_values;
+	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
+							       struct drsuapi_DsAttributeValueDataBlob,
+							       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+
+	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(blobs);
+
+	for (i=0; i < in->num_values; i++) {
+		ssize_t ret;
+
+		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+
+		ret = convert_string_talloc(blobs, CH_UNIX, CH_UTF16,
+					    in->values[i].data,
+					    in->values[i].length,
+					    (void **)&blobs[i].data);
+		if (ret == -1) {
+			return WERR_FOOBAR;
+		}
+		blobs[i].length = ret;
+	}
+
+	return WERR_OK;
+}
+
 #define OMOBJECTCLASS(val) { .length = sizeof(val) - 1, .data = discard_const_p(uint8_t, val) }
 
 static const struct dsdb_syntax dsdb_syntaxes[] = {
@@ -766,8 +861,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.15",
 		.oMSyntax		= 64,
 		.attributeSyntax_oid	= "2.5.5.12",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_UNICODE_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_UNICODE_ldb_to_drsuapi,
 	},{
 		.name			= "Interval/LargeInteger",
 		.ldap_oid		= "1.2.840.113556.1.4.906",
