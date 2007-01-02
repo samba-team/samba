@@ -233,9 +233,9 @@ _krb5_pac_free(krb5_context context, struct krb5_pac *pac)
 static krb5_error_code
 verify_checksum(krb5_context context,
 		const struct PAC_INFO_BUFFER *sig,
-		krb5_data *data,
+		const krb5_data *data,
 		void *ptr, size_t len,
-		krb5_keyblock *key)
+		const krb5_keyblock *key)
 {
     krb5_crypto crypto = NULL;
     krb5_storage *sp = NULL;
@@ -296,7 +296,7 @@ out:
 
 static krb5_error_code
 create_checksum(krb5_context context,
-		krb5_keyblock *key,
+		const krb5_keyblock *key,
 		void *data, size_t datalen,
 		void *sig, size_t siglen)
 {
@@ -344,9 +344,9 @@ unix2nttime(time_t unix_time)
 static krb5_error_code
 verify_logonname(krb5_context context,
 		 const struct PAC_INFO_BUFFER *logon_name,
-		 krb5_data *data,
+		 const krb5_data *data,
 		 time_t authtime,
-		 krb5_principal principal)
+		 krb5_const_principal principal)
 {
     krb5_error_code ret;
     krb5_principal p2;
@@ -355,8 +355,8 @@ verify_logonname(krb5_context context,
     uint16_t len;
     char *s;
 
-    sp = krb5_storage_from_mem((char *)data->data + logon_name->offset_lo,
-			       logon_name->buffersize);
+    sp = krb5_storage_from_readonly_mem((const char *)data->data + logon_name->offset_lo,
+					logon_name->buffersize);
     if (sp == NULL) {
 	krb5_set_error_string(context, "Out of memory");
 	return ENOMEM;
@@ -532,11 +532,11 @@ out:
 
 krb5_error_code
 _krb5_pac_verify(krb5_context context, 
-		 struct krb5_pac *pac,
+		 const struct krb5_pac *pac,
 		 time_t authtime,
-		 krb5_principal principal,
-		 krb5_keyblock *server,
-		 krb5_keyblock *privsvr)
+		 krb5_const_principal principal,
+		 const krb5_keyblock *server,
+		 const krb5_keyblock *privsvr)
 {
     krb5_error_code ret;
 
@@ -639,8 +639,8 @@ _krb5_pac_sign(krb5_context context,
 	       struct krb5_pac *p,
 	       time_t authtime,
 	       krb5_principal principal,
-	       krb5_keyblock *server_key,
-	       krb5_keyblock *priv_key,
+	       const krb5_keyblock *server_key,
+	       const krb5_keyblock *priv_key,
 	       krb5_data *data)
 {
     krb5_error_code ret;
