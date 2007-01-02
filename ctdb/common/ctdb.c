@@ -30,10 +30,18 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
+#ifdef HAVE_INFINIBAND
+	int ctdb_ibw_init(struct ctdb_context *ctdb);
+#endif /*HAVE_INFINIBAND*/
 
 	if (strcmp(transport, "tcp") == 0) {
 		return ctdb_tcp_init(ctdb);
 	}
+#ifdef HAVE_INFINIBAND
+	if (strcmp(transport, "ib") == 0) {
+		return ctdb_ibw_init(ctdb);
+	}
+#endif /*HAVE_INFINIBAND*/
 	ctdb_set_error(ctdb, "Unknown transport '%s'\n", transport);
 	return -1;
 }
