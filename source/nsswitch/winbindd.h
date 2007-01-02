@@ -161,6 +161,7 @@ struct winbindd_child {
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	fstring alt_name;                      /* alt Domain name (if any) */
+	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
 	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
