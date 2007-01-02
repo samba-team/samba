@@ -246,15 +246,11 @@ static struct ldb_val hex2bin(struct ldb_module *module, TALLOC_CTX *ctx, const 
 {
 	struct ldb_val out;
 	struct samr_Password *pwd;
-	pwd = smbpasswd_gethexpwd(ctx, talloc_strndup(ctx, (const char *)val->data, val->length));
+	pwd = smbpasswd_gethexpwd(ctx, (const char *)val->data);
 	if (!pwd) {
 		return data_blob(NULL, 0);
 	}
-	out.data = talloc_memdup(ctx, pwd->hash, sizeof(pwd->hash));
-	if (!out.data) {
-		return data_blob(NULL, 0);
-	}
-	out.length = sizeof(pwd->hash);
+	out = data_blob_talloc(ctx, pwd->hash, sizeof(pwd->hash));
 	return out;
 }
 
@@ -331,7 +327,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* sambaLMPassword -> lmPwdHash*/
 	{
-		.local_name = "lmpwdhash",
+		.local_name = "lmPwdHash",
 		.type = MAP_CONVERT,
 		.u = {
 			.convert = {
