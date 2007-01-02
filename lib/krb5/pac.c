@@ -319,6 +319,20 @@ krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
     krb5_error_code ret;
     uint32_t i;
 
+    /*
+     * Hide the checksums from external consumers
+     */
+
+    if (type == PAC_PRIVSVR_CHECKSUM || type == PAC_SERVER_CHECKSUM) {
+	ret = krb5_data_alloc(data, 16);
+	if (ret) {
+	    krb5_set_error_string(context, "out of memory");
+	    return ret;
+	}
+	memset(data->data, 0, data->length);
+	return 0;
+    }
+
     for (i = 0; i < p->pac->numbuffers; i++) {
 	size_t len = p->pac->buffers[i].buffersize;
 	size_t offset = p->pac->buffers[i].offset_lo;
@@ -336,6 +350,31 @@ krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
     krb5_set_error_string(context, "No PAC buffer of type %lu was found",
 			  (unsigned long)type);
     return ENOENT;
+}
+
+/*
+ *
+ */
+
+krb5_error_code
+krb5_pac_get_types(krb5_context context,
+		   struct krb5_pac *p,
+		   size_t *len,
+		   uint32_t **types)
+{
+    size_t i;
+
+    *types = calloc(p->pac->numbuffers, sizeof(*types));
+    if (*types == NULL) {
+	*len = 0;
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    for (i = 0; i < p->pac->numbuffers; i++)
+	(*types)[i] = p->pac->buffers[i].type;
+    *len = p->pac->numbuffers;
+
+    return 0;
 }
 
 /*
