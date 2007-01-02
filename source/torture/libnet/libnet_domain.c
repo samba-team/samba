@@ -128,7 +128,7 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 	BOOL ret = True;
 	struct libnet_context *ctx;
 	struct libnet_DomainOpen r;
-	struct lsa_Close close;
+	struct lsa_Close lsa_close;
 	struct dcerpc_binding *binding;
 	struct policy_handle h;
 	const char *bindstr;
@@ -160,11 +160,11 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 		goto done;
 	}
 
-	ZERO_STRUCT(close);
-	close.in.handle  = &ctx->lsa.handle;
-	close.out.handle = &h;
+	ZERO_STRUCT(lsa_close);
+	lsa_close.in.handle  = &ctx->lsa.handle;
+	lsa_close.out.handle = &h;
 	
-	status = dcerpc_lsa_Close(ctx->lsa.pipe, ctx, &close);
+	status = dcerpc_lsa_Close(ctx->lsa.pipe, ctx, &lsa_close);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to close domain on lsa service: %s\n", nt_errstr(status));
 		ret = False;
