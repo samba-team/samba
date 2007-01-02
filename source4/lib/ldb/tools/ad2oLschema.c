@@ -332,7 +332,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 
 		/* We might have been asked to remap this oid, due to a conflict */
-		for (j=0; oid && oid_map[j].old_oid; j++) {
+		for (j=0; oid && oid_map && oid_map[j].old_oid; j++) {
 			if (strcmp(oid, oid_map[j].old_oid) == 0) {
 				oid =  oid_map[j].new_oid;
 				break;
