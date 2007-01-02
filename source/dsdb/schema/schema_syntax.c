@@ -329,6 +329,98 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(const struct dsdb_schema *schema,
+						    const struct dsdb_attribute *attr,
+						    const struct drsuapi_DsReplicaAttribute *in,
+						    TALLOC_CTX *mem_ctx,
+						    struct ldb_message_element *out)
+{
+	uint32_t i;
+
+	out->flags	= 0;
+	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
+	W_ERROR_HAVE_NO_MEMORY(out->name);
+
+	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->values);
+
+	for (i=0; i < out->num_values; i++) {
+		NTTIME v;
+		time_t t;
+		char *str;
+
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
+			return WERR_FOOBAR;
+		}
+
+		if (in->value_ctr.data_blob.values[i].data->length != 8) {
+			return WERR_FOOBAR;
+		}
+
+		v = BVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v *= 10000000;
+		t = nt_time_to_unix(v);
+
+		/* 
+		 * NOTE: On a w2k3 server you can set a GeneralizedTime string
+		 *       via LDAP, but you get back an UTCTime string,
+		 *       but via DRSUAPI you get back the NTTIME_1sec value
+		 *       that represents the GeneralizedTime value!
+		 *
+		 *       So if we store the UTCTime string in our ldb
+		 *       we'll loose information!
+		 */
+		str = ldb_timestring_utc(out->values, t); 
+		W_ERROR_HAVE_NO_MEMORY(str);
+		out->values[i] = data_blob_string_const(str);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_schema *schema,
+						    const struct dsdb_attribute *attr,
+						    const struct ldb_message_element *in,
+						    TALLOC_CTX *mem_ctx,
+						    struct drsuapi_DsReplicaAttribute *out)
+{
+	uint32_t i;
+	DATA_BLOB *blobs;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	out->attid				= attr->attributeID_id;
+	out->value_ctr.data_blob.num_values	= in->num_values;
+	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
+							       struct drsuapi_DsAttributeValueDataBlob,
+							       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+
+	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(blobs);
+
+	for (i=0; i < in->num_values; i++) {
+		NTTIME v;
+		time_t t;
+
+		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+
+		blobs[i] = data_blob_talloc(blobs, NULL, 8);
+		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
+
+		t = ldb_string_utc_to_time((const char *)in->values[i].data);
+		unix_to_nt_time(&v, t);
+		v /= 10000000;
+
+		SBVAL(blobs[i].data, 0, v);
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,
 						const struct drsuapi_DsReplicaAttribute *in,
@@ -405,6 +497,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_schema *schema
 
 		t = ldb_string_to_time((const char *)in->values[i].data);
 		unix_to_nt_time(&v, t);
+		v /= 10000000;
 
 		SBVAL(blobs[i].data, 0, v);
 	}
@@ -1032,13 +1125,12 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
 	},{
-	/* not used in w2k3 forest */
 		.name			= "String(UTC-Time)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.53",
 		.oMSyntax		= 23,
 		.attributeSyntax_oid	= "2.5.5.11",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi,
 	},{
 		.name			= "String(Generalized-Time)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.24",
