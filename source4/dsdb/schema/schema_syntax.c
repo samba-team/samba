@@ -1047,7 +1047,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_ldb_to_drsuapi,
 	},{
-	/* not used in w2k3 forest */
+	/* not used in w2k3 schema */
 		.name			= "String(Case Sensitive)",
 		.ldap_oid		= "1.2.840.113556.1.4.1362",
 		.oMSyntax		= 27,
@@ -1092,7 +1092,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
 	},{
-	/* not used in w2k3 forest */
+	/* not used in w2k3 schema */
 		.name			= "Object(OR-Name)",
 		.ldap_oid		= "1.2.840.113556.1.4.1221",
 		.oMSyntax		= 127,
@@ -1110,15 +1110,15 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
 	},{
 	/* not used in w2k3 forest */
+		.name			= "Object(Presentation-Address)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.43",
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x5c"),
 		.attributeSyntax_oid	= "2.5.5.13",
-		.name			= "Object(Presentation-Address)",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
 	},{
-	/* not used in w2k3 forest */
+	/* not used in w2k3 schema */
 		.name			= "Object(Access-Point)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.2",
 		.oMSyntax		= 127,
@@ -1127,7 +1127,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
 	},{
-	/* not used in w2k3 forest */
+	/* not used in w2k3 schema */
 		.name			= "Object(DN-String)",
 		.ldap_oid		= "1.2.840.113556.1.4.904",
 		.oMSyntax		= 127,
