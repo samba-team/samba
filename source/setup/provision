@@ -28,9 +28,9 @@ options = GetOptions(ARGV,
 		'wheel=s',
 		'users=s',
 		'quiet',
-                'blank',
+		'blank',
 		'ldap-base',
-                'ldap-backend=s');
+		'ldap-backend=s');
 
 if (options == undefined) {
    println("Failed to parse options");
@@ -43,7 +43,7 @@ libinclude("provision.js");
 /*
   print a message if quiet is not set
 */
-function message() 
+function message()
 {
 	if (options["quiet"] == undefined) {
 		print(vsprintf(arguments));
@@ -117,6 +117,7 @@ if (options["ldap-backend"] != undefined) {
 
 var blank = (options["blank"] != undefined);
 var ldapbase = (options["ldap-base"] != undefined);
+var ldapbackend = (options["ldap-backend"] != undefined);
 
 if (!provision_validate(subobj, message)) {
 	return -1;
@@ -130,7 +131,7 @@ message("Using administrator password: %s\n", subobj.ADMINPASS);
 if (ldapbase) {
 	provision_ldapbase(subobj, message, paths);
 } else {
-	provision(subobj, message, blank, paths, system_session, creds);
+	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
 	provision_dns(subobj, message, paths, system_session, creds);
 }
 message("All OK\n");
