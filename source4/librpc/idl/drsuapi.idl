@@ -519,15 +519,6 @@ interface drsuapi
 	} drsuapi_DsAttributeValueCtrGUID;
 
 	typedef [nodiscriminant] union {
-		/* UnicodeString */
-		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_adminDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_adminDescription)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_lDAPDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_name)]			drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_sAMAccountName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(DRSUAPI_ATTRIBUTE_gPLink)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-
 		/* DN String */
 		[case(DRSUAPI_ATTRIBUTE_member)]		drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(DRSUAPI_ATTRIBUTE_objectCategory)]	drsuapi_DsAttributeValueCtrDNString dn_string;
