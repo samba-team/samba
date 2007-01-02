@@ -82,12 +82,12 @@ static const unsigned char saved_pac[] = {
 	0x83, 0xb3, 0x13, 0x3f, 0xfc, 0x5c, 0x41, 0xad, 0xe2, 0x64, 0x83, 0xe0, 0x00, 0x00, 0x00, 0x00
 };
 
-static krb5_keyblock kdc_keyblock = {
+static const krb5_keyblock kdc_keyblock = {
     ETYPE_ARCFOUR_HMAC_MD5,
     { 16, "\xB2\x86\x75\x71\x48\xAF\x7F\xD2\x52\xC5\x36\x03\xA1\x50\xB7\xE7" }
 };
 
-static krb5_keyblock member_keyblock = {
+static const krb5_keyblock member_keyblock = {
     ETYPE_ARCFOUR_HMAC_MD5,
     { 16, "\xD2\x17\xFA\xEA\xE5\xE6\xB5\xF9\x5C\xCC\x94\x07\x7A\xB8\xA5\xFC" }
 };
@@ -136,6 +136,80 @@ main(int argc, char **argv)
 			   &member_keyblock, &kdc_keyblock);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_verify 2");
+
+    _krb5_pac_free(context, pac);
+
+    /*
+     * Test empty free
+     */
+
+    ret = krb5_pac_init(context, &pac);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_pac_init");
+    _krb5_pac_free(context, pac);
+
+    /*
+     * Test add remove buffer
+     */
+
+    ret = krb5_pac_init(context, &pac);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_pac_init");
+
+    {
+	const krb5_data cdata = { 2, "\x00\x00" } ;
+
+	ret = krb5_pac_add_buffer(context, pac, 1, &cdata);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_add_buffer");
+    }
+    {
+	ret = krb5_pac_get_buffer(context, pac, 1, &data);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_get_buffer");
+	if (data.length != 2 || memcmp(data.data, "\x00\x00", 2) != 0)
+	    krb5_errx(context, 1, "krb5_pac_get_buffer data not the same");
+	krb5_data_free(&data);
+    }
+
+    {
+	const krb5_data cdata = { 2, "\x02\x00" } ;
+
+	ret = krb5_pac_add_buffer(context, pac, 2, &cdata);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_add_buffer");
+    }
+    {
+	ret = krb5_pac_get_buffer(context, pac, 1, &data);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_get_buffer");
+	if (data.length != 2 || memcmp(data.data, "\x00\x00", 2) != 0)
+	    krb5_errx(context, 1, "krb5_pac_get_buffer data not the same");
+	krb5_data_free(&data);
+	/* */
+	ret = krb5_pac_get_buffer(context, pac, 2, &data);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_get_buffer");
+	if (data.length != 2 || memcmp(data.data, "\x02\x00", 2) != 0)
+	    krb5_errx(context, 1, "krb5_pac_get_buffer data not the same");
+	krb5_data_free(&data);
+    }
+
+    ret = _krb5_pac_sign(context, pac, authtime, p, 
+			 &member_keyblock, &kdc_keyblock, &data);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_sign");
+
+    _krb5_pac_free(context, pac);
+
+    ret = _krb5_pac_parse(context, data.data, data.length, &pac);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_parse 3");
+
+    ret = _krb5_pac_verify(context, pac, authtime, p,
+			   &member_keyblock, &kdc_keyblock);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_verify 3");
 
     _krb5_pac_free(context, pac);
 
