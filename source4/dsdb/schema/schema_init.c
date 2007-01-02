@@ -472,9 +472,10 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 #define GET_UINT32_DS(s, r, attr, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (_a && _a->value_ctr.uint32.num_values >= 1 \
-	    && _a->value_ctr.uint32.values[0].value) { \
-		(p)->elem = *_a->value_ctr.uint32.values[0].value;\
+	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
+	    && _a->value_ctr.data_blob.values[0].data \
+	    && _a->value_ctr.data_blob.values[0].data->length == 4) { \
+		(p)->elem = IVAL(_a->value_ctr.data_blob.values[0].data->data,0);\
 	} else { \
 		(p)->elem = 0; \
 	} \
