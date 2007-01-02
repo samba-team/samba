@@ -524,11 +524,6 @@ interface drsuapi
 		[case(DRSUAPI_ATTRIBUTE_attributeID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
 		[case(DRSUAPI_ATTRIBUTE_attributeSyntax)]	drsuapi_DsAttributeValueCtrUINT32 oid;
 
-		/* BOOL */
-		[case(DRSUAPI_ATTRIBUTE_isSingleValued)]	drsuapi_DsAttributeValueCtrUINT32 boolean;
-		[case(DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly)] drsuapi_DsAttributeValueCtrUINT32 boolean;
-		[case(DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet)] drsuapi_DsAttributeValueCtrUINT32 boolean;
-
 		/* UINT32 */
 		[case(DRSUAPI_ATTRIBUTE_instanceType)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
 		[case(DRSUAPI_ATTRIBUTE_rangeLower)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
