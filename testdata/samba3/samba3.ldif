@@ -197,8 +197,8 @@ sambaHomePath: \\PDC-SMB3\home\%U
 sambaHomeDrive: H:
 sambaProfilePath: \\PDC-SMB3\profiles\%U\Administrator
 sambaPrimaryGroupSID: S-1-5-21-4231626423-2410014848-2360679739-512
-sambaLMPassword: XXX
-sambaNTPassword: XXX
+sambaLMPassword: 193130B61A7F81C0AAD3B435B51404EE
+sambaNTPassword: C2AE1FE6E648846352453E816F2AEB93
 sambaAcctFlags: [U          ]
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739-2996
 loginShell: /bin/false
