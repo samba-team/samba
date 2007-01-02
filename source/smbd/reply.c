@@ -3629,7 +3629,7 @@ int reply_printclose(connection_struct *conn,
 
 	if (!CAN_PRINT(conn)) {
 		END_PROFILE(SMBsplclose);
-		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		return ERROR_NT(NT_STATUS_DOS(ERRSRV, ERRerror));
 	}
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
