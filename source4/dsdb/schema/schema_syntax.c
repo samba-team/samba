@@ -506,12 +506,6 @@ static WERROR dsdb_syntax_DATA_BLOB_drsuapi_to_ldb(const struct dsdb_schema *sch
 {
 	uint32_t i;
 
-switch (attr->attributeID_id) {
-case DRSUAPI_ATTRIBUTE_invocationId:
-case DRSUAPI_ATTRIBUTE_schemaIDGUID:
-	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
-}
-
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
