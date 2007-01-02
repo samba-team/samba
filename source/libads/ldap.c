@@ -979,21 +979,6 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 }
 
 /**
- * Get a canonical dn from search results
- * @param ads connection to ads server
- * @param msg Search result
- * @return dn string
- **/
- char *ads_get_dn_canonical(ADS_STRUCT *ads, LDAPMessage *msg)
-{
-#ifdef HAVE_LDAP_DN2AD_CANONICAL
-	return ldap_dn2ad_canonical(ads_get_dn(ads, msg));
-#else
-	return NULL;
-#endif
-}
-
-/**
  * Get the parent from a dn
  * @param dn the dn to return the parent from
  * @return parent dn string
@@ -2938,8 +2923,6 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 }
 #endif
 
-#ifdef HAVE_LDAP
-
 /**
  * Delete a machine from the realm
  * @param ads connection to ads server
@@ -3059,6 +3042,5 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	SAFE_FREE(host);
 	return status;
 }
-#endif
 
 #endif
