@@ -1480,7 +1480,8 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 
 	char *domain_name = NULL;
 	char *dns_name = NULL;
-	DOM_SID *dom_sid = NULL;
+	char *forest_name = NULL;	
+	DOM_SID *dom_sid = NULL;	
 
 	ZERO_STRUCT( ctr );
 	
@@ -1545,7 +1546,7 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		   to determine that the DC is active directory */
 		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
 						       12, &domain_name,
-						       &dns_name, NULL,
+						       &dns_name, &forest_name,
 						       NULL, &dom_sid);
 	}
 
@@ -1557,6 +1558,9 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 
 		if (dns_name)
 			fstrcpy(domain->alt_name, dns_name);
+
+		if ( forest_name )
+			fstrcpy(domain->forest_name, forest_name);		
 
 		if (dom_sid) 
 			sid_copy(&domain->sid, dom_sid);
@@ -1584,10 +1588,10 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 	}
 done:
 
-	DEBUG(5, ("set_dc_type_and_flags: domain %s is %snative mode.\n",
+	DEBUG(5, ("set_dc_type_and_flags: domain %s is %sin native mode.\n",
 		  domain->name, domain->native_mode ? "" : "NOT "));
 
-	DEBUG(5,("set_dc_type_and_flags: domain %s is %sactive directory.\n",
+	DEBUG(5,("set_dc_type_and_flags: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
 	cli_rpc_pipe_close(cli);
