@@ -169,7 +169,7 @@ done:
 }
 
 
-static BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const char *host,
+static BOOL test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, const char *host,
 			  const char* share)
 {
 	NTSTATUS status;
@@ -188,7 +188,7 @@ static BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const c
 	add.in.level      = 2;
 	add.in.info.info2 = &i;
 
-	status = dcerpc_srvsvc_NetShareAdd(pipe, mem_ctx, &add);
+	status = dcerpc_srvsvc_NetShareAdd(svc_pipe, mem_ctx, &add);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to add a new share\n");
 		return False;
