@@ -1889,8 +1889,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 ********************************************************************/
 
 static NTSTATUS can_delete(connection_struct *conn, char *fname,
-			   uint32 dirtype, BOOL bad_path,
-			   BOOL check_is_at_open)
+			   uint32 dirtype, BOOL bad_path)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1938,7 +1937,7 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 	  from Windows Explorer).
 	*/
 
-	if (!check_is_at_open && !lp_delete_readonly(SNUM(conn))) {
+	if (!lp_delete_readonly(SNUM(conn))) {
 		if (fattr & aRONLY) {
 			return NT_STATUS_CANNOT_DELETE;
 		}
@@ -1947,29 +1946,22 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	if (check_is_at_open) {
-		if (!can_delete_file_in_directory(conn, fname)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	} else {
-		/* On open checks the open itself will check the share mode, so
-		   don't do it here as we'll get it wrong. */
+	/* On open checks the open itself will check the share mode, so
+	   don't do it here as we'll get it wrong. */
 
-		status = open_file_ntcreate(conn, fname, &sbuf,
-					DELETE_ACCESS,
-					FILE_SHARE_NONE,
-					FILE_OPEN,
-					0,
-					FILE_ATTRIBUTE_NORMAL,
-					0,
-					NULL, &fsp);
+	status = open_file_ntcreate(conn, fname, &sbuf,
+				    DELETE_ACCESS,
+				    FILE_SHARE_NONE,
+				    FILE_OPEN,
+				    0,
+				    FILE_ATTRIBUTE_NORMAL,
+				    0,
+				    NULL, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	if (NT_STATUS_IS_OK(status)) {
 		close_file(fsp,NORMAL_CLOSE);
 	}
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
@@ -2027,7 +2019,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(conn,directory,dirtype,bad_path,False);
+		error = can_delete(conn,directory,dirtype,bad_path);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -2093,7 +2085,8 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(conn,fname,dirtype,bad_path,False);
+				error = can_delete(conn, fname, dirtype,
+						   bad_path);
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
