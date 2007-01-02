@@ -529,6 +529,10 @@ BOOL init_domain_list(void)
 					     &cache_methods, &our_sid);
 		domain->primary = True;
 		setup_domain_child(domain, &domain->child, NULL);
+#if 0	/* old code needed to get the parent domain */
+		init_dc_connection(domain);
+#endif
+		
 		/* Even in the parent winbindd we'll need to
 		   talk to the DC, so try and see if we can
 		   contact it. Theoretically this isn't neccessary
@@ -650,6 +654,19 @@ struct winbindd_domain *find_our_domain(void)
 
 	smb_panic("Could not find our domain\n");
 	return NULL;
+}
+
+struct winbindd_domain *find_root_domain(void)
+{
+	struct winbindd_domain *ours = find_our_domain();	
+	
+	if ( !ours )
+		return NULL;
+	
+	if ( strlen(ours->forest_name) == 0 )
+		return NULL;
+	
+	return find_domain_from_name( ours->forest_name );
 }
 
 struct winbindd_domain *find_builtin_domain(void)
