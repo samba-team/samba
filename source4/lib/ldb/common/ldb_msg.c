@@ -757,7 +757,7 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 }
 
 /*
-  return a LDAP formatted time string
+  return a LDAP formatted GeneralizedTime string
 */
 char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
@@ -787,9 +787,8 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 	return ts;
 }
 
-
 /*
-  convert a LDAP time string to a time_t. Return 0 if unable to convert
+  convert a LDAP GeneralizedTime string to a time_t. Return 0 if unable to convert
 */
 time_t ldb_string_to_time(const char *s)
 {
@@ -804,6 +803,60 @@ time_t ldb_string_to_time(const char *s)
 		return 0;
 	}
 	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+	
+	return timegm(&tm);
+}
+
+/*
+  return a LDAP formatted UTCTime string
+*/
+char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
+{
+	struct tm *tm = gmtime(&t);
+	char *ts;
+	int r;
+
+	if (!tm) {
+		return NULL;
+	}
+
+	/* we now excatly how long this string will be */
+	ts = talloc_array(mem_ctx, char, 14);
+
+	/* formatted like: 20040408072012.0Z => 040408072012Z */
+	r = snprintf(ts, 14,
+			"%02u%02u%02u%02u%02u%02uZ",
+			(tm->tm_year+1900)%100, tm->tm_mon+1,
+			tm->tm_mday, tm->tm_hour, tm->tm_min,
+			tm->tm_sec);
+
+	if (r != 13) {
+		talloc_free(ts);
+		return NULL;
+	}
+
+	return ts;
+}
+
+/*
+  convert a LDAP UTCTime string to a time_t. Return 0 if unable to convert
+*/
+time_t ldb_string_utc_to_time(const char *s)
+{
+	struct tm tm;
+	
+	if (s == NULL) return 0;
+	
+	memset(&tm, 0, sizeof(tm));
+	if (sscanf(s, "%02u%02u%02u%02u%02u%02u", 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return 0;
+	}
+	if (tm.tm_year < 50) {
+		tm.tm_year += 100;
+	}
 	tm.tm_mon -= 1;
 	
 	return timegm(&tm);
