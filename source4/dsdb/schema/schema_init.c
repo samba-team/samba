@@ -451,8 +451,35 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 } while (0)
 
 #define GET_DN_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
-	/* TODO: ! */ \
-	(p)->elem = NULL; \
+	struct drsuapi_DsReplicaAttribute *_a; \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
+	if (strict && !_a) { \
+		d_printf("%s: %s == NULL\n", __location__, attr); \
+		return WERR_INVALID_PARAM; \
+	} \
+	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
+		d_printf("%s: %s num_values == %u\n", __location__, attr, \
+			_a->value_ctr.data_blob.num_values); \
+		return WERR_INVALID_PARAM; \
+	} \
+	if (strict && !_a->value_ctr.data_blob.values[0].data) { \
+		d_printf("%s: %s data == NULL\n", __location__, attr); \
+		return WERR_INVALID_PARAM; \
+	} \
+	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
+	    && _a->value_ctr.data_blob.values[0].data) { \
+		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
+		NTSTATUS _nt_status; \
+		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.data_blob.values[0].data, \
+						      mem_ctx, &_id3,\
+						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
+		if (!NT_STATUS_IS_OK(_nt_status)) { \
+			return ntstatus_to_werror(_nt_status); \
+		} \
+		(p)->elem = _id3.dn; \
+	} else { \
+		(p)->elem = NULL; \
+	} \
 } while (0)
 
 #define GET_BOOL_DS(s, r, attr, p, elem, strict) do { \
