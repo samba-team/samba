@@ -214,6 +214,130 @@ out:
     return ret;
 }
 
+krb5_error_code
+krb5_pac_init(krb5_context context, struct krb5_pac **pac)
+{
+    krb5_error_code ret;
+    struct krb5_pac *p;
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+
+    p->pac = calloc(1, sizeof(*p->pac));
+    if (p->pac == NULL) {
+	free(p);
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+
+    ret = krb5_data_alloc(&p->data, PACTYPE_SIZE);
+    if (ret) {
+	free (p->pac);
+	free(p);
+	krb5_set_error_string(context, "out of memory");
+	return ret;
+    }
+
+
+    *pac = p;
+    return 0;
+}
+
+krb5_error_code
+krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
+		    uint32_t type, const krb5_data *data)
+{
+    krb5_error_code ret;
+    void *ptr;
+    size_t len, offset, header_end;
+    uint32_t i;
+
+    len = p->pac->numbuffers + 1;
+    if (len < p->pac->numbuffers)
+	return EINVAL;
+
+    ptr = realloc(p->pac,
+		  sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * len));
+    if (ptr == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    p->pac = ptr;
+
+    for (i = 0; i < len; i++)
+	p->pac->buffers[i].offset_lo += PAC_INFO_BUFFER_SIZE;
+
+    offset = data->length + PAC_INFO_BUFFER_SIZE;
+
+    p->pac->buffers[len - 1].type = type;
+    p->pac->buffers[len - 1].buffersize = data->length;
+    p->pac->buffers[len - 1].offset_lo = offset;
+    p->pac->buffers[len - 1].offset_hi = 0;
+
+    len = p->data.length + data->length + PAC_INFO_BUFFER_SIZE;
+    if (len < p->data.length) {
+	krb5_set_error_string(context, "integer overrun");
+	return EINVAL;
+    }
+    
+    /* align to PAC_ALIGNMENT */
+    len = ((len + PAC_ALIGNMENT - 1) / PAC_ALIGNMENT) * PAC_ALIGNMENT;
+
+    ret = krb5_data_realloc(&p->data, len);
+    if (ret) {
+	krb5_set_error_string(context, "out of memory");
+	return ret;
+    }
+
+    /* make place for PAC INFO BUFFER header */
+    header_end = PACTYPE_SIZE + (PAC_INFO_BUFFER_SIZE * p->pac->numbuffers);
+    memmove((unsigned char *)p->data.data + header_end,
+	    (unsigned char *)p->data.data + header_end + PAC_INFO_BUFFER_SIZE,
+	    PAC_INFO_BUFFER_SIZE);
+
+    /*
+     *
+     */
+
+    memcpy((unsigned char *)p->data.data + offset,
+	   data->data, data->length);
+    memset((unsigned char *)p->data.data + offset + data->length,
+	   0, p->data.length - offset - data->length);
+
+    p->pac->numbuffers += 1;
+
+    return 0;
+}
+
+krb5_error_code
+krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
+		    uint32_t type, krb5_data *data)
+{
+    krb5_error_code ret;
+    uint32_t i;
+
+    for (i = 0; i < p->pac->numbuffers; i++) {
+	size_t len = p->pac->buffers[i].buffersize;
+	size_t offset = p->pac->buffers[i].offset_lo;
+
+	if (p->pac->buffers[i].type != type)
+	    continue;
+
+	ret = krb5_data_copy(data, (unsigned char *)p->data.data + offset, len);
+	if (ret) {
+	    krb5_set_error_string(context, "Out of memory");
+	    return ret;
+	}
+	return 0;
+    }
+    krb5_set_error_string(context, "No PAC buffer of type %lu was found",
+			  (unsigned long)type);
+    return ENOENT;
+}
+
 /*
  *
  */
@@ -765,6 +889,7 @@ _krb5_pac_sign(krb5_context context,
 		ret = ENOMEM;
 		goto out;
 	    }
+	    /* XXX if not aligned, fill_zeros */
 	}
 
 	/* write header */
