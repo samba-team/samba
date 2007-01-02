@@ -162,18 +162,6 @@ static WERROR dsdb_syntax_INT32_drsuapi_to_ldb(const struct dsdb_schema *schema,
 {
 	uint32_t i;
 
-switch (attr->attributeID_id) {
-case DRSUAPI_ATTRIBUTE_instanceType:
-case DRSUAPI_ATTRIBUTE_rangeLower:
-case DRSUAPI_ATTRIBUTE_rangeUpper:
-case DRSUAPI_ATTRIBUTE_objectVersion:
-case DRSUAPI_ATTRIBUTE_oMSyntax:
-case DRSUAPI_ATTRIBUTE_searchFlags:
-case DRSUAPI_ATTRIBUTE_systemFlags:
-case DRSUAPI_ATTRIBUTE_msDS_Behavior_Version:
-	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
-}
-
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
@@ -585,11 +573,15 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_schema *sche
 		const struct dsdb_class *c;
 		const char *str;
 
-		if (in->value_ctr.object_class_id.values[i].objectClassId == NULL) {
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		v = *in->value_ctr.object_class_id.values[i].objectClassId;
+		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+			return WERR_FOOBAR;
+		}
+
+		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
 
 		c = dsdb_class_by_governsID_id(schema, v);
 		if (!c) {
@@ -627,11 +619,15 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_schema *sche
 		WERROR status;
 		const char *str;
 
-		if (in->value_ctr.oid.values[i].value == NULL) {
+		if (in->value_ctr.data_blob.values[i].data == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		v = *in->value_ctr.oid.values[i].value;
+		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+			return WERR_FOOBAR;
+		}
+
+		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
 
 		status = dsdb_map_int2oid(schema, v, out->values, &str);
 		W_ERROR_NOT_OK_RETURN(status);

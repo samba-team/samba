@@ -1128,23 +1128,26 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 	/* objectClass: nTDSDSA */
 	{
-		struct drsuapi_DsAttributeValueObjectClassId *vs;
-		enum drsuapi_DsObjectClassId *v;
+		struct drsuapi_DsAttributeValueDataBlob *vs;
+		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueObjectClassId, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
 		if (composite_nomem(vs, c)) return;
 
-		v = talloc_array(vs, enum drsuapi_DsObjectClassId, 1);
-		if (composite_nomem(v, c)) return;
+		vd = talloc_array(vs, DATA_BLOB, 1);
+		if (composite_nomem(vd, c)) return;
+
+		vd[0] = data_blob_talloc(vd, NULL, 4);
+		if (composite_nomem(vd[0].data, c)) return;
 
 		/* value for nTDSDSA */
-		v[0]			= 0x0017002F;
+		SIVAL(vd[0].data, 0, 0x0017002F);
 
-		vs[0].objectClassId	= &v[0];
+		vs[0].data		= &vd[0];
 
 		attrs[i].attid					= DRSUAPI_ATTRIBUTE_objectClass;
-		attrs[i].value_ctr.object_class_id.num_values	= 1;
-		attrs[i].value_ctr.object_class_id.values	= vs;
+		attrs[i].value_ctr.data_blob.num_values		= 1;
+		attrs[i].value_ctr.data_blob.values		= vs;
 
 		i++;
 	}
@@ -1319,44 +1322,50 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 	/* msDS-Behavior-Version */
 	if (w2k3) {
-		struct drsuapi_DsAttributeValueUINT32 *vs;
-		uint32_t *v;
+		struct drsuapi_DsAttributeValueDataBlob *vs;
+		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueUINT32, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
 		if (composite_nomem(vs, c)) return;
 
-		v = talloc_array(vs, uint32_t, 1);
-		if (composite_nomem(v, c)) return;
+		vd = talloc_array(vs, DATA_BLOB, 1);
+		if (composite_nomem(vd, c)) return;
 
-		v[0]			= DS_BEHAVIOR_WIN2003;
+		vd[0] = data_blob_talloc(vd, NULL, 4);
+		if (composite_nomem(vd[0].data, c)) return;
 
-		vs[0].value		= &v[0];
+		SIVAL(vd[0].data, 0, DS_BEHAVIOR_WIN2003);
+
+		vs[0].data		= &vd[0];
 
 		attrs[i].attid					= DRSUAPI_ATTRIBUTE_msDS_Behavior_Version;
-		attrs[i].value_ctr.uint32.num_values		= 1;
-		attrs[i].value_ctr.uint32.values		= vs;
+		attrs[i].value_ctr.data_blob.num_values		= 1;
+		attrs[i].value_ctr.data_blob.values		= vs;
 
 		i++;
 	}
 
 	/* systemFlags */
 	{
-		struct drsuapi_DsAttributeValueUINT32 *vs;
-		uint32_t *v;
+		struct drsuapi_DsAttributeValueDataBlob *vs;
+		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueUINT32, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
 		if (composite_nomem(vs, c)) return;
 
-		v = talloc_array(vs, uint32_t, 1);
-		if (composite_nomem(v, c)) return;
+		vd = talloc_array(vs, DATA_BLOB, 1);
+		if (composite_nomem(vd, c)) return;
 
-		v[0]			= SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE;
+		vd[0] = data_blob_talloc(vd, NULL, 4);
+		if (composite_nomem(vd[0].data, c)) return;
 
-		vs[0].value		= &v[0];
+		SIVAL(vd[0].data, 0, SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+
+		vs[0].data		= &vd[0];
 
 		attrs[i].attid					= DRSUAPI_ATTRIBUTE_systemFlags;
-		attrs[i].value_ctr.uint32.num_values		= 1;
-		attrs[i].value_ctr.uint32.values		= vs;
+		attrs[i].value_ctr.data_blob.num_values		= 1;
+		attrs[i].value_ctr.data_blob.values		= vs;
 
 		i++;
 	}
