@@ -656,8 +656,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
 		   only error we care about for "can we delete this ?" questions. */
-		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
-						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE)) {
 			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
@@ -1284,8 +1284,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
 		   only error we care about for "can we delete this ?" questions. */
-		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
-						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE)) {
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
 		}
