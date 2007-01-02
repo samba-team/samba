@@ -3296,10 +3296,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Close ordinary file.
 		 */
 		int close_err;
-		pstring file_name;
-
-		/* Save the name for time set in close. */
-		pstrcpy( file_name, fsp->fsp_name);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
 			 fsp->fh->fd, fsp->fnum,
