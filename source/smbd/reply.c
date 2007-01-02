@@ -2074,7 +2074,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
 					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						if ((dirtype & FILE_ATTRIBUTE_DIRECTORY) && (dirtype & FILE_ATTRIBUTE_SYSTEM)) {
+						if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
 							sys_direntry = True;
 						} else {
 							continue;
