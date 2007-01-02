@@ -1550,9 +1550,9 @@ void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
 /**
    Convert a time structure to a string
 
-   This function converts a time_t structure to an LDAP formatted time
-   string.
-
+   This function converts a time_t structure to an LDAP formatted
+   GeneralizedTime string.
+		
    \param mem_ctx the memory context to allocate the return string in
    \param t the time structure to convert
 
@@ -1564,14 +1564,40 @@ char *ldb_timestring(void *mem_ctx, time_t t);
 /**
    Convert a string to a time structure
 
-   This function converts an LDAP formatted time string to a time_t
-   structure.
+   This function converts an LDAP formatted GeneralizedTime string
+   to a time_t structure.
 
    \param s the string to convert
 
    \return the time structure, or 0 if the string cannot be converted
 */
 time_t ldb_string_to_time(const char *s);
+
+/**
+   Convert a time structure to a string
+
+   This function converts a time_t structure to an LDAP formatted
+   UTCTime string.
+		
+   \param mem_ctx the memory context to allocate the return string in
+   \param t the time structure to convert
+
+   \return the formatted string, or NULL if the time structure could
+   not be converted
+*/
+char *ldb_timestring_utc(void *mem_ctx, time_t t);
+
+/**
+   Convert a string to a time structure
+
+   This function converts an LDAP formatted UTCTime string
+   to a time_t structure.
+
+   \param s the string to convert
+
+   \return the time structure, or 0 if the string cannot be converted
+*/
+time_t ldb_string_utc_to_time(const char *s);
 
 
 void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
