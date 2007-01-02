@@ -213,15 +213,29 @@ DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf)
 static DNS_ERROR read_all(int fd, uint8 *data, size_t len)
 {
 	size_t total = 0;
+	fd_set rfds;
+	struct timeval tv;
 
 	while (total < len) {
+		ssize_t ret;
+		int fd_ready;
+		
+		FD_ZERO( &rfds );
+		FD_SET( fd, &rfds );
 
-		ssize_t ret = read(fd, data + total, len - total);
+		/* 10 second timeout */
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		
+		fd_ready = select( fd+1, &rfds, NULL, NULL, &tv );
+		if ( fd_ready == 0 ) {
+			/* read timeout */
+			return ERROR_DNS_SOCKET_ERROR;
+		}
 
+		ret = read(fd, data + total, len - total);
 		if (ret <= 0) {
-			/*
-			 * EOF or error
-			 */
+			/* EOF or error */
 			return ERROR_DNS_SOCKET_ERROR;
 		}
 
