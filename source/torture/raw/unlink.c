@@ -252,34 +252,41 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 
-	printf("Testing with non-empty directory delete_on_close\n");
-	status = create_directory_handle(cli->tree, dname, &fnum);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	
-	fnum2 = create_complex_file(cli, mem_ctx, inside);
+	if (!lp_parm_bool(-1, "torture", "samba3", False)) {
 
-	sfinfo.disposition_info.in.file.fnum = fnum;
-	sfinfo.disposition_info.in.delete_on_close = 1;
-	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
-	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+		/*
+		 * Known deficiency, also skipped in base-delete.
+		 */
 
-	sfinfo.disposition_info.in.file.fnum = fnum2;
-	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
+		printf("Testing with non-empty directory delete_on_close\n");
+		status = create_directory_handle(cli->tree, dname, &fnum);
+		CHECK_STATUS(status, NT_STATUS_OK);
 
-	sfinfo.disposition_info.in.file.fnum = fnum;
-	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
-	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+		fnum2 = create_complex_file(cli, mem_ctx, inside);
 
-	smbcli_close(cli->tree, fnum2);
+		sfinfo.disposition_info.in.file.fnum = fnum;
+		sfinfo.disposition_info.in.delete_on_close = 1;
+		status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+		CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
-	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
+		sfinfo.disposition_info.in.file.fnum = fnum2;
+		status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
 
-	smbcli_close(cli->tree, fnum);
+		sfinfo.disposition_info.in.file.fnum = fnum;
+		status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+		CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
-	status = smb_raw_rmdir(cli->tree, &dio);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbcli_close(cli->tree, fnum2);
+
+		status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		smbcli_close(cli->tree, fnum);
+
+		status = smb_raw_rmdir(cli->tree, &dio);
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	}
 
 	printf("Testing open dir with delete_on_close\n");
 	status = create_directory_handle(cli->tree, dname, &fnum);
