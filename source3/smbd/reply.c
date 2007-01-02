@@ -1888,7 +1888,9 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL bad_path, BOOL check_is_at_open)
+static NTSTATUS can_delete(connection_struct *conn, char *fname,
+			   uint32 dirtype, BOOL bad_path,
+			   BOOL check_is_at_open)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
