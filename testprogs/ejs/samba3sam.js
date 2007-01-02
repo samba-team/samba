@@ -114,7 +114,6 @@ showInAdvancedViewOnly: TRUE
 		println(ldb.errstring());
 		assert(ok);
 	}
-	assert(ok);
 
 	println("Checking for existence of record (local)");
 	/* TODO: This record must be searched in the local database, which is currently only supported for base searches
@@ -288,7 +287,10 @@ description: y
 	ldif = substitute_var(ldif, s4);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
-	assert(ok);
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
 
 	/* Add a set of remote records */
 	var ldif = "
