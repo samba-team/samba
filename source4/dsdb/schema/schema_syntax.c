@@ -979,7 +979,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 			return WERR_FOOBAR;
 		}
 
-		status = ndr_pull_struct_blob(in->value_ctr.data_blob.values[i].data,
+		status = ndr_pull_struct_blob_all(in->value_ctr.data_blob.values[i].data,
 						  out->values, &id3b,
 						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NT_STATUS_IS_OK(status)) {
