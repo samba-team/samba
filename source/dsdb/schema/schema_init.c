@@ -427,16 +427,32 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.unicode_string.num_values != 1) { \
+	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.unicode_string.num_values); \
+			_a->value_ctr.data_blob.num_values); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (_a && _a->value_ctr.unicode_string.num_values >= 1) { \
-		(p)->elem = talloc_steal(mem_ctx, _a->value_ctr.unicode_string.values[0].string);\
+	if (_a && _a->value_ctr.data_blob.num_values >= 1) { \
+		ssize_t _ret; \
+		_ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, \
+					     _a->value_ctr.data_blob.values[0].data->data, \
+					     _a->value_ctr.data_blob.values[0].data->length, \
+					     (void **)discard_const(&(p)->elem)); \
+		if (_ret == -1) { \
+			DEBUG(0,("%s: invalid data!\n", attr)); \
+			dump_data(0, \
+				     _a->value_ctr.data_blob.values[0].data->data, \
+				     _a->value_ctr.data_blob.values[0].data->length); \
+			return WERR_FOOBAR; \
+		} \
 	} else { \
 		(p)->elem = NULL; \
 	} \
+} while (0)
+
+#define GET_DN_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
+	/* TODO: ! */ \
+	(p)->elem = NULL; \
 } while (0)
 
 #define GET_BOOL_DS(s, r, attr, p, elem, strict) do { \
@@ -594,8 +610,8 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 
 	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
 	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, False);
-	GET_STRING_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
- 
+	GET_DN_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
+
 	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, True);
 
 	obj->systemAuxiliaryClass	= NULL;
