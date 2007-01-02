@@ -534,10 +534,6 @@ interface drsuapi
 		[case(DRSUAPI_ATTRIBUTE_systemFlags)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
 		[case(DRSUAPI_ATTRIBUTE_msDS_Behavior_Version)]	drsuapi_DsAttributeValueCtrUINT32 uint32;
 
-		/* GUID */
-		[case(DRSUAPI_ATTRIBUTE_invocationId)] drsuapi_DsAttributeValueCtrGUID guid;
-		[case(DRSUAPI_ATTRIBUTE_schemaIDGUID)] drsuapi_DsAttributeValueCtrGUID guid;
-
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 		[case(DRSUAPI_ATTRIBUTE_adminDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
