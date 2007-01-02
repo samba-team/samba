@@ -28,7 +28,7 @@ OBJ_FILES = \
 [MODULE::ldb_samba3sam]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_samba3sam_module_init
-PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map
+PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map SMBPASSWD
 OBJ_FILES = \
 		samba3sam.o
 #

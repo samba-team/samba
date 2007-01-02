@@ -211,5 +211,6 @@ struct samba3
 };
 
 #include "lib/samba3/samba3_proto.h"
+#include "lib/samba3/samba3_smbpasswd_proto.h"
 
 #endif /* _SAMBA3_H */

@@ -1,7 +1,8 @@
-/* 
+/*
    ldb database library - Samba3 SAM compatibility backend
 
    Copyright (C) Jelmer Vernooij 2005
+   Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
 */
 
 #include "includes.h"
@@ -12,32 +13,34 @@
 #include "system/passwd.h"
 
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/security.h"
 #include "libcli/security/proto.h"
+#include "lib/samba3/samba3.h"
 
-/* 
+/*
  * sambaSID -> member  (dn!)
- * sambaSIDList -> member (dn!) 
- * sambaDomainName -> name 
- * sambaTrustPassword 
- * sambaUnixIdPool 
- * sambaIdmapEntry 
- * sambaAccountPolicy 
- * sambaSidEntry 
+ * sambaSIDList -> member (dn!)
+ * sambaDomainName -> name
+ * sambaTrustPassword
+ * sambaUnixIdPool
+ * sambaIdmapEntry
+ * sambaAccountPolicy
+ * sambaSidEntry
  * sambaAcctFlags -> systemFlags ?
  * sambaPasswordHistory  -> ntPwdHistory*/
 
 /* Not necessary:
  * sambaConfig
  * sambaShare
- * sambaConfigOption 
+ * sambaConfigOption
  * sambaNextGroupRid
  * sambaNextUserRid
  * sambaAlgorithmicRidBase
  */
 
-/* Not in Samba4: 
+/* Not in Samba4:
  * sambaKickoffTime
  * sambaPwdCanChange
  * sambaPwdMustChange
@@ -86,7 +89,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	/* We need the domain, so we get it from the objectSid that we hope is here... */
 	sidval = ldb_msg_find_ldb_val(local, "objectSid");
 
-	if (!sidval) 
+	if (!sidval)
 		return; /* Sorry, no SID today.. */
 
 	sid = talloc(remote_mp, struct dom_sid);
@@ -110,9 +113,13 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	talloc_free(sidstring);
 }
 
+/* Just copy the old value. */
 static struct ldb_val convert_uid_samaccount(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	return ldb_val_dup(ctx, val);
+	struct ldb_val out = data_blob(NULL, 0);
+	ldb_handler_copy(module->ldb, ctx, val, &out);
+
+	return out;
 }
 
 static struct ldb_val lookup_homedir(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
@@ -167,49 +174,88 @@ static struct ldb_val lookup_uid(struct ldb_module *module, TALLOC_CTX *ctx, con
 	return retval;
 }
 
+/* Encode a sambaSID to an objectSid. */
 static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct dom_sid *sid = dom_sid_parse_talloc(ctx, (char *)val->data);
-	struct ldb_val *out = talloc_zero(ctx, struct ldb_val);
+	struct ldb_val out = data_blob(NULL, 0);
+	struct dom_sid *sid;
 	NTSTATUS status;
 
+	sid = dom_sid_parse_talloc(ctx, (char *)val->data);
 	if (sid == NULL) {
-		return *out;
+		return out;
 	}
-	status = ndr_push_struct_blob(out, ctx, sid, 
+
+	status = ndr_push_struct_blob(&out, ctx, sid,
 				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NT_STATUS_IS_OK(status)) {
-		return *out;
+		return out;
 	}
 
-	return *out;
+	return out;
 }
 
+/* Decode an objectSid to a sambaSID. */
 static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
+	struct ldb_val out = data_blob(NULL, 0);
 	struct dom_sid *sid;
 	NTSTATUS status;
-	struct ldb_val *out = talloc_zero(ctx, struct ldb_val);
-	
+
 	sid = talloc(ctx, struct dom_sid);
 	if (sid == NULL) {
-		return *out;
+		return out;
 	}
-	status = ndr_pull_struct_blob(val, sid, sid, 
+
+	status = ndr_pull_struct_blob(val, sid, sid,
 				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(sid);
-		return *out;
+		goto done;
 	}
-	out->data = (uint8_t *)dom_sid_string(ctx, sid);
-	talloc_free(sid);
-	if (out->data == NULL) {
-		return *out;
-	}
-	out->length = strlen((const char *)out->data);
 
-	return *out;
+	out.data = (uint8_t *)dom_sid_string(ctx, sid);
+	if (out.data == NULL) {
+		goto done;
+	}
+	out.length = strlen((const char *)out.data);
+
+done:
+	talloc_free(sid);
+	return out;
+}
+
+/* Convert 16 bytes to 32 hex digits. */
+static struct ldb_val bin2hex(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	struct samr_Password pwd;
+	if (val->length != sizeof(pwd.hash)) {
+		return data_blob(NULL, 0);
+	}
+	memcpy(pwd.hash, val->data, sizeof(pwd.hash));
+	out = data_blob_string_const(smbpasswd_sethexpwd(ctx, &pwd, 0));
+	if (!out.data) {
+		return data_blob(NULL, 0);
+	}
+	return out;
+}
+
+/* Convert 32 hex digits to 16 bytes. */
+static struct ldb_val hex2bin(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	struct samr_Password *pwd;
+	pwd = smbpasswd_gethexpwd(ctx, talloc_strndup(ctx, (const char *)val->data, val->length));
+	if (!pwd) {
+		return data_blob(NULL, 0);
+	}
+	out.data = talloc_memdup(ctx, pwd->hash, sizeof(pwd->hash));
+	if (!out.data) {
+		return data_blob(NULL, 0);
+	}
+	out.length = sizeof(pwd->hash);
+	return out;
 }
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
@@ -227,15 +273,15 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 		.musts = { "cn", "gidNumber", NULL },
 		.mays = { "userPassword", "memberUid", "description", NULL },
 	},
-	{ 
-		.local_name = "group", 
+	{
+		.local_name = "group",
 		.remote_name = "sambaGroupMapping",
 		.base_classes = { "top", "posixGroup", NULL },
 		.musts = { "gidNumber", "sambaSID", "sambaGroupType", NULL },
 		.mays = { "displayName", "description", "sambaSIDList", NULL },
 	},
-	{ 
-		.local_name = "user", 
+	{
+		.local_name = "user",
 		.remote_name = "sambaSAMAccount",
 		.base_classes = { "top", "posixAccount", NULL },
 		.musts = { "uid", "sambaSID", NULL },
@@ -246,11 +292,11 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 			"sambaLogonScript", "sambaProfilePath", "description", "sambaUserWorkstations",
 			"sambaPrimaryGroupSID", "sambaDomainName", "sambaMungedDial",
 			"sambaBadPasswordCount", "sambaBadPasswordTime",
-	        "sambaPasswordHistory", "sambaLogonHours", NULL }
-	
+		"sambaPasswordHistory", "sambaLogonHours", NULL }
+
 	},
-	{ 
-		.local_name = "domain", 
+	{
+		.local_name = "domain",
 		.remote_name = "sambaDomain",
 		.base_classes = { "top", NULL },
 		.musts = { "sambaDomainName", "sambaSID", NULL },
@@ -259,7 +305,7 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 		{ NULL, NULL }
 };
 
-const struct ldb_map_attribute samba3_attributes[] = 
+const struct ldb_map_attribute samba3_attributes[] =
 {
 	/* sambaNextRid -> nextRid */
 	{
@@ -285,11 +331,13 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* sambaLMPassword -> lmPwdHash*/
 	{
-		.local_name = "lmPwdHash",
-		.type = MAP_RENAME,
+		.local_name = "lmpwdhash",
+		.type = MAP_CONVERT,
 		.u = {
-			.rename = {
+			.convert = {
 				.remote_name = "sambaLMPassword",
+				.convert_local = bin2hex,
+				.convert_remote = hex2bin,
 			},
 		},
 	},
@@ -307,11 +355,13 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* sambaNTPassword -> ntPwdHash*/
 	{
-		.local_name = "ntPwdHash",
-		.type = MAP_RENAME,
+		.local_name = "ntpwdhash",
+		.type = MAP_CONVERT,
 		.u = {
-			.rename = {
+			.convert = {
 				.remote_name = "sambaNTPassword",
+				.convert_local = bin2hex,
+				.convert_remote = hex2bin,
 			},
 		},
 	},
@@ -324,7 +374,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 			.generate = {
 				.remote_names = { "sambaPrimaryGroupSID", NULL },
 				.generate_local = generate_primaryGroupID,
-				.generate_remote = generate_sambaPrimaryGroupSID, 
+				.generate_remote = generate_sambaPrimaryGroupSID,
 			},
 		},
 	},
@@ -421,7 +471,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 	},
 
 	/* codePage */
-	{ 
+	{
 		.local_name = "codePage",
 		.type = MAP_IGNORE,
 	},
@@ -452,13 +502,13 @@ const struct ldb_map_attribute samba3_attributes[] =
 	},
 
 	/* nTMixedDomain */
-	{ 
+	{
 		.local_name = "nTMixedDomain",
 		.type = MAP_IGNORE,
 	},
 
 	/* operatingSystem */
-	{ 
+	{
 		.local_name = "operatingSystem",
 		.type = MAP_IGNORE,
 	},
@@ -518,7 +568,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_CONVERT,
 		.u = {
 			.convert = {
-				.remote_name = "sambaSID", 
+				.remote_name = "sambaSID",
 				.convert_local = decode_sid,
 				.convert_remote = encode_sid,
 			},
@@ -534,11 +584,11 @@ const struct ldb_map_attribute samba3_attributes[] =
 				.remote_name = "sambaPwdLastSet",
 			},
 		},
-	},	
+	},
 
 	/* accountExpires */
 	{
-		.local_name = "accountExpires", 
+		.local_name = "accountExpires",
 		.type = MAP_IGNORE,
 	},
 
@@ -559,55 +609,55 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "createTimestamp",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* creationTime */
 	{
 		.local_name = "creationTime",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* dMDLocation */
 	{
 		.local_name = "dMDLocation",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* fSMORoleOwner */
 	{
 		.local_name = "fSMORoleOwner",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* forceLogoff */
 	{
 		.local_name = "forceLogoff",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* instanceType */
 	{
 		.local_name = "instanceType",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* invocationId */
 	{
 		.local_name = "invocationId",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* isCriticalSystemObject */
 	{
 		.local_name = "isCriticalSystemObject",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* localPolicyFlags */
 	{
 		.local_name = "localPolicyFlags",
 		.type = MAP_IGNORE,
 	},
-	
+
 	/* lockOutObservationWindow */
 	{
 		.local_name = "lockOutObservationWindow",
@@ -868,13 +918,13 @@ const struct ldb_map_attribute samba3_attributes[] =
 /* the context init function */
 static int samba3sam_init(struct ldb_module *module)
 {
-        int ret;
+	int ret;
 
 	ret = ldb_map_init(module, samba3_attributes, samba3_objectclasses, NULL, "samba3sam");
-        if (ret != LDB_SUCCESS)
-                return ret;
+	if (ret != LDB_SUCCESS)
+		return ret;
 
-        return ldb_next_init(module);
+	return ldb_next_init(module);
 }
 
 static struct ldb_module_ops samba3sam_ops = {
