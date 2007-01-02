@@ -519,17 +519,6 @@ interface drsuapi
 	} drsuapi_DsAttributeValueCtrGUID;
 
 	typedef [nodiscriminant] union {
-		/* DN String */
-		[case(DRSUAPI_ATTRIBUTE_member)]		drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_objectCategory)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_hasMasterNCs)]		drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_dMDLocation)]		drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_fSMORoleOwner)]		drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_serverReference)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_serverReferenceBL)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-
 		/* the default is the DATA_BLOB */
 		[default] drsuapi_DsAttributeValueCtrDataBlob data_blob;
 	} drsuapi_DsReplicaAttributeValueCtr;

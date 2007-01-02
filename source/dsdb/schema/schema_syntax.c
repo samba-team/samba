@@ -830,20 +830,6 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 {
 	uint32_t i;
 
-switch (attr->attributeID_id) {
-case DRSUAPI_ATTRIBUTE_member:
-case DRSUAPI_ATTRIBUTE_objectCategory:
-case DRSUAPI_ATTRIBUTE_hasMasterNCs:
-case DRSUAPI_ATTRIBUTE_dMDLocation:
-case DRSUAPI_ATTRIBUTE_fSMORoleOwner:
-case DRSUAPI_ATTRIBUTE_wellKnownObjects:
-case DRSUAPI_ATTRIBUTE_serverReference:
-case DRSUAPI_ATTRIBUTE_serverReferenceBL:
-case DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs:
-case DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs:
-	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
-}
-
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
