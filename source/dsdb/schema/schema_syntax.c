@@ -1291,6 +1291,12 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
 	},{
+	/* 
+	 * TODO: verify if DATA_BLOB is correct here...!
+	 *
+	 *       repsFrom and repsTo are the only attributes using
+	 *       this attribute syntax, but they're not replicated... 
+	 */
 		.name			= "Object(Replica-Link)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.40",
 		.oMSyntax		= 127,
