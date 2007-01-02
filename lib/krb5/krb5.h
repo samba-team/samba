@@ -716,6 +716,7 @@ typedef struct krb5_krbhst_data *krb5_krbhst_handle;
 #define KRB5_KRBHST_ADMIN	2
 #define KRB5_KRBHST_CHANGEPW	3
 #define KRB5_KRBHST_KRB524	4
+#define KRB5_KRBHST_KCA		5
 
 typedef struct krb5_krbhst_info {
     enum { KRB5_KRBHST_UDP,
