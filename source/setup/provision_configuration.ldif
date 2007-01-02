@@ -1,0 +1,182 @@
+###############################
+# Configuration Naming Context
+###############################
+dn: CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: configuration
+cn: Configuration
+instanceType: 13
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
+subRefs: CN=Schema,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+
+dn: CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRefContainer
+cn: Partitions
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2147483648
+objectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
+msDS-Behavior-Version: 0
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+
+dn: CN=Enterprise Configuration,CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Configuration
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 1
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: CN=Configuration,${BASEDN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Enterprise Schema,CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Schema
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 1
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: CN=Schema,CN=Configuration,${BASEDN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=${DOMAIN},CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: ${DOMAIN}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 3
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: ${BASEDN}
+nETBIOSName: ${DOMAIN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: sitesContainer
+cn: Sites
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2181038080
+objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: site
+cn: ${DEFAULTSITE}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2181038080
+objectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2181038080
+objectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: server
+cn: ${NETBIOSNAME}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 1375731712
+objectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
+dNSHostName: ${DNSNAME}
+serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
+
+dn: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+options: 1
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 33554432
+objectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
+dMDLocation: CN=Schema,CN=Configuration,${BASEDN}
+objectGUID: ${INVOCATIONID}
+invocationId: ${INVOCATIONID}
+msDS-Behavior-Version: 2
+
+dn: CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Services
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2147483648
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Windows NT
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: nTDSService
+cn: Directory Service
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
+sPNMappings: host=ldap,dns,cifs,http
+
+dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Query-Policies
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: queryPolicy
+cn: Default Query Policy
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Query-Policy,CN=Schema,CN=Configuration,${BASEDN}
+lDAPAdminLimits: MaxValRange=1500
+lDAPAdminLimits: MaxReceiveBuffer=10485760
+lDAPAdminLimits: MaxDatagramRecv=4096
+lDAPAdminLimits: MaxPoolThreads=4
+lDAPAdminLimits: MaxResultSetSize=262144
+lDAPAdminLimits: MaxTempTableSize=10000
+lDAPAdminLimits: MaxQueryDuration=120
+lDAPAdminLimits: MaxPageSize=1000
+lDAPAdminLimits: MaxNotificationPerConn=5
+lDAPAdminLimits: MaxActiveQueries=20
+lDAPAdminLimits: MaxConnIdleTime=900
+lDAPAdminLimits: InitRecvTimeout=120
+lDAPAdminLimits: MaxConnections=5000
+
+
+###############################
+# Schema Naming Context
+###############################
+dn: CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: dMD
+cn: Schema
+instanceType: 13
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectVersion: 30

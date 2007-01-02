@@ -1,0 +1,19 @@
+dn: CN=Computers,${BASEDN}
+changetype: modify
+replace: description
+description: Default container for upgraded computer accounts
+-
+replace: instanceType
+instanceType: 4
+-
+replace: showInAdvancedViewOnly
+showInAdvancedViewOnly: FALSE
+-
+replace: systemFlags
+systemFlags: 2348810240
+-
+replace: objectCategory
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+-
+replace: isCriticalSystemObject
+isCriticalSystemObject: TRUE

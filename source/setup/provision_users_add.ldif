@@ -1,0 +1,3 @@
+dn: CN=Users,${BASEDN}
+objectClass: top
+objectClass: container

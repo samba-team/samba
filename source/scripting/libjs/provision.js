@@ -180,7 +180,6 @@ function ldb_erase(ldb)
 		ldb.del(res[i].dn);
 	}
 
-
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 0) {
 		ldb_delete(ldb);
@@ -192,7 +191,7 @@ function ldb_erase(ldb)
 /*
   erase an ldb, removing all records
 */
-function ldb_erase_partitions(info, ldb)
+function ldb_erase_partitions(info, ldb, ldapbackend)
 {
 	var rootDSE_attrs = new Array("namingContexts");
 	var lp = loadparm_init();
@@ -205,15 +204,21 @@ function ldb_erase_partitions(info, ldb)
 		return;
 	}	
 	for (j=0; j<res[0].namingContexts.length; j++) {
+		var anything = "(|(objectclass=*)(dn=*))";
 		var attrs = new Array("dn");
 		var basedn = res[0].namingContexts[j];
 		var k;
 		var previous_remaining = 1;
 		var current_remaining = 0;
 
-			for (k=0; k < 10 && (previous_remaining != current_remaining); k++) {
+		if (ldapbackend && (basedn == info.subobj.BASEDN)) {
+			/* Only delete objects that were created by provision */
+			anything = "(objectcategory=*)";
+		}
+
+		for (k=0; k < 10 && (previous_remaining != current_remaining); k++) {
 			/* and the rest */
-			var res2 = ldb.search("(|(objectclass=*)(dn=*))", basedn, ldb.SCOPE_SUBTREE, attrs);
+			var res2 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
 			var i;
 			if (typeof(res2) == "undefined") {
 				info.message("ldb search failed: " + ldb.errstring() + "\n");
@@ -225,7 +230,7 @@ function ldb_erase_partitions(info, ldb)
 				ldb.del(res2[i].dn);
 			}
 			
-			var res3 = ldb.search("(|(objectclass=*)(dn=*))", basedn, ldb.SCOPE_SUBTREE, attrs);
+			var res3 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
 			if (typeof(res3) == "undefined") {
 				info.message("ldb search failed: " + ldb.errstring() + "\n");
 				continue;
@@ -430,7 +435,7 @@ function setup_name_mappings(info, ldb)
 /*
   provision samba4 - caution, this wipes all existing data!
 */
-function provision(subobj, message, blank, paths, session_info, credentials)
+function provision(subobj, message, blank, paths, session_info, credentials, ldapbackend)
 {
 	var lp = loadparm_init();
 	var sys = sys_init();
@@ -495,7 +500,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	message("Setting up sam.ldb attributes\n");
 	setup_add_ldif("provision_init.ldif", info, samdb, false);
 	message("Erasing data from partitions\n");
-	ldb_erase_partitions(info, samdb);
+	ldb_erase_partitions(info, samdb, ldapbackend);
 	
 	message("Adding baseDN: " + subobj.BASEDN + " (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
@@ -528,8 +533,34 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
 	message("Setting up sam.ldb templates\n");
 	setup_add_ldif("provision_templates.ldif", info, samdb, false);
+
+	message("Adding users container (permitted to fail)\n");
+	var add_ok = setup_add_ldif("provision_users_add.ldif", info, samdb, true);
+	message("Modifying users container\n");
+	var modify_ok = setup_ldb_modify("provision_help_users_mod.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify the users container\n");
+			assert(modify_ok);
+		}
+		assert(modify_ok);
+	}
+	message("Adding computers container (permitted to fail)\n");
+	var add_ok = setup_add_ldif("provision_computers_add.ldif", info, samdb, true);
+	message("Modifying computers container\n");
+	var modify_ok = setup_ldb_modify("provision_computers_modify.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify the computers container\n");
+			assert(modify_ok);
+		}
+		assert(modify_ok);
+	}
+
 	message("Setting up sam.ldb data\n");
 	setup_add_ldif("provision.ldif", info, samdb, false);
+	message("Setting up sam.ldb configuration data\n");
+	setup_add_ldif("provision_configuration.ldif", info, samdb, false);
 
 	if (blank != false) {
 		message("Setting up sam.ldb index\n");
