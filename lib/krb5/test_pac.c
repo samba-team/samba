@@ -211,6 +211,19 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_verify 3");
 
+    {
+	uint32_t *list;
+	size_t len;
+	ret = krb5_pac_get_types(context, pac, &len, &list);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_get_types");
+	if (len != 2)
+	    krb5_errx(context, 1, "list wrong length");
+	if (list[0] != 1 || list[1] != 2)
+	    krb5_errx(context, 1, "list wrong content");
+	free(list);
+    }
+
     _krb5_pac_free(context, pac);
 
     return 0;
