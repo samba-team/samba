@@ -445,18 +445,24 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.uint32.num_values != 1) { \
+	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.uint32.num_values); \
+			_a->value_ctr.data_blob.num_values); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && !_a->value_ctr.uint32.values[0].value) { \
-		d_printf("%s: %s value == NULL\n", __location__, attr); \
+	if (strict && !_a->value_ctr.data_blob.values[0].data) { \
+		d_printf("%s: %s data == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (_a && _a->value_ctr.uint32.num_values >= 1 \
-	    && _a->value_ctr.uint32.values[0].value) { \
-		(p)->elem = (*_a->value_ctr.uint32.values[0].value?True:False);\
+	if (strict && _a->value_ctr.data_blob.values[0].data->length != 4) { \
+		d_printf("%s: %s length == %u\n", __location__, attr, \
+			_a->value_ctr.data_blob.values[0].data->length); \
+		return WERR_INVALID_PARAM; \
+	} \
+	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
+	    && _a->value_ctr.data_blob.values[0].data \
+	    && _a->value_ctr.data_blob.values[0].data->length == 4) { \
+		(p)->elem = (IVAL(_a->value_ctr.data_blob.values[0].data->data,0)?True:False);\
 	} else { \
 		(p)->elem = False; \
 	} \
