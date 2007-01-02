@@ -7,7 +7,7 @@ fi
 
 mkdir -p $LDBDIR/tests/tmp/db
 
-# running slapd with -d0 means it stays in the same process group, so it can be
+# running slapd in the background (with &) means it stays in the same process group, so it can be
 # killed by timelimit
 slapd -d0 -f $LDBDIR/tests/slapd.conf -h "`$LDBDIR/tests/ldapi_url.sh`" $* &
 
