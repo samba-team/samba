@@ -519,21 +519,6 @@ interface drsuapi
 	} drsuapi_DsAttributeValueCtrGUID;
 
 	typedef [nodiscriminant] union {
-		[case(DRSUAPI_ATTRIBUTE_objectClass)] drsuapi_DsAttributeValueCtrObjectClassId object_class_id;
-		[case(DRSUAPI_ATTRIBUTE_governsID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
-		[case(DRSUAPI_ATTRIBUTE_attributeID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
-		[case(DRSUAPI_ATTRIBUTE_attributeSyntax)]	drsuapi_DsAttributeValueCtrUINT32 oid;
-
-		/* UINT32 */
-		[case(DRSUAPI_ATTRIBUTE_instanceType)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_rangeLower)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_rangeUpper)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_objectVersion)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_oMSyntax)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_searchFlags)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_systemFlags)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(DRSUAPI_ATTRIBUTE_msDS_Behavior_Version)]	drsuapi_DsAttributeValueCtrUINT32 uint32;
-
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 		[case(DRSUAPI_ATTRIBUTE_adminDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
