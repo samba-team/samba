@@ -772,7 +772,11 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
+/********************************************************************
+ This is the second callback after contacting the forest root
+********************************************************************/
+
+static void lookupname_recv2(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
 			    void *c, void *private_data)
 {
@@ -804,8 +808,71 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	     (enum lsa_SidType)response->data.sid.type);
 }
 
-void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
-			       const char *name,
+/********************************************************************
+ This is the first callback after contacting our own domain 
+********************************************************************/
+
+static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			    struct winbindd_response *response,
+			    void *c, void *private_data)
+{
+	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
+		     enum lsa_SidType type) =
+		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
+	DOM_SID sid;
+
+	if (!success) {
+		DEBUG(5, ("lookupname_recv: lookup_name() failed!\n"));
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		/* Try again using the forest root */
+		struct winbindd_domain *root_domain = find_root_domain();
+		struct winbindd_cli_state *state = (struct winbindd_cli_state*)private_data;		
+		struct winbindd_request request;		
+		char *name_domain, *name_account;
+		
+		if ( !root_domain ) {
+			DEBUG(5,("lookupname_recv: unable determine forest root\n"));
+			cont(private_data, False, NULL, SID_NAME_UNKNOWN);
+			return;
+		}
+
+		name_domain  = state->request.data.name.dom_name;
+		name_account = state->request.data.name.name;	
+
+		ZERO_STRUCT(request);
+		request.cmd = WINBINDD_LOOKUPNAME;
+		fstrcpy(request.data.name.dom_name, name_domain);
+		fstrcpy(request.data.name.name, name_account);
+
+		do_async_domain(mem_ctx, root_domain, &request, lookupname_recv2,
+				(void *)cont, private_data);
+
+		return;
+	}
+
+	if (!string_to_sid(&sid, response->data.sid.sid)) {
+		DEBUG(0, ("Could not convert string %s to sid\n",
+			  response->data.sid.sid));
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
+	cont(private_data, True, &sid,
+	     (enum lsa_SidType)response->data.sid.type);
+}
+
+/********************************************************************
+ The lookup name call first contacts a DC in its own domain
+ and fallbacks to contact a DC in the forest in our domain doesn't
+ know the name.
+********************************************************************/
+
+void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
+			       const char *dom_name, const char *name,
 			       void (*cont)(void *private_data, BOOL success,
 					    const DOM_SID *sid,
 					    enum lsa_SidType type),
@@ -814,9 +881,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
 	struct winbindd_request request;
 	struct winbindd_domain *domain;
 
-	domain = find_lookup_domain_from_name(dom_name);
-
-	if (domain == NULL) {
+	if ( (domain = find_lookup_domain_from_name(dom_name)) == NULL ) {
 		DEBUG(5, ("Could not find domain for name %s\n", dom_name));
 		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
