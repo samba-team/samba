@@ -23,7 +23,8 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/dlinklist.h"
-#include "librpc/gen_ndr/drsuapi.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 
 WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
@@ -479,12 +480,19 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 } while (0)
 
-#define GET_GUID_DS(s, r, attr, p, elem) do { \
+#define GET_GUID_DS(s, r, attr, mem_ctx, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (_a && _a->value_ctr.guid.num_values >= 1 \
-	    && _a->value_ctr.guid.values[0].guid) { \
-		(p)->elem = *_a->value_ctr.guid.values[0].guid;\
+	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
+	    && _a->value_ctr.data_blob.values[0].data \
+	    && _a->value_ctr.data_blob.values[0].data->length == 16) { \
+	    	NTSTATUS _nt_status; \
+		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.data_blob.values[0].data, \
+						      mem_ctx, &(p)->elem, \
+						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
+		if (!NT_STATUS_IS_OK(_nt_status)) { \
+			return ntstatus_to_werror(_nt_status); \
+		} \
 	} else { \
 		ZERO_STRUCT((p)->elem);\
 	} \
@@ -519,10 +527,10 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 			win_errstr(status)));
 		return status;
 	}
-	GET_GUID_DS(schema, r, "schemaIDGUID", attr, schemaIDGUID);
+	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, attr, schemaIDGUID);
 	GET_UINT32_DS(schema, r, "mAPIID", attr, mAPIID);
 
-	GET_GUID_DS(schema, r, "attributeSecurityGUID", attr, attributeSecurityGUID);
+	GET_GUID_DS(schema, r, "attributeSecurityGUID", mem_ctx, attr, attributeSecurityGUID);
 
 	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags);
 	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags);
@@ -581,7 +589,7 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 			win_errstr(status)));
 		return status;
 	}
-	GET_GUID_DS(schema, r, "schemaIDGUID", obj, schemaIDGUID);
+	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, obj, schemaIDGUID);
 
 	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
 	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, False);
