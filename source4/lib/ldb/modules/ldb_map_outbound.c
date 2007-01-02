@@ -229,8 +229,7 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 		return NULL;
 	}
 
-	el->num_values = old->num_values;
-	el->values = talloc_array(el, struct ldb_val, el->num_values);
+	el->values = talloc_array(el, struct ldb_val, old->num_values);
 	if (el->values == NULL) {
 		talloc_free(el);
 		map_oom(module);
@@ -244,8 +243,14 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 		return NULL;
 	}
 
-	for (i = 0; i < el->num_values; i++) {
+	for (i = 0; i < old->num_values; i++) {
 		el->values[i] = ldb_val_map_remote(module, el->values, map, &old->values[i]);
+		/* Conversions might fail, in which case bail */
+		if (!el->values[i].data) {
+			talloc_free(el);
+			return NULL;
+		}
+		el->num_values++;
 	}
 
 	return el;
@@ -262,7 +267,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 
 	/* We handle wildcards in ldb_msg_el_merge_wildcard */
 	if (ldb_attr_cmp(attr_name, "*") == 0) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	map = map_attr_find_local(data, attr_name);
@@ -270,7 +275,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 	/* Unknown attribute in remote message:
 	 * skip, attribute was probably auto-generated */
 	if (map == NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	switch (map->type) {
@@ -291,7 +296,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 
 	switch (map->type) {
 	case MAP_IGNORE:
-		return 0;
+		return LDB_SUCCESS;
 
 	case MAP_CONVERT:
 		if (map->u.convert.convert_remote == NULL) {
@@ -299,7 +304,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 				  "Skipping attribute '%s': "
 				  "'convert_remote' not set\n",
 				  attr_name);
-			return 0;
+			return LDB_SUCCESS;
 		}
 		/* fall through */
 	case MAP_KEEP:
@@ -318,7 +323,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 				  "Skipping attribute '%s': "
 				  "'generate_local' not set\n",
 				  attr_name);
-			return 0;
+			return LDB_SUCCESS;
 		}
 
 		el = map->u.generate.generate_local(module, local, attr_name, remote);
@@ -330,7 +335,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 	}
 
 	if (el == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
 	return ldb_msg_replace(local, el);
@@ -376,7 +381,7 @@ static int ldb_msg_el_merge_wildcard(struct ldb_module *module, struct ldb_messa
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /* Mapping messages
@@ -394,7 +399,7 @@ static int ldb_msg_merge_local(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /* Merge a local and a remote message into a single local one. */
@@ -432,7 +437,7 @@ static int ldb_msg_merge_remote(struct map_context *ac, struct ldb_message *loca
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /* Mapping search results
@@ -941,10 +946,6 @@ static int map_attrs_collect_and_partition(struct ldb_module *module, struct map
 	const char **remote_attrs;
 	const char **local_attrs;
 	int ret;
-
-	/* Clear initial lists of partitioned attributes */
-
-	/* Clear initial lists of partitioned attributes */
 
 	/* There is no tree, just partition the searched attributes */
 	if (tree == NULL) {
