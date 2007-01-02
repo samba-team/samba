@@ -157,6 +157,11 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 			switch (a->attid) {
 			case DRSUAPI_ATTRIBUTE_objectClass:
+#if 0
+				/*
+				 * Metze, please fix this properly :-)
+				 */
+
 				for (j=0; j < a->value_ctr.uint32.num_values; j++) {
 					uint32_t val = *a->value_ctr.uint32.values[j].value;
 
@@ -167,6 +172,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 						is_class = true;
 					}
 				}
+#endif
 				break;
 			default:
 				break;
