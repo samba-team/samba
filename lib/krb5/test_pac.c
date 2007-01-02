@@ -214,13 +214,13 @@ main(int argc, char **argv)
     {
 	uint32_t *list;
 	size_t len;
+
+	/* our two user buffer plus the three "system" buffers */
 	ret = krb5_pac_get_types(context, pac, &len, &list);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_get_types");
-	if (len != 2)
+	if (len != 5)
 	    krb5_errx(context, 1, "list wrong length");
-	if (list[0] != 1 || list[1] != 2)
-	    krb5_errx(context, 1, "list wrong content");
 	free(list);
     }
 
