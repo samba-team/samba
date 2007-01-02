@@ -530,12 +530,17 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	}
 
 	/* now add the userPrincipalName and sAMAccountName entries */
-	
+
 	if ( (sam_account_name = ads_get_samaccountname( ads, ctx, machine_name)) == NULL ) {
 		DEBUG(0,("ads_keytab_add_entry: unable to determine machine account's name in AD!\n"));
 		TALLOC_FREE( ctx );
 		return -1;	
 	}
+
+	/* upper case the sAMAccountName to make it easier for apps to 
+	   know what case to use in the keytab file */
+
+	strupper_m( sam_account_name );	
 
 	if ( (ret = ads_keytab_add_entry(ads, sam_account_name )) != 0 ) {
 		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding sAMAccountName (%s)\n",
