@@ -77,13 +77,6 @@ static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(const struct dsdb_schema *schema,
 {
 	uint32_t i;
 
-switch (attr->attributeID_id) {
-case DRSUAPI_ATTRIBUTE_isSingleValued:
-case DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly:
-case DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet:
-	return dsdb_syntax_FOOBAR_drsuapi_to_ldb(schema,attr, in, mem_ctx, out);
-}
-
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
