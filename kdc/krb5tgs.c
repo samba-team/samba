@@ -272,6 +272,75 @@ check_KRB5SignedPath(krb5_context context,
     return 0;
 }
 
+/*
+ *
+ */
+
+static krb5_error_code
+check_PAC(krb5_context context,
+	  krb5_kdc_configuration *config,
+	  hdb_entry_ex *client,
+	  const EncryptionKey *ekey,
+	  EncTicketPart *tkt,
+	  int *require_signedpath)
+{
+    AuthorizationData *ad = tkt->authorization_data;
+    unsigned i, j;
+    krb5_error_code ret;
+
+    if (ad == NULL || ad->len == 0)
+	return 0;
+
+    for (i = 0; i < ad->len; i++) {
+	AuthorizationData child;
+
+	if (ad->val[i].ad_type != KRB5_AUTHDATA_IF_RELEVANT)
+	    continue;
+
+	ret = decode_AuthorizationData(ad->val[i].ad_data.data,
+				       ad->val[i].ad_data.length,
+				       &child,
+				       NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode "
+				  "IF_RELEVANT with %d", ret);
+	    return ret;
+	}
+	for (j = 0; j < child.len; j++) {
+
+	    if (child.val[j].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
+		krb5_pac pac;
+
+		/* Found PAC */
+		ret = _krb5_pac_parse(context,
+				      child.val[j].ad_data.data,
+				      child.val[j].ad_data.length,
+				      &pac);
+		free_AuthorizationData(&child);
+		if (ret)
+		    return ret;
+
+		ret = _krb5_pac_verify(context, pac, tkt->authtime, 
+				       client->entry.principal,
+				       &tkt->key,
+				       ekey);
+		if (ret) {
+		    _krb5_pac_free(context, pac);
+		    return ret;
+		}
+
+		ret = _kdc_pac_verify(context, client, pac);
+		_krb5_pac_free(context, pac);
+		if (ret == 0)
+		    *require_signedpath = 0;
+
+		return ret;
+	    }
+	}
+	free_AuthorizationData(&child);
+    }
+    return 0;
+}
 
 /*
  *
@@ -575,7 +644,9 @@ tgs_make_reply(krb5_context context,
 	       KDC_REQ_BODY *b, 
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt, 
-	       const EncTicketPart *adtkt, 
+	       const EncryptionKey *ekey,
+	       krb5_enctype etype,
+	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server, 
 	       const char *server_name, 
@@ -592,31 +663,6 @@ tgs_make_reply(krb5_context context,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
-    krb5_enctype etype;
-    Key *skey;
-    const EncryptionKey *ekey;
-    
-    if(adtkt) {
-	int i;
-	ekey = &adtkt->key;
-	for(i = 0; i < b->etype.len; i++)
-	    if (b->etype.val[i] == adtkt->key.keytype)
-		break;
-	if(i == b->etype.len) {
-	    krb5_clear_error_string(context);
-	    return KRB5KDC_ERR_ETYPE_NOSUPP;
-	}
-	etype = b->etype.val[i];
-    }else{
-	ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
-			      &skey, &etype);
-	if(ret) {
-	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", server_name);
-	    return ret;
-	}
-	ekey = &skey->key;
-    }
     
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -805,7 +851,7 @@ tgs_make_reply(krb5_context context,
        DES3? */
     ret = _kdc_encode_reply(context, config, 
 			    &rep, &et, &ek, etype,
-			    adtkt ? 0 : server->entry.kvno, 
+			    kvno, 
 			    ekey, 0, &tgt->key, e_text, reply);
 out:
     free_TGS_REP(&rep);
@@ -1177,6 +1223,9 @@ tgs_build_reply(krb5_context context,
     hdb_entry_ex *server = NULL, *client = NULL;
     EncTicketPart *tgt = &ticket->ticket;
     KRB5SignedPathPrincipals *spp = NULL;
+    const EncryptionKey *ekey;
+    krb5_enctype etype;
+    krb5_kvno kvno;
 
     PrincipalName *s;
     Realm r;
@@ -1583,6 +1632,45 @@ server_lookup:
 	goto out;
     }
 	
+    /*
+     * Select enctype, return key and kvno.
+     */
+
+    if(b->kdc_options.enc_tkt_in_skey) {
+	int i;
+	ekey = &adtkt.key;
+	for(i = 0; i < b->etype.len; i++)
+	    if (b->etype.val[i] == adtkt.key.keytype)
+		break;
+	if(i == b->etype.len) {
+	    krb5_clear_error_string(context);
+	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	}
+	etype = b->etype.val[i];
+	kvno = 0;
+    }else{
+	Key *skey;
+
+	ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
+			      &skey, &etype);
+	if(ret) {
+	    kdc_log(context, config, 0, 
+		    "Server (%s) has no support for etypes", spp);
+	    return ret;
+	}
+	ekey = &skey->key;
+	kvno = server->entry.kvno;
+    }
+
+    /* check PAC if there is one */
+    ret = check_PAC(context, config, client, ekey, tgt, &require_signedpath);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"check_PAC check failed for %s (%s) from %s with %s",
+		spn, cpn, from, krb5_get_err_text(context, ret));
+	goto out;
+    }
+
     /* also check the krbtgt for signature */
     ret = check_KRB5SignedPath(context,
 			       config,
@@ -1606,7 +1694,9 @@ server_lookup:
 			 b, 
 			 client_principal,
 			 tgt, 
-			 b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
+			 ekey,
+			 etype,
+			 kvno,
 			 auth_data,
 			 server, 
 			 spn,
