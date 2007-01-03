@@ -55,13 +55,13 @@ interface drsblobs {
 	typedef struct {
 		uint32 count;
 		uint32 reserved;
-		drsuapi_DsReplicaCoursor coursors[count];
+		drsuapi_DsReplicaCursor cursors[count];
 	} replUpToDateVectorCtr1;
 
 	typedef struct {
 		uint32 count;
 		uint32 reserved;
-		drsuapi_DsReplicaCoursor2 coursors[count];
+		drsuapi_DsReplicaCursor2 cursors[count];
 	} replUpToDateVectorCtr2;
 
 	typedef [nodiscriminant] union {
