@@ -1,7 +1,0 @@
-qx\.ui\.basic\.Image\.ATTR_ALT\b="alt"
-qx\.ui\.basic\.Image\.ATTR_TITLE\b="title"
-qx\.ui\.basic\.Image\.BORDER_NONE\b="0 none"
-qx\.ui\.basic\.Image\.RESET_VALIGN\b="top"
-qx\.ui\.basic\.Image\.IMGLOADER_START\b="progid:DXImageTransform.Microsoft.AlphaImageLoader(src\='"
-qx\.ui\.basic\.Image\.IMGLOADER_STOP\b="',sizingMethod\='scale')"
-qx\.ui\.basic\.Image\.FILTER_GRAY\b="Gray() Alpha(Opacity\=30)"
