@@ -698,6 +698,7 @@ function provision_guess()
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
 	subobj.LDAPBACKEND  = "users.ldb";
+	subobj.LDAPMODULE = "entryUUID";
 	subobj.LDAPMODULES = "objectguid";
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
 	return subobj;
