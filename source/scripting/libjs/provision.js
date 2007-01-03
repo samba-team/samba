@@ -537,7 +537,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Adding users container (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_users_add.ldif", info, samdb, true);
 	message("Modifying users container\n");
-	var modify_ok = setup_ldb_modify("provision_help_users_mod.ldif", info, samdb);
+	var modify_ok = setup_ldb_modify("provision_users_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
 			message("Failed to both add and modify the users container\n");
