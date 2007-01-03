@@ -637,5 +637,8 @@ configure(krb5_context context, int argc, char **argv)
 	config->enable_524 = 0;
 	config->enable_kaserver = 0;
     }
+
+    _kdc_winkdc_init(context);
+
     return config;
 }
