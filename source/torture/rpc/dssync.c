@@ -563,6 +563,64 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	return ret;
 }
 
+static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	int i, y = 0;
+	uint64_t highest_usn = 0;
+	const char *partition = NULL;
+	struct drsuapi_DsGetNT4ChangeLog r;
+	int32_t out_level = 0;
+	struct GUID null_guid;
+	struct dom_sid null_sid;
+	DATA_BLOB cookie;
+
+	ZERO_STRUCT(null_guid);
+	ZERO_STRUCT(null_sid);
+	ZERO_STRUCT(cookie);
+
+	ZERO_STRUCT(r);
+	r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
+	r.in.level		= 1;
+
+	r.in.req.req1.unknown1	= lp_parm_int(-1, "dssync", "nt4-1", 3);
+	r.in.req.req1.unknown2	= lp_parm_int(-1, "dssync", "nt4-2", 0x00004000);
+
+	while (1) {
+		r.in.req.req1.length	= cookie.length;
+		r.in.req.req1.data	= cookie.data;
+
+		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.pipe, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *errstr = nt_errstr(status);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
+			}
+			printf("dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n", errstr);
+			ret = False;
+		} else if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("DsGetNT4ChangeLog failed - %s\n", win_errstr(r.out.result));
+			ret = False;
+		} else if (r.out.level != 1) {
+			printf("DsGetNT4ChangeLog unknown level - %u\n", r.out.level);
+			ret = False;
+		} else if (NT_STATUS_IS_OK(r.out.info.info1.status)) {
+		} else if (NT_STATUS_EQUAL(r.out.info.info1.status, STATUS_MORE_ENTRIES)) {
+			cookie.length	= r.out.info.info1.length1;
+			cookie.data	= r.out.info.info1.data1;
+			continue;
+		} else {
+			printf("DsGetNT4ChangeLog failed - %s\n", nt_errstr(r.out.info.info1.status));
+			ret = False;
+		}
+
+		break;
+	}
+
+	return ret;
+}
+
 BOOL torture_rpc_dssync(struct torture_context *torture)
 {
 	BOOL ret = True;
@@ -577,6 +635,7 @@ BOOL torture_rpc_dssync(struct torture_context *torture)
 	ret &= test_GetInfo(ctx);
 	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->new_dc.drsuapi);
 	ret &= test_FetchData(ctx);
+	ret &= test_FetchNT4Data(ctx);
 
 	return ret;
 }

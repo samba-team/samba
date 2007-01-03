@@ -192,10 +192,10 @@ static WERROR DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_call, TALL
 
 
 /* 
-  DRSUAPI_GET_NT4_CHANGELOG 
+  drsuapi_DsGetNT4ChangeLog 
 */
-static WERROR DRSUAPI_GET_NT4_CHANGELOG(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_GET_NT4_CHANGELOG *r)
+static WERROR drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsGetNT4ChangeLog *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
