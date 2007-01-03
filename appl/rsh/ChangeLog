@@ -1,5 +1,10 @@
-2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rshd.c: Declare iruserok if needed, based on bug report from
+	David Love.
+	
+2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rsh_locl.h: Forward decl.
 	
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
