@@ -1,3 +1,9 @@
+2007-01-04  David Love  <fx@gnu.org>
+
+	* Makefile.am (hxtool_LDADD): Add libasn1.la
+
+	* hxtool.c (pcert_verify): Fix format string.
+
 2006-12-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool.c: Allow setting path length
