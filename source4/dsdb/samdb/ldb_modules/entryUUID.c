@@ -83,6 +83,50 @@ static struct ldb_val guid_always_string(struct ldb_module *module, TALLOC_CTX *
 	return out;
 }
 
+static struct ldb_val encode_ns_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct GUID guid;
+	NTSTATUS status = NS_GUID_from_string((char *)val->data, &guid);
+	struct ldb_val out = data_blob(NULL, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return out;
+	}
+	status = ndr_push_struct_blob(&out, ctx, &guid, 
+				      (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return out;
+	}
+
+	return out;
+}
+
+static struct ldb_val guid_ns_string(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	NTSTATUS status;
+	struct ldb_val out = data_blob(NULL, 0);
+	if (val->length >= 32 && val->data[val->length] == '\0') {
+		struct GUID guid;
+		GUID_from_string((char *)val->data, &guid);
+		out = data_blob_string_const(NS_GUID_string(ctx, &guid));
+	} else {
+		struct GUID *guid_p;
+		guid_p = talloc(ctx, struct GUID);
+		if (guid_p == NULL) {
+			return out;
+		}
+		status = ndr_pull_struct_blob(val, guid_p, guid_p, 
+					      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(guid_p);
+			return out;
+		}
+		out = data_blob_string_const(NS_GUID_string(ctx, guid_p));
+		talloc_free(guid_p);
+	}
+	return out;
+}
+
 /* The backend holds binary sids, so just copy them back */
 static struct ldb_val val_copy(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
@@ -411,6 +455,154 @@ const char * const wildcard_attributes[] = {
 	NULL
 };
 
+const struct ldb_map_attribute nsuniqueid_attributes[] = 
+{
+	/* objectGUID */
+	{
+		.local_name = "objectGUID",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "nsuniqueid", 
+				.convert_local = guid_ns_string,
+				.convert_remote = encode_ns_guid,
+			},
+		},
+	},
+	/* objectSid */
+	{
+		.local_name = "objectSid",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "objectSid", 
+				.convert_local = sid_always_binary,
+				.convert_remote = val_copy,
+			},
+		},
+	},
+	{
+		.local_name = "whenCreated",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "createTimestamp"
+			 }
+		}
+	},
+	{
+		.local_name = "whenChanged",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "modifyTimestamp"
+			 }
+		}
+	},
+	{
+		.local_name = "sambaPassword",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "userPassword"
+			 }
+		}
+	},
+	{
+		.local_name = "allowedChildClassesEffective",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "allowedChildClassesEffective", 
+				.convert_local = class_to_oid,
+				.convert_remote = class_from_oid,
+			},
+		},
+	},
+	{
+		.local_name = "objectCategory",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "objectCategory", 
+				.convert_local = objectCategory_always_dn,
+				.convert_remote = val_copy,
+			},
+		},
+	},
+	{
+		.local_name = "distinguishedName",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "entryDN"
+			 }
+		}
+	},
+	{
+		.local_name = "groupType",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "groupType",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
+		}
+	},
+	{
+		.local_name = "sAMAccountType",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "sAMAccountType",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
+		}
+	},
+	{
+		.local_name = "usnChanged",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "modifyTimestamp",
+				 .convert_local = usn_to_timestamp,
+				 .convert_remote = timestamp_to_usn,
+			 },
+		},
+	},
+	{
+		.local_name = "usnCreated",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "createTimestamp",
+				 .convert_local = usn_to_timestamp,
+				 .convert_remote = timestamp_to_usn,
+			 },
+		},
+	},
+	{
+		.local_name = "*",
+		.type = MAP_KEEP,
+	},
+	{
+		.local_name = NULL,
+	}
+};
+
+/* These things do not show up in wildcard searches in OpenLDAP, but
+ * we need them to show up in the AD-like view */
+const char * const nsuniqueid_wildcard_attributes[] = {
+	"objectGUID", 
+	"whenCreated", 
+	"whenChanged",
+	"usnCreated",
+	"usnChanged",
+	NULL
+};
+
 static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
@@ -582,6 +774,41 @@ static int entryUUID_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
+/* the context init function */
+static int nsuniqueid_init(struct ldb_module *module)
+{
+        int ret;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	struct ldb_dn *schema_dn;
+
+	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, NULL);
+        if (ret != LDB_SUCCESS)
+                return ret;
+
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
+	map_private->caller_private = entryUUID_private;
+
+	schema_dn = find_schema_dn(module->ldb, map_private);
+	if (!schema_dn) {
+		/* Perhaps no schema yet */
+		return LDB_SUCCESS;
+	}
+	
+	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
+				       &entryUUID_private->objectclass_res);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
+		return ret;
+	}	
+
+	ret = find_base_dns(module, entryUUID_private);
+
+	return ldb_next_init(module);
+}
+
 static int get_seq(struct ldb_context *ldb, void *context, 
 		   struct ldb_reply *ares) 
 {
@@ -678,9 +905,16 @@ static struct ldb_module_ops entryUUID_ops = {
 	.sequence_number   = entryUUID_sequence_number
 };
 
+static struct ldb_module_ops nsuniqueid_ops = {
+	.name		   = "nsuniqueid",
+	.init_context	   = nsuniqueid_init,
+	.sequence_number   = entryUUID_sequence_number
+};
+
 /* the init function */
 int ldb_entryUUID_module_init(void)
 {
+	int ret;
 	struct ldb_module_ops ops = ldb_map_get_ops();
 	entryUUID_ops.add	= ops.add;
 	entryUUID_ops.modify	= ops.modify;
@@ -688,5 +922,19 @@ int ldb_entryUUID_module_init(void)
 	entryUUID_ops.rename	= ops.rename;
 	entryUUID_ops.search	= ops.search;
 	entryUUID_ops.wait	= ops.wait;
-	return ldb_register_module(&entryUUID_ops);
+	ret = ldb_register_module(&entryUUID_ops);
+
+	if (ret) {
+		return ret;
+	}
+
+	nsuniqueid_ops.add	= ops.add;
+	nsuniqueid_ops.modify	= ops.modify;
+	nsuniqueid_ops.del	= ops.del;
+	nsuniqueid_ops.rename	= ops.rename;
+	nsuniqueid_ops.search	= ops.search;
+	nsuniqueid_ops.wait	= ops.wait;
+	ret = ldb_register_module(&nsuniqueid_ops);
+
+	return ret;
 }
