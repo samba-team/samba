@@ -436,47 +436,14 @@ interface drsuapi
 
 	/* Generic DATA_BLOB values */
 	typedef struct {
-		[range(0,10485760),value(ndr_size_DATA_BLOB(0,r->data,0))] uint32 length;
-		DATA_BLOB *data;
-	} drsuapi_DsAttributeValueDataBlob;
+		[range(0,10485760),value(ndr_size_DATA_BLOB(0,r->blob,0))] uint32 __ndr_size;
+		DATA_BLOB *blob;
+	} drsuapi_DsAttributeValue;
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueDataBlob *values;
-	} drsuapi_DsAttributeValueCtrDataBlob;
-
-	/* objectClass values */
-	typedef struct {
-		[range(0,10485760),value(4)] uint32 __ndr_size;
-		[subcontext(4)] drsuapi_DsObjectClassId *objectClassId;
-	} drsuapi_DsAttributeValueObjectClassId;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueObjectClassId *values;
-	} drsuapi_DsAttributeValueCtrObjectClassId;
-
-	/* uint32 values */
-	typedef struct {
-		[range(0,10485760),value(4)] uint32 __ndr_size;
-		[subcontext(4)] uint32 *value;
-	} drsuapi_DsAttributeValueUINT32;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueUINT32 *values;
-	} drsuapi_DsAttributeValueCtrUINT32;
-
-	/* UnicodeString values */
-	typedef struct {
-		[range(0,10485760)] uint32 length;
-		[subcontext(4)] nstring *string;
-	} drsuapi_DsAttributeValueUnicodeString;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueUnicodeString *values;
-	} drsuapi_DsAttributeValueCtrUnicodeString;
+		[size_is(num_values)] drsuapi_DsAttributeValue *values;
+	} drsuapi_DsAttributeValueCtr;
 
 	/* DN String values */
 	typedef [public,gensize] struct {
@@ -497,35 +464,9 @@ interface drsuapi
 		[flag(NDR_REMAINING)] DATA_BLOB binary;
 	} drsuapi_DsReplicaObjectIdentifier3Binary;
 
-	typedef struct {
-		[range(0,10485760),value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(object, ndr->flags))] uint32 __ndr_size;
-		[subcontext(4),subcontext_size(__ndr_size)] drsuapi_DsReplicaObjectIdentifier3 *object;
-	} drsuapi_DsAttributeValueDNString;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueDNString *values;
-	} drsuapi_DsAttributeValueCtrDNString;
-
-	/* GUID values */
-	typedef struct {
-		[range(0,10485760),value(ndr_size_GUID(guid, ndr->flags))] uint32 __ndr_size;
-		[subcontext(4)] GUID *guid;
-	} drsuapi_DsAttributeValueGUID;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueGUID *values;
-	} drsuapi_DsAttributeValueCtrGUID;
-
-	typedef [nodiscriminant] union {
-		/* the default is the DATA_BLOB */
-		[default] drsuapi_DsAttributeValueCtrDataBlob data_blob;
-	} drsuapi_DsReplicaAttributeValueCtr;
-
 	typedef [public] struct {
 		drsuapi_DsAttributeId attid;
-		[switch_is(attid)] drsuapi_DsReplicaAttributeValueCtr value_ctr;
+		drsuapi_DsAttributeValueCtr value_ctr;
 	} drsuapi_DsReplicaAttribute;
 
 	typedef struct {
@@ -576,13 +517,9 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr1;
 
 	typedef struct {
-		drsuapi_DsReplicaObjectIdentifier *dn;
-		drsuapi_DsAttributeId attid;
-		/* this dn_string, depends on the attid, maybe could be another
-		 * attribute syntax
-		 */
-		drsuapi_DsAttributeValueDNString dn_string;
-		uint32 u1;
+		drsuapi_DsReplicaObjectIdentifier *identifier;
+		drsuapi_DsReplicaAttribute attribute;
+		uint32 unknown1;
 		NTTIME_1sec time1;
 		drsuapi_DsReplicaMetaData meta_data;
 	} drsuapi_DsReplicaLinkedAttribute;

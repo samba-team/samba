@@ -157,12 +157,12 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 			switch (a->attid) {
 			case DRSUAPI_ATTRIBUTE_objectClass:
-				for (j=0; j < a->value_ctr.data_blob.num_values; j++) {
+				for (j=0; j < a->value_ctr.num_values; j++) {
 					uint32_t val = 0xFFFFFFFF;
 
-					if (a->value_ctr.data_blob.values[i].data
-					    && a->value_ctr.data_blob.values[i].data->length == 4) {
-						val = IVAL(a->value_ctr.data_blob.values[i].data->data,0);
+					if (a->value_ctr.values[i].blob
+					    && a->value_ctr.values[i].blob->length == 4) {
+						val = IVAL(a->value_ctr.values[i].blob->data,0);
 					}
 
 					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
