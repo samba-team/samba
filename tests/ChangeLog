@@ -1,5 +1,9 @@
 2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* plugin/check-pac.in: test tgs-req
+
+	* plugin/windc.c: log that the function is called.
+
 	* kdc/check-digest.in: Test security layer in ntlm.
 
 	* plugin: test WinDC PAC functionallity
