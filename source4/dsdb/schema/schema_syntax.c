@@ -39,14 +39,14 @@ static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(const struct dsdb_schema *schema
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
@@ -81,7 +81,7 @@ static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(const struct dsdb_schema *schema,
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -89,15 +89,15 @@ static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		uint32_t v;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+		if (in->value_ctr.values[i].blob->length != 4) {
 			return WERR_FOOBAR;
 		}
 
-		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = IVAL(in->value_ctr.values[i].blob->data, 0);
 
 		if (v != 0) {
 			str = talloc_strdup(out->values, "TRUE");
@@ -126,18 +126,18 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -166,7 +166,7 @@ static WERROR dsdb_syntax_INT32_drsuapi_to_ldb(const struct dsdb_schema *schema,
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -174,15 +174,15 @@ static WERROR dsdb_syntax_INT32_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		int32_t v;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+		if (in->value_ctr.values[i].blob->length != 4) {
 			return WERR_FOOBAR;
 		}
 
-		v = IVALS(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = IVALS(in->value_ctr.values[i].blob->data, 0);
 
 		str = talloc_asprintf(out->values, "%d", v);
 		W_ERROR_HAVE_NO_MEMORY(str);
@@ -206,12 +206,12 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -219,7 +219,7 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	for (i=0; i < in->num_values; i++) {
 		int32_t v;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -244,7 +244,7 @@ static WERROR dsdb_syntax_INT64_drsuapi_to_ldb(const struct dsdb_schema *schema,
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -252,15 +252,15 @@ static WERROR dsdb_syntax_INT64_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		int64_t v;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 8) {
+		if (in->value_ctr.values[i].blob->length != 8) {
 			return WERR_FOOBAR;
 		}
 
-		v = BVALS(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = BVALS(in->value_ctr.values[i].blob->data, 0);
 
 		str = talloc_asprintf(out->values, "%lld", v);
 		W_ERROR_HAVE_NO_MEMORY(str);
@@ -284,12 +284,12 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -297,7 +297,7 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	for (i=0; i < in->num_values; i++) {
 		int64_t v;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -322,7 +322,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(const struct dsdb_schema *sc
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -331,15 +331,15 @@ static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(const struct dsdb_schema *sc
 		time_t t;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 8) {
+		if (in->value_ctr.values[i].blob->length != 8) {
 			return WERR_FOOBAR;
 		}
 
-		v = BVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = BVAL(in->value_ctr.values[i].blob->data, 0);
 		v *= 10000000;
 		t = nt_time_to_unix(v);
 
@@ -373,12 +373,12 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_schema *sc
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -387,7 +387,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_schema *sc
 		NTTIME v;
 		time_t t;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -414,7 +414,7 @@ static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(const struct dsdb_schema *schema
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -423,15 +423,15 @@ static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(const struct dsdb_schema *schema
 		time_t t;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 8) {
+		if (in->value_ctr.values[i].blob->length != 8) {
 			return WERR_FOOBAR;
 		}
 
-		v = BVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = BVAL(in->value_ctr.values[i].blob->data, 0);
 		v *= 10000000;
 		t = nt_time_to_unix(v);
 
@@ -457,12 +457,12 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_schema *schema
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -471,7 +471,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_schema *schema
 		NTTIME v;
 		time_t t;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -498,21 +498,21 @@ static WERROR dsdb_syntax_DATA_BLOB_drsuapi_to_ldb(const struct dsdb_schema *sch
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+		if (in->value_ctr.values[i].blob->length == 0) {
 			return WERR_FOOBAR;
 		}
 
 		out->values[i] = data_blob_dup_talloc(out->values,
-						      in->value_ctr.data_blob.values[i].data);
+						      in->value_ctr.values[i].blob);
 		W_ERROR_HAVE_NO_MEMORY(out->values[i].data);
 	}
 
@@ -532,18 +532,18 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(const struct dsdb_schema *sch
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_dup_talloc(blobs, &in->values[i]);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -564,7 +564,7 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_schema *sche
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -573,15 +573,15 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_schema *sche
 		const struct dsdb_class *c;
 		const char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+		if (in->value_ctr.values[i].blob->length != 4) {
 			return WERR_FOOBAR;
 		}
 
-		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = IVAL(in->value_ctr.values[i].blob->data, 0);
 
 		c = dsdb_class_by_governsID_id(schema, v);
 		if (!c) {
@@ -610,7 +610,7 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_schema *sche
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -619,15 +619,15 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_schema *sche
 		WERROR status;
 		const char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+		if (in->value_ctr.values[i].blob->length != 4) {
 			return WERR_FOOBAR;
 		}
 
-		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = IVAL(in->value_ctr.values[i].blob->data, 0);
 
 		status = dsdb_map_int2oid(schema, v, out->values, &str);
 		W_ERROR_NOT_OK_RETURN(status);
@@ -659,7 +659,7 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(const struct dsdb_schema *schema,
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -668,15 +668,15 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		const char *name;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length != 4) {
+		if (in->value_ctr.values[i].blob->length != 4) {
 			return WERR_FOOBAR;
 		}
 
-		v = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		v = IVAL(in->value_ctr.values[i].blob->data, 0);
 
 		name = dsdb_lDAPDisplayName_by_id(schema, v);
 		if (!name) {
@@ -713,12 +713,12 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		return dsdb_syntax_FOOBAR_ldb_to_drsuapi(schema, attr, in, mem_ctx, out);
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -726,7 +726,7 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	for (i=0; i < in->num_values; i++) {
 		uint32_t v;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
@@ -751,7 +751,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_schema *schem
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -759,17 +759,17 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_schema *schem
 		ssize_t ret;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+		if (in->value_ctr.values[i].blob->length == 0) {
 			return WERR_FOOBAR;
 		}
 
 		ret = convert_string_talloc(out->values, CH_UTF16, CH_UNIX,
-					    in->value_ctr.data_blob.values[i].data->data,
-					    in->value_ctr.data_blob.values[i].data->length,
+					    in->value_ctr.values[i].blob->data,
+					    in->value_ctr.values[i].blob->length,
 					    (void **)&str);
 		if (ret == -1) {
 			return WERR_FOOBAR;
@@ -794,12 +794,12 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schem
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -807,7 +807,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schem
 	for (i=0; i < in->num_values; i++) {
 		ssize_t ret;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		ret = convert_string_talloc(blobs, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
@@ -834,7 +834,7 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -842,15 +842,15 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
 		NTSTATUS status;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+		if (in->value_ctr.values[i].blob->length == 0) {
 			return WERR_FOOBAR;
 		}
 
-		status = ndr_pull_struct_blob_all(in->value_ctr.data_blob.values[i].data,
+		status = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
 						  out->values, &id3,
 						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -877,12 +877,12 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -891,7 +891,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		NTSTATUS status;
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		/* TODO: handle id3.guid and id3.sid */
 		ZERO_STRUCT(id3);
@@ -919,7 +919,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -929,15 +929,15 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 		char *str;
 		NTSTATUS status;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length == 0) {
+		if (in->value_ctr.values[i].blob->length == 0) {
 			return WERR_FOOBAR;
 		}
 
-		status = ndr_pull_struct_blob_all(in->value_ctr.data_blob.values[i].data,
+		status = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
 						  out->values, &id3b,
 						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -974,12 +974,12 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -988,7 +988,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 		NTSTATUS status;
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		/* TODO: handle id3b.guid and id3b.sid, id3.binary */
 		ZERO_STRUCT(id3b);
@@ -1017,7 +1017,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
 
-	out->num_values	= in->value_ctr.data_blob.num_values;
+	out->num_values	= in->value_ctr.num_values;
 	out->values	= talloc_array(mem_ctx, struct ldb_val, out->num_values);
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
@@ -1026,23 +1026,23 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 		ssize_t ret;
 		char *str;
 
-		if (in->value_ctr.data_blob.values[i].data == NULL) {
+		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
 		}
 
-		if (in->value_ctr.data_blob.values[i].data->length < 4) {
+		if (in->value_ctr.values[i].blob->length < 4) {
 			return WERR_FOOBAR;
 		}
 
-		len = IVAL(in->value_ctr.data_blob.values[i].data->data, 0);
+		len = IVAL(in->value_ctr.values[i].blob->data, 0);
 
-		if (len != in->value_ctr.data_blob.values[i].data->length) {
+		if (len != in->value_ctr.values[i].blob->length) {
 			return WERR_FOOBAR;
 		}
 
 		ret = convert_string_talloc(out->values, CH_UTF16, CH_UNIX,
-					    in->value_ctr.data_blob.values[i].data->data+4,
-					    in->value_ctr.data_blob.values[i].data->length-4,
+					    in->value_ctr.values[i].blob->data+4,
+					    in->value_ctr.values[i].blob->length-4,
 					    (void **)&str);
 		if (ret == -1) {
 			return WERR_FOOBAR;
@@ -1067,12 +1067,12 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 		return WERR_FOOBAR;
 	}
 
-	out->attid				= attr->attributeID_id;
-	out->value_ctr.data_blob.num_values	= in->num_values;
-	out->value_ctr.data_blob.values		= talloc_array(mem_ctx,
-							       struct drsuapi_DsAttributeValueDataBlob,
-							       in->num_values);
-	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.data_blob.values);
+	out->attid			= attr->attributeID_id;
+	out->value_ctr.num_values	= in->num_values;
+	out->value_ctr.values		= talloc_array(mem_ctx,
+						       struct drsuapi_DsAttributeValue,
+						       in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
 
 	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
 	W_ERROR_HAVE_NO_MEMORY(blobs);
@@ -1081,7 +1081,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 		uint8_t *data;
 		ssize_t ret;
 
-		out->value_ctr.data_blob.values[i].data	= &blobs[i];
+		out->value_ctr.values[i].blob	= &blobs[i];
 
 		ret = convert_string_talloc(blobs, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
