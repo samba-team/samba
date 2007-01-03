@@ -576,6 +576,7 @@ AC_CONFIG_FILES(Makefile 		\
 	tests/db/Makefile		\
 	tests/kdc/Makefile		\
 	tests/gss/Makefile		\
+	tests/plugin/Makefile		\
 	doc/Makefile			\
 	tools/Makefile			\
 )
