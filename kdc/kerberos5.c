@@ -635,6 +635,69 @@ get_pa_etype_info2(krb5_context context,
 }
 
 /*
+ *
+ */
+
+static void
+log_as_req(krb5_context context,
+	   krb5_kdc_configuration *config,
+	   krb5_enctype cetype,
+	   krb5_enctype setype,
+	   const KDC_REQ_BODY *b)
+{
+    krb5_error_code ret;
+    struct rk_strpool *p = NULL;
+    char *str;
+    int i;
+    
+    for (i = 0; i < b->etype.len; i++) {
+	ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
+	if (ret == 0) {
+	    p = rk_strpoolprintf(p, "%s", str);
+	    free(str);
+	} else
+	    p = rk_strpoolprintf(p, "%d", b->etype.val[i]);
+	if (p && i + 1 < b->etype.len)
+	    p = rk_strpoolprintf(p, ", ");
+	if (p == NULL) {
+	    kdc_log(context, config, 0, "out of memory");
+	    return;
+	}
+    }
+    if (p == NULL)
+	p = rk_strpoolprintf(p, "no encryption types");
+    
+    str = rk_strpoolcollect(p);
+    kdc_log(context, config, 0, "Client supported enctypes: %s", str);
+    free(str);
+
+    {
+	char *cet;
+	char *set;
+
+	ret = krb5_enctype_to_string(context, cetype, &cet);
+	if(ret == 0) {
+	    ret = krb5_enctype_to_string(context, setype, &set);
+	    if (ret == 0) {
+		kdc_log(context, config, 5, "Using %s/%s", cet, set);
+		free(set);
+	    }
+	    free(cet);
+	}
+	if (ret != 0)
+	    kdc_log(context, config, 5, "Using e-types %d/%d", cetype, setype);
+    }
+    
+    {
+	char str[128];
+	unparse_flags(KDCOptions2int(b->kdc_options), asn1_KDCOptions_units(), 
+		      str, sizeof(str));
+	if(*str)
+	    kdc_log(context, config, 2, "Requested flags: %s", str);
+    }
+}
+
+/*
  * verify the flags on `client' and `server', returning 0
  * if they are OK and generating an error messages and returning
  * and error code otherwise.
@@ -1222,57 +1285,7 @@ _kdc_as_rep(krb5_context context,
 	}
     }
 
-    {
-	struct rk_strpool *p = NULL;
-	char *str;
-	int i;
-
-	for (i = 0; i < b->etype.len; i++) {
-	    ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
-	    if (ret == 0) {
-		p = rk_strpoolprintf(p, "%s", str);
-		free(str);
-	    } else
-		p = rk_strpoolprintf(p, "%d", b->etype.val[i]);
-	    if (p && i + 1 < b->etype.len)
-		p = rk_strpoolprintf(p, ", ");
-	    if (p == NULL) {
-		kdc_log(context, config, 0, "out of memory");
-		goto out;
-	    }
-	}
-	if (p == NULL)
-	    p = rk_strpoolprintf(p, "no encryption types");
-
-	str = rk_strpoolcollect(p);
-	kdc_log(context, config, 0, "Client supported enctypes: %s", str);
-	free(str);
-    }
-    {
-	char *cet;
-	char *set;
-
-	ret = krb5_enctype_to_string(context, cetype, &cet);
-	if(ret == 0) {
-	    ret = krb5_enctype_to_string(context, setype, &set);
-	    if (ret == 0) {
-		kdc_log(context, config, 5, "Using %s/%s", cet, set);
-		free(set);
-	    }
-	    free(cet);
-	}
-	if (ret != 0)
-	    kdc_log(context, config, 5, "Using e-types %d/%d", cetype, setype);
-    }
-    
-    {
-	char str[128];
-	unparse_flags(KDCOptions2int(f), asn1_KDCOptions_units(), 
-		      str, sizeof(str));
-	if(*str)
-	    kdc_log(context, config, 2, "Requested flags: %s", str);
-    }
-    
+    log_as_req(context, config, cetype, setype, b);
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey
        || (f.request_anonymous && !config->allow_anonymous)) {
@@ -1481,6 +1494,37 @@ _kdc_as_rep(krb5_context context,
     if (rep.padata->len == 0) {
 	free(rep.padata);
 	rep.padata = NULL;
+    }
+
+    /* Add the PAC */
+    {
+	krb5_pac p = NULL;
+	krb5_data data;
+
+	ret = _kdc_pac_generate(context, client, &p);
+	if (ret) {
+	    kdc_log(context, config, 0, "PAC generation failed for -- %s", 
+		    client_name);
+	    goto out;
+	}
+	if (p != NULL) {
+	    ret = _krb5_pac_sign(context, p, et.authtime,
+				 client->entry.principal,
+				 &et.key, &skey->key, &data);
+	    _krb5_pac_free(context, p);
+	    if (ret) {
+		kdc_log(context, config, 0, "PAC signing failed for -- %s", 
+			client_name);
+		goto out;
+	    }
+
+	    ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					      KRB5_AUTHDATA_WIN2K_PAC,
+					      &data);
+	    krb5_data_free(&data);
+	    if (ret)
+		goto out;
+	}
     }
 
     _kdc_log_timestamp(context, config, "AS-REQ", et.authtime, et.starttime, 
