@@ -41,6 +41,7 @@ libkdc_la_SOURCES = 		\
 	kaserver.c		\
 	kx509.c			\
 	process.c		\
+	windc.c			\
 	rx.h
 
 
@@ -105,5 +106,10 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 kdc_LDADD = libkdc.la $(LDADD) $(LIB_pidfile)
 
 include_HEADERS = kdc.h kdc-protos.h
+
+krb5dir = $(includedir)/krb5
+krb5_HEADERS = windc_plugin.h
+
+build_HEADERZ = $(krb5_HEADERS) # XXX
 
 EXTRA_DIST = $(man_MANS)
