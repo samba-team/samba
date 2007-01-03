@@ -6,5 +6,6 @@ objectClass: top
 objectClass: domain
 objectClass: domainDNS
 ${EXTENSIBLEOBJECT}
+${ACI}
 dc: ${RDN_DC}
 

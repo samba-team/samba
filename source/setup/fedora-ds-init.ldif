@@ -22,5 +22,6 @@ nsslapd-suffix: dc=tammy,dc=abartlet,dc=net
 #
 
 
-# provision with --ldap-backend=ldap://localhost:4389 --ldap-module=nsuniqueid
+# provision with --ldap-backend=ldap://localhost:4389 --ldap-module=nsuniqueid --aci='aci: (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)'
+
 
