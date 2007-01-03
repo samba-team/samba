@@ -80,7 +80,7 @@ typedef struct krb5_digest *krb5_digest;
 struct krb5_ntlm;
 typedef struct krb5_ntlm *krb5_ntlm;
 
-struct krb5_pac;
+typedef struct krb5_pac *krb5_pac;
 
 typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
 typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
