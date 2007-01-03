@@ -1236,8 +1236,8 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		[charset(UTF16),string] uint16 *object_dn;
-		uint32 value_length;
-		[size_is(value_length)] uint8 *value;
+		[value(ndr_size_DATA_BLOB(0,r->binary,0))] uint32 __ndr_size_binary;
+		DATA_BLOB *binary;
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
@@ -1291,8 +1291,8 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		[charset(UTF16),string] uint16 *object_dn;
-		uint32 value_length;
-		[size_is(value_length)] uint8 *value;
+		[value(ndr_size_DATA_BLOB(0,r->binary,0))] uint32 __ndr_size_binary;
+		DATA_BLOB *binary;
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
