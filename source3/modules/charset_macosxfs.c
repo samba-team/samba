@@ -202,9 +202,9 @@ static void hexdump( const char * label, const char * s, size_t len )
  * perfect fits.
  */
 static size_t macosxfs_encoding_pull(
-	void *cd,				/* Encoder handle */
-	char **inbuf, size_t *inbytesleft,	/* Script string */
-	char **outbuf, size_t *outbytesleft)	/* UTF-16-LE string */
+	void *cd,				    /* Encoder handle */
+	const char **inbuf, size_t *inbytesleft,    /* Script string */
+	char **outbuf, size_t *outbytesleft)	    /* UTF-16-LE string */
 {
 	static const int script_code = kCFStringEncodingUTF8;
 	static CFMutableStringRef cfstring = NULL;
@@ -324,9 +324,9 @@ static size_t macosxfs_encoding_pull(
 }
 
 static size_t macosxfs_encoding_push(
-	void *cd,				/* Encoder handle */
-	char **inbuf, size_t *inbytesleft,	/* UTF-16-LE string */
-	char **outbuf, size_t *outbytesleft)	/* Script string */
+	void *cd,				    /* Encoder handle */
+	const char **inbuf, size_t *inbytesleft,    /* UTF-16-LE string */
+	char **outbuf, size_t *outbytesleft)	    /* Script string */
 {
 	static const int script_code = kCFStringEncodingUTF8;
 	static CFMutableStringRef cfstring = NULL;
@@ -374,7 +374,7 @@ static size_t macosxfs_encoding_push(
 	charsconverted = CFStringGetBytes(
 		cfstring, CFRangeMake(0,cfsize),
 		script_code, 0, False,
-		*outbuf, *outbytesleft, &outsize);
+		(uint8_t *)(*outbuf), *outbytesleft, &outsize);
 
 	if (0 == charsconverted) {
 		debug_out("String conversion: "
