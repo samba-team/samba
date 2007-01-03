@@ -63,6 +63,9 @@ $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
+echo "$0: building Web Application Framework (SWAT)"
+make -C ../webapps/swat distclean build || exit 1
+
 echo "Now run ./configure and then make."
 exit 0
 

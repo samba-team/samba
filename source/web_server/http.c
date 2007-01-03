@@ -126,7 +126,7 @@ static const char *http_local_path(struct websrv_context *web,
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
-		path = talloc_asprintf_append(path, "/index.html");
+		path = talloc_asprintf_append(path, "/index.esp");
 	}
 	return path;
 }
