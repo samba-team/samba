@@ -1,2 +1,0 @@
-QxWindowManager=QxWindowManager was converted from a singleton to a normal class to allow multiple usage. This is useful for example to implement something like virtual desktops.
-QxAtom=Was renamed to QxFooBar (Only a test)
