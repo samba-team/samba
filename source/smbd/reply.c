@@ -1475,7 +1475,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
 #endif
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
-	SMB_OFF_T size=0;
 	uint32 fattr=0;
 	int mtime=0;
 	SMB_STRUCT_STAT sbuf;
@@ -1545,8 +1544,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(status);
 	}
 
-	size = sbuf.st_size;
-
 	/* Setting the "size" field in vwv9 and vwv10 causes the file to be set to this size,
 	   if the file is truncated or created. */
 	if (((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) && allocation_size) {
@@ -1562,7 +1559,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			END_PROFILE(SMBopenX);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
-		size = get_allocation_size(conn,fsp,&sbuf);
+		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
 	}
 
 	fattr = dos_mode(conn,fname,&sbuf);
@@ -1611,7 +1608,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	} else {
 		srv_put_dos_date3(outbuf,smb_vwv4,mtime);
 	}
-	SIVAL(outbuf,smb_vwv6,(uint32)size);
+	SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
 	SSVAL(outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
 	SSVAL(outbuf,smb_vwv11,smb_action);
 
@@ -1662,6 +1659,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int com;
 	int outsize = 0;
 	uint32 fattr = SVAL(inbuf,smb_vwv0);
+	struct utimbuf times;
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
@@ -1675,6 +1673,8 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBcreate);
  
 	com = SVAL(inbuf,smb_com);
+
+	times.modtime = srv_make_unix_date3(inbuf + smb_vwv1);
 
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1721,6 +1721,9 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
  
+	times.actime = sbuf.st_atime;
+	file_utime(conn, fname, &times);
+
 	outsize = set_message(outbuf,1,0,True);
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
 
