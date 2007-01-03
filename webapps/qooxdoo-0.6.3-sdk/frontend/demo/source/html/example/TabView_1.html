@@ -1,0 +1,152 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tabbar implementation.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var tf1 = new qx.ui.pageview.tabview.TabView;
+    tf1.set({ left: 20, top: 48, right: 335, bottom: 48 });
+
+    var t1_1 = new qx.ui.pageview.tabview.Button("Edit");
+    var t1_2 = new qx.ui.pageview.tabview.Button("Find");
+    var t1_3 = new qx.ui.pageview.tabview.Button("Backup");
+
+    t1_1.setChecked(true);
+
+    tf1.getBar().add(t1_1, t1_2, t1_3);
+
+    var p1_1 = new qx.ui.pageview.tabview.Page(t1_1);
+    var p1_2 = new qx.ui.pageview.tabview.Page(t1_2);
+    var p1_3 = new qx.ui.pageview.tabview.Page(t1_3);
+
+    tf1.getPane().add(p1_1, p1_2, p1_3);
+
+    var f2 = new qx.ui.form.TextField("Find Anywhere");
+    var f3 = new qx.ui.form.TextField("Backup Input");
+
+    p1_2.add(f2);
+    p1_3.add(f3);
+
+    var c1 = new qx.ui.form.CheckBox("Place bar on top");
+    var c2 = new qx.ui.form.CheckBox("Align tabs to left");
+
+    c1.setTop(0);
+    c1.setChecked(true);
+
+    c2.setTop(20);
+    c2.setChecked(true);
+
+    p1_1.add(c1, c2);
+
+    c1.addEventListener("changeChecked", function(e) {
+      tf1.setPlaceBarOnTop(e.getData());
+    });
+
+    c2.addEventListener("changeChecked", function(e) {
+      tf1.setAlignTabsToLeft(e.getData());
+    });
+
+
+
+
+    var tf2 = new qx.ui.pageview.tabview.TabView;
+
+    tf2.set({ left: 0, top: 50, right: 0, bottom: 0 });
+
+
+
+    var t2_1 = new qx.ui.pageview.tabview.Button("Search for Files", "icon/16/file-open.png");
+    var t2_2 = new qx.ui.pageview.tabview.Button("Search the Web", "icon/16/network.png");
+    var t2_3 = new qx.ui.pageview.tabview.Button("Search for Text", "icon/16/contents.png");
+    var t2_4 = new qx.ui.pageview.tabview.Button("Search for Persons", "icon/16/emoticon.png");
+    var t2_5 = new qx.ui.pageview.tabview.Button("Search in Mails", "icon/16/mail.png");
+
+    t2_1.setChecked(true);
+
+    tf2.getBar().add(t2_1, t2_2, t2_3, t2_4, t2_5);
+
+    var p2_1 = new qx.ui.pageview.tabview.Page(t2_1);
+    var p2_2 = new qx.ui.pageview.tabview.Page(t2_2);
+    var p2_3 = new qx.ui.pageview.tabview.Page(t2_3);
+    var p2_4 = new qx.ui.pageview.tabview.Page(t2_4);
+    var p2_5 = new qx.ui.pageview.tabview.Page(t2_5);
+
+    tf2.getPane().add(p2_1, p2_2, p2_3, p2_4, p2_5);
+
+    var t2_1 = new qx.ui.form.TextField("Files...");
+    var t2_2 = new qx.ui.form.TextField("Web...");
+    var t2_3 = new qx.ui.form.TextField("Printers...");
+    var t2_4 = new qx.ui.form.TextField("Persons...");
+    var t2_5 = new qx.ui.form.TextField("Mails...");
+
+    t2_1.set({ top: 2, left: 0, width: 140 });
+    t2_2.set({ top: 2, left: 0, width: 140 });
+    t2_3.set({ top: 2, left: 0, width: 140 });
+    t2_4.set({ top: 2, left: 0, width: 140 });
+    t2_5.set({ top: 2, left: 0, width: 140 });
+
+    p2_1.add(t2_1);
+    p2_2.add(t2_2);
+    p2_3.add(t2_3);
+    p2_4.add(t2_4);
+    p2_5.add(t2_5);
+
+    var b2_1 = new qx.ui.form.Button("Search", "icon/16/search.png");
+    var b2_2 = new qx.ui.form.Button("Search", "icon/16/search.png");
+    var b2_3 = new qx.ui.form.Button("Search", "icon/16/search.png");
+    var b2_4 = new qx.ui.form.Button("Search", "icon/16/search.png");
+    var b2_5 = new qx.ui.form.Button("Search", "icon/16/search.png");
+
+    b2_1.set({ top: 0, left: 150 });
+    b2_2.set({ top: 0, left: 150 });
+    b2_3.set({ top: 0, left: 150 });
+    b2_4.set({ top: 0, left: 150 });
+    b2_5.set({ top: 0, left: 150 });
+
+    p2_1.add(b2_1);
+    p2_2.add(b2_2);
+    p2_3.add(b2_3);
+    p2_4.add(b2_4);
+    p2_5.add(b2_5);
+
+    function dosearch(e) {
+      alert("Searching...");
+    };
+
+    b2_1.addEventListener("click", dosearch);
+    b2_2.addEventListener("click", dosearch);
+    b2_3.addEventListener("click", dosearch);
+    b2_4.addEventListener("click", dosearch);
+    b2_5.addEventListener("click", dosearch);
+
+
+
+
+    p1_2.add(tf2);
+
+
+
+
+
+
+    d.add(tf1);
+  });
+  </script>
+</body>
+</html>

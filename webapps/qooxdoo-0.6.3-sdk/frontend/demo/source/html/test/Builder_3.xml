@@ -1,0 +1,33 @@
+<qx.client.builder.Container>
+   <qx.ui.menu.Menu id='m2'>
+    <qx.ui.menu.MenuButton label='New Window'/>
+    <qx.ui.menu.MenuButton label='Overlapping'/>
+    <qx.ui.menu.MenuButton label='Split Vertical'/>
+    <qx.ui.menu.MenuButton label='Split Horizontal'/>
+    <qx.ui.menu.MenuButton label='Next Window'/>
+    <qx.ui.menu.MenuButton label='Previous Window'/>
+  </qx.ui.menu.Menu>
+
+  <qx.ui.menu.Menu id='m1'>
+    <qx.ui.menu.MenuButton label='View/Lists'/>
+    <qx.ui.menu.MenuButton label='Syntax Highlighting'/>
+    <qx.ui.menu.MenuSeparator/>
+    <qx.ui.menu.MenuButton label='Window Font'/>
+    <qx.ui.menu.MenuButton label='Printer Font' menu='m2'/>
+  </qx.ui.menu.Menu>
+    
+  <qx.ui.form.Button id='btn' label='Reference Property' location='20,48'>
+    <qx.client.builder.EventListener type='click' args='e'>
+      var el = this.getElement();
+      m1.setLeft(qx.dom.DomLocation.getPageBoxLeft(el));
+      m1.setTop(qx.dom.DomLocation.getPageBoxBottom(el));      ;
+      m1.show();
+      e.setPropagationStopped(true);
+    </qx.client.builder.EventListener>
+    <qx.client.builder.EventListener type='mousedown' args='e'>
+      e.setPropagationStopped(true);
+    </qx.client.builder.EventListener>  
+  </qx.ui.form.Button>
+  
+  <qx.ui.basic.Atom label='Comma Delimited Property &amp; Eval Property ' location='140,48' backgroundColor='#BDD2EF' dimension='220,220' border='qx.renderer.border.Border.presets.outset'/>
+</qx.client.builder.Container>

@@ -1,0 +1,126 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing multiple parallel requests of files with different sizes.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var lab1 = new qx.ui.basic.Label("40KB");
+    var lab2 = new qx.ui.basic.Label("400KB");
+    var lab3 = new qx.ui.basic.Label("4000KB");
+
+    var spin1 = new qx.ui.form.Spinner(0, 3, 50);
+    var spin2 = new qx.ui.form.Spinner(0, 3, 20);
+    var spin3 = new qx.ui.form.Spinner(0, 3, 10);
+
+
+
+
+    var grid = new qx.ui.layout.GridLayout;
+
+    grid.setLocation(20, 48);
+    grid.setDimension("auto", "auto");
+    grid.setHorizontalSpacing(10);
+    grid.setVerticalSpacing(4);
+    grid.setBorder(qx.renderer.border.BorderPresets.getInstance().thinOutset);
+    grid.setBackgroundColor("white");
+    grid.setPadding(10);
+
+    grid.setColumnCount(3);
+    grid.setRowCount(2);
+
+    grid.setColumnWidth(0, 50);
+    grid.setColumnWidth(1, 50);
+    grid.setColumnWidth(2, 50);
+
+    grid.setRowHeight(0, 18);
+    grid.setRowHeight(1, 22);
+
+    qx.ui.core.ClientDocument.getInstance().add(grid);
+
+    grid.add(lab1, 0, 0);
+    grid.add(lab2, 1, 0);
+    grid.add(lab3, 2, 0);
+
+    grid.add(spin1, 0, 1);
+    grid.add(spin2, 1, 1);
+    grid.add(spin3, 2, 1);
+
+
+
+    var btn = new qx.ui.form.Button("Send", "icon/16/button-ok.png");
+    btn.setLocation(20, 120);
+    qx.ui.core.ClientDocument.getInstance().add(btn);
+
+
+
+    var area = new qx.ui.form.TextArea("");
+    area.setLocation(20, 154);
+    area.setDimension(192, 400);
+    qx.ui.core.ClientDocument.getInstance().add(area);
+
+
+
+    btn.addEventListener("execute", function(e)
+    {
+      var s1 = parseInt(spin1.getValue());
+      var s2 = parseInt(spin2.getValue());
+      var s3 = parseInt(spin3.getValue());
+
+      while ((s1+s2+s3) > 0)
+      {
+        if (s1 > 0)
+        {
+          makeRequest(40);
+          s1--;
+        };
+
+        if (s2 > 0)
+        {
+          makeRequest(400);
+          s2--;
+        };
+
+        if (s3 > 0)
+        {
+          makeRequest(4000);
+          s3--;
+        };
+      };
+    });
+
+    function makeRequest(size)
+    {
+      var req = new qx.io.remote.Request("data/filesize/" + size + "kb.xml", "GET", "application/xml");
+
+      req.addEventListener("completed", function(e) {
+        area.setValue(area.getValue() + "Request " + size + "kb: completed\n");
+      });
+
+      req.addEventListener("failed", function(e) {
+        area.setValue(area.getValue() + "Request " + size + "kb: failed\n");
+      });
+
+      req.addEventListener("timeout", function(e) {
+        area.setValue(area.getValue() + "Request " + size + "kb: timeout\n");
+      });
+
+      req.send();
+    };
+  });
+  </script>
+</body>
+</html>

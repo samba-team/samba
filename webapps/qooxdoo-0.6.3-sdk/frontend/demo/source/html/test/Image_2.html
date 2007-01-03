@@ -1,0 +1,150 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    Some advanced tests for qx.ui.basic.Image. Click on the fourth and fivth image to test the reflow possibilities.
+    The debug log gives you information of the preferred dimensions.
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var i1 = new qx.ui.basic.Image("icon/64/folder.png");
+    
+    i1.setLeft(20);
+    i1.setTop(48);
+    
+    i1.addEventListener("load", function() {
+      this.debug("Image 1: " + this.getPreferredBoxWidth() + "x" + this.getPreferredBoxHeight());
+    });
+    
+
+
+    var i2 = new qx.ui.basic.Image("icon/64/folder.png");
+    
+    i2.setLeft(120);
+    i2.setTop(48);
+    i2.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    i2.setPadding(2, 4);    
+    
+    i2.addEventListener("load", function() {
+      this.debug("Image 2: " + this.getPreferredBoxWidth() + "x" + this.getPreferredBoxHeight());
+    });
+
+
+    
+    var i3 = new qx.ui.basic.Image("icon/64/folder.png");
+    
+    i3.setLeft(220);
+    i3.setTop(48);
+    i3.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    i3.setPadding(8);    
+    i3.setOpacity(0.5);
+    
+    i3.addEventListener("load", function() {
+      this.debug("Image 3: " + this.getPreferredBoxWidth() + "x" + this.getPreferredBoxHeight());
+    });
+
+
+    
+    var i4 = new qx.ui.basic.Image("icon/64/folder.png");
+    
+    i4.setLeft(320);
+    i4.setTop(48);
+    i4.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    i4.setPadding(2, 4);     
+    
+    i4.addEventListener("load", function() {
+      this.debug("Image 4: " + this.getPreferredBoxWidth() + "x" + this.getPreferredBoxHeight());
+    });    
+
+    i4.addEventListener("click", function() {
+      this.setSource(this.getSource() == "icon/64/folder.png" ? "icon/32/run.png" : "icon/64/folder.png");
+    });    
+    
+
+    
+     
+    
+    var i5w1 = new qx.ui.layout.CanvasLayout;
+    i5w1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    i5w1.setPadding(8);
+    i5w1.setLeft(420);
+    i5w1.setTop(48);
+    i5w1.setWidth("auto");
+    i5w1.setHeight("auto");
+        
+    var i5w2 = new qx.ui.layout.CanvasLayout;
+    i5w2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    i5w2.setPadding(8);
+    i5w2.setLeft(0);
+    i5w2.setTop(0);
+    i5w2.setWidth("auto");
+    i5w2.setHeight("auto");
+
+    var i5w3 = new qx.ui.layout.CanvasLayout;
+    i5w3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    i5w3.setPadding(8);
+    i5w3.setLeft(0);
+    i5w3.setTop(0);
+    i5w3.setWidth("auto");
+    i5w3.setHeight("auto");
+    
+    var i5 = new qx.ui.basic.Image("icon/64/folder.png");
+    
+    i5.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    i5.setPadding(2, 4);     
+    
+    i5.addEventListener("load", function() {
+      this.debug("Image 4: " + this.getPreferredBoxWidth() + "x" + this.getPreferredBoxHeight());
+    });    
+
+    i5.addEventListener("click", function() {
+      this.setSource(this.getSource() == "icon/64/folder.png" ? "icon/32/run.png" : "icon/64/folder.png");
+    });    
+
+    i5w1.add(i5w2);
+    i5w2.add(i5w3);
+    i5w3.add(i5);
+    d.add(i5w1);
+    
+
+    
+    var i6 = new qx.ui.basic.Image("icon/128/paint.png");
+    i6.setLeft(20);
+    i6.setRight(400);
+    i6.setTop(200);
+    i6.setHeight(150);
+    i6.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    i6.setWidth(null);
+
+    var i7 = new qx.ui.basic.Image("icon/128/paint.png");
+    i7.setLeft(20);
+    i7.setRight(400);
+    i7.setTop(400);
+    i7.setHeight(150);
+    i7.setBorder(qx.renderer.border.BorderPresets.getInstance().black);    
+    i7.setResizeToInner(true);
+    i7.setWidth(null);
+    
+
+
+    d.add(i1, i2, i3, i4, i6, i7); 
+
+
+  });
+  </script>
+</body>
+</html>

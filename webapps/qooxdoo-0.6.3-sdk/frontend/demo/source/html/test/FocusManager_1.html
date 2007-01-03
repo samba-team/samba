@@ -1,0 +1,108 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Some tests for some of the most used properties of qx.ui.basic.Terminator (coordinates, dimensions, backgroundColor, opacity, ...).</p>
+    <p>Also here are the first test of some widgets which extend qx.ui.basic.Terminator: qx.ui.form.TextField and qx.ui.form.PasswordField. These extended
+    widgets also interacts like the basic QxTerminators with the qx.event.handler.FocusHandler.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var c1 = new qx.ui.basic.Terminator;
+    d.add(c1);
+
+    c1.setTabIndex(1);
+    c1.setHeight(60);
+    c1.setWidth(60);
+    c1.setTop(48);
+    c1.setLeft(20);
+    c1.setBackgroundColor("blue");
+    c1.setOpacity(0.5);
+
+    c1.addEventListener("keydown", function(e){
+      if (e.getKeyIdentifier() != "Space") {
+        return;
+      };
+
+      this.setBackgroundColor("rgb(" + Math.round(Math.random()*255) + "," + Math.round(Math.random()*255) + "," + Math.round(Math.random()*255) + ")");
+    });
+
+
+    var c2 = new qx.ui.basic.Terminator;
+    d.add(c2);
+
+    c2.setTabIndex(2);
+    c2.setHeight(60);
+    c2.setWidth(60);
+    c2.setTop(68);
+    c2.setLeft(40);
+    c2.setBackgroundColor("orange");
+    c2.setOpacity(0.5);
+
+    c2.addEventListener("keydown", function(e){
+      if (e.getKeyIdentifier() != "Space") {
+        return;
+      };
+
+      this.setBackgroundColor("rgb(" + Math.round(Math.random()*255) + "," + Math.round(Math.random()*255) + "," + Math.round(Math.random()*255) + ")");
+    });
+
+
+    var t1 = new qx.ui.form.TextField;
+    t1.setValue("textfield");
+    t1.setTop(140);
+    t1.setLeft(20);
+    t1.setTabIndex(3);
+
+    d.add(t1);
+
+
+
+    var t2 = new qx.ui.form.PasswordField;
+    t2.setValue("passwordfield");
+    t2.setTop(170);
+    t2.setLeft(20);
+    t2.setTabIndex(4);
+
+    d.add(t2);
+
+
+    var t3 = new qx.ui.form.TextArea;
+    t3.setValue("textarea");
+    t3.setTop(200);
+    t3.setLeft(20);
+    t3.setWidth(300);
+    t3.setHeight(60);
+    t3.setTabIndex(5);
+
+    d.add(t3);
+
+
+    var t4 = new qx.ui.form.TextField;
+    t4.setValue("textfield");
+    t4.setTop(300);
+    t4.setLeft(20);
+    t4.setWidth(200);
+    t4.setMaxLength(100);
+    t4.setReadOnly(true);
+    t4.setTabIndex(6);
+
+    d.add(t4);
+  });
+  </script>
+</body>
+</html>

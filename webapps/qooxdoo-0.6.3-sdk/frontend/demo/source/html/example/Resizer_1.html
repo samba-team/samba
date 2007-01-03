@@ -1,0 +1,63 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+  
+  <div id="demoDescription">
+    <p>Test for qx.ui.resizer.Rezizer.</p>
+    <p>
+      The Resizer widget acts as a wrapper of another widget.  It allows the child widget to be resized by the end user.
+    </p>
+  </div>  
+
+  <script type="text/javascript">
+    function newResizer() {
+      var tArea = new qx.ui.form.TextArea;
+      tArea.setValue("Resize me\nI'm resizable");
+      tArea.set({
+        minWidth: 100,
+        minHeight: 50,
+        width: 200,
+        height: 100
+      });
+      return new qx.ui.resizer.Resizer(tArea);
+    }
+    
+    function newHBox() {
+      var hBox = new qx.ui.layout.BoxLayout;
+      hBox.set({
+        spacing: 10
+      });
+      hBox.auto();
+      hBox.add(newResizer(), newResizer());
+      return hBox;
+    }
+    
+    qx.core.Init.getInstance().defineMain(function() {
+      var vBox = new qx.ui.layout.VerticalBoxLayout;
+      var list = new qx.ui.form.List;
+      list.set({width: 100, height: 200, minWidth: 50, minHeight: 100, overflow: 'auto'});
+      for (var i = 0; i < 100; i++) {
+        list.add(new qx.ui.form.ListItem('Option number '+i));
+      }
+      vBox.add(new qx.ui.resizer.Resizer(list));
+      vBox.set({
+        spacing: 10,
+        top: 50,
+        left: 30
+      });
+      vBox.auto();
+      vBox.add(newHBox(), newHBox());
+      vBox.addToDocument();
+    });
+  </script>
+</body>
+</html>

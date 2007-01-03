@@ -1,0 +1,67 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tests for qx.io.local.CookieTransport API.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var vAll = [];
+    var vNum = 20;
+
+    for (var i=0; i<vNum; i++)
+    {
+      var f1 = new qx.ui.form.TextField;
+      f1.setLocation(20, 48+(i*22));
+      qx.ui.core.ClientDocument.getInstance().add(f1);
+      vAll.push(f1);
+    };
+
+    var b1 = new qx.ui.form.Button("Restore");
+    b1.setLocation(220, 48);
+    qx.ui.core.ClientDocument.getInstance().add(b1);
+
+    var b2 = new qx.ui.form.Button("Save");
+    b2.setLocation(280, 48);
+    qx.ui.core.ClientDocument.getInstance().add(b2);
+
+    var b3 = new qx.ui.form.Button("Clear");
+    b3.setLocation(340, 48);
+    qx.ui.core.ClientDocument.getInstance().add(b3);
+
+
+
+    b1.addEventListener("execute", function(e)
+    {
+      for (var i=0; i<vAll.length; i++) {
+        var vIn = qx.io.local.CookieTransport.get("fieldContent" + i);
+        vAll[i].setValue(vIn);
+      };
+    });
+
+    b2.addEventListener("execute", function(e)
+    {
+      for (var i=0; i<vAll.length; i++) {
+        qx.io.local.CookieTransport.set("fieldContent" + i, vAll[i].getValue());
+      };
+    });
+
+    b3.addEventListener("execute", function(e) {
+      qx.io.local.CookieTransport.delAll();
+    });
+  });
+  </script>
+</body>
+</html>
