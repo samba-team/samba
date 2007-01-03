@@ -339,7 +339,7 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			"__IGNORED__"
 		},{
 			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_CURSURS05,
+			DRSUAPI_DS_REPLICA_INFO_CURSORS05,
 			NULL
 		},{
 			DRSUAPI_DS_REPLICA_GET_INFO2,
