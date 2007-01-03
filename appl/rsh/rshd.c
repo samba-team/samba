@@ -40,7 +40,7 @@ login_access( struct passwd *user, char *from);
 int
 read_limits_conf(const char *file, const struct passwd *pwd);
 
-#ifndef NEED_IRUSEROK_PROTO
+#ifdef NEED_IRUSEROK_PROTO
 int iruserok(uint32_t, int, const char *, const char *);
 #endif
 
