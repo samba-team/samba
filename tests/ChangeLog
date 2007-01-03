@@ -1,5 +1,7 @@
 2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-digest.in: Test security layer in ntlm.
+
 	* plugin: test WinDC PAC functionallity
 	
 	* Makefile.am: Include plugin in tests
