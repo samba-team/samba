@@ -70,7 +70,7 @@
  *
  *     autoActionsBeforeOnentry -
  *     autoActionsAfterOnentry -
- *     auutoActionsBeforeOnexit -
+ *     autoActionsBeforeOnexit -
  *     autoActionsAfterOnexit -
  *       Automatic actions which take place at the time specified by the
  *       property name.  In all cases, the action takes place immediately
@@ -181,11 +181,11 @@ function(stateName, stateInfo)
       break;
 
     case "autoActionsBeforeOnexit":
-      this.setAutoActionsBeforeOnentry(stateInfo[field]);
+      this.setAutoActionsBeforeOnexit(stateInfo[field]);
       break;
 
-    case "autoActionsBeforeOnexit":
-      this.setAutoActionsBeforeOnentry(stateInfo[field]);
+    case "autoActionsAfterOnexit":
+      this.setAutoActionsAfterOnexit(stateInfo[field]);
       break;
 
     case "events":
