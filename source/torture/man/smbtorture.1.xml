@@ -77,7 +77,7 @@
 
 		<para>
 		'host' is an IP or hostname or netbios name. If the binding string 
-		identifies the server side of an endpoint, 'host' may be an empty");
+		identifies the server side of an endpoint, 'host' may be an empty
 	  	string.
 		</para>
 
