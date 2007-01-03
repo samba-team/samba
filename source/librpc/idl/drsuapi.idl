@@ -516,11 +516,20 @@ interface drsuapi
 		uint32 unknown4;
 	} drsuapi_DsGetNCChangesCtr1;
 
-	typedef struct {
+	/*
+	 * if the DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE flag
+	 * isn't there it means the value is deleted
+	 */
+	typedef [public] bitmap {
+		DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE	= 0x00000001
+	} drsuapi_DsLinkedAttributeFlags;
+
+	typedef [public] struct {
 		drsuapi_DsReplicaObjectIdentifier *identifier;
-		drsuapi_DsReplicaAttribute attribute;
-		uint32 unknown1;
-		NTTIME_1sec time1;
+		drsuapi_DsAttributeId attid;
+		drsuapi_DsAttributeValue value;
+		drsuapi_DsLinkedAttributeFlags flags;
+		NTTIME_1sec orginating_add_time;
 		drsuapi_DsReplicaMetaData meta_data;
 	} drsuapi_DsReplicaLinkedAttribute;
 
