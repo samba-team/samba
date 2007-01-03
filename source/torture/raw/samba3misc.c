@@ -340,6 +340,11 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_chkpath(cli_dos->tree, "<\\bla");
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
+	status = smbcli_chkpath(cli_nt->tree, "");
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smbcli_chkpath(cli_dos->tree, "");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	/*
 	 * .... And the same gang against getatr. Note that the DOS error codes
 	 * differ....
@@ -379,6 +384,35 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	{
+		uint16_t attr;
+
+		status = smbcli_getatr(cli_nt->tree, "", &attr, NULL, NULL);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (attr != (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY)) {
+			d_printf("(%s) getatr(\"\") returned 0x%x, expected "
+				 "0x%x\n", __location__, attr,
+				 FILE_ATTRIBUTE_HIDDEN
+				 |FILE_ATTRIBUTE_DIRECTORY);
+			ret = False;
+		}
+
+		status = smbcli_setatr(cli_nt->tree, "",
+				       FILE_ATTRIBUTE_DIRECTORY, -1);
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+		status = smbcli_setatr(cli_dos->tree, "",
+				       FILE_ATTRIBUTE_DIRECTORY, -1);
+		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess));
+
+		status = smbcli_setatr(cli_nt->tree, ".",
+				       FILE_ATTRIBUTE_DIRECTORY, -1);
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+		status = smbcli_setatr(cli_dos->tree, ".",
+				       FILE_ATTRIBUTE_DIRECTORY, -1);
+		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	}
+		
 
 	/* Try the same set with openX. */
 
