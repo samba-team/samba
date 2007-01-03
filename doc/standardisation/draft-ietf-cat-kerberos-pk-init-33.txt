@@ -1,6 +1,3 @@
-
-
-
 NETWORK WORKING GROUP                                             L. Zhu
 Internet-Draft                                     Microsoft Corporation
 Expires: July 28, 2006                                           B. Tung
@@ -426,7 +423,7 @@ Internet-Draft                   PKINIT                     January 2006
 
     Kerberos Encryption Type Name  Num  Corresponding Algorithm OID
     ============================== === ===============================
-    id-dsa-with-sha1-CmsOID         9  id-dsa-with-sha1 [RFC3279]
+    id-dsa-with-sha1-CmsOID        9   id-dsa-with-sha1 [RFC3279]
     md5WithRSAEncryption-CmsOID    10  md5WithRSAEncryption [RFC3279]
     sha-1WithRSAEncryption-CmsOID  11  sha-1WithRSAEncryption [RFC3279]
     rc2-cbc-EnvOID                 12  rc2-cbc [RFC3370]
@@ -455,8 +452,8 @@ Internet-Draft                   PKINIT                     January 2006
 
    For maximum interoperability, however, PKINIT clients wishing to
    indicate to the KDC the support for one or more of the algorithms
-   listed above SHOULD include the corresponding encryption type
-   number(s) in the etype field of the AS-REQ.
+   listed above SHOULD include the corresponding encryption type numbers
+   in the etype field of the AS-REQ.
 
 3.2.  PKINIT Pre-authentication Syntax and Use
 
@@ -2336,5 +2333,3 @@ Acknowledgment
 
 
 Zhu & Tung                Expires July 28, 2006                [Page 42]
-
-

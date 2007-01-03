@@ -1,0 +1,373 @@
+
+INTERNET-DRAFT                                         Clifford Neuman
+draft-ietf-cat-kerberos-pk-init-00.txt                      Brian Tung
+Updates: RFC 1510                                                  ISI
+expires September 3, 1995                                    John Wray
+                                         Digital Equipment Corporation
+
+
+    Public Key Cryptography for Initial Authentication in Kerberos
+
+
+0. Status Of this Memo
+
+   This document is an Internet-Draft.   Internet-Drafts  are  working
+   documents of the Internet Engineering Task Force (IETF), its areas,
+   and its working groups.  Note that other groups may also distribute
+   working documents as Internet-Drafts.
+
+   Internet-Drafts are draft documents valid  for  a  maximum  of  six
+   months  and  may  be updated, replaced, or obsoleted by other docu-
+   ments at any time.  It is inappropriate to use  Internet-Drafts  as
+   reference  material  or  to  cite them other than as ``work in pro-
+   gress.''
+
+   To learn the current status of any Internet-Draft, please check the
+   ``1id-abstracts.txt'' listing contained in the Internet-Drafts Sha-
+   dow Directories on ds.internic.net (US East  Coast),  nic.nordu.net
+   (Europe),  ftp.isi.edu  (US  West Coast), or munnari.oz.au (Pacific
+   Rim).
+
+   The distribution of  this  memo  is  unlimited.   It  is  filed  as
+   draft-ietf-cat-kerberos-pk-init-00.txt, and expires August 6, 1995.
+   Please send comments to the authors.
+
+
+1. Abstract
+
+   This document defines extensions to the Kerberos protocol  specifi-
+   cation  (RFC  1510,  "The  Kerberos  Network Authentication Service
+   (V5)", September 1993) to provide a method for using public key
+   cryptography during initial authentication.  The method defined 
+   specifies the way in which preauthentication data fields and error
+   data fields in Kerberos messages are to be used to transport public
+   key data. 
+
+2. Motivation
+
+   Public key cryptography provides a means by which a principal may
+   demonstrate possession of a key, without ever having divulged this
+   key to anyone else.  In conventional cryptography, the encryption key
+   and decryption key are either identical or can easily be derived from
+   each other.  In public key cryptography, however, neither key can be
+   derived easily from the other; hence, the ability to encrypt a message
+   does not imply the ability to decrypt it in turn.  Additionally, each
+   key is a full inverse of the other, so that either key can be used
+   for encryption or decryption.
+
+   The advantages provided by public key cryptography have produced a
+   demand for its integration into the Kerberos authentication protocol.
+   There are two important areas where public key cryptography will have
+   immediate use: in the initial authentication of users registered with
+   the KDC or using public key certificates from outside authorities,
+   and to establish inter-realm keys for cross-realm authentication.
+   This memo describes a method by which the first of these can be done.
+   The second case will be the topic for a separate proposal.
+
+   Some of the ideas on which this proposal is based arose during
+   discussions over several years between members of the SAAG, the
+   IETF-CAT working group, and the PSRG, regarding integration of
+   Kerberos and SPX.  Some ideas are drawn from the DASS system, and
+   similar extensions have been discussed for use in DCE.  These changes
+   are by no means endorsed by these groups.  This is an attempt to
+   revive some of the goals of that group, and the proposal approaches
+   those goals primarily from the Kerberos perspective.
+
+   This proposal will allow users with keys already registered for use
+   with X.509, PEM, or PGP, to use those keys to obtain Kerberos
+   credentials which can then be used for authentication with application
+   servers supporting Kerberos.
+
+   Use of public-key will not be a requirement for Kerberos, but if one's
+   organization runs a KDC supporting public key, then users may choose
+   to be registered with public keys instead of the current secret key.
+   The application request and response, between Kerberos clients and
+   application servers, will continue to be based on conventional
+   cryptography, and the application servers will continue to be
+   registered with conventional keys.
+
+
+3. Initial authentication of users with public keys
+
+   This section proposes extensions to Version 5 of the Kerberos
+   protocol that will support the use of public key cryptography 
+   by users in the initial request for a ticket granting ticket.
+
+   The advantage of registering public keys with the KDC lies in the
+   ease of recovery in case the KDC is compromised.  With Kerberos as it
+   currently stands, compromise of the security KDC is disastrous.  All
+   keys become known by the attacker and all keys must be changed.  
+
+   If users register public keys, compromise of the KDC does not divulge
+   their private key.  Compromise of security on the KDC is still
+   disastrous, since the attacker can impersonate any user.  An
+   attacker with the private key of the KDC can use it to certify a
+   bogus nonce key, and impersonate a user.  Changing this key
+   invalidates all bogus certifications.  Legitimate users must
+   re-certify their keys with the new KDC key, but users' public
+   keys do not have to be changed.  (Users who store their private
+   keys in an encrypted form on the KDC do have to change their
+   keys, since the encryption key is a symmetric key derived from
+   a password (as described below) and hence vulnerable to dictionary
+   attacks.  The difference is that, assuming good password policy,
+   site policy may allow the use of the old password only for the
+   purpose of key change for a time after the compromise, which means
+   that users can change their own passwords, rather than forcing the
+   administrator to re-key everyone.)
+
+   In the event of compromise of the KDC, recovery is simple since only
+   the KDC's key, keys for application servers, and users' private keys
+   stored in the KDC (as described above) must be changed.
+   Since there are usually fewer servers than users, and since an
+   organization usually has better procedures for updating servers,
+   changing these keys is much easier than having to individually
+   contact every user.
+
+   This proposed extension will not require users to register with
+   public keys.  It is intended to allow them to do so, but we recognize
+   that there are many reasons, including licensing terms, that users or
+   an organization as a whole will choose not to use the public key
+   option.  Users registered will public keys will only be able to
+   perform initial authentication from a client that support public key,
+   and must be registered in a realm that supports public key.  But they
+   will be able to use services registered in realms that support only
+   conventional Kerberos.  Further, users registered with conventional
+   Kerberos keys will be able to use all clients.
+
+   This proposal specifically does not address the registration of
+   public keys for services.  The application request and response,
+   between Kerberos clients and application servers, will continue to be
+   based on conventional cryptography, and the application servers will
+   continue to be registered with conventional keys. There are
+   performance issues and other reasons that servers may be better off
+   using conventional cryptography.  There are also reasons that they
+   may want to use public key.  For this proposal, however, we feel that
+   80 percent of the benefits of integrating public key with Kerberos
+   can be attained for 20 percent of the effort, by addressing only
+   initial authentication. This proposal does not preclude separate
+   extensions.
+
+   This proposal address two ways in which users may use public key
+   cryptography for initial authentication with Kerberos.  In both
+   cases, the end result is that the user obtains a conventional ticket
+   granting ticket, or conventional server ticket, that may be used for
+   subsequent authentication, with such subsequent authentication using
+   only conventional cryptography.
+
+   Users may register keys directly with the KDC, or they may present
+   certificates by outside certification authorities (or certifications
+   by other users) attesting to the association of the public key with
+   the named user.  We first consider the case where the user's key is
+   registered with the KDC.
+
+
+3.1 Initial request for user registered with public key on KDC 
+
+   In this scenario it is assumed that the user is registered with a public
+   key on the KDC.  The user's private key may be known to the user, or
+   may be stored on the KDC, encrypted so that it can not be used by the KDC.
+
+   We consider first the case where the user knows the private key, then
+   add support for retrieving the private key from the KDC.
+
+   The initial request to the KDC for a ticket granting ticket proceeds
+   according to RFC 1510.  Typically, preauthentication using a secret
+   key would not be included, but if included it may be ignored by the
+   KDC.  (This may introduce a problem: even if the KDC should ignore
+   the preauthentication, an attacker may not, and use an
+   intercepted message to guess the password off-line.)
+   If the private key is known to the client in advance, the
+   response from the KDC would be identical to the response in RFC1510,
+   except that instead of being encrypted in the secret key shared by the
+   client and the KDC, it is encrypted in a random key freshly generated
+   by the KDC.  A preauthentication field (specified below)
+   accompanies the response, containing a certificate with the public
+   key for the KDC, and a package containing the secret key in which the
+   rest of the response is encrypted, itself encrypted in the private key
+   of the KDC, and the public key of the user.  This package also contains
+   the same nonce used in the rest of the response, in order to prevent
+   replays of this part of the message, accompanied by a reconstructed
+   response.
+
+   PA-PK-AS-REP ::= SEQUENCE {
+	   kdc-cert	SEQUENCE OF OCTET STRING,
+           encryptPack  EncryptedData -- EncPaPkAsRepPart
+   }
+
+   EncPaPkAsRepPart ::= SEQUENCE {
+           enc-sess-key INTEGER,
+           nonce        INTEGER
+   }
+
+   Upon receipt of the response from the KDC, the client will verify the
+   public key for the KDC from PA-PK-AS-REP preauthentication data field,
+   The certificate must certify the key as belonging to a principal whose
+   name can be derived from the realm name.  We solicit discussion on the
+   form of the kdc-cert.  If client systems are expected to know (by
+   being hard-coded, for example) at least one public key, and to verify
+   certificates from that key, then there should be at least some policy
+   about which key that is, or alternatively some way to inform the KDC
+   which key the client possesses.
+
+   If the certificate checks
+   out, the client then extracts the message key for the rest of the
+   response by decrypting the field in the PA-PK-AS-REP with the public
+   key of the KDC and the private key of the user.  The client then uses
+   the message key to decrypt the rest of the response, and continues as
+   per RFC1510[1].
+
+
+3.1.1. Private key held by KDC
+
+   When the user's private key is not carried with the user, the user may
+   encrypt the private key using conventional cryptography, and register
+   the encrypted private key with the KDC.
+
+   When the user's private key is registered with the KDC, the KDC record
+   will also indicate whether preauthentication is required before
+   returning the record (we recommend that it be required).  If such
+   preauthentication is required, when the initial request is received
+   the KDC will respond with a KRB_ERROR message of type
+   KDC_ERR_PREAUTH_REQUIRED and with an error data field set to:
+
+   PA-PK-AS-INFO ::= SEQUENCE {
+	   kdc-cert	OCTET STRING}
+   }
+
+   The kdc-cert field is identical to that in the PA-PK-AS-REP
+   preauthentication data field returned with the KDC response, and must
+   be validated as belonging to the KDC in the same manner.
+
+   Upon receipt of the KRB_ERROR message with a PA-PK-AS-INFO field, the
+   client will prompt the user for the password that will be used to
+   decrypt the private key when returned, calculate a one way hash H1 of the
+   key, and send a request to the KDC, including a timestamp and a
+   client-generated nonce secret key that will be used to super-encrypt
+   the encrypted private key before it is returned to the client.  This
+   information is sent to the KDC in a subsequent AS_REQ message in a
+   preauthentication data field:
+
+   PA-PK-AS-REQ ::= SEQUENCE {
+	   enc-part	EncryptedData -- EncPaPkAsReqPart
+   }
+
+   EncPaPkAsReqPart ::= SEQUENCE {
+           tstamp       KerberosTime,
+           noncekey	INTEGER
+   }
+
+   encrypted first with the hash H1, then the public key of the KDC from
+   the certificate in the PA-PK-AS-INFO field of the error response.
+
+   Upon receipt of the authentication request with the PA-PK-AS-REQ the
+   KDC verifies the hash of the user's DES encryption key by comparing it
+   to the hash stored in the users database record.  If valid, it
+   generates the AS response as defined in RFC1510, but additionally
+   includes a preauthentication field of type PA-PK-USER KEY.  This
+   response will also be included in response to the initial request
+   without preauthentication if preauthentication is not required for the
+   user and the user's encrypted private key is stored on the KDC.  The
+   KDC generates a preauthentication data field of type PA-PK-USER-KEY
+   which will be returned with the KDC reply (together with the
+   PA-PK-AS-REP that is already returned).
+
+   PA-PK-USER-KEY ::= SEQUENCE {
+           enc-priv-key         OCTET STRING OPTIONAL
+   }
+
+   This message contains the encrypted private key that has been
+   registered with the KDC by the user, as encrypted by the user,
+   super-encrypted with the noncekey from the PA-PK-AS-REQ message if
+   preauthentication using that method was provided.  Note that since
+   H1 is a one-way hash, it is not possible for one to decrypt the
+   message if one possesses H1 but not the noncekey that H1 is derived
+   from.
+
+
+3.2. Clients with a public key certified by an outside authority
+
+   In the case where the client is not registered with the current KDC,
+   the client is responsible for obtaining the private key on its own.
+   The client will request initial tickets from the KDC using the TGS
+   exchange, but instead of performing pre-authentication using a
+   Kerberos ticket granting ticket, or with the PA-PK-AS-REQ that is used
+   when the public key is known to the KDC, the client performs
+   preauthentication using the preauthentication data field of type
+   PA-PK-AS-EXT-CERT:
+
+   PA-PK-AS-EXT-CERT ::= SEQUENCE {
+           user-cert	SEQUENCE OF OCTET STRING,
+	   authent	EncryptedData -- PKAuthenticator
+   }
+
+   PKAuthenticator ::= SEQUENCE {
+	   cksum	Checksum OPTIONAL,
+	   cusec	INTEGER,
+	   ctime	KerberosTime,
+   }
+
+   The fields in the encrypted authenticator are the same as those
+   in the Kerberos authenticator.  The structure is itself signed using
+   the user's private key corresponding to the public key in the
+   certificate. 
+
+   The KDC will verify the preauthentication authenticator, and check the
+   certification path against its own policy of legitimate certifiers.
+   This may be based on a certification hierarchy, or simply a list of
+   recognized certifiers in a system like PGP.
+
+   If all checks out, the KDC will issue Kerberos credentials, as in 3.1,
+   but with the names of all the certifiers in the certification path
+   added to the transited field of the ticket, with a principal name
+   taken from the certificate (this might be a long path for X.509, or a
+   string like "John Q. Public <jqpublic@company.com>" if the certificate
+   was a PGP certificate.  The realm will identify the kind of
+   certificate and the final certifier (e.g. PGP:<endorser@company.com>)[2].
+
+
+4. Compatibility with One-Time Passcodes
+
+   We solicit discussion on how the use of public key crytpgraphy for
+   intial authentication will interact with the proposed use of one time
+   passwords discussed in Internet Draft
+   draft-ietf-cat-kerberos-passwords-00.txt 
+
+5. Expiration
+
+   This Internet-Draft expires on August 6, 1995.
+
+
+6. Authors' Addresses
+
+   B. Clifford Neuman
+   USC/Information Sciences Institute
+   4676 Admiralty Way #1001
+   Marina del Rey, CA 90292-6695
+
+   Phone: 310-822-1511
+   EMail: bcn@isi.edu
+
+
+   Brian Tung
+   USC/Information Sciences Institute
+   4676 Admiralty Way #1001
+   Marina del Rey, CA 90292-6695
+
+   Phone: 310-822-1511
+   EMail: brian@isi.edu
+
+
+   John Wray
+   Digital Equipment Corporation
+   550 King Street, LKG2-2/Z7
+   Littleton, MA 01460
+
+   Phone: 508-486-5210
+   EMail: wray@tuxedo.enet.dec.com
+
+[1] Note: We have not yet defined the public key encryption method for
+encrypting the enc-sess-key field in the PA-PK-AS-REP.
+
+[2] Note: We are soliciting input on the form of the name.  We believe the
+name part must be taken without modification from the certificate, but the
+realm part is open for discussion.

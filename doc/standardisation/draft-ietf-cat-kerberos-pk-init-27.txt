@@ -1,6 +1,3 @@
-
-
-
 NETWORK WORKING GROUP                                            B. Tung
 Internet-Draft                        USC Information Sciences Institute
 Expires: January 20, 2006                                         L. Zhu

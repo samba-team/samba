@@ -1,4 +1,3 @@
-
 INTERNET-DRAFT                                                Brian Tung
 draft-ietf-cat-kerberos-pk-init-17.txt                   Clifford Neuman
 Updates: RFC 1510bis                                             USC/ISI
@@ -804,4 +803,3 @@ E-mail: John_Wray@iris.com
 
 Jonathan Trostle
 E-mail: jtrostle@world.std.com
-

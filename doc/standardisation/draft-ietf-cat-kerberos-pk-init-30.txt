@@ -1,12 +1,12 @@
-NETWORK WORKING GROUP                                            B. Tung
-Internet-Draft                        USC Information Sciences Institute
-Expires: April 22, 2006                                           L. Zhu
-                                                   Microsoft Corporation
-                                                        October 19, 2005
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                     Microsoft Corporation
+Expires: June 2, 2006                                            B. Tung
+                                      USC Information Sciences Institute
+                                                       November 29, 2005
 
 
      Public Key Cryptography for Initial Authentication in Kerberos
-                   draft-ietf-cat-kerberos-pk-init-29
+                   draft-ietf-cat-kerberos-pk-init-30
 
 Status of this Memo
 
@@ -31,7 +31,7 @@ Status of this Memo
    The list of Internet-Draft Shadow Directories can be accessed at
    http://www.ietf.org/shadow.html.
 
-   This Internet-Draft will expire on April 22, 2006.
+   This Internet-Draft will expire on June 2, 2006.
 
 Copyright Notice
 
@@ -49,9 +49,9 @@ Abstract
 
 
 
-Tung & Zhu               Expires April 22, 2006                 [Page 1]
+Zhu & Tung                Expires June 2, 2006                  [Page 1]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
 Table of Contents
@@ -59,29 +59,29 @@ Table of Contents
    1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
    2.  Conventions Used in This Document  . . . . . . . . . . . . . .  3
    3.  Extensions . . . . . . . . . . . . . . . . . . . . . . . . . .  4
-     3.1.  Definitions, Requirements, and Constants . . . . . . . . .  4
-       3.1.1.  Required Algorithms  . . . . . . . . . . . . . . . . .  4
+     3.1.  Definitions, Requirements, and Constants . . . . . . . . .  5
+       3.1.1.  Required Algorithms  . . . . . . . . . . . . . . . . .  5
        3.1.2.  Defined Message and Encryption Types . . . . . . . . .  5
        3.1.3.  Algorithm Identifiers  . . . . . . . . . . . . . . . .  6
      3.2.  PKINIT Pre-authentication Syntax and Use . . . . . . . . .  7
        3.2.1.  Generation of Client Request . . . . . . . . . . . . .  7
-       3.2.2.  Receipt of Client Request  . . . . . . . . . . . . . . 10
-       3.2.3.  Generation of KDC Reply  . . . . . . . . . . . . . . . 14
-       3.2.4.  Receipt of KDC Reply . . . . . . . . . . . . . . . . . 20
-     3.3.  Interoperability Requirements  . . . . . . . . . . . . . . 21
-     3.4.  KDC Indication of PKINIT Support . . . . . . . . . . . . . 21
-   4.  Security Considerations  . . . . . . . . . . . . . . . . . . . 22
-   5.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 24
-   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 24
-   7.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 25
-     7.1.  Normative References . . . . . . . . . . . . . . . . . . . 25
-     7.2.  Informative References . . . . . . . . . . . . . . . . . . 26
-   Appendix A.  PKINIT ASN.1 Module . . . . . . . . . . . . . . . . . 26
-   Appendix B.  Test Vectors  . . . . . . . . . . . . . . . . . . . . 32
+       3.2.2.  Receipt of Client Request  . . . . . . . . . . . . . . 12
+       3.2.3.  Generation of KDC Reply  . . . . . . . . . . . . . . . 16
+       3.2.4.  Receipt of KDC Reply . . . . . . . . . . . . . . . . . 22
+     3.3.  Interoperability Requirements  . . . . . . . . . . . . . . 24
+     3.4.  KDC Indication of PKINIT Support . . . . . . . . . . . . . 24
+   4.  Security Considerations  . . . . . . . . . . . . . . . . . . . 25
+   5.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 27
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 27
+   7.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+     7.1.  Normative References . . . . . . . . . . . . . . . . . . . 28
+     7.2.  Informative References . . . . . . . . . . . . . . . . . . 29
+   Appendix A.  PKINIT ASN.1 Module . . . . . . . . . . . . . . . . . 29
+   Appendix B.  Test Vectors  . . . . . . . . . . . . . . . . . . . . 35
    Appendix C.  Miscellaneous Information about Microsoft Windows
-                PKINIT Implementations  . . . . . . . . . . . . . . . 33
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 35
-   Intellectual Property and Copyright Statements . . . . . . . . . . 36
+                PKINIT Implementations  . . . . . . . . . . . . . . . 36
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 38
+   Intellectual Property and Copyright Statements . . . . . . . . . . 39
 
 
 
@@ -105,9 +105,9 @@ Table of Contents
 
 
 
-Tung & Zhu               Expires April 22, 2006                 [Page 2]
+Zhu & Tung                Expires June 2, 2006                  [Page 2]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
 1.  Introduction
@@ -161,13 +161,22 @@ Internet-Draft                   PKINIT                     October 2005
 
 
 
-Tung & Zhu               Expires April 22, 2006                 [Page 3]
+Zhu & Tung                Expires June 2, 2006                  [Page 3]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
    field of the KDC-REP in the AS-REP [RFC4120] is referred to as the AS
    reply key.
+
+   In this document, an empty sequence in an optional field can be
+   either included or omitted: both encodings are permitted and
+   considered equivalent.
+
+   In this document, the term "Modular Exponential Diffie-Hellman" is
+   used to refer to the Diffie-Hellman key exchange as described in
+   [RFC2631], in order to differentiate it from other equivalent
+   representations of the same key agreement algorithm.
 
 
 3.  Extensions
@@ -206,21 +215,18 @@ Internet-Draft                   PKINIT                     October 2005
    necessary extension message types.  Section 3.2 describes the
    extension messages in greater detail.
 
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 4]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
 3.1.  Definitions, Requirements, and Constants
 
 3.1.1.  Required Algorithms
 
    All PKINIT implementations MUST support the following algorithms:
-
-
-
-
-
-
-Tung & Zhu               Expires April 22, 2006                 [Page 4]
-
-Internet-Draft                   PKINIT                     October 2005
-
 
    o  AS reply key enctype: aes128-cts-hmac-sha1-96 and aes256-cts-hmac-
       sha1-96 [RFC3962].
@@ -258,42 +264,23 @@ Internet-Draft                   PKINIT                     October 2005
        KDC_ERR_REVOCATION_STATUS_UNKNOWN            73
        KDC_ERR_CLIENT_NAME_MISMATCH                 75
        KDC_ERR_INCONSISTENT_KEY_PURPOSE             76
+       KDC_ERR_DIGEST_IN_CERT_NOT_ACCEPTED          77
+       KDC_ERR_HASH_IN_KDF_NOT_ACCEPTED             78
+       KDC_ERR_DIGEST_IN_SIGNED_DATA_NOT_ACCEPTED   79
 
    PKINIT uses the following typed data types for errors:
+
+
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 5]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
        TD_TRUSTED_CERTIFIERS                       104
        TD_INVALID_CERTIFICATES                     105
        TD_DH_PARAMETERS                            109
-
-   PKINIT defines the following encryption types, for use in the etype
-   field of the AS-REQ [RFC4120] message to indicate acceptance of the
-   corresponding algorithms that can used by Cryptographic Message
-   Syntax (CMS) [RFC3852] messages in the reply:
-
-
-
-
-Tung & Zhu               Expires April 22, 2006                 [Page 5]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
-       dsaWithSHA1-CmsOID                            9
-          -- Indicates that the client supports dsaWithSHA1
-       md5WithRSAEncryption-CmsOID                  10
-          -- Indicates that the client supports md5WithRSAEncryption
-       sha1WithRSAEncryption-CmsOID                 11
-          -- Indicates that the client supports sha1WithRSAEncryption
-       rc2CBC-EnvOID                                12
-          -- Indicates that the client supports rc2CBC
-       rsaEncryption-EnvOID                         13
-          -- Indicates that the client supports
-          --  rsaEncryption (PKCS1 v2.1)
-       id-RSAES-OAEP-EnvOID                         14
-          -- Indicates that the client supports
-          -- id-RSAES-OAEP (PKCS1 v2.1)
-       des-ede3-cbc-EnvOID                          15
-          -- Indicates that the client supports des-ede3-cbc
 
    The ASN.1 module for all structures defined in this document (plus
    IMPORT statements for all imported structures) is given in
@@ -307,7 +294,7 @@ Internet-Draft                   PKINIT                     October 2005
 
    Interoperability note: Some implementations may not be able to decode
    wrapped CMS objects encoded with BER but not DER; specifically, they
-   may not be able to decode infinite length encodings.  To maximize
+   may not be able to decode indefinite length encodings.  To maximize
    interoperability, implementers SHOULD encode CMS objects used in
    PKINIT with DER.
 
@@ -316,36 +303,58 @@ Internet-Draft                   PKINIT                     October 2005
    PKINIT does not define, but does make use of, the following algorithm
    identifiers.
 
-   PKINIT uses the following algorithm identifier(s) for Diffie-Hellman
-   key agreement [RFC3279]:
+   PKINIT uses the following algorithm identifier(s) for Modular
+   Exponential Diffie-Hellman key agreement [RFC2631] [RFC3279]:
 
-       dhpublicnumber (Modular Exponential Diffie-Hellman [RFC2631])
+       dhpublicnumber (as described in [RFC3279])
 
-   PKINIT uses the following signature algorithm identifiers [RFC3279]:
+   PKINIT uses the following signature algorithm identifiers as defined
+   in [RFC3279]:
 
        sha-1WithRSAEncryption (RSA with SHA1)
        md5WithRSAEncryption   (RSA with MD5)
        id-dsa-with-sha1       (DSA with SHA1)
 
+   PKINIT uses the following encryption algorithm identifiers as defined
+   in [RFC3447] for encrypting the temporary key with a public key:
 
-
-Tung & Zhu               Expires April 22, 2006                 [Page 6]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
-   PKINIT uses the following encryption algorithm identifiers [RFC3447]
-   for encrypting the temporary key with a public key:
-
-       rsaEncryption          (PKCS1 v2.1)
-       id-RSAES-OAEP          (PKCS1 v2.1)
+       rsaEncryption
+       id-RSAES-OAEP
 
    PKINIT uses the following algorithm identifiers [RFC3370] [RFC3565]
    for encrypting the AS reply key with the temporary key:
 
-       des-ede3-cbc           (three-key 3DES, CBC mode)
-       rc2-cbc                (RC2, CBC mode)
-       id-aes256-CBC          (AES-256, CBC mode)
+       des-ede3-cbc (three-key 3DES, CBC mode, as defined in [RFC3370])
+       rc2-cbc       (RC2, CBC mode, as defined in [RFC3370])
+
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 6]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+       id-aes256-CBC (AES-256, CBC mode, as defined in [RFC3565])
+
+   PKINIT defines the following encryption types, for use in the etype
+   field of the AS-REQ [RFC4120] message to indicate acceptance of the
+   corresponding algorithms that can used by Cryptographic Message
+   Syntax (CMS) [RFC3852] messages in the reply:
+
+       id-dsa-with-sha1-CmsOID                       9
+          -- Indicates that the client supports id-dsa-with-sha1.
+       md5WithRSAEncryption-CmsOID                  10
+          -- Indicates that the client supports md5WithRSAEncryption.
+       sha-1WithRSAEncryption-CmsOID                11
+          -- Indicates that the client supports sha-1WithRSAEncryption.
+       rc2-cbc-EnvOID                               12
+          -- Indicates that the client supports rc2-cbc.
+       rsaEncryption-EnvOID                         13
+          -- Indicates that the client supports rsaEncryption.
+       id-RSAES-OAEP-EnvOID                         14
+          -- Indicates that the client supports id-RSAES-OAEP.
+       des-ede3-cbc-EnvOID                          15
+          -- Indicates that the client supports des-ede3-cbc.
 
 3.2.  PKINIT Pre-authentication Syntax and Use
 
@@ -373,8 +382,16 @@ Internet-Draft                   PKINIT                     October 2005
                    -- AuthPack is defined below.
           trustedCertifiers       [1] SEQUENCE OF
                       ExternalPrincipalIdentifier OPTIONAL,
-                   -- A list of CAs, trusted by the client, that can
-                   -- be used to certify the KDC.
+
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 7]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+                   -- Contains a list of CAs, trusted by the client,
+                   -- that can be used to certify the KDC.
                    -- Each ExternalPrincipalIdentifier identifies a CA
                    -- or a CA certificate (thereby its public key).
                    -- The information contained in the
@@ -382,14 +399,6 @@ Internet-Draft                   PKINIT                     October 2005
                    -- hints to guide its selection of an appropriate
                    -- certificate chain to return to the client.
           kdcPkId                 [2] IMPLICIT OCTET STRING
-
-
-
-Tung & Zhu               Expires April 22, 2006                 [Page 7]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
                                       OPTIONAL,
                    -- Contains a CMS type SignerIdentifier encoded
                    -- according to [RFC3852].
@@ -429,6 +438,14 @@ Internet-Draft                   PKINIT                     October 2005
        }
 
        AuthPack ::= SEQUENCE {
+
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 8]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
           pkAuthenticator         [0] PKAuthenticator,
           clientPublicValue       [1] SubjectPublicKeyInfo OPTIONAL,
                    -- Type SubjectPublicKeyInfo is defined in
@@ -438,14 +455,6 @@ Internet-Draft                   PKINIT                     October 2005
                    -- The DH public key value is encoded as a BIT
                    -- STRING according to [RFC3279].
                    -- This field is present only if the client wishes
-
-
-
-Tung & Zhu               Expires April 22, 2006                 [Page 8]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
                    -- to use the Diffie-Hellman key agreement method.
           supportedCMSTypes       [2] SEQUENCE OF AlgorithmIdentifier
                                       OPTIONAL,
@@ -474,8 +483,9 @@ Internet-Draft                   PKINIT                     October 2005
           ...
        }
 
-   The ContentInfo [RFC3852] structure for the signedAuthPack field is
-   filled out as follows:
+   The ContentInfo [RFC3852] structure contained in the signedAuthPack
+   field of the type PA-PK-AS-REQ is encoded according to [RFC3852] and
+   is filled out as follows:
 
    1.  The contentType field of the type ContentInfo is id-signedData
        (as defined in [RFC3852]), and the content field is a SignedData
@@ -483,7 +493,18 @@ Internet-Draft                   PKINIT                     October 2005
 
    2.  The eContentType field for the type SignedData is id-pkinit-
        authData: { iso(1) org(3) dod(6) internet(1) security(5)
-       kerberosv5(2) pkinit(3) authData(1) }.
+       kerberosv5(2) pkinit(3) authData(1) }.  Notes to CMS
+
+
+
+Zhu & Tung                Expires June 2, 2006                  [Page 9]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+       implementers: the signed attribute content-type MUST be present
+       in this SignedData instance and its value is id-pkinit-authData
+       according to [RFC3852].
 
    3.  The eContent field for the type SignedData contains the DER
        encoding of the type AuthPack.
@@ -491,30 +512,52 @@ Internet-Draft                   PKINIT                     October 2005
    4.  The signerInfos field of the type SignedData contains a single
        signerInfo, which contains the signature over the type AuthPack.
 
-   5.  The certificates field of the type SignedData contains
+   5.  The AuthPack structure contains a PKAuthenticator, the client
+       public key information, the CMS encryption types supported by the
+       client and a DHNonce.  The pkAuthenticator field certifies to the
+       KDC that the client has recent knowledge of the signing key that
+       authenticates the client.  The clientPublicValue field specifies
+       Diffie-Hellman domain parameters and the client's public key
+       value.  The DH public key value is encoded as a BIT STRING
+       according to [RFC3279].  The clientPublicValue field is present
+       only if the client wishes to use the Diffie-Hellman key agreement
+       method.  The supportedCMSTypes field specifies the list of CMS
+       encryption types supported by the client in order of (decreasing)
+       preference.  The clientDHNonce field is described later in this
+       section.
+
+   6.  The ctime field in the PKAuthenticator structure contains the
+       current time on the client's host, and the cusec field contains
+       the microsecond part of the client's timestamp.  The ctime and
+       cusec fields are used together to specify a reasonably accurate
+       timestamp [RFC4120].  The nonce field is chosen randomly.  The
+       paChecksum field contains a SHA1 checksum that is performed over
+       the KDC-REQ-BODY [RFC4120].
+
+   7.  The certificates field of the type SignedData contains
        certificates intended to facilitate certification path
        construction, so that the KDC can verify the signature over the
-
-
-
-Tung & Zhu               Expires April 22, 2006                 [Page 9]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
        type AuthPack.  For path validation, these certificates SHOULD be
        sufficient to construct at least one certification path from the
        client certificate to one trust anchor acceptable by the KDC
-       [CAPATH].  The client MUST be capable of including such a set of
+       [RFC4158].  The client MUST be capable of including such a set of
        certificates if configured to do so.  The certificates field MUST
        NOT contain "root" CA certificates.
 
-   6.  The client's Diffie-Hellman public value (clientPublicValue) is
+   8.  The client's Diffie-Hellman public value (clientPublicValue) is
        included if and only if the client wishes to use the Diffie-
        Hellman key agreement method.  The Diffie-Hellman domain
        parameters [IEEE1363] for the client's public key are specified
        in the algorithm field of the type SubjectPublicKeyInfo [RFC3279]
        and the client's Diffie-Hellman public key value is mapped to a
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 10]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
        subjectPublicKey (a BIT STRING) according to [RFC3279].  When
        using the Diffie-Hellman key agreement method, implementations
        MUST support Oakley 1024-bit Modular Exponential (MODP) well-
@@ -529,12 +572,55 @@ Internet-Draft                   PKINIT                     October 2005
        least twice as many bits as the symmetric keys that will be
        derived from them [ODL99].
 
-   7.  The client may wish to reuse DH keys or to allow the KDC to do so
+   9.  The client may wish to reuse DH keys or to allow the KDC to do so
        (see Section 3.2.3.1).  If so, then the client includes the
-       clientDHNonce field.  This nonce string needs to be as long as
-       the longest key length of the symmetric key types that the client
+       clientDHNonce field.  This nonce string MUST be as long as the
+       longest key length of the symmetric key types that the client
        supports.  This nonce MUST be chosen randomly.
 
+   The ExternalPrincipalIdentifier structure is used in this document to
+   identify the subject's public key thereby the subject principal.
+   This structure is filled out as follows:
+
+   1.  The subjectName field contains a PKIX type Name encoded according
+       to [RFC3280].  This field identifies the certificate subject by
+       the distinguished subject name.  This field is REQUIRED when
+       there is a distinguished subject name present in the certificate
+       being used.
+
+   2.  The issuerAndSerialNumber field contains a CMS type
+       IssuerAndSerialNumber encoded according to [RFC3852].  This field
+       identifies a certificate of the subject.  This field is REQUIRED
+       for TD-INVALID-CERTIFICATES and TD-TRUSTED-CERTIFIERS (both
+       structures are defined in Section 3.2.2).
+
+   3.  The subjectKeyIdentifier [RFC3852] field identifies the subject's
+       public key by a key identifier.  When an X.509 certificate is
+       referenced, this key identifier matches the X.509
+       subjectKeyIdentifier extension value.  When other certificate
+       formats are referenced, the documents that specify the
+       certificate format and their use with the CMS must include
+       details on matching the key identifier to the appropriate
+       certificate field.  This field is RECOMMENDED for TD-TRUSTED-
+       CERTIFIERS (as defined in Section 3.2.2).
+
+   The trustedCertifiers field of the type PA-PK-AS-REQ contains a list
+   of CAs, trusted by the client, that can be used to certify the KDC.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 11]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+   Each ExternalPrincipalIdentifier identifies a CA or a CA certificate
+   (thereby its public key).
+
+   The kdcPkId field of the type PA-PK-AS-REQ contains a CMS type
+   SignerIdentifier encoded according to [RFC3852].  This field
+   identifies, if present, a particular KDC public key that the client
+   already has.
 
 3.2.2.  Receipt of Client Request
 
@@ -550,14 +636,6 @@ Internet-Draft                   PKINIT                     October 2005
    certificate, it sends back a KRB-ERROR [RFC4120] message with the
    code KDC_ERR_CANT_VERIFY_CERTIFICATE.  The accompanying e-data for
    this error message is a TYPED-DATA (as defined in [RFC4120]) that
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 10]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    contains an element whose data-type is TD_TRUSTED_CERTIFIERS, and
    whose data-value contains the DER encoding of the type TD-TRUSTED-
    CERTIFIERS:
@@ -567,6 +645,10 @@ Internet-Draft                   PKINIT                     October 2005
                    -- Identifies a list of CAs trusted by the KDC.
                    -- Each ExternalPrincipalIdentifier identifies a CA
                    -- or a CA certificate (thereby its public key).
+
+   Each ExternalPrincipalIdentifier (as defined in Section 3.2.1) in the
+   TD-TRUSTED-CERTIFIERS structure identifies a CA or a CA certificate
+   (thereby its public key) trusted by the KDC.
 
    Upon receiving this error message, the client SHOULD retry only if it
    has a different set of certificates (from those of the previous
@@ -581,11 +663,22 @@ Internet-Draft                   PKINIT                     October 2005
    TD_INVALID_CERTIFICATES, and whose data-value contains the DER
    encoding of the type TD-INVALID-CERTIFICATES:
 
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 12]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
        TD-INVALID-CERTIFICATES ::= SEQUENCE OF
                       ExternalPrincipalIdentifier
                    -- Each ExternalPrincipalIdentifier identifies a
                    -- certificate (sent by the client) with an invalid
                    -- signature.
+
+   Each ExternalPrincipalIdentifier (as defined in Section 3.2.1) in the
+   TD-INVALID-CERTIFICATES structure identifies a certificate (that was
+   sent by the client) with an invalid signature.
 
    If more than one X.509 certificate signature is invalid, the KDC MAY
    include one IssuerAndSerialNumber per invalid signature within the
@@ -606,14 +699,6 @@ Internet-Draft                   PKINIT                     October 2005
    Note that the TD_INVALID_CERTIFICATES error data is only used to
    identify invalid certificates sent by the client in the request.
 
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 11]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    The client's public key is then used to verify the signature.  If the
    signature fails to verify, the KDC MUST return an error message with
    the code KDC_ERR_INVALID_SIG.  There is no accompanying e-data for
@@ -632,6 +717,14 @@ Internet-Draft                   PKINIT                     October 2005
       Alternative Name (SAN) extension carrying a KRB5PrincipalName
       (defined below) in the otherName field of the type GeneralName
       [RFC3280], it binds the client's X.509 certificate to that name.
+
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 13]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
       The type of the otherName field is AnotherName.  The type-id field
       of the type AnotherName is id-pkinit-san:
@@ -662,14 +755,6 @@ Internet-Draft                   PKINIT                     October 2005
 
    The KDC MAY require the presence of an Extended Key Usage (EKU)
    KeyPurposeId [RFC3280] id-pkinit-KPClientAuth in the extensions field
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 12]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    of the client's X.509 certificate:
 
        id-pkinit-KPClientAuth OBJECT IDENTIFIER ::=
@@ -679,12 +764,24 @@ Internet-Draft                   PKINIT                     October 2005
               -- Key usage bits that MUST be consistent:
               -- digitalSignature.
 
+   The digitalSignature key usage bit MUST be asserted when the intended
+   purpose of the client certificate is restricted with the id-pkinit-
+   KPClientAuth EKU.
+
    If this EKU KeyPurposeId is required but it is not present or if the
    client certificate is restricted not to be used for PKINIT client
    authentication per Section 4.2.1.13 of [RFC3280], the KDC MUST return
    an error message of the code KDC_ERR_INCONSISTENT_KEY_PURPOSE.  There
    is no accompanying e-data for this error message.  KDCs implementing
    this requirement SHOULD also accept the EKU KeyPurposeId id-ms-kp-sc-
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 14]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
    logon (1.3.6.1.4.1.311.20.2.2) as meeting the requirement, as there
    are a large number of X.509 client certificates deployed for use with
    PKINIT which have this EKU.
@@ -692,8 +789,16 @@ Internet-Draft                   PKINIT                     October 2005
    As a matter of local policy, the KDC MAY decide to reject requests on
    the basis of the absence or presence of other specific EKU OID's.
 
-   If the client's public key is not accepted, the KDC returns an error
-   message with the code KDC_ERR_CLIENT_NOT_TRUSTED.
+   If the digest algorithm used in generating the CA signature for the
+   public key in any certificate of the request is not acceptable by the
+   KDC, the KDC MUST return a KRB-ERROR [RFC4120] message with the code
+   KDC_ERR_DIGEST_IN_CERT_NOT_ACCEPTED.  The accompanying e-data MUST be
+   encoded in TYPED-DATA although none is defined at this point.
+
+   If the client's public key is not accepted with reasons other than
+   what were specified above, the KDC returns a KRB-ERROR [RFC4120]
+   message with the code KDC_ERR_CLIENT_NOT_TRUSTED.  There is no
+   accompanying e-data currently defined for this error message.
 
    The KDC MUST check the timestamp to ensure that the request is not a
    replay, and that the time skew falls within acceptable limits.  The
@@ -719,22 +824,28 @@ Internet-Draft                   PKINIT                     October 2005
    that the KDC supports in decreasing preference order, from which the
    client SHOULD pick one to retry the request.
 
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 13]
-
-Internet-Draft                   PKINIT                     October 2005
-
+   The AlgorithmIdentifier structure is defined in [RFC3280] and is
+   filled in according to [RFC3279].  More specifically Section 2.3.3 of
+   [RFC3279] describes how to fill in the AlgorithmIdentifier structure
+   in the case where MODP Diffie-Hellman key exchange is used.
 
    If the client included a kdcPkId field in the PA-PK-AS-REQ and the
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 15]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
    KDC does not possess the corresponding key, the KDC MUST ignore the
    kdcPkId field as if the client did not include one.
 
-   If there is a supportedCMSTypes field in the AuthPack, the KDC must
-   check to see if it supports any of the listed types.  If it supports
-   more than one of the types, the KDC SHOULD use the one listed first.
-   If it does not support any of them, it MUST return an error message
-   with the code KDC_ERR_ETYPE_NOSUPP [RFC4120].
+   If the digest algorithm used by the id-pkinit-authData is not
+   acceptable by the KDC, the KDC MUST return a KRB-ERROR [RFC4120]
+   message with the code KDC_ERR_DIGEST_IN_SIGNED_DATA_NOT_ACCEPTED.
+   The accompanying e-data MUST be encoded in TYPED-DATA although none
+   is defined at this point.
 
 3.2.3.  Generation of KDC Reply
 
@@ -753,6 +864,12 @@ Internet-Draft                   PKINIT                     October 2005
                    -- Each ExternalPrincipalIdentifier identifies a CA
                    -- or a CA certificate (thereby its public key).
 
+   The AD-INITIAL-VERIFIED-CAS structure identifies the certification
+   path based on which the client certificate was validated.  Each
+   ExternalPrincipalIdentifier (as defined in Section 3.2.1) in the AD-
+   INITIAL-VERIFIED-CAS structure identifies a CA or a CA certificate
+   (thereby its public key).
+
    The AS wraps any AD-INITIAL-VERIFIED-CAS data in AD-IF-RELEVANT
    containers if the list of CAs satisfies the AS' realm's local policy
    (this corresponds to the TRANSITED-POLICY-CHECKED ticket flag
@@ -769,19 +886,19 @@ Internet-Draft                   PKINIT                     October 2005
    acceptable.  (This corresponds to the AP server checking the
    transited field when the TRANSITED-POLICY-CHECKED flag has not been
    set [RFC4120].)  If such a data type is contained within an AD-IF-
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 16]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
    RELEVANT container, AP servers MAY apply local policy to determine
    whether the authorization data is acceptable.
 
    A pre-authentication data element, whose padata-type is PA_PK_AS_REP
    and whose padata-value contains the DER encoding of the type PA-PK-
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 14]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    AS-REP (defined below), is included in the AS-REP [RFC4120].
 
        PA-PK-AS-REP ::= CHOICE {
@@ -825,26 +942,28 @@ Internet-Draft                   PKINIT                     October 2005
 
        KDCDHKeyInfo ::= SEQUENCE {
           subjectPublicKey        [0] BIT STRING,
-                   -- KDC's DH public key.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 17]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+                   -- The KDC's DH public key.
                    -- The DH public key value is encoded as a BIT
                    -- STRING according to [RFC3279].
           nonce                   [1] INTEGER (0..4294967295),
-                   -- Contains the nonce in the PKAuthenticator of the
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 15]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
-                   -- request if DH keys are NOT reused,
+                   -- Contains the nonce in the pkAuthenticator field
+                   -- in the request if the DH keys are NOT reused,
                    -- 0 otherwise.
           dhKeyExpiration         [2] KerberosTime OPTIONAL,
                    -- Expiration time for KDC's key pair,
-                   -- present if and only if DH keys are reused. If
-                   -- this field is omitted then the serverDHNonce
-                   -- field MUST also be omitted. See Section 3.2.3.1.
+                   -- present if and only if the DH keys are reused.
+                   -- If present, the KDC's DH public key MUST not be
+                   -- used past the point of this expiration time.
+                   -- If this field is omitted then the serverDHNonce
+                   -- field MUST also be omitted.
           ...
        }
 
@@ -874,39 +993,56 @@ Internet-Draft                   PKINIT                     October 2005
 
    2.  The eContentType field for the type SignedData is the OID value
        for id-pkinit-DHKeyData: { iso(1) org(3) dod(6) internet(1)
-       security(5) kerberosv5(2) pkinit(3) DHKeyData(2) }.
+       security(5) kerberosv5(2) pkinit(3) DHKeyData(2) }.  Notes to CMS
+       implementers: the signed attribute content-type MUST be present
+       in this SignedData instance and its value is id-pkinit-DHKeyData
+       according to [RFC3852].
+
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 18]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
    3.  The eContent field for the type SignedData contains the DER
        encoding of the type KDCDHKeyInfo.
 
-   4.  The signerInfos field of the type SignedData contains a single
+   4.  The KDCDHKeyInfo structure contains the KDC's public key, a nonce
+       and optionally the expiration time of the KDC's DH key being
+       reused.  The subjectPublicKey field of the type KDCDHKeyInfo
+       field identifies KDC's DH public key.  This DH public key value
+       is encoded as a BIT STRING according to [RFC3279].  The nonce
+       field contains the nonce in the pkAuthenticator field in the
+       request if the DH keys are NOT reused.  The value of this nonce
+       field is 0 if the DH keys are reused.  The dhKeyExpiration field
+       is present if and only if the DH keys are reused.  If the
+       dhKeyExpiration field is present, the KDC's public key in this
+       KDCDHKeyInfo structure MUST NOT be used past the point of this
+       expiration time.  If this field is omitted then the serverDHNonce
+       field MUST also be omitted.
+
+   5.  The signerInfos field of the type SignedData contains a single
        signerInfo, which contains the signature over the type
        KDCDHKeyInfo.
 
-   5.  The certificates field of the type SignedData contains
+   6.  The certificates field of the type SignedData contains
        certificates intended to facilitate certification path
        construction, so that the client can verify the KDC's signature
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 16]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
        over the type KDCDHKeyInfo.  The information contained in the
        trustedCertifiers in the request SHOULD be used by the KDC as
        hints to guide its selection of an appropriate certificate chain
-       to return to the client.  This field may only. be left empty if
-       the KDC public key specified by the kdcPkId field in the PA-PK-
-       AS-REQ was used for signing.  Otherwise, for path validation,
-       these certificates SHOULD be sufficient to construct at least one
+       to return to the client.  This field may be left empty if the KDC
+       public key specified by the kdcPkId field in the PA-PK-AS-REQ was
+       used for signing.  Otherwise, for path validation, these
+       certificates SHOULD be sufficient to construct at least one
        certification path from the KDC certificate to one trust anchor
-       acceptable by the client [CAPATH].  The KDC MUST be capable of
+       acceptable by the client [RFC4158].  The KDC MUST be capable of
        including such a set of certificates if configured to do so.  The
        certificates field MUST NOT contain "root" CA certificates.
 
-   6.  If the client included the clientDHNonce field, then the KDC may
+   7.  If the client included the clientDHNonce field, then the KDC may
        choose to reuse its DH keys (see Section 3.2.3.1).  If the server
        reuses DH keys then it MUST include an expiration time in the
        dhKeyExpiration field.  Past the point of the expiration time,
@@ -918,6 +1054,13 @@ Internet-Draft                   PKINIT                     October 2005
        server calculate the key to use to encrypt the reply; see below
        for details.  The KDC SHOULD NOT reuse DH keys unless the
        clientDHNonce field is present in the request.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 19]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
    The AS reply key is derived as follows:
 
@@ -937,18 +1080,6 @@ Internet-Draft                   PKINIT                     October 2005
       triple (ya, yb, DHSharedSecret), where ya is the client's public
       key and yb is the KDC's public key.  If both ya and yb are the
       same in a later exchange, the cached DHSharedSecret can be used.
-
-
-
-
-
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 17]
-
-Internet-Draft                   PKINIT                     October 2005
-
 
    2. Let K be the key-generation seed length [RFC3961] of the AS reply
       key whose enctype is selected according to [RFC4120].
@@ -977,52 +1108,24 @@ Internet-Draft                   PKINIT                     October 2005
 
            k = octetstring2key(DHSharedSecret | n_c | n_k)
 
+   If the hash algorithm used in the key derivation function (currently
+   only octetstring2key() is defined) is not acceptable by the KDC, the
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 20]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+   KDC MUST return a KRB-ERROR [RFC4120] message with the code
+   KDC_ERR_HASH_IN_KDF_NOT_ACCEPTED.  The accompanying e-data MUST be
+   encoded in TYPED-DATA although none is defined at this point.
+
 3.2.3.2.  Using Public Key Encryption
 
-   In this case, the PA-PK-AS-REP contains a ContentInfo structure
-   wrapped in an OCTET STRING.  The AS reply key is encrypted in the
-   encKeyPack field, which contains data of type ReplyKeyPack:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 18]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
-       ReplyKeyPack ::= SEQUENCE {
-          replyKey                [0] EncryptionKey,
-                   -- Contains the session key used to encrypt the
-                   -- enc-part field in the AS-REP.
-          asChecksum              [1] Checksum,
-                  -- Contains the checksum of the AS-REQ
-                  -- corresponding to the containing AS-REP.
-                  -- The checksum is performed over the type AS-REQ.
-                  -- The protocol key [RFC3961] of the checksum is the
-                  -- replyKey and the key usage number is 6.
-                  -- If the replyKey's enctype is "newer" [RFC4120]
-                  -- [RFC4121], the checksum is the required
-                  -- checksum operation [RFC3961] for that enctype.
-                  -- The client MUST verify this checksum upon receipt
-                  -- of the AS-REP.
-          ...
-       }
+   In this case, the PA-PK-AS-REP contains an encKeyPack structure where
+   the AS reply key is encrypted.
 
    The ContentInfo [RFC3852] structure for the encKeyPack field is
    filled in as follows:
@@ -1039,35 +1142,38 @@ Internet-Draft                   PKINIT                     October 2005
        decrypted from the encryptedContent field for the type
        EnvelopedData) is id-pkinit-rkeyData: { iso(1) org(3) dod(6)
        internet(1) security(5) kerberosv5(2) pkinit(3) rkeyData(3) }.
+       Notes to CMS implementers: the signed attribute content-type MUST
+       be present in this SignedData instance and its value is id-
+       pkinit-rkeyData according to [RFC3852].
 
    4.  The eContent field for the inner type SignedData contains the DER
-       encoding of the type ReplyKeyPack.
+       encoding of the type ReplyKeyPack (as described below).
 
    5.  The signerInfos field of the inner type SignedData contains a
-       single signerInfo, which contains the signature over the type
+       single signerInfo, which contains the signature for the type
        ReplyKeyPack.
 
    6.  The certificates field of the inner type SignedData contains
        certificates intended to facilitate certification path
        construction, so that the client can verify the KDC's signature
-       over the type ReplyKeyPack.  The information contained in the
+       for the type ReplyKeyPack.  The information contained in the
        trustedCertifiers in the request SHOULD be used by the KDC as
        hints to guide its selection of an appropriate certificate chain
-       to return to the client.  This field may only be left empty if
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 19]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
-       the KDC public key specified by the kdcPkId field in the PA-PK-
-       AS-REQ was used for signing.  Otherwise, for path validation,
-       these certificates SHOULD be sufficient to construct at least one
+       to return to the client.  This field may be left empty if the KDC
+       public key specified by the kdcPkId field in the PA-PK-AS-REQ was
+       used for signing.  Otherwise, for path validation, these
+       certificates SHOULD be sufficient to construct at least one
        certification path from the KDC certificate to one trust anchor
-       acceptable by the client [CAPATH].  The KDC MUST be capable of
+       acceptable by the client [RFC4158].  The KDC MUST be capable of
        including such a set of certificates if configured to do so.  The
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 21]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
        certificates field MUST NOT contain "root" CA certificates.
 
    7.  The recipientInfos field of the type EnvelopedData is a SET which
@@ -1078,12 +1184,52 @@ Internet-Draft                   PKINIT                     October 2005
    8.  The unprotectedAttrs or originatorInfo fields of the type
        EnvelopedData MAY be present.
 
+   If there is a supportedCMSTypes field in the AuthPack, the KDC must
+   check to see if it supports any of the listed types.  If it supports
+   more than one of the types, the KDC SHOULD use the one listed first.
+   If it does not support any of them, it MUST return an error message
+   with the code KDC_ERR_ETYPE_NOSUPP [RFC4120].
+
+   Furthermore the KDC computes the checksum of the AS-REQ in the client
+   request.  This checksum is performed over the type AS-REQ and the
+   protocol key [RFC3961] of the checksum operation is the replyKey and
+   the key usage number is 6.  If the replyKey's enctype is "newer"
+   [RFC4120] [RFC4121], the checksum operation is the required checksum
+   operation [RFC3961] of that enctype.
+
+       ReplyKeyPack ::= SEQUENCE {
+          replyKey                [0] EncryptionKey,
+                   -- Contains the session key used to encrypt the
+                   -- enc-part field in the AS-REP, i.e. the
+                   -- AS reply key.
+          asChecksum              [1] Checksum,
+                  -- Contains the checksum of the AS-REQ
+                  -- corresponding to the containing AS-REP.
+                  -- The checksum is performed over the type AS-REQ.
+                  -- The protocol key [RFC3961] of the checksum is the
+                  -- replyKey and the key usage number is 6.
+                  -- If the replyKey's enctype is "newer" [RFC4120]
+                  -- [RFC4121], the checksum is the required
+                  -- checksum operation [RFC3961] for that enctype.
+                  -- The client MUST verify this checksum upon receipt
+                  -- of the AS-REP.
+          ...
+       }
+
    Implementations of this RSA encryption key delivery method are
-   RECOMMENDED to support for RSA keys at least 2048 bits in size.
+   RECOMMENDED to support RSA keys at least 2048 bits in size.
 
 3.2.4.  Receipt of KDC Reply
 
    Upon receipt of the KDC's reply, the client proceeds as follows.  If
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 22]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
    the PA-PK-AS-REP contains the dhSignedData field, the client derives
    the AS reply key using the same procedure used by the KDC as defined
    in Section 3.2.3.1.  Otherwise, the message contains the encKeyPack
@@ -1109,21 +1255,16 @@ Internet-Draft                   PKINIT                     October 2005
    is intended for a Kerberos KDC, the client MUST require that the KDC
    certificate contains the EKU KeyPurposeId [RFC3280] id-pkinit-KPKdc:
 
-
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 20]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
        id-pkinit-KPKdc OBJECT IDENTIFIER ::=
          { iso(1) org(3) dod(6) internet(1) security(5) kerberosv5(2)
            pkinit(3) keyPurposeKdc(5) }
               -- Signing KDC responses.
               -- Key usage bits that MUST be consistent:
               -- digitalSignature.
+
+   The digitalSignature key usage bit MUST be asserted when the intended
+   purpose of KDC certificate is restricted with the id-pkinit-KPKdc
+   EKU.
 
    If the KDC certificate contains the Kerberos TGS name encoded as an
    id-pkinit-san SAN, this certificate is certified by the issuing CA as
@@ -1137,6 +1278,13 @@ Internet-Draft                   PKINIT                     October 2005
    "short" and "fully-qualified" Kerberos realm names of the KDC (one
    per GeneralName [RFC3280]) into the KDC certificate to allow maximum
    flexibility.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 23]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
 3.3.  Interoperability Requirements
 
@@ -1166,14 +1314,6 @@ Internet-Draft                   PKINIT                     October 2005
 
    If pre-authentication is required, but was not present in the
    request, per [RFC4120] an error message with the code
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 21]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    KDC_ERR_PREAUTH_FAILED is returned and a METHOD-DATA object will be
    stored in the e-data field of the KRB-ERROR message to specify which
    pre-authentication mechanisms are acceptable.  The KDC can then
@@ -1191,6 +1331,15 @@ Internet-Draft                   PKINIT                     October 2005
    STRING), and clients MUST ignore this and any other value.  Future
    extensions to this protocol may specify other data to send instead of
    an empty OCTET STRING.
+
+
+
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 24]
+
+Internet-Draft                   PKINIT                    November 2005
 
 
 4.  Security Considerations
@@ -1222,14 +1371,6 @@ Internet-Draft                   PKINIT                     October 2005
    In order to trust a KDC certificate that is certified by a CA as a
    KDC certificate for a target realm (for example, by asserting the TGS
    name of that Kerberos realm as an id-pkinit-san SAN and/or
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 22]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    restricting the certificate usage by using the id-pkinit-KPKdc EKU,
    as described in Section 3.2.4), the client MUST verify that the KDC
    certificate's issuing CA is authorized to issue KDC certificates for
@@ -1249,6 +1390,14 @@ Internet-Draft                   PKINIT                     October 2005
    specified with the id-pkinit-san SAN.
 
    It is the responsibility of the PKI administrators for an
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 25]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
    organization to ensure that KDC certificates are only issued to KDCs,
    and that clients can ascertain this using their local policy.
 
@@ -1278,14 +1427,6 @@ Internet-Draft                   PKINIT                     October 2005
 
    PKINIT does not provide for a "return routability" test to prevent
    attackers from mounting a denial-of-service attack on the KDC by
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 23]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    causing it to perform unnecessary and expensive public-key
    operations.  Strictly speaking, this is also true of standard
    Kerberos, although the potential cost is not as great, because
@@ -1297,14 +1438,35 @@ Internet-Draft                   PKINIT                     October 2005
    permit empty SEQUENCEs to be encoded.  Such empty sequences may only
    be used if the KDC itself vouches for the user's certificate.
 
+   When the Diffie-Hellman key exchange method is used, additional pre-
+   authentication data [RFC4120] (in addition to the PA_PK_AS_REQ as
+   defined in this specification) is not bound to the AS_REQ by the
+   mechanisms discussed in this specification (meaning it may be dropped
+   or added by attackers without being detected by either the client or
+   the KDC).  Designers of additional pre-authentication data should
+   take that into consideration if such additional pre-authentication
+   data can be used in conjunction with the PA_PK_AS_REQ.  The future
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 26]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+   work of the Kerberos working group is expected to update the hash
+   algorithms specified in this document and provide a generic mechanism
+   to bind additional pre-authentication data with the accompanying
+   AS_REQ.
+
 
 5.  Acknowledgements
 
    The following people have made significant contributions to this
    draft: Paul Leach, Stefan Santesson, Sam Hartman, Love Hornquist
-   Astrand, Ken Raeburn, Nicolas Williams, John Wray, Jonathan Trostle,
-   Tom Yu, Jeffrey Hutzelman, David Cross, Dan Simon, Karthik
-   Jaganathan, and Chaskiel M Grundman.
+   Astrand, Ken Raeburn, Nicolas Williams, John Wray, Tom Yu, Jeffrey
+   Hutzelman, David Cross, Dan Simon, Karthik Jaganathan, Chaskiel M
+   Grundman and Jeffrey Altman.
 
    Andre Scedrov, Aaron D. Jaggard, Iliano Cervesato, Joe-Kai Tsay and
    Chris Walstad discovered a binding issue between the AS-REQ and AS-
@@ -1335,14 +1497,18 @@ Internet-Draft                   PKINIT                     October 2005
    This document has no actions for IANA.
 
 
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 24]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
 7.  References
+
+
+
+
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 27]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
 7.1.  Normative References
 
@@ -1391,14 +1557,15 @@ Internet-Draft                   PKINIT                     October 2005
    [RFC3852]  Housley, R., "Cryptographic Message Syntax (CMS)",
               RFC 3852, July 2004.
 
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 25]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
    [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 28]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
               Kerberos 5", RFC 3961, February 2005.
 
    [RFC3962]  Raeburn, K., "Advanced Encryption Standard (AES)
@@ -1413,9 +1580,6 @@ Internet-Draft                   PKINIT                     October 2005
               Interface (GSS-API) Mechanism: Version 2", RFC 4121,
               July 2005.
 
-   [X.509-97] ITU-T Recommendation X.509: The Directory - Authentication 
-              Framework, 1997.
-                    
    [X680]     ITU-T Recommendation X.680 (2002) | ISO/IEC 8824-1:2002, 
               Information technology - Abstract Syntax Notation One 
               (ASN.1): Specification of basic notation.
@@ -1427,15 +1591,22 @@ Internet-Draft                   PKINIT                     October 2005
 
 7.2.  Informative References
 
-   [CAPATH]   RFC-Editor: To be replaced by RFC number for draft-ietf-
-              pkix-certpathbuild.  Work in Progress. 
-
    [LENSTRA]  Lenstra, A. and E. Verheul, "Selecting Cryptographic Key 
               Sizes", Journal of Cryptology 14 (2001) 255-293.
    
    [ODL99]    Odlyzko, A., "Discrete logarithms: The past and the
-              future, Designs, Codes, and Cryptography (1999)". 
-              
+              future, Designs, Codes, and Cryptography (1999)".
+
+
+Zhu & Tung                Expires June 1, 2006                 [Page 27]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+   [RFC4158]  Cooper, M., Dzambasow, Y., Hesse, P., Joseph, S., and R.
+              Nicholas, "Internet X.509 Public Key Infrastructure:
+              Certification Path Building", RFC 4158, September 2005.
+
 
 Appendix A.  PKINIT ASN.1 Module
 
@@ -1445,15 +1616,15 @@ Appendix A.  PKINIT ASN.1 Module
        } DEFINITIONS EXPLICIT TAGS ::= BEGIN
 
        IMPORTS
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 26]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
            SubjectPublicKeyInfo, AlgorithmIdentifier
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 29]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
                FROM PKIX1Explicit88 { iso (1)
                  identified-organization (3) dod (6) internet (1)
                  security (5) mechanisms (5) pkix (7) id-mod (0)
@@ -1501,17 +1672,17 @@ Internet-Draft                   PKINIT                     October 2005
                    -- type AuthPack.
                    -- AuthPack is defined below.
           trustedCertifiers       [1] SEQUENCE OF
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 27]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
                       ExternalPrincipalIdentifier OPTIONAL,
-                   -- A list of CAs, trusted by the client, that can
-                   -- be used to certify the KDC.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 30]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
+                   -- Contains a list of CAs, trusted by the client,
+                   -- that can be used to certify the KDC.
                    -- Each ExternalPrincipalIdentifier identifies a CA
                    -- or a CA certificate (thereby its public key).
                    -- The information contained in the
@@ -1557,15 +1728,15 @@ Internet-Draft                   PKINIT                     October 2005
           ...
        }
 
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 28]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
        AuthPack ::= SEQUENCE {
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 31]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
           pkAuthenticator         [0] PKAuthenticator,
           clientPublicValue       [1] SubjectPublicKeyInfo OPTIONAL,
                    -- Type SubjectPublicKeyInfo is defined in
@@ -1613,15 +1784,14 @@ Internet-Draft                   PKINIT                     October 2005
                       ExternalPrincipalIdentifier
                    -- Each ExternalPrincipalIdentifier identifies a
                    -- certificate (sent by the client) with an invalid
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 29]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
                    -- signature.
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 32]
+
+Internet-Draft                   PKINIT                    November 2005
+
 
        KRB5PrincipalName ::= SEQUENCE {
            realm                   [0] Realm,
@@ -1669,32 +1839,34 @@ Internet-Draft                   PKINIT                     October 2005
                    -- eContent field contains the DER encoding of the
                    -- type KDCDHKeyInfo.
                    -- KDCDHKeyInfo is defined below.
-
-
-
-Tung & Zhu               Expires April 22, 2006                [Page 30]
-
-Internet-Draft                   PKINIT                     October 2005
-
-
           serverDHNonce           [1] DHNonce OPTIONAL
                    -- Present if and only if dhKeyExpiration is
+
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 33]
+
+Internet-Draft                   PKINIT                    November 2005
+
+
                    -- present.
        }
 
        KDCDHKeyInfo ::= SEQUENCE {
           subjectPublicKey        [0] BIT STRING,
-                   -- KDC's DH public key.
+                   -- The KDC's DH public key.
                    -- The DH public key value is encoded as a BIT
                    -- STRING according to [RFC3279].
-           nonce                   [1] INTEGER (0..4294967295),
-                   -- Contains the nonce in the PKAuthenticator of the
-                   -- request if DH keys are NOT reused,
+          nonce                   [1] INTEGER (0..4294967295),
+                   -- Contains the nonce in the pkAuthenticator field
+                   -- in the request if the DH keys are NOT reused,
                    -- 0 otherwise.
           dhKeyExpiration         [2] KerberosTime OPTIONAL,
                    -- Expiration time for KDC's key pair,
-                   -- present if and only if DH keys are reused. If
-                   -- this field is omitted then the serverDHNonce
+                   -- present if and only if the DH keys are reused.
+                   -- If present, the KDC's DH public key MUST not be
+                   -- used past the point of this expiration time.
+                   -- If this field is omitted then the serverDHNonce
                    -- field MUST also be omitted.
           ...
        }
@@ -1702,7 +1874,8 @@ Internet-Draft                   PKINIT                     October 2005
        ReplyKeyPack ::= SEQUENCE {
           replyKey                [0] EncryptionKey,
                    -- Contains the session key used to encrypt the
-                   -- enc-part field in the AS-REP.
+                   -- enc-part field in the AS-REP, i.e. the
+                   -- AS reply key.
           asChecksum              [1] Checksum,
                   -- Contains the checksum of the AS-REQ
                   -- corresponding to the containing AS-REP.
@@ -1727,10 +1900,9 @@ Internet-Draft                   PKINIT                     October 2005
 
 
 
-
-Tung & Zhu               Expires April 22, 2006                [Page 31]
+Zhu & Tung                Expires June 2, 2006                 [Page 34]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
 Appendix B.  Test Vectors
@@ -1784,9 +1956,9 @@ Appendix B.  Test Vectors
 
 
 
-Tung & Zhu               Expires April 22, 2006                [Page 32]
+Zhu & Tung                Expires June 2, 2006                 [Page 35]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
      ac f7 70 7c 08 97 3d df db 27 cd 36 14 42 cc fb
@@ -1840,9 +2012,9 @@ Appendix C.  Miscellaneous Information about Microsoft Windows PKINIT
 
 
 
-Tung & Zhu               Expires April 22, 2006                [Page 33]
+Zhu & Tung                Expires June 2, 2006                 [Page 36]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
    dNSName SAN with the DNS name of the host running the KDC, and the
@@ -1896,21 +2068,12 @@ Internet-Draft                   PKINIT                     October 2005
 
 
 
-Tung & Zhu               Expires April 22, 2006                [Page 34]
+Zhu & Tung                Expires June 2, 2006                 [Page 37]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
 Authors' Addresses
-
-   Brian Tung
-   USC Information Sciences Institute
-   4676 Admiralty Way Suite 1001
-   Marina del Rey, CA  90292
-   US
-
-   Email: brian@isi.edu
-
 
    Larry Zhu
    Microsoft Corporation
@@ -1921,6 +2084,13 @@ Authors' Addresses
    Email: lzhu@microsoft.com
 
 
+   Brian Tung
+   USC Information Sciences Institute
+   4676 Admiralty Way Suite 1001
+   Marina del Rey, CA  90292
+   US
+
+   Email: brian@isi.edu
 
 
 
@@ -1952,9 +2122,11 @@ Authors' Addresses
 
 
 
-Tung & Zhu               Expires April 22, 2006                [Page 35]
+
+
+Zhu & Tung                Expires June 2, 2006                 [Page 38]
 
-Internet-Draft                   PKINIT                     October 2005
+Internet-Draft                   PKINIT                    November 2005
 
 
 Intellectual Property Statement
@@ -2008,6 +2180,4 @@ Acknowledgment
 
 
 
-Tung & Zhu               Expires April 22, 2006                [Page 36]
-
-
+Zhu & Tung                Expires June 2, 2006                 [Page 39]

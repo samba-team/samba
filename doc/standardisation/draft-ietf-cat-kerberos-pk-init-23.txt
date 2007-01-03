@@ -1,5 +1,6 @@
 
 
+
 NETWORK WORKING GROUP                                            B. Tung
 Internet-Draft                        USC Information Sciences Institute
 Expires: August 4, 2005                                           L. Zhu
@@ -8,7 +9,7 @@ Expires: August 4, 2005                                           L. Zhu
 
 
      Public Key Cryptography for Initial Authentication in Kerberos
-                   draft-ietf-cat-kerberos-pk-init-23
+                    draft-ietf-cat-kerberos-pk-init
 
 Status of this Memo
 

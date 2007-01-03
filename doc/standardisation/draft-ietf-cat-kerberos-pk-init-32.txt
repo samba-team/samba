@@ -1,6 +1,3 @@
-
-
-
 NETWORK WORKING GROUP                                             L. Zhu
 Internet-Draft                                     Microsoft Corporation
 Expires: July 15, 2006                                           B. Tung
@@ -2289,5 +2286,3 @@ Acknowledgment
 
 
 Zhu & Tung                Expires July 15, 2006                [Page 41]
-
-
