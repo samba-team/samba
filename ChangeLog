@@ -1,4 +1,10 @@
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: add tests/plugin/Makefile
+	
 2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Get right key for PAC krbtgt verification.
 
 	* kdc/config.c: spelling
 
