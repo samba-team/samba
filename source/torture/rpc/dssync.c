@@ -354,11 +354,11 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 				continue;
 			}
 
-			if (attr->value_ctr.data_blob.num_values != 1) continue;
+			if (attr->value_ctr.num_values != 1) continue;
 
-			if (!attr->value_ctr.data_blob.values[0].data) continue;
+			if (!attr->value_ctr.values[0].blob) continue;
 
-			data = attr->value_ctr.data_blob.values[0].data;
+			data = attr->value_ctr.values[0].blob;
 
 			if (!dn_printed) {
 				DEBUG(0,("DN: %s\n", dn));

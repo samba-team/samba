@@ -1053,13 +1053,13 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 	/* ntSecurityDescriptor */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct security_descriptor *v;
 		struct dom_sid *domain_admins_sid;
 		const char *domain_admins_sid_str;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1118,21 +1118,21 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		c->status = ndr_push_struct_blob(&vd[0], vd, v,(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_ntSecurityDescriptor;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_ntSecurityDescriptor;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* objectClass: nTDSDSA */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1144,22 +1144,22 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		/* value for nTDSDSA */
 		SIVAL(vd[0].data, 0, 0x0017002F);
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_objectClass;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_objectClass;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* objectCategory: CN=NTDS-DSA,CN=Schema,... */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[1];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1175,22 +1175,22 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_objectCategory;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_objectCategory;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* invocationId: random guid */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		const struct GUID *v;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1201,22 +1201,22 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		c->status = ndr_push_struct_blob(&vd[0], vd, v, (ndr_push_flags_fn_t)ndr_push_GUID);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_invocationId;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_invocationId;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* hasMasterNCs: ... */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[3];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 3);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 3);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 3);
@@ -1246,24 +1246,24 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
-		vs[1].data		= &vd[1];
-		vs[2].data		= &vd[2];
+		vs[0].blob		= &vd[0];
+		vs[1].blob		= &vd[1];
+		vs[2].blob		= &vd[2];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_hasMasterNCs;
-		attrs[i].value_ctr.data_blob.num_values		= 3;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_hasMasterNCs;
+		attrs[i].value_ctr.num_values	= 3;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* msDS-hasMasterNCs: ... */
 	if (w2k3) {
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[3];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 3);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 3);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 3);
@@ -1293,24 +1293,24 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
-		vs[1].data		= &vd[1];
-		vs[2].data		= &vd[2];
+		vs[0].blob		= &vd[0];
+		vs[1].blob		= &vd[1];
+		vs[2].blob		= &vd[2];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs;
-		attrs[i].value_ctr.data_blob.num_values		= 3;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs;
+		attrs[i].value_ctr.num_values	= 3;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* dMDLocation: CN=Schema,... */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[1];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1324,22 +1324,22 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_dMDLocation;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_dMDLocation;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* msDS-HasDomainNCs: <domain_partition> */
 	if (w2k3) {
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[1];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1353,21 +1353,21 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* msDS-Behavior-Version */
 	if (w2k3) {
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1378,21 +1378,21 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		SIVAL(vd[0].data, 0, DS_BEHAVIOR_WIN2003);
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_msDS_Behavior_Version;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_Behavior_Version;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* systemFlags */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1403,22 +1403,22 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		SIVAL(vd[0].data, 0, SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_systemFlags;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_systemFlags;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}
 
 	/* serverReference: ... */
 	{
-		struct drsuapi_DsAttributeValueDataBlob *vs;
+		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		struct drsuapi_DsReplicaObjectIdentifier3 v[1];
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
 
 		vd = talloc_array(vs, DATA_BLOB, 1);
@@ -1432,11 +1432,11 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!composite_is_ok(c)) return;
 
-		vs[0].data		= &vd[0];
+		vs[0].blob		= &vd[0];
 
-		attrs[i].attid					= DRSUAPI_ATTRIBUTE_serverReference;
-		attrs[i].value_ctr.data_blob.num_values		= 1;
-		attrs[i].value_ctr.data_blob.values		= vs;
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_serverReference;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
 
 		i++;
 	}

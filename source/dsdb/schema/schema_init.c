@@ -427,22 +427,22 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
+	if (strict && _a->value_ctr.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.data_blob.num_values); \
+			_a->value_ctr.num_values); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1) { \
+	if (_a && _a->value_ctr.num_values >= 1) { \
 		ssize_t _ret; \
 		_ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, \
-					     _a->value_ctr.data_blob.values[0].data->data, \
-					     _a->value_ctr.data_blob.values[0].data->length, \
+					     _a->value_ctr.values[0].blob->data, \
+					     _a->value_ctr.values[0].blob->length, \
 					     (void **)discard_const(&(p)->elem)); \
 		if (_ret == -1) { \
 			DEBUG(0,("%s: invalid data!\n", attr)); \
 			dump_data(0, \
-				     _a->value_ctr.data_blob.values[0].data->data, \
-				     _a->value_ctr.data_blob.values[0].data->length); \
+				     _a->value_ctr.values[0].blob->data, \
+				     _a->value_ctr.values[0].blob->length); \
 			return WERR_FOOBAR; \
 		} \
 	} else { \
@@ -457,20 +457,20 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
+	if (strict && _a->value_ctr.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.data_blob.num_values); \
+			_a->value_ctr.num_values); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && !_a->value_ctr.data_blob.values[0].data) { \
+	if (strict && !_a->value_ctr.values[0].blob) { \
 		d_printf("%s: %s data == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
-	    && _a->value_ctr.data_blob.values[0].data) { \
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob) { \
 		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
 		NTSTATUS _nt_status; \
-		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.data_blob.values[0].data, \
+		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
 						      mem_ctx, &_id3,\
 						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
 		if (!NT_STATUS_IS_OK(_nt_status)) { \
@@ -489,24 +489,24 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.data_blob.num_values != 1) { \
+	if (strict && _a->value_ctr.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.data_blob.num_values); \
+			_a->value_ctr.num_values); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && !_a->value_ctr.data_blob.values[0].data) { \
+	if (strict && !_a->value_ctr.values[0].blob) { \
 		d_printf("%s: %s data == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (strict && _a->value_ctr.data_blob.values[0].data->length != 4) { \
+	if (strict && _a->value_ctr.values[0].blob->length != 4) { \
 		d_printf("%s: %s length == %u\n", __location__, attr, \
-			_a->value_ctr.data_blob.values[0].data->length); \
+			_a->value_ctr.values[0].blob->length); \
 		return WERR_INVALID_PARAM; \
 	} \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
-	    && _a->value_ctr.data_blob.values[0].data \
-	    && _a->value_ctr.data_blob.values[0].data->length == 4) { \
-		(p)->elem = (IVAL(_a->value_ctr.data_blob.values[0].data->data,0)?True:False);\
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob \
+	    && _a->value_ctr.values[0].blob->length == 4) { \
+		(p)->elem = (IVAL(_a->value_ctr.values[0].blob->data,0)?True:False);\
 	} else { \
 		(p)->elem = False; \
 	} \
@@ -515,10 +515,10 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 #define GET_UINT32_DS(s, r, attr, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
-	    && _a->value_ctr.data_blob.values[0].data \
-	    && _a->value_ctr.data_blob.values[0].data->length == 4) { \
-		(p)->elem = IVAL(_a->value_ctr.data_blob.values[0].data->data,0);\
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob \
+	    && _a->value_ctr.values[0].blob->length == 4) { \
+		(p)->elem = IVAL(_a->value_ctr.values[0].blob->data,0);\
 	} else { \
 		(p)->elem = 0; \
 	} \
@@ -527,11 +527,11 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 #define GET_GUID_DS(s, r, attr, mem_ctx, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
-	    && _a->value_ctr.data_blob.values[0].data \
-	    && _a->value_ctr.data_blob.values[0].data->length == 16) { \
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob \
+	    && _a->value_ctr.values[0].blob->length == 16) { \
 	    	NTSTATUS _nt_status; \
-		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.data_blob.values[0].data, \
+		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
 						      mem_ctx, &(p)->elem, \
 						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
 		if (!NT_STATUS_IS_OK(_nt_status)) { \
@@ -545,9 +545,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 #define GET_BLOB_DS(s, r, attr, mem_ctx, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
-	    && _a->value_ctr.data_blob.values[0].data) { \
-		(p)->elem = *_a->value_ctr.data_blob.values[0].data;\
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob) { \
+		(p)->elem = *_a->value_ctr.values[0].blob;\
 		talloc_steal(mem_ctx, (p)->elem.data); \
 	} else { \
 		ZERO_STRUCT((p)->elem);\
