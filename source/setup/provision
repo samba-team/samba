@@ -30,7 +30,8 @@ options = GetOptions(ARGV,
 		'quiet',
 		'blank',
 		'ldap-base',
-		'ldap-backend=s');
+		'ldap-backend=s',
+                'ldap-module=s');
 
 if (options == undefined) {
    println("Failed to parse options");
@@ -79,6 +80,7 @@ provision [options]
  --blank			do not add users or groups, just the structure
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
+ --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
 
 You must provide at least a realm and domain
 
@@ -112,7 +114,7 @@ for (r in options) {
 }
 
 if (options["ldap-backend"] != undefined) {
-	subobj["LDAPMODULES"] = "entryUUID,paged_searches";
+	subobj["LDAPMODULES"] = subobj["LDAPMODULE"] + ",paged_searches";
 }
 
 var blank = (options["blank"] != undefined);
