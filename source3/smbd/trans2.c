@@ -810,6 +810,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
+	if (open_ofun == 0) {
+		return ERROR_NT(NT_STATUS_OBJECT_NAME_COLLISION);
+	}
+
 	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
 				&access_mask,
 				&share_mode,
@@ -857,7 +861,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+		return ERROR_NT(status);
 	}
 
 	size = get_file_size(sbuf);
@@ -909,7 +913,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	params = *pparams;
 
 	SSVAL(params,0,fsp->fnum);
-	SSVAL(params,2,open_attr);
+	SSVAL(params,2,fattr);
 	srv_put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
 	SSVAL(params,12,deny_mode);
