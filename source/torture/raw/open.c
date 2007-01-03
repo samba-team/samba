@@ -396,8 +396,15 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
-		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
+	if (lp_parm_bool(-1, "torture", "samba3", False)) {
+		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
+			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED|
+					  FILE_ATTRIBUTE_SPARSE));
+	}
+	else {
+		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
+			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED));
+	}
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
 	smbcli_unlink(cli->tree, fname);
 
@@ -550,6 +557,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* check all combinations of open_func */
 	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
+	again:
 		if (open_funcs[i].with_file) {
 			io.t2open.in.fname = fname1;
 		} else {
@@ -557,6 +565,15 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 		io.t2open.in.open_func = open_funcs[i].open_func;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		if ((io.t2open.in.num_eas != 0)
+		    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)
+		    && lp_parm_bool(-1, "torture", "samba3", False)) {
+			printf("(%s) EAs not supported, not treating as fatal "
+			       "in Samba3 test\n", __location__);
+			io.t2open.in.num_eas = 0;
+			goto again;
+		}
+
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
@@ -592,11 +609,14 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum);
 
 	status = torture_check_ea(cli, fname, ".CLASSINFO", "first value");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(status, io.t2open.in.num_eas
+		     ? NT_STATUS_OK : NT_STATUS_EAS_NOT_SUPPORTED);
 	status = torture_check_ea(cli, fname, "EA TWO", "foo");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(status, io.t2open.in.num_eas
+		     ? NT_STATUS_OK : NT_STATUS_EAS_NOT_SUPPORTED);
 	status = torture_check_ea(cli, fname, "X THIRD", "xy");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(status, io.t2open.in.num_eas
+		     ? NT_STATUS_OK : NT_STATUS_EAS_NOT_SUPPORTED);
 
 	/* now check the search attrib for hidden files - win2003 ignores this? */
 	SET_ATTRIB(FILE_ATTRIBUTE_HIDDEN);
