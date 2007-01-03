@@ -591,7 +591,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	p = strptime (opt->time_string, "%Y-%m-%d", &tm);
 	if (p == NULL)
-	    errx(1, "Failed to parse time %s, need to be on format %Y-%m-%d",
+	    errx(1, "Failed to parse time %s, need to be on format %%Y-%%m-%%d",
 		 opt->time_string);
 	
 	t = tm2time (tm, 0);
