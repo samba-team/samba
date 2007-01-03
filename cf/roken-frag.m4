@@ -430,6 +430,7 @@ AC_NEED_PROTO([#include <unistd.h>], gethostname)
 AC_NEED_PROTO([#include <unistd.h>], mkstemp)
 AC_NEED_PROTO([#include <unistd.h>], getusershell)
 AC_NEED_PROTO([#include <unistd.h>], daemon)
+AC_NEED_PROTO([#include <unistd.h>], iruserok)
 
 AC_NEED_PROTO([
 #ifdef HAVE_SYS_TYPES_H
