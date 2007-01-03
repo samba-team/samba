@@ -1663,12 +1663,26 @@ server_lookup:
     }
 
     /* check PAC if there is one */
-    ret = check_PAC(context, config, client, ekey, tgt, &require_signedpath);
-    if (ret) {
-	kdc_log(context, config, 0,
-		"check_PAC check failed for %s (%s) from %s with %s",
-		spn, cpn, from, krb5_get_err_text(context, ret));
-	goto out;
+    
+    {
+	Key *tkey;
+
+	ret = hdb_enctype2key(context, &krbtgt->entry, 
+			      krbtgt_etype, &tkey);
+	if(ret) {
+	    kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC check");
+	    goto out;
+	}
+
+	ret = check_PAC(context, config, client, &tkey->key, 
+			tgt, &require_signedpath);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "check_PAC check failed for %s (%s) from %s with %s",
+		    spn, cpn, from, krb5_get_err_text(context, ret));
+	    goto out;
+	}
     }
 
     /* also check the krbtgt for signature */
