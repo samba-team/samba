@@ -797,6 +797,39 @@ fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
     return 0;
 }
 
+static krb5_error_code
+pac_checksum(krb5_context context, 
+	     const krb5_keyblock *key,
+	     uint32_t *cksumtype,
+	     size_t *cksumsize)
+{
+    krb5_cksumtype cktype;
+    krb5_error_code ret;
+    krb5_crypto crypto = NULL;
+
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
+
+    ret = krb5_crypto_get_checksum_type(context, crypto, &cktype);
+    ret = krb5_crypto_destroy(context, crypto);
+    if (ret)
+	return ret;
+
+    if (krb5_checksum_is_keyed(context, cktype) == FALSE) {
+	krb5_set_error_string(context, "PAC checksum type is not keyed");
+	return EINVAL;
+    }
+
+    ret = krb5_checksumsize(context, cktype, cksumsize);
+    if (ret)
+	return ret;
+    
+    *cksumtype = (uint32_t)cktype;
+
+    return 0;
+}
+
 krb5_error_code
 _krb5_pac_sign(krb5_context context,
 	       struct krb5_pac *p,
@@ -858,21 +891,12 @@ _krb5_pac_sign(krb5_context context,
 
     /* Set lengths for checksum */
 
-    /* XXX */
-#if 0
-    ret = krb5_checksumsize(context, server_key->keytype, &server_size);
-    ret = krb5_checksumsize(context, priv_key->keytype, &priv_size);
-#else
-    if (server_key->keytype != ETYPE_ARCFOUR_HMAC_MD5 || priv_key->keytype != ETYPE_ARCFOUR_HMAC_MD5)
-    {
-	krb5_set_error_string(context, "only support arcfour for now");
-	return EINVAL;
-    }
-    server_size = 16;
-    server_cksumtype = -138;
-    priv_size = 16;
-    priv_cksumtype = -138;
-#endif
+    ret = pac_checksum(context, server_key, &server_cksumtype, &server_size);
+    if (ret)
+	goto out;
+    ret = pac_checksum(context, priv_key, &priv_cksumtype, &priv_size);
+    if (ret)
+	goto out;
 
     /* Encode PAC */
     sp = krb5_storage_emem();
