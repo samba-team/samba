@@ -1,0 +1,42 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function() {
+      new qx.client.Builder().build(qx.ui.core.ClientDocument.getInstance(), document.getElementById('widgets'));
+    });
+  </script>
+  <div id="demoDescription">
+    <p>qx.client.Builder demo.</p>
+    <p>2 Format Example</p>
+  </div>
+  <textarea id='widgets' style='display:none'>
+    <qx.client.builder.Container>
+      <qx.ui.basic.Atom id="linfo" label="Current Value" icon="icon/16/forward.png" border="qx.renderer.border.BorderPresets.getInstance().black" padding="2,4" backgroundColor="white" top="48" left="20"/>
+      <qx.manager.selection.RadioManager id='_rm1' name="mygroup">
+        <qx.client.builder.EventListener type='changeSelected' args='e'>
+          linfo.setLabel("Current Value: \"" + e.getData().getLabel() + "\" (" + e.getData().getValue() + ")");
+        </qx.client.builder.EventListener>
+      </qx.manager.selection.RadioManager>
+      <qx.ui.form.RadioButton qxtype="radioButton" label="Option #1" value="rb1" location="20,80"  manager="_rm1"/>
+      <qx.ui.form.RadioButton label="Option #2" value="rb2" location="20,110" manager="_rm1" checked="true"/>
+      <div qxtype="qx.ui.form.RadioButton" label="Top RadioButton" value="rb3" location="20,160" manager="_rm1" iconPosition="top"/>
+      <qx.ui.form.RadioButton label="Bottom RadioButton" value="rb4" location="160,160" manager="_rm1" iconPosition="bottom"/>
+      <qx.ui.form.RadioButton label="Left RadioButton" value="rb5" location="20,220" manager="_rm1" iconPosition="left"/>
+      <qx.ui.form.RadioButton label="Right RadioButton" value="rb6" location="160,220" manager="_rm1" iconPosition="right"/>
+      <qx.ui.form.RadioButton value="rb7" location="20,280" manager="_rm1"/>
+    </qx.client.builder.Container>
+  </textarea>
+</body>
+</html>
+

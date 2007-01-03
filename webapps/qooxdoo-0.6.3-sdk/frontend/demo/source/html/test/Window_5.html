@@ -1,0 +1,221 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Some tests for zIndex handling for different widgets.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    
+    
+    var btnaler = new qx.ui.form.Button("Open Alert", "icon/16/error.png");
+    btnaler.setLocation(450, 50);
+    qx.ui.core.ClientDocument.getInstance().add(btnaler);
+    
+    
+    var aler = new qx.ui.popup.PopupAtom("Attention", "icon/128/error.png");
+    aler.setLocation(40, 70);
+    aler.setBackgroundColor("yellow");
+    aler.setOpacity(0.5);
+    qx.ui.core.ClientDocument.getInstance().add(aler);
+    
+    btnaler.addEventListener("execute", function(e)
+    {
+      aler.show();
+    });
+    
+    
+    
+    var bar = new qx.ui.basic.Terminator;
+    bar.setLocation(0, 0);
+    bar.setWidth(50);
+    bar.setBottom(0);
+    bar.setBackgroundColor("black");
+    bar.setOpacity(0.5);
+    bar.setZIndex(1e7);
+    qx.ui.core.ClientDocument.getInstance().add(bar);
+    
+    
+    
+
+    var w1 = new qx.ui.window.Window("Application Window");
+    w1.setSpace(20, 400, 48, 250);
+    d.add(w1);
+    
+    
+    
+    var m1 = new qx.ui.menu.Menu;
+    
+    var mb11 = new qx.ui.menu.Button("Open");
+    var mb12 = new qx.ui.menu.Button("Save");
+    var mb13 = new qx.ui.menu.Button("Close");
+    var mb14 = new qx.ui.menu.Button("Exit");
+    
+    m1.add(mb11, mb12, mb13, mb14);
+    
+    var m2 = new qx.ui.menu.Menu;
+    
+    var mb21 = new qx.ui.menu.Button("Cut");
+    var mb22 = new qx.ui.menu.Button("Copy");
+    var mb23 = new qx.ui.menu.Button("Paste");
+    
+    m2.add(mb21, mb22, mb23);
+    
+    var m3 = new qx.ui.menu.Menu;
+    
+    var mb31 = new qx.ui.menu.Button("Toolbars");
+    var mb32 = new qx.ui.menu.Button("Options");
+    
+    m3.add(mb31, mb32);
+    
+    var m4 = new qx.ui.menu.Menu;
+    
+    var mb41 = new qx.ui.menu.Button("Help");
+    var mb42 = new qx.ui.menu.Button("Info");
+    
+    m4.add(mb41, mb42);
+    
+    qx.ui.core.ClientDocument.getInstance().add(m1, m2, m3, m4);
+    
+    
+    
+    
+    
+    
+
+    var t1 = new qx.ui.toolbar.ToolBar;
+    
+    t1.setLocation(0, 0);
+    t1.setRight(0);
+    
+    var tb1 = new qx.ui.toolbar.MenuButton("File", m1);
+    var tb2 = new qx.ui.toolbar.MenuButton("Edit", m2);
+    var tb3 = new qx.ui.toolbar.MenuButton("View", m3);
+    var tb4 = new qx.ui.toolbar.MenuButton("Help", m4);
+    
+    t1.add(tb1, tb2, tb3, tb4);
+    
+    w1.add(t1);
+    
+    var tt1 = new qx.ui.popup.ToolTip("File Menu Button");
+    var tt2 = new qx.ui.popup.ToolTip("Edit Menu Button");
+    var tt3 = new qx.ui.popup.ToolTip("View Menu Button");
+    var tt4 = new qx.ui.popup.ToolTip("Help Menu Button");
+    
+    tb1.setToolTip(tt1);
+    tb2.setToolTip(tt2);
+    tb3.setToolTip(tt3);
+    tb4.setToolTip(tt4);
+    
+    qx.ui.core.ClientDocument.getInstance().add(tt1, tt2, tt3, tt4);
+    
+    
+    
+    
+    
+    
+    
+    
+    var c1 = new qx.ui.form.ComboBox;
+    
+    c1.setLocation(0, 35);
+    
+    c1.getList().add(new qx.ui.form.ListItem("Item 1"));
+    c1.getList().add(new qx.ui.form.ListItem("Item 2"));
+    c1.getList().add(new qx.ui.form.ListItem("Item 3"));
+    c1.getList().add(new qx.ui.form.ListItem("Item 4"));
+    c1.getList().add(new qx.ui.form.ListItem("Item 5"));
+    
+    w1.add(c1);
+    
+    
+    
+    
+    
+    var square = new qx.ui.basic.Terminator;
+    square.setDimension(50, 50);
+    square.setLocation(0, 70);
+    square.setBackgroundColor("blue");
+    w1.add(square);
+    
+    
+    var p1 = new qx.ui.popup.PopupAtom("Hello World");
+    p1.setBorder(4, "solid", "red");
+    p1.setBackgroundColor("yellow");
+    p1.setLocation(0, 70);
+    p1.setAutoHide(false);
+    w1.add(p1);
+    
+    var p2 = new qx.ui.popup.PopupAtom("Hello World");
+    p2.setBorder(4, "solid", "yellow");
+    p2.setBackgroundColor("red");
+    p2.setLocation(30, 70);
+    p2.setAutoHide(false);
+    w1.add(p2);    
+    
+    
+    var btn1 = new qx.ui.form.Button("Show1");
+    btn1.setLocation(140, 70);
+    w1.add(btn1);
+
+    var btn2 = new qx.ui.form.Button("Hide1");
+    btn2.setLocation(190, 70);
+    w1.add(btn2);
+
+    btn1.addEventListener("execute", function(e) {
+      p1.show();      
+    });
+    
+    btn2.addEventListener("execute", function(e) {
+      p1.hide();      
+    });
+    
+    
+    
+    var btn3 = new qx.ui.form.Button("Show2");
+    btn3.setLocation(250, 70);
+    w1.add(btn3);
+
+    var btn4 = new qx.ui.form.Button("Hide2");
+    btn4.setLocation(300, 70);
+    w1.add(btn4);
+
+    btn3.addEventListener("execute", function(e) {
+      p2.show();      
+    });
+    
+    btn4.addEventListener("execute", function(e) {
+      p2.hide();      
+    });    
+    
+    
+    
+    w1.open();
+
+
+
+
+    
+    var w2 = new qx.ui.window.Window("Test 2");
+    w2.setDimension(400, 200);
+    w2.setLocation(200, 200);
+    qx.ui.core.ClientDocument.getInstance().add(w2);
+    w2.show();
+
+  });
+  </script>
+</body>
+</html>

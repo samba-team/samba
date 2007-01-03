@@ -1,0 +1,166 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <fieldset style="padding:3px; background-color:#fff; text-align:right"><legend style="color:red">Outer</legend>
+    <span style="color:blue; font-style:italic">Margin</span>
+    <fieldset style="margin:3px 10px; padding:3px 10px; background-color:#bbb"><legend style="color:red">Box</legend>
+    <span style="color:blue; font-style:italic">Inset (Border + Scrollbar)</span>
+    <fieldset style="margin:3px 10px; padding:3px 10px; background-color:#999"><legend style="color:red">Area</legend>
+    <span style="color:blue; font-style:italic">Padding</span>
+    <fieldset style="margin:3px 10px; padding:3px 10px; background-color:#666"><legend style="color:red">Inner</legend>
+    </fieldset>
+    </fieldset>
+    </fieldset>
+    </fieldset>
+  </div>
+
+  <div style="margin-left:200px;margin-right:400px; margin-top: 30px;">
+Mit seiner Aufnahme in die Elite war Knechts Leben auf eine andre Ebene verpflanzt, es war der erste und entscheidende Schritt in seiner Entwicklung geschehen. Es geht durchaus nicht allen Elitesch�lern so, da� die amtliche Aufnahme in die Elite mit dem innern Erlebnis der Berufung zusammenf�llt. Das ist Gnade, oder wenn man es banal ausdr�cken will: es ist ein Gl�cksfall. Wem er begegnet, dessen Leben hat ein Plus, so wie der ein Plus besitzt, dem ein Gl�cksfall besonders gl�ckliche Gaben an Leib und See le mitgegeben hat. Die meisten Elitesch�ler, ja beinahe alle, empfinden zwar ihre Wahl als ein gro�es Gl�ck, als eine Auszeichnung, auf die sie stolz sind, und sehr viele von ihnen haben sich auch diese Auszeichnung vorher gl�hend erw�nscht. Aber der �bergang von der gew�hnlichen heimatlichen Schule in die Schulen von Kastalien f�llt den meisten Auserw�hlten dann doch schwerer, als sie gedacht h�tten, und bringt manchen unerwartete Entt�uschungen. Vor allem ist der �bergang f�r alle jene Sch�ler, die in i hrem Elternhaus gl�cklich und geliebt waren, ein sehr schwerer Abschied und Verzicht, und so kommt denn auch, namentlich w�hrend der beiden ersten Elitejahre, eine nicht unbetr�chtliche Zahl von R�ckversetzungen vor, deren Grund nicht ein Mangel an Begabung und Flei�, sondern Unf�higkeit der Sch�ler ist, sich mit dem Internatsleben und vor allem mit dem Gedanken zu vers�hnen, k�nftig die Verbindung mit Familie und Heimat immer mehr zu l�sen und schlie�lich keine andre Zugeh�rigkeit mehr zu kennen und zu r espektieren als die zum Orden. Dann gibt es je und je auch Sch�ler, welchen umgekehrt gerade das Loskommen vom Vaterhaus und von einer ihnen entleideten Schule die Hauptsache bei ihrer Aufnahme in die Elite war; diese, etwa von einem strengen Vater oder einem ihnen unangenehmen Lehrer befreit, atmeten zwar eine Weile auf, hatten sich aber von dem Wechsel so gro�e und unm�gliche Ver�nderungen ihres ganzen Lebens versprochen, da� bald eine Entt�uschung kam. Auch die eigentlichen Streber und Mustersch�ler, d i! e Pedantischen, konnten sich in Kastalien nicht immer halten; nicht da� sie den Studien nicht w�ren gewachsen gewesen, aber es kam in der Elite eben nicht allein auf die Studien und Fachzeugnisse an, sondern es wurden auch erzieherische und musische Ziele angestrebt, vor welchen dieser und jener die Waffen streckte. Immerhin war in dem System der vier gro�en Eliteschulen mit ihren zahlreichen Unterabteilungen und Zweiganstalten Raum f�r vielerlei Begabungen, und ein strebsamer Mathematiker oder Philologe, wenn er wirklich das Zeug zu einem Gelehrten in sich hatte, brauchte etwa einen Mangel an musikalischer oder philosophischer Begabung nicht als Gefahr zu empfinden. Es gab zuzeiten sogar in Kastalien sehr starke Tendenzen zur Pflege der reinen, n�chternen Fachwissenschaften, und die Vork�mpfer dieser Tendenzen waren nicht nur gegen die �Phantasten�, das hei�t gegen die Musikalischen und Musischen, kritisch und spottlustig gestimmt, sondern haben zuzeiten innerhalb ihrer Kreise alles Musische, und namentl ich das Glasperlenspiel, geradezu abgeschworen und verp�nt.Da Knechts Leben, soweit es uns bekannt ist, sich ganz in Kastalien abspielte, in jenem stillsten und heitersten Bezirk unseres gebirgigen Landes, den man fr�her mit einem Ausdruck des Dichters Goethe oft auch �die p�dagogische Provinz� genannt hat, wollen wir in aller K�rze und auf die Gefahr hin, den Leser mit L�ngstgewu�tem zu langweilen, nochmals dies ber�hmte Kastalien.
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var w1 = new qx.ui.basic.Terminator;
+
+      with(w1)
+      {
+        setHeight(100);
+        setWidth(100);
+        setTop(48);
+        setLeft(20);
+        setBackgroundColor("orange");
+        setStyleProperty("padding", "5px");
+        setStyleProperty("margin", "10px");
+        setBorder(new qx.renderer.border.Border(2, "solid", "blue"));
+        setOverflow("scroll");
+      };
+
+      d.add(w1);
+
+      w1.addEventListener("initialShow", function(e)
+      {
+        QxDebug("Properties", "getComputedMarginLeft: " + w1.getComputedMarginLeft());
+        QxDebug("Properties", "getComputedMarginTop: " + w1.getComputedMarginTop());
+        QxDebug("Properties", "getComputedMarginRight: " + w1.getComputedMarginRight());
+        QxDebug("Properties", "getComputedMarginBottom: " + w1.getComputedMarginBottom());
+
+        QxDebug("Properties", "getComputedPaddingLeft: " + w1.getComputedPaddingLeft());
+        QxDebug("Properties", "getComputedPaddingTop: " + w1.getComputedPaddingTop());
+        QxDebug("Properties", "getComputedPaddingRight: " + w1.getComputedPaddingRight());
+        QxDebug("Properties", "getComputedPaddingBottom: " + w1.getComputedPaddingBottom());
+
+        QxDebug("Properties", "getComputedBorderLeft: " + w1.getComputedBorderLeft());
+        QxDebug("Properties", "getComputedBorderTop: " + w1.getComputedBorderTop());
+        QxDebug("Properties", "getComputedBorderRight: " + w1.getComputedBorderRight());
+        QxDebug("Properties", "getComputedBorderBottom: " + w1.getComputedBorderBottom());
+
+        QxDebug("Dimensions", "getComputedOuterWidth: " + w1.getComputedOuterWidth());
+        QxDebug("Dimensions", "getComputedOuterHeight: " + w1.getComputedOuterHeight());
+
+        QxDebug("Dimensions", "getComputedBoxWidth: " + w1.getComputedBoxWidth());
+        QxDebug("Dimensions", "getComputedBoxHeight: " + w1.getComputedBoxHeight());
+
+        QxDebug("Dimensions", "getComputedAreaWidth: " + w1.getComputedAreaWidth());
+        QxDebug("Dimensions", "getComputedAreaHeight: " + w1.getComputedAreaHeight());
+
+        QxDebug("Dimensions", "getComputedInnerWidth: " + w1.getComputedInnerWidth());
+        QxDebug("Dimensions", "getComputedInnerHeight: " + w1.getComputedInnerHeight());
+
+        QxDebug("Insets", "getComputedInsetLeft: " + w1.getComputedInsetLeft());
+        QxDebug("Insets", "getComputedInsetTop: " + w1.getComputedInsetTop());
+        QxDebug("Insets", "getComputedInsetRight: " + w1.getComputedInsetRight());
+        QxDebug("Insets", "getComputedInsetBottom: " + w1.getComputedInsetBottom());
+
+        QxDebug("Scroll", "getComputedScrollBarSizeLeft: " + w1.getComputedScrollBarSizeLeft());
+        QxDebug("Scroll", "getComputedScrollBarSizeTop: " + w1.getComputedScrollBarSizeTop());
+        QxDebug("Scroll", "getComputedScrollBarSizeRight: " + w1.getComputedScrollBarSizeRight());
+        QxDebug("Scroll", "getComputedScrollBarSizeBottom: " + w1.getComputedScrollBarSizeBottom());
+
+        QxDebug("Scroll", "getComputedScrollBarVisibleX: " + w1.getComputedScrollBarVisibleX());
+        QxDebug("Scroll", "getComputedScrollBarVisibleY: " + w1.getComputedScrollBarVisibleY());
+
+
+
+        QxDebug("Positions->Client", "getComputedClientOuterLeft: " + w1.getComputedClientOuterLeft());
+        QxDebug("Positions->Client", "getComputedClientOuterTop: " + w1.getComputedClientOuterTop());
+        QxDebug("Positions->Client", "getComputedClientOuterRight: " + w1.getComputedClientOuterRight());
+        QxDebug("Positions->Client", "getComputedClientOuterBottom: " + w1.getComputedClientOuterBottom());
+
+        QxDebug("Positions->Client", "getComputedClientBoxLeft: " + w1.getComputedClientBoxLeft());
+        QxDebug("Positions->Client", "getComputedClientBoxTop: " + w1.getComputedClientBoxTop());
+        QxDebug("Positions->Client", "getComputedClientBoxRight: " + w1.getComputedClientBoxRight());
+        QxDebug("Positions->Client", "getComputedClientBoxBottom: " + w1.getComputedClientBoxBottom());
+
+        QxDebug("Positions->Client", "getComputedClientAreaLeft: " + w1.getComputedClientAreaLeft());
+        QxDebug("Positions->Client", "getComputedClientAreaTop: " + w1.getComputedClientAreaTop());
+        QxDebug("Positions->Client", "getComputedClientAreaRight: " + w1.getComputedClientAreaRight());
+        QxDebug("Positions->Client", "getComputedClientAreaBottom: " + w1.getComputedClientAreaBottom());
+
+        QxDebug("Positions->Client", "getComputedClientInnerLeft: " + w1.getComputedClientInnerLeft());
+        QxDebug("Positions->Client", "getComputedClientInnerTop: " + w1.getComputedClientInnerTop());
+        QxDebug("Positions->Client", "getComputedClientInnerRight: " + w1.getComputedClientInnerRight());
+        QxDebug("Positions->Client", "getComputedClientInnerBottom: " + w1.getComputedClientInnerBottom());
+
+
+
+        QxDebug("Positions->Page", "getComputedPageOuterLeft: " + w1.getComputedPageOuterLeft());
+        QxDebug("Positions->Page", "getComputedPageOuterTop: " + w1.getComputedPageOuterTop());
+        QxDebug("Positions->Page", "getComputedPageOuterRight: " + w1.getComputedPageOuterRight());
+        QxDebug("Positions->Page", "getComputedPageOuterBottom: " + w1.getComputedPageOuterBottom());
+
+        QxDebug("Positions->Page", "getComputedPageBoxLeft: " + w1.getComputedPageBoxLeft());
+        QxDebug("Positions->Page", "getComputedPageBoxTop: " + w1.getComputedPageBoxTop());
+        QxDebug("Positions->Page", "getComputedPageBoxRight: " + w1.getComputedPageBoxRight());
+        QxDebug("Positions->Page", "getComputedPageBoxBottom: " + w1.getComputedPageBoxBottom());
+
+        QxDebug("Positions->Page", "getComputedPageAreaLeft: " + w1.getComputedPageAreaLeft());
+        QxDebug("Positions->Page", "getComputedPageAreaTop: " + w1.getComputedPageAreaTop());
+        QxDebug("Positions->Page", "getComputedPageAreaRight: " + w1.getComputedPageAreaRight());
+        QxDebug("Positions->Page", "getComputedPageAreaBottom: " + w1.getComputedPageAreaBottom());
+
+        QxDebug("Positions->Page", "getComputedPageInnerLeft: " + w1.getComputedPageInnerLeft());
+        QxDebug("Positions->Page", "getComputedPageInnerTop: " + w1.getComputedPageInnerTop());
+        QxDebug("Positions->Page", "getComputedPageInnerRight: " + w1.getComputedPageInnerRight());
+        QxDebug("Positions->Page", "getComputedPageInnerBottom: " + w1.getComputedPageInnerBottom());
+
+
+
+
+        QxDebug("Screen", "getComputedScreenOuterLeft: " + w1.getComputedScreenOuterLeft());
+        QxDebug("Screen", "getComputedScreenOuterTop: " + w1.getComputedScreenOuterTop());
+        QxDebug("Screen", "getComputedScreenOuterRight: " + w1.getComputedScreenOuterRight());
+        QxDebug("Screen", "getComputedScreenOuterBottom: " + w1.getComputedScreenOuterBottom());
+
+        QxDebug("Screen", "getComputedScreenBoxLeft: " + w1.getComputedScreenBoxLeft());
+        QxDebug("Screen", "getComputedScreenBoxTop: " + w1.getComputedScreenBoxTop());
+        QxDebug("Screen", "getComputedScreenBoxRight: " + w1.getComputedScreenBoxRight());
+        QxDebug("Screen", "getComputedScreenBoxBottom: " + w1.getComputedScreenBoxBottom());
+
+        QxDebug("Screen", "getComputedScreenAreaLeft: " + w1.getComputedScreenAreaLeft());
+        QxDebug("Screen", "getComputedScreenAreaTop: " + w1.getComputedScreenAreaTop());
+        QxDebug("Screen", "getComputedScreenAreaRight: " + w1.getComputedScreenAreaRight());
+        QxDebug("Screen", "getComputedScreenAreaBottom: " + w1.getComputedScreenAreaBottom());
+
+        QxDebug("Screen", "getComputedScreenInnerLeft: " + w1.getComputedScreenInnerLeft());
+        QxDebug("Screen", "getComputedScreenInnerTop: " + w1.getComputedScreenInnerTop());
+        QxDebug("Screen", "getComputedScreenInnerRight: " + w1.getComputedScreenInnerRight());
+        QxDebug("Screen", "getComputedScreenInnerBottom: " + w1.getComputedScreenInnerBottom());
+      });
+    });
+  </script>
+</body>
+</html>

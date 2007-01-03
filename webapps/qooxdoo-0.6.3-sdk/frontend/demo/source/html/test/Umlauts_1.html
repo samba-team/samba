@@ -1,0 +1,26 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test some Umlauts methods from the String.prototype.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      alert("Umlauts Short: " + qx.util.Normalization.umlautsShort("äöüÄÖÜß"))
+      alert("Umlauts Long: " + qx.util.Normalization.umlautsLong("äöüÄÖÜß"))
+    });
+  </script>
+</body>
+</html>

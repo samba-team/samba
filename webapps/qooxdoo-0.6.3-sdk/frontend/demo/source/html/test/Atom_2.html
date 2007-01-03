@@ -1,0 +1,187 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Example to show correct calculations of qx.ui.basic.Atom sizes. Normally a qx.ui.basic.Atom has only the size of its content.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var w = qx.ui.core.ClientDocument.getInstance();
+
+
+      function alertoff() {
+        alert(this.getElement().offsetWidth + "x" + this.getElement().offsetHeight);
+      };
+
+      var l1 = new qx.ui.layout.CanvasLayout();
+      var l2 = new qx.ui.layout.CanvasLayout();
+
+      with(l1)
+      {
+        setTop(100);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      with(l2)
+      {
+        setTop(123);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      w.add(l1);
+      w.add(l2);
+
+
+
+      var a1 = new qx.ui.basic.Atom("Pure Text", "icon/22/folder.png");
+      var a2 = new qx.ui.basic.Atom(null, "icon/22/folder.png");
+
+      with(a1) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(100);
+        setLeft(120);
+      };
+
+      with(a2) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(100);
+        setLeft(300);
+      };
+
+      w.add(a1);
+      w.add(a2);
+
+      a1.addEventListener("click", alertoff);
+      a2.addEventListener("click", alertoff);
+
+
+
+      var l3 = new qx.ui.layout.CanvasLayout();
+      var l4 = new qx.ui.layout.CanvasLayout();
+
+      with(l3)
+      {
+        setTop(200);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      with(l4)
+      {
+        setTop(233);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      w.add(l3);
+      w.add(l4);
+
+
+      var b1 = new qx.ui.basic.Atom("Pure Text", "icon/32/network.png");
+      var b2 = new qx.ui.basic.Atom(null, "icon/32/network.png");
+
+      with(b1) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(200);
+        setLeft(120);
+      };
+
+      with(b2) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(200);
+        setLeft(300);
+      };
+
+      w.add(b1);
+      w.add(b2);
+
+      b1.addEventListener("click", alertoff);
+      b2.addEventListener("click", alertoff);
+
+
+
+
+
+
+      var l5 = new qx.ui.layout.CanvasLayout();
+      var l6 = new qx.ui.layout.CanvasLayout();
+
+      with(l5)
+      {
+        setTop(300);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      with(l6)
+      {
+        setTop(317);
+        setLeft(20);
+        setWidth(500);
+        setHeight(1);
+        setBackgroundColor("red");
+        setOverflow("hidden");
+      };
+
+      w.add(l5);
+      w.add(l6);
+
+
+      var c1 = new qx.ui.basic.Atom("Pure Text", "icon/16/network.png");
+      var c2 = new qx.ui.basic.Atom(null, "icon/16/network.png");
+
+      with(c1) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(300);
+        setLeft(120);
+      };
+
+      with(c2) {
+        setBorder(new qx.renderer.border.Border(1, "solid", "black"));
+        setTop(300);
+        setLeft(300);
+      };
+
+      w.add(c1);
+      w.add(c2);
+
+      c1.addEventListener("click", alertoff);
+      c2.addEventListener("click", alertoff);
+
+
+
+
+
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for qx.renderer.border.Border, a cross-browser advanced border engine.
+    Each instance of qx.renderer.border.Border allows to affect multiple QxTerminators.
+    When the one property of the qx.renderer.border.Border change, it informs all bounded
+    QxTerminators to rerender the border.</p>
+
+    <p>The qx.renderer.border.Border constructor also allows you to convert a string
+    (css-like) into and qx.renderer.border.Border instance (last example).</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+
+
+    var c1 = new qx.ui.basic.Terminator;
+    with(c1)
+    {
+      setTop(48);
+      setLeft(20);
+      setWidth(150);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.Color("#fff"));
+    };
+    d.add(c1);
+
+    var c2 = new qx.ui.basic.Terminator;
+    with(c2)
+    {
+      setTop(48);
+      setLeft(200);
+      setWidth(150);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.Color("#fff"));
+    };
+    d.add(c2);
+
+    var b1 = new qx.renderer.border.Border;
+
+    // before set border properties
+    c1.setBorder(b1);
+
+    b1.setWidth(2);
+    b1.setStyle("solid");
+    b1.setColor(new qx.renderer.color.Color("black"));
+    b1.setBottomStyle("dotted");
+    b1.setTopColor(new qx.renderer.color.Color("blue"));
+
+    // after set border properties
+    c2.setBorder(b1);
+
+
+
+
+
+
+
+
+    var c3 = new qx.ui.basic.Terminator;
+    with(c3)
+    {
+      setTop(110);
+      setLeft(20);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c3);
+
+    c3.setBorder(qx.renderer.border.BorderPresets.getInstance().thinInset);
+
+    var c4 = new qx.ui.basic.Terminator;
+    with(c4)
+    {
+      setTop(110);
+      setLeft(80);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c4);
+
+    c4.setBorder(qx.renderer.border.BorderPresets.getInstance().thinOutset);
+
+    var c5 = new qx.ui.basic.Terminator;
+    with(c5)
+    {
+      setTop(110);
+      setLeft(140);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c5);
+
+    c5.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+
+
+    var c6 = new qx.ui.basic.Terminator;
+    with(c6)
+    {
+      setTop(110);
+      setLeft(200);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c6);
+
+    c6.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+
+
+    var c7 = new qx.ui.basic.Terminator;
+    with(c7)
+    {
+      setTop(110);
+      setLeft(260);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c7);
+
+    c7.setBorder(qx.renderer.border.BorderPresets.getInstance().groove);
+
+    var c8 = new qx.ui.basic.Terminator;
+    with(c8)
+    {
+      setTop(110);
+      setLeft(320);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c8);
+
+    c8.setBorder(qx.renderer.border.BorderPresets.getInstance().ridge);
+
+
+
+    var c9 = new qx.ui.basic.Terminator;
+    with(c9)
+    {
+      setTop(110);
+      setLeft(380);
+      setWidth(40);
+      setHeight(40);
+      setBackgroundColor(new qx.renderer.color.ColorObject("threedface"));
+    };
+    d.add(c9);
+
+    var b2 = qx.renderer.border.Border.fromString("2px solid red");
+    c9.setBorder(b2);
+    
+    
+    
+    // Color Themes
+    qx.manager.object.ColorManager.getInstance().createThemeList(d, 220, 248);
+  });
+  </script>
+</body>
+</html>
