@@ -188,15 +188,15 @@ interface drsuapi
 	typedef [public] struct {
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		hyper highest_usn;  /* updated after a full replication cycle */
-	} drsuapi_DsReplicaCoursor;
+	} drsuapi_DsReplicaCursor;
 
 	typedef struct {
 		uint32 u1;
 		uint32 u2;
 		[range(0,0x100000)] uint32 count;
 		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCoursor coursors[];
-	} drsuapi_DsReplicaCoursorCtrEx;
+		[size_is(count)] drsuapi_DsReplicaCursor cursors[];
+	} drsuapi_DsReplicaCursorCtrEx;
 
 	typedef [public] bitmap {
 		/* the _WRITEABLE flag indicates a replication with all attributes
@@ -234,7 +234,7 @@ interface drsuapi
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
-		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
+		drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 max_object_count; /* w2k3 uses min(133,max(100,max_object_count)) */
 		uint32 max_ndr_size; /* w2k3 seems to ignore this */
@@ -404,7 +404,7 @@ interface drsuapi
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
-		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
+		drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 max_object_count; /* w2k3 uses min(133,max(100,max_object_count)) */
 		uint32 max_ndr_size; /* w2k3 seems to ignore this */
@@ -424,15 +424,15 @@ interface drsuapi
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		hyper highest_usn;  /* updated after a full replication cycle */
 		NTTIME last_sync_success;
-	} drsuapi_DsReplicaCoursor2;
+	} drsuapi_DsReplicaCursor2;
 
 	typedef struct {
 		uint32 u1;
 		uint32 u2;
 		[range(0,0x100000)] uint32 count;
 		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCoursor2 coursors[];
-	} drsuapi_DsReplicaCoursor2CtrEx;
+		[size_is(count)] drsuapi_DsReplicaCursor2 coursors[];
+	} drsuapi_DsReplicaCursor2CtrEx;
 
 	/* Generic DATA_BLOB values */
 	typedef struct {
@@ -506,7 +506,7 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
-		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
+		drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 		uint32 total_object_count;
 		uint32 object_count;
@@ -539,7 +539,7 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
-		drsuapi_DsReplicaCoursor2CtrEx *uptodateness_vector;
+		drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 		uint32 total_object_count;
 		uint32 object_count;
@@ -1112,7 +1112,7 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2	= 10,
 		DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02			= -2,
 		DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04			= -4,
-		DRSUAPI_DS_REPLICA_INFO_CURSURS05			= -5,
+		DRSUAPI_DS_REPLICA_INFO_CURSORS05			= -5,
 		DRSUAPI_DS_REPLICA_INFO_06				= -6
 	} drsuapi_DsReplicaInfoType;
 
@@ -1165,8 +1165,8 @@ interface drsuapi
 	typedef struct {
 		uint32 count;
 		uint32 reserved;
-		[size_is(count)] drsuapi_DsReplicaCoursor array[];
-	} drsuapi_DsReplicaCoursorCtr;
+		[size_is(count)] drsuapi_DsReplicaCursor array[];
+	} drsuapi_DsReplicaCursorCtr;
 
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
@@ -1256,21 +1256,21 @@ interface drsuapi
 	typedef struct {
 		uint32 count;
 		int32 enumeration_context;
-		[size_is(count)] drsuapi_DsReplicaCoursor2 array[];
-	} drsuapi_DsReplicaCoursor2Ctr;
+		[size_is(count)] drsuapi_DsReplicaCursor2 array[];
+	} drsuapi_DsReplicaCursor2Ctr;
 
 	typedef struct {
 		GUID source_dsa_invocation_id;
 		hyper highest_usn;
 		NTTIME last_sync_success;
 		[charset(UTF16),string] uint16 *source_dsa_obj_dn;
-	} drsuapi_DsReplicaCoursor3;
+	} drsuapi_DsReplicaCursor3;
 
 	typedef struct {
 		uint32 count;
 		int32 enumeration_context;
-		[size_is(count)] drsuapi_DsReplicaCoursor3 array[];
-	} drsuapi_DsReplicaCoursor3Ctr;
+		[size_is(count)] drsuapi_DsReplicaCursor3 array[];
+	} drsuapi_DsReplicaCursor3Ctr;
 
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
@@ -1344,19 +1344,19 @@ interface drsuapi
 
 	typedef [switch_type(drsuapi_DsReplicaInfoType)] union {
 		[case(DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)] drsuapi_DsReplicaNeighbourCtr *neighbours;
-		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS)] drsuapi_DsReplicaCoursorCtr *coursors;
+		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS)] drsuapi_DsReplicaCursorCtr *cursors;
 		[case(DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA)] drsuapi_DsReplicaObjMetaDataCtr *objmetadata;
 		[case(DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES)] drsuapi_DsReplicaKccDsaFailuresCtr *connectfailures;
 		[case(DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES)] drsuapi_DsReplicaKccDsaFailuresCtr *linkfailures;
 		[case(DRSUAPI_DS_REPLICA_INFO_PENDING_OPS)] drsuapi_DsReplicaOpCtr *pendingops;
 		[case(DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA)] drsuapi_DsReplicaAttrValMetaDataCtr *attrvalmetadata;
-		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS2)] drsuapi_DsReplicaCoursor2Ctr *coursors2;
-		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS3)] drsuapi_DsReplicaCoursor3Ctr *coursors3;
+		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS2)] drsuapi_DsReplicaCursor2Ctr *cursors2;
+		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS3)] drsuapi_DsReplicaCursor3Ctr *cursors3;
 		[case(DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2)] drsuapi_DsReplicaObjMetaData2Ctr *objmetadata2;
 		[case(DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2)] drsuapi_DsReplicaAttrValMetaData2Ctr *attrvalmetadata2;
 		[case(DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02)] drsuapi_DsReplicaNeighbourCtr *neighbours02;
 		[case(DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04)] drsuapi_DsReplicaConnection04Ctr *connections04;
-		[case(DRSUAPI_DS_REPLICA_INFO_CURSURS05)] drsuapi_DsReplicaCoursorCtrEx *coursors05;
+		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS05)] drsuapi_DsReplicaCursorCtrEx *cursors05;
 		[case(DRSUAPI_DS_REPLICA_INFO_06)] drsuapi_DsReplica06Ctr *i06;
 	} drsuapi_DsReplicaInfo;
 
