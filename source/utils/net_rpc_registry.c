@@ -661,7 +661,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		}
 		case REG_BINARY:
 			d_printf("Value      = %d bytes\n",
-				 v->v.binary.length);
+				 (int)v->v.binary.length);
 			break;
 		default:
 			d_printf("Value      = <unprintable>\n");
