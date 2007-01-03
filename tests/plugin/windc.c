@@ -22,6 +22,8 @@ pac_generate(void *ctx, krb5_context context,
     krb5_error_code ret;
     krb5_data data;
 
+    krb5_warnx(context, "pac generate");
+
     data.data = "\x00\x01";
     data.length = 2;
 
@@ -42,6 +44,8 @@ pac_verify(void *ctx, krb5_context context,
 {
     krb5_error_code ret;
     krb5_data data;
+
+    krb5_warnx(context, "pac_verify");
 
     ret = krb5_pac_get_buffer(context, pac, 1, &data);
     if (ret)
