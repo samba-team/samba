@@ -1021,30 +1021,30 @@ int ibw_disconnect(struct ibw_conn *conn)
 	return 0;
 }
 
-int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, int n)
+int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, uint32_t len)
 {
 	struct ibw_ctx_priv *pctx = talloc_get_type(conn->ctx->internal, struct ibw_ctx_priv);
 	struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
 	struct ibw_wr *p = pconn->wr_list_avail;
 
 	if (p!=NULL) {
-		DEBUG(10, ("ibw_alloc_send_buf#1: cmid=%u, n=%d\n", (uint32_t)pconn->cm_id, n));
+		DEBUG(10, ("ibw_alloc_send_buf#1: cmid=%u, len=%d\n", (uint32_t)pconn->cm_id, len));
 
 		DLIST_REMOVE(pconn->wr_list_avail, p);
 		DLIST_ADD(pconn->wr_list_used, p);
 
-		if (n + sizeof(long) <= pctx->opts.avg_send_size) {
-			*buf = (void *)(p->msg + sizeof(long));
+		if (len + sizeof(uint32_t) <= pctx->opts.avg_send_size) {
+			*buf = (void *)(p->msg + sizeof(uint32_t));
 		} else {
-			p->msg_large = ibw_alloc_mr(pctx, pconn, n + sizeof(long), &p->mr_large);
+			p->msg_large = ibw_alloc_mr(pctx, pconn, len + sizeof(uint32_t), &p->mr_large);
 			if (!p->msg_large) {
 				sprintf(ibw_lasterr, "ibw_alloc_mr#1 failed\n");
 				goto error;
 			}
-			*buf = (void *)(p->msg_large + sizeof(long));
+			*buf = (void *)(p->msg_large + sizeof(uint32_t));
 		}
 	} else {
-		DEBUG(10, ("ibw_alloc_send_buf#2: cmid=%u, n=%d\n", (uint32_t)pconn->cm_id, n));
+		DEBUG(10, ("ibw_alloc_send_buf#2: cmid=%u, len=%d\n", (uint32_t)pconn->cm_id, len));
 		/* not optimized */
 		p = pconn->extra_avail;
 		if (!p) {
@@ -1065,12 +1065,12 @@ int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, int n)
 		}
 		DLIST_REMOVE(pconn->extra_avail, p);
 
-		p->msg_large = ibw_alloc_mr(pctx, pconn, n + sizeof(long), &p->mr_large);
+		p->msg_large = ibw_alloc_mr(pctx, pconn, len + sizeof(uint32_t), &p->mr_large);
 		if (!p->msg_large) {
 			sprintf(ibw_lasterr, "ibw_alloc_mr#2 failed");
 			goto error;
 		}
-		*buf = (void *)(p->msg_large + sizeof(long));
+		*buf = (void *)(p->msg_large + sizeof(uint32_t));
 	}
 
 	*key = (void *)p;
@@ -1082,20 +1082,20 @@ error:
 }
 
 
-int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n)
+int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 {
 	struct ibw_ctx_priv *pctx = talloc_get_type(conn->ctx->internal, struct ibw_ctx_priv);
 	struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
 	struct ibw_wr *p = talloc_get_type(key, struct ibw_wr);
 	int	rc;
 
-	*((uint32_t *)buf) = htonl(n);
+	*((uint32_t *)buf) = htonl(len);
 
 	/* can we send it right now? */
 	if (pconn->wr_sent<=pctx->opts.max_send_wr) {
 		struct ibv_sge list = {
 			.addr 	= (uintptr_t) NULL,
-			.length = n,
+			.length = len,
 			.lkey 	= 0
 		};
 		struct ibv_send_wr wr = {
@@ -1108,7 +1108,7 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n)
 		struct ibv_send_wr *bad_wr;
 
 		DEBUG(10, ("ibw_wc_send#1(cmid: %u, wrid: %u, n: %d)\n",
-			(uint32_t)pconn->cm_id, (uint32_t)wr.wr_id, n));
+			(uint32_t)pconn->cm_id, (uint32_t)wr.wr_id, len));
 
 		if (p->msg_large==NULL) {
 			list.lkey = pconn->mr_send->lkey;
@@ -1124,15 +1124,48 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n)
 			sprintf(ibw_lasterr, "ibv_post_send error %d (%d)\n",
 				rc, pconn->wr_sent);
 			DEBUG(0, (ibw_lasterr));
-		} else
+		} else {
+			/* good case */
+			if (p->wr_id>=pctx->opts.max_send_wr) {
+				/* we don't have prepared index for this, so that
+				 * we will have to find this later on */
+				DLIST_ADD(pconn->extra_sent, p);
+			}
 			pconn->wr_sent++;
+		}
 		return rc;
 	} /* else put the request into our own queue: */
 
-	DEBUG(10, ("ibw_wc_send#2(cmid: %u, n %u)\n", (uint32_t)pconn->cm_id, n));
+	DEBUG(10, ("ibw_wc_send#2(cmid: %u, len: %u)\n", (uint32_t)pconn->cm_id, len));
 
 	/* to be sent by ibw_wc_send */
 	DLIST_ADD_END(pconn->queue, p, struct ibw_wr *); /* TODO: optimize */
+
+	return 0;
+}
+
+int ibw_cancel_send_buf(struct ibw_conn *conn, void *buf, void *key)
+{
+	struct ibw_ctx_priv *pctx = talloc_get_type(conn->ctx->internal, struct ibw_ctx_priv);
+	struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
+	struct ibw_wr *p = talloc_get_type(key, struct ibw_wr);
+
+	assert(p!=NULL);
+	assert(buf!=NULL);
+	assert(conn!=NULL);
+
+	if (p->msg_large)
+		ibw_free_mr(&p->msg_large, &p->mr_large);
+
+	/* parallel case */
+	if (p->wr_id < pctx->opts.max_send_wr) {
+		DEBUG(10, ("ibw_cancel_send_buf#1 %u", (int)p->wr_id));
+		DLIST_REMOVE(pconn->wr_list_used, p);
+		DLIST_ADD(pconn->wr_list_avail, p);
+	} else { /* "extra" packet */
+		DEBUG(10, ("ibw_cancel_send_buf#2 %u", (int)p->wr_id));
+		DLIST_ADD(pconn->extra_avail, p);
+	}
 
 	return 0;
 }
