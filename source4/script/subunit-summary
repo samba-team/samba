@@ -57,6 +57,11 @@ while(<STDIN>) {
 
 print "\n" if ($opt_progress);
 
+if ($numtests == 0) {
+    print "No tests run\n";
+    exit(0);
+}
+
 printf("%d%%: %d tests, %d succeeded, %d failed, %d skipped\n", 
        ($numsuccess / $numtests * 100),
 	   $numtests,
