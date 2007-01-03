@@ -95,6 +95,7 @@
 #include <der.h>
 
 #include <heimntlm.h>
+#include <windc_plugin.h>
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
