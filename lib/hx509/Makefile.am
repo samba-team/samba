@@ -127,7 +127,12 @@ nodist_hxtool_SOURCES = hxtool-commands.c hxtool-commands.h
 $(hxtool_OBJECTS): hxtool-commands.h
 
 hxtool_CPPFLAGS = $(INCLUDE_des)
-hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
+hxtool_LDADD = \
+	libhx509.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_des) \
+	$(LIB_roken) \
+	$(top_builddir)/lib/sl/libsl.la
 
 CLEANFILES = $(BUILT_SOURCES) \
 	$(gen_files_ocsp) ocsp_asn1_files ocsp_asn1.h \
