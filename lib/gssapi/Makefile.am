@@ -156,6 +156,7 @@ ntlmsrc = \
 	ntlm/export_sec_context.c \
 	ntlm/external.c \
 	ntlm/ntlm.h \
+	ntlm/ntlm-private.h \
 	ntlm/import_name.c \
 	ntlm/import_sec_context.c \
 	ntlm/indicate_mechs.c \
