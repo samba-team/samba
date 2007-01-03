@@ -1,0 +1,32 @@
+\.copy\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.clone\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.getFirst\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.getLast\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.insertAt\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.insertBefore\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.insertAfter\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.removeAt\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.removeAll\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.append\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.remove\b=Maybe old use of prototype function. Please use qx.lang.Array instead.
+\.contains\b=Maybe old use of prototype function. Please use qx.lang.Array/qx.lang.String instead.
+
+\.toCamelCase\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.trimLeft\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.trimRight\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.trim\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.stripTags\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.startsWith\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.endsWith\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.pad\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.toFirstUp\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+\.escapeRegexpChars\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+
+# All widget add/remove is affected. It's generally better to hide these because the string
+# methods are relatively rarely used.
+#\.add\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+#\.remove\b=Maybe old use of prototype function. Please use qx.lang.String instead.
+
+\.isInRange\b=Maybe old use of prototype function. Please use qx.lang.Number instead.
+\.isBetweenRange\b=Maybe old use of prototype function. Please use qx.lang.Number instead.
+\.limit\b=Maybe old use of prototype function. Please use qx.lang.Number instead.

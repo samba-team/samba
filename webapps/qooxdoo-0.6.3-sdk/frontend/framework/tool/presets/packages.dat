@@ -1,0 +1,25 @@
+###########################################################################
+#
+# Generates 3 JavaScript files with different include configuration
+#
+###########################################################################
+
+script-input = framework/source/class
+cache-directory = .cache
+generate-compiled-script
+optimize-strings
+
+package = core
+include = core
+compiled-script-file = pkg-core.js
+
+package = ui_core
+include = ui_core
+exclude = core
+compiled-script-file = pkg-ui_core.js
+
+package = ui_basic
+include = ui_basic
+exclude = core
+exclude = ui_core
+compiled-script-file = pkg-ui_basic.js

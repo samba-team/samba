@@ -1,0 +1,5 @@
+\bqx\.ui\.component\.DateChooser\.STATE_HEADER\b="header"
+\bqx\.ui\.component\.DateChooser\.STATE_WEEKEND\b="weekend"
+\bqx\.ui\.component\.DateChooser\.STATE_OTHER_MONTH\b="otherMonth"
+\bqx\.ui\.component\.DateChooser\.STATE_SELECTED\b="selected"
+\bqx\.ui\.component\.DateChooser\.STATE_TODAY\b="today"
