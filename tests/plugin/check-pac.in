@@ -76,6 +76,7 @@ ${kadmin} \
     ${R} || exit 1
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
+${kadmin} add -p bar --use-defaults ${server}@${R} || exit 1
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
@@ -100,6 +101,8 @@ ec=0
 echo "Getting client initial tickets";
 ${kinit} --password-file=${objdir}/foopassword foo@$R || \
 	{ ec=1 ; eval "${testfailed}"; }
+echo "Getting tickets"
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 
 ${kdestroy}
 
