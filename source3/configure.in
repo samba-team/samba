@@ -4,6 +4,7 @@ dnl We must use autotools 2.53 or above
 AC_PREREQ(2.53)
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
+AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
