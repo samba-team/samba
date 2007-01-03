@@ -143,6 +143,24 @@ ${context} --mech-type=ntlm \
 	    --name-type=hostbased-service datan@host.foo 2>/dev/null && \
 		{ echo "test_context 4 failed"; exit 1; }
 
+echo "Trying SL in NTLM"
+
+
+for type in \
+    "" \
+    "--getverifymic" \
+    "--wrapunwrap" \
+    "--getverifymic --wrapunwrap" \
+    ; do
+
+	echo "Trying NTLM type: ${type}"
+	${context} --mech-type=ntlm ${type} \
+	    --name-type=hostbased-service datan@TEST || \
+	    { echo "test_context 1 failed"; exit 1; }
+
+done
+
+
 echo "Trying CHAP"
 
 ${kdigest} digest-server-init \
