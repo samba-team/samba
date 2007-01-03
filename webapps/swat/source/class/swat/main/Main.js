@@ -26,7 +26,7 @@ function()
  */
 
 //#require(swat.module.statistics.Statistics)
-new swat.module.Module("Statistics",
+new swat.module.Module("Status and Statistics",
                        swat.module.statistics.Statistics);
 
 //#require(swat.module.ldbbrowse.LdbBrowse)
