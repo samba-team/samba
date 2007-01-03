@@ -742,7 +742,41 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0b */
-	WERROR DRSUAPI_GET_NT4_CHANGELOG();
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		[range(0,0x00A00000)] uint32 length;
+		[size_is(length)] uint8 *data;
+	} drsuapi_DsGetNT4ChangeLogRequest1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] drsuapi_DsGetNT4ChangeLogRequest1 req1;
+	} drsuapi_DsGetNT4ChangeLogRequest;
+
+	typedef struct {
+		[range(0,0x00A00000)] uint32 length1;
+		[range(0,0x00A00000)] uint32 length2;
+		hyper unknown1;
+		NTTIME time2;
+		hyper unknown3;
+		NTTIME time4;
+		hyper unknown5;
+		NTTIME time6;
+		NTSTATUS status;
+		[size_is(length1)] uint8 *data1;
+		[size_is(length2)] uint8 *data2;
+	} drsuapi_DsGetNT4ChangeLogInfo1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] drsuapi_DsGetNT4ChangeLogInfo1 info1;
+	} drsuapi_DsGetNT4ChangeLogInfo;
+
+	WERROR drsuapi_DsGetNT4ChangeLog(
+		[in] policy_handle *bind_handle,
+		[in,out] uint32 level,
+		[in] [switch_is(level)] drsuapi_DsGetNT4ChangeLogRequest req,
+		[out] [switch_is(level)] drsuapi_DsGetNT4ChangeLogInfo info
+		);
 
 	/*****************/
 	/* Function 0x0c */
