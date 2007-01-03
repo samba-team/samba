@@ -4,6 +4,7 @@
 # released under the GNU GPL
 
 package Parse::Pidl::Samba4::TDR;
+use Parse::Pidl qw(fatal);
 use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 
@@ -20,7 +21,6 @@ sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $ret .= $tabs.(shift)."\n"; }
 sub pidl_hdr($) { $ret_hdr .= (shift)."\n"; }
-sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 sub typearg($) { 
 	my $t = shift; 
 	return(", const char *name") if ($t eq "print");

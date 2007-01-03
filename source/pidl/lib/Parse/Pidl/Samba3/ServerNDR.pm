@@ -7,6 +7,7 @@
 package Parse::Pidl::Samba3::ServerNDR;
 
 use strict;
+use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(hasType getType mapType scalar_is_reference);
 use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
@@ -22,8 +23,6 @@ sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $res .= $tabs.(shift)."\n"; }
 sub pidl_hdr($) { $res_hdr .= (shift)."\n"; }
-sub fatal($$) { my ($e,$s) = @_; die("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
-sub warning($$) { my ($e,$s) = @_; warn("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
 sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
 sub AllocOutVar($$$$)
