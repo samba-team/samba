@@ -1,4 +1,48 @@
+2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/headers.h: Include <windc_plugin.h>.
+
+	* kdc/Makefile.am: Include windc.c and use windc_plugin.h
+
+	* kdc/krb5tgs.c: Call callbacks for emulating a Windows Domain
+	Controller.
+
+	* kdc/kerberos5.c: Call callbacks for emulating a Windows Domain
+	Controller.  Move the some of the log related stuff to its own
+	function.
+
+	* kdc/config.c: Init callbacks for emulating a Windows Domain
+	Controller.
+
+	* kdc/windc.c: Rename the init function to windc instead of pac.
+
+	* kdc/windc.c: Callbacks specific to emulating a Windows Domain
+	Controller.
+
+	* kdc/windc_plugin.h: Callbacks specific to emulating a Windows
+	Domain Controller.
+
+	* lib/krb5/Makefile.am: add krb5_HEADERS to build_HEADERZ
+
+	* lib/krb5/pac.c: Support all keyed checksum types.
+	
 2007-01-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pac.c (krb5_pac_get_types): Return list of types.
+	
+	* lib/krb5/test_pac.c: test krb5_pac_get_types
+
+	* lib/krb5/krbhst.c: Add KRB5_KRBHST_KCA.
+
+	* lib/krb5/krbhst.c: Add KRB5_KRBHST_KCA.
+
+	* lib/krb5/krb5.h: Add KRB5_KRBHST_KCA.
+
+	* lib/krb5/test_pac.c: test Add/remove pac buffer functions.
+
+	* lib/krb5/pac.c: Add/remove pac buffer functions.
+
+	* lib/krb5/pac.c: sprinkle const
 
 	* lib/krb5/pac.c: rename DCHECK to CHECK
 	
