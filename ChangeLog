@@ -1,5 +1,9 @@
 2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/config.c: spelling
+
+	* lib/krb5/krb5.h: typedef for krb5_pac.
+
 	* kdc/headers.h: Include <windc_plugin.h>.
 
 	* kdc/Makefile.am: Include windc.c and use windc_plugin.h
