@@ -701,6 +701,7 @@ function provision_guess()
 	subobj.LDAPMODULE = "entryUUID";
 	subobj.LDAPMODULES = "objectguid";
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
+	subobj.ACI = "# no aci for local ldb";
 	return subobj;
 }
 

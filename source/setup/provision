@@ -31,7 +31,8 @@ options = GetOptions(ARGV,
 		'blank',
 		'ldap-base',
 		'ldap-backend=s',
-                'ldap-module=s');
+                'ldap-module=s',
+                'aci=s');
 
 if (options == undefined) {
    println("Failed to parse options");
@@ -81,7 +82,7 @@ provision [options]
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
  --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
-
+ --aci=         ACI             An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server
 You must provide at least a realm and domain
 
 ");
@@ -111,6 +112,9 @@ var subobj = provision_guess();
 for (r in options) {
 	var key = strupper(join("", split("-", r)));
 	subobj[key] = options[r];
+}
+if (options["aci"] != undefined) {
+	println("set ACI: " + subobj["ACI"]);
 }
 
 if (options["ldap-backend"] != undefined) {
