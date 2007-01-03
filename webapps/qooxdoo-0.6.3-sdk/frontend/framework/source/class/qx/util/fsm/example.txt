@@ -3,10 +3,10 @@ var state;
 var trans;
 
 // Create a new finite state machine called "Test Machine"
-fsm = new qx.util.finitestatemachine.Fsm("Test machine");
+fsm = new qx.util.fsm.FiniteStateMachine("Test machine");
 
 // State S1
-state = new qx.util.finitestatemachine.State(
+state = new qx.util.fsm.State(
   // State name
   "S1",
 
@@ -58,9 +58,9 @@ state = new qx.util.finitestatemachine.State(
     };
 
     // also available, in same format as actionsBeforeOnentry:
-    //   "actionsAfterOnentry",
-    //   "actionsBeforeOnexit"
-    //   "actionsAfterOnexit"
+    //   "autoActionsAfterOnentry",
+    //   "autoActionsBeforeOnexit"
+    //   "autoActionsAfterOnexit"
 
     // Events handled by this state, or queued for processing by a future state
     "events" :
@@ -70,7 +70,7 @@ state = new qx.util.finitestatemachine.State(
       // to the state, until the predicate for a transition returns true (or
       // no predicate is specified for the transition, which is an implicit
       // "true") That transition will be used.
-      "complete"  : qx.util.finitestatemachine.Fsm.EventHandling.PREDICATE,
+      "complete"  : qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE,
 
       // The event type "interval" has two objects specified by their
       // "friendly name".  The action when an event of type "interval" occurs
@@ -84,7 +84,7 @@ state = new qx.util.finitestatemachine.State(
         // If the target of the event was the object to which we have given
         // the friendly name "timeout", then enqueue this event for possible
         // processing by a future state.
-        "timeout" : qx.util.finitestatemachine.Fsm.EventHandling.BLOCKED
+        "timeout" : qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
       },
 
         // The event type "execute", too, has two objects specified by their
@@ -94,12 +94,12 @@ state = new qx.util.finitestatemachine.State(
         // If the target of the event was the object to which we have given
         // the friend name "ok", search the transitions in order looking for
         // one where the predicate is true
-        "ok"      : qx.util.finitestatemachine.Fsm.EventHandling.PREDICATE
+        "ok"      : qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE
 
         // If the target of the event was the object to which we have given
         // the friendly name "restart", then enqueue this event for possible
         // processing by a future state.
-        "restart" : qx.util.finitestatemachine.Fsm.EventHandling.BLOCKED
+        "restart" : qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
       }
 
       // all events other than those which are handled or blocked are ignored.
@@ -110,7 +110,7 @@ state = new qx.util.finitestatemachine.State(
 fsm.addState(state);
 
 // Transition from S1 to S2 due to event 1
-trans = new qx.util.finitestatemachine.Transition(
+trans = new qx.util.fsm.Transition(
   // Transition name
   "S1_S2_ev1",
 
@@ -143,7 +143,7 @@ trans = new qx.util.finitestatemachine.Transition(
     // the state which was found at the top of the stack.  States are added to
     // the state stack by calling fsm.pushState() during a state's onexit
     // function or by a transition's action function.
-    "nextState" : qx.util.finintestatemachine.Fsm.StateChange.POP_STATE_STACK,
+    "nextState" : qx.util.fsm.FiniteStateMachine.StateChange..POP_STATE_STACK,
 
     // action taken during transisition
     "action"    :
@@ -157,7 +157,7 @@ trans = new qx.util.finitestatemachine.Transition(
 state.addTransition(trans);
 
 // Default transition (any event): remain in current state
-trans = new qx.util.finitestatemachine.Transition(
+trans = new qx.util.fsm.Transition(
   "S1_S1_default",
   {
     // true or undefined : always pass
@@ -174,7 +174,7 @@ trans = new qx.util.finitestatemachine.Transition(
       },
               
     // return to current state
-    "nextState" : qx.util.finitestatemacine.CURRENT_STATE,
+    "nextState" : qx.util.fsm.FiniteStateMachine.StateChange.CURRENT_STATE,
   });
 state.addTransition(trans);
 

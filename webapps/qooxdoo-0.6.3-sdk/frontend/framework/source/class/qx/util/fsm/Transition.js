@@ -86,7 +86,7 @@
  *         - One of the constants:
  *           - qx.util.fsm.FiniteStateMachine.StateChange.CURRENT_STATE:
  *               Remain in whatever is the current state
- *           - qx.util.fsm.FiniteStateMachine.StateChange.PREVIOUS_STATE:
+ *           - qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK:
  *               Transition to the state at the top of the saved-state stack,
  *               and remove the top element from the saved-state stack.
  *               Elements are added to the saved-state stack using
@@ -308,7 +308,8 @@ qx.Proto._checkNextState = function(propValue, propData)
     switch(propValue)
     {
     case qx.util.fsm.FiniteStateMachine.StateChange.CURRENT_STATE:
-    case qx.util.fsm.FiniteStateMachine.StateChange.PREVIOUS_STATE:
+    case qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK:
+    case qx.util.fsm.FiniteStateMachine.StateChange.TERMINATE:
       return propValue;
 
     default:
