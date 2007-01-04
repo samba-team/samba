@@ -392,6 +392,18 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 	delete_dir = (lck->delete_on_close | lck->initial_delete_on_close);
 
+	if (delete_dir) {
+		int i;
+		/* See if others still have the dir open. If this is the
+		 * case, then don't delete */
+		for (i=0; i<lck->num_share_modes; i++) {
+			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+				delete_dir = False;
+				break;
+			}
+		}
+	}
+
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir &&
 				lck->delete_token) {
