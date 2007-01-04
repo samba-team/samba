@@ -1,5 +1,9 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa.c: Add i2d_RSAPrivateKey.
+
+	* rsa.h: Add i2d_RSAPrivateKey.
+
 	* test_rsa.c: test RSA_generate_key_ex
 
 	* rsa-imath.c: Add imath_rsa_generate_key.
