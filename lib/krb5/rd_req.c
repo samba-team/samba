@@ -513,6 +513,7 @@ krb5_verify_ap_req2(krb5_context context,
 struct krb5_rd_req_in_ctx {
     krb5_keytab keytab;
     krb5_keyblock *keyblock;
+    krb5_boolean no_pac_check;
 };
 
 struct krb5_rd_req_out_ctx {
@@ -544,6 +545,16 @@ krb5_rd_req_in_set_keytab(krb5_context context,
     in->keytab = keytab; /* XXX should make copy */
     return 0;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_pac_check(krb5_context context, 
+			     krb5_rd_req_in_ctx in,
+			     krb5_boolean flag)
+{
+    in->no_pac_check = !flag;
+    return 0;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_in_set_keyblock(krb5_context context, 
@@ -826,7 +837,7 @@ krb5_rd_req_ctx(krb5_context context,
 	goto out;
 
     /* If there is a PAC, verify its server signature */
-    {
+    if (inctx->no_pac_check == FALSE) {
 	krb5_pac pac;
 	krb5_data data;
 
