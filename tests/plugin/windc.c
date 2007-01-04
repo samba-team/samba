@@ -56,12 +56,19 @@ pac_verify(void *ctx, krb5_context context,
     return 0;
 }
 
-
+static krb5_error_code 
+client_access(void *ctx, krb5_context context, 
+	      struct hdb_entry_ex *client, KDC_REQ *req)
+{
+    krb5_warnx(context, "client_access");
+    return 0;
+}
 
 krb5plugin_windc_ftable windc = {
     KRB5_WINDC_PLUGING_MINOR,
     windc_init,
     windc_fini,
     pac_generate,
-    pac_verify
+    pac_verify,
+    client_access
 };
