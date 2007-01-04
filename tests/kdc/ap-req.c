@@ -42,10 +42,13 @@ RCSID("$Id$");
 #include <getarg.h>
 #include <roken.h>
 
+static int verify_pac = 0;
 static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
+    {"verify-pac",0,	arg_flag,	&verify_pac,
+     "verify the PAC", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
     {"help",	0,	arg_flag,	&help_flag,
@@ -133,6 +136,31 @@ test_ap(krb5_context context,
     krb5_data_free(&data);
     krb5_auth_con_free(context, client_ac);
     krb5_auth_con_free(context, server_ac);
+
+    if (verify_pac) {
+	krb5_pac pac;
+
+	ret = krb5_ticket_get_authorization_data_type(context,
+						      ticket,
+						      KRB5_AUTHDATA_WIN2K_PAC,
+						      &data);
+	if (ret)
+	    krb5_errx(context, 1, "get pac");
+
+	ret = krb5_pac_parse(context, data.data, data.length, &pac);
+	if (ret)
+	    krb5_errx(context, 1, "pac parse");
+	
+
+	ret = krb5_pac_verify(context, pac, ticket->ticket.authtime,
+			       ticket->client, &ticket->ticket.key, NULL);
+	if (ret)
+	    krb5_errx(context, 1, "pac verify");
+
+	krb5_pac_free(context, pac);
+    }
+
+    krb5_free_ticket(context, ticket);
 }
 
 
