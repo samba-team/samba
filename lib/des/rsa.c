@@ -380,6 +380,50 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 }
 
 int
+i2d_RSAPrivateKey(RSA *rsa, unsigned char **pp)
+{
+    RSAPrivateKey data;
+    size_t size;
+    int ret;
+
+    memset(&data, 0, sizeof(data));
+
+    ret  = bn2heim_int(rsa->n, &data.modulus)
+    ret |= bn2heim_int(rsa->e, &data.publicExponent);
+    ret |= bn2heim_int(rsa->d, &data.privateExponent);
+    ret |= bn2heim_int(rsa->p, &data.prime1);
+    ret |= bn2heim_int(rsa->q, &data.prime2);
+    ret |= bn2heim_int(rsa->dmp1, &data.exponent1);
+    ret |= bn2heim_int(rsa->dmq1, &data.exponent2);
+    if (ret) {
+	free_RSAPrivateKey(&data);
+	return -1;
+    }
+
+    if (pp == NULL) {
+	size = length_RSAPrivateKey(&data);
+	free_RSAPrivateKey(&data);
+    } else {
+	void *p;
+	size_t len;
+
+	ASN1_MALLOC_ENCODE(RSAPrivateKey, p, len, &data, &size, ret);
+	free_RSAPrivateKey(&data);
+	if (ret)
+	    return -1;
+	if (len != size)
+	    abort();
+
+	memcpy(*pp, p, size);
+	free(p);
+
+	*pp += size;
+
+    }
+    return size;
+}
+
+int
 i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
 {
     RSAPublicKey data;
