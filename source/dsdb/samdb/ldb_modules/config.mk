@@ -12,6 +12,19 @@ PUBLIC_DEPENDENCIES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_repl_mata_data
+[MODULE::ldb_repl_meta_data]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
+INIT_FUNCTION = repl_meta_data_module_init
+OBJ_FILES = \
+		repl_meta_data.o
+PUBLIC_DEPENDENCIES = \
+		LIBNDR NDR_MISC
+# End MODULE ldb_objectguid
+################################################
+
+################################################
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = ldb
