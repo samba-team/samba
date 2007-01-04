@@ -28,6 +28,13 @@
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/dlinklist.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "system/time.h"
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
@@ -99,15 +106,40 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 				 TALLOC_CTX *mem_ctx,
 				 struct ldb_message **_msg)
 {
+	NTSTATUS nt_status;
 	WERROR status;
 	uint32_t i;
 	struct ldb_message *msg;
+	struct replPropertyMetaDataBlob md;
+	struct ldb_val md_value;
+	struct drsuapi_DsReplicaObjMetaDataCtr mdc;
+	struct ldb_val guid_value;
+	NTTIME whenChanged = 0;
+	time_t whenChanged_t;
+	const char *whenChanged_s;
+	const char *rdn_name;
+	const struct ldb_val *rdn_value;
+	const struct dsdb_attribute *rdn_attr;
+	uint32_t rdn_attid;
+	struct drsuapi_DsReplicaAttribute *name_a;
+	struct drsuapi_DsReplicaMetaData *name_d;
+	struct replPropertyMetaData1 *rdn_m;
+	struct drsuapi_DsReplicaObjMetaData *rdn_mc;
+	int ret;
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
 	msg->dn			= ldb_dn_new(msg, s->ldb, obj->object.identifier->dn);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+
+	rdn_name	= ldb_dn_get_rdn_name(msg->dn);
+	rdn_attr	= dsdb_attribute_by_lDAPDisplayName(s->schema, rdn_name);
+	if (!rdn_attr) {
+		return WERR_FOOBAR;
+	}
+	rdn_attid	= rdn_attr->attributeID_id;
+	rdn_value	= ldb_dn_get_rdn_val(msg->dn);
 
 	msg->num_elements	= obj->object.attribute_ctr.num_attributes;
 	msg->elements		= talloc_array(msg, struct ldb_message_element,
@@ -121,12 +153,127 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 
+	if (obj->object.attribute_ctr.num_attributes != 0 && !obj->meta_data_ctr) {
+		return WERR_FOOBAR;
+	}
+
+	if (obj->object.attribute_ctr.num_attributes != obj->meta_data_ctr->count) {
+		return WERR_FOOBAR;
+	}
+
+	md.version		= 1;
+	md.reserved		= 0;
+	md.ctr.ctr1.count	= obj->meta_data_ctr->count;
+	md.ctr.ctr1.reserved	= 0;
+	md.ctr.ctr1.array	= talloc_array(mem_ctx,
+					       struct replPropertyMetaData1,
+					       md.ctr.ctr1.count + 1);
+	W_ERROR_HAVE_NO_MEMORY(md.ctr.ctr1.array);
+
+	mdc.count	= obj->meta_data_ctr->count;
+	mdc.reserved	= 0;
+	mdc.array	= talloc_array(mem_ctx,
+				       struct drsuapi_DsReplicaObjMetaData,
+				       mdc.count + 1);
+	W_ERROR_HAVE_NO_MEMORY(mdc.array);
+
+	for (i=0; i < obj->meta_data_ctr->count; i++) {
+		struct drsuapi_DsReplicaAttribute *a;
+		struct drsuapi_DsReplicaMetaData *d;
+		struct replPropertyMetaData1 *m;
+		struct drsuapi_DsReplicaObjMetaData *mc;
+
+		a = &obj->object.attribute_ctr.attributes[i];
+		d = &obj->meta_data_ctr->meta_data[i];
+		m = &md.ctr.ctr1.array[i];
+		mc = &mdc.array[i];
+
+		m->attid			= a->attid;
+		m->version			= d->version;
+		m->orginating_time		= d->orginating_time;
+		m->orginating_invocation_id	= d->orginating_invocation_id;
+		m->orginating_usn		= d->orginating_usn;
+		m->local_usn			= 0;
+
+		mc->attribute_name		= dsdb_lDAPDisplayName_by_id(s->schema, a->attid);
+		mc->version			= d->version;
+		mc->originating_last_changed	= d->orginating_time;
+		mc->originating_dsa_invocation_id= d->orginating_invocation_id;
+		mc->originating_usn		= d->orginating_usn;
+		mc->local_usn			= 0;
+
+		if (d->orginating_time > whenChanged) {
+			whenChanged = d->orginating_time;
+		}
+
+		if (a->attid == DRSUAPI_ATTRIBUTE_name) {
+			name_a = a;
+			name_d = d;
+			rdn_m = &md.ctr.ctr1.array[md.ctr.ctr1.count];
+			rdn_mc = &mdc.array[mdc.count];
+		}
+	}
+
+	if (!name_d) {
+		return WERR_FOOBAR;
+	}
+
+	ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+
+	nt_status = ndr_push_struct_blob(&guid_value, msg, &obj->object.identifier->guid,
+					 (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ntstatus_to_werror(nt_status);
+	}
+	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+
+	whenChanged_t = nt_time_to_unix(whenChanged);
+	whenChanged_s = ldb_timestring(msg, whenChanged_t);
+	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
+	ret = ldb_msg_add_string(msg, "whenChanged", whenChanged_s);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+
+	rdn_m->attid				= rdn_attid;
+	rdn_m->version				= name_d->version;
+	rdn_m->orginating_time			= name_d->orginating_time;
+	rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
+	rdn_m->orginating_usn			= name_d->orginating_usn;
+	rdn_m->local_usn			= 0;
+	md.ctr.ctr1.count++;
+
+	rdn_mc->attribute_name			= rdn_attr->lDAPDisplayName;
+	rdn_mc->version				= name_d->version;
+	rdn_mc->originating_last_changed	= name_d->orginating_time;
+	rdn_mc->originating_dsa_invocation_id	= name_d->orginating_invocation_id;
+	rdn_mc->originating_usn			= name_d->orginating_usn;
+	rdn_mc->local_usn			= 0;
+	mdc.count++;
+
+	nt_status = ndr_push_struct_blob(&md_value, msg, &md,
+					 (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ntstatus_to_werror(nt_status);
+	}
+	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &md_value, NULL);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+
 	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
 		struct ldb_ldif ldif;
 		fprintf(stdout, "#\n");
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = msg;
 		ldb_ldif_write_file(s->ldb, stdout, &ldif);
+		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjMetaDataCtr, &mdc);
 	}
 
 	*_msg = msg;
@@ -296,6 +443,9 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	uint32_t i;
 
 	switch (c->ctr_level) {
 	case 1:
@@ -303,12 +453,16 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		total_object_count	= c->ctr1->total_object_count;
 		object_count		= c->ctr1->object_count;
 		first_object		= c->ctr1->first_object;
+		linked_attributes_count	= 0;
+		linked_attributes	= NULL;
 		break;
 	case 6:
 		mapping_ctr		= &c->ctr6->mapping_ctr;
 		total_object_count	= c->ctr6->total_object_count;
 		object_count		= c->ctr6->object_count;
 		first_object		= c->ctr6->first_object;
+		linked_attributes_count	= c->ctr6->linked_attributes_count;
+		linked_attributes	= c->ctr6->linked_attributes;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -332,6 +486,32 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		status = test_object_to_ldb(s, c, cur, s, &msg);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
+		}
+	}
+
+	for (i=0; i < linked_attributes_count; i++) {
+		const struct dsdb_attribute *sa;
+
+		if (!linked_attributes[i].identifier) {
+			return NT_STATUS_FOOBAR;		
+		}
+
+		if (!linked_attributes[i].value.blob) {
+			return NT_STATUS_FOOBAR;		
+		}
+
+		sa = dsdb_attribute_by_attributeID_id(s->schema,
+						      linked_attributes[i].attid);
+		if (!sa) {
+			return NT_STATUS_FOOBAR;
+		}
+
+		if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+			DEBUG(0,("# %s\n", sa->lDAPDisplayName));
+			NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, &linked_attributes[i]);
+			dump_data(0,
+				linked_attributes[i].value.blob->data,
+				linked_attributes[i].value.blob->length);
 		}
 	}
 
