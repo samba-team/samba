@@ -822,6 +822,36 @@ krb5_rd_req_ctx(krb5_context context,
 			     &o->ap_req_options,
 			     &o->ticket);
 
+    if (ret)
+	goto out;
+
+    /* If there is a PAC, verify its server signature */
+    {
+	krb5_pac pac;
+	krb5_data data;
+
+	ret = krb5_ticket_get_authorization_data_type(context,
+						      o->ticket,
+						      KRB5_AUTHDATA_WIN2K_PAC,
+						      &data);
+	if (ret == 0) {
+	    ret = krb5_pac_parse(context, data.data, data.length, &pac);
+	    krb5_data_free(&data);
+	    if (ret)
+		goto out;
+	
+	    ret = krb5_pac_verify(context,
+				  pac, 
+				  o->ticket->ticket.authtime,
+				  o->ticket->client, 
+				  &o->ticket->ticket.key, 
+				  NULL);
+	    krb5_pac_free(context, pac);
+	    if (ret)
+		goto out;
+	}
+	ret = 0;
+    }
 out:
     if (ret || outctx == NULL) {
 	krb5_rd_req_out_ctx_free(context, o);
