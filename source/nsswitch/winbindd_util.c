@@ -529,9 +529,6 @@ BOOL init_domain_list(void)
 					     &cache_methods, &our_sid);
 		domain->primary = True;
 		setup_domain_child(domain, &domain->child, NULL);
-#if 0	/* old code needed to get the parent domain */
-		init_dc_connection(domain);
-#endif
 		
 		/* Even in the parent winbindd we'll need to
 		   talk to the DC, so try and see if we can
