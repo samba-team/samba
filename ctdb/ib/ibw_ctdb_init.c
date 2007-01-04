@@ -135,7 +135,9 @@ static const struct ctdb_methods ctdb_ibw_methods = {
 	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
 	.allocate_pkt = ctdb_ibw_allocate_pkt
-	/* TODO: missing node_disconnect & final_stop upcalls */
+	
+//	.dealloc_pkt = ctdb_ibw_dealloc_pkt
+//	.stop = ctdb_ibw_stop
 };
 
 /*

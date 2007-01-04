@@ -628,14 +628,13 @@ static inline int ibw_wc_send(struct ibw_conn *conn, struct ibv_wc *wc)
 	}
 
 	if (pconn->queue) {
-		char	*buf;
-
-		DEBUG(10, ("ibw_wc_send#queue %u", (int)wc->wr_id));
+		DEBUG(10, ("ibw_wc_send#queue %u\n", (int)wc->wr_id));
 		p = pconn->queue;
 		DLIST_REMOVE(pconn->queue, p);
 
-		buf = (p->msg_large!=NULL) ? p->msg_large : p->msg;
-		ibw_send(conn, buf, p, ntohl(*(uint32_t *)buf));
+		assert(p->queued_msg!=NULL);
+		ibw_send(conn, p->queued_msg, p, ntohl(*(uint32_t *)p->queued_msg));
+		p->queued_msg = NULL;
 	}
 
 	return 0;
@@ -1033,15 +1032,15 @@ int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, uint32_t l
 		DLIST_REMOVE(pconn->wr_list_avail, p);
 		DLIST_ADD(pconn->wr_list_used, p);
 
-		if (len + sizeof(uint32_t) <= pctx->opts.avg_send_size) {
-			*buf = (void *)(p->msg + sizeof(uint32_t));
+		if (len <= pctx->opts.avg_send_size) {
+			*buf = (void *)p->msg;
 		} else {
-			p->msg_large = ibw_alloc_mr(pctx, pconn, len + sizeof(uint32_t), &p->mr_large);
+			p->msg_large = ibw_alloc_mr(pctx, pconn, len, &p->mr_large);
 			if (!p->msg_large) {
 				sprintf(ibw_lasterr, "ibw_alloc_mr#1 failed\n");
 				goto error;
 			}
-			*buf = (void *)(p->msg_large + sizeof(uint32_t));
+			*buf = (void *)p->msg_large;
 		}
 	} else {
 		DEBUG(10, ("ibw_alloc_send_buf#2: cmid=%u, len=%d\n", (uint32_t)pconn->cm_id, len));
@@ -1065,12 +1064,12 @@ int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, uint32_t l
 		}
 		DLIST_REMOVE(pconn->extra_avail, p);
 
-		p->msg_large = ibw_alloc_mr(pctx, pconn, len + sizeof(uint32_t), &p->mr_large);
+		p->msg_large = ibw_alloc_mr(pctx, pconn, len, &p->mr_large);
 		if (!p->msg_large) {
 			sprintf(ibw_lasterr, "ibw_alloc_mr#2 failed");
 			goto error;
 		}
-		*buf = (void *)(p->msg_large + sizeof(uint32_t));
+		*buf = (void *)p->msg_large;
 	}
 
 	*key = (void *)p;
@@ -1110,13 +1109,12 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 		DEBUG(10, ("ibw_wc_send#1(cmid: %u, wrid: %u, n: %d)\n",
 			(uint32_t)pconn->cm_id, (uint32_t)wr.wr_id, len));
 
+		list.addr = (uintptr_t)buf;
 		if (p->msg_large==NULL) {
 			list.lkey = pconn->mr_send->lkey;
-			list.addr = (uintptr_t) p->msg;
 		} else {
 			assert(p->mr_large!=NULL);
 			list.lkey = p->mr_large->lkey;
-			list.addr = (uintptr_t) p->msg_large;
 		}
 
 		rc = ibv_post_send(pconn->cm_id->qp, &wr, &bad_wr);
@@ -1140,6 +1138,7 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 
 	/* to be sent by ibw_wc_send */
 	DLIST_ADD_END(pconn->queue, p, struct ibw_wr *); /* TODO: optimize */
+	p->queued_msg = buf;
 
 	return 0;
 }

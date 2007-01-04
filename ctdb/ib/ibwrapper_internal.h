@@ -36,6 +36,8 @@ struct ibw_wr {
 	char	*msg_large; /* allocated specially for "large" message */
 	struct ibv_mr *mr_large;
 
+	char	*queued_msg; /* set at ibw_send - can be different than above */
+
 	struct ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
 };
 
