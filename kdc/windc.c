@@ -94,3 +94,13 @@ _kdc_pac_verify(krb5_context context,
     }
     return (windcft->pac_verify)(windcctx, context, client, pac);
 }
+
+krb5_error_code
+_kdc_windc_client_access(krb5_context context,
+			 struct hdb_entry_ex *client,
+			 KDC_REQ *req)
+{
+    if (windcft == NULL)
+	return 0;
+    return (windcft->client_access)(windcctx, context, client, req);
+}
