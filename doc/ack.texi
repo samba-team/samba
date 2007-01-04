@@ -58,6 +58,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Michael B Allen
 @item Douglas E Engert
 @item Jason McIntyre
+@item Andreaw Bartlett
 @item and we hope that those not mentioned here will forgive us.
 @end table
 
