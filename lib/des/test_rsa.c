@@ -65,7 +65,7 @@ check_rsa(const unsigned char *in, size_t len, RSA *rsa, int padding)
 
     keylen = RSA_private_encrypt(len, in, res, rsa, padding);
     if (keylen <= 0)
-	errx(1, "failed to private encrypt: %d", (int)len, (int)keylen);
+	errx(1, "failed to private encrypt: %d %d", (int)len, (int)keylen);
     
     if (keylen > RSA_size(rsa))
 	errx(1, "keylen > RSA_size(rsa)");
@@ -101,6 +101,12 @@ check_rsa(const unsigned char *in, size_t len, RSA *rsa, int padding)
 
     free(res);
     free(res2);
+}
+
+static int
+cb_func(int a, int b, BN_GENCB *c)
+{
+    return 0;
 }
 
 /*
@@ -173,10 +179,7 @@ main(int argc, char **argv)
     
     printf("rsa %s\n", ENGINE_get_RSA(engine)->name);
 
-    if (rsa_key == NULL)
-	errx(1, "missing rsa key flag!");
-
-    {
+    if (rsa_key) {
 	unsigned char buf[1024 * 4];
 	const unsigned char *p;
 	size_t size;
@@ -199,44 +202,69 @@ main(int argc, char **argv)
 	    err(1, "failed to parse key in file %s", rsa_key);
 	
 	RSA_set_method(rsa, ENGINE_get_RSA(engine));
+
+
+	/*
+	 * Assuming that you use the RSA key in the distribution, this
+	 * test will generate a signature have a starting zero and thus
+	 * will generate a checksum that is 127 byte instead of the
+	 * checksum that is 128 byte (like the key).
+	 */
+	{
+	    const unsigned char sha1[20] = {
+		0x6d, 0x33, 0xf9, 0x40, 0x75, 0x5b, 0x4e, 0xc5, 0x90, 0x35, 
+		0x48, 0xab, 0x75, 0x02, 0x09, 0x76, 0x9a, 0xb4, 0x7d, 0x6b
+	    };
+	    
+	    check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
+	}
+	
+	for (i = 0; i < 128; i++) {
+	    unsigned char sha1[20];
+	    
+	    RAND_bytes(sha1, sizeof(sha1));
+	    check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
+	}
+	for (i = 0; i < 128; i++) {
+	    unsigned char des3[21];
+
+	    RAND_bytes(des3, sizeof(des3));
+	    check_rsa(des3, sizeof(des3), rsa, RSA_PKCS1_PADDING);
+	}
+	for (i = 0; i < 128; i++) {
+	    unsigned char aes[32];
+
+	    RAND_bytes(aes, sizeof(aes));
+	    check_rsa(aes, sizeof(aes), rsa, RSA_PKCS1_PADDING);
+	}
+
+	RSA_free(rsa);
     }
 
-
-    /*
-     * Assuming that you use the RSA key in the distribution, this
-     * test will generate a signature have a starting zero and thus
-     * will generate a checksum that is 127 byte instead of the
-     * checksum that is 128 byte (like the key).
-     */
     {
-	const unsigned char sha1[20] = {
-	    0x6d, 0x33, 0xf9, 0x40, 0x75, 0x5b, 0x4e, 0xc5, 0x90, 0x35, 
-	    0x48, 0xab, 0x75, 0x02, 0x09, 0x76, 0x9a, 0xb4, 0x7d, 0x6b
-	};
+	BN_GENCB cb;
+	BIGNUM *e;
 
-	check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
+	rsa = RSA_new_method(engine);
+
+	e = BN_new();
+	BN_set_word(e, 0x10001);
+	
+	BN_GENCB_set(&cb, cb_func, NULL);
+
+	if (RSA_generate_key_ex(rsa, 1024, e, &cb) != 1)
+	    errx(1, "RSA_generate_key_ex");
+
+	BN_free(e);
+	
+	{
+	    unsigned char sha1[20];
+	    RAND_bytes(sha1, sizeof(sha1));
+	    check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
+	}
+
+	RSA_free(rsa);
     }
-
-    for (i = 0; i < 128; i++) {
-	unsigned char sha1[20];
-
-	RAND_bytes(sha1, sizeof(sha1));
-	check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
-    }
-    for (i = 0; i < 128; i++) {
-	unsigned char des3[21];
-
-	RAND_bytes(des3, sizeof(des3));
-	check_rsa(des3, sizeof(des3), rsa, RSA_PKCS1_PADDING);
-    }
-    for (i = 0; i < 128; i++) {
-	unsigned char aes[32];
-
-	RAND_bytes(aes, sizeof(aes));
-	check_rsa(aes, sizeof(aes), rsa, RSA_PKCS1_PADDING);
-    }
-
-    RSA_free(rsa);
 
     ENGINE_finish(engine);
 
