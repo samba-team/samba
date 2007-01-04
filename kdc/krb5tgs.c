@@ -1697,7 +1697,9 @@ server_lookup:
 	    kvno = server->entry.kvno;
 	}
 	
-	krb5_generate_random_keyblock(context, etype, &sessionkey);
+	ret = krb5_generate_random_keyblock(context, etype, &sessionkey);
+	if (ret)
+	    goto out;
     }
 
     /* check PAC if there is one */
