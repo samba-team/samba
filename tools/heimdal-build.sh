@@ -46,6 +46,7 @@ hversion=
 cvsroot=
 cvsflags=
 autotools=no
+distcheck=no
 
 while true
 do
@@ -83,6 +84,10 @@ do
 		;;
 	--release)
 		hversion="heimdal-$2"
+		shift 2
+		;;
+	--distcheck)
+		distcheck=yes
 		shift 2
 		;;
 	--result-directory)
@@ -243,6 +248,15 @@ if [ $? != 0 ] ; then
     echo Make check failed
     status=${status:-make check}
 fi
+
+if [ "$distcheck" = yes ] ; then
+    echo make distcheck >> ab.txt
+    if [ $? != 0 ] ; then
+        echo Make check failed
+        status=${status:-make distcheck}
+    fi
+fi
+
 status=${status:-ok}
 
 echo "done: ${status}"
