@@ -823,6 +823,63 @@ read_private_key(const char *fn, hx509_private_key *key)
     return 0;
 }
 
+static void
+get_key(const char *fn, const char *type, int optbits, 
+	hx509_private_key *signer)
+{
+    int ret;
+
+    if (type) {
+	BIGNUM *e;
+	RSA *rsa;
+	unsigned char *p0, *p;
+	size_t len;
+	int bits = 1024;
+
+	if (fn == NULL)
+	    errx(1, "no key argument, don't know here to store key");
+	
+	if (strcasecmp(type, "rsa") != 0)
+	    errx(1, "can only handle rsa keys for now");
+	    
+	e = BN_new();
+	BN_set_word(e, 0x10001);
+
+	if (optbits)
+	    bits = optbits;
+
+	rsa = RSA_new();
+	if(rsa == NULL)
+	    errx(1, "RSA_new failed");
+
+	ret = RSA_generate_key_ex(rsa, bits, e, NULL);
+	if(ret != 1)
+	    errx(1, "RSA_new failed");
+
+	BN_free(e);
+
+	len = i2d_RSAPrivateKey(rsa, NULL);
+
+	p0 = p = malloc(len);
+	if (p == NULL)
+	    errx(1, "out of memory");
+	
+	i2d_RSAPrivateKey(rsa, &p);
+
+	rk_dumpdata(fn, p0, len);
+	memset(p0, 0, len);
+	free(p0);
+	
+	RSA_free(rsa);
+
+    } else if (fn == NULL)
+	err(1, "no private key");
+
+    ret = read_private_key(fn, signer);
+    if (ret)
+	err(1, "read_private_key");
+}
+
 int
 request_create(struct request_create_options *opt, int argc, char **argv)
 {
@@ -835,12 +892,10 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 
     memset(&key, 0, sizeof(key));
 
-    if (opt->key_string) {
-	ret = read_private_key(opt->key_string, &signer);
-	if (ret)
-	    err(1, "read_private_key");
-    } else
-	errx(1, "key generation code not written yet");
+    get_key(opt->key_string, 
+	    opt->generate_key_string,
+	    opt->key_bits_integer,
+	    &signer);
     
     _hx509_request_init(context, &req);
 
@@ -880,14 +935,14 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 						  &key);
     free_SubjectPublicKeyInfo(&key);
     if (ret)
-	errx(1, "_hx509_request_set_SubjectPublicKeyInfo: %d", ret);
+	hx509_err(context, ret, 1, "_hx509_request_set_SubjectPublicKeyInfo");
 
     ret = _hx509_request_to_pkcs10(context,
 				   req,
 				   signer,
 				   &request);
     if (ret)
-	errx(1, "_hx509_request_to_pkcs10: %d\n", ret);
+	hx509_err(context, ret, 1, "_hx509_request_to_pkcs10");
 
     _hx509_free_private_key(&signer);
     _hx509_request_free(&req);
@@ -1222,13 +1277,15 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
     if (opt->ca_certificate_string == NULL && !opt->self_signed_flag)
 	errx(1, "--ca-certificate argument missing (not using --self-signed)");
-    if (opt->ca_private_key_string == NULL && opt->self_signed_flag)
+    if (opt->ca_private_key_string == NULL && opt->generate_key_string == NULL && opt->self_signed_flag)
 	errx(1, "--ca-private-key argument missing (using --self-signed)");
     if (opt->certificate_string == NULL)
 	errx(1, "--certificate argument missing");
-    if (opt->req_string == NULL) {
+    if (opt->req_string == NULL && opt->generate_key_string == NULL) {
 	if (!opt->self_signed_flag)
 	    errx(1, "--req argument missing");
+    } else if (opt->req_string && opt->generate_key_string) {
+	    errx(1, "can't do both --req and --generate-key");
     } else {
 	if (opt->ca_private_key_string)
 	    errx(1, "both --req and --ca-private-key used");
@@ -1261,7 +1318,11 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	hx509_query_free(context, q);
 	if (ret)
 	    hx509_err(context, ret, 1, "no CA certificate found");
-    }
+    } else if (opt->self_signed_flag) {
+	if (opt->generate_key_string == NULL && opt->ca_private_key_string == NULL)
+	    errx(1, "no signing private key");
+    } else
+	errx(1, "missing ca key");
 
     if (opt->ca_private_key_string) {
 
@@ -1300,6 +1361,22 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    errx(1, "copy_SubjectPublicKeyInfo: %d", ret);
 
 	free_CertificationRequest(&req);
+    }
+
+    if (opt->generate_key_string) {
+	hx509_private_key key;
+	
+	get_key(opt->key_string, 
+		opt->generate_key_string,
+		opt->key_bits_integer,
+		&key);
+
+	ret = _hx509_private_key2SPKI(context, key, &spki);
+	if (ret)
+	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);
+
+	if (opt->self_signed_flag)
+	    private_key = key;
     }
 
     if (opt->subject_string) {
