@@ -77,11 +77,15 @@ for ln in $LANGS; do
     echo $FNAME
     if test "$mode" = 'install'; then
       if [ "x$BOOKDIR" = "x" ]; then
-        cat $f | sed 's/@BOOKDIR@.*$//' > $f.tmp
+        cat $f | sed 's/@BOOKDIR@.*$//' > $FNAME.tmp
       else
-        cat $f | sed 's/@BOOKDIR@//' > $f.tmp
+        cat $f | sed 's/@BOOKDIR@//' > $FNAME.tmp
       fi
-      f=$f.tmp
+      if test ! -f "$FNAME.tmp"; then
+        echo "Cannot install $FNAME. Does $USER have privileges? "
+        exit 1
+      fi
+      f=$FNAME.tmp
       cp "$f" "$FNAME"
       rm -f "$f"
       if test ! -f "$FNAME"; then
