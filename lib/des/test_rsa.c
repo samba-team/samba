@@ -106,7 +106,7 @@ check_rsa(const unsigned char *in, size_t len, RSA *rsa, int padding)
 static int
 cb_func(int a, int b, BN_GENCB *c)
 {
-    return 0;
+    return 1;
 }
 
 /*
