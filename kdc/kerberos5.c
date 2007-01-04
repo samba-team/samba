@@ -1345,7 +1345,9 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    krb5_generate_random_keyblock(context, sessionetype, &et.key);
+    ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
+    if (ret)
+	goto out;
     copy_PrincipalName(&rep.cname, &et.cname);
     copy_Realm(&rep.crealm, &et.crealm);
     

@@ -971,8 +971,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
-	    krb5_generate_random_keyblock(context, enctype, 
-					  &client_params->reply_key);
+	    ret = krb5_generate_random_keyblock(context, enctype, 
+						&client_params->reply_key);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
@@ -1062,8 +1066,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	pa_type = KRB5_PADATA_PK_AS_REP_19;
 	rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
-	krb5_generate_random_keyblock(context, enctype, 
-				      &client_params->reply_key);
+	ret = krb5_generate_random_keyblock(context, enctype, 
+					    &client_params->reply_key);
+	if (ret) {
+	    free_PA_PK_AS_REP_Win2k(&rep);
+	    goto out;
+	}
 	ret = pk_mk_pa_reply_enckey(context,
 				    client_params,
 				    req,
