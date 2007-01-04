@@ -414,6 +414,10 @@ imath_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
 	CHECK(mp_int_gcd(&t1, &el, &t2), MP_OK);
     } while(mp_int_compare_value(&t2, 1) != 0);
 
+    /* make p > q */
+    if (mp_int_compare(&p, &q) < 0)
+	mp_int_swap(&p, &q);
+
     BN_GENCB_call(cb, 3, 1);
 
     /* calculate n,  		n = p * q */
