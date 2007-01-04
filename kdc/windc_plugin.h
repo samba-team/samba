@@ -39,12 +39,14 @@
 #include <krb5.h>
 
 /*
- * The generate function should allocate a krb5_pac using krb5_pac_init
- * and fill in the PAC structure for the principal using
+ * The PAC generate function should allocate a krb5_pac using
+ * krb5_pac_init and fill in the PAC structure for the principal using
  * krb5_pac_add_buffer.
  *
- * The verify function should verify all components in the PAC using
- * krb5_pac_get_types and krb5_pac_get_buffer for all types.
+ * The PAC verify function should verify all components in the PAC
+ * using krb5_pac_get_types and krb5_pac_get_buffer for all types.
+ *
+ * Check client access function check if the client is authorized.
  */
 
 struct hdb_entry_ex;
@@ -57,6 +59,11 @@ typedef krb5_error_code
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
 			       struct hdb_entry_ex *, krb5_pac);
 
+typedef krb5_error_code 
+(*krb5plugin_windc_client_access)(
+    void *, krb5_context, struct hdb_entry_ex *, KDC_REQ *);
+
+
 #define KRB5_WINDC_PLUGING_MINOR		1
 
 typedef struct krb5plugin_windc_ftable {
@@ -65,6 +72,7 @@ typedef struct krb5plugin_windc_ftable {
     void		(*fini)(void *);
     krb5plugin_windc_pac_generate	pac_generate;
     krb5plugin_windc_pac_verify		pac_verify;
+    krb5plugin_windc_client_access	client_access;
 } krb5plugin_windc_ftable;
 
 #endif /* HEIMDAL_KRB5_PAC_PLUGIN_H */
