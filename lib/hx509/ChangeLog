@@ -1,5 +1,8 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Try all formats on the binary file before giving up,
+	this way we can handle binary rsa keys too.
+
 	* data/key2.der: new test key
 
 2007-01-04  David Love  <fx@gnu.org>

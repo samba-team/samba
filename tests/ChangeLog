@@ -1,5 +1,17 @@
-2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: Add test for pkinit with locally generated
+	certs.
+
+	* kdc/check-pkinit.in: Generate a ca, kdc cert and client cert and
+	try to use them
+
+	* kdc/pki-mapping: add other foo@TEST
+
+	* kdc/krb5-pkinit.conf.in: pkinit specific krb5.conf
+	
+2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* plugin/check-pac.in: test tgs-req
 
 	* plugin/windc.c: log that the function is called.
