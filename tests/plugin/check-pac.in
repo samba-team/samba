@@ -47,7 +47,7 @@ R=TEST.H5L.SE
 
 port=8888
 
-kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r ${R}"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.test.h5l.se
@@ -100,15 +100,35 @@ trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 ec=0
 
 echo "Getting client initial tickets"; > messages.log
-${kinit} --password-file=${objdir}/foopassword foo@$R || \
+${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "Getting tickets" ; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
-
 echo "Verify PAC on server"; > messages.log
 ../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
+
+echo "Getting client initial tickets (pag)"; > messages.log
+${kinit} --request-pac --password-file=${objdir}/foopassword foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "Getting tickets" ; > messages.log
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "Verify PAC on server (pag)"; > messages.log
+../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Getting client initial tickets (no pag)"; > messages.log
+${kinit} --no-request-pac --password-file=${objdir}/foopassword foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "Getting tickets" ; > messages.log
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "Verify PAC on server (no pag)"; > messages.log
+../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} 2> /dev/null && \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
