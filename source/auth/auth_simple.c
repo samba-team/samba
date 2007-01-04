@@ -26,6 +26,10 @@
 #include "auth/auth.h"
 #include "lib/events/events.h"
 
+/*
+ It's allowed to pass NULL as session_info,
+ when the caller doesn't need a session_info
+*/
 _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   struct event_context *ev,
 					   struct messaging_context *msg,
@@ -82,12 +86,15 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = auth_generate_session_info(tmp_ctx, server_info, session_info);
+	if (session_info) {
+		nt_status = auth_generate_session_info(tmp_ctx, server_info, session_info);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		talloc_steal(mem_ctx, *session_info);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			talloc_steal(mem_ctx, *session_info);
+		}
 	}
 
+	talloc_free(tmp_ctx);
 	return nt_status;
 }
 
