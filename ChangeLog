@@ -1,5 +1,8 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: describe how to use hx509 to create
+	certificates.
+
 	* tools/heimdal-build.sh: Add --distcheck.
 
 	* kdc/kerberos5.c: Check for KRB5_PADATA_PA_PAC_REQUEST to check
