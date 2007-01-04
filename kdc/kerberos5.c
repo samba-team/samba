@@ -945,6 +945,10 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
+    ret = _kdc_windc_client_access(context, client, req);
+    if(ret)
+	goto out;
+
     ret = _kdc_check_flags(context, config, 
 			   client, client_name,
 			   server, server_name,
@@ -1511,7 +1515,7 @@ _kdc_as_rep(krb5_context context,
 	    ret = _krb5_pac_sign(context, p, et.authtime,
 				 client->entry.principal,
 				 &et.key, &skey->key, &data);
-	    _krb5_pac_free(context, p);
+	    krb5_pac_free(context, p);
 	    if (ret) {
 		kdc_log(context, config, 0, "PAC signing failed for -- %s", 
 			client_name);
@@ -1598,7 +1602,7 @@ krb5_error_code
 _kdc_tkt_add_if_relevant_ad(krb5_context context,
 			    EncTicketPart *tkt,
 			    int type,
-			    krb5_data *data)
+			    const krb5_data *data)
 {
     krb5_error_code ret;
     size_t size;
