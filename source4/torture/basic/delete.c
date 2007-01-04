@@ -1254,6 +1254,85 @@ static bool deltest21(struct torture_context *tctx)
 
 	return correct;
 }
+
+/* Test 22 ... */
+
+/*
+ * Test whether a second *directory* handle inhibits delete if the first has
+ * del-on-close set and is closed
+ */
+static bool deltest22(struct torture_context *tctx)
+{
+	int dnum1 = -1;
+	int dnum2 = -1;
+	struct smbcli_state *cli1;
+	bool correct = True;
+
+	if (!torture_open_connection(&cli1, 0))
+		return False;
+
+	smbcli_deltree(cli1->tree, dname);
+
+	torture_assert_ntstatus_ok(
+		tctx, smbcli_mkdir(cli1->tree, dname),
+		talloc_asprintf(tctx, "smbcli_mdir failed: (%s)\n",
+				smbcli_errstr(cli1->tree)));
+
+	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+
+	torture_assert(tctx, dnum1 != -1,
+		       talloc_asprintf(tctx, "open of %s failed: %s!", 
+				       dname, smbcli_errstr(cli1->tree)));
+
+	dnum2 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+
+	torture_assert(tctx, dnum2 != -1,
+		       talloc_asprintf(tctx, "open of %s failed: %s!", 
+				       dname, smbcli_errstr(cli1->tree)));
+
+	torture_assert_ntstatus_ok(
+		tctx, smbcli_nt_delete_on_close(cli1->tree, dnum1, True), 
+		talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
+				smbcli_errstr(cli1->tree)));
+
+	smbcli_close(cli1->tree, dnum1);
+
+	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+
+	torture_assert(tctx, dnum1 == -1,
+		       talloc_asprintf(tctx, "open of %s succeeded!\n",
+				       dname));
+
+	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
+
+	return correct;
+}
 	
 /*
   Test delete on close semantics.
@@ -1285,6 +1364,7 @@ struct torture_suite *torture_test_delete(void)
 	torture_suite_add_2smb_test(suite, "deltest19", deltest19);
 	torture_suite_add_2smb_test(suite, "deltest20", deltest20);
 	torture_suite_add_simple_test(suite, "deltest21", deltest21);
+	torture_suite_add_simple_test(suite, "deltest22", deltest22);
 
 	return suite;
 }
