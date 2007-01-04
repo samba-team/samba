@@ -1,3 +1,7 @@
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* data/key2.der: new test key
+
 2007-01-04  David Love  <fx@gnu.org>
 
 	* Makefile.am (hxtool_LDADD): Add libasn1.la
