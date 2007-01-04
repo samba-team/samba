@@ -197,7 +197,11 @@ libgssapi_la_LIBADD = \
 man_MANS = gssapi.3 gss_acquire_cred.3
 
 include_HEADERS = gssapi.h
-noinst_HEADERS = gssapi_mech.h
+noinst_HEADERS = \
+	gssapi_mech.h \
+	ntlm/ntlm-private.h \
+	spnego/spnego-private.h \
+	krb5/krb5-private.h
 nobase_include_HEADERS = \
 	gssapi/gssapi.h \
 	gssapi/gssapi_krb5.h \
