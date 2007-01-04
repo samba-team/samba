@@ -314,26 +314,26 @@ check_PAC(krb5_context context,
 		krb5_pac pac;
 
 		/* Found PAC */
-		ret = _krb5_pac_parse(context,
-				      child.val[j].ad_data.data,
-				      child.val[j].ad_data.length,
-				      &pac);
+		ret = krb5_pac_parse(context,
+				     child.val[j].ad_data.data,
+				     child.val[j].ad_data.length,
+				     &pac);
 		free_AuthorizationData(&child);
 		if (ret)
 		    return ret;
 
-		ret = _krb5_pac_verify(context, pac, tkt->authtime, 
-				       client->entry.principal,
-				       &tkt->key,
-				       ekey);
+		ret = krb5_pac_verify(context, pac, tkt->authtime, 
+				      client->entry.principal,
+				      &tkt->key,
+				      ekey);
 		if (ret) {
-		    _krb5_pac_free(context, pac);
+		    krb5_pac_free(context, pac);
 		    return ret;
 		}
 
 		ret = _kdc_pac_verify(context, client, pac);
 		if (ret) {
-		    _krb5_pac_free(context, pac);
+		    krb5_pac_free(context, pac);
 		    return ret;
 		}
 		*require_signedpath = 0;
@@ -342,7 +342,7 @@ check_PAC(krb5_context context,
 				     client->entry.principal,
 				     sessionkey, ekey, rspac);
 
-		_krb5_pac_free(context, pac);
+		krb5_pac_free(context, pac);
 
 		return ret;
 	    }
