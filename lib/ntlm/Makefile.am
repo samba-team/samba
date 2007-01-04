@@ -21,5 +21,5 @@ TESTS = test_ntlm
 
 check_PROGRAMS = test_ntlm
 
-LDADD = libheimntlm.la
+LDADD = libheimntlm.la $(LIB_roken)
 
