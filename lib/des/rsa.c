@@ -388,7 +388,7 @@ i2d_RSAPrivateKey(RSA *rsa, unsigned char **pp)
 
     memset(&data, 0, sizeof(data));
 
-    ret  = bn2heim_int(rsa->n, &data.modulus)
+    ret  = bn2heim_int(rsa->n, &data.modulus);
     ret |= bn2heim_int(rsa->e, &data.publicExponent);
     ret |= bn2heim_int(rsa->d, &data.privateExponent);
     ret |= bn2heim_int(rsa->p, &data.prime1);
