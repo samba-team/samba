@@ -647,21 +647,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
 	   is really going to delete this file. */
-	if (desired_access & DELETE_ACCESS) {
+	if ((desired_access & DELETE_ACCESS)
+	    && !can_delete_file_in_directory(conn, fname)) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE)
-				&& (access_mask & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn))
+	    && (share_access & FILE_SHARE_DELETE)
+	    && (access_mask & DELETE_ACCESS)
+	    && !can_delete_file_in_directory(conn, fname)) {
 #endif
-		status = can_delete(conn, fname, file_attributes, bad_path, True);
-		/* We're only going to fail here if it's access denied, as that's the
-		   only error we care about for "can we delete this ?" questions. */
-		if (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE)) {
-			restore_case_semantics(conn, file_attributes);
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-		}
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
 	/* 
@@ -1276,19 +1273,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
 	   is really going to delete this file. */
-	if (desired_access & DELETE_ACCESS) {
+	if ((desired_access & DELETE_ACCESS)
+	    && !can_delete_file_in_directory(conn, fname)) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (access_mask & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn))
+	    && (share_access & FILE_SHARE_DELETE)
+	    && (access_mask & DELETE_ACCESS)
+	    && !can_delete_file_in_directory(conn, fname)) {
 #endif
-		status = can_delete(conn, fname, file_attributes, bad_path, True);
-		/* We're only going to fail here if it's access denied, as that's the
-		   only error we care about for "can we delete this ?" questions. */
-		if (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE)) {
-			restore_case_semantics(conn, file_attributes);
-			return ERROR_NT(status);
-		}
+		restore_case_semantics(conn, file_attributes);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
 	if (ea_len) {
