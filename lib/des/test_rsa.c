@@ -109,18 +109,53 @@ cb_func(int a, int b, BN_GENCB *c)
     return 1;
 }
 
+static RSA *
+read_key(ENGINE *engine, const char *rsa_key)
+{
+    unsigned char buf[1024 * 4];
+    const unsigned char *p;
+    size_t size;
+    RSA *rsa;
+    FILE *f;
+    
+    f = fopen(rsa_key, "r");
+    if (f == NULL)
+	err(1, "could not open file %s", rsa_key);
+    
+    size = fread(buf, 1, sizeof(buf), f);
+    fclose(f);
+    if (size == 0)
+	err(1, "failed to read file %s", rsa_key);
+    if (size == sizeof(buf))
+	err(1, "key too long in file %s!", rsa_key);
+    
+    p = buf;
+    rsa = d2i_RSAPrivateKey(NULL, &p, size);
+    if (rsa == NULL)
+	err(1, "failed to parse key in file %s", rsa_key);
+    
+    RSA_set_method(rsa, ENGINE_get_RSA(engine));
+
+    return rsa;
+}
+
+
+
 /*
  *
  */
 
 static int version_flag;
 static int help_flag;
+static char *time_key;
 static char *rsa_key;
 static char *id_flag;
 
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
       "selects the engine id", 	"engine-id" },
+    { "time-key",	0,	arg_string,	&time_key,
+      "rsa key file", NULL },
     { "key",	0,	arg_string,	&rsa_key,
       "rsa key file", NULL },
     { "version",	0,	arg_flag,	&version_flag,
@@ -179,30 +214,37 @@ main(int argc, char **argv)
     
     printf("rsa %s\n", ENGINE_get_RSA(engine)->name);
 
-    if (rsa_key) {
-	unsigned char buf[1024 * 4];
-	const unsigned char *p;
-	size_t size;
-	FILE *f;
-	
-	f = fopen(rsa_key, "r");
-	if (f == NULL)
-	    err(1, "could not open file %s", rsa_key);
-	
-	size = fread(buf, 1, sizeof(buf), f);
-	if (size == 0)
-	    err(1, "failed to read file %s", rsa_key);
-	if (size == sizeof(buf))
-	    err(1, "key too long in file %s!", rsa_key);
-	fclose(f);
-	
-	p = buf;
-	rsa = d2i_RSAPrivateKey(NULL, &p, size);
-	if (rsa == NULL)
-	    err(1, "failed to parse key in file %s", rsa_key);
-	
-	RSA_set_method(rsa, ENGINE_get_RSA(engine));
+    if (time_key) {
+	const int size = 20;
+	const int num = 128;
+	struct timeval tv1, tv2;
+	unsigned char *p;
 
+	rsa = read_key(engine, time_key);
+
+	p = emalloc(num * size);
+
+	RAND_bytes(p, num * size);
+
+	gettimeofday(&tv1, NULL);
+	for (i = 0; i < num; i++)
+	    check_rsa(p + (i * size), size, rsa, RSA_PKCS1_PADDING);
+	gettimeofday(&tv2, NULL);
+
+	timevalsub(&tv2, &tv1);
+
+	printf("time %lu.%06lu\n", 
+	       (unsigned long)tv2.tv_sec, 
+	       (unsigned long)tv2.tv_usec);
+
+	RSA_free(rsa);
+	ENGINE_finish(engine);
+
+	return 0;
+    }
+
+    if (rsa_key) {
+	rsa = read_key(engine, rsa_key);
 
 	/*
 	 * Assuming that you use the RSA key in the distribution, this
