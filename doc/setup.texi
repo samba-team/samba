@@ -1320,7 +1320,7 @@ hxtool issue-certificate \
     --ca-certificate=FILE:ca.der,ca.key \
     --generate-key=rsa \
     --type="pkinit-kdc" \
-    --pk-init-principal="krbtgt/TEST.H5L.SE@TEST.H5L.SE" \
+    --pk-init-principal="krbtgt/TEST.H5L.SE@@TEST.H5L.SE" \
     --key="kdc.key" \
     --subject="uid=kdc,DC=test,DC=h5l,DC=se" \
     --certificate="kdc.der"
@@ -1338,7 +1338,7 @@ hxtool issue-certificate \
     --ca-certificate=FILE:ca.der,ca.key \
     --generate-key=rsa \
     --type="pkinit-client" \
-    --pk-init-principal="lha@TEST.H5L.SE" \
+    --pk-init-principal="lha@@TEST.H5L.SE" \
     --key="user.key" \
     --subject="uid=lha,DC=test,DC=h5l,DC=se" \
     --certificate="user.der"
