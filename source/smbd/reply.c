@@ -1004,7 +1004,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 
-	if (strequal(fname, ".")) {
+	if (fname[0] == '.' && fname[1] == '\0') {
 		/*
 		 * Not sure here is the right place to catch this
 		 * condition. Might be moved to somewhere else later -- vl
