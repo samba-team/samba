@@ -80,8 +80,8 @@ static const char zeros[PAC_ALIGNMENT] = { 0 };
  */
 
 krb5_error_code
-_krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
-		struct krb5_pac **pac)
+krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
+	       struct krb5_pac **pac)
 {
     krb5_error_code ret;
     struct krb5_pac *p;
@@ -382,7 +382,7 @@ krb5_pac_get_types(krb5_context context,
  */
 
 void
-_krb5_pac_free(krb5_context context, struct krb5_pac *pac)
+krb5_pac_free(krb5_context context, struct krb5_pac *pac)
 {
     krb5_data_free(&pac->data);
     free(pac->pac);
@@ -694,12 +694,12 @@ out:
  */
 
 krb5_error_code
-_krb5_pac_verify(krb5_context context, 
-		 const struct krb5_pac *pac,
-		 time_t authtime,
-		 krb5_const_principal principal,
-		 const krb5_keyblock *server,
-		 const krb5_keyblock *privsvr)
+krb5_pac_verify(krb5_context context, 
+		const struct krb5_pac *pac,
+		time_t authtime,
+		krb5_const_principal principal,
+		const krb5_keyblock *server,
+		const krb5_keyblock *privsvr)
 {
     krb5_error_code ret;
 

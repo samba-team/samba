@@ -112,32 +112,32 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = _krb5_pac_parse(context, saved_pac, sizeof(saved_pac), &pac);
+    ret = krb5_pac_parse(context, saved_pac, sizeof(saved_pac), &pac);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_parse");
+	krb5_err(context, 1, ret, "krb5_pac_parse");
 
-    ret = _krb5_pac_verify(context, pac, authtime, p,
+    ret = krb5_pac_verify(context, pac, authtime, p,
 			   &member_keyblock, &kdc_keyblock);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_verify");
+	krb5_err(context, 1, ret, "krb5_pac_verify");
 
     ret = _krb5_pac_sign(context, pac, authtime, p, 
 			 &member_keyblock, &kdc_keyblock, &data);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_sign");
 
-    _krb5_pac_free(context, pac);
+    krb5_pac_free(context, pac);
 
-    ret = _krb5_pac_parse(context, data.data, data.length, &pac);
+    ret = krb5_pac_parse(context, data.data, data.length, &pac);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_parse 2");
+	krb5_err(context, 1, ret, "krb5_pac_parse 2");
 
-    ret = _krb5_pac_verify(context, pac, authtime, p,
+    ret = krb5_pac_verify(context, pac, authtime, p,
 			   &member_keyblock, &kdc_keyblock);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_verify 2");
+	krb5_err(context, 1, ret, "krb5_pac_verify 2");
 
-    _krb5_pac_free(context, pac);
+    krb5_pac_free(context, pac);
 
     /*
      * Test empty free
@@ -146,7 +146,7 @@ main(int argc, char **argv)
     ret = krb5_pac_init(context, &pac);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_init");
-    _krb5_pac_free(context, pac);
+    krb5_pac_free(context, pac);
 
     /*
      * Test add remove buffer
@@ -200,16 +200,16 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_sign");
 
-    _krb5_pac_free(context, pac);
+    krb5_pac_free(context, pac);
 
-    ret = _krb5_pac_parse(context, data.data, data.length, &pac);
+    ret = krb5_pac_parse(context, data.data, data.length, &pac);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_parse 3");
+	krb5_err(context, 1, ret, "krb5_pac_parse 3");
 
-    ret = _krb5_pac_verify(context, pac, authtime, p,
+    ret = krb5_pac_verify(context, pac, authtime, p,
 			   &member_keyblock, &kdc_keyblock);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_pac_verify 3");
+	krb5_err(context, 1, ret, "krb5_pac_verify 3");
 
     {
 	uint32_t *list;
@@ -224,7 +224,7 @@ main(int argc, char **argv)
 	free(list);
     }
 
-    _krb5_pac_free(context, pac);
+    krb5_pac_free(context, pac);
 
     return 0;
 }
