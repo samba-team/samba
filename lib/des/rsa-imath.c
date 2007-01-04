@@ -48,6 +48,7 @@ RCSID("$Id$");
 
 #include "imath/imath.h"
 #include "imath/rsamath.h"
+#include "imath/iprime.h"
 
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)
@@ -62,6 +63,24 @@ BN2mpz(mpz_t *s, const BIGNUM *bn)
     BN_bn2bin(bn, p);
     mp_int_read_unsigned(s, p, len);
     free(p);
+}
+
+static BIGNUM *
+mpz2BN(mpz_t *s)
+{
+    size_t size;
+    BIGNUM *bn;
+    void *p;
+
+    size = mp_int_unsigned_len(s);
+    p = malloc(size);
+    if (p == NULL && size != 0)
+	return NULL;
+    mp_int_to_unsigned(s, p, size);
+
+    bn = BN_bin2bn(p, size, NULL);
+    free(p);
+    return bn;
 }
 
 static int
@@ -321,6 +340,125 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
     return size;
 }
 
+static int
+random_num(mp_int num, size_t len)
+{
+    unsigned char *p;
+    mp_result res;
+ 
+    len = (len + 7) / 8;
+    p = malloc(len);
+    if (p == NULL)
+	return 1;
+    if (RAND_bytes(p, len) != 1) {
+	free(p);
+	return 1;
+    }
+    res = mp_int_read_unsigned(num, p, len);
+    free(p);
+    if (res != MP_OK)
+	return 1;
+    return 0;
+}
+
+#define CHECK(f, v) if ((f) != (v)) { goto out; }
+
+static int
+imath_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
+{
+    mpz_t el, p, q, n, d, dmp1, dmq1, iqmp, t1, t2, t3;
+    int counter, ret;
+
+    if (bits < 789)
+	return -1;
+
+    ret = -1;
+
+    mp_int_init(&el);
+    mp_int_init(&p);
+    mp_int_init(&q);
+    mp_int_init(&n);
+    mp_int_init(&d);
+    mp_int_init(&dmp1);
+    mp_int_init(&dmq1);
+    mp_int_init(&iqmp);
+    mp_int_init(&t1);
+    mp_int_init(&t2);
+    mp_int_init(&t3);
+
+    BN2mpz(&el, e);
+
+    /* generate p and q so that p != q and bits(pq) ~ bits */
+    counter = 0;
+    do {
+	BN_GENCB_call(cb, 2, counter++);
+	CHECK(random_num(&p, bits / 2 + 1), 0);
+	CHECK(mp_int_find_prime(&p), MP_TRUE);
+
+	CHECK(mp_int_sub_value(&p, 1, &t1), MP_OK);
+	CHECK(mp_int_gcd(&t1, &el, &t2), MP_OK);
+    } while(mp_int_compare_value(&t2, 1) != 0);
+
+    BN_GENCB_call(cb, 3, 0);
+
+    counter = 0;
+    do {
+	BN_GENCB_call(cb, 2, counter++);
+	CHECK(random_num(&q, bits / 2 + 1), 0);
+	CHECK(mp_int_find_prime(&q), MP_TRUE);
+
+	if (mp_int_compare(&p, &q) == 0) /* don't let p and q be the same */
+	    continue;
+
+	CHECK(mp_int_sub_value(&q, 1, &t1), MP_OK);
+	CHECK(mp_int_gcd(&t1, &el, &t2), MP_OK);
+    } while(mp_int_compare_value(&t2, 1) != 0);
+
+    BN_GENCB_call(cb, 3, 1);
+
+    /* calculate n,  		n = p * q */
+    CHECK(mp_int_mul(&p, &q, &n), MP_OK);
+
+    /* calculate d, 		d = 1/e mod (p - 1)(q - 1) */
+    CHECK(mp_int_sub_value(&p, 1, &t1), MP_OK);
+    CHECK(mp_int_sub_value(&q, 1, &t2), MP_OK);
+    CHECK(mp_int_mul(&t1, &t2, &t3), MP_OK);
+    CHECK(mp_int_invmod(&el, &t3, &d), MP_OK);
+
+    /* calculate dmp1		dmp1 = d mod (p-1) */
+    CHECK(mp_int_mod(&d, &t1, &dmp1), MP_OK);
+    /* calculate dmq1		dmq1 = d mod (q-1) */
+    CHECK(mp_int_mod(&d, &t2, &dmq1), MP_OK);
+    /* calculate iqmp 		iqmp = q mod p */
+    CHECK(mp_int_invmod(&q, &p, &iqmp), MP_OK);
+
+    /* fill in RSA key */
+
+    rsa->e = mpz2BN(&el);
+    rsa->p = mpz2BN(&p);
+    rsa->q = mpz2BN(&q);
+    rsa->n = mpz2BN(&n);
+    rsa->d = mpz2BN(&d);
+    rsa->dmp1 = mpz2BN(&dmp1);
+    rsa->dmq1 = mpz2BN(&dmp1);
+    rsa->iqmp = mpz2BN(&iqmp);
+
+    ret = 1;
+out:
+    mp_int_clear(&el);
+    mp_int_clear(&p);
+    mp_int_clear(&q);
+    mp_int_clear(&n);
+    mp_int_clear(&d);
+    mp_int_clear(&dmp1);
+    mp_int_clear(&dmq1);
+    mp_int_clear(&iqmp);
+    mp_int_clear(&t1);
+    mp_int_clear(&t2);
+    mp_int_clear(&t3);
+
+    return ret;
+}
 
 static int 
 imath_rsa_init(RSA *rsa)
@@ -347,7 +485,8 @@ const RSA_METHOD hc_rsa_imath_method = {
     0,
     NULL,
     NULL,
-    NULL
+    NULL,
+    imath_rsa_generate_key
 };
 
 const RSA_METHOD *
