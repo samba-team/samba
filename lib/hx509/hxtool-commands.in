@@ -311,6 +311,16 @@ command = {
 		help = "Key-pair"
 	}
 	option = {
+		long = "generate-key"
+		type = "string"
+		help = "keytype"
+	}
+	option = {
+	        long = "key-bits"
+		type = "integer"
+		help = "number of bits in the generated key";
+	}
+	option = {
 		long = "verbose"
 		type = "flag"
 		help = "verbose status"
@@ -495,6 +505,21 @@ command = {
 		long = "req"
 		type = "string"
 		help = "pkcs10 request"
+	}
+	option = {
+		long = "key"
+		type = "string"
+		help = "Key-pair"
+	}
+	option = {
+		long = "generate-key"
+		type = "string"
+		help = "keytype"
+	}
+	option = {
+	        long = "key-bits"
+		type = "integer"
+		help = "number of bits in the generated key";
 	}
 	name = "certificate-sign"
 	name = "cert-sign"
