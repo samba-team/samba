@@ -201,7 +201,7 @@ noinst_HEADERS = \
 	gssapi_mech.h \
 	ntlm/ntlm-private.h \
 	spnego/spnego-private.h \
-	krb5/krb5-private.h
+	krb5/gsskrb5-private.h
 nobase_include_HEADERS = \
 	gssapi/gssapi.h \
 	gssapi/gssapi_krb5.h \
