@@ -1,5 +1,8 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c: Check for KRB5_PADATA_PA_PAC_REQUEST to check
+	if we should include the PAC in the krbtgt.
+
 	* kdc/pkinit.c (_kdc_as_rep): check if
 	krb5_generate_random_keyblock failes.
 
