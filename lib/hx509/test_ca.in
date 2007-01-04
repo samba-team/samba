@@ -150,5 +150,41 @@ ${hxtool} verify --missing-revoke \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "issue ca cert (generate rsa key)"
+${hxtool} issue-certificate \
+	  --self-signed \
+	  --issue-ca \
+	  --generate-key=rsa \
+	  --key="ca2-key.der" \
+	  --subject="cn=ca2-cert" \
+	  --certificate="cert-ca.der" || exit 1
+
+echo "issue ca cert (generate rsa key)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:cert-ca.der,ca2-key.der \
+	  --generate-key=rsa \
+	  --key="ee2-key.der" \
+	  --subject="cn=cert-ee2" \
+	  --certificate="cert-ee.der" || exit 1
+
+echo "verify certificate"
+${hxtool} verify --missing-revoke \
+	cert:FILE:cert-ee.der \
+	anchor:FILE:cert-ca.der > /dev/null || exit 1
+
+echo "sign CMS signature (generate key)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:cert-ee.der,ee2-key.der \
+	"$srcdir/test_name.c" \
+	sd.data > /dev/null || exit 1
+
+echo "verify CMS signature (generate key)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:cert-ca.der \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_name.c" sd.data.out || exit 1
+
+
 
 exit 0
