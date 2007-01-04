@@ -149,6 +149,7 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	connection_struct *conn = fsp->conn;
 	BOOL delete_file = False;
 	struct share_mode_lock *lck;
+	SMB_STRUCT_STAT sbuf;
 
 	/*
 	 * Lock the share entries, and determine if we should delete
@@ -159,12 +160,14 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if (lck == NULL) {
-		DEBUG(0, ("close_remove_share_mode: Could not get share mode lock for file %s\n", fsp->fsp_name));
+		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
+			  "lock for file %s\n", fsp->fsp_name));
 		return EINVAL;
 	}
 
 	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("close_remove_share_mode: Could not delete share entry for file %s\n", fsp->fsp_name));
+		DEBUG(0, ("close_remove_share_mode: Could not delete share "
+			  "entry for file %s\n", fsp->fsp_name));
 	}
 
 	delete_file = (lck->delete_on_close | lck->initial_delete_on_close);
@@ -190,62 +193,75 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	 * reference to a file.
 	 */
 
-	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
-				delete_file &&
-				lck->delete_token) {
-		SMB_STRUCT_STAT sbuf;
-
-		DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set - deleting file.\n",
-			fsp->fsp_name));
-
-		/* Become the user who requested the delete. */
-
-		if (!push_sec_ctx()) {
-			smb_panic("close_remove_share_mode: file %s. failed to push sec_ctx.\n");
-		}
-
-		set_sec_ctx(lck->delete_token->uid,
-				lck->delete_token->gid,
-				lck->delete_token->ngroups,
-				lck->delete_token->groups,
-				NULL);
-
-		/* We can only delete the file if the name we have
-		   is still valid and hasn't been renamed. */
-	
-		if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
-			DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
-				"and stat failed with error %s\n",
-				fsp->fsp_name, strerror(errno) ));
-		} else {
-			if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
-				DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set and "
-					"dev and/or inode does not match\n",
-					fsp->fsp_name ));
-				DEBUG(5,("close_remove_share_mode: file %s. stored dev = %x, inode = %.0f "
-					"stat dev = %x, inode = %.0f\n",
-					fsp->fsp_name,
-					(unsigned int)fsp->dev, (double)fsp->inode,
-					(unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
-
-			} else if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
-				/*
-				 * This call can potentially fail as another smbd may have
-				 * had the file open with delete on close set and deleted
-				 * it when its last reference to this file went away. Hence
-				 * we log this but not at debug level zero.
-				 */
-
-				DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
-					"and unlink failed with error %s\n",
-					fsp->fsp_name, strerror(errno) ));
-			}
-		}
-		/* unbecome user. */
-		pop_sec_ctx();
-	
-		process_pending_change_notify_queue((time_t)0);
+	if (!(close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE)
+	    || !delete_file
+	    || (lck->delete_token == NULL)) {
+		TALLOC_FREE(lck);
+		return 0;
 	}
+
+	/*
+	 * Ok, we have to delete the file
+	 */
+
+	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
+		 "- deleting file.\n", fsp->fsp_name));
+
+	/* Become the user who requested the delete. */
+
+	if (!push_sec_ctx()) {
+		smb_panic("close_remove_share_mode: file %s. failed to push "
+			  "sec_ctx.\n");
+	}
+
+	set_sec_ctx(lck->delete_token->uid,
+		    lck->delete_token->gid,
+		    lck->delete_token->ngroups,
+		    lck->delete_token->groups,
+		    NULL);
+
+	/* We can only delete the file if the name we have is still valid and
+	   hasn't been renamed. */
+	
+	if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
+		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+			 "was set and stat failed with error %s\n",
+			 fsp->fsp_name, strerror(errno) ));
+		goto done;
+	}
+
+	if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
+		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+			 "was set and dev and/or inode does not match\n",
+			 fsp->fsp_name ));
+		DEBUG(5,("close_remove_share_mode: file %s. stored dev = %x, "
+			 "inode = %.0f stat dev = %x, inode = %.0f\n",
+			 fsp->fsp_name,
+			 (unsigned int)fsp->dev, (double)fsp->inode,
+			 (unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
+		goto done;
+	}
+
+	if (SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
+		/*
+		 * This call can potentially fail as another smbd may
+		 * have had the file open with delete on close set and
+		 * deleted it when its last reference to this file
+		 * went away. Hence we log this but not at debug level
+		 * zero.
+		 */
+
+		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+			 "was set and unlink failed with error %s\n",
+			 fsp->fsp_name, strerror(errno) ));
+		goto done;
+	}
+
+ done:
+	/* unbecome user. */
+	pop_sec_ctx();
+	
+	process_pending_change_notify_queue((time_t)0);
 
 	TALLOC_FREE(lck);
 	return 0;
