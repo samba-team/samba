@@ -1,5 +1,16 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c (_kdc_as_rep): check if
+	krb5_generate_random_keyblock failes.
+
+	* kdc/kerberos5.c (_kdc_as_rep): check if
+	krb5_generate_random_keyblock failes.
+
+	* kdc/krb5tgs.c (tgs_build_reply): check if
+	krb5_generate_random_keyblock failes.
+
+	* kdc/krb5tgs.c: Scope etype.
+
 	* lib/krb5/rd_req.c: Make it possible to turn off PAC check, its
 	default on.
 
