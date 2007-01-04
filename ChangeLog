@@ -1,5 +1,27 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/rd_req.c: Make it possible to turn off PAC check, its
+	default on.
+
+	* lib/krb5/rd_req.c (krb5_rd_req_ctx): If there is a PAC, verify
+	its server signature.
+
+	* kdc/kerberos5.c (_kdc_as_rep): call windc client access hook.
+	(_kdc_tkt_add_if_relevant_ad): constify in data argument.
+
+	* kdc/windc_plugin.h: More comments add a client_access hook.
+
+	* kdc/windc.c: Add _kdc_windc_client_access.
+
+	* kdc/krb5tgs.c: rename functions after export some more pac
+	functions.
+
+	* lib/krb5/test_pac.c: export some more pac functions.
+
+	* lib/krb5/pac.c: export some more pac functions.
+
+	* kdc/krb5tgs.c: Resign the PAC in tgsreq if we have a PAC.
+
 	* configure.in: add tests/plugin/Makefile
 	
 2007-01-03  Love Hörnquist Åstrand  <lha@it.su.se>

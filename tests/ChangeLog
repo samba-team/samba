@@ -1,5 +1,8 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/ap-req.c: Make it possible to turn off PAC check, its
+	default on.
+
 	* plugin/windc.c: Add client_access.
 
 	* plugin/check-pac.in: Verify PAC on server end too.
