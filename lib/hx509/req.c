@@ -156,6 +156,12 @@ _hx509_request_to_pkcs10(hx509_context context,
     int ret;
     size_t size;
 
+    if (req->name == NULL) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "PKCS10 needs to have a subject");
+	return EINVAL;
+    }
+
     memset(&r, 0, sizeof(r));
     memset(request, 0, sizeof(*request));
 
