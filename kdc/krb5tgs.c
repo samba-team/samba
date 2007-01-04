@@ -1254,7 +1254,6 @@ tgs_build_reply(krb5_context context,
     KRB5SignedPathPrincipals *spp = NULL;
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
-    krb5_enctype etype;
     krb5_kvno kvno;
     krb5_data rspac;
 
@@ -1669,33 +1668,37 @@ server_lookup:
      * Select enctype, return key and kvno.
      */
 
-    if(b->kdc_options.enc_tkt_in_skey) {
-	int i;
-	ekey = &adtkt.key;
-	for(i = 0; i < b->etype.len; i++)
-	    if (b->etype.val[i] == adtkt.key.keytype)
-		break;
-	if(i == b->etype.len) {
-	    krb5_clear_error_string(context);
-	    return KRB5KDC_ERR_ETYPE_NOSUPP;
-	}
-	etype = b->etype.val[i];
-	kvno = 0;
-    }else{
-	Key *skey;
+    {
+	krb5_enctype etype;
 
-	ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
-			      &skey, &etype);
-	if(ret) {
-	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", spp);
-	    return ret;
+	if(b->kdc_options.enc_tkt_in_skey) {
+	    int i;
+	    ekey = &adtkt.key;
+	    for(i = 0; i < b->etype.len; i++)
+		if (b->etype.val[i] == adtkt.key.keytype)
+		    break;
+	    if(i == b->etype.len) {
+		krb5_clear_error_string(context);
+		return KRB5KDC_ERR_ETYPE_NOSUPP;
+	    }
+	    etype = b->etype.val[i];
+	    kvno = 0;
+	} else {
+	    Key *skey;
+	    
+	    ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
+				  &skey, &etype);
+	    if(ret) {
+		kdc_log(context, config, 0, 
+			"Server (%s) has no support for etypes", spp);
+		return ret;
+	    }
+	    ekey = &skey->key;
+	    kvno = server->entry.kvno;
 	}
-	ekey = &skey->key;
-	kvno = server->entry.kvno;
+	
+	krb5_generate_random_keyblock(context, etype, &sessionkey);
     }
-
-    krb5_generate_random_keyblock(context, etype, &sessionkey);
 
     /* check PAC if there is one */
     {
