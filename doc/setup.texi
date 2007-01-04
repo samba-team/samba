@@ -1291,6 +1291,60 @@ lha@@EXAMPLE.ORG:CN=Love,UID=lha
 
 @subsection Using Kerberos database
 
+@section Use hxtool to create certificates
+
+First you need to generate a CA certificate, change the --subject to
+something appropriate, the CA certificate will be valid for 10 years.
+
+You need to change --subject  in the command below.
+
+@example
+hxtool issue-certificate \
+    --self-signed \
+    --issue-ca \
+    --generate-key=rsa \
+    --key="ca.key" \
+    --subject="CN=CA,DC=test,DC=h5l,DC=se" \
+    --lifetime=10years \
+    --certificate="ca.der"
+@end example
+
+The KDC needs to have a certificate, so generate a certificate of the
+type ``pkinit-kdc'' and set the PK-INIT specifial SubjectAltName to the
+name of the krbtgt of the realm.
+
+You need to change --subject and --pk-init-principal in the command below.
+
+@example
+hxtool issue-certificate \
+    --ca-certificate=FILE:ca.der,ca.key \
+    --generate-key=rsa \
+    --type="pkinit-kdc" \
+    --pk-init-principal="krbtgt/TEST.H5L.SE@TEST.H5L.SE" \
+    --key="kdc.key" \
+    --subject="uid=kdc,DC=test,DC=h5l,DC=se" \
+    --certificate="kdc.der"
+@end example
+
+The users also needs to have a certificates, so generate a certificate
+of the type ``pkinit-client''. Client doesn't need to have the PK-INIT
+SubjectAltName set, you can have the Subject DN in the ACL file
+(pki-mapping) instead.
+
+You need to change --subject and --pk-init-principal in the command below.
+
+@example
+hxtool issue-certificate \
+    --ca-certificate=FILE:ca.der,ca.key \
+    --generate-key=rsa \
+    --type="pkinit-client" \
+    --pk-init-principal="lha@TEST.H5L.SE" \
+    --key="user.key" \
+    --subject="uid=lha,DC=test,DC=h5l,DC=se" \
+    --certificate="user.der"
+@end example
+
+
 @section Use OpenSSL to create certificates
 
 This section tries to give the CA owners hints how to create
