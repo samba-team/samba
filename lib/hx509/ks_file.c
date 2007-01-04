@@ -540,6 +540,7 @@ file_init(hx509_context context,
 	if (!found_data) {
 	    size_t length;
 	    void *ptr;
+	    int i;
 
 	    ret = _hx509_map_file(p, &ptr, &length, NULL);
 	    if (ret) {
@@ -547,7 +548,11 @@ file_init(hx509_context context,
 		goto out;
 	    }
 
-	    ret = parse_certificate(context, p, c, NULL, ptr, length);
+	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
+		ret = (*formats[i].func)(context, p, c, NULL, ptr, length);
+		if (ret == 0)
+		    break;
+	    }
 	    _hx509_unmap_file(ptr, length);
 	    if (ret)
 		goto out;
