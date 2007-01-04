@@ -714,7 +714,7 @@ const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb
 
 	/* TODO: add binary search */
 	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcmp(cur->lDAPDisplayName, name) != 0) continue;
+		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
 
 		return cur;
 	}
@@ -769,7 +769,7 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 
 	/* TODO: add binary search */
 	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcmp(cur->lDAPDisplayName, name) != 0) continue;
+		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
 
 		return cur;
 	}
