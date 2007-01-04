@@ -77,6 +77,7 @@ ${kadmin} \
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults ${server}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
@@ -98,12 +99,15 @@ trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 ec=0
 
-echo "Getting client initial tickets";
+echo "Getting client initial tickets"; > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@$R || \
 	{ ec=1 ; eval "${testfailed}"; }
-echo "Getting tickets"
+echo "Getting tickets" ; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 
+echo "Verify PAC on server"; > messages.log
+../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
 echo "killing kdc (${kdcpid})"
