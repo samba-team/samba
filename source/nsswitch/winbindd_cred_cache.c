@@ -419,7 +419,11 @@ NTSTATUS remove_ccache(const char *username)
 
 #ifdef HAVE_KRB5
 	ret = ads_kdestroy(entry->ccname);
-	if (ret) {
+
+	/* we ignore the error when there has been no credential cache */
+	if (ret == KRB5_FCC_NOFILE) {
+		ret = 0;
+	} else if (ret) {
 		DEBUG(0,("remove_ccache: failed to destroy user krb5 ccache %s with: %s\n",
 			entry->ccname, error_message(ret)));
 	} else {
