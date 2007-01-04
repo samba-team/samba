@@ -282,6 +282,8 @@ check_PAC(krb5_context context,
 	  hdb_entry_ex *client,
 	  const EncryptionKey *ekey,
 	  EncTicketPart *tkt,
+	  const EncryptionKey *sessionkey,
+	  krb5_data *rspac,
 	  int *require_signedpath)
 {
     AuthorizationData *ad = tkt->authorization_data;
@@ -330,9 +332,17 @@ check_PAC(krb5_context context,
 		}
 
 		ret = _kdc_pac_verify(context, client, pac);
+		if (ret) {
+		    _krb5_pac_free(context, pac);
+		    return ret;
+		}
+		*require_signedpath = 0;
+
+		ret = _krb5_pac_sign(context, pac, tkt->authtime,
+				     client->entry.principal,
+				     sessionkey, ekey, rspac);
+
 		_krb5_pac_free(context, pac);
-		if (ret == 0)
-		    *require_signedpath = 0;
 
 		return ret;
 	    }
@@ -645,7 +655,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt, 
 	       const EncryptionKey *ekey,
-	       krb5_enctype etype,
+	       const krb5_keyblock *sessionkey,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server, 
@@ -655,6 +665,7 @@ tgs_make_reply(krb5_context context,
 	       hdb_entry_ex *krbtgt,
 	       krb5_enctype krbtgt_etype,
 	       KRB5SignedPathPrincipals *spp,
+	       const krb5_data *rspac,
 	       const char **e_text,
 	       krb5_data *reply)
 {
@@ -802,7 +813,21 @@ tgs_make_reply(krb5_context context,
 	}
     }
 
-    krb5_generate_random_keyblock(context, etype, &et.key);
+    if(rspac->length) {
+	/*
+	 * No not need to filter out the any PAC from the
+	 * auth_data since its signed by the KDC.
+	 */
+	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					  KRB5_AUTHDATA_WIN2K_PAC,
+					  rspac);
+	if (ret)
+	    goto out;
+    }
+
+    ret = krb5_copy_keyblock_contents(context, sessionkey, &et.key);
+    if (ret)
+	goto out;
     et.crealm = tgt->crealm;
     et.cname = tgt_name->name;
 	    
@@ -810,6 +835,10 @@ tgs_make_reply(krb5_context context,
     /* MIT must have at least one last_req */
     ek.last_req.len = 1;
     ek.last_req.val = calloc(1, sizeof(*ek.last_req.val));
+    if (ek.last_req.val == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
     ek.nonce = b->nonce;
     ek.flags = et.flags;
     ek.authtime = et.authtime;
@@ -832,7 +861,7 @@ tgs_make_reply(krb5_context context,
 					  krbtgt,
 					  krbtgt_etype,
 					  NULL,
-					  NULL,
+					  spp,
 					  &et);
 	    if (ret)
 		goto out;
@@ -850,7 +879,7 @@ tgs_make_reply(krb5_context context,
        etype list, even if we don't want a session key with
        DES3? */
     ret = _kdc_encode_reply(context, config, 
-			    &rep, &et, &ek, etype,
+			    &rep, &et, &ek, et.key.keytype,
 			    kvno, 
 			    ekey, 0, &tgt->key, e_text, reply);
 out:
@@ -1224,8 +1253,10 @@ tgs_build_reply(krb5_context context,
     EncTicketPart *tgt = &ticket->ticket;
     KRB5SignedPathPrincipals *spp = NULL;
     const EncryptionKey *ekey;
+    krb5_keyblock sessionkey;
     krb5_enctype etype;
     krb5_kvno kvno;
+    krb5_data rspac;
 
     PrincipalName *s;
     Realm r;
@@ -1234,7 +1265,9 @@ tgs_build_reply(krb5_context context,
     char opt_str[128];
     int require_signedpath = 0;
 
+    memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
+    krb5_data_zero(&rspac);
 
     s = b->sname;
     r = b->realm;
@@ -1662,8 +1695,9 @@ server_lookup:
 	kvno = server->entry.kvno;
     }
 
+    krb5_generate_random_keyblock(context, etype, &sessionkey);
+
     /* check PAC if there is one */
-    
     {
 	Key *tkey;
 
@@ -1676,7 +1710,7 @@ server_lookup:
 	}
 
 	ret = check_PAC(context, config, client, &tkey->key, 
-			tgt, &require_signedpath);
+			tgt, &sessionkey, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "check_PAC check failed for %s (%s) from %s with %s",
@@ -1709,7 +1743,7 @@ server_lookup:
 			 client_principal,
 			 tgt, 
 			 ekey,
-			 etype,
+			 &sessionkey,
 			 kvno,
 			 auth_data,
 			 server, 
@@ -1719,6 +1753,7 @@ server_lookup:
 			 krbtgt, 
 			 krbtgt_etype,
 			 spp,
+			 &rspac,
 			 e_text,
 			 reply);
 	
@@ -1726,6 +1761,8 @@ out:
     free(spn);
     free(cpn);
 	    
+    krb5_data_free(&rspac);
+    krb5_free_keyblock_contents(context, &sessionkey);
     if(server)
 	_kdc_free_ent(context, server);
     if(client)
