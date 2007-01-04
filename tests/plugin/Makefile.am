@@ -34,4 +34,5 @@ CLEANFILES= \
 	messages.log
 
 EXTRA_DIST = \
-	check-pac.in
+	check-pac.in \
+	krb5.conf.in
