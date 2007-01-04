@@ -126,12 +126,6 @@ hx509_ca_tbs_set_proxy(hx509_context context,
 		       hx509_ca_tbs tbs,
 		       int pathLenConstraint)
 {
-    if (pathLenConstraint < 0) {
-	hx509_set_error_string(context, 0, EINVAL,
-			       "PathLenConstraint must be larger then zero "
-			       "for proxy certificates");
-	return EINVAL;
-    }
     tbs->flags.proxy = 1;
     tbs->pathLenConstraint = pathLenConstraint;
     return 0;
