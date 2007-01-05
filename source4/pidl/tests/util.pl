@@ -3,7 +3,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 25;
+use Test::More tests => 29;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Parse::Pidl::Util;
@@ -16,6 +16,10 @@ is(undef, has_property({PROPERTIES => {foo => undef}}, "foo"));
 
 # is_constant()
 ok(is_constant("2"));
+ok(is_constant("256"));
+ok(is_constant("0x400"));
+ok(is_constant("0x4BC"));
+ok(not is_constant("0x4BGC"));
 ok(not is_constant("str"));
 ok(not is_constant("2 * expr"));
 
