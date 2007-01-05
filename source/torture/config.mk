@@ -260,6 +260,7 @@ OBJ_FILES = \
 		libnet/libnet_BecomeDC.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-NET \
+		smbcalls \
 		POPT_CREDENTIALS
 PRIVATE_DEPENDENCIES = torture_rpc
 # End SUBSYSTEM TORTURE_NET
