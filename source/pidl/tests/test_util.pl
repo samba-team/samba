@@ -5,7 +5,6 @@ use strict;
 
 use Test::More tests => 6;
 use FindBin qw($RealBin);
-use lib "$RealBin/../lib";
 use lib "$RealBin";
 use Util qw(test_warnings test_errors);
 use Parse::Pidl qw(warning error);

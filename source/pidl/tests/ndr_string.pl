@@ -6,7 +6,6 @@ use strict;
 
 use Test::More tests => 3 * 8;
 use FindBin qw($RealBin);
-use lib "$RealBin/../lib";
 use lib "$RealBin";
 use Util qw(test_samba4_ndr);
 

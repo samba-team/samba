@@ -15,15 +15,15 @@ use lib "$RealBin/../lib";
 
 use Parse::Pidl;
 my $warnings = "";
-sub Parse::Pidl::warning($$) 
-{ 
+undef &Parse::Pidl::warning;
+*Parse::Pidl::warning = sub { 
 	my ($e, $l) = @_;
 	$warnings .= "$e->{FILE}:$e->{LINE}: $l\n";
 };
 
 my $errors = "";
-sub Parse::Pidl::error($$) 
-{ 
+undef &Parse::Pidl::error;
+*Parse::Pidl::error = sub { 
 	my ($e, $l) = @_;
 	$errors .= "$e->{FILE}:$e->{LINE}: $l\n";
 };
