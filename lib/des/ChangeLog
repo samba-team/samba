@@ -1,5 +1,7 @@
 2007-01-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_rsa.c: Allow testing effect of key-blinding
+
 	* rsa-imath.c: Add timing info to rsa keygen.
 	
 	* test_rsa.c: don't include <imath/rsamath.h>
