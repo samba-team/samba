@@ -697,7 +697,7 @@ function provision_guess()
 				      subobj.DNSDOMAIN);
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
-	subobj.ROOTDN       = subobj.ROOTDN;
+	subobj.ROOTDN       = subobj.BASEDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
 	subobj.LDAPBACKEND  = "users.ldb";
