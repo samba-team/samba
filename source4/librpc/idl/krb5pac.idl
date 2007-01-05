@@ -72,7 +72,7 @@ interface krb5pac
 	typedef [public] struct {
 		PAC_TYPE type;
 		uint32 ndr_size;
-		[relative,subcontext(0),subcontext_size(NDR_ROUND(r->ndr_size,8)),flag(NDR_ALIGN8)] DATA_BLOB_REM *info;
+		[relative,subcontext(0),subcontext_size(NDR_ROUND(ndr_size,8)),flag(NDR_ALIGN8)] DATA_BLOB_REM *info;
 		[value(0)] uint32 _pad; /* Top half of a 64 bit pointer? */
 	} PAC_BUFFER_RAW;
 

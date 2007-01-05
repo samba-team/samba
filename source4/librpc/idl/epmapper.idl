@@ -199,7 +199,7 @@ interface epmapper
 
 	typedef struct {
 		[subcontext(2)] epm_lhs lhs;
-		[subcontext(2),switch_is(r->lhs.protocol)] epm_rhs rhs;
+		[subcontext(2),switch_is(lhs.protocol)] epm_rhs rhs;
 	} epm_floor;
 
 	/* note that the NDR_NOALIGN flag is inherited by all nested
