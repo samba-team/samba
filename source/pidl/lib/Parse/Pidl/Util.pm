@@ -54,9 +54,8 @@ sub property_matches($$$)
 sub is_constant($)
 {
 	my $s = shift;
-	if (defined $s && $s =~ /^\d$/) {
-		return 1;
-	}
+	return 1 if (defined $s && $s =~ /^\d+$/);
+	return 1 if (defined $s && $s =~ /^0x[0-9A-Fa-f]+$/);
 	return 0;
 }
 
