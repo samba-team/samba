@@ -10,7 +10,6 @@ OPTIMIZESTRINGS = false
 OPTIMIZEVARIABLES = false
 SOURCELOADER=
 NICE=10
-LOCALINSTALLDIR = /usr/local/samba/share/swat/apps/swat
 
 
 ###################################################################################
@@ -116,7 +115,7 @@ distclean: realclean
 ###################################################################################
 
 generate-script-source:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --source-script-path ../$(FRAMEWORK)/source/class \
 	  --script-input $(API)/source/class \
@@ -136,7 +135,7 @@ generate-script-source:
 #      --resource-output defined for one set, it must be defined for each set
 #
 generate-script-build:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --resource-input $(FRAMEWORK)/source/resource \
 	  --resource-output build/resource \
@@ -155,7 +154,7 @@ generate-script-build:
 	  --add-new-lines
 
 generate-api-build:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --resource-input $(FRAMEWORK)/source/resource \
 	  --resource-output api/resource/qooxdoo \
@@ -172,7 +171,7 @@ generate-api-build:
 	  --cache-directory $(CACHE)
 
 generate-api-data:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --script-input $(API)/source/class \
 	  --script-input source/class \
@@ -181,7 +180,7 @@ generate-api-data:
 	  --cache-directory $(CACHE)
 
 generate-pretty:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input source/class \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --include-without-dependencies api.* \
@@ -189,7 +188,7 @@ generate-pretty:
 	  --cache-directory $(CACHE)
 
 generate-fix:
-	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
+	@$(GENERATOR) \
 	  --script-input source/class \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --include-without-dependencies api.* \
@@ -234,14 +233,3 @@ info-source:
 	@echo "****************************************************************************"
 	@echo "  GENERATING SWAT WEB APPLICATION SOURCE"
 	@echo "****************************************************************************"
-
-###################################################################################
-# INSTALL TARGETS (for developer use only)
-###################################################################################
-
-install:	
-	@echo "****************************************************************************"
-	@echo "  INSTALLING SWAT"
-	@echo "****************************************************************************"
-	@echo "  * Installing swat files..."
-	@rsync -av --exclude=crystalsvg --delete build/ $(LOCALINSTALLDIR)

@@ -450,7 +450,7 @@ if (valid)
 if (! valid)
 {
     error.setError(jsonrpc.Constant.ErrorCode.MethodNotFound,
-                   "Method `" + method + "` not found.");
+                   "Method `" + jsonInput.method + "` not found.");
     error.Send();
     return;
 }
