@@ -56,6 +56,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_simple_test(suite, "ACLS", torture_raw_acls);
 	torture_suite_add_simple_test(suite, "COMPOSITE", torture_raw_composite);
 	torture_suite_add_simple_test(suite, "SAMBA3HIDE", torture_samba3_hide);
+	torture_suite_add_simple_test(suite, "SAMBA3CLOSEERR", torture_samba3_closeerr);
 	torture_suite_add_simple_test(suite, "SAMBA3CHECKFSP", torture_samba3_checkfsp);
 	torture_suite_add_simple_test(suite, "SAMBA3BADPATH", torture_samba3_badpath);
 	torture_suite_add_simple_test(suite, "SCAN-EAMAX", torture_max_eas);

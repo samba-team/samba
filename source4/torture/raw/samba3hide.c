@@ -64,7 +64,7 @@ struct list_state {
 static void set_visible(struct clilist_file_info *i, const char *mask,
 			void *priv)
 {
-	struct list_state *state = priv;
+	struct list_state *state = (struct list_state *)priv;
 
 	if (strcasecmp_m(state->fname, i->name) == 0)
 		state->visible = True;
@@ -264,4 +264,74 @@ BOOL torture_samba3_hide(struct torture_context *torture)
 	}
 
 	return True;
+}
+
+/*
+ * Try to force smb_close to return an error. The only way I can think of is
+ * to open a file with delete on close, chmod the parent dir to 000 and then
+ * close. smb_close should return NT_STATUS_ACCESS_DENIED.
+ */
+
+BOOL torture_samba3_closeerr(struct torture_context *tctx)
+{
+	struct smbcli_state *cli = NULL;
+	BOOL result = False;
+	NTSTATUS status;
+	const char *dname = "closeerr.dir";
+	const char *fname = "closeerr.dir\\closerr.txt";
+	int fnum;
+
+	if (!torture_open_connection(&cli, 0)) {
+		goto fail;
+	}
+
+	smbcli_deltree(cli->tree, dname);
+
+	torture_assert_ntstatus_ok(
+		tctx, smbcli_mkdir(cli->tree, dname),
+		talloc_asprintf(tctx, "smbcli_mdir failed: (%s)\n",
+				smbcli_errstr(cli->tree)));
+
+	fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR,
+			    DENY_NONE);
+	torture_assert(tctx, fnum != -1, 
+		       talloc_asprintf(tctx, "smbcli_open failed: %s\n",
+				       smbcli_errstr(cli->tree)));
+	smbcli_close(cli->tree, fnum);
+
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 0, 0);
+
+	torture_assert(tctx, fnum != -1, 
+		       talloc_asprintf(tctx, "smbcli_open failed: %s\n",
+				       smbcli_errstr(cli->tree)));
+
+	status = smbcli_nt_delete_on_close(cli->tree, fnum, True);
+
+	torture_assert_ntstatus_ok(tctx, status, 
+				   "setting delete_on_close on file failed !");
+
+	status = smbcli_chmod(cli->tree, dname, 0);
+
+	torture_assert_ntstatus_ok(tctx, status, 
+				   "smbcli_chmod on file failed !");
+
+	status = smbcli_close(cli->tree, fnum);
+
+	smbcli_chmod(cli->tree, dname, UNIX_R_USR|UNIX_W_USR|UNIX_X_USR);
+	smbcli_deltree(cli->tree, dname);
+
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_ACCESS_DENIED,
+				      "smbcli_close");
+
+	result = True;
+	
+ fail:
+	if (cli) {
+		torture_close_connection(cli);
+	}
+	return result;
 }
