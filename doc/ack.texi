@@ -32,6 +32,8 @@ contains a modifed copy.
 The @code{getifaddrs} implementation for Linux was written by Hideaki
 YOSHIFUJI for the Usagi project.
 
+The @code{pkcs11.h} headerfile was written by the Scute project.
+
 Bugfixes, documentation, encouragement, and code has been contributed by:
 @table @asis
 @item Derrick J Brashear
