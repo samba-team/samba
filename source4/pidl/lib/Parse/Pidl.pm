@@ -17,13 +17,13 @@ use vars qw ( $VERSION );
 
 $VERSION = '0.02';
 
-sub warning($$)
+sub warning
 {
 	my ($l,$m) = @_;
 	print STDERR "$l->{FILE}:$l->{LINE}: warning: $m\n";
 }
 
-sub error($$)
+sub error
 {
 	my ($l,$m) = @_;
 	print STDERR "$l->{FILE}:$l->{LINE}: error: $m\n";
