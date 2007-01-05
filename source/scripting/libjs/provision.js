@@ -470,6 +470,9 @@ function provision_become_dc(subobj, message, paths, session_info)
 	message("Setting up " + paths.samdb + " rootDSE\n");
 	setup_add_ldif("provision_rootdse_add.ldif", info, samdb, false);
 
+	message("Erasing data from partitions\n");
+	ldb_erase_partitions(info, samdb, undefined);
+
 	ok = samdb.transaction_commit();
 	assert(ok);
 
