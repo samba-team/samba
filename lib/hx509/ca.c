@@ -41,10 +41,12 @@ struct hx509_ca_tbs {
     ExtKeyUsage eku;
     GeneralNames san;
     unsigned key_usage;
+    heim_integer serial;
     struct {
 	unsigned int proxy:1;
 	unsigned int ca:1;
 	unsigned int key:1;
+	unsigned int serial:1;
     } flags;
     time_t notBefore;
     time_t notAfter;
@@ -77,6 +79,7 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     free_SubjectPublicKeyInfo(&(*tbs)->spki);
     free_GeneralNames(&(*tbs)->san);
     free_ExtKeyUsage(&(*tbs)->eku);
+    der_free_heim_integer(&(*tbs)->serial);
 
     hx509_name_free(&(*tbs)->subject);
 
@@ -133,7 +136,7 @@ hx509_ca_tbs_set_proxy(hx509_context context,
 
 
 int
-hx509_ca_tbs_set_spki(hx509_context contex,
+hx509_ca_tbs_set_spki(hx509_context context,
 		      hx509_ca_tbs tbs,
 		      const SubjectPublicKeyInfo *spki)
 {
@@ -141,6 +144,18 @@ hx509_ca_tbs_set_spki(hx509_context contex,
     free_SubjectPublicKeyInfo(&tbs->spki);
     ret = copy_SubjectPublicKeyInfo(spki, &tbs->spki);
     tbs->flags.key = !ret;
+    return ret;
+}
+
+int
+hx509_ca_tbs_set_serialnumber(hx509_context context,
+			      hx509_ca_tbs tbs,
+			      const heim_integer *serialNumber)
+{
+    int ret;
+    der_free_heim_integer(&tbs->serial);
+    ret = der_copy_heim_integer(serialNumber, &tbs->serial);
+    tbs->flags.serial = !ret;
     return ret;
 }
 
@@ -467,16 +482,24 @@ ca_sign(hx509_context context,
     }
     *tbsc->version = rfc3280_version_3;
     /* serialNumber         CertificateSerialNumber, */
-    tbsc->serialNumber.length = 20;
-    tbsc->serialNumber.data = malloc(tbsc->serialNumber.length);
-    if (tbsc->serialNumber.data == NULL){
-	ret = ENOMEM;
-	hx509_set_error_string(context, 0, ret, "Out of memory");
-	goto out;
+    if (tbs->flags.serial) {
+	ret = der_copy_heim_integer(&tbs->serial, &tbsc->serialNumber);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+    } else {
+	tbsc->serialNumber.length = 20;
+	tbsc->serialNumber.data = malloc(tbsc->serialNumber.length);
+	if (tbsc->serialNumber.data == NULL){
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	/* XXX diffrent */
+	RAND_bytes(tbsc->serialNumber.data, tbsc->serialNumber.length);
+	((unsigned char *)tbsc->serialNumber.data)[0] &= 0x7f;
     }
-    /* XXX diffrent */
-    RAND_bytes(tbsc->serialNumber.data, tbsc->serialNumber.length);
-    ((unsigned char *)tbsc->serialNumber.data)[0] &= 0x7f;
     /* signature            AlgorithmIdentifier, */
     ret = copy_AlgorithmIdentifier(sigalg, &tbsc->signature);
     if (ret) {
