@@ -39,7 +39,6 @@ RCSID("$Id$");
 
 #ifdef HAVE_DLOPEN
 
-#include "pkcs11u.h"
 #include "pkcs11.h"
 
 struct p11_slot {
