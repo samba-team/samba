@@ -29,6 +29,9 @@
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 
+/* not nice; temporary workaround for the current implementation... */
+static void *last_key = NULL;
+
 static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 {
 	struct ibw_ctx *ictx = talloc_get_type(ctdb->private, struct ibw_ctx);
@@ -108,14 +111,12 @@ static int ctdb_ibw_add_node(struct ctdb_node *node)
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
-static void *ctdb_ibw_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+static void *ctdb_ibw_allocate_pkt(struct ctdb_node *node, size_t size)
 {
 	struct ibw_conn *conn = NULL;
 	void *buf = NULL;
-	void *key; /* TODO: expand the param list with this */
 
-	/* TODO2: !!! I need "node" or ibw_conn here */
-	if (ibw_alloc_send_buf(conn, &buf, &key, (int)size))
+	if (ibw_alloc_send_buf(conn, &buf, &last_key, size))
 		return NULL;
 
 	return buf;
@@ -124,20 +125,40 @@ static void *ctdb_ibw_allocate_pkt(struct ctdb_context *ctdb, size_t size)
 static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
 	struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
-	void *key = NULL; /* TODO: expand the param list with this */
+	int	rc;
 
-	assert(conn!=NULL);
-	return ibw_send(conn, data, key, length);
+	rc = ibw_send(conn, data, last_key, length);
+	last_key = NULL;
+
+	return rc;
+}
+
+static void ctdb_ibw_dealloc_pkt(struct ctdb_node *node, void *data)
+{
+	if (last_key) {
+		struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
+	
+		assert(conn!=NULL);
+		ibw_cancel_send_buf(conn, data, last_key);
+	} /* else ibw_send is already using it and will free it after completion */
+}
+
+static int ctdb_ibw_stop(struct ctdb_context *cctx)
+{
+	struct ibw_ctx *ictx = talloc_get_type(cctx->private, struct ibw_ctx);
+
+	assert(ictx!=NULL);
+	return ibw_stop(ictx);
 }
 
 static const struct ctdb_methods ctdb_ibw_methods = {
 	.start     = ctdb_ibw_start,
 	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
-	.allocate_pkt = ctdb_ibw_allocate_pkt
-	
-//	.dealloc_pkt = ctdb_ibw_dealloc_pkt
-//	.stop = ctdb_ibw_stop
+	.allocate_pkt = ctdb_ibw_allocate_pkt,
+
+	.dealloc_pkt = ctdb_ibw_dealloc_pkt,
+	.stop = ctdb_ibw_stop
 };
 
 /*
@@ -146,7 +167,7 @@ static const struct ctdb_methods ctdb_ibw_methods = {
 int ctdb_ibw_init(struct ctdb_context *ctdb)
 {
 	struct ibw_ctx *ictx;
-	
+
 	ictx = ibw_init(
 		NULL, //struct ibw_initattr *attr, /* TODO */
 		0, //int nattr, /* TODO */

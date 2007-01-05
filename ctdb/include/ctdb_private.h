@@ -55,7 +55,9 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
-	void *(*allocate_pkt)(struct ctdb_context *, size_t );
+	void *(*allocate_pkt)(struct ctdb_node *, size_t);
+	void (*dealloc_pkt)(struct ctdb_node *, void *data);
+	int (*stop)(struct ctdb_context *); /* initiate stopping the protocol */
 };
 
 /*
@@ -70,6 +72,9 @@ struct ctdb_upcalls {
 
 	/* node_connected is called when a connection to a node is established */
 	void (*node_connected)(struct ctdb_node *);
+
+	/* protocol has been stopped */
+	void (*stopped)(struct ctdb_context *);
 };
 
 /* main state of the ctdb daemon */

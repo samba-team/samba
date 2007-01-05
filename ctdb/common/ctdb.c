@@ -30,14 +30,14 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
-#ifdef HAVE_INFINIBAND
+#ifdef USE_INFINIBAND
 	int ctdb_ibw_init(struct ctdb_context *ctdb);
 #endif /*HAVE_INFINIBAND*/
 
 	if (strcmp(transport, "tcp") == 0) {
 		return ctdb_tcp_init(ctdb);
 	}
-#ifdef HAVE_INFINIBAND
+#ifdef USE_INFINIBAND
 	if (strcmp(transport, "ib") == 0) {
 		return ctdb_ibw_init(ctdb);
 	}
@@ -256,10 +256,15 @@ void ctdb_wait_loop(struct ctdb_context *ctdb)
 	}
 }
 
+void ctdb_stopped(struct ctdb_context *ctdb)
+{
+}
+
 static const struct ctdb_upcalls ctdb_upcalls = {
 	.recv_pkt       = ctdb_recv_pkt,
 	.node_dead      = ctdb_node_dead,
-	.node_connected = ctdb_node_connected
+	.node_connected = ctdb_node_connected,
+	.stopped        = ctdb_stopped
 };
 
 /*
