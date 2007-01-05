@@ -35,7 +35,8 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
-
+#include "auth/auth.h"
+#include "lib/db_wrap.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
@@ -94,6 +95,7 @@ failed:
 }
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
+#define TORTURE_SAMDB_LDB "test_samdb.ldb"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -174,8 +176,25 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"subobj.DNSNAME      = \"%s\";\n"
 		"subobj.DEFAULTSITE  = \"%s\";\n"
 		"\n"
+		"modules_list        = new Array(\"rootdse\",\n"
+		"                                \"kludge_acl\",\n"
+		"                                \"paged_results\",\n"
+		"                                \"server_sort\",\n"
+		"                                \"extended_dn\",\n"
+		"                                \"asq\",\n"
+		"                                //\"samldb\",should only handle originating changes...\n"
+		"                                \"password_hash\",\n"
+		"                                \"operational\",\n"
+		"                                \"objectclass\",\n"
+		"                                \"rdn_name\",\n"
+		"                                \"partition\");\n"
+		"subobj.MODULES_LIST = join(\",\", modules_list);\n"
+		"subobj.DOMAINDN_MOD = \"objectguid\";\n"
+		"subobj.CONFIGDN_MOD = \"objectguid\";\n"
+		"subobj.SCHEMADN_MOD = \"objectguid\";\n"
+		"\n"
 		"var paths = provision_default_paths(subobj);\n"
-		"paths.samdb = \"test_samdb.ldb\";\n"
+		"paths.samdb = \"%s\";\n"
 		"\n"
 		"var system_session = system_session();\n"
 		"\n"
@@ -189,7 +208,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		p->forest->schema_dn_str,
 		p->dest_dsa->netbios_name,
 		p->dest_dsa->dns_name,
-		p->dest_dsa->site_name);
+		p->dest_dsa->site_name,
+		TORTURE_SAMDB_LDB);
 	NT_STATUS_HAVE_NO_MEMORY(ejs);
 
 	ret = test_run_ejs(ejs);
@@ -199,8 +219,23 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		talloc_free(ejs);
 		return NT_STATUS_FOOBAR;
 	}
-
 	talloc_free(ejs);
+
+	talloc_free(s->ldb);
+
+	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+				  system_session(s),
+				  NULL, 0, NULL);
+	if (!s->ldb) {
+		DEBUG(0,("Failed to open '%s'\n",
+			TORTURE_SAMDB_LDB));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ret = ldb_transaction_start(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -231,6 +266,14 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 	struct replPropertyMetaData1 *rdn_m;
 	struct drsuapi_DsReplicaObjMetaData *rdn_mc;
 	int ret;
+
+	if (!obj->object.identifier) {
+		return WERR_FOOBAR;
+	}
+
+	if (!obj->object.identifier->dn || !obj->object.identifier->dn[0]) {
+		return WERR_FOOBAR;
+	}
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
@@ -381,6 +424,18 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjMetaDataCtr, &mdc);
 	}
 
+	ret = ldb_add(s->ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+			DEBUG(0,("record exists (ignored): %s: %d\n",
+				obj->object.identifier->dn, ret));
+		} else {
+			DEBUG(0,("Failed to add record: %s: %d\n",
+				obj->object.identifier->dn, ret));
+			return WERR_FOOBAR;
+		}
+	}
+
 	*_msg = msg;
 	return WERR_OK;
 }
@@ -390,6 +445,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 {
 	WERROR status;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	int ret;
 
 	for (cur = s->schema_part.first_object; cur; cur = cur->next_object) {
 		uint32_t i;
@@ -466,6 +522,17 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
+	}
+
+	ret = ldb_transaction_commit(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to commit the schema changes: %d\n", ret));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_transaction_start(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
@@ -551,6 +618,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	uint32_t i;
+	int ret;
 
 	switch (c->ctr_level) {
 	case 1:
@@ -618,6 +686,17 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 				linked_attributes[i].value.blob->data,
 				linked_attributes[i].value.blob->length);
 		}
+	}
+
+	ret = ldb_transaction_commit(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to commit the changes: %d\n", ret));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_transaction_start(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
