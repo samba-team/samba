@@ -1,7 +1,7 @@
 ################################
 ## Domain Naming Context
 ################################
-dn: ${BASEDN}
+dn: ${DOMAINDN}
 objectClass: top
 objectClass: domain
 objectClass: domainDNS

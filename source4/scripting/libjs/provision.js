@@ -57,7 +57,7 @@ objectClass: top
 objectClass: foreignSecurityPrincipal
 description: %s
 ",
-			  sid, subobj.BASEDN, desc);
+			  sid, subobj.DOMAINDN, desc);
 	/* deliberately ignore errors from this, as the records may
 	   already exist */
 	ldb.add(add);
@@ -71,7 +71,7 @@ function setup_name_mapping(info, ldb, sid, unixname)
 {
 	var attrs = new Array("dn");
 	var res = ldb.search(sprintf("objectSid=%s", sid), 
-			     info.subobj.BASEDN, ldb.SCOPE_SUBTREE, attrs);
+			     info.subobj.DOMAINDN, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 1) {
 		info.message("Failed to find record for objectSid %s\n", sid);
 		return false;
@@ -211,7 +211,7 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 		var previous_remaining = 1;
 		var current_remaining = 0;
 
-		if (ldapbackend && (basedn == info.subobj.BASEDN)) {
+		if (ldapbackend && (basedn == info.subobj.DOMAINDN)) {
 			/* Only delete objects that were created by provision */
 			anything = "(objectcategory=*)";
 		}
@@ -398,7 +398,7 @@ function setup_name_mappings(info, ldb)
 	var attrs = new Array("objectSid");
 	var subobj = info.subobj;
 
-	res = ldb.search("objectSid=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
+	res = ldb.search("objectSid=*", subobj.DOMAINDN, ldb.SCOPE_BASE, attrs);
 	assert(res.length == 1 && res[0].objectSid != undefined);
 	var sid = res[0].objectSid;
 
@@ -450,7 +450,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	assert(valid_netbios_name(subobj.DOMAIN));
 	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
 	assert(valid_netbios_name(subobj.NETBIOSNAME));
-	var rdns = split(",", subobj.BASEDN);
+	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 	
 	if (subobj.DOMAINGUID != undefined) {
@@ -502,13 +502,13 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Erasing data from partitions\n");
 	ldb_erase_partitions(info, samdb, ldapbackend);
 	
-	message("Adding baseDN: " + subobj.BASEDN + " (permitted to fail)\n");
+	message("Adding DomainDN: " + subobj.DOMAINDN + " (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
-	message("Modifying baseDN: " + subobj.BASEDN + "\n");
+	message("Modifying DomainDN: " + subobj.DOMAINDN + "\n");
 	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify " + subobj.BASEDN + " in target " + subobj.LDAPBACKEND + "\n");
+			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.LDAPBACKEND + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 		};
 		assert(modify_ok);
@@ -622,12 +622,12 @@ function provision_dns(subobj, message, paths, session_info, credentials)
            or may not have been specified, so fetch them from the database */
 
 	var attrs = new Array("objectGUID");
-	res = ldb.search("objectGUID=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
+	res = ldb.search("objectGUID=*", subobj.DOMAINDN, ldb.SCOPE_BASE, attrs);
 	assert(res.length == 1);
 	assert(res[0].objectGUID != undefined);
 	subobj.DOMAINGUID = res[0].objectGUID;
 
-	subobj.HOSTGUID = searchone(ldb, subobj.BASEDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
+	subobj.HOSTGUID = searchone(ldb, subobj.DOMAINDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
 	assert(subobj.HOSTGUID != undefined);
 
 	setup_file("provision.zone", 
@@ -640,8 +640,8 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 /* Write out a DNS zone file, from the info in the current database */
 function provision_ldapbase(subobj, message, paths)
 {
-	message("Setting up LDAP base entry: " + subobj.BASEDN + " \n");
-	var rdns = split(",", subobj.BASEDN);
+	message("Setting up LDAP base entry: " + subobj.DOMAINDN + " \n");
+	var rdns = split(",", subobj.DOMAINDN);
 	subobj.EXTENSIBLEOBJECT = "objectClass: extensibleObject";
 
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
@@ -696,8 +696,8 @@ function provision_guess()
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
 	rdn_list = split(".", subobj.DNSDOMAIN);
-	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
-	subobj.ROOTDN       = subobj.BASEDN;
+	subobj.DOMAINDN       = "DC=" + join(",DC=", rdn_list);
+	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
 	subobj.LDAPBACKEND  = "users.ldb";
