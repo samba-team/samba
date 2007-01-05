@@ -10,7 +10,7 @@
 /**
  * Abstract Module class.  All modules should extend this class.
  */
-qx.OO.defineClass("swat.module.AbstractModule", qx.core.Object,
+qx.OO.defineClass("swat.main.AbstractModule", qx.core.Object,
 function()
 {
   qx.core.Object.call(this);
@@ -26,7 +26,7 @@ function()
  * module is first selected (and each subsequent time), and the FSM can use
  * that event to build the complete FSM.
  *
- * @param module {swat.module.Module}
+ * @param module {swat.main.Module}
  *    The module descriptor for the module.
  */
 qx.Proto.buildInitialFsm = function(module)
@@ -47,7 +47,7 @@ qx.Proto.buildInitialFsm = function(module)
    * State: Idle
    *
    * Transition on:
-   *  "appear" on swat.module.canvas
+   *  "appear" on swat.main.canvas
    */
   var state = new qx.util.fsm.State(
     "State_Idle",
@@ -59,7 +59,7 @@ qx.Proto.buildInitialFsm = function(module)
           // user interface.
           "appear"  :
           {
-            "swat.module.canvas" :
+            "swat.main.canvas" :
               "Transition_Idle_to_Idle_Load_Gui"
           }
         }
@@ -106,7 +106,7 @@ qx.Proto.buildInitialFsm = function(module)
   module.fsm = fsm;
 
   // Save the module descriptor in the finite state machine
-  fsm.addObject("swat.module.module", module);
+  fsm.addObject("swat.main.module", module);
 
   // Create an RPC object for use by this module
   module.rpc = new qx.io.remote.Rpc();
@@ -117,7 +117,7 @@ qx.Proto.buildInitialFsm = function(module)
   module.rpc.addEventListener("failed", fsm.eventListener, fsm);
   module.rpc.addEventListener("timeout", fsm.eventListener, fsm);
   module.rpc.addEventListener("aborted", fsm.eventListener, fsm);
-  fsm.addObject("swat.module.rpc", module.rpc);
+  fsm.addObject("swat.main.rpc", module.rpc);
 
   // Start the finite state machine
   fsm.start();
