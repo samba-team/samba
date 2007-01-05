@@ -32,13 +32,13 @@
  *
  * @param class {class}
  *   The class which contains the module implementation.  That class must
- *   extend swat.module.AbstractModule and implement a singleton interface
+ *   extend swat.main.AbstractModule and implement a singleton interface
  *   that provides a public method called initialAppear() which takes this
  *   Module object as a parameter, and creates the finite state machine for
  *   the module (if applicable) and builds the graphical user interface for
  *   the module.
  */
-qx.OO.defineClass("swat.module.Module", qx.core.Object,
+qx.OO.defineClass("swat.main.Module", qx.core.Object,
 function(moduleName, class)
 {
   qx.core.Object.call(this);
@@ -55,7 +55,7 @@ function(moduleName, class)
   this.class = class;
 
   // Add this new module to the module list.
-  swat.module.Module._list[moduleName] = this;
+  swat.main.Module._list[moduleName] = this;
 });
 
 
@@ -64,7 +64,7 @@ function(moduleName, class)
  */
 qx.Class.getList = function()
 {
-  return swat.module.Module._list;
+  return swat.main.Module._list;
 };
 
 

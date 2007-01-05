@@ -125,7 +125,7 @@ qx.Class.buildGui = function(moduleList)
     canvas.setDisplay(false); // initially not displayed
 
     var fsm = moduleList[moduleName].fsm;
-    fsm.addObject("swat.module.canvas", canvas);
+    fsm.addObject("swat.main.canvas", canvas);
     canvas.addEventListener("appear", fsm.eventListener, fsm);
     canvas.addEventListener("disappear", fsm.eventListener, fsm);
 

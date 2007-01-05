@@ -10,10 +10,10 @@
 /**
  * Swat statistics class finite state machine
  */
-qx.OO.defineClass("swat.module.statistics.Fsm", swat.module.AbstractModuleFsm,
+qx.OO.defineClass("swat.module.statistics.Fsm", swat.main.AbstractModuleFsm,
 function()
 {
-  swat.module.AbstractModuleFsm.call(this);
+  swat.main.AbstractModuleFsm.call(this);
 });
 
 
@@ -105,14 +105,14 @@ qx.Proto.buildFsm = function(module)
           // When we get an appear event, start our timer
           "appear" :
           {
-            "swat.module.canvas" :
+            "swat.main.canvas" :
               "Transition_Idle_to_Idle_via_appear"
           },
 
           // When we get a disappear event, stop our timer
           "disappear" :
           {
-            "swat.module.canvas" :
+            "swat.main.canvas" :
               "Transition_Idle_to_Idle_via_disappear"
           }
         }

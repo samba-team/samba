@@ -11,7 +11,7 @@
  * Common facilities for modules' finite state machines.  Each module's FSM
  * should extend this class.
  */
-qx.OO.defineClass("swat.module.AbstractModuleFsm", qx.core.Object, function()
+qx.OO.defineClass("swat.main.AbstractModuleFsm", qx.core.Object, function()
 {
   qx.core.Object.call(this);
 
@@ -35,17 +35,17 @@ qx.Proto.addAwaitRpcResultState = function(module)
    * State: AwaitRpcResult
    *
    * Actions upon entry:
-   *  - enable any objects in group "swat.module.fsmUtils.enable_during_rpc"
-   *  - disable any objects in group "swat.module.fsmUtils.disable_during_rpc"
+   *  - enable any objects in group "swat.main.fsmUtils.enable_during_rpc"
+   *  - disable any objects in group "swat.main.fsmUtils.disable_during_rpc"
    *
    * Actions upon exit:
-   *   - disable any objects in group "swat.module.fsmUtils.enable_during_rpc"
-   *   - enable any objects in group "swat.module.fsmUtils.disable_during_rpc"
+   *   - disable any objects in group "swat.main.fsmUtils.enable_during_rpc"
+   *   - enable any objects in group "swat.main.fsmUtils.disable_during_rpc"
    *
    * Transition on:
    *  "completed" (on RPC)
    *  "failed" (on RPC)
-   *  "execute" on swat.module.fsmUtils.abort_rpc
+   *  "execute" on swat.main.fsmUtils.abort_rpc
    */
   var state = new qx.util.fsm.State(
     "State_AwaitRpcResult",
@@ -57,24 +57,24 @@ qx.Proto.addAwaitRpcResultState = function(module)
         [
           {
             // We want to enable objects in the group
-            // swat.module.fsmUtils.enable_during_rpc
+            // swat.main.fsmUtils.enable_during_rpc
             "parameters" : [ true ],
 
             // Call this.getObject(<object>).setEnabled(true) on
             // state entry, for each <object> in the group called
-            // "swat.module.fsmUtils.enable_during_rpc".
-            "groups"      : [ "swat.module.fsmUtils.enable_during_rpc" ]
+            // "swat.main.fsmUtils.enable_during_rpc".
+            "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
           },
 
           {
             // We want to disable objects in the group
-            // swat.module.fsmUtils.disable_during_rpc
+            // swat.main.fsmUtils.disable_during_rpc
             "parameters" : [ false ],
 
             // Call this.getObject(<object>).setEnabled(false) on
             // state entry, for each <object> in the group called
-            // "swat.module.fsmUtils.disable_during_rpc".
-            "groups"      : [ "swat.module.fsmUtils.disable_during_rpc" ]
+            // "swat.main.fsmUtils.disable_during_rpc".
+            "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
           }
         ]
       },
@@ -86,24 +86,24 @@ qx.Proto.addAwaitRpcResultState = function(module)
         [
           {
             // We want to re-disable objects we had enabled, in the group
-            // swat.module.fsmUtils.enable_during_rpc
+            // swat.main.fsmUtils.enable_during_rpc
             "parameters" : [ false ],
 
             // Call this.getObject(<object>).setEnabled(false) on
             // state entry, for each <object> in the group called
-            // "swat.module.fsmUtils.enable_during_rpc".
-            "groups"      : [ "swat.module.fsmUtils.enable_during_rpc" ]
+            // "swat.main.fsmUtils.enable_during_rpc".
+            "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
           },
 
           {
             // We want to re-enable objects we had disabled, in the group
-            // swat.module.fsmUtils.disable_during_rpc
+            // swat.main.fsmUtils.disable_during_rpc
             "parameters" : [ true ],
 
             // Call this.getObject(<object>).setEnabled(true) on
             // state entry, for each <object> in the group called
-            // "swat.module.fsmUtils.disable_during_rpc".
-            "groups"      : [ "swat.module.fsmUtils.disable_during_rpc" ]
+            // "swat.main.fsmUtils.disable_during_rpc".
+            "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
           }
         ]
       },
@@ -123,7 +123,7 @@ qx.Proto.addAwaitRpcResultState = function(module)
       {
         "execute"  :
         {
-          "swat.module.fsmUtils.abort_rpc" :
+          "swat.main.fsmUtils.abort_rpc" :
             "Transition_AwaitRpcResult_to_AwaitRpcResult_via_button_abort"
         },
 
@@ -155,8 +155,8 @@ qx.Proto.addAwaitRpcResultState = function(module)
           var error = event.getData(); // retrieve the JSON-RPC error
 
           // Did we get get origin=Server, code=PermissionDenied ?
-          var origins = swat.module.AbstractModuleFsm.JsonRpc_Origin;
-          var serverErrors = swat.module.AbstractModuleFsm.JsonRpc_ServerError;
+          var origins = swat.main.AbstractModuleFsm.JsonRpc_Origin;
+          var serverErrors = swat.main.AbstractModuleFsm.JsonRpc_ServerError;
           if (error.origin == origins.Server &&
               error.code == serverErrors.PermissionDenied)
           {
@@ -201,7 +201,7 @@ qx.Proto.addAwaitRpcResultState = function(module)
   /*
    * Transition: AwaitRpcResult to AwaitRpcResult
    *
-   * Cause: "execute" on swat.module.fsmUtils.abort_rpc
+   * Cause: "execute" on swat.main.fsmUtils.abort_rpc
    */
   var trans = new qx.util.fsm.Transition(
     "Transition_AwaitRpcResult_to_AwaitRpcResult_via_button_abort",
@@ -287,7 +287,7 @@ qx.Proto.callRpc = function(fsm, service, method, params)
   rpcRequest.params.unshift(true);
 
   // Retrieve the RPC object */
-  var rpc = fsm.getObject("swat.module.rpc");
+  var rpc = fsm.getObject("swat.main.rpc");
 
   // Set the service name
   rpc.setServiceName(rpcRequest.service);

@@ -8,8 +8,8 @@
  */
 
 /*
-#require(swat.module.Module)
-#require(swat.module.AbstractModule)
+#require(swat.main.Module)
+#require(swat.main.AbstractModule)
 */
 
 /**
@@ -26,16 +26,16 @@ function()
  */
 
 //#require(swat.module.statistics.Statistics)
-new swat.module.Module("Status and Statistics",
+new swat.main.Module("Status and Statistics",
                        swat.module.statistics.Statistics);
 
 //#require(swat.module.ldbbrowse.LdbBrowse)
-new swat.module.Module("LDB Browser",
+new swat.main.Module("LDB Browser",
                        swat.module.ldbbrowse.LdbBrowse);
 
 //#require(swat.module.documentation.Documentation)
 //#require(api.Viewer)
-new swat.module.Module("API Documentation",
+new swat.main.Module("API Documentation",
                        swat.module.documentation.Documentation);
 
 
@@ -54,7 +54,7 @@ qx.Proto.initialize = function()
   qx.Settings.setCustomOfClass("qx.io.Json", "enableDebug", true);
 
   // For each module...
-  var moduleList = swat.module.Module.getList();
+  var moduleList = swat.main.Module.getList();
   for (moduleName in moduleList)
   {
     // ... call the module's buildInitialFsm() function
@@ -66,7 +66,7 @@ qx.Proto.initialize = function()
 
 qx.Proto.main = function()
 {
-  var moduleList = swat.module.Module.getList();
+  var moduleList = swat.main.Module.getList();
 
   // Initialize the gui for the main menu
   swat.main.Gui.buildGui(moduleList);
@@ -84,7 +84,7 @@ qx.Proto.main = function()
 qx.Proto.finalize = function()
 {
   // Call each module's finalization function
-  var moduleList = swat.module.Module.getList();
+  var moduleList = swat.main.Module.getList();
   for (moduleName in moduleList)
   {
     var module = moduleList[moduleName]["class"].getInstance();
