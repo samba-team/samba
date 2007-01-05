@@ -3,7 +3,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 29;
+use Test::More tests => 41;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Parse::Pidl::Util;
@@ -57,3 +57,21 @@ is("r->length+r->length",
 is("2/2*(r->length)", 
 	ParseExpr("constant/constant*(len)", {"constant" => "2", 
 			                              "len" => "r->length"}));
+is("2+2-r->length", 
+	ParseExpr("constant+constant-len", {"constant" => "2", 
+			                              "len" => "r->length"}));
+is("*r->length", ParseExpr("*len", { "len" => "r->length"}));
+is("**r->length", ParseExpr("**len", { "len" => "r->length"}));
+is("r->length&2", ParseExpr("len&2", { "len" => "r->length"}));
+is("&r->length", ParseExpr("&len", { "len" => "r->length"}));
+is("strlen(\"data\")", ParseExpr("strlen(foo)", { "foo" => "\"data\""}));
+is("strlen(\"data\", 4)", ParseExpr("strlen(foo, 4)", { "foo" => "\"data\""}));
+is("foo / bar", ParseExpr("foo / bar", { "bla" => "\"data\""}));
+is("r->length%2", ParseExpr("len%2", { "len" => "r->length"}));
+is("r->length==2", ParseExpr("len==2", { "len" => "r->length"}));
+is("r->length!=2", ParseExpr("len!=2", { "len" => "r->length"}));
+is("pr->length", ParseExpr("pr->length", { "p" => "r"}));
+TODO: {
+	todo_skip 1, "Broken at the moment";
+	is("r->length", ParseExpr("p->length", { "p" => "r"}));
+}
