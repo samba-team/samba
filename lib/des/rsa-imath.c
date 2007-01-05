@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -50,6 +50,8 @@ RCSID("$Id$");
 #include "imath/rsamath.h"
 #include "imath/iprime.h"
 
+#define USE_CRT 0
+
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)
 {
@@ -82,6 +84,78 @@ mpz2BN(mpz_t *s)
     free(p);
     return bn;
 }
+
+static int random_num(mp_int, size_t);
+
+static void
+setup_blind(mp_int n, mp_int b, mp_int bi)
+{
+    mp_int_init(b);
+    mp_int_init(bi);
+    random_num(b, mp_int_count_bits(n));
+    mp_int_mod(b, n, b);
+    mp_int_invmod(b, n, bi);
+}
+
+static void
+blind(mp_int in, mp_int b, mp_int e, mp_int n)
+{
+    mpz_t t1;
+    mp_int_init(&t1);
+    /* in' = (in * b^e) mod n */
+    mp_int_exptmod(b, e, n, &t1);
+    mp_int_mul(&t1, in, in);
+    mp_int_mod(in, n, in);
+    mp_int_clear(&t1);
+}
+
+static void
+unblind(mp_int out, mp_int bi, mp_int n)
+{
+    /* out' = (out * 1/b) mod n */
+    mp_int_mul(out, bi, out);
+    mp_int_mod(out, n, out);
+}
+
+static mp_result
+rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
+		      mp_int dmp1, mp_int dmq1, mp_int iqmp,
+		      mp_int out)
+{
+    mpz_t v1, v2, t, u;
+    mp_int_init(&v1); mp_int_init(&v2); mp_int_init(&t);
+    mp_int_init(&u);
+    
+    /* v1 = c ^ (d mod (q - 1)) mod q */
+    /* v2 = c ^ (d mod (p - 1)) mod p */
+    mp_int_exptmod(in, dmq1, q, &v1);
+    mp_int_exptmod(in, dmp1, p, &v2);
+    
+    /* C2 = 1/q mod p  (iqmp) */
+    /* u = (v2 - v1)C2 mod p. */
+    mp_int_sub(&v2, &v1, &u);
+    if (MP_SIGN(&u) == MP_NEG) {
+	mp_int_add(&u, p, &t);
+	mp_int_swap(&u, &t);
+    }
+    mp_int_mul(&u, iqmp, &t);
+    mp_int_mod(&t, p, &u);
+    
+    /* c ^ d mod n = v1 + u q */
+    mp_int_mul(&u, q, &t);
+    mp_int_add(&t, &v1, out);
+    
+    mp_int_clear(&v1);
+    mp_int_clear(&v2);
+    mp_int_clear(&t);
+    mp_int_clear(&u);
+
+    return MP_OK;
+}
+
+/*
+ *
+ */
 
 static int
 imath_rsa_public_encrypt(int flen, const unsigned char* from, 
@@ -230,7 +304,8 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
     unsigned char *p, *p0;
     mp_result res;
     size_t size;
-    mpz_t s, us, n, d;
+    mpz_t in, out, n, e, b, bi;
+    int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -239,9 +314,6 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 
     if (size < RSA_PKCS1_PADDING_SIZE || size - RSA_PKCS1_PADDING_SIZE < flen)
 	return -2;
-
-    BN2mpz(&n, rsa->n);
-    BN2mpz(&d, rsa->d);
 
     p0 = p = malloc(size);
     *p++ = 0;
@@ -253,29 +325,72 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
     p += flen;
     assert((p - p0) == size);
 
-    mp_int_init(&s);
-    mp_int_init(&us);
-    mp_int_read_unsigned(&us, p0, size);
+    BN2mpz(&n, rsa->n);
+    BN2mpz(&e, rsa->e);
+
+    mp_int_init(&in);
+    mp_int_init(&out);
+    mp_int_read_unsigned(&in, p0, size);
     free(p0);
 
-    /* XXX insert pre-image keyblinding here */
+    if(mp_int_compare_zero(&in) < 0 ||
+       mp_int_compare(&in, &n) >= 0) {
+	size = 0;
+	goto out;
+    }
 
-    res = rsa_rsasp(&us, &d, &n, &s);
+    if (blinding) {
+	setup_blind(&n, &b, &bi);
+	blind(&in, &b, &e, &n);
+    }
 
-    /* XXX insert post-image keyblinding here */
+    if (USE_CRT && rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
+	mpz_t p, q, dmp1, dmq1, iqmp;
 
-    mp_int_clear(&d);
-    mp_int_clear(&n);
-    mp_int_clear(&us);
+	BN2mpz(&p, rsa->p);
+	BN2mpz(&q, rsa->q);
+	BN2mpz(&dmp1, rsa->dmp1);
+	BN2mpz(&dmq1, rsa->dmq1);
+	BN2mpz(&iqmp, rsa->iqmp);
+
+	res = rsa_private_calculate(&in, &p, &q, &dmp1, &dmq1, &iqmp, &out);
+
+	mp_int_clear(&p);
+	mp_int_clear(&q);
+	mp_int_clear(&dmp1);
+	mp_int_clear(&dmq1);
+	mp_int_clear(&iqmp);
+    } else {
+	mpz_t d;
+
+	BN2mpz(&d, rsa->d);
+	res = mp_int_exptmod(&in, &d, &n, &out);
+	mp_int_clear(&d);
+	if (res != MP_OK) {
+	    size = 0;
+	    goto out;
+	}
+    }
+
+    if (blinding) {
+	unblind(&out, &bi, &n);
+	mp_int_clear(&b);
+	mp_int_clear(&bi);
+    }
+
     {
 	size_t ssize;
-	ssize = mp_int_unsigned_len(&s);
+	ssize = mp_int_unsigned_len(&out);
 	assert(size >= ssize);
-	mp_int_to_unsigned(&s, to, size);
+	mp_int_to_unsigned(&out, to, size);
 	size = ssize;
     }
     
-    mp_int_clear(&s);
+out:
+    mp_int_clear(&e);
+    mp_int_clear(&n);
+    mp_int_clear(&in);
+    mp_int_clear(&out);
 
     return size;
 }
@@ -284,10 +399,11 @@ static int
 imath_rsa_private_decrypt(int flen, const unsigned char* from, 
 			  unsigned char* to, RSA* rsa, int padding)
 {
-    unsigned char *p;
+    unsigned char *ptr;
     mp_result res;
     size_t size;
-    mpz_t enc, dec, n, d;
+    mpz_t in, out, n, e, b, bi;
+    int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -296,46 +412,94 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
     if (flen > size)
 	return -2;
 
-    mp_int_init(&enc);
-    mp_int_init(&dec);
+    mp_int_init(&in);
+    mp_int_init(&out);
 
     BN2mpz(&n, rsa->n);
-    BN2mpz(&d, rsa->d);
+    BN2mpz(&e, rsa->e);
 
-    res = mp_int_read_unsigned(&enc, rk_UNCONST(from), flen);
+    res = mp_int_read_unsigned(&in, rk_UNCONST(from), flen);
+    if (res != MP_OK) {
+	size = -1;
+	goto out;
+    }
 
-    /* XXX insert pre-image keyblinding here */
+    if(mp_int_compare_zero(&in) < 0 ||
+       mp_int_compare(&in, &n) >= 0) {
+	size = 0;
+	goto out;
+    }
 
-    res = rsa_rsadp(&enc, &d, &n, &dec);
+    if (blinding) {
+	setup_blind(&n, &b, &bi);
+	blind(&in, &b, &e, &n);
+    }
 
-    /* XXX insert post-image keyblinding here */
+    if (USE_CRT && rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
+	mpz_t p, q, dmp1, dmq1, iqmp;
 
-    mp_int_clear(&enc);
-    mp_int_clear(&d);
-    mp_int_clear(&n);
+	BN2mpz(&p, rsa->p);
+	BN2mpz(&q, rsa->q);
+	BN2mpz(&dmp1, rsa->dmp1);
+	BN2mpz(&dmq1, rsa->dmq1);
+	BN2mpz(&iqmp, rsa->iqmp);
 
-    p = to;
+	res = rsa_private_calculate(&in, &p, &q, &dmp1, &dmq1, &iqmp, &out);
+
+	mp_int_clear(&p);
+	mp_int_clear(&q);
+	mp_int_clear(&dmp1);
+	mp_int_clear(&dmq1);
+	mp_int_clear(&iqmp);
+    } else {
+	mpz_t d;
+
+	if(mp_int_compare_zero(&in) < 0 ||
+	   mp_int_compare(&in, &n) >= 0)
+	    return MP_RANGE;
+
+	BN2mpz(&d, rsa->d);
+	res = mp_int_exptmod(&in, &d, &n, &out);
+	mp_int_clear(&d);
+	if (res != MP_OK) {
+	    size = 0;
+	    goto out;
+	}
+    }
+
+    if (blinding) {
+	unblind(&out, &bi, &n);
+	mp_int_clear(&b);
+	mp_int_clear(&bi);
+    }
+
+    ptr = to;
     {
 	size_t ssize;
-	ssize = mp_int_unsigned_len(&dec);
+	ssize = mp_int_unsigned_len(&out);
 	assert(size >= ssize);
-	mp_int_to_unsigned(&dec, p, ssize);
+	mp_int_to_unsigned(&out, ptr, ssize);
 	size = ssize;
     }
-    mp_int_clear(&dec);
 
     /* head zero was skipped by mp_int_to_unsigned */
-    if (*p != 2)
+    if (*ptr != 2)
 	return -3;
-    size--; p++;
-    while (size && *p != 0) {
-	size--; p++;
+    size--; ptr++;
+    while (size && *ptr != 0) {
+	size--; ptr++;
     }
     if (size == 0)
 	return -4;
-    size--; p++;
+    size--; ptr++;
 
-    memmove(to, p, size);
+    memmove(to, ptr, size);
+
+out:
+    mp_int_clear(&e);
+    mp_int_clear(&n);
+    mp_int_clear(&in);
+    mp_int_clear(&out);
 
     return size;
 }
