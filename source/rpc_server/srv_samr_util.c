@@ -52,6 +52,7 @@ void copy_id20_to_sam_passwd(struct samu *to, SAM_USER_INFO_20 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		new_string = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_20 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
@@ -194,6 +195,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
@@ -417,6 +419,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
@@ -628,6 +631,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_25 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
