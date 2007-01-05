@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -147,6 +147,7 @@ read_key(ENGINE *engine, const char *rsa_key)
 
 static int version_flag;
 static int help_flag;
+static int time_keygen;
 static char *time_key;
 static char *rsa_key;
 static char *id_flag;
@@ -154,6 +155,8 @@ static char *id_flag;
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
       "selects the engine id", 	"engine-id" },
+    { "time-keygen",	0,	arg_flag,	&time_keygen,
+      "time rsa generation", NULL },
     { "time-key",	0,	arg_string,	&time_key,
       "rsa key file", NULL },
     { "key",	0,	arg_string,	&rsa_key,
@@ -213,6 +216,38 @@ main(int argc, char **argv)
 	return 77;
     
     printf("rsa %s\n", ENGINE_get_RSA(engine)->name);
+
+    if (time_keygen) {
+	struct timeval tv1, tv2;
+	const int num = 10;
+	BIGNUM *e;
+
+	rsa = RSA_new_method(engine);
+
+	e = BN_new();
+	BN_set_word(e, 0x10001);
+
+	gettimeofday(&tv1, NULL);
+
+	for (i = 0; i < num; i++) {
+	    rsa = RSA_new_method(engine);
+	    if (RSA_generate_key_ex(rsa, 1024, e, NULL) != 1)
+		errx(1, "RSA_generate_key_ex");
+	    RSA_free(rsa);
+	}
+
+	gettimeofday(&tv2, NULL);
+	timevalsub(&tv2, &tv1);
+
+	printf("time %lu.%06lu\n", 
+	       (unsigned long)tv2.tv_sec, 
+	       (unsigned long)tv2.tv_usec);
+
+	BN_free(e);
+	ENGINE_finish(engine);
+
+	return 0;
+    }
 
     if (time_key) {
 	const int size = 20;
