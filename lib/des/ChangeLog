@@ -1,5 +1,13 @@
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath: prune off stuff we dont use
+
+	* imath/import.sh: Prune off stuff we don't use from imathsource
+
+	* Makefile.am: Prune off stuff we don't use from imathsource
+
+	* rsa-imath.c: Use mp_int_exptmod directly.
+
 	* imath/iprime.c: Use a larger table of small primes, cut down
 	genenration in best cases to half compared to using a small table.
 
