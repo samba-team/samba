@@ -3,7 +3,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 41;
+use Test::More tests => 53;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Parse::Pidl::Util;
@@ -48,30 +48,39 @@ ok(property_matches({PROPERTIES => {x => "data"}}, "x", "data"));
 ok(property_matches({PROPERTIES => {x => "data"}}, "x", "^([dat]+)\$"));
 
 # ParseExpr()
-is("", ParseExpr("", {}));
+#is("", ParseExpr("", {}));
 is("a", ParseExpr("a", {"b" => "2"}));
 is("2", ParseExpr("a", {"a" => "2"}));
-is("2*2", ParseExpr("a*a", {"a" => "2"}));
-is("r->length+r->length", 
+is("2 * 2", ParseExpr("a*a", {"a" => "2"}));
+is("r->length + r->length", 
    ParseExpr("length+length", {"length" => "r->length"}));
-is("2/2*(r->length)", 
+is("2 / 2 * (r->length)", 
 	ParseExpr("constant/constant*(len)", {"constant" => "2", 
 			                              "len" => "r->length"}));
-is("2+2-r->length", 
+is("2 + 2 - r->length", 
 	ParseExpr("constant+constant-len", {"constant" => "2", 
 			                              "len" => "r->length"}));
 is("*r->length", ParseExpr("*len", { "len" => "r->length"}));
 is("**r->length", ParseExpr("**len", { "len" => "r->length"}));
-is("r->length&2", ParseExpr("len&2", { "len" => "r->length"}));
+is("r->length & 2", ParseExpr("len&2", { "len" => "r->length"}));
 is("&r->length", ParseExpr("&len", { "len" => "r->length"}));
+is("calc()", ParseExpr("calc()", { "foo" => "2"}));
+is("calc(2 * 2)", ParseExpr("calc(foo * 2)", { "foo" => "2"}));
 is("strlen(\"data\")", ParseExpr("strlen(foo)", { "foo" => "\"data\""}));
 is("strlen(\"data\", 4)", ParseExpr("strlen(foo, 4)", { "foo" => "\"data\""}));
 is("foo / bar", ParseExpr("foo / bar", { "bla" => "\"data\""}));
-is("r->length%2", ParseExpr("len%2", { "len" => "r->length"}));
-is("r->length==2", ParseExpr("len==2", { "len" => "r->length"}));
-is("r->length!=2", ParseExpr("len!=2", { "len" => "r->length"}));
+is("r->length % 2", ParseExpr("len%2", { "len" => "r->length"}));
+is("r->length == 2", ParseExpr("len==2", { "len" => "r->length"}));
+is("r->length != 2", ParseExpr("len!=2", { "len" => "r->length"}));
 is("pr->length", ParseExpr("pr->length", { "p" => "r"}));
-TODO: {
-	todo_skip 1, "Broken at the moment";
-	is("r->length", ParseExpr("p->length", { "p" => "r"}));
-}
+is("r->length", ParseExpr("p->length", { "p" => "r"}));
+is("_foo / bla32", ParseExpr("_foo / bla32", { "bla" => "\"data\""}));
+is("foo.bar.blah", ParseExpr("foo.blah", { "foo" => "foo.bar"}));
+is("\"bla\"", ParseExpr("\"bla\"", {}));
+is("1 << 2", ParseExpr("1 << 2", {}));
+is("1 >> 2", ParseExpr("1 >> 2", {}));
+is("0x200", ParseExpr("0x200", {}));
+is("2?3:0", ParseExpr("2?3:0", {}));
+is("~0", ParseExpr("~0", {}));
+is("b->a->a", ParseExpr("a->a->a", {"a" => "b"}));
+is("b.a.a", ParseExpr("a.a.a", {"a" => "b"}));
