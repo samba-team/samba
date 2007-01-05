@@ -131,10 +131,72 @@ qx.Proto.addAwaitRpcResultState = function(module)
           "Transition_AwaitRpcResult_to_PopStack_via_complete",
 
         "failed" :
-          "Transition_AwaitRpcResult_to_PopStack_via_failed"
+          qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE
       }
     });
   fsm.addState(state);
+
+  /*** Transitions that use a PREDICATE appear first ***/
+
+  /*
+   * Transition: AwaitRpcResult to GetAuthInfo
+   *
+   * Cause: "failed" (on RPC) where reason is PermissionDenied
+   */
+  var trans = new qx.util.fsm.Transition(
+    "Transition_AwaitRpcResult_to_GetAuthInfo",
+    {
+      "nextState" :
+        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
+
+      "predicate" :
+        function(fsm, event)
+        {
+          var error = event.getData(); // retrieve the JSON-RPC error
+
+          // Did we get get origin=Server, code=PermissionDenied ?
+          var origins = swat.module.AbstractModuleFsm.JsonRpc_Origin;
+          var serverErrors = swat.module.AbstractModuleFsm.JsonRpc_ServerError;
+          if (error.origin == origins.Server &&
+              error.code == serverErrors.PermissionDenied)
+          {
+            return true;
+          }
+
+          // fall through to next transition, also for "failed"
+          return false;
+        }
+    });
+  state.addTransition(trans);
+
+  /*
+   * Transition: AwaitRpcResult to PopStack
+   *
+   * Cause: "failed" (on RPC)
+   */
+  var trans = new qx.util.fsm.Transition(
+    "Transition_AwaitRpcResult_to_PopStack_via_failed",
+    {
+      "nextState" :
+        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
+
+      "ontransition" :
+        function(fsm, event)
+        {
+          // Get the request object
+          var rpcRequest = _this.getCurrentRpcRequest();
+          
+          // Generate the result for a completed request
+          rpcRequest.setUserData("result",
+                                  {
+                                      type : "failed",
+                                      data : event.getData()
+                                  });
+        }
+    });
+  state.addTransition(trans);
+
+  /*** Remaining transitions are accessed via the jump table ***/
 
   /*
    * Transition: AwaitRpcResult to AwaitRpcResult
@@ -180,33 +242,6 @@ qx.Proto.addAwaitRpcResultState = function(module)
           rpcRequest.setUserData("result",
                                   {
                                       type : "complete",
-                                      data : event.getData()
-                                  });
-        }
-    });
-  state.addTransition(trans);
-
-  /*
-   * Transition: AwaitRpcResult to PopStack
-   *
-   * Cause: "failed" (on RPC)
-   */
-  var trans = new qx.util.fsm.Transition(
-    "Transition_AwaitRpcResult_to_PopStack_via_failed",
-    {
-      "nextState" :
-        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
-
-      "ontransition" :
-        function(fsm, event)
-        {
-          // Get the request object
-          var rpcRequest = _this.getCurrentRpcRequest();
-          
-          // Generate the result for a completed request
-          rpcRequest.setUserData("result",
-                                  {
-                                      type : "failed",
                                       data : event.getData()
                                   });
         }
@@ -317,3 +352,104 @@ qx.Proto.getCurrentRpcRequest = function()
   return this._requests[this._requests.length - 1];
 };
 
+
+/**
+ * JSON-RPC error origins
+ */
+qx.Class.JsonRpc_Origin =
+{
+  Server              : 1,
+  Application         : 2,
+  Transport           : 3,
+  Client              : 4
+};
+
+
+/**
+ * JSON-RPC Errors for origin == Server
+ */
+qx.Class.JsonRpc_ServerError =
+{
+  /**
+   * Error code, value 0: Unknown Error
+   *
+   * The default error code, used only when no specific error code is passed
+   * to the JsonRpcError constructor.  This code should generally not be used.
+   */
+  Unknown               : 0,
+
+  /**
+   * Error code, value 1: Illegal Service
+   *
+   * The service name contains illegal characters or is otherwise deemed
+   * unacceptable to the JSON-RPC server.
+   */
+  IllegalService        : 1,
+
+  /**
+   * Error code, value 2: Service Not Found
+   *
+   * The requested service does not exist at the JSON-RPC server.
+   */
+  ServiceNotFound       : 2,
+
+  /**
+   * Error code, value 3: Class Not Found
+   *
+   * If the JSON-RPC server divides service methods into subsets (classes),
+   * this indicates that the specified class was not found.  This is slightly
+   * more detailed than "Method Not Found", but that error would always also
+   * be legal (and true) whenever this one is returned. (Not used in this
+   * implementation)
+   */
+  ClassNotFound         : 3, // not used in this implementation
+
+  /**
+   * Error code, value 4: Method Not Found
+   *
+   * The method specified in the request is not found in the requested
+   * service.
+   */
+  MethodNotFound        : 4,
+
+  /*
+   * Error code, value 5: Parameter Mismatch
+   *
+   * If a method discovers that the parameters (arguments) provided to it do
+   * not match the requisite types for the method's parameters, it should
+   * return this error code to indicate so to the caller.
+   *
+   * This error is also used to indicate an illegal parameter value, in server
+   * scripts.
+   */
+  ParameterMismatch     : 5,
+
+  /**
+   * Error code, value 6: Permission Denied
+   *
+   * A JSON-RPC service provider can require authentication, and that
+   * authentication can be implemented such the method takes authentication
+   * parameters, or such that a method or class of methods requires prior
+   * authentication.  If the caller has not properly authenticated to use the
+   * requested method, this error code is returned.
+   */
+  PermissionDenied      : 6,
+
+  /*
+   * Error code, value 7: Unexpected Output
+   *
+   * The called method illegally generated output to the browser, which would
+   * have preceeded the JSON-RPC data.
+   */
+  UnexpectedOutput      : 7,
+
+  /*
+   * Error code, value 8: Resource Error
+   *
+   * Too many resources were requested, a system limitation on the total
+   * number of resources has been reached, or a resource or resource id was
+   * misused.
+   */
+  ResourceError         : 8
+
+};
