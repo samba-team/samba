@@ -96,6 +96,7 @@ do
 		    echo "$resultdir doesn't exists"
 		    exit 1
 		fi
+		resultdir="`pwd`/${resultdir}"
 		shift 2
 		;;
 	--fetch-method)
