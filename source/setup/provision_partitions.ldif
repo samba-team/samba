@@ -1,13 +1,13 @@
 dn: @PARTITION
-partition: ${SCHEMADN}:schema.ldb
-partition: ${CONFIGDN}:configuration.ldb
-partition: ${DOMAINDN}:${LDAPBACKEND}
+partition: ${SCHEMADN}:${SCHEMADN_LDB}
+partition: ${CONFIGDN}:${CONFIGDN_LDB}
+partition: ${DOMAINDN}:${DOMAINDN_LDB}
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
-modules:${SCHEMADN}:objectguid
-modules:${CONFIGDN}:objectguid
-modules:${DOMAINDN}:${LDAPMODULES}
+modules:${SCHEMADN}:${SCHEMADN_MOD}
+modules:${CONFIGDN}:${CONFIGDN_MOD}
+modules:${DOMAINDN}:${DOMAINDN_MOD}
 
 #Add modules to the list to activate them by default
 #beware often order is important
