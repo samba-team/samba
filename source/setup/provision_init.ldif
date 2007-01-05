@@ -47,7 +47,7 @@ dn: cn=ROOTDSE
 subschemaSubentry: CN=Aggregate,${SCHEMADN}
 dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 defaultNamingContext: ${BASEDN}
-rootDomainNamingContext: ${BASEDN}
+rootDomainNamingContext: ${ROOTDN}
 configurationNamingContext: ${CONFIGDN}
 schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 3
