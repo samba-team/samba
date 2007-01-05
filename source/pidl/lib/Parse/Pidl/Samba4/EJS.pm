@@ -187,7 +187,11 @@ sub EjsPullPointer($$$$$)
 sub EjsPullString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	$var = get_pointer_to($var);
+	if (defined($pl) and $pl->{TYPE} eq "POINTER") {
+		$var = get_pointer_to($var);
+	}
 	pidl "NDR_CHECK(ejs_pull_string(ejs, v, $name, $var));";
 }
 
@@ -248,14 +252,14 @@ sub EjsPullSwitch($$$$$)
 sub EjsPullElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (has_property($e, "charset")) {
+	if (($l->{TYPE} eq "POINTER")) {
+		EjsPullPointer($e, $l, $var, $name, $env);
+	} elsif (has_property($e, "charset")) {
 		EjsPullString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPullArray($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "DATA") {
 		EjsPullScalar($e, $l, $var, $name, $env);
-	} elsif (($l->{TYPE} eq "POINTER")) {
-		EjsPullPointer($e, $l, $var, $name, $env);
 	} elsif (($l->{TYPE} eq "SWITCH")) {
 		EjsPullSwitch($e, $l, $var, $name, $env);
 	} else {
@@ -459,6 +463,10 @@ sub EjsPushScalar($$$$$)
 sub EjsPushString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	if (defined($pl) and $pl->{TYPE} eq "POINTER") {
+		$var = get_pointer_to($var);
+	}
 	pidl "NDR_CHECK(ejs_push_string(ejs, v, $name, $var));";
 }
 
@@ -531,14 +539,14 @@ sub EjsPushArray($$$$$)
 sub EjsPushElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (has_property($e, "charset")) {
+	if (($l->{TYPE} eq "POINTER")) {
+		EjsPushPointer($e, $l, $var, $name, $env);
+	} elsif (has_property($e, "charset")) {
 		EjsPushString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPushArray($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "DATA") {
 		EjsPushScalar($e, $l, $var, $name, $env);
-	} elsif (($l->{TYPE} eq "POINTER")) {
-		EjsPushPointer($e, $l, $var, $name, $env);
 	} elsif (($l->{TYPE} eq "SWITCH")) {
 		EjsPushSwitch($e, $l, $var, $name, $env);
 	} else {
