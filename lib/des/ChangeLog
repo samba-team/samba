@@ -1,5 +1,7 @@
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa.h: add RSA_FLAG_NO_BLINDING
+
 	* rsa-imath.c: Add keyblinding, add a commented out CRT based RSA.
 
 	* rsa.c: Add iqmp.
