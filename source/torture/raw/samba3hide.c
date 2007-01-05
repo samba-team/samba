@@ -42,7 +42,7 @@ static void init_unixinfo_nochange(union smb_setfileinfo *info)
 	
 	info->unix_basic.in.status_change_time = SMB_TIME_NO_CHANGE_HI;
 	info->unix_basic.in.status_change_time <<= 32;
-	info->unix_basic.in.status_change_time = SMB_TIME_NO_CHANGE_LO;
+	info->unix_basic.in.status_change_time |= SMB_TIME_NO_CHANGE_LO;
 
 	info->unix_basic.in.access_time = SMB_TIME_NO_CHANGE_HI;
 	info->unix_basic.in.access_time <<= 32;
