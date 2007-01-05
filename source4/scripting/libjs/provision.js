@@ -508,7 +508,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.LDAPBACKEND + "\n");
+			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 		};
 		assert(modify_ok);
@@ -691,20 +691,25 @@ function provision_guess()
 	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff", "adm");
 	subobj.BACKUP       = findnss(nss.getgrnam, "backup", "wheel", "root", "staff");
 	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other", "unknown", "usr");
+
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
 	rdn_list = split(".", subobj.DNSDOMAIN);
-	subobj.DOMAINDN       = "DC=" + join(",DC=", rdn_list);
+	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
+	subobj.DOMAINDN_LDB = "users.ldb";
+	subobj.DOMAINDN_MOD = "objectguid";
 	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
+	subobj.CONFIGDN_LDB = "configuration.ldb";
+	subobj.CONFIGDN_MOD = "objectguid";
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
-	subobj.LDAPBACKEND  = "users.ldb";
-	subobj.LDAPMODULE = "entryUUID";
-	subobj.LDAPMODULES = "objectguid";
+	subobj.SCHEMADN_LDB = "schema.ldb";
+	subobj.SCHEMADN_MOD = "objectguid";
+
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
-	subobj.ACI = "# no aci for local ldb";
+	subobj.ACI		= "# no aci for local ldb";
 	return subobj;
 }
 

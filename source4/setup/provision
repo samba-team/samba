@@ -113,17 +113,23 @@ for (r in options) {
 	var key = strupper(join("", split("-", r)));
 	subobj[key] = options[r];
 }
-if (options["aci"] != undefined) {
-	println("set ACI: " + subobj["ACI"]);
-}
-
-if (options["ldap-backend"] != undefined) {
-	subobj["LDAPMODULES"] = subobj["LDAPMODULE"] + ",paged_searches";
-}
 
 var blank = (options["blank"] != undefined);
 var ldapbase = (options["ldap-base"] != undefined);
 var ldapbackend = (options["ldap-backend"] != undefined);
+var ldapmodule = (options["ldap-module"] != undefined);
+
+if (options["aci"] != undefined) {
+	println("set ACI: " + subobj["ACI"]);
+}
+
+if (ldapbackend) {
+	if (!ldapmodule) {
+		subobj["LDAPMODULE"] = "objectUUID";
+	}
+	subobj["DOMAINDN_LDB"] = subobj["LDAPBACKEND"];
+	subobj["DOMAINDN_MOD"] = subobj["LDAPMODULE"] + ",paged_searches";
+}
 
 if (!provision_validate(subobj, message)) {
 	return -1;
