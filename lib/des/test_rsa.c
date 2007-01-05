@@ -47,6 +47,39 @@ RCSID("$Id$");
 #include <engine.h>
 #include <evp.h>
 
+/*
+ *
+ */
+
+static int version_flag;
+static int help_flag;
+static int time_keygen;
+static char *time_key;
+static int key_blinding = 1;
+static char *rsa_key;
+static char *id_flag;
+
+static struct getargs args[] = {
+    { "id",		0,	arg_string,	&id_flag,
+      "selects the engine id", 	"engine-id" },
+    { "time-keygen",	0,	arg_flag,	&time_keygen,
+      "time rsa generation", NULL },
+    { "time-key",	0,	arg_string,	&time_key,
+      "rsa key file", NULL },
+    { "key-blinding",	0,	arg_negative_flag, &key_blinding,
+      "key blinding", NULL },
+    { "key",	0,	arg_string,	&rsa_key,
+      "rsa key file", NULL },
+    { "version",	0,	arg_flag,	&version_flag,
+      "print version", NULL },
+    { "help",		0,	arg_flag,	&help_flag,
+      NULL, 	NULL }
+};
+
+/*
+ *
+ */
+
 static void
 check_rsa(const unsigned char *in, size_t len, RSA *rsa, int padding)
 {
@@ -136,36 +169,15 @@ read_key(ENGINE *engine, const char *rsa_key)
     
     RSA_set_method(rsa, ENGINE_get_RSA(engine));
 
+    if (!key_blinding)
+	rsa->flags |= RSA_FLAG_NO_BLINDING;
+
     return rsa;
 }
-
-
 
 /*
  *
  */
-
-static int version_flag;
-static int help_flag;
-static int time_keygen;
-static char *time_key;
-static char *rsa_key;
-static char *id_flag;
-
-static struct getargs args[] = {
-    { "id",		0,	arg_string,	&id_flag,
-      "selects the engine id", 	"engine-id" },
-    { "time-keygen",	0,	arg_flag,	&time_keygen,
-      "time rsa generation", NULL },
-    { "time-key",	0,	arg_string,	&time_key,
-      "rsa key file", NULL },
-    { "key",	0,	arg_string,	&rsa_key,
-      "rsa key file", NULL },
-    { "version",	0,	arg_flag,	&version_flag,
-      "print version", NULL },
-    { "help",		0,	arg_flag,	&help_flag,
-      NULL, 	NULL }
-};
 
 static void
 usage (int ret)
@@ -223,6 +235,8 @@ main(int argc, char **argv)
 	BIGNUM *e;
 
 	rsa = RSA_new_method(engine);
+	if (!key_blinding)
+	    rsa->flags |= RSA_FLAG_NO_BLINDING;
 
 	e = BN_new();
 	BN_set_word(e, 0x10001);
@@ -323,6 +337,8 @@ main(int argc, char **argv)
 	BIGNUM *e;
 
 	rsa = RSA_new_method(engine);
+	if (!key_blinding)
+	    rsa->flags |= RSA_FLAG_NO_BLINDING;
 
 	e = BN_new();
 	BN_set_word(e, 0x10001);
