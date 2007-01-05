@@ -36,7 +36,7 @@ sub AllocOutVar($$$$)
 	}
 
 	if ($l->{TYPE} eq "ARRAY") {
-		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
 		pidl "$name = talloc_zero_size($mem_ctx, sizeof(*$name) * $size);";
 	} else {
 		pidl "$name = talloc_zero_size($mem_ctx, sizeof(*$name));";

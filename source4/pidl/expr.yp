@@ -22,8 +22,8 @@ exp:        NUM
 		|	TEXT				{ "\"$_[1]\"" }
 		|	func
 		|	exp '.'	VAR			{ "$_[1].$_[3]" }
-        |   VAR                 { $_[0]->Lookup($_[1]) }
-        |   '*' exp %prec DEREF { $_[0]->Dereference($_[2]); "*$_[2]" }
+        |   VAR                 { $_[0]->_Lookup($_[1]) }
+        |   '*' exp %prec DEREF { $_[0]->_Dereference($_[2]); "*$_[2]" }
         |   '~' exp %prec INV   { "~$_[2]" }
         |   exp '+' exp         { "$_[1] + $_[3]" }
         |   exp '-' exp         { "$_[1] - $_[3]" }
@@ -93,13 +93,13 @@ sub _Lexer {
     }
 }
 
-sub Lookup($$) 
+sub _Lookup($$) 
 {
 	my ($self, $x) = @_;
 	return $self->YYData->{LOOKUP}->($x);
 }
 
-sub Dereference($$)
+sub _Dereference($$)
 {
 	my ($self, $x) = @_;
 	if (defined($self->YYData->{DEREFERENCE})) {
@@ -107,10 +107,18 @@ sub Dereference($$)
 	}
 }
 
+sub _Error($)
+{
+	my ($self) = @_;
+	$self->YYData->{ERROR}->("Parse error in `".$self->YYData->{FULL_INPUT}."' near `". $self->YYData->{LAST_TOKEN} . "'");
+}
+
 sub Run {
     my($self, $data, $error, $lookup, $deref) = @_;
+    $self->YYData->{FULL_INPUT} = $data;
     $self->YYData->{INPUT} = $data;
     $self->YYData->{LOOKUP} = $lookup;
     $self->YYData->{DEREFERENCE} = $deref;
-    return $self->YYParse( yylex => \&_Lexer, yyerror => $error );
+    $self->YYData->{ERROR} = $error;
+    return $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error);
 }
