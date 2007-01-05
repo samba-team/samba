@@ -9,7 +9,7 @@ package Parse::Pidl;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(warning error fatal);
+@EXPORT_OK = qw(warning error fatal);
 
 use strict;
 
