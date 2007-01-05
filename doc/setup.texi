@@ -1303,7 +1303,7 @@ hxtool issue-certificate \
     --self-signed \
     --issue-ca \
     --generate-key=rsa \
-    --key="ca.key" \
+    --out-key="ca.key" \
     --subject="CN=CA,DC=test,DC=h5l,DC=se" \
     --lifetime=10years \
     --certificate="ca.der"
@@ -1321,7 +1321,7 @@ hxtool issue-certificate \
     --generate-key=rsa \
     --type="pkinit-kdc" \
     --pk-init-principal="krbtgt/TEST.H5L.SE@@TEST.H5L.SE" \
-    --key="kdc.key" \
+    --out-key="kdc.key" \
     --subject="uid=kdc,DC=test,DC=h5l,DC=se" \
     --certificate="kdc.der"
 @end example
@@ -1339,7 +1339,7 @@ hxtool issue-certificate \
     --generate-key=rsa \
     --type="pkinit-client" \
     --pk-init-principal="lha@@TEST.H5L.SE" \
-    --key="user.key" \
+    --out-key="user.key" \
     --subject="uid=lha,DC=test,DC=h5l,DC=se" \
     --certificate="user.der"
 @end example
