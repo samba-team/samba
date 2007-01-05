@@ -1,4 +1,4 @@
-dn: CN=SD-Rights-Effective,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SD-Rights-Effective,${SCHEMADN}
 cn: SD-Rights-Effective
 name: SD-Rights-Effective
 objectClass: top
@@ -13,7 +13,7 @@ attributeID: 1.2.840.113556.1.4.1304
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-Exch-Owner-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-Exch-Owner-BL,${SCHEMADN}
 cn: ms-Exch-Owner-BL
 name: ms-Exch-Owner-BL
 objectClass: top
@@ -30,7 +30,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Is-Member-Of-DL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Is-Member-Of-DL,${SCHEMADN}
 cn: Is-Member-Of-DL
 name: Is-Member-Of-DL
 objectClass: top
@@ -47,7 +47,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Search-Guide,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Search-Guide,${SCHEMADN}
 cn: Search-Guide
 name: Search-Guide
 objectClass: top
@@ -62,7 +62,7 @@ attributeID: 2.5.4.14
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-ReplicationEpoch,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-ReplicationEpoch,${SCHEMADN}
 cn: ms-DS-ReplicationEpoch
 name: ms-DS-ReplicationEpoch
 objectClass: top
@@ -77,7 +77,7 @@ attributeID: 1.2.840.113556.1.4.1720
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Auditing-Policy,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Auditing-Policy,${SCHEMADN}
 cn: Auditing-Policy
 name: Auditing-Policy
 objectClass: top
@@ -92,7 +92,7 @@ attributeID: 1.2.840.113556.1.4.202
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Phone-Fax-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Fax-Other,${SCHEMADN}
 cn: Phone-Fax-Other
 name: Phone-Fax-Other
 objectClass: top
@@ -107,7 +107,7 @@ attributeID: 1.2.840.113556.1.4.646
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Address,${SCHEMADN}
 cn: Address
 name: Address
 objectClass: top
@@ -122,7 +122,7 @@ attributeID: 1.2.840.113556.1.2.256
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Security-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Security-Identifier,${SCHEMADN}
 cn: Security-Identifier
 name: Security-Identifier
 objectClass: top
@@ -137,7 +137,7 @@ attributeID: 1.2.840.113556.1.4.121
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=ms-DS-KeyVersionNumber,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-KeyVersionNumber,${SCHEMADN}
 cn: ms-DS-KeyVersionNumber
 name: ms-DS-KeyVersionNumber
 objectClass: top
@@ -152,7 +152,7 @@ attributeID: 1.2.840.113556.1.4.1782
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Account-Name-History,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Account-Name-History,${SCHEMADN}
 cn: Account-Name-History
 name: Account-Name-History
 objectClass: top
@@ -167,7 +167,7 @@ attributeID: 1.2.840.113556.1.4.1307
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=preferredLanguage,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=preferredLanguage,${SCHEMADN}
 cn: preferredLanguage
 name: preferredLanguage
 objectClass: top
@@ -182,7 +182,7 @@ attributeID: 2.16.840.1.113730.3.1.39
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=User-Shared-Folder-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Shared-Folder-Other,${SCHEMADN}
 cn: User-Shared-Folder-Other
 name: User-Shared-Folder-Other
 objectClass: top
@@ -197,7 +197,7 @@ attributeID: 1.2.840.113556.1.4.752
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=User-Shared-Folder,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Shared-Folder,${SCHEMADN}
 cn: User-Shared-Folder
 name: User-Shared-Folder
 objectClass: top
@@ -212,7 +212,7 @@ attributeID: 1.2.840.113556.1.4.751
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=MSMQ-Digests-Mig,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Digests-Mig,${SCHEMADN}
 cn: MSMQ-Digests-Mig
 name: MSMQ-Digests-Mig
 objectClass: top
@@ -227,7 +227,7 @@ attributeID: 1.2.840.113556.1.4.966
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Domain-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-Identifier,${SCHEMADN}
 cn: Domain-Identifier
 name: Domain-Identifier
 objectClass: top
@@ -242,7 +242,7 @@ attributeID: 1.2.840.113556.1.4.755
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Legacy-Exchange-DN,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Legacy-Exchange-DN,${SCHEMADN}
 cn: Legacy-Exchange-DN
 name: Legacy-Exchange-DN
 objectClass: top
@@ -257,7 +257,7 @@ attributeID: 1.2.840.113556.1.4.655
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-dn: CN=Well-Known-Objects,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Well-Known-Objects,${SCHEMADN}
 cn: Well-Known-Objects
 name: Well-Known-Objects
 objectClass: top
@@ -273,7 +273,7 @@ attributeSyntax: 2.5.5.7
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBCw==
 
-dn: CN=RDN,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RDN,${SCHEMADN}
 cn: RDN
 name: RDN
 objectClass: top
@@ -288,7 +288,7 @@ attributeID: 1.2.840.113556.1.4.1
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Non-Security-Member-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Non-Security-Member-BL,${SCHEMADN}
 cn: Non-Security-Member-BL
 name: Non-Security-Member-BL
 objectClass: top
@@ -305,7 +305,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Repl-Attribute-Meta-Data,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Repl-Attribute-Meta-Data,${SCHEMADN}
 cn: ms-DS-Repl-Attribute-Meta-Data
 name: ms-DS-Repl-Attribute-Meta-Data
 objectClass: top
@@ -320,7 +320,7 @@ attributeID: 1.2.840.113556.1.4.1707
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=DN-Reference-Update,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DN-Reference-Update,${SCHEMADN}
 cn: DN-Reference-Update
 name: DN-Reference-Update
 objectClass: top
@@ -336,7 +336,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=GP-Options,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=GP-Options,${SCHEMADN}
 cn: GP-Options
 name: GP-Options
 objectClass: top
@@ -351,7 +351,7 @@ attributeID: 1.2.840.113556.1.4.892
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=MS-DS-Per-User-Trust-Tombstones-Quota,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Per-User-Trust-Tombstones-Quota,${SCHEMADN}
 cn: MS-DS-Per-User-Trust-Tombstones-Quota
 name: MS-DS-Per-User-Trust-Tombstones-Quota
 objectClass: top
@@ -366,7 +366,7 @@ attributeID: 1.2.840.113556.1.4.1790
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Phone-Pager-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Pager-Primary,${SCHEMADN}
 cn: Phone-Pager-Primary
 name: Phone-Pager-Primary
 objectClass: top
@@ -381,7 +381,7 @@ attributeID: 0.9.2342.19200300.100.1.42
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Site-GUID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Site-GUID,${SCHEMADN}
 cn: Site-GUID
 name: Site-GUID
 objectClass: top
@@ -396,7 +396,7 @@ attributeID: 1.2.840.113556.1.4.362
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Az-Script-Engine-Cache-Max,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Script-Engine-Cache-Max,${SCHEMADN}
 cn: ms-DS-Az-Script-Engine-Cache-Max
 name: ms-DS-Az-Script-Engine-Cache-Max
 objectClass: top
@@ -411,7 +411,7 @@ attributeID: 1.2.840.113556.1.4.1796
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Token-Groups-No-GC-Acceptable,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Token-Groups-No-GC-Acceptable,${SCHEMADN}
 cn: Token-Groups-No-GC-Acceptable
 name: Token-Groups-No-GC-Acceptable
 objectClass: top
@@ -426,7 +426,7 @@ attributeID: 1.2.840.113556.1.4.1303
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=Token-Groups-Global-And-Universal,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Token-Groups-Global-And-Universal,${SCHEMADN}
 cn: Token-Groups-Global-And-Universal
 name: Token-Groups-Global-And-Universal
 objectClass: top
@@ -441,7 +441,7 @@ attributeID: 1.2.840.113556.1.4.1418
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=Alt-Security-Identities,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Alt-Security-Identities,${SCHEMADN}
 cn: Alt-Security-Identities
 name: Alt-Security-Identities
 objectClass: top
@@ -456,7 +456,7 @@ attributeID: 1.2.840.113556.1.4.867
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=labeledURI,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=labeledURI,${SCHEMADN}
 cn: labeledURI
 name: labeledURI
 objectClass: top
@@ -471,7 +471,7 @@ attributeID: 1.3.6.1.4.1.250.1.57
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Pwd-Last-Set,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Pwd-Last-Set,${SCHEMADN}
 cn: Pwd-Last-Set
 name: Pwd-Last-Set
 objectClass: top
@@ -486,7 +486,7 @@ attributeID: 1.2.840.113556.1.4.96
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Object-Classes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Classes,${SCHEMADN}
 cn: Object-Classes
 name: Object-Classes
 objectClass: top
@@ -501,7 +501,7 @@ attributeID: 2.5.21.6
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Trust-Attributes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Attributes,${SCHEMADN}
 cn: Trust-Attributes
 name: Trust-Attributes
 objectClass: top
@@ -516,7 +516,7 @@ attributeID: 1.2.840.113556.1.4.470
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-DS-Trust-Forest-Trust-Info,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Trust-Forest-Trust-Info,${SCHEMADN}
 cn: ms-DS-Trust-Forest-Trust-Info
 name: ms-DS-Trust-Forest-Trust-Info
 objectClass: top
@@ -531,7 +531,7 @@ attributeID: 1.2.840.113556.1.4.1702
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Site-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Site-Object,${SCHEMADN}
 cn: Site-Object
 name: Site-Object
 objectClass: top
@@ -548,7 +548,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Is-Privilege-Holder,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Is-Privilege-Holder,${SCHEMADN}
 cn: Is-Privilege-Holder
 name: Is-Privilege-Holder
 objectClass: top
@@ -565,7 +565,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Dns-Root,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Dns-Root,${SCHEMADN}
 cn: Dns-Root
 name: Dns-Root
 objectClass: top
@@ -580,7 +580,7 @@ attributeID: 1.2.840.113556.1.4.28
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Modified-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Modified-Count,${SCHEMADN}
 cn: Modified-Count
 name: Modified-Count
 objectClass: top
@@ -595,7 +595,7 @@ attributeID: 1.2.840.113556.1.4.168
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=International-ISDN-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=International-ISDN-Number,${SCHEMADN}
 cn: International-ISDN-Number
 name: International-ISDN-Number
 objectClass: top
@@ -610,7 +610,7 @@ attributeID: 2.5.4.25
 attributeSyntax: 2.5.5.6
 oMSyntax: 18
 
-dn: CN=Business-Category,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Business-Category,${SCHEMADN}
 cn: Business-Category
 name: Business-Category
 objectClass: top
@@ -625,7 +625,7 @@ attributeID: 2.5.4.15
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=houseIdentifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=houseIdentifier,${SCHEMADN}
 cn: houseIdentifier
 name: houseIdentifier
 objectClass: top
@@ -639,7 +639,7 @@ attributeID: 2.5.4.51
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Other-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Other-Name,${SCHEMADN}
 cn: Other-Name
 name: Other-Name
 objectClass: top
@@ -654,7 +654,7 @@ attributeID: 2.16.840.1.113730.3.1.34
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Repl-Topology-Stay-Of-Execution,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Repl-Topology-Stay-Of-Execution,${SCHEMADN}
 cn: Repl-Topology-Stay-Of-Execution
 name: Repl-Topology-Stay-Of-Execution
 objectClass: top
@@ -669,7 +669,7 @@ attributeID: 1.2.840.113556.1.4.677
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Netboot-GUID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Netboot-GUID,${SCHEMADN}
 cn: Netboot-GUID
 name: Netboot-GUID
 objectClass: top
@@ -684,7 +684,7 @@ attributeID: 1.2.840.113556.1.4.359
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=RDN-Att-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RDN-Att-ID,${SCHEMADN}
 cn: RDN-Att-ID
 name: RDN-Att-ID
 objectClass: top
@@ -699,7 +699,7 @@ attributeID: 1.2.840.113556.1.2.26
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=May-Contain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=May-Contain,${SCHEMADN}
 cn: May-Contain
 name: May-Contain
 objectClass: top
@@ -714,7 +714,7 @@ attributeID: 1.2.840.113556.1.2.25
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Trust-Auth-Outgoing,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Auth-Outgoing,${SCHEMADN}
 cn: Trust-Auth-Outgoing
 name: Trust-Auth-Outgoing
 objectClass: top
@@ -729,7 +729,7 @@ attributeID: 1.2.840.113556.1.4.135
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Server-Reference-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server-Reference-BL,${SCHEMADN}
 cn: Server-Reference-BL
 name: Server-Reference-BL
 objectClass: top
@@ -746,7 +746,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Create-Time-Stamp,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Create-Time-Stamp,${SCHEMADN}
 cn: Create-Time-Stamp
 name: Create-Time-Stamp
 objectClass: top
@@ -761,7 +761,7 @@ attributeID: 2.5.18.1
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=Attribute-Display-Names,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Attribute-Display-Names,${SCHEMADN}
 cn: Attribute-Display-Names
 name: Attribute-Display-Names
 objectClass: top
@@ -776,7 +776,7 @@ attributeID: 1.2.840.113556.1.4.748
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Admin-Context-Menu,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Context-Menu,${SCHEMADN}
 cn: Admin-Context-Menu
 name: Admin-Context-Menu
 objectClass: top
@@ -791,7 +791,7 @@ attributeID: 1.2.840.113556.1.4.614
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=LSA-Modified-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=LSA-Modified-Count,${SCHEMADN}
 cn: LSA-Modified-Count
 name: LSA-Modified-Count
 objectClass: top
@@ -806,7 +806,7 @@ attributeID: 1.2.840.113556.1.4.67
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=LSA-Creation-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=LSA-Creation-Time,${SCHEMADN}
 cn: LSA-Creation-Time
 name: LSA-Creation-Time
 objectClass: top
@@ -821,7 +821,7 @@ attributeID: 1.2.840.113556.1.4.66
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Server-State,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server-State,${SCHEMADN}
 cn: Server-State
 name: Server-State
 objectClass: top
@@ -836,7 +836,7 @@ attributeID: 1.2.840.113556.1.4.154
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Supplemental-Credentials,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Supplemental-Credentials,${SCHEMADN}
 cn: Supplemental-Credentials
 name: Supplemental-Credentials
 objectClass: top
@@ -851,7 +851,7 @@ attributeID: 1.2.840.113556.1.4.125
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=LDAP-Display-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=LDAP-Display-Name,${SCHEMADN}
 cn: LDAP-Display-Name
 name: LDAP-Display-Name
 objectClass: top
@@ -866,7 +866,7 @@ attributeID: 1.2.840.113556.1.2.460
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=msNPSavedCallingStationID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msNPSavedCallingStationID,${SCHEMADN}
 cn: msNPSavedCallingStationID
 name: msNPSavedCallingStationID
 objectClass: top
@@ -881,7 +881,7 @@ attributeID: 1.2.840.113556.1.4.1130
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=Flags,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Flags,${SCHEMADN}
 cn: Flags
 name: Flags
 objectClass: top
@@ -896,7 +896,7 @@ attributeID: 1.2.840.113556.1.4.38
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Create-Wizard-Ext,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Create-Wizard-Ext,${SCHEMADN}
 cn: Create-Wizard-Ext
 name: Create-Wizard-Ext
 objectClass: top
@@ -911,7 +911,7 @@ attributeID: 1.2.840.113556.1.4.812
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=DMD-Location,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DMD-Location,${SCHEMADN}
 cn: DMD-Location
 name: DMD-Location
 objectClass: top
@@ -927,7 +927,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-Exch-House-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-Exch-House-Identifier,${SCHEMADN}
 cn: ms-Exch-House-Identifier
 name: ms-Exch-House-Identifier
 objectClass: top
@@ -940,7 +940,7 @@ attributeID: 1.2.840.113556.1.2.596
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Phone-Mobile-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Mobile-Other,${SCHEMADN}
 cn: Phone-Mobile-Other
 name: Phone-Mobile-Other
 objectClass: top
@@ -955,7 +955,7 @@ attributeID: 1.2.840.113556.1.4.647
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Generation-Qualifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Generation-Qualifier,${SCHEMADN}
 cn: Generation-Qualifier
 name: Generation-Qualifier
 objectClass: top
@@ -970,7 +970,7 @@ attributeID: 2.5.4.44
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=DS-Heuristics,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DS-Heuristics,${SCHEMADN}
 cn: DS-Heuristics
 name: DS-Heuristics
 objectClass: top
@@ -985,7 +985,7 @@ attributeID: 1.2.840.113556.1.2.212
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Serial-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Serial-Number,${SCHEMADN}
 cn: Serial-Number
 name: Serial-Number
 objectClass: top
@@ -1000,7 +1000,7 @@ attributeID: 2.5.4.5
 attributeSyntax: 2.5.5.5
 oMSyntax: 19
 
-dn: CN=ms-DS-Settings,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Settings,${SCHEMADN}
 cn: ms-DS-Settings
 name: ms-DS-Settings
 objectClass: top
@@ -1015,7 +1015,7 @@ attributeID: 1.2.840.113556.1.4.1697
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Operator-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Operator-Count,${SCHEMADN}
 cn: Operator-Count
 name: Operator-Count
 objectClass: top
@@ -1030,7 +1030,7 @@ attributeID: 1.2.840.113556.1.4.144
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=msRADIUSFramedIPAddress,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRADIUSFramedIPAddress,${SCHEMADN}
 cn: msRADIUSFramedIPAddress
 name: msRADIUSFramedIPAddress
 objectClass: top
@@ -1045,7 +1045,7 @@ attributeID: 1.2.840.113556.1.4.1153
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Home-Drive,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Home-Drive,${SCHEMADN}
 cn: Home-Drive
 name: Home-Drive
 objectClass: top
@@ -1060,7 +1060,7 @@ attributeID: 1.2.840.113556.1.4.45
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Attribute-Types,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Attribute-Types,${SCHEMADN}
 cn: Attribute-Types
 name: Attribute-Types
 objectClass: top
@@ -1075,7 +1075,7 @@ attributeID: 2.5.21.5
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Initial-Auth-Outgoing,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Initial-Auth-Outgoing,${SCHEMADN}
 cn: Initial-Auth-Outgoing
 name: Initial-Auth-Outgoing
 objectClass: top
@@ -1090,7 +1090,7 @@ attributeID: 1.2.840.113556.1.4.540
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Object-Class,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Class,${SCHEMADN}
 cn: Object-Class
 name: Object-Class
 objectClass: top
@@ -1105,7 +1105,7 @@ attributeID: 2.5.4.0
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Possible-Inferiors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Possible-Inferiors,${SCHEMADN}
 cn: Possible-Inferiors
 name: Possible-Inferiors
 objectClass: top
@@ -1120,7 +1120,7 @@ attributeID: 1.2.840.113556.1.4.915
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=ms-DS-Approx-Immed-Subordinates,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Approx-Immed-Subordinates,${SCHEMADN}
 cn: ms-DS-Approx-Immed-Subordinates
 name: ms-DS-Approx-Immed-Subordinates
 objectClass: top
@@ -1135,7 +1135,7 @@ attributeID: 1.2.840.113556.1.4.1669
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-DS-Replication-Notify-Subsequent-DSA-Delay,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Replication-Notify-Subsequent-DSA-Delay,${SCHEMADN}
 cn: ms-DS-Replication-Notify-Subsequent-DSA-Delay
 name: ms-DS-Replication-Notify-Subsequent-DSA-Delay
 objectClass: top
@@ -1150,7 +1150,7 @@ attributeID: 1.2.840.113556.1.4.1664
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Create-Dialog,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Create-Dialog,${SCHEMADN}
 cn: Create-Dialog
 name: Create-Dialog
 objectClass: top
@@ -1165,7 +1165,7 @@ attributeID: 1.2.840.113556.1.4.810
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Query-Policy-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Query-Policy-Object,${SCHEMADN}
 cn: Query-Policy-Object
 name: Query-Policy-Object
 objectClass: top
@@ -1182,7 +1182,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=FRS-Root-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=FRS-Root-Path,${SCHEMADN}
 cn: FRS-Root-Path
 name: FRS-Root-Path
 objectClass: top
@@ -1197,7 +1197,7 @@ attributeID: 1.2.840.113556.1.4.487
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Organizational-Unit-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Organizational-Unit-Name,${SCHEMADN}
 cn: Organizational-Unit-Name
 name: Organizational-Unit-Name
 objectClass: top
@@ -1212,7 +1212,7 @@ attributeID: 2.5.4.11
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Telex-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Telex-Number,${SCHEMADN}
 cn: Telex-Number
 name: Telex-Number
 objectClass: top
@@ -1227,7 +1227,7 @@ attributeID: 2.5.4.21
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Address-Home,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Address-Home,${SCHEMADN}
 cn: Address-Home
 name: Address-Home
 objectClass: top
@@ -1242,7 +1242,7 @@ attributeID: 1.2.840.113556.1.2.617
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Assistant,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Assistant,${SCHEMADN}
 cn: Assistant
 name: Assistant
 objectClass: top
@@ -1258,7 +1258,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Netboot-Machine-File-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Netboot-Machine-File-Path,${SCHEMADN}
 cn: Netboot-Machine-File-Path
 name: Netboot-Machine-File-Path
 objectClass: top
@@ -1273,7 +1273,7 @@ attributeID: 1.2.840.113556.1.4.361
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=x500uniqueIdentifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=x500uniqueIdentifier,${SCHEMADN}
 cn: x500uniqueIdentifier
 name: x500uniqueIdentifier
 objectClass: top
@@ -1288,7 +1288,7 @@ attributeID: 2.5.4.45
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=DBCS-Pwd,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DBCS-Pwd,${SCHEMADN}
 cn: DBCS-Pwd
 name: DBCS-Pwd
 objectClass: top
@@ -1303,7 +1303,7 @@ attributeID: 1.2.840.113556.1.4.55
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Prefix-Map,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Prefix-Map,${SCHEMADN}
 cn: Prefix-Map
 name: Prefix-Map
 objectClass: top
@@ -1318,7 +1318,7 @@ attributeID: 1.2.840.113556.1.4.538
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Members-For-Az-Role-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Members-For-Az-Role-BL,${SCHEMADN}
 cn: ms-DS-Members-For-Az-Role-BL
 name: ms-DS-Members-For-Az-Role-BL
 objectClass: top
@@ -1335,7 +1335,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Last-Known-Parent,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Known-Parent,${SCHEMADN}
 cn: Last-Known-Parent
 name: Last-Known-Parent
 objectClass: top
@@ -1351,7 +1351,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=FSMO-Role-Owner,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=FSMO-Role-Owner,${SCHEMADN}
 cn: FSMO-Role-Owner
 name: FSMO-Role-Owner
 objectClass: top
@@ -1367,7 +1367,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Retired-Repl-DSA-Signatures,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Retired-Repl-DSA-Signatures,${SCHEMADN}
 cn: Retired-Repl-DSA-Signatures
 name: Retired-Repl-DSA-Signatures
 objectClass: top
@@ -1382,7 +1382,7 @@ attributeID: 1.2.840.113556.1.4.673
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Network-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Network-Address,${SCHEMADN}
 cn: Network-Address
 name: Network-Address
 objectClass: top
@@ -1396,7 +1396,7 @@ attributeID: 1.2.840.113556.1.2.459
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-dn: CN=Schema-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Schema-Version,${SCHEMADN}
 cn: Schema-Version
 name: Schema-Version
 objectClass: top
@@ -1411,7 +1411,7 @@ attributeID: 1.2.840.113556.1.2.471
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Poss-Superiors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Poss-Superiors,${SCHEMADN}
 cn: Poss-Superiors
 name: Poss-Superiors
 objectClass: top
@@ -1426,7 +1426,7 @@ attributeID: 1.2.840.113556.1.2.8
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Default-Security-Descriptor,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Security-Descriptor,${SCHEMADN}
 cn: Default-Security-Descriptor
 name: Default-Security-Descriptor
 objectClass: top
@@ -1441,7 +1441,7 @@ attributeID: 1.2.840.113556.1.4.224
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=User-SMIME-Certificate,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-SMIME-Certificate,${SCHEMADN}
 cn: User-SMIME-Certificate
 name: User-SMIME-Certificate
 objectClass: top
@@ -1456,7 +1456,7 @@ attributeID: 2.16.840.1.113730.3.140
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=userPKCS12,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=userPKCS12,${SCHEMADN}
 cn: userPKCS12
 name: userPKCS12
 objectClass: top
@@ -1471,7 +1471,7 @@ attributeID: 2.16.840.1.113730.3.1.216
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=User-Account-Control,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Account-Control,${SCHEMADN}
 cn: User-Account-Control
 name: User-Account-Control
 objectClass: top
@@ -1486,7 +1486,7 @@ attributeID: 1.2.840.113556.1.4.8
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Terminal-Server,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Terminal-Server,${SCHEMADN}
 cn: Terminal-Server
 name: Terminal-Server
 objectClass: top
@@ -1501,7 +1501,7 @@ attributeID: 1.2.840.113556.1.4.885
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Account-Expires,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Account-Expires,${SCHEMADN}
 cn: Account-Expires
 name: Account-Expires
 objectClass: top
@@ -1516,7 +1516,7 @@ attributeID: 1.2.840.113556.1.4.159
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Group-Type,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Group-Type,${SCHEMADN}
 cn: Group-Type
 name: Group-Type
 objectClass: top
@@ -1531,7 +1531,7 @@ attributeID: 1.2.840.113556.1.4.750
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=NT-Group-Members,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NT-Group-Members,${SCHEMADN}
 cn: NT-Group-Members
 name: NT-Group-Members
 objectClass: top
@@ -1546,7 +1546,7 @@ attributeID: 1.2.840.113556.1.4.89
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=WWW-Page-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=WWW-Page-Other,${SCHEMADN}
 cn: WWW-Page-Other
 name: WWW-Page-Other
 objectClass: top
@@ -1561,7 +1561,7 @@ attributeID: 1.2.840.113556.1.4.749
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Revision,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Revision,${SCHEMADN}
 cn: Revision
 name: Revision
 objectClass: top
@@ -1576,7 +1576,7 @@ attributeID: 1.2.840.113556.1.4.145
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Object-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Version,${SCHEMADN}
 cn: Object-Version
 name: Object-Version
 objectClass: top
@@ -1591,7 +1591,7 @@ attributeID: 1.2.840.113556.1.2.76
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-DS-NC-Repl-Inbound-Neighbors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-NC-Repl-Inbound-Neighbors,${SCHEMADN}
 cn: ms-DS-NC-Repl-Inbound-Neighbors
 name: ms-DS-NC-Repl-Inbound-Neighbors
 objectClass: top
@@ -1606,7 +1606,7 @@ attributeID: 1.2.840.113556.1.4.1705
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-COM-UserLink,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-COM-UserLink,${SCHEMADN}
 cn: ms-COM-UserLink
 name: ms-COM-UserLink
 objectClass: top
@@ -1623,7 +1623,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Mastered-By,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Mastered-By,${SCHEMADN}
 cn: Mastered-By
 name: Mastered-By
 objectClass: top
@@ -1640,7 +1640,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Canonical-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Canonical-Name,${SCHEMADN}
 cn: Canonical-Name
 name: Canonical-Name
 objectClass: top
@@ -1655,7 +1655,7 @@ attributeID: 1.2.840.113556.1.4.916
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-NC-Replica-Locations,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-NC-Replica-Locations,${SCHEMADN}
 cn: ms-DS-NC-Replica-Locations
 name: ms-DS-NC-Replica-Locations
 objectClass: top
@@ -1672,7 +1672,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-UpdateScript,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-UpdateScript,${SCHEMADN}
 cn: ms-DS-UpdateScript
 name: ms-DS-UpdateScript
 objectClass: top
@@ -1687,7 +1687,7 @@ attributeID: 1.2.840.113556.1.4.1721
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Next-Rid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Next-Rid,${SCHEMADN}
 cn: Next-Rid
 name: Next-Rid
 objectClass: top
@@ -1702,7 +1702,7 @@ attributeID: 1.2.840.113556.1.4.88
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=X121-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=X121-Address,${SCHEMADN}
 cn: X121-Address
 name: X121-Address
 objectClass: top
@@ -1717,7 +1717,7 @@ attributeID: 2.5.4.24
 attributeSyntax: 2.5.5.6
 oMSyntax: 18
 
-dn: CN=User-Password,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Password,${SCHEMADN}
 cn: User-Password
 name: User-Password
 objectClass: top
@@ -1732,7 +1732,7 @@ attributeID: 2.5.4.35
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Telephone-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Telephone-Number,${SCHEMADN}
 cn: Telephone-Number
 name: Telephone-Number
 objectClass: top
@@ -1747,7 +1747,7 @@ attributeID: 2.5.4.20
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Department,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Department,${SCHEMADN}
 cn: Department
 name: Department
 objectClass: top
@@ -1762,7 +1762,7 @@ attributeID: 1.2.840.113556.1.2.141
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Policy-Replication-Flags,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Policy-Replication-Flags,${SCHEMADN}
 cn: Policy-Replication-Flags
 name: Policy-Replication-Flags
 objectClass: top
@@ -1777,7 +1777,7 @@ attributeID: 1.2.840.113556.1.4.633
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Application-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Application-Name,${SCHEMADN}
 cn: Application-Name
 name: Application-Name
 objectClass: top
@@ -1792,7 +1792,7 @@ attributeID: 1.2.840.113556.1.4.218
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=System-May-Contain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-May-Contain,${SCHEMADN}
 cn: System-May-Contain
 name: System-May-Contain
 objectClass: top
@@ -1807,7 +1807,7 @@ attributeID: 1.2.840.113556.1.4.196
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=msRASSavedFramedRoute,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRASSavedFramedRoute,${SCHEMADN}
 cn: msRASSavedFramedRoute
 name: msRASSavedFramedRoute
 objectClass: top
@@ -1822,7 +1822,7 @@ attributeID: 1.2.840.113556.1.4.1191
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=msRASSavedCallbackNumber,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRASSavedCallbackNumber,${SCHEMADN}
 cn: msRASSavedCallbackNumber
 name: msRASSavedCallbackNumber
 objectClass: top
@@ -1837,7 +1837,7 @@ attributeID: 1.2.840.113556.1.4.1189
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=Trust-Type,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Type,${SCHEMADN}
 cn: Trust-Type
 name: Trust-Type
 objectClass: top
@@ -1852,7 +1852,7 @@ attributeID: 1.2.840.113556.1.4.136
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Domain-Replica,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-Replica,${SCHEMADN}
 cn: Domain-Replica
 name: Domain-Replica
 objectClass: top
@@ -1867,7 +1867,7 @@ attributeID: 1.2.840.113556.1.4.158
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Personal-Title,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Personal-Title,${SCHEMADN}
 cn: Personal-Title
 name: Personal-Title
 objectClass: top
@@ -1882,7 +1882,7 @@ attributeID: 1.2.840.113556.1.2.615
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Other-Mailbox,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Other-Mailbox,${SCHEMADN}
 cn: Other-Mailbox
 name: Other-Mailbox
 objectClass: top
@@ -1896,7 +1896,7 @@ attributeID: 1.2.840.113556.1.4.651
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=E-mail-Addresses,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=E-mail-Addresses,${SCHEMADN}
 cn: E-mail-Addresses
 name: E-mail-Addresses
 objectClass: top
@@ -1911,7 +1911,7 @@ attributeID: 0.9.2342.19200300.100.1.3
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Other-Settings,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Other-Settings,${SCHEMADN}
 cn: ms-DS-Other-Settings
 name: ms-DS-Other-Settings
 objectClass: top
@@ -1926,7 +1926,7 @@ attributeID: 1.2.840.113556.1.4.1621
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Machine-Role,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Machine-Role,${SCHEMADN}
 cn: Machine-Role
 name: Machine-Role
 objectClass: top
@@ -1941,7 +1941,7 @@ attributeID: 1.2.840.113556.1.4.71
 attributeSyntax: 2.5.5.9
 oMSyntax: 10
 
-dn: CN=ms-DS-Az-Domain-Timeout,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Domain-Timeout,${SCHEMADN}
 cn: ms-DS-Az-Domain-Timeout
 name: ms-DS-Az-Domain-Timeout
 objectClass: top
@@ -1956,7 +1956,7 @@ attributeID: 1.2.840.113556.1.4.1795
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=System-Auxiliary-Class,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-Auxiliary-Class,${SCHEMADN}
 cn: System-Auxiliary-Class
 name: System-Auxiliary-Class
 objectClass: top
@@ -1971,7 +1971,7 @@ attributeID: 1.2.840.113556.1.4.198
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Is-Defunct,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Is-Defunct,${SCHEMADN}
 cn: Is-Defunct
 name: Is-Defunct
 objectClass: top
@@ -1986,7 +1986,7 @@ attributeID: 1.2.840.113556.1.4.661
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Primary-Group-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Primary-Group-ID,${SCHEMADN}
 cn: Primary-Group-ID
 name: Primary-Group-ID
 objectClass: top
@@ -2001,7 +2001,7 @@ attributeID: 1.2.840.113556.1.4.98
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Lm-Pwd-History,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lm-Pwd-History,${SCHEMADN}
 cn: Lm-Pwd-History
 name: Lm-Pwd-History
 objectClass: top
@@ -2016,7 +2016,7 @@ attributeID: 1.2.840.113556.1.4.160
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Group-Membership-SAM,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Group-Membership-SAM,${SCHEMADN}
 cn: Group-Membership-SAM
 name: Group-Membership-SAM
 objectClass: top
@@ -2031,7 +2031,7 @@ attributeID: 1.2.840.113556.1.4.166
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Trust-Partner,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Partner,${SCHEMADN}
 cn: Trust-Partner
 name: Trust-Partner
 objectClass: top
@@ -2046,7 +2046,7 @@ attributeID: 1.2.840.113556.1.4.133
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Instance-Type,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Instance-Type,${SCHEMADN}
 cn: Instance-Type
 name: Instance-Type
 objectClass: top
@@ -2061,7 +2061,7 @@ attributeID: 1.2.840.113556.1.2.1
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Treat-As-Leaf,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Treat-As-Leaf,${SCHEMADN}
 cn: Treat-As-Leaf
 name: Treat-As-Leaf
 objectClass: top
@@ -2076,7 +2076,7 @@ attributeID: 1.2.840.113556.1.4.806
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Admin-Property-Pages,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Property-Pages,${SCHEMADN}
 cn: Admin-Property-Pages
 name: Admin-Property-Pages
 objectClass: top
@@ -2091,7 +2091,7 @@ attributeID: 1.2.840.113556.1.4.562
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Az-Scope-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Scope-Name,${SCHEMADN}
 cn: ms-DS-Az-Scope-Name
 name: ms-DS-Az-Scope-Name
 objectClass: top
@@ -2106,7 +2106,7 @@ attributeID: 1.2.840.113556.1.4.1799
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=See-Also,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=See-Also,${SCHEMADN}
 cn: See-Also
 name: See-Also
 objectClass: top
@@ -2122,7 +2122,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Retired-Repl-NC-Signatures,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Retired-Repl-NC-Signatures,${SCHEMADN}
 cn: ms-DS-Retired-Repl-NC-Signatures
 name: ms-DS-Retired-Repl-NC-Signatures
 objectClass: top
@@ -2137,7 +2137,7 @@ attributeID: 1.2.840.113556.1.4.1826
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Has-Master-NCs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Has-Master-NCs,${SCHEMADN}
 cn: Has-Master-NCs
 name: Has-Master-NCs
 objectClass: top
@@ -2154,7 +2154,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Modified-Count-At-Last-Prom,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Modified-Count-At-Last-Prom,${SCHEMADN}
 cn: Modified-Count-At-Last-Prom
 name: Modified-Count-At-Last-Prom
 objectClass: top
@@ -2169,7 +2169,7 @@ attributeID: 1.2.840.113556.1.4.81
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Min-Pwd-Age,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Min-Pwd-Age,${SCHEMADN}
 cn: Min-Pwd-Age
 name: Min-Pwd-Age
 objectClass: top
@@ -2184,7 +2184,7 @@ attributeID: 1.2.840.113556.1.4.78
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Force-Logoff,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Force-Logoff,${SCHEMADN}
 cn: Force-Logoff
 name: Force-Logoff
 objectClass: top
@@ -2199,7 +2199,7 @@ attributeID: 1.2.840.113556.1.4.39
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Move-Tree-State,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Move-Tree-State,${SCHEMADN}
 cn: Move-Tree-State
 name: Move-Tree-State
 objectClass: top
@@ -2214,7 +2214,7 @@ attributeID: 1.2.840.113556.1.4.1305
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Allowed-To-Delegate-To,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Allowed-To-Delegate-To,${SCHEMADN}
 cn: ms-DS-Allowed-To-Delegate-To
 name: ms-DS-Allowed-To-Delegate-To
 objectClass: top
@@ -2229,7 +2229,7 @@ attributeID: 1.2.840.113556.1.4.1787
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=DNS-Host-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DNS-Host-Name,${SCHEMADN}
 cn: DNS-Host-Name
 name: DNS-Host-Name
 objectClass: top
@@ -2244,7 +2244,7 @@ attributeID: 1.2.840.113556.1.4.619
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Az-Minor-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Minor-Version,${SCHEMADN}
 cn: ms-DS-Az-Minor-Version
 name: ms-DS-Az-Minor-Version
 objectClass: top
@@ -2259,7 +2259,7 @@ attributeID: 1.2.840.113556.1.4.1825
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=System-Only,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-Only,${SCHEMADN}
 cn: System-Only
 name: System-Only
 objectClass: top
@@ -2274,7 +2274,7 @@ attributeID: 1.2.840.113556.1.4.170
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=ms-DS-IntId,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-IntId,${SCHEMADN}
 cn: ms-DS-IntId
 name: ms-DS-IntId
 objectClass: top
@@ -2289,7 +2289,7 @@ attributeID: 1.2.840.113556.1.4.1716
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Bad-Password-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Bad-Password-Time,${SCHEMADN}
 cn: Bad-Password-Time
 name: Bad-Password-Time
 objectClass: top
@@ -2304,7 +2304,7 @@ attributeID: 1.2.840.113556.1.4.49
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Primary-Group-Token,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Primary-Group-Token,${SCHEMADN}
 cn: Primary-Group-Token
 name: Primary-Group-Token
 objectClass: top
@@ -2319,7 +2319,7 @@ attributeID: 1.2.840.113556.1.4.1412
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=USN-Intersite,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-Intersite,${SCHEMADN}
 cn: USN-Intersite
 name: USN-Intersite
 objectClass: top
@@ -2334,7 +2334,7 @@ attributeID: 1.2.840.113556.1.2.469
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=FRS-Member-Reference-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=FRS-Member-Reference-BL,${SCHEMADN}
 cn: FRS-Member-Reference-BL
 name: FRS-Member-Reference-BL
 objectClass: top
@@ -2351,7 +2351,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-SD-Reference-Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-SD-Reference-Domain,${SCHEMADN}
 cn: ms-DS-SD-Reference-Domain
 name: ms-DS-SD-Reference-Domain
 objectClass: top
@@ -2368,7 +2368,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Last-Backup-Restoration-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Backup-Restoration-Time,${SCHEMADN}
 cn: Last-Backup-Restoration-Time
 name: Last-Backup-Restoration-Time
 objectClass: top
@@ -2383,7 +2383,7 @@ attributeID: 1.2.840.113556.1.4.519
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Tree-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Tree-Name,${SCHEMADN}
 cn: Tree-Name
 name: Tree-Name
 objectClass: top
@@ -2398,7 +2398,7 @@ attributeID: 1.2.840.113556.1.4.660
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=OEM-Information,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=OEM-Information,${SCHEMADN}
 cn: OEM-Information
 name: OEM-Information
 objectClass: top
@@ -2413,7 +2413,7 @@ attributeID: 1.2.840.113556.1.4.151
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Given-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Given-Name,${SCHEMADN}
 cn: Given-Name
 name: Given-Name
 objectClass: top
@@ -2428,7 +2428,7 @@ attributeID: 2.5.4.42
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=SPN-Mappings,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SPN-Mappings,${SCHEMADN}
 cn: SPN-Mappings
 name: SPN-Mappings
 objectClass: top
@@ -2443,7 +2443,7 @@ attributeID: 1.2.840.113556.1.4.1347
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Operating-System-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Operating-System-Version,${SCHEMADN}
 cn: Operating-System-Version
 name: Operating-System-Version
 objectClass: top
@@ -2458,7 +2458,7 @@ attributeID: 1.2.840.113556.1.4.364
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Notification-List,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Notification-List,${SCHEMADN}
 cn: Notification-List
 name: Notification-List
 objectClass: top
@@ -2474,7 +2474,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Token-Groups,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Token-Groups,${SCHEMADN}
 cn: Token-Groups
 name: Token-Groups
 objectClass: top
@@ -2489,7 +2489,7 @@ attributeID: 1.2.840.113556.1.4.1301
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=carLicense,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=carLicense,${SCHEMADN}
 cn: carLicense
 name: carLicense
 objectClass: top
@@ -2504,7 +2504,7 @@ attributeID: 2.16.840.1.113730.3.1.1
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Preferred-OU,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Preferred-OU,${SCHEMADN}
 cn: Preferred-OU
 name: Preferred-OU
 objectClass: top
@@ -2520,7 +2520,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=MS-DS-Creator-SID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Creator-SID,${SCHEMADN}
 cn: MS-DS-Creator-SID
 name: MS-DS-Creator-SID
 objectClass: top
@@ -2535,7 +2535,7 @@ attributeID: 1.2.840.113556.1.4.1410
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=ms-DS-Non-Members,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Non-Members,${SCHEMADN}
 cn: ms-DS-Non-Members
 name: ms-DS-Non-Members
 objectClass: top
@@ -2552,7 +2552,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Tasks-For-Az-Role-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Tasks-For-Az-Role-BL,${SCHEMADN}
 cn: ms-DS-Tasks-For-Az-Role-BL
 name: ms-DS-Tasks-For-Az-Role-BL
 objectClass: top
@@ -2569,7 +2569,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Extension-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Extension-Name,${SCHEMADN}
 cn: Extension-Name
 name: Extension-Name
 objectClass: top
@@ -2584,7 +2584,7 @@ attributeID: 1.2.840.113556.1.2.227
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Replication-Notify-First-DSA-Delay,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Replication-Notify-First-DSA-Delay,${SCHEMADN}
 cn: ms-DS-Replication-Notify-First-DSA-Delay
 name: ms-DS-Replication-Notify-First-DSA-Delay
 objectClass: top
@@ -2599,7 +2599,7 @@ attributeID: 1.2.840.113556.1.4.1663
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Max-Pwd-Age,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Max-Pwd-Age,${SCHEMADN}
 cn: Max-Pwd-Age
 name: Max-Pwd-Age
 objectClass: top
@@ -2614,7 +2614,7 @@ attributeID: 1.2.840.113556.1.4.74
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Phone-Ip-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Ip-Other,${SCHEMADN}
 cn: Phone-Ip-Other
 name: Phone-Ip-Other
 objectClass: top
@@ -2629,7 +2629,7 @@ attributeID: 1.2.840.113556.1.4.722
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=secretary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=secretary,${SCHEMADN}
 cn: secretary
 name: secretary
 objectClass: top
@@ -2645,7 +2645,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=User-Parameters,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Parameters,${SCHEMADN}
 cn: User-Parameters
 name: User-Parameters
 objectClass: top
@@ -2660,7 +2660,7 @@ attributeID: 1.2.840.113556.1.4.138
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Trust-Posix-Offset,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Posix-Offset,${SCHEMADN}
 cn: Trust-Posix-Offset
 name: Trust-Posix-Offset
 objectClass: top
@@ -2675,7 +2675,7 @@ attributeID: 1.2.840.113556.1.4.134
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Bridgehead-Server-List-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Bridgehead-Server-List-BL,${SCHEMADN}
 cn: Bridgehead-Server-List-BL
 name: Bridgehead-Server-List-BL
 objectClass: top
@@ -2692,7 +2692,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Az-Application-Data,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Application-Data,${SCHEMADN}
 cn: ms-DS-Az-Application-Data
 name: ms-DS-Az-Application-Data
 objectClass: top
@@ -2707,7 +2707,7 @@ attributeID: 1.2.840.113556.1.4.1819
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Pek-Key-Change-Interval,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Pek-Key-Change-Interval,${SCHEMADN}
 cn: Pek-Key-Change-Interval
 name: Pek-Key-Change-Interval
 objectClass: top
@@ -2722,7 +2722,7 @@ attributeID: 1.2.840.113556.1.4.866
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Country-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Country-Name,${SCHEMADN}
 cn: Country-Name
 name: Country-Name
 objectClass: top
@@ -2737,7 +2737,7 @@ attributeID: 2.5.4.6
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Destination-Indicator,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Destination-Indicator,${SCHEMADN}
 cn: Destination-Indicator
 name: Destination-Indicator
 objectClass: top
@@ -2752,7 +2752,7 @@ attributeID: 2.5.4.27
 attributeSyntax: 2.5.5.5
 oMSyntax: 19
 
-dn: CN=Country-Code,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Country-Code,${SCHEMADN}
 cn: Country-Code
 name: Country-Code
 objectClass: top
@@ -2767,7 +2767,7 @@ attributeID: 1.2.840.113556.1.4.25
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Phone-Mobile-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Mobile-Primary,${SCHEMADN}
 cn: Phone-Mobile-Primary
 name: Phone-Mobile-Primary
 objectClass: top
@@ -2782,7 +2782,7 @@ attributeID: 0.9.2342.19200300.100.1.41
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=RID-Set-References,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RID-Set-References,${SCHEMADN}
 cn: RID-Set-References
 name: RID-Set-References
 objectClass: top
@@ -2798,7 +2798,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Schema-ID-GUID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Schema-ID-GUID,${SCHEMADN}
 cn: Schema-ID-GUID
 name: Schema-ID-GUID
 objectClass: top
@@ -2813,7 +2813,7 @@ attributeID: 1.2.840.113556.1.4.148
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Auxiliary-Class,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Auxiliary-Class,${SCHEMADN}
 cn: Auxiliary-Class
 name: Auxiliary-Class
 objectClass: top
@@ -2828,7 +2828,7 @@ attributeID: 1.2.840.113556.1.2.351
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=uid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=uid,${SCHEMADN}
 cn: uid
 name: uid
 objectClass: top
@@ -2843,7 +2843,7 @@ attributeID: 0.9.2342.19200300.100.1.1
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=departmentNumber,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=departmentNumber,${SCHEMADN}
 cn: departmentNumber
 name: departmentNumber
 objectClass: top
@@ -2858,7 +2858,7 @@ attributeID: 2.16.840.1.113730.3.1.2
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Additional-Trusted-Service-Names,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Additional-Trusted-Service-Names,${SCHEMADN}
 cn: Additional-Trusted-Service-Names
 name: Additional-Trusted-Service-Names
 objectClass: top
@@ -2873,7 +2873,7 @@ attributeID: 1.2.840.113556.1.4.889
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=WWW-Home-Page,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=WWW-Home-Page,${SCHEMADN}
 cn: WWW-Home-Page
 name: WWW-Home-Page
 objectClass: top
@@ -2888,7 +2888,7 @@ attributeID: 1.2.840.113556.1.2.464
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=USN-Source,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-Source,${SCHEMADN}
 cn: USN-Source
 name: USN-Source
 objectClass: top
@@ -2903,7 +2903,7 @@ attributeID: 1.2.840.113556.1.4.896
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=MS-DS-Consistency-Guid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Consistency-Guid,${SCHEMADN}
 cn: MS-DS-Consistency-Guid
 name: MS-DS-Consistency-Guid
 objectClass: top
@@ -2918,7 +2918,7 @@ attributeID: 1.2.840.113556.1.4.1360
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Frs-Computer-Reference-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Frs-Computer-Reference-BL,${SCHEMADN}
 cn: Frs-Computer-Reference-BL
 name: Frs-Computer-Reference-BL
 objectClass: top
@@ -2935,7 +2935,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Allowed-Attributes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Allowed-Attributes,${SCHEMADN}
 cn: Allowed-Attributes
 name: Allowed-Attributes
 objectClass: top
@@ -2950,7 +2950,7 @@ attributeID: 1.2.840.113556.1.4.913
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=ms-DS-Az-Application-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Application-Name,${SCHEMADN}
 cn: ms-DS-Az-Application-Name
 name: ms-DS-Az-Application-Name
 objectClass: top
@@ -2965,7 +2965,7 @@ attributeID: 1.2.840.113556.1.4.1798
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=UPN-Suffixes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=UPN-Suffixes,${SCHEMADN}
 cn: UPN-Suffixes
 name: UPN-Suffixes
 objectClass: top
@@ -2980,7 +2980,7 @@ attributeID: 1.2.840.113556.1.4.890
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=MS-DS-Per-User-Trust-Quota,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Per-User-Trust-Quota,${SCHEMADN}
 cn: MS-DS-Per-User-Trust-Quota
 name: MS-DS-Per-User-Trust-Quota
 objectClass: top
@@ -2995,7 +2995,7 @@ attributeID: 1.2.840.113556.1.4.1788
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=MS-DS-Machine-Account-Quota,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Machine-Account-Quota,${SCHEMADN}
 cn: MS-DS-Machine-Account-Quota
 name: MS-DS-Machine-Account-Quota
 objectClass: top
@@ -3010,7 +3010,7 @@ attributeID: 1.2.840.113556.1.4.1411
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Server-Role,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server-Role,${SCHEMADN}
 cn: Server-Role
 name: Server-Role
 objectClass: top
@@ -3025,7 +3025,7 @@ attributeID: 1.2.840.113556.1.4.157
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Phone-Home-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Home-Primary,${SCHEMADN}
 cn: Phone-Home-Primary
 name: Phone-Home-Primary
 objectClass: top
@@ -3040,7 +3040,7 @@ attributeID: 0.9.2342.19200300.100.1.20
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Operating-System-Hotfix,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Operating-System-Hotfix,${SCHEMADN}
 cn: Operating-System-Hotfix
 name: Operating-System-Hotfix
 objectClass: top
@@ -3055,7 +3055,7 @@ attributeID: 1.2.840.113556.1.4.415
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Additional-Dns-Host-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Additional-Dns-Host-Name,${SCHEMADN}
 cn: ms-DS-Additional-Dns-Host-Name
 name: ms-DS-Additional-Dns-Host-Name
 objectClass: top
@@ -3070,7 +3070,7 @@ attributeID: 1.2.840.113556.1.4.1717
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Az-Script-Timeout,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Script-Timeout,${SCHEMADN}
 cn: ms-DS-Az-Script-Timeout
 name: ms-DS-Az-Script-Timeout
 objectClass: top
@@ -3085,7 +3085,7 @@ attributeID: 1.2.840.113556.1.4.1797
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Must-Contain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Must-Contain,${SCHEMADN}
 cn: Must-Contain
 name: Must-Contain
 objectClass: top
@@ -3100,7 +3100,7 @@ attributeID: 1.2.840.113556.1.2.24
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=X509-Cert,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=X509-Cert,${SCHEMADN}
 cn: X509-Cert
 name: X509-Cert
 objectClass: top
@@ -3115,7 +3115,7 @@ attributeID: 2.5.4.36
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=msNPCallingStationID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msNPCallingStationID,${SCHEMADN}
 cn: msNPCallingStationID
 name: msNPCallingStationID
 objectClass: top
@@ -3130,7 +3130,7 @@ attributeID: 1.2.840.113556.1.4.1124
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=ms-DS-User-Account-Control-Computed,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-User-Account-Control-Computed,${SCHEMADN}
 cn: ms-DS-User-Account-Control-Computed
 name: ms-DS-User-Account-Control-Computed
 objectClass: top
@@ -3145,7 +3145,7 @@ attributeID: 1.2.840.113556.1.4.1460
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Home-Directory,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Home-Directory,${SCHEMADN}
 cn: Home-Directory
 name: Home-Directory
 objectClass: top
@@ -3160,7 +3160,7 @@ attributeID: 1.2.840.113556.1.4.44
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Az-LDAP-Query,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-LDAP-Query,${SCHEMADN}
 cn: ms-DS-Az-LDAP-Query
 name: ms-DS-Az-LDAP-Query
 objectClass: top
@@ -3175,7 +3175,7 @@ attributeID: 1.2.840.113556.1.4.1792
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Partial-Attribute-Deletion-List,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Partial-Attribute-Deletion-List,${SCHEMADN}
 cn: Partial-Attribute-Deletion-List
 name: Partial-Attribute-Deletion-List
 objectClass: top
@@ -3190,7 +3190,7 @@ attributeID: 1.2.840.113556.1.4.663
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Is-Critical-System-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Is-Critical-System-Object,${SCHEMADN}
 cn: Is-Critical-System-Object
 name: Is-Critical-System-Object
 objectClass: top
@@ -3205,7 +3205,7 @@ attributeID: 1.2.840.113556.1.4.868
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=GP-Link,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=GP-Link,${SCHEMADN}
 cn: GP-Link
 name: GP-Link
 objectClass: top
@@ -3220,7 +3220,7 @@ attributeID: 1.2.840.113556.1.4.891
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Scope-Flags,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Scope-Flags,${SCHEMADN}
 cn: Scope-Flags
 name: Scope-Flags
 objectClass: top
@@ -3235,7 +3235,7 @@ attributeID: 1.2.840.113556.1.4.1354
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Lockout-Duration,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lockout-Duration,${SCHEMADN}
 cn: Lockout-Duration
 name: Lockout-Duration
 objectClass: top
@@ -3250,7 +3250,7 @@ attributeID: 1.2.840.113556.1.4.60
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=ms-COM-UserPartitionSetLink,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-COM-UserPartitionSetLink,${SCHEMADN}
 cn: ms-COM-UserPartitionSetLink
 name: ms-COM-UserPartitionSetLink
 objectClass: top
@@ -3267,7 +3267,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Logo,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Logo,${SCHEMADN}
 cn: Logo
 name: Logo
 objectClass: top
@@ -3282,7 +3282,7 @@ attributeID: 2.16.840.1.113730.3.1.36
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Picture,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Picture,${SCHEMADN}
 cn: Picture
 name: Picture
 objectClass: top
@@ -3297,7 +3297,7 @@ attributeID: 2.16.840.1.113730.3.1.35
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Location,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Location,${SCHEMADN}
 cn: Location
 name: Location
 objectClass: top
@@ -3312,7 +3312,7 @@ attributeID: 1.2.840.113556.1.4.222
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=User-Workstations,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Workstations,${SCHEMADN}
 cn: User-Workstations
 name: User-Workstations
 objectClass: top
@@ -3327,7 +3327,7 @@ attributeID: 1.2.840.113556.1.4.86
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Logon-Workstation,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Logon-Workstation,${SCHEMADN}
 cn: Logon-Workstation
 name: Logon-Workstation
 objectClass: top
@@ -3342,7 +3342,7 @@ attributeID: 1.2.840.113556.1.4.65
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Last-Logon-Timestamp,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Logon-Timestamp,${SCHEMADN}
 cn: Last-Logon-Timestamp
 name: Last-Logon-Timestamp
 objectClass: top
@@ -3357,7 +3357,7 @@ attributeID: 1.2.840.113556.1.4.1696
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Prior-Value,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Prior-Value,${SCHEMADN}
 cn: Prior-Value
 name: Prior-Value
 objectClass: top
@@ -3372,7 +3372,7 @@ attributeID: 1.2.840.113556.1.4.100
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Last-Set-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Set-Time,${SCHEMADN}
 cn: Last-Set-Time
 name: Last-Set-Time
 objectClass: top
@@ -3387,7 +3387,7 @@ attributeID: 1.2.840.113556.1.4.53
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Object-Guid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Guid,${SCHEMADN}
 cn: Object-Guid
 name: Object-Guid
 objectClass: top
@@ -3402,7 +3402,7 @@ attributeID: 1.2.840.113556.1.4.2
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Tasks-For-Az-Task-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Tasks-For-Az-Task-BL,${SCHEMADN}
 cn: ms-DS-Tasks-For-Az-Task-BL
 name: ms-DS-Tasks-For-Az-Task-BL
 objectClass: top
@@ -3419,7 +3419,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Managed-By,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Managed-By,${SCHEMADN}
 cn: Managed-By
 name: Managed-By
 objectClass: top
@@ -3436,7 +3436,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Pwd-Properties,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Pwd-Properties,${SCHEMADN}
 cn: Pwd-Properties
 name: Pwd-Properties
 objectClass: top
@@ -3451,7 +3451,7 @@ attributeID: 1.2.840.113556.1.4.93
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Builtin-Creation-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Builtin-Creation-Time,${SCHEMADN}
 cn: Builtin-Creation-Time
 name: Builtin-Creation-Time
 objectClass: top
@@ -3466,7 +3466,7 @@ attributeID: 1.2.840.113556.1.4.13
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Post-Office-Box,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Post-Office-Box,${SCHEMADN}
 cn: Post-Office-Box
 name: Post-Office-Box
 objectClass: top
@@ -3481,7 +3481,7 @@ attributeID: 2.5.4.18
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Company,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Company,${SCHEMADN}
 cn: Company
 name: Company
 objectClass: top
@@ -3496,7 +3496,7 @@ attributeID: 1.2.840.113556.1.2.146
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Catalogs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Catalogs,${SCHEMADN}
 cn: Catalogs
 name: Catalogs
 objectClass: top
@@ -3511,7 +3511,7 @@ attributeID: 1.2.840.113556.1.4.675
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Default-Object-Category,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Object-Category,${SCHEMADN}
 cn: Default-Object-Category
 name: Default-Object-Category
 objectClass: top
@@ -3527,7 +3527,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=msRADIUSFramedRoute,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRADIUSFramedRoute,${SCHEMADN}
 cn: msRADIUSFramedRoute
 name: msRADIUSFramedRoute
 objectClass: top
@@ -3542,7 +3542,7 @@ attributeID: 1.2.840.113556.1.4.1158
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=Prior-Set-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Prior-Set-Time,${SCHEMADN}
 cn: Prior-Set-Time
 name: Prior-Set-Time
 objectClass: top
@@ -3557,7 +3557,7 @@ attributeID: 1.2.840.113556.1.4.99
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=User-Cert,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Cert,${SCHEMADN}
 cn: User-Cert
 name: User-Cert
 objectClass: top
@@ -3572,7 +3572,7 @@ attributeID: 1.2.840.113556.1.4.645
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Non-Security-Member,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Non-Security-Member,${SCHEMADN}
 cn: Non-Security-Member
 name: Non-Security-Member
 objectClass: top
@@ -3589,7 +3589,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Member,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Member,${SCHEMADN}
 cn: Member
 name: Member
 objectClass: top
@@ -3606,7 +3606,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Group-Attributes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Group-Attributes,${SCHEMADN}
 cn: Group-Attributes
 name: Group-Attributes
 objectClass: top
@@ -3621,7 +3621,7 @@ attributeID: 1.2.840.113556.1.4.152
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=System-Flags,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-Flags,${SCHEMADN}
 cn: System-Flags
 name: System-Flags
 objectClass: top
@@ -3636,7 +3636,7 @@ attributeID: 1.2.840.113556.1.4.375
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Proxied-Object-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Proxied-Object-Name,${SCHEMADN}
 cn: Proxied-Object-Name
 name: Proxied-Object-Name
 objectClass: top
@@ -3652,7 +3652,7 @@ attributeSyntax: 2.5.5.7
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBCw==
 
-dn: CN=ms-DS-Repl-Value-Meta-Data,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Repl-Value-Meta-Data,${SCHEMADN}
 cn: ms-DS-Repl-Value-Meta-Data
 name: ms-DS-Repl-Value-Meta-Data
 objectClass: top
@@ -3667,7 +3667,7 @@ attributeID: 1.2.840.113556.1.4.1708
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Allowed-Child-Classes-Effective,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Allowed-Child-Classes-Effective,${SCHEMADN}
 cn: Allowed-Child-Classes-Effective
 name: Allowed-Child-Classes-Effective
 objectClass: top
@@ -3682,7 +3682,7 @@ attributeID: 1.2.840.113556.1.4.912
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=ms-DS-Az-Generate-Audits,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Generate-Audits,${SCHEMADN}
 cn: ms-DS-Az-Generate-Audits
 name: ms-DS-Az-Generate-Audits
 objectClass: top
@@ -3697,7 +3697,7 @@ attributeID: 1.2.840.113556.1.4.1805
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=ms-DS-Az-Application-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Application-Version,${SCHEMADN}
 cn: ms-DS-Az-Application-Version
 name: ms-DS-Az-Application-Version
 objectClass: top
@@ -3712,7 +3712,7 @@ attributeID: 1.2.840.113556.1.4.1817
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Icon-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Icon-Path,${SCHEMADN}
 cn: Icon-Path
 name: Icon-Path
 objectClass: top
@@ -3727,7 +3727,7 @@ attributeID: 1.2.840.113556.1.4.219
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Street-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Street-Address,${SCHEMADN}
 cn: Street-Address
 name: Street-Address
 objectClass: top
@@ -3742,7 +3742,7 @@ attributeID: 2.5.4.9
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-ExecuteScriptPassword,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-ExecuteScriptPassword,${SCHEMADN}
 cn: ms-DS-ExecuteScriptPassword
 name: ms-DS-ExecuteScriptPassword
 objectClass: top
@@ -3757,7 +3757,7 @@ attributeID: 1.2.840.113556.1.4.1783
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Logon-Time-Sync-Interval,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Logon-Time-Sync-Interval,${SCHEMADN}
 cn: ms-DS-Logon-Time-Sync-Interval
 name: ms-DS-Logon-Time-Sync-Interval
 objectClass: top
@@ -3772,7 +3772,7 @@ attributeID: 1.2.840.113556.1.4.1784
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Garbage-Coll-Period,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Garbage-Coll-Period,${SCHEMADN}
 cn: Garbage-Coll-Period
 name: Garbage-Coll-Period
 objectClass: top
@@ -3787,7 +3787,7 @@ attributeID: 1.2.840.113556.1.2.301
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=MSMQ-Sign-Certificates-Mig,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Sign-Certificates-Mig,${SCHEMADN}
 cn: MSMQ-Sign-Certificates-Mig
 name: MSMQ-Sign-Certificates-Mig
 objectClass: top
@@ -3802,7 +3802,7 @@ attributeID: 1.2.840.113556.1.4.967
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Cached-Membership-Time-Stamp,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Cached-Membership-Time-Stamp,${SCHEMADN}
 cn: ms-DS-Cached-Membership-Time-Stamp
 name: ms-DS-Cached-Membership-Time-Stamp
 objectClass: top
@@ -3817,7 +3817,7 @@ attributeID: 1.2.840.113556.1.4.1442
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Logon-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Logon-Count,${SCHEMADN}
 cn: Logon-Count
 name: Logon-Count
 objectClass: top
@@ -3832,7 +3832,7 @@ attributeID: 1.2.840.113556.1.4.169
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Locale-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Locale-ID,${SCHEMADN}
 cn: Locale-ID
 name: Locale-ID
 objectClass: top
@@ -3847,7 +3847,7 @@ attributeID: 1.2.840.113556.1.4.58
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Bad-Pwd-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Bad-Pwd-Count,${SCHEMADN}
 cn: Bad-Pwd-Count
 name: Bad-Pwd-Count
 objectClass: top
@@ -3862,7 +3862,7 @@ attributeID: 1.2.840.113556.1.4.12
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Trust-Auth-Incoming,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Auth-Incoming,${SCHEMADN}
 cn: Trust-Auth-Incoming
 name: Trust-Auth-Incoming
 objectClass: top
@@ -3877,7 +3877,7 @@ attributeID: 1.2.840.113556.1.4.129
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=SubSchemaSubEntry,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SubSchemaSubEntry,${SCHEMADN}
 cn: SubSchemaSubEntry
 name: SubSchemaSubEntry
 objectClass: top
@@ -3893,7 +3893,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Structural-Object-Class,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Structural-Object-Class,${SCHEMADN}
 cn: Structural-Object-Class
 name: Structural-Object-Class
 objectClass: top
@@ -3908,7 +3908,7 @@ attributeID: 2.5.21.9
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Is-Deleted,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Is-Deleted,${SCHEMADN}
 cn: Is-Deleted
 name: Is-Deleted
 objectClass: top
@@ -3923,7 +3923,7 @@ attributeID: 1.2.840.113556.1.2.48
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Extra-Columns,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Extra-Columns,${SCHEMADN}
 cn: Extra-Columns
 name: Extra-Columns
 objectClass: top
@@ -3938,7 +3938,7 @@ attributeID: 1.2.840.113556.1.4.1687
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Admin-Multiselect-Property-Pages,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Multiselect-Property-Pages,${SCHEMADN}
 cn: Admin-Multiselect-Property-Pages
 name: Admin-Multiselect-Property-Pages
 objectClass: top
@@ -3953,7 +3953,7 @@ attributeID: 1.2.840.113556.1.4.1690
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Options,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Options,${SCHEMADN}
 cn: Options
 name: Options
 objectClass: top
@@ -3968,7 +3968,7 @@ attributeID: 1.2.840.113556.1.4.307
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Lock-Out-Observation-Window,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lock-Out-Observation-Window,${SCHEMADN}
 cn: Lock-Out-Observation-Window
 name: Lock-Out-Observation-Window
 objectClass: top
@@ -3983,7 +3983,7 @@ attributeID: 1.2.840.113556.1.4.61
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Default-Local-Policy-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Local-Policy-Object,${SCHEMADN}
 cn: Default-Local-Policy-Object
 name: Default-Local-Policy-Object
 objectClass: top
@@ -3999,7 +3999,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Creation-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Creation-Time,${SCHEMADN}
 cn: Creation-Time
 name: Creation-Time
 objectClass: top
@@ -4014,7 +4014,7 @@ attributeID: 1.2.840.113556.1.4.26
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Registered-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Registered-Address,${SCHEMADN}
 cn: Registered-Address
 name: Registered-Address
 objectClass: top
@@ -4028,7 +4028,7 @@ attributeID: 2.5.4.26
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Postal-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Postal-Address,${SCHEMADN}
 cn: Postal-Address
 name: Postal-Address
 objectClass: top
@@ -4043,7 +4043,7 @@ attributeID: 2.5.4.16
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Initials,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Initials,${SCHEMADN}
 cn: Initials
 name: Initials
 objectClass: top
@@ -4058,7 +4058,7 @@ attributeID: 2.5.4.43
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Netboot-SIF-File,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Netboot-SIF-File,${SCHEMADN}
 cn: Netboot-SIF-File
 name: Netboot-SIF-File
 objectClass: top
@@ -4073,7 +4073,7 @@ attributeID: 1.2.840.113556.1.4.1240
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Additional-Sam-Account-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Additional-Sam-Account-Name,${SCHEMADN}
 cn: ms-DS-Additional-Sam-Account-Name
 name: ms-DS-Additional-Sam-Account-Name
 objectClass: top
@@ -4088,7 +4088,7 @@ attributeID: 1.2.840.113556.1.4.1718
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=System-Poss-Superiors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-Poss-Superiors,${SCHEMADN}
 cn: System-Poss-Superiors
 name: System-Poss-Superiors
 objectClass: top
@@ -4103,7 +4103,7 @@ attributeID: 1.2.840.113556.1.4.195
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=photo,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=photo,${SCHEMADN}
 cn: photo
 name: photo
 objectClass: top
@@ -4118,7 +4118,7 @@ attributeID: 0.9.2342.19200300.100.1.7
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Employee-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Employee-Number,${SCHEMADN}
 cn: Employee-Number
 name: Employee-Number
 objectClass: top
@@ -4133,7 +4133,7 @@ attributeID: 1.2.840.113556.1.2.610
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Lockout-Time,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lockout-Time,${SCHEMADN}
 cn: Lockout-Time
 name: Lockout-Time
 objectClass: top
@@ -4148,7 +4148,7 @@ attributeID: 1.2.840.113556.1.4.662
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Dynamic-LDAP-Server,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Dynamic-LDAP-Server,${SCHEMADN}
 cn: Dynamic-LDAP-Server
 name: Dynamic-LDAP-Server
 objectClass: top
@@ -4164,7 +4164,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Extended-Attribute-Info,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Extended-Attribute-Info,${SCHEMADN}
 cn: Extended-Attribute-Info
 name: Extended-Attribute-Info
 objectClass: top
@@ -4179,7 +4179,7 @@ attributeID: 1.2.840.113556.1.4.909
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-Exch-Assistant-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-Exch-Assistant-Name,${SCHEMADN}
 cn: ms-Exch-Assistant-Name
 name: ms-Exch-Assistant-Name
 objectClass: top
@@ -4192,7 +4192,7 @@ attributeID: 1.2.840.113556.1.2.444
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Non-Members-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Non-Members-BL,${SCHEMADN}
 cn: ms-DS-Non-Members-BL
 name: ms-DS-Non-Members-BL
 objectClass: top
@@ -4209,7 +4209,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Admin-Display-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Display-Name,${SCHEMADN}
 cn: Admin-Display-Name
 name: Admin-Display-Name
 objectClass: top
@@ -4224,7 +4224,7 @@ attributeID: 1.2.840.113556.1.2.194
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Context-Menu,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Context-Menu,${SCHEMADN}
 cn: Context-Menu
 name: Context-Menu
 objectClass: top
@@ -4239,7 +4239,7 @@ attributeID: 1.2.840.113556.1.4.499
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=attributeCertificateAttribute,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=attributeCertificateAttribute,${SCHEMADN}
 cn: attributeCertificateAttribute
 name: attributeCertificateAttribute
 objectClass: top
@@ -4254,7 +4254,7 @@ attributeID: 2.5.4.58
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Surname,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Surname,${SCHEMADN}
 cn: Surname
 name: Surname
 objectClass: top
@@ -4269,7 +4269,7 @@ attributeID: 2.5.4.4
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=SAM-Account-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SAM-Account-Name,${SCHEMADN}
 cn: SAM-Account-Name
 name: SAM-Account-Name
 objectClass: top
@@ -4284,7 +4284,7 @@ attributeID: 1.2.840.113556.1.4.221
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Governs-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Governs-ID,${SCHEMADN}
 cn: Governs-ID
 name: Governs-ID
 objectClass: top
@@ -4299,7 +4299,7 @@ attributeID: 1.2.840.113556.1.2.22
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=jpegPhoto,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=jpegPhoto,${SCHEMADN}
 cn: jpegPhoto
 name: jpegPhoto
 objectClass: top
@@ -4314,7 +4314,7 @@ attributeID: 0.9.2342.19200300.100.1.60
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=MSMQ-Sign-Certificates,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Sign-Certificates,${SCHEMADN}
 cn: MSMQ-Sign-Certificates
 name: MSMQ-Sign-Certificates
 objectClass: top
@@ -4329,7 +4329,7 @@ attributeID: 1.2.840.113556.1.4.947
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Initial-Auth-Incoming,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Initial-Auth-Incoming,${SCHEMADN}
 cn: Initial-Auth-Incoming
 name: Initial-Auth-Incoming
 objectClass: top
@@ -4344,7 +4344,7 @@ attributeID: 1.2.840.113556.1.4.539
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Domain-Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-Cross-Ref,${SCHEMADN}
 cn: Domain-Cross-Ref
 name: Domain-Cross-Ref
 objectClass: top
@@ -4360,7 +4360,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Text-Encoded-OR-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Text-Encoded-OR-Address,${SCHEMADN}
 cn: Text-Encoded-OR-Address
 name: Text-Encoded-OR-Address
 objectClass: top
@@ -4374,7 +4374,7 @@ attributeID: 0.9.2342.19200300.100.1.2
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=USN-DSA-Last-Obj-Removed,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-DSA-Last-Obj-Removed,${SCHEMADN}
 cn: USN-DSA-Last-Obj-Removed
 name: USN-DSA-Last-Obj-Removed
 objectClass: top
@@ -4389,7 +4389,7 @@ attributeID: 1.2.840.113556.1.2.267
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=ms-DS-Operations-For-Az-Role-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Operations-For-Az-Role-BL,${SCHEMADN}
 cn: ms-DS-Operations-For-Az-Role-BL
 name: ms-DS-Operations-For-Az-Role-BL
 objectClass: top
@@ -4406,7 +4406,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=MS-DS-Consistency-Child-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-Consistency-Child-Count,${SCHEMADN}
 cn: MS-DS-Consistency-Child-Count
 name: MS-DS-Consistency-Child-Count
 objectClass: top
@@ -4421,7 +4421,7 @@ attributeID: 1.2.840.113556.1.4.1361
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=DSA-Signature,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DSA-Signature,${SCHEMADN}
 cn: DSA-Signature
 name: DSA-Signature
 objectClass: top
@@ -4436,7 +4436,7 @@ attributeID: 1.2.840.113556.1.2.74
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Allowed-Child-Classes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Allowed-Child-Classes,${SCHEMADN}
 cn: Allowed-Child-Classes
 name: Allowed-Child-Classes
 objectClass: top
@@ -4451,7 +4451,7 @@ attributeID: 1.2.840.113556.1.4.911
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=Allowed-Attributes-Effective,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Allowed-Attributes-Effective,${SCHEMADN}
 cn: Allowed-Attributes-Effective
 name: Allowed-Attributes-Effective
 objectClass: top
@@ -4466,7 +4466,7 @@ attributeID: 1.2.840.113556.1.4.914
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=NT-Mixed-Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NT-Mixed-Domain,${SCHEMADN}
 cn: NT-Mixed-Domain
 name: NT-Mixed-Domain
 objectClass: top
@@ -4481,7 +4481,7 @@ attributeID: 1.2.840.113556.1.4.357
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-DS-Has-Instantiated-NCs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Has-Instantiated-NCs,${SCHEMADN}
 cn: ms-DS-Has-Instantiated-NCs
 name: ms-DS-Has-Instantiated-NCs
 objectClass: top
@@ -4498,7 +4498,7 @@ attributeSyntax: 2.5.5.7
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBCw==
 
-dn: CN=Min-Pwd-Length,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Min-Pwd-Length,${SCHEMADN}
 cn: Min-Pwd-Length
 name: Min-Pwd-Length
 objectClass: top
@@ -4513,7 +4513,7 @@ attributeID: 1.2.840.113556.1.4.79
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Domain-Policy-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-Policy-Object,${SCHEMADN}
 cn: Domain-Policy-Object
 name: Domain-Policy-Object
 objectClass: top
@@ -4529,7 +4529,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Physical-Delivery-Office-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Physical-Delivery-Office-Name,${SCHEMADN}
 cn: Physical-Delivery-Office-Name
 name: Physical-Delivery-Office-Name
 objectClass: top
@@ -4544,7 +4544,7 @@ attributeID: 2.5.4.19
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Volume-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Volume-Count,${SCHEMADN}
 cn: Volume-Count
 name: Volume-Count
 objectClass: top
@@ -4559,7 +4559,7 @@ attributeID: 1.2.840.113556.1.4.507
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=msRADIUSServiceType,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRADIUSServiceType,${SCHEMADN}
 cn: msRADIUSServiceType
 name: msRADIUSServiceType
 objectClass: top
@@ -4574,7 +4574,7 @@ attributeID: 1.2.840.113556.1.4.1171
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Last-Logon,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Logon,${SCHEMADN}
 cn: Last-Logon
 name: Last-Logon
 objectClass: top
@@ -4589,7 +4589,7 @@ attributeID: 1.2.840.113556.1.4.52
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Groups-to-Ignore,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Groups-to-Ignore,${SCHEMADN}
 cn: Groups-to-Ignore
 name: Groups-to-Ignore
 objectClass: top
@@ -4604,7 +4604,7 @@ attributeID: 1.2.840.113556.1.4.344
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Schema-Info,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Schema-Info,${SCHEMADN}
 cn: Schema-Info
 name: Schema-Info
 objectClass: top
@@ -4619,7 +4619,7 @@ attributeID: 1.2.840.113556.1.4.1358
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Domain-Component,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-Component,${SCHEMADN}
 cn: Domain-Component
 name: Domain-Component
 objectClass: top
@@ -4634,7 +4634,7 @@ attributeID: 0.9.2342.19200300.100.1.25
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Object-Category,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Category,${SCHEMADN}
 cn: Object-Category
 name: Object-Category
 objectClass: top
@@ -4650,7 +4650,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Modify-Time-Stamp,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Modify-Time-Stamp,${SCHEMADN}
 cn: Modify-Time-Stamp
 name: Modify-Time-Stamp
 objectClass: top
@@ -4665,7 +4665,7 @@ attributeID: 2.5.18.2
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=Display-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Display-Name,${SCHEMADN}
 cn: Display-Name
 name: Display-Name
 objectClass: top
@@ -4680,7 +4680,7 @@ attributeID: 1.2.840.113556.1.2.13
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Admin-Description,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Description,${SCHEMADN}
 cn: Admin-Description
 name: Admin-Description
 objectClass: top
@@ -4695,7 +4695,7 @@ attributeID: 1.2.840.113556.1.2.226
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-DnsRootAlias,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-DnsRootAlias,${SCHEMADN}
 cn: ms-DS-DnsRootAlias
 name: ms-DS-DnsRootAlias
 objectClass: top
@@ -4710,7 +4710,7 @@ attributeID: 1.2.840.113556.1.4.1719
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Creation-Wizard,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Creation-Wizard,${SCHEMADN}
 cn: Creation-Wizard
 name: Creation-Wizard
 objectClass: top
@@ -4725,7 +4725,7 @@ attributeID: 1.2.840.113556.1.4.498
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Has-Partial-Replica-NCs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Has-Partial-Replica-NCs,${SCHEMADN}
 cn: Has-Partial-Replica-NCs
 name: Has-Partial-Replica-NCs
 objectClass: top
@@ -4742,7 +4742,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Control-Access-Rights,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Control-Access-Rights,${SCHEMADN}
 cn: Control-Access-Rights
 name: Control-Access-Rights
 objectClass: top
@@ -4757,7 +4757,7 @@ attributeID: 1.2.840.113556.1.4.200
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=UAS-Compat,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=UAS-Compat,${SCHEMADN}
 cn: UAS-Compat
 name: UAS-Compat
 objectClass: top
@@ -4772,7 +4772,7 @@ attributeID: 1.2.840.113556.1.4.155
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Object-Sid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Sid,${SCHEMADN}
 cn: Object-Sid
 name: Object-Sid
 objectClass: top
@@ -4787,7 +4787,7 @@ attributeID: 1.2.840.113556.1.4.146
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=Title,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Title,${SCHEMADN}
 cn: Title
 name: Title
 objectClass: top
@@ -4802,7 +4802,7 @@ attributeID: 2.5.4.12
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Phone-Pager-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Pager-Other,${SCHEMADN}
 cn: Phone-Pager-Other
 name: Phone-Pager-Other
 objectClass: top
@@ -4817,7 +4817,7 @@ attributeID: 1.2.840.113556.1.2.118
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Division,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Division,${SCHEMADN}
 cn: Division
 name: Division
 objectClass: top
@@ -4832,7 +4832,7 @@ attributeID: 1.2.840.113556.1.4.261
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=SAM-Account-Type,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SAM-Account-Type,${SCHEMADN}
 cn: SAM-Account-Type
 name: SAM-Account-Type
 objectClass: top
@@ -4847,7 +4847,7 @@ attributeID: 1.2.840.113556.1.4.302
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Object-Class-Category,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Object-Class-Category,${SCHEMADN}
 cn: Object-Class-Category
 name: Object-Class-Category
 objectClass: top
@@ -4862,7 +4862,7 @@ attributeID: 1.2.840.113556.1.2.370
 attributeSyntax: 2.5.5.9
 oMSyntax: 10
 
-dn: CN=Default-Hiding-Value,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Hiding-Value,${SCHEMADN}
 cn: Default-Hiding-Value
 name: Default-Hiding-Value
 objectClass: top
@@ -4877,7 +4877,7 @@ attributeID: 1.2.840.113556.1.4.518
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=msNPAllowDialin,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msNPAllowDialin,${SCHEMADN}
 cn: msNPAllowDialin
 name: msNPAllowDialin
 objectClass: top
@@ -4892,7 +4892,7 @@ attributeID: 1.2.840.113556.1.4.1119
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Code-Page,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Code-Page,${SCHEMADN}
 cn: Code-Page
 name: Code-Page
 objectClass: top
@@ -4907,7 +4907,7 @@ attributeID: 1.2.840.113556.1.4.16
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Admin-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Admin-Count,${SCHEMADN}
 cn: Admin-Count
 name: Admin-Count
 objectClass: top
@@ -4922,7 +4922,7 @@ attributeID: 1.2.840.113556.1.4.150
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Schema-Update,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Schema-Update,${SCHEMADN}
 cn: Schema-Update
 name: Schema-Update
 objectClass: top
@@ -4937,7 +4937,7 @@ attributeID: 1.2.840.113556.1.4.481
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=Trust-Direction,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Direction,${SCHEMADN}
 cn: Trust-Direction
 name: Trust-Direction
 objectClass: top
@@ -4952,7 +4952,7 @@ attributeID: 1.2.840.113556.1.4.132
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Enabled,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Enabled,${SCHEMADN}
 cn: Enabled
 name: Enabled
 objectClass: top
@@ -4967,7 +4967,7 @@ attributeID: 1.2.840.113556.1.2.557
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Locality-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Locality-Name,${SCHEMADN}
 cn: Locality-Name
 name: Locality-Name
 objectClass: top
@@ -4982,7 +4982,7 @@ attributeID: 2.5.4.7
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=EFSPolicy,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=EFSPolicy,${SCHEMADN}
 cn: EFSPolicy
 name: EFSPolicy
 objectClass: top
@@ -4997,7 +4997,7 @@ attributeID: 1.2.840.113556.1.4.268
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Builtin-Modified-Count,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Builtin-Modified-Count,${SCHEMADN}
 cn: Builtin-Modified-Count
 name: Builtin-Modified-Count
 objectClass: top
@@ -5012,7 +5012,7 @@ attributeID: 1.2.840.113556.1.4.14
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Phone-Office-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Office-Other,${SCHEMADN}
 cn: Phone-Office-Other
 name: Phone-Office-Other
 objectClass: top
@@ -5027,7 +5027,7 @@ attributeID: 1.2.840.113556.1.2.18
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Phone-ISDN-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-ISDN-Primary,${SCHEMADN}
 cn: Phone-ISDN-Primary
 name: Phone-ISDN-Primary
 objectClass: top
@@ -5042,7 +5042,7 @@ attributeID: 1.2.840.113556.1.4.649
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Employee-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Employee-ID,${SCHEMADN}
 cn: Employee-ID
 name: Employee-ID
 objectClass: top
@@ -5057,7 +5057,7 @@ attributeID: 1.2.840.113556.1.4.35
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Tombstone-Lifetime,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Tombstone-Lifetime,${SCHEMADN}
 cn: Tombstone-Lifetime
 name: Tombstone-Lifetime
 objectClass: top
@@ -5072,7 +5072,7 @@ attributeID: 1.2.840.113556.1.2.54
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Operating-System-Service-Pack,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Operating-System-Service-Pack,${SCHEMADN}
 cn: Operating-System-Service-Pack
 name: Operating-System-Service-Pack
 objectClass: top
@@ -5087,7 +5087,7 @@ attributeID: 1.2.840.113556.1.4.365
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Netboot-Initialization,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Netboot-Initialization,${SCHEMADN}
 cn: Netboot-Initialization
 name: Netboot-Initialization
 objectClass: top
@@ -5102,7 +5102,7 @@ attributeID: 1.2.840.113556.1.4.358
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=User-Principal-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Principal-Name,${SCHEMADN}
 cn: User-Principal-Name
 name: User-Principal-Name
 objectClass: top
@@ -5117,7 +5117,7 @@ attributeID: 1.2.840.113556.1.4.656
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Service-Principal-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Service-Principal-Name,${SCHEMADN}
 cn: Service-Principal-Name
 name: Service-Principal-Name
 objectClass: top
@@ -5132,7 +5132,7 @@ attributeID: 1.2.840.113556.1.4.771
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Other-Login-Workstations,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Other-Login-Workstations,${SCHEMADN}
 cn: Other-Login-Workstations
 name: Other-Login-Workstations
 objectClass: top
@@ -5147,7 +5147,7 @@ attributeID: 1.2.840.113556.1.4.91
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-IIS-FTP-Dir,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-IIS-FTP-Dir,${SCHEMADN}
 cn: ms-IIS-FTP-Dir
 name: ms-IIS-FTP-Dir
 objectClass: top
@@ -5162,7 +5162,7 @@ attributeID: 1.2.840.113556.1.4.1786
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Site-Affinity,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Site-Affinity,${SCHEMADN}
 cn: ms-DS-Site-Affinity
 name: ms-DS-Site-Affinity
 objectClass: top
@@ -5177,7 +5177,7 @@ attributeID: 1.2.840.113556.1.4.1443
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Max-Storage,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Max-Storage,${SCHEMADN}
 cn: Max-Storage
 name: Max-Storage
 objectClass: top
@@ -5192,7 +5192,7 @@ attributeID: 1.2.840.113556.1.4.76
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=NT-Security-Descriptor,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NT-Security-Descriptor,${SCHEMADN}
 cn: NT-Security-Descriptor
 name: NT-Security-Descriptor
 objectClass: top
@@ -5207,7 +5207,7 @@ attributeID: 1.2.840.113556.1.2.281
 attributeSyntax: 2.5.5.15
 oMSyntax: 66
 
-dn: CN=Site-Object-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Site-Object-BL,${SCHEMADN}
 cn: Site-Object-BL
 name: Site-Object-BL
 objectClass: top
@@ -5224,7 +5224,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Query-Policy-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Query-Policy-BL,${SCHEMADN}
 cn: Query-Policy-BL
 name: Query-Policy-BL
 objectClass: top
@@ -5241,7 +5241,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Partial-Attribute-Set,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Partial-Attribute-Set,${SCHEMADN}
 cn: Partial-Attribute-Set
 name: Partial-Attribute-Set
 objectClass: top
@@ -5256,7 +5256,7 @@ attributeID: 1.2.840.113556.1.4.640
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Obj-Dist-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Obj-Dist-Name,${SCHEMADN}
 cn: Obj-Dist-Name
 name: Obj-Dist-Name
 objectClass: top
@@ -5272,7 +5272,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Description,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Description,${SCHEMADN}
 cn: Description
 name: Description
 objectClass: top
@@ -5287,7 +5287,7 @@ attributeID: 2.5.4.13
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Az-Class-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Class-ID,${SCHEMADN}
 cn: ms-DS-Az-Class-ID
 name: ms-DS-Az-Class-ID
 objectClass: top
@@ -5302,7 +5302,7 @@ attributeID: 1.2.840.113556.1.4.1816
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=RID-Available-Pool,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RID-Available-Pool,${SCHEMADN}
 cn: RID-Available-Pool
 name: RID-Available-Pool
 objectClass: top
@@ -5317,7 +5317,7 @@ attributeID: 1.2.840.113556.1.4.370
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Shell-Property-Pages,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Shell-Property-Pages,${SCHEMADN}
 cn: Shell-Property-Pages
 name: Shell-Property-Pages
 objectClass: top
@@ -5332,7 +5332,7 @@ attributeID: 1.2.840.113556.1.4.563
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-SPN-Suffixes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-SPN-Suffixes,${SCHEMADN}
 cn: ms-DS-SPN-Suffixes
 name: ms-DS-SPN-Suffixes
 objectClass: top
@@ -5347,7 +5347,7 @@ attributeID: 1.2.840.113556.1.4.1715
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Private-Key,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Private-Key,${SCHEMADN}
 cn: Private-Key
 name: Private-Key
 objectClass: top
@@ -5362,7 +5362,7 @@ attributeID: 1.2.840.113556.1.4.101
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Facsimile-Telephone-Number,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Facsimile-Telephone-Number,${SCHEMADN}
 cn: Facsimile-Telephone-Number
 name: Facsimile-Telephone-Number
 objectClass: top
@@ -5377,7 +5377,7 @@ attributeID: 2.5.4.23
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=MSMQ-Nt4-Stub,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Nt4-Stub,${SCHEMADN}
 cn: MSMQ-Nt4-Stub
 name: MSMQ-Nt4-Stub
 objectClass: top
@@ -5392,7 +5392,7 @@ attributeID: 1.2.840.113556.1.4.960
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Schema-Flags-Ex,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Schema-Flags-Ex,${SCHEMADN}
 cn: Schema-Flags-Ex
 name: Schema-Flags-Ex
 objectClass: top
@@ -5407,7 +5407,7 @@ attributeID: 1.2.840.113556.1.4.120
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-IIS-FTP-Root,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-IIS-FTP-Root,${SCHEMADN}
 cn: ms-IIS-FTP-Root
 name: ms-IIS-FTP-Root
 objectClass: top
@@ -5422,7 +5422,7 @@ attributeID: 1.2.840.113556.1.4.1785
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Group-Priority,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Group-Priority,${SCHEMADN}
 cn: Group-Priority
 name: Group-Priority
 objectClass: top
@@ -5437,7 +5437,7 @@ attributeID: 1.2.840.113556.1.4.345
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Bridgehead-Transport-List,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Bridgehead-Transport-List,${SCHEMADN}
 cn: Bridgehead-Transport-List
 name: Bridgehead-Transport-List
 objectClass: top
@@ -5454,7 +5454,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Extended-Class-Info,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Extended-Class-Info,${SCHEMADN}
 cn: Extended-Class-Info
 name: Extended-Class-Info
 objectClass: top
@@ -5469,7 +5469,7 @@ attributeID: 1.2.840.113556.1.4.908
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Flat-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Flat-Name,${SCHEMADN}
 cn: Flat-Name
 name: Flat-Name
 objectClass: top
@@ -5484,7 +5484,7 @@ attributeID: 1.2.840.113556.1.4.511
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Wbem-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Wbem-Path,${SCHEMADN}
 cn: Wbem-Path
 name: Wbem-Path
 objectClass: top
@@ -5499,7 +5499,7 @@ attributeID: 1.2.840.113556.1.4.301
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-NC-Repl-Outbound-Neighbors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-NC-Repl-Outbound-Neighbors,${SCHEMADN}
 cn: ms-DS-NC-Repl-Outbound-Neighbors
 name: ms-DS-NC-Repl-Outbound-Neighbors
 objectClass: top
@@ -5514,7 +5514,7 @@ attributeID: 1.2.840.113556.1.4.1706
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Operations-For-Az-Task-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Operations-For-Az-Task-BL,${SCHEMADN}
 cn: ms-DS-Operations-For-Az-Task-BL
 name: ms-DS-Operations-For-Az-Task-BL
 objectClass: top
@@ -5531,7 +5531,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Show-In-Advanced-View-Only,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Show-In-Advanced-View-Only,${SCHEMADN}
 cn: Show-In-Advanced-View-Only
 name: Show-In-Advanced-View-Only
 objectClass: top
@@ -5546,7 +5546,7 @@ attributeID: 1.2.840.113556.1.2.169
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=ms-DS-Behavior-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Behavior-Version,${SCHEMADN}
 cn: ms-DS-Behavior-Version
 name: ms-DS-Behavior-Version
 objectClass: top
@@ -5561,7 +5561,7 @@ attributeID: 1.2.840.113556.1.4.1459
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=ms-DS-Has-Master-NCs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Has-Master-NCs,${SCHEMADN}
 cn: ms-DS-Has-Master-NCs
 name: ms-DS-Has-Master-NCs
 objectClass: top
@@ -5578,7 +5578,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Pwd-History-Length,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Pwd-History-Length,${SCHEMADN}
 cn: Pwd-History-Length
 name: Pwd-History-Length
 objectClass: top
@@ -5593,7 +5593,7 @@ attributeID: 1.2.840.113556.1.4.95
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Pek-List,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Pek-List,${SCHEMADN}
 cn: Pek-List
 name: Pek-List
 objectClass: top
@@ -5608,7 +5608,7 @@ attributeID: 1.2.840.113556.1.4.865
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Postal-Code,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Postal-Code,${SCHEMADN}
 cn: Postal-Code
 name: Postal-Code
 objectClass: top
@@ -5623,7 +5623,7 @@ attributeID: 2.5.4.17
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Netboot-Mirror-Data-File,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Netboot-Mirror-Data-File,${SCHEMADN}
 cn: Netboot-Mirror-Data-File
 name: Netboot-Mirror-Data-File
 objectClass: top
@@ -5638,7 +5638,7 @@ attributeID: 1.2.840.113556.1.4.1241
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Default-Class-Store,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Class-Store,${SCHEMADN}
 cn: Default-Class-Store
 name: Default-Class-Store
 objectClass: top
@@ -5654,7 +5654,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=MSMQ-Site-ID,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Site-ID,${SCHEMADN}
 cn: MSMQ-Site-ID
 name: MSMQ-Site-ID
 objectClass: top
@@ -5669,7 +5669,7 @@ attributeID: 1.2.840.113556.1.4.953
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Show-In-Address-Book,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Show-In-Address-Book,${SCHEMADN}
 cn: Show-In-Address-Book
 name: Show-In-Address-Book
 objectClass: top
@@ -5685,7 +5685,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=When-Created,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=When-Created,${SCHEMADN}
 cn: When-Created
 name: When-Created
 objectClass: top
@@ -5700,7 +5700,7 @@ attributeID: 1.2.840.113556.1.2.2
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=DS-Core-Propagation-Data,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DS-Core-Propagation-Data,${SCHEMADN}
 cn: DS-Core-Propagation-Data
 name: DS-Core-Propagation-Data
 objectClass: top
@@ -5715,7 +5715,7 @@ attributeID: 1.2.840.113556.1.4.1357
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=Display-Name-Printable,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Display-Name-Printable,${SCHEMADN}
 cn: Display-Name-Printable
 name: Display-Name-Printable
 objectClass: top
@@ -5730,7 +5730,7 @@ attributeID: 1.2.840.113556.1.2.353
 attributeSyntax: 2.5.5.5
 oMSyntax: 19
 
-dn: CN=State-Or-Province-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=State-Or-Province-Name,${SCHEMADN}
 cn: State-Or-Province-Name
 name: State-Or-Province-Name
 objectClass: top
@@ -5745,7 +5745,7 @@ attributeID: 2.5.4.8
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Server-Reference,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server-Reference,${SCHEMADN}
 cn: Server-Reference
 name: Server-Reference
 objectClass: top
@@ -5762,7 +5762,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Has-Domain-NCs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Has-Domain-NCs,${SCHEMADN}
 cn: ms-DS-Has-Domain-NCs
 name: ms-DS-Has-Domain-NCs
 objectClass: top
@@ -5779,7 +5779,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Invocation-Id,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Invocation-Id,${SCHEMADN}
 cn: Invocation-Id
 name: Invocation-Id
 objectClass: top
@@ -5794,7 +5794,7 @@ attributeID: 1.2.840.113556.1.2.115
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Replica-Source,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Replica-Source,${SCHEMADN}
 cn: Replica-Source
 name: Replica-Source
 objectClass: top
@@ -5809,7 +5809,7 @@ attributeID: 1.2.840.113556.1.4.109
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Phone-Ip-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Ip-Primary,${SCHEMADN}
 cn: Phone-Ip-Primary
 name: Phone-Ip-Primary
 objectClass: top
@@ -5824,7 +5824,7 @@ attributeID: 1.2.840.113556.1.4.721
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Phone-Home-Other,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Phone-Home-Other,${SCHEMADN}
 cn: Phone-Home-Other
 name: Phone-Home-Other
 objectClass: top
@@ -5839,7 +5839,7 @@ attributeID: 1.2.840.113556.1.2.277
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Organization-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Organization-Name,${SCHEMADN}
 cn: Organization-Name
 name: Organization-Name
 objectClass: top
@@ -5854,7 +5854,7 @@ attributeID: 2.5.4.10
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Operating-System,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Operating-System,${SCHEMADN}
 cn: Operating-System
 name: Operating-System
 objectClass: top
@@ -5869,7 +5869,7 @@ attributeID: 1.2.840.113556.1.4.363
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Object-Reference,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Object-Reference,${SCHEMADN}
 cn: ms-DS-Object-Reference
 name: ms-DS-Object-Reference
 objectClass: top
@@ -5885,7 +5885,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=MSMQ-Interval1,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Interval1,${SCHEMADN}
 cn: MSMQ-Interval1
 name: MSMQ-Interval1
 objectClass: top
@@ -5900,7 +5900,7 @@ attributeID: 1.2.840.113556.1.4.1308
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Rid,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Rid,${SCHEMADN}
 cn: Rid
 name: Rid
 objectClass: top
@@ -5915,7 +5915,7 @@ attributeID: 1.2.840.113556.1.4.153
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Profile-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Profile-Path,${SCHEMADN}
 cn: Profile-Path
 name: Profile-Path
 objectClass: top
@@ -5930,7 +5930,7 @@ attributeID: 1.2.840.113556.1.4.139
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=msRADIUSCallbackNumber,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRADIUSCallbackNumber,${SCHEMADN}
 cn: msRADIUSCallbackNumber
 name: msRADIUSCallbackNumber
 objectClass: top
@@ -5945,7 +5945,7 @@ attributeID: 1.2.840.113556.1.4.1145
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: CN=ACS-Policy-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ACS-Policy-Name,${SCHEMADN}
 cn: ACS-Policy-Name
 name: ACS-Policy-Name
 objectClass: top
@@ -5960,7 +5960,7 @@ attributeID: 1.2.840.113556.1.4.772
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Comment,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Comment,${SCHEMADN}
 cn: Comment
 name: Comment
 objectClass: top
@@ -5975,7 +5975,7 @@ attributeID: 1.2.840.113556.1.2.81
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-DS-Object-Reference-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Object-Reference-BL,${SCHEMADN}
 cn: ms-DS-Object-Reference-BL
 name: ms-DS-Object-Reference-BL
 objectClass: top
@@ -5992,7 +5992,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=When-Changed,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=When-Changed,${SCHEMADN}
 cn: When-Changed
 name: When-Changed
 objectClass: top
@@ -6007,7 +6007,7 @@ attributeID: 1.2.840.113556.1.2.3
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
-dn: CN=USN-Last-Obj-Rem,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-Last-Obj-Rem,${SCHEMADN}
 cn: USN-Last-Obj-Rem
 name: USN-Last-Obj-Rem
 objectClass: top
@@ -6022,7 +6022,7 @@ attributeID: 1.2.840.113556.1.2.121
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Reps-To,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Reps-To,${SCHEMADN}
 cn: Reps-To
 name: Reps-To
 objectClass: top
@@ -6038,7 +6038,7 @@ attributeSyntax: 2.5.5.10
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBBg==
 
-dn: CN=Repl-UpToDate-Vector,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Repl-UpToDate-Vector,${SCHEMADN}
 cn: Repl-UpToDate-Vector
 name: Repl-UpToDate-Vector
 objectClass: top
@@ -6053,7 +6053,7 @@ attributeID: 1.2.840.113556.1.4.4
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=netboot-SCP-BL,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=netboot-SCP-BL,${SCHEMADN}
 cn: netboot-SCP-BL
 name: netboot-SCP-BL
 objectClass: top
@@ -6070,7 +6070,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Mastered-By,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Mastered-By,${SCHEMADN}
 cn: ms-DS-Mastered-By
 name: ms-DS-Mastered-By
 objectClass: top
@@ -6087,7 +6087,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-COM-PartitionSetLink,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-COM-PartitionSetLink,${SCHEMADN}
 cn: ms-COM-PartitionSetLink
 name: ms-COM-PartitionSetLink
 objectClass: top
@@ -6104,7 +6104,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Common-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Common-Name,${SCHEMADN}
 cn: Common-Name
 name: Common-Name
 objectClass: top
@@ -6119,7 +6119,7 @@ attributeID: 2.5.4.3
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=MS-DS-All-Users-Trust-Quota,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DS-All-Users-Trust-Quota,${SCHEMADN}
 cn: MS-DS-All-Users-Trust-Quota
 name: MS-DS-All-Users-Trust-Quota
 objectClass: top
@@ -6134,7 +6134,7 @@ attributeID: 1.2.840.113556.1.4.1789
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Default-Group,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Default-Group,${SCHEMADN}
 cn: Default-Group
 name: Default-Group
 objectClass: top
@@ -6150,7 +6150,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=User-Comment,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User-Comment,${SCHEMADN}
 cn: User-Comment
 name: User-Comment
 objectClass: top
@@ -6165,7 +6165,7 @@ attributeID: 1.2.840.113556.1.4.156
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Local-Policy-Flags,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Local-Policy-Flags,${SCHEMADN}
 cn: Local-Policy-Flags
 name: Local-Policy-Flags
 objectClass: top
@@ -6180,7 +6180,7 @@ attributeID: 1.2.840.113556.1.4.56
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=MSMQ-Interval2,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Interval2,${SCHEMADN}
 cn: MSMQ-Interval2
 name: MSMQ-Interval2
 objectClass: top
@@ -6195,7 +6195,7 @@ attributeID: 1.2.840.113556.1.4.1309
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=SID-History,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SID-History,${SCHEMADN}
 cn: SID-History
 name: SID-History
 objectClass: top
@@ -6210,7 +6210,7 @@ attributeID: 1.2.840.113556.1.4.609
 attributeSyntax: 2.5.5.17
 oMSyntax: 4
 
-dn: CN=ms-ds-Schema-Extensions,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-ds-Schema-Extensions,${SCHEMADN}
 cn: ms-ds-Schema-Extensions
 name: ms-ds-Schema-Extensions
 objectClass: top
@@ -6225,7 +6225,7 @@ attributeID: 1.2.840.113556.1.4.1440
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Unicode-Pwd,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Unicode-Pwd,${SCHEMADN}
 cn: Unicode-Pwd
 name: Unicode-Pwd
 objectClass: top
@@ -6240,7 +6240,7 @@ attributeID: 1.2.840.113556.1.4.90
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=msRASSavedFramedIPAddress,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=msRASSavedFramedIPAddress,${SCHEMADN}
 cn: msRASSavedFramedIPAddress
 name: msRASSavedFramedIPAddress
 objectClass: top
@@ -6255,7 +6255,7 @@ attributeID: 1.2.840.113556.1.4.1190
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=MS-DRM-Identity-Certificate,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MS-DRM-Identity-Certificate,${SCHEMADN}
 cn: MS-DRM-Identity-Certificate
 name: MS-DRM-Identity-Certificate
 objectClass: top
@@ -6269,7 +6269,7 @@ attributeID: 1.2.840.113556.1.4.1843
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Last-Logoff,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Last-Logoff,${SCHEMADN}
 cn: Last-Logoff
 name: Last-Logoff
 objectClass: top
@@ -6284,7 +6284,7 @@ attributeID: 1.2.840.113556.1.4.51
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=DMD-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DMD-Name,${SCHEMADN}
 cn: DMD-Name
 name: DMD-Name
 objectClass: top
@@ -6299,7 +6299,7 @@ attributeID: 1.2.840.113556.1.2.598
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=ms-Exch-LabeledURI,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-Exch-LabeledURI,${SCHEMADN}
 cn: ms-Exch-LabeledURI
 name: ms-Exch-LabeledURI
 objectClass: top
@@ -6312,7 +6312,7 @@ attributeID: 1.2.840.113556.1.2.593
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Reports,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Reports,${SCHEMADN}
 cn: Reports
 name: Reports
 objectClass: top
@@ -6329,7 +6329,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Repl-Property-Meta-Data,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Repl-Property-Meta-Data,${SCHEMADN}
 cn: Repl-Property-Meta-Data
 name: Repl-Property-Meta-Data
 objectClass: top
@@ -6344,7 +6344,7 @@ attributeID: 1.2.840.113556.1.4.3
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=From-Entry,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=From-Entry,${SCHEMADN}
 cn: From-Entry
 name: From-Entry
 objectClass: top
@@ -6359,7 +6359,7 @@ attributeID: 1.2.840.113556.1.4.910
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=Trust-Parent,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trust-Parent,${SCHEMADN}
 cn: Trust-Parent
 name: Trust-Parent
 objectClass: top
@@ -6375,7 +6375,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=RID-Manager-Reference,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RID-Manager-Reference,${SCHEMADN}
 cn: RID-Manager-Reference
 name: RID-Manager-Reference
 objectClass: top
@@ -6391,7 +6391,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Lockout-Threshold,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lockout-Threshold,${SCHEMADN}
 cn: Lockout-Threshold
 name: Lockout-Threshold
 objectClass: top
@@ -6406,7 +6406,7 @@ attributeID: 1.2.840.113556.1.4.73
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Desktop-Profile,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Desktop-Profile,${SCHEMADN}
 cn: Desktop-Profile
 name: Desktop-Profile
 objectClass: top
@@ -6421,7 +6421,7 @@ attributeID: 1.2.840.113556.1.4.346
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Text-Country,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Text-Country,${SCHEMADN}
 cn: Text-Country
 name: Text-Country
 objectClass: top
@@ -6436,7 +6436,7 @@ attributeID: 1.2.840.113556.1.2.131
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Teletex-Terminal-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Teletex-Terminal-Identifier,${SCHEMADN}
 cn: Teletex-Terminal-Identifier
 name: Teletex-Terminal-Identifier
 objectClass: top
@@ -6451,7 +6451,7 @@ attributeID: 2.5.4.22
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Telex-Primary,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Telex-Primary,${SCHEMADN}
 cn: Telex-Primary
 name: Telex-Primary
 objectClass: top
@@ -6466,7 +6466,7 @@ attributeID: 1.2.840.113556.1.4.648
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Manager,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Manager,${SCHEMADN}
 cn: Manager
 name: Manager
 objectClass: top
@@ -6483,7 +6483,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Physical-Location-Object,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Physical-Location-Object,${SCHEMADN}
 cn: Physical-Location-Object
 name: Physical-Location-Object
 objectClass: top
@@ -6499,7 +6499,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Az-Major-Version,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Major-Version,${SCHEMADN}
 cn: ms-DS-Az-Major-Version
 name: ms-DS-Az-Major-Version
 objectClass: top
@@ -6514,7 +6514,7 @@ attributeID: 1.2.840.113556.1.4.1824
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
-dn: CN=Sub-Class-Of,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Sub-Class-Of,${SCHEMADN}
 cn: Sub-Class-Of
 name: Sub-Class-Of
 objectClass: top
@@ -6529,7 +6529,7 @@ attributeID: 1.2.840.113556.1.2.21
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=System-Must-Contain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=System-Must-Contain,${SCHEMADN}
 cn: System-Must-Contain
 name: System-Must-Contain
 objectClass: top
@@ -6544,7 +6544,7 @@ attributeID: 1.2.840.113556.1.4.197
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
 
-dn: CN=roomNumber,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=roomNumber,${SCHEMADN}
 cn: roomNumber
 name: roomNumber
 objectClass: top
@@ -6559,7 +6559,7 @@ attributeID: 0.9.2342.19200300.100.1.6
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Employee-Type,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Employee-Type,${SCHEMADN}
 cn: Employee-Type
 name: Employee-Type
 objectClass: top
@@ -6574,7 +6574,7 @@ attributeID: 1.2.840.113556.1.2.613
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Current-Value,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Current-Value,${SCHEMADN}
 cn: Current-Value
 name: Current-Value
 objectClass: top
@@ -6589,7 +6589,7 @@ attributeID: 1.2.840.113556.1.4.27
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=DIT-Content-Rules,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DIT-Content-Rules,${SCHEMADN}
 cn: DIT-Content-Rules
 name: DIT-Content-Rules
 objectClass: top
@@ -6604,7 +6604,7 @@ attributeID: 2.5.21.2
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=USN-Created,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-Created,${SCHEMADN}
 cn: USN-Created
 name: USN-Created
 objectClass: top
@@ -6619,7 +6619,7 @@ attributeID: 1.2.840.113556.1.2.19
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Sub-Refs,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Sub-Refs,${SCHEMADN}
 cn: Sub-Refs
 name: Sub-Refs
 objectClass: top
@@ -6635,7 +6635,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Proxy-Addresses,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Proxy-Addresses,${SCHEMADN}
 cn: Proxy-Addresses
 name: Proxy-Addresses
 objectClass: top
@@ -6650,7 +6650,7 @@ attributeID: 1.2.840.113556.1.2.210
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Superior-DNS-Root,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Superior-DNS-Root,${SCHEMADN}
 cn: Superior-DNS-Root
 name: Superior-DNS-Root
 objectClass: top
@@ -6665,7 +6665,7 @@ attributeID: 1.2.840.113556.1.4.532
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Root-Trust,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Root-Trust,${SCHEMADN}
 cn: Root-Trust
 name: Root-Trust
 objectClass: top
@@ -6681,7 +6681,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=Shell-Context-Menu,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Shell-Context-Menu,${SCHEMADN}
 cn: Shell-Context-Menu
 name: Shell-Context-Menu
 objectClass: top
@@ -6696,7 +6696,7 @@ attributeID: 1.2.840.113556.1.4.615
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Class-Display-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Class-Display-Name,${SCHEMADN}
 cn: Class-Display-Name
 name: Class-Display-Name
 objectClass: top
@@ -6711,7 +6711,7 @@ attributeID: 1.2.840.113556.1.4.610
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=CA-Certificate,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=CA-Certificate,${SCHEMADN}
 cn: CA-Certificate
 name: CA-Certificate
 objectClass: top
@@ -6726,7 +6726,7 @@ attributeID: 2.5.4.37
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=MHS-OR-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MHS-OR-Address,${SCHEMADN}
 cn: MHS-OR-Address
 name: MHS-OR-Address
 objectClass: top
@@ -6741,7 +6741,7 @@ attributeID: 1.2.840.113556.1.4.650
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Nt-Pwd-History,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Nt-Pwd-History,${SCHEMADN}
 cn: Nt-Pwd-History
 name: Nt-Pwd-History
 objectClass: top
@@ -6756,7 +6756,7 @@ attributeID: 1.2.840.113556.1.4.94
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=SMTP-Mail-Address,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SMTP-Mail-Address,${SCHEMADN}
 cn: SMTP-Mail-Address
 name: SMTP-Mail-Address
 objectClass: top
@@ -6771,7 +6771,7 @@ attributeID: 1.2.840.113556.1.4.786
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Foreign-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Foreign-Identifier,${SCHEMADN}
 cn: Foreign-Identifier
 name: Foreign-Identifier
 objectClass: top
@@ -6786,7 +6786,7 @@ attributeID: 1.2.840.113556.1.4.356
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=USN-Changed,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=USN-Changed,${SCHEMADN}
 cn: USN-Changed
 name: USN-Changed
 objectClass: top
@@ -6801,7 +6801,7 @@ attributeID: 1.2.840.113556.1.2.120
 attributeSyntax: 2.5.5.16
 oMSyntax: 65
 
-dn: CN=Reps-From,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Reps-From,${SCHEMADN}
 cn: Reps-From
 name: Reps-From
 objectClass: top
@@ -6817,7 +6817,7 @@ attributeSyntax: 2.5.5.10
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBBg==
 
-dn: CN=Other-Well-Known-Objects,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Other-Well-Known-Objects,${SCHEMADN}
 cn: Other-Well-Known-Objects
 name: Other-Well-Known-Objects
 objectClass: top
@@ -6833,7 +6833,7 @@ attributeSyntax: 2.5.5.7
 oMSyntax: 127
 oMObjectClass:: KoZIhvcUAQEBCw==
 
-dn: CN=ms-DS-NC-Repl-Cursors,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-NC-Repl-Cursors,${SCHEMADN}
 cn: ms-DS-NC-Repl-Cursors
 name: ms-DS-NC-Repl-Cursors
 objectClass: top
@@ -6848,7 +6848,7 @@ attributeID: 1.2.840.113556.1.4.1704
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Managed-Objects,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Managed-Objects,${SCHEMADN}
 cn: Managed-Objects
 name: Managed-Objects
 objectClass: top
@@ -6865,7 +6865,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=ms-DS-Allowed-DNS-Suffixes,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Allowed-DNS-Suffixes,${SCHEMADN}
 cn: ms-DS-Allowed-DNS-Suffixes
 name: ms-DS-Allowed-DNS-Suffixes
 objectClass: top
@@ -6880,7 +6880,7 @@ attributeID: 1.2.840.113556.1.4.1710
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=NC-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NC-Name,${SCHEMADN}
 cn: NC-Name
 name: NC-Name
 objectClass: top
@@ -6896,7 +6896,7 @@ attributeSyntax: 2.5.5.1
 oMSyntax: 127
 oMObjectClass:: KwwCh3McAIVK
 
-dn: CN=NETBIOS-Name,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NETBIOS-Name,${SCHEMADN}
 cn: NETBIOS-Name
 name: NETBIOS-Name
 objectClass: top
@@ -6911,7 +6911,7 @@ attributeID: 1.2.840.113556.1.4.87
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Query-Filter,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Query-Filter,${SCHEMADN}
 cn: Query-Filter
 name: Query-Filter
 objectClass: top
@@ -6926,7 +6926,7 @@ attributeID: 1.2.840.113556.1.4.1355
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=Preferred-Delivery-Method,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Preferred-Delivery-Method,${SCHEMADN}
 cn: Preferred-Delivery-Method
 name: Preferred-Delivery-Method
 objectClass: top
@@ -6941,7 +6941,7 @@ attributeID: 2.5.4.28
 attributeSyntax: 2.5.5.9
 oMSyntax: 10
 
-dn: CN=MSMQ-Site-Foreign,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Site-Foreign,${SCHEMADN}
 cn: MSMQ-Site-Foreign
 name: MSMQ-Site-Foreign
 objectClass: top
@@ -6956,7 +6956,7 @@ attributeID: 1.2.840.113556.1.4.961
 attributeSyntax: 2.5.5.8
 oMSyntax: 1
 
-dn: CN=audio,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=audio,${SCHEMADN}
 cn: audio
 name: audio
 objectClass: top
@@ -6971,7 +6971,7 @@ attributeID: 0.9.2342.19200300.100.1.55
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Script-Path,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Script-Path,${SCHEMADN}
 cn: Script-Path
 name: Script-Path
 objectClass: top
@@ -6986,7 +6986,7 @@ attributeID: 1.2.840.113556.1.4.62
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
-dn: CN=MSMQ-Digests,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=MSMQ-Digests,${SCHEMADN}
 cn: MSMQ-Digests
 name: MSMQ-Digests
 objectClass: top
@@ -7001,7 +7001,7 @@ attributeID: 1.2.840.113556.1.4.948
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=ms-DS-Cached-Membership,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Cached-Membership,${SCHEMADN}
 cn: ms-DS-Cached-Membership
 name: ms-DS-Cached-Membership
 objectClass: top
@@ -7016,7 +7016,7 @@ attributeID: 1.2.840.113556.1.4.1441
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Logon-Hours,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Logon-Hours,${SCHEMADN}
 cn: Logon-Hours
 name: Logon-Hours
 objectClass: top
@@ -7031,7 +7031,7 @@ attributeID: 1.2.840.113556.1.4.64
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: CN=Top,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Top,${SCHEMADN}
 cn: Top
 name: Top
 objectClass: top
@@ -7133,15 +7133,15 @@ systemMayContain: adminDisplayName
 systemMayContain: adminDescription
 objectClassCategory: 2
 subClassOf: top
-defaultObjectCategory: CN=Top,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Top,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967ab7-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain-DNS,${SCHEMADN}
 cn: Domain-DNS
 name: Domain-DNS
 objectClass: top
@@ -7156,12 +7156,12 @@ systemMayContain: msDS-AllowedDNSSuffixes
 systemMayContain: managedBy
 objectClassCategory: 1
 subClassOf: domain
-defaultObjectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Domain-DNS,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: lostAndFound
 possibleInferiors: builtinDomain
@@ -7176,7 +7176,7 @@ possibleInferiors: country
 possibleInferiors: organizationalUnit
 schemaIDGUID: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
-dn: CN=ms-DS-Az-Application,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Application,${SCHEMADN}
 cn: ms-DS-Az-Application
 name: ms-DS-Az-Application
 objectClass: top
@@ -7193,18 +7193,18 @@ systemMayContain: msDS-AzApplicationName
 systemMayContain: description
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=ms-DS-Az-Application,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-DS-Az-Application,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: container
 possibleInferiors: msDS-AzScope
 schemaIDGUID: ddf8de9b-cba5-4e12-842e-28d8b66f75ec
 
-dn: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Builtin-Domain,${SCHEMADN}
 cn: Builtin-Domain
 name: Builtin-Domain
 objectClass: top
@@ -7216,18 +7216,18 @@ governsID: 1.2.840.113556.1.5.4
 rDNAttID: cn
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Builtin-Domain,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: computer
 possibleInferiors: user
 schemaIDGUID: bf967a81-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Infrastructure-Update,${SCHEMADN}
 cn: Infrastructure-Update
 name: Infrastructure-Update
 objectClass: top
@@ -7240,15 +7240,15 @@ rDNAttID: cn
 systemMayContain: dNReferenceUpdate
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Infrastructure-Update,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;GA;;;SY)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: 2df90d89-009f-11d2-aa4c-00c04fd7d83a
 
-dn: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Configuration,${SCHEMADN}
 cn: Configuration
 name: Configuration
 objectClass: top
@@ -7262,18 +7262,18 @@ systemMayContain: gPOptions
 systemMayContain: gPLink
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Configuration,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: lostAndFound
 possibleInferiors: sitesContainer
 possibleInferiors: container
 schemaIDGUID: bf967a87-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Cross-Ref,${SCHEMADN}
 cn: Cross-Ref
 name: Cross-Ref
 objectClass: top
@@ -7299,15 +7299,15 @@ systemMayContain: msDS-DnsRootAlias
 systemMayContain: msDS-Behavior-Version
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Cross-Ref,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a8d-0de6-11d0-a285-00aa003049e2
 
-dn: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=RID-Manager,${SCHEMADN}
 cn: RID-Manager
 name: RID-Manager
 objectClass: top
@@ -7319,15 +7319,15 @@ rDNAttID: cn
 systemMustContain: rIDAvailablePool
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=RID-Manager,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)S:(AU;SA;CRWP;;;WD)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: 6617188d-8f3c-11d0-afda-00c04fd930c9
 
-dn: CN=Display-Specifier,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Display-Specifier,${SCHEMADN}
 cn: Display-Specifier
 name: Display-Specifier
 objectClass: top
@@ -7354,15 +7354,15 @@ systemMayContain: adminMultiselectPropertyPages
 systemMayContain: adminContextMenu
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Display-Specifier,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Display-Specifier,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: e0fa1e8a-9b45-11d0-afdd-00c04fd930c9
 
-dn: CN=ms-DS-Az-Scope,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Scope,${SCHEMADN}
 cn: ms-DS-Az-Scope
 name: ms-DS-Az-Scope
 objectClass: top
@@ -7376,17 +7376,17 @@ systemMayContain: msDS-AzApplicationData
 systemMayContain: description
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=ms-DS-Az-Scope,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-DS-Az-Scope,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: container
 schemaIDGUID: 4feae054-ce55-47bb-860e-5b12063a51de
 
-dn: CN=Locality,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Locality,${SCHEMADN}
 cn: Locality
 name: Locality
 objectClass: top
@@ -7406,17 +7406,17 @@ systemMayContain: seeAlso
 systemMayContain: searchGuide
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Locality,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Locality,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: organization
 possibleInferiors: locality
 schemaIDGUID: bf967aa0-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Cross-Ref-Container,${SCHEMADN}
 cn: Cross-Ref-Container
 name: Cross-Ref-Container
 objectClass: top
@@ -7432,16 +7432,16 @@ systemMayContain: msDS-ExecuteScriptPassword
 systemMayContain: msDS-Behavior-Version
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Cross-Ref-Container,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;GA;;;SY)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: crossRef
 schemaIDGUID: ef9e60e0-56f7-11d1-a9c6-0000f80367c1
 
-dn: CN=Subnet-Container,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Subnet-Container,${SCHEMADN}
 cn: Subnet-Container
 name: Subnet-Container
 objectClass: top
@@ -7452,16 +7452,16 @@ governsID: 1.2.840.113556.1.5.95
 rDNAttID: cn
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Subnet-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Subnet-Container,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: subnet
 schemaIDGUID: b7b13125-b82e-11d0-afee-0000f80367c1
 
-dn: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NTDS-DSA,${SCHEMADN}
 cn: NTDS-DSA
 name: NTDS-DSA
 objectClass: top
@@ -7491,15 +7491,15 @@ systemMayContain: fRSRootPath
 systemMayContain: dMDLocation
 objectClassCategory: 1
 subClassOf: applicationSettings
-defaultObjectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=NTDS-DSA,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: f0f8ffab-1191-11d0-a060-00aa006c33ed
 
-dn: CN=Sam-Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Sam-Domain,${SCHEMADN}
 cn: Sam-Domain
 name: Sam-Domain
 objectClass: top
@@ -7548,15 +7548,15 @@ systemMayContain: builtinCreationTime
 systemMayContain: auditingPolicy
 objectClassCategory: 3
 subClassOf: top
-defaultObjectCategory: CN=Sam-Domain,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Sam-Domain,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a90-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Sam-Domain-Base,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Sam-Domain-Base,${SCHEMADN}
 cn: Sam-Domain-Base
 name: Sam-Domain-Base
 objectClass: top
@@ -7587,14 +7587,14 @@ systemMayContain: domainReplica
 systemMayContain: creationTime
 objectClassCategory: 3
 subClassOf: top
-defaultObjectCategory: CN=Sam-Domain-Base,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Sam-Domain-Base,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a91-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Country,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Country,${SCHEMADN}
 cn: Country
 name: Country
 objectClass: top
@@ -7609,18 +7609,18 @@ systemMayContain: co
 systemMayContain: searchGuide
 objectClassCategory: 0
 subClassOf: top
-defaultObjectCategory: CN=Country,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Country,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: organization
 possibleInferiors: locality
 possibleInferiors: organizationalUnit
 schemaIDGUID: bf967a8c-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Organizational-Unit,${SCHEMADN}
 cn: Organizational-Unit
 name: Organizational-Unit
 objectClass: top
@@ -7666,12 +7666,12 @@ systemMayContain: c
 systemMayContain: businessCategory
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Organizational-Unit,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(OA;;CCDC;bf967a86-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)(A;;RPLCLORC;;;AU)(A;;LCRPLORC;;;ED)(OA;;CCDC;4828CC14-1437-45bc-9B07-AD6F015E5F28;;AO)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: computer
 possibleInferiors: user
@@ -7683,7 +7683,7 @@ possibleInferiors: organizationalUnit
 possibleInferiors: organizationalPerson
 schemaIDGUID: bf967aa5-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Lost-And-Found,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Lost-And-Found,${SCHEMADN}
 cn: Lost-And-Found
 name: Lost-And-Found
 objectClass: top
@@ -7697,12 +7697,12 @@ rDNAttID: cn
 systemMayContain: moveTreeState
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Lost-And-Found,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Lost-And-Found,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: msDS-AzApplication
 possibleInferiors: lostAndFound
@@ -7734,7 +7734,7 @@ possibleInferiors: organizationalPerson
 possibleInferiors: server
 schemaIDGUID: 52ab8671-5709-11d1-a9c6-0000f80367c1
 
-dn: CN=Organizational-Person,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Organizational-Person,${SCHEMADN}
 cn: Organizational-Person
 name: Organizational-Person
 objectClass: top
@@ -7802,15 +7802,15 @@ systemMayContain: assistant
 systemMayContain: streetAddress
 objectClassCategory: 0
 subClassOf: person
-defaultObjectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Person,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967aa4-0de6-11d0-a285-00aa003049e2
 
-dn: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=NTDS-Service,${SCHEMADN}
 cn: NTDS-Service
 name: NTDS-Service
 objectClass: top
@@ -7827,16 +7827,16 @@ systemMayContain: garbageCollPeriod
 systemMayContain: dSHeuristics
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=NTDS-Service,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: container
 schemaIDGUID: 19195a5f-6da0-11d0-afd3-00c04fd930c9
 
-dn: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Servers-Container,${SCHEMADN}
 cn: Servers-Container
 name: Servers-Container
 objectClass: top
@@ -7847,16 +7847,16 @@ governsID: 1.2.840.113556.1.5.7000.48
 rDNAttID: cn
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Servers-Container,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;CC;;;BA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: server
 schemaIDGUID: f780acc0-56f0-11d1-a9c6-0000f80367c1
 
-dn: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Computer,${SCHEMADN}
 cn: Computer
 name: Computer
 objectClass: top
@@ -7894,15 +7894,15 @@ systemMayContain: cn
 systemMayContain: catalogs
 objectClassCategory: 1
 subClassOf: user
-defaultObjectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Computer,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPCRLCLORCSDDT;;;CO)(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)(A;;RPLCLORC;;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(A;;CCDC;;;PS)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;CO)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;CO)(OA;;WP;3e0abfd0-126a-11d0-a060-00aa006c33ed;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967950-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a86-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Person,${SCHEMADN}
 cn: Person
 name: Person
 objectClass: top
@@ -7921,15 +7921,15 @@ systemMayContain: serialNumber
 systemMayContain: seeAlso
 objectClassCategory: 0
 subClassOf: top
-defaultObjectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Person,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967aa7-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Container,${SCHEMADN}
 cn: Container
 name: Container
 objectClass: top
@@ -7954,12 +7954,12 @@ systemMayContain: schemaVersion
 systemMayContain: defaultClassStore
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Container,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: trustedDomain
 possibleInferiors: computer
@@ -7974,7 +7974,7 @@ possibleInferiors: secret
 possibleInferiors: organizationalPerson
 schemaIDGUID: bf967a8b-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Site,${SCHEMADN}
 cn: Site
 name: Site
 objectClass: top
@@ -7995,16 +7995,16 @@ systemMayContain: gPOptions
 systemMayContain: gPLink
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Site,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;LCRPLORC;;;ED)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: serversContainer
 schemaIDGUID: bf967ab3-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Organization,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Organization,${SCHEMADN}
 cn: Organization
 name: Organization
 objectClass: top
@@ -8038,12 +8038,12 @@ systemMayContain: destinationIndicator
 systemMayContain: businessCategory
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Organization,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Organization,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: computer
 possibleInferiors: user
 possibleInferiors: container
@@ -8054,7 +8054,7 @@ possibleInferiors: organizationalUnit
 possibleInferiors: organizationalPerson
 schemaIDGUID: bf967aa3-0de6-11d0-a285-00aa003049e2
 
-dn: CN=ms-DS-Az-Admin-Manager,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=ms-DS-Az-Admin-Manager,${SCHEMADN}
 cn: ms-DS-Az-Admin-Manager
 name: ms-DS-Az-Admin-Manager
 objectClass: top
@@ -8075,18 +8075,18 @@ systemMayContain: msDS-AzDomainTimeout
 systemMayContain: description
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=ms-DS-Az-Admin-Manager,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-DS-Az-Admin-Manager,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: group
 possibleInferiors: msDS-AzApplication
 possibleInferiors: container
 schemaIDGUID: cfee1051-5f28-4bae-a863-5d0cc18a8ed1
 
-dn: CN=Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Security-Principal,${SCHEMADN}
 cn: Security-Principal
 name: Security-Principal
 objectClass: top
@@ -8110,14 +8110,14 @@ systemMayContain: altSecurityIdentities
 systemMayContain: accountNameHistory
 objectClassCategory: 3
 subClassOf: top
-defaultObjectCategory: CN=Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Security-Principal,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967ab0-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Application-Settings,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Application-Settings,${SCHEMADN}
 cn: Application-Settings
 name: Application-Settings
 objectClass: top
@@ -8131,14 +8131,14 @@ systemMayContain: msDS-Settings
 systemMayContain: applicationName
 objectClassCategory: 2
 subClassOf: top
-defaultObjectCategory: CN=Application-Settings,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Application-Settings,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: f780acc1-56f0-11d1-a9c6-0000f80367c1
 
-dn: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Class-Schema,${SCHEMADN}
 cn: Class-Schema
 name: Class-Schema
 objectClass: top
@@ -8173,15 +8173,15 @@ systemMayContain: classDisplayName
 systemMayContain: auxiliaryClass
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Class-Schema,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 134217744
 systemOnly: FALSE
 defaultSecurityDescriptor: D:S:
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a83-0de6-11d0-a285-00aa003049e2
 
-dn: CN=User,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=User,${SCHEMADN}
 cn: User
 name: User
 objectClass: top
@@ -8290,15 +8290,15 @@ systemMayContain: aCSPolicyName
 systemMayContain: accountExpires
 objectClassCategory: 1
 subClassOf: organizationalPerson
-defaultObjectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Person,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RP;037088f8-0ae1-11d2-b422-00a0c968f939;;RS)(OA;;RP;4c164200-20c0-11d0-a768-00aa006e0529;;RS)(OA;;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;;RS)(A;;RC;;;AU)(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(OA;;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;;RS)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)(OA;;WPRP;6db69a1c-9422-11d1-aebd-0000f80367c1;;S-1-5-32-561)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967aba-0de6-11d0-a285-00aa003049e2
 
-dn: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=DMD,${SCHEMADN}
 cn: DMD
 name: DMD
 objectClass: top
@@ -8316,17 +8316,17 @@ systemMayContain: msDS-IntId
 systemMayContain: dmdName
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=DMD,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: TRUE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: lostAndFound
 possibleInferiors: classSchema
 schemaIDGUID: bf967a8f-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Leaf,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Leaf,${SCHEMADN}
 cn: Leaf
 name: Leaf
 objectClass: top
@@ -8336,15 +8336,15 @@ governsID: 1.2.840.113556.1.5.20
 rDNAttID: cn
 objectClassCategory: 2
 subClassOf: top
-defaultObjectCategory: CN=Leaf,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Leaf,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a9e-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Secret,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Secret,${SCHEMADN}
 cn: Secret
 name: Secret
 objectClass: top
@@ -8359,15 +8359,15 @@ systemMayContain: lastSetTime
 systemMayContain: currentValue
 objectClassCategory: 1
 subClassOf: leaf
-defaultObjectCategory: CN=Secret,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Secret,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967aae-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Sites-Container,${SCHEMADN}
 cn: Sites-Container
 name: Sites-Container
 objectClass: top
@@ -8378,17 +8378,17 @@ governsID: 1.2.840.113556.1.5.107
 rDNAttID: cn
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Sites-Container,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: subnetContainer
 possibleInferiors: site
 schemaIDGUID: 7a4117da-cd67-11d0-afff-0000f80367c1
 
-dn: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server,${SCHEMADN}
 cn: Server
 name: Server
 objectClass: top
@@ -8405,16 +8405,16 @@ systemMayContain: dNSHostName
 systemMayContain: bridgeheadTransportList
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Server,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: container
 schemaIDGUID: bf967a92-0de6-11d0-a285-00aa003049e2
 
-dn: CN=SubSchema,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=SubSchema,${SCHEMADN}
 cn: SubSchema
 name: SubSchema
 objectClass: top
@@ -8431,15 +8431,15 @@ systemMayContain: dITContentRules
 systemMayContain: attributeTypes
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=SubSchema,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=SubSchema,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 134217744
 systemOnly: TRUE
 defaultSecurityDescriptor: D:S:
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: 5a8b3261-c38d-11d1-bbc9-0080c76670c0
 
-dn: CN=Trusted-Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Trusted-Domain,${SCHEMADN}
 cn: Trusted-Domain
 name: Trusted-Domain
 objectClass: top
@@ -8466,15 +8466,15 @@ systemMayContain: domainCrossRef
 systemMayContain: additionalTrustedServiceNames
 objectClassCategory: 1
 subClassOf: leaf
-defaultObjectCategory: CN=Trusted-Domain,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Trusted-Domain,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(OA;;WP;736e4812-af31-11d2-b7df-00805f48caeb;bf967ab8-0de6-11d0-a285-00aa003049e2;CO)(A;;SD;;;CO)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967ab8-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Domain,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Domain,${SCHEMADN}
 cn: Domain
 name: Domain
 objectClass: top
@@ -8487,15 +8487,15 @@ rDNAttID: dc
 systemMustContain: dc
 objectClassCategory: 2
 subClassOf: top
-defaultObjectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Domain-DNS,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: domainDNS
 schemaIDGUID: 19195a5a-6da0-11d0-afd3-00c04fd930c9
 
-dn: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Foreign-Security-Principal,${SCHEMADN}
 cn: Foreign-Security-Principal
 name: Foreign-Security-Principal
 objectClass: top
@@ -8508,15 +8508,15 @@ systemMustContain: objectSid
 systemMayContain: foreignIdentifier
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Foreign-Security-Principal,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)(A;;RC;;;AU)(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: 89e31c12-8530-11d0-afda-00c04fd930c9
 
-dn: CN=Subnet,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Subnet,${SCHEMADN}
 cn: Subnet
 name: Subnet
 objectClass: top
@@ -8530,16 +8530,16 @@ systemMayContain: physicalLocationObject
 systemMayContain: location
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Subnet,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Subnet,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 possibleInferiors: container
 schemaIDGUID: b7b13124-b82e-11d0-afee-0000f80367c1
 
-dn: CN=Mail-Recipient,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Mail-Recipient,${SCHEMADN}
 cn: Mail-Recipient
 name: Mail-Recipient
 objectClass: top
@@ -8564,15 +8564,15 @@ systemMayContain: garbageCollPeriod
 systemMayContain: info
 objectClassCategory: 3
 subClassOf: top
-defaultObjectCategory: CN=Mail-Recipient,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Mail-Recipient,${SCHEMADN}
 defaultHidingValue: TRUE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967aa1-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Group,${SCHEMADN}
 cn: Group
 name: Group
 objectClass: top
@@ -8606,21 +8606,21 @@ systemMayContain: controlAccessRights
 systemMayContain: adminCount
 objectClassCategory: 1
 subClassOf: top
-defaultObjectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Group,${SCHEMADN}
 defaultHidingValue: FALSE
 systemFlags: 16
 systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a55-1e2f-11d0-9819-00aa0040529b;;AU)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)
-objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,${SCHEMADN}
 schemaIDGUID: bf967a9c-0de6-11d0-a285-00aa003049e2
 
-dn: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Aggregate,${SCHEMADN}
 objectClass: top
 objectClass: subSchema
 cn: Aggregate
 instanceType: 4
 name: Aggregate
-objectCategory: CN=SubSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=SubSchema,${SCHEMADN}
 objectClasses: ( 2.5.6.0 NAME 'top' SUP top ABSTRACT MUST ( objectClass $ objectCategory $ nTSecurityDescriptor $ instanceType ) MAY ( url $ wWWHomePage $ whenCreated $ whenChanged $ wellKnownObjects $ wbemPath $ uSNSource $ uSNLastObjRem $ USNIntersite $ uSNDSALastObjRemoved $ uSNCreated $ uSNChanged $ systemFlags $ subSchemaSubEntry $ subRefs $ structuralObjectClass $ siteObjectBL $ serverReferenceBL $ sDRightsEffective $ revision $ repsTo $ repsFrom $ directReports $ replUpToDateVector $ replPropertyMetaData $ name $ queryPolicyBL $ proxyAddresses $ proxiedObjectName $ possibleInferiors $ partialAttributeSet $ partialAttributeDeletionList $ otherWellKnownObjects $ objectVersion $ objectGUID $ distinguishedName $ nonSecurityMemberBL $ netbootSCPBL $ ownerBL $ msDS-ReplValueMetaData $ msDS-ReplAttributeMetaData $ msDS-NonMembersBL $ msDS-NCReplOutboundNeighbors $ msDS-NCReplInboundNeighbors $ msDS-NCReplCursors $ msDS-TasksForAzRoleBL $ msDS-TasksForAzTaskBL $ msDS-OperationsForAzRoleBL $ msDS-OperationsForAzTaskBL $ msDS-MembersForAzRoleBL $ msDs-masteredBy $ mS-DS-ConsistencyGuid $ mS-DS-ConsistencyChildCount $ msDS-Approx-Immed-Subordinates $ msCOM-PartitionSetLink $ msCOM-UserLink $ modifyTimeStamp $ masteredBy $ managedObjects $ lastKnownParent $ isPrivilegeHolder $ memberOf $ isDeleted $ isCriticalSystemObject $ showInAdvancedViewOnly $ fSMORoleOwner $ fRSMemberReferenceBL $ frsComputerReferenceBL $ fromEntry $ flags $ extensionName $ dSASignature $ dSCorePropagationData $ displayNamePrintable $ displayName $ description $ createTimeStamp $ cn $ canonicalName $ bridgeheadServerListBL $ allowedChildClassesEffective $ allowedChildClasses $ allowedAttributesEffective $ allowedAttributes $ adminDisplayName $ adminDescription $ msDS-ObjectReferenceBL ) )
 objectClasses: ( 1.2.840.113556.1.5.67 NAME 'domainDNS' SUP domain STRUCTURAL MAY ( msDS-Behavior-Version $ msDS-AllowedDNSSuffixes $ managedBy ) )
 objectClasses: ( 1.2.840.113556.1.5.235 NAME 'msDS-AzApplication' SUP top STRUCTURAL MAY ( msDS-AzApplicationData $ msDS-AzGenerateAudits $ msDS-AzApplicationVersion $ msDS-AzClassId $ msDS-AzApplicationName $ description ) )

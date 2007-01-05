@@ -67,22 +67,22 @@ replace: modifiedCount
 modifiedCount: 1
 -
 replace: objectCategory
-objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Domain-DNS,${SCHEMADN}
 -
 replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
 -
 replace: subRefs
-subRefs: CN=Configuration,${BASEDN}
-subRefs: CN=Schema,CN=Configuration,${BASEDN}
+subRefs: ${CONFIGDN}
+subRefs: ${SCHEMADN}
 -
 replace: masteredBy
-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -
 replace: msDs-masteredBy
-msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -
 ${DOMAINGUID_MOD}

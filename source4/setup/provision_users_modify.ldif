@@ -13,7 +13,7 @@ replace: systemFlags
 systemFlags: 2348810240
 -
 replace: objectCategory
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 -
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE

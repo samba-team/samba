@@ -40,7 +40,7 @@ sAMAccountName: Administrators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 privilege: SeSecurityPrivilege
 privilege: SeBackupPrivilege
@@ -101,7 +101,7 @@ sAMAccountName: Users
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Guests,CN=Builtin,${BASEDN}
@@ -116,7 +116,7 @@ sAMAccountName: Guests
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Print Operators,CN=Builtin,${BASEDN}
@@ -130,7 +130,7 @@ sAMAccountName: Print Operators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 privilege: SeLoadDriverPrivilege
 privilege: SeShutdownPrivilege
@@ -147,7 +147,7 @@ sAMAccountName: Backup Operators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeRestorePrivilege
@@ -165,7 +165,7 @@ sAMAccountName: Replicator
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Remote Desktop Users,CN=Builtin,${BASEDN}
@@ -178,7 +178,7 @@ sAMAccountName: Remote Desktop Users
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Network Configuration Operators,CN=Builtin,${BASEDN}
@@ -191,7 +191,7 @@ sAMAccountName: Network Configuration Operators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Monitor Users,CN=Builtin,${BASEDN}
@@ -204,7 +204,7 @@ sAMAccountName: Performance Monitor Users
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Log Users,CN=Builtin,${BASEDN}
@@ -217,7 +217,7 @@ sAMAccountName: Performance Log Users
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
@@ -245,7 +245,7 @@ cn: Domain Computers
 description: All workstations and servers joined to the domain
 objectSid: ${DOMAINSID}-515
 sAMAccountName: Domain Computers
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Controllers,CN=Users,${BASEDN}
@@ -290,7 +290,7 @@ groupType: 2147483652
 sAMAccountType: 536870912
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Admins,CN=Users,${BASEDN}
@@ -333,7 +333,7 @@ description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${BASEDN}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
@@ -346,7 +346,7 @@ objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
 sAMAccountType: 536870912
 groupType: 2147483652
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=Server Operators,CN=Builtin,${BASEDN}
@@ -361,7 +361,7 @@ sAMAccountName: Server Operators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeSystemtimePrivilege
@@ -382,7 +382,7 @@ sAMAccountName: Account Operators
 sAMAccountType: 536870912
 systemFlags: 2348810240
 groupType: 2147483653
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
 
