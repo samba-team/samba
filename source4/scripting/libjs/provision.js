@@ -431,6 +431,50 @@ function setup_name_mappings(info, ldb)
 	return true;
 }
 
+function provision_fix_subobj(subobj, message)
+{
+	subobj.REALM       = strupper(subobj.REALM);
+	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
+	subobj.DOMAIN      = strupper(subobj.DOMAIN);
+	assert(valid_netbios_name(subobj.DOMAIN));
+	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
+	assert(valid_netbios_name(subobj.NETBIOSNAME));
+	var rdns = split(",", subobj.DOMAINDN);
+	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
+
+	return true;
+}
+
+function provision_become_dc(subobj, message, paths, session_info)
+{
+	var lp = loadparm_init();
+	var sys = sys_init();
+	var info = new Object();
+
+	var ok = provision_fix_subobj(subobj, message);
+	assert(ok);
+
+	info.subobj = subobj;
+	info.message = message;
+	info.session_info = session_info;
+
+	/* Also wipes the database */
+	message("Setting up " + paths.samdb + " partitions\n");
+	setup_ldb("provision_partitions.ldif", info, paths.samdb);
+
+	var samdb = open_ldb(info, paths.samdb, false);
+
+	message("Setting up " + paths.samdb + " attributes\n");
+	setup_add_ldif("provision_init.ldif", info, samdb, false);
+
+	message("Setting up " + paths.samdb + " rootDSE\n");
+	setup_add_ldif("provision_rootdse_add.ldif", info, samdb, false);
+
+	ok = samdb.transaction_commit();
+	assert(ok);
+
+	return true;
+}
 
 /*
   provision samba4 - caution, this wipes all existing data!
@@ -441,18 +485,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var sys = sys_init();
 	var info = new Object();
 
-	/*
-	  some options need to be upper/lower case
-	*/
-	subobj.REALM       = strupper(subobj.REALM);
-	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
-	subobj.DOMAIN      = strupper(subobj.DOMAIN);
-	assert(valid_netbios_name(subobj.DOMAIN));
-	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
-	assert(valid_netbios_name(subobj.NETBIOSNAME));
-	var rdns = split(",", subobj.DOMAINDN);
-	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
-	
+	var ok = provision_fix_subobj(subobj, message);
+	assert(ok);
+
 	if (subobj.DOMAINGUID != undefined) {
 		subobj.DOMAINGUID_MOD = sprintf("replace: objectGUID\nobjectGUID: %s\n-", subobj.DOMAINGUID);
 	} else {

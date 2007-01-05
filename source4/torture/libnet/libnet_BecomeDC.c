@@ -36,6 +36,63 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
 
+#include "lib/appweb/ejs/ejs.h"
+#include "lib/appweb/ejs/ejsInternal.h"
+#include "scripting/ejs/smbcalls.h"
+
+static EjsId eid;
+static int ejs_error;
+
+static void test_ejs_exception(const char *reason)
+{
+	Ejs *ep = ejsPtr(eid);
+	ejsSetErrorMsg(eid, "%s", reason);
+	fprintf(stderr, "%s", ep->error);
+	ejs_error = 127;
+}
+
+static int test_run_ejs(char *script)
+{
+	EjsHandle handle = 0;
+	MprVar result;
+	char *emsg;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct MprVar *return_var;
+
+	mprSetCtx(mem_ctx);
+
+	if (ejsOpen(NULL, NULL, NULL) != 0) {
+		d_printf("ejsOpen(): unable to initialise EJS subsystem\n");
+		ejs_error = 127;
+		goto failed;
+	}
+
+	smb_setup_ejs_functions(test_ejs_exception);
+
+	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
+		d_printf("smbscript: ejsOpenEngine(): unable to initialise an EJS engine\n");
+		ejs_error = 127;
+		goto failed;
+	}
+
+	mprSetVar(ejsGetGlobalObject(eid), "ARGV", mprList("ARGV", NULL));
+
+	/* run the script */
+	if (ejsEvalScript(eid, script, &result, &emsg) == -1) {
+		d_printf("smbscript: ejsEvalScript(): %s\n", emsg);
+		if (ejs_error == 0) ejs_error = 127;
+		goto failed;
+	}
+
+	return_var = ejsGetReturnValue(eid);
+	ejs_error = mprVarToNumber(return_var);
+
+failed:
+	ejsClose();
+	talloc_free(mem_ctx);
+	return ejs_error;
+}
+
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
 struct test_become_dc_state {
@@ -77,6 +134,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 					  const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+	char *ejs;
+	int ret;
 
 	DEBUG(0,("New Server[%s] in Site[%s]\n",
 		p->dest_dsa->dns_name, p->dest_dsa->site_name));
@@ -96,6 +155,52 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	DEBUG(0,("Domain Partition[%s]\n",
 		p->domain->dn_str));
+
+	ejs = talloc_asprintf(s,
+		"libinclude(\"base.js\");\n"
+		"libinclude(\"provision.js\");\n"
+		"\n"
+		"function message() { print(vsprintf(arguments)); }\n"
+		"\n"
+		"var subobj = provision_guess();\n"
+		"subobj.ROOTDN       = \"%s\";\n"
+		"subobj.DOMAINDN     = \"%s\";\n"
+		"subobj.DOMAINDN_LDB = \"test_domain.ldb\";\n"
+		"subobj.CONFIGDN     = \"%s\";\n"
+		"subobj.CONFIGDN_LDB = \"test_config.ldb\";\n"
+		"subobj.SCHEMADN     = \"%s\";\n"
+		"subobj.SCHEMADN_LDB = \"test_schema.ldb\";\n"
+		"subobj.HOSTNAME     = \"%s\";\n"
+		"subobj.DNSNAME      = \"%s\";\n"
+		"subobj.DEFAULTSITE  = \"%s\";\n"
+		"\n"
+		"var paths = provision_default_paths(subobj);\n"
+		"paths.samdb = \"test_samdb.ldb\";\n"
+		"\n"
+		"var system_session = system_session();\n"
+		"\n"
+		"var ok = provision_become_dc(subobj, message, paths, system_session);\n"
+		"assert(ok);\n"
+		"\n"
+		"return 0;\n",
+		p->forest->root_dn_str,
+		p->domain->dn_str,
+		p->forest->config_dn_str,
+		p->forest->schema_dn_str,
+		p->dest_dsa->netbios_name,
+		p->dest_dsa->dns_name,
+		p->dest_dsa->site_name);
+	NT_STATUS_HAVE_NO_MEMORY(ejs);
+
+	ret = test_run_ejs(ejs);
+	if (ret != 0) {
+		DEBUG(0,("Failed to run ejs script: %d:\n%s",
+			ret, ejs));
+		talloc_free(ejs);
+		return NT_STATUS_FOOBAR;
+	}
+
+	talloc_free(ejs);
 
 	return NT_STATUS_OK;
 }
