@@ -11,6 +11,8 @@ fi
 rm *.[ch]
 
 headers=`grep ^HDRS "$dir"/Makefile |sed 's/^HDRS=//' | sed 's/imdrover.h//'`
+code=`echo $headers | sed 's/imrat.h//g'`
+code=`echo $headers | sed 's/rsamath.h//g'`
 code=`echo $headers | sed 's/\.h/.c/g'`
 
 for a in $headers $code LICENSE ; do

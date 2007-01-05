@@ -118,12 +118,8 @@ libhcrypto_la_SOURCES =	\
 imathsource =			\
 	imath/imath.c		\
 	imath/imath.h		\
-	imath/imrat.c		\
-	imath/imrat.h		\
 	imath/iprime.c		\
-	imath/iprime.h		\
-	imath/rsamath.c		\
-	imath/rsamath.h
+	imath/iprime.h
 
 $(libhcrypto_la_OBJECTS): hcrypto-link
 
