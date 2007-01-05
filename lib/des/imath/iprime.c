@@ -110,7 +110,6 @@ static const int s_ptab[] = {
     4801, 4813, 4817, 4831, 4861, 4871, 4877, 4889,
     4903, 4909, 4919, 4931, 4933, 4937, 4943, 4951,
     4957, 4967, 4969, 4973, 4987, 4993, 4999
-#endif
 };
 static const int s_ptab_size = sizeof(s_ptab)/sizeof(s_ptab[0]);
 

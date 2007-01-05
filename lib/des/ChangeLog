@@ -1,5 +1,8 @@
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath/iprime.c: Use a larger table of small primes, cut down
+	genenration in best cases to half compared to using a small table.
+
 	* rsa.h: add RSA_FLAG_NO_BLINDING
 
 	* rsa-imath.c: Add keyblinding, add a commented out CRT based RSA.
