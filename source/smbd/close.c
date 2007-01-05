@@ -144,12 +144,14 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
  Deal with removing a share mode on last close.
 ****************************************************************************/
 
-static int close_remove_share_mode(files_struct *fsp, enum file_close_type close_type)
+static NTSTATUS close_remove_share_mode(files_struct *fsp,
+					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
 	BOOL delete_file = False;
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/*
 	 * Lock the share entries, and determine if we should delete
@@ -162,7 +164,7 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
 			  "lock for file %s\n", fsp->fsp_name));
-		return EINVAL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!del_share_mode(lck, fsp)) {
@@ -197,7 +199,7 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	    || !delete_file
 	    || (lck->delete_token == NULL)) {
 		TALLOC_FREE(lck);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -227,6 +229,9 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and stat failed with error %s\n",
 			 fsp->fsp_name, strerror(errno) ));
+		/*
+		 * Don't save the errno here, we ignore this error
+		 */
 		goto done;
 	}
 
@@ -239,6 +244,9 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 			 fsp->fsp_name,
 			 (unsigned int)fsp->dev, (double)fsp->inode,
 			 (unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
+		/*
+		 * Don't save the errno here, we ignore this error
+		 */
 		goto done;
 	}
 
@@ -254,8 +262,12 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and unlink failed with error %s\n",
 			 fsp->fsp_name, strerror(errno) ));
+
+		status = map_nt_error_from_unix(errno);
 		goto done;
 	}
+
+	status = NT_STATUS_FILE_DELETED;
 
  done:
 	/* unbecome user. */
@@ -264,7 +276,7 @@ static int close_remove_share_mode(files_struct *fsp, enum file_close_type close
 	process_pending_change_notify_queue((time_t)0);
 
 	TALLOC_FREE(lck);
-	return 0;
+	return status;
 }
 
 /****************************************************************************
