@@ -127,7 +127,7 @@ interface drsuapi
 	/* Function 0x02 */
 	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags)-4)] uint32 __ndr_size;
-		[value(ndr_size_dom_sid28(&r->sid, ndr->flags))]  uint32 __ndr_size_sid;
+		[value(ndr_size_dom_sid28(&sid, ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
 		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string dn;
@@ -327,7 +327,7 @@ interface drsuapi
 	 * 2.5.5.17	=> dom_sid
 	 */
 	typedef [nopush,nopull] struct {
-		[range(0,10000),value(ndr_size_drsuapi_DsReplicaOID_oid(r->oid, 0))] uint32 __ndr_size;
+		[range(0,10000),value(ndr_size_drsuapi_DsReplicaOID_oid(oid, 0))] uint32 __ndr_size;
 		[size_is(__ndr_size),charset(DOS)] uint8 *oid; /* it's encoded with asn1_write_OID_String() */
 	} drsuapi_DsReplicaOID;
 
@@ -436,7 +436,7 @@ interface drsuapi
 
 	/* Generic DATA_BLOB values */
 	typedef struct {
-		[range(0,10485760),value(ndr_size_DATA_BLOB(0,r->blob,0))] uint32 __ndr_size;
+		[range(0,10485760),value(ndr_size_DATA_BLOB(0,blob,0))] uint32 __ndr_size;
 		DATA_BLOB *blob;
 	} drsuapi_DsAttributeValue;
 
@@ -448,7 +448,7 @@ interface drsuapi
 	/* DN String values */
 	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags))] uint32 __ndr_size;
-		[value(ndr_size_dom_sid28(&r->sid,ndr->flags))]  uint32 __ndr_size_sid;
+		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
 		[flag(STR_SIZE4|STR_CHARLEN)] string dn;
@@ -456,11 +456,11 @@ interface drsuapi
 
 	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->flags))] uint32 __ndr_size;
-		[value(ndr_size_dom_sid28(&r->sid,ndr->flags))]  uint32 __ndr_size_sid;
+		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
 		[flag(STR_SIZE4|STR_CHARLEN)] string dn;
-		[value(r->binary.length + 4)] uint32 __ndr_size_binary;
+		[value(binary.length + 4)] uint32 __ndr_size_binary;
 		[flag(NDR_REMAINING)] DATA_BLOB binary;
 	} drsuapi_DsReplicaObjectIdentifier3Binary;
 
@@ -557,7 +557,7 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),
+		[subcontext(4),subcontext_size(compressed_length),
 		 compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)]
 		 drsuapi_DsGetNCChangesCtr1 *ctr1;
 	} drsuapi_DsGetNCChangesMSZIPCtr1;
@@ -565,7 +565,7 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),
+		[subcontext(4),subcontext_size(compressed_length),
 		 compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)]
 		 drsuapi_DsGetNCChangesCtr6 *ctr6;
 	} drsuapi_DsGetNCChangesMSZIPCtr6;
@@ -573,7 +573,7 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),
+		[subcontext(4),subcontext_size(compressed_length),
 		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
 		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
 	} drsuapi_DsGetNCChangesXPRESSCtr1;
@@ -581,7 +581,7 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),
+		[subcontext(4),subcontext_size(compressed_length),
 		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
 		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
 	} drsuapi_DsGetNCChangesXPRESSCtr6;
@@ -1270,7 +1270,7 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		[charset(UTF16),string] uint16 *object_dn;
-		[value(ndr_size_DATA_BLOB(0,r->binary,0))] uint32 __ndr_size_binary;
+		[value(ndr_size_DATA_BLOB(0,binary,0))] uint32 __ndr_size_binary;
 		DATA_BLOB *binary;
 		NTTIME deleted;
 		NTTIME created;
@@ -1325,7 +1325,7 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		[charset(UTF16),string] uint16 *object_dn;
-		[value(ndr_size_DATA_BLOB(0,r->binary,0))] uint32 __ndr_size_binary;
+		[value(ndr_size_DATA_BLOB(0,binary,0))] uint32 __ndr_size_binary;
 		DATA_BLOB *binary;
 		NTTIME deleted;
 		NTTIME created;

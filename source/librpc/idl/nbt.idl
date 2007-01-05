@@ -269,7 +269,7 @@ interface nbt
 		uint16                      opcode;
 		uint16                      priority;
 		uint16                      class;
-		[value(strlen(mailslot_name)+1+r->data.length)] 
+		[value(strlen(mailslot_name)+1+data.length)] 
 		      uint16                byte_count;
 		astring                     mailslot_name;
 		[flag(NDR_REMAINING)]       DATA_BLOB data;
