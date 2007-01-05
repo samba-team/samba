@@ -19,7 +19,7 @@ package Parse::Pidl::Wireshark::NDR;
 use strict;
 use Parse::Pidl qw(error);
 use Parse::Pidl::Typelist qw(getType);
-use Parse::Pidl::Util qw(has_property ParseExpr property_matches make_str);
+use Parse::Pidl::Util qw(has_property property_matches make_str);
 use Parse::Pidl::NDR qw(ContainsString GetNextLevel);
 use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
 use Parse::Pidl::Wireshark::Conformance qw(ReadConformance);

@@ -198,8 +198,8 @@ sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
-	my $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env);
+	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env, $e);
+	my $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env, $e);
 	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
@@ -238,7 +238,7 @@ sub EjsPullArray($$$$$)
 sub EjsPullSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env, $e);
 	pidl "ejs_set_switch(ejs, $switch_var);";
 	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 }
@@ -270,7 +270,7 @@ sub EjsPullElementTop($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
+	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env, $e);
 	my $name = "\"$e->{NAME}\"";
 	EjsPullElement($e, $l, $var, $name, $env);
 }
@@ -488,7 +488,7 @@ sub EjsPushPointer($$$$$)
 sub EjsPushSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env, $e);
 	pidl "ejs_set_switch(ejs, $switch_var);";
 	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 }
@@ -500,7 +500,7 @@ sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env, $e);
 	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
@@ -553,7 +553,7 @@ sub EjsPushElementTop($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
+	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env, $e);
 	my $name = "\"$e->{NAME}\"";
 	EjsPushElement($e, $l, $var, $name, $env);
 }

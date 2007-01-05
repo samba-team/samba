@@ -13,6 +13,7 @@ $VERSION = '0.01';
 use strict;
 
 use Parse::Pidl::Expr;
+use Parse::Pidl qw(error);
 
 #####################################################################
 # a dumper wrapper to prevent dependence on the Data::Dumper module
@@ -97,15 +98,15 @@ sub useUintEnums()
 	return $useUintEnums;
 }
 
-sub ParseExpr($$)
+sub ParseExpr($$$)
 {
-	my($expr, $varlist) = @_;
+	my($expr, $varlist, $e) = @_;
 
 	die("Undefined value in ParseExpr") if not defined($expr);
 
 	my $x = new Parse::Pidl::Expr();
 	
-	return $x->Run($expr, sub { my $x = shift; die(MyDumper($x)); },
+	return $x->Run($expr, sub { my $x = shift; error($e, $x); },
 		# Lookup fn 
 		sub { my $x = shift; 
 			  return($varlist->{$x}) if (defined($varlist->{$x})); 
