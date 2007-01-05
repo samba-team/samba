@@ -74,9 +74,6 @@ dist_libhx509_la_SOURCES = \
 	peer.c \
 	print.c \
 	ref/pkcs11.h \
-	ref/pkcs11f.h \
-	ref/pkcs11t.h \
-	ref/pkcs11u.h \
 	req.c \
 	revoke.c
 
