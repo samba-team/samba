@@ -53,7 +53,7 @@ instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 3
 objectCategory: CN=Cross-Ref,${SCHEMADN}
-nCName: ${BASEDN}
+nCName: ${DOMAINDN}
 nETBIOSName: ${DOMAIN}
 dnsRoot: ${DNSDOMAIN}
 
@@ -93,7 +93,7 @@ showInAdvancedViewOnly: TRUE
 systemFlags: 1375731712
 objectCategory: CN=Server,${SCHEMADN}
 dNSHostName: ${DNSNAME}
-serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
+serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 
 dn: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top

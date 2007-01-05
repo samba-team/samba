@@ -1,12 +1,12 @@
-dn: CN=Administrator,CN=Users,${BASEDN}
+dn: CN=Administrator,CN=Users,${DOMAINDN}
 objectClass: user
 cn: Administrator
 description: Built-in account for administering the computer/domain
-memberOf: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
-memberOf: CN=Domain Admins,CN=Users,${BASEDN}
-memberOf: CN=Enterprise Admins,CN=Users,${BASEDN}
-memberOf: CN=Schema Admins,CN=Users,${BASEDN}
-memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+memberOf: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
+memberOf: CN=Domain Admins,CN=Users,${DOMAINDN}
+memberOf: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+memberOf: CN=Schema Admins,CN=Users,${DOMAINDN}
+memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 userAccountControl: 66048
 objectSid: ${DOMAINSID}-500
 adminCount: 1
@@ -15,25 +15,25 @@ sAMAccountName: Administrator
 isCriticalSystemObject: TRUE
 sambaPassword: ${ADMINPASS}
 
-dn: CN=Guest,CN=Users,${BASEDN}
+dn: CN=Guest,CN=Users,${DOMAINDN}
 objectClass: user
 cn: Guest
 description: Built-in account for guest access to the computer/domain
-memberOf: CN=Guests,CN=Builtin,${BASEDN}
+memberOf: CN=Guests,CN=Builtin,${DOMAINDN}
 userAccountControl: 66082
 primaryGroupID: 514
 objectSid: ${DOMAINSID}-501
 sAMAccountName: Guest
 isCriticalSystemObject: TRUE
 
-dn: CN=Administrators,CN=Builtin,${BASEDN}
+dn: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Administrators
 description: Administrators have complete and unrestricted access to the computer/domain
-member: CN=Domain Admins,CN=Users,${BASEDN}
-member: CN=Enterprise Admins,CN=Users,${BASEDN}
-member: CN=Administrator,CN=Users,${BASEDN}
+member: CN=Domain Admins,CN=Users,${DOMAINDN}
+member: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
@@ -68,7 +68,7 @@ privilege: SeNetworkLogonRight
 privilege: SeRemoteInteractiveLogonRight
 
 
-dn: CN=${NETBIOSNAME},CN=Domain Controllers,${BASEDN}
+dn: CN=${NETBIOSNAME},CN=Domain Controllers,${DOMAINDN}
 objectClass: computer
 cn: ${NETBIOSNAME}
 userAccountControl: 532480
@@ -90,12 +90,12 @@ servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
 ${HOSTGUID_ADD}
 
-dn: CN=Users,CN=Builtin,${BASEDN}
+dn: CN=Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Users
 description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
-member: CN=Domain Users,CN=Users,${BASEDN}
+member: CN=Domain Users,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-545
 sAMAccountName: Users
 sAMAccountType: 536870912
@@ -104,13 +104,13 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Guests,CN=Builtin,${BASEDN}
+dn: CN=Guests,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Guests
 description: Guests have the same access as members of the Users group by default, except for the Guest account which is further restricted
-member: CN=Domain Guests,CN=Users,${BASEDN}
-member: CN=Guest,CN=Users,${BASEDN}
+member: CN=Domain Guests,CN=Users,${DOMAINDN}
+member: CN=Guest,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
 sAMAccountType: 536870912
@@ -119,7 +119,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Print Operators,CN=Builtin,${BASEDN}
+dn: CN=Print Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Print Operators
@@ -136,7 +136,7 @@ privilege: SeLoadDriverPrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
-dn: CN=Backup Operators,CN=Builtin,${BASEDN}
+dn: CN=Backup Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Backup Operators
@@ -154,7 +154,7 @@ privilege: SeRestorePrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
-dn: CN=Replicator,CN=Builtin,${BASEDN}
+dn: CN=Replicator,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Replicator
@@ -168,7 +168,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Remote Desktop Users,CN=Builtin,${BASEDN}
+dn: CN=Remote Desktop Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Remote Desktop Users
@@ -181,7 +181,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Network Configuration Operators,CN=Builtin,${BASEDN}
+dn: CN=Network Configuration Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Network Configuration Operators
@@ -194,7 +194,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Performance Monitor Users,CN=Builtin,${BASEDN}
+dn: CN=Performance Monitor Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Performance Monitor Users
@@ -207,7 +207,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Performance Log Users,CN=Builtin,${BASEDN}
+dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Performance Log Users
@@ -220,7 +220,7 @@ groupType: 2147483653
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=krbtgt,CN=Users,${BASEDN}
+dn: CN=krbtgt,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -238,7 +238,7 @@ servicePrincipalName: kadmin/changepw
 isCriticalSystemObject: TRUE
 sambaPassword: ${KRBTGTPASS}
 
-dn: CN=Domain Computers,CN=Users,${BASEDN}
+dn: CN=Domain Computers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Domain Computers
@@ -248,7 +248,7 @@ sAMAccountName: Domain Computers
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Domain Controllers,CN=Users,${BASEDN}
+dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Domain Controllers
@@ -258,30 +258,30 @@ adminCount: 1
 sAMAccountName: Domain Controllers
 isCriticalSystemObject: TRUE
 
-dn: CN=Schema Admins,CN=Users,${BASEDN}
+dn: CN=Schema Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Schema Admins
 description: Designated administrators of the schema
-member: CN=Administrator,CN=Users,${BASEDN}
+member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
 isCriticalSystemObject: TRUE
 
-dn: CN=Enterprise Admins,CN=Users,${BASEDN}
+dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Enterprise Admins
 description: Designated administrators of the enterprise
-member: CN=Administrator,CN=Users,${BASEDN}
-memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+member: CN=Administrator,CN=Users,${DOMAINDN}
+memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
 isCriticalSystemObject: TRUE
 
-dn: CN=Cert Publishers,CN=Users,${BASEDN}
+dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Cert Publishers
@@ -293,50 +293,50 @@ sAMAccountName: Cert Publishers
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Domain Admins,CN=Users,${BASEDN}
+dn: CN=Domain Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Domain Admins
 description: Designated administrators of the domain
-member: CN=Administrator,CN=Users,${BASEDN}
-memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+member: CN=Administrator,CN=Users,${DOMAINDN}
+memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
 isCriticalSystemObject: TRUE
 
-dn: CN=Domain Users,CN=Users,${BASEDN}
+dn: CN=Domain Users,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Domain Users
 description: All domain users
-memberOf: CN=Users,CN=Builtin,${BASEDN}
+memberOf: CN=Users,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
 isCriticalSystemObject: TRUE
 
-dn: CN=Domain Guests,CN=Users,${BASEDN}
+dn: CN=Domain Guests,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Domain Guests
 description: All domain guests
-memberOf: CN=Guests,CN=Builtin,${BASEDN}
+memberOf: CN=Guests,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
 isCriticalSystemObject: TRUE
 
-dn: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
+dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Group Policy Creator Owners
 description: Members in this group can modify group policy for the domain
-member: CN=Administrator,CN=Users,${BASEDN}
+member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
+dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: RAS and IAS Servers
@@ -349,7 +349,7 @@ groupType: 2147483652
 objectCategory: CN=Group,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=Server Operators,CN=Builtin,${BASEDN}
+dn: CN=Server Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Server Operators
@@ -370,7 +370,7 @@ privilege: SeRestorePrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
 
-dn: CN=Account Operators,CN=Builtin,${BASEDN}
+dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 cn: Account Operators
