@@ -107,7 +107,7 @@ qx.Proto.buildGui = function(module)
 /**
  * Populate the graphical user interface with the specified data
  *
- * @param module {swat.module.Module}
+ * @param module {swat.main.Module}
  *   The module descriptor for the module.
  *
  * @result {Object}
@@ -296,7 +296,7 @@ qx.Proto._buildPageSearch = function(module, page)
   find.addEventListener("execute", fsm.eventListener, fsm);
 
   // We'll be receiving events on the find object, so save its friendly name
-  fsm.addObject("find", find, "swat.module.fsmUtils.disable_during_rpc");
+  fsm.addObject("find", find, "swat.main.fsmUtils.disable_during_rpc");
 
   hlayout.add(find);
 

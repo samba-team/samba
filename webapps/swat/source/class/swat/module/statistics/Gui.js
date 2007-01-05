@@ -303,7 +303,7 @@ qx.Proto.buildGui = function(module)
 /**
  * Populate the graphical user interface with the specified data
  *
- * @param module {swat.module.Module}
+ * @param module {swat.main.Module}
  *   The module descriptor for the module.
  *
  * @result {Object}

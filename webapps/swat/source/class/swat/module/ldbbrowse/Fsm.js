@@ -10,10 +10,10 @@
 /**
  * Swat LDB Browser class finite state machine
  */
-qx.OO.defineClass("swat.module.ldbbrowse.Fsm", swat.module.AbstractModuleFsm,
+qx.OO.defineClass("swat.module.ldbbrowse.Fsm", swat.main.AbstractModuleFsm,
 function()
 {
-  swat.module.AbstractModuleFsm.call(this);
+  swat.main.AbstractModuleFsm.call(this);
 });
 
 
@@ -106,7 +106,7 @@ qx.Proto.buildFsm = function(module)
         function(fsm, event)
         {
           // Get our module descriptor
-          var module = fsm.getObject("swat.module.module");
+          var module = fsm.getObject("swat.main.module");
 
           // Retrieve the database handle
           var dbHandle = module.dbHandle;
@@ -203,7 +203,7 @@ qx.Proto.buildFsm = function(module)
           var searchExpr = "(objectclass=*)";
 
           // Get our module descriptor
-          var module = fsm.getObject("swat.module.module");
+          var module = fsm.getObject("swat.main.module");
 
           // Retrieve the database handle
           var dbHandle = module.dbHandle;
@@ -299,7 +299,7 @@ qx.Proto.buildFsm = function(module)
           var searchExpr = "(objectclass=*)";
 
           // Get our module descriptor
-          var module = fsm.getObject("swat.module.module");
+          var module = fsm.getObject("swat.main.module");
 
           // Retrieve the database handle
           var dbHandle = module.dbHandle;

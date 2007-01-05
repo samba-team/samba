@@ -11,10 +11,10 @@
  * Swat statistics class
  */
 qx.OO.defineClass("swat.module.statistics.Statistics",
-                  swat.module.AbstractModule,
+                  swat.main.AbstractModule,
 function()
 {
-  swat.module.AbstractModule.call(this);
+  swat.main.AbstractModule.call(this);
 });
 
 
@@ -25,7 +25,7 @@ function()
  * appear.  Creation of the module's actual FSM and GUI have been deferred
  * until they were actually needed (now) so we need to create them.
  *
- * @param module {swat.module.Module}
+ * @param module {swat.main.Module}
  *   The module descriptor for the module.
  */
 qx.Proto.initialAppear = function(module)

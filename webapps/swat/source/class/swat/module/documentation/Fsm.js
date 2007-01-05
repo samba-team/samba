@@ -11,10 +11,10 @@
  * Swat statistics class finite state machine
  */
 qx.OO.defineClass("swat.module.documentation.Fsm",
-                  swat.module.AbstractModuleFsm,
+                  swat.main.AbstractModuleFsm,
 function()
 {
-  swat.module.AbstractModuleFsm.call(this);
+  swat.main.AbstractModuleFsm.call(this);
 });
 
 
@@ -36,7 +36,7 @@ qx.Proto.buildFsm = function(module)
           // We need at least one event listed due to FSM requirements
           "appear" :
           {
-            "swat.module.canvas" :
+            "swat.main.canvas" :
               "Transition_Idle_to_Idle_via_appear"
           }
         }
