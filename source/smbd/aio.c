@@ -580,14 +580,13 @@ int process_aio_queue(void)
 
 #define SMB_TIME_FOR_AIO_COMPLETE_WAIT 29
 
-BOOL wait_for_aio_completion(files_struct *fsp)
+int wait_for_aio_completion(files_struct *fsp)
 {
 	struct aio_extra *aio_ex;
 	const SMB_STRUCT_AIOCB **aiocb_list;
 	int aio_completion_count = 0;
 	time_t start_time = time(NULL);
 	int seconds_left;
-	int ret = 0;
 
 	for (seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT; seconds_left >= 0;) {
 		int err = 0;
@@ -602,7 +601,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 		}
 
 		if (!aio_completion_count) {
-			return ret;
+			return 0;
 		}
 
 		DEBUG(3,("wait_for_aio_completion: waiting for %d aio events to complete.\n",
@@ -610,7 +609,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 
 		aiocb_list = SMB_MALLOC_ARRAY(const SMB_STRUCT_AIOCB *, aio_completion_count);
 		if (!aiocb_list) {
-			return False;
+			return ENOMEM;
 		}
 
 		for( i = 0, aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
@@ -637,7 +636,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 			/* Timeout. */
 			cancel_aio_by_fsp(fsp);
 			SAFE_FREE(aiocb_list);
-			return ret ? ret : EIO;
+			return EIO;
 		}
 
 		/* One or more events might have completed - process them if so. */
@@ -666,7 +665,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 	DEBUG(10,("wait_for_aio_completion: aio_suspend timed out waiting for %d events\n",
 			aio_completion_count));
 
-	return ret ? ret : EIO;
+	return EIO;
 }
 
 /****************************************************************************
