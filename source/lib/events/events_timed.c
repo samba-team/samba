@@ -33,8 +33,8 @@
 */
 static int common_event_timed_destructor(struct timed_event *te)
 {
-	struct event_context *ev = talloc_get_type(te->event_ctx->additional_data,
-							   struct event_context);
+	struct event_context *ev = talloc_get_type(te->event_ctx,
+						   struct event_context);
 	DLIST_REMOVE(ev->timed_events, te);
 	return 0;
 }
