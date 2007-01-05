@@ -493,14 +493,17 @@ qx.Proto._checkEvents = function(propValue, propData)
       for (action_e in action)
       {
         if (typeof(action[action_e]) == "number" &&
-            action != qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE &&
-            action != qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED)
+            action[action_e] !=
+              qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE &&
+            action[action_e] !=
+              qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED)
         {
           throw new Error("Invalid numeric value in events object " +
                           "(" + e + "): " +
                           action_e + ": " + action[action_e]);
         }
-        else if (typeof(action[action_e]) != "string")
+        else if (typeof(action[action_e]) != "string" &&
+                 typeof(action[action_e]) != "number")
         {
           throw new Error("Invalid value in events object " +
                           "(" + e + "): " +
@@ -508,7 +511,7 @@ qx.Proto._checkEvents = function(propValue, propData)
         }
       }
     }
-    else if (typeof(action) != "string")
+    else if (typeof(action) != "string" && typeof(action) != "number")
     {
       throw new Error("Invalid value in events object: " +
                       e + ": " + propValue[e]);
