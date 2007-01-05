@@ -114,12 +114,12 @@ qx.Proto.buildGui = function(module)
  *   The result returned by SAMBA to our request.  We display the data
  *   provided by this result.
  */
-qx.Proto.displayData = function(module, request)
+qx.Proto.displayData = function(module, rpcRequest)
 {
   var gui = module.gui;
   var fsm = module.fsm;
-  var result = request.getUserData("result")
-  var requestType = request.getUserData("requestType");
+  var result = rpcRequest.getUserData("result")
+  var requestType = rpcRequest.getUserData("requestType");
 
   // Did the request fail?
   if (result.type == "failed")
@@ -133,19 +133,19 @@ qx.Proto.displayData = function(module, request)
   switch(requestType)
   {
   case "find":
-    this._displayFindResults(module, request);
+    this._displayFindResults(module, rpcRequest);
     break;
     
   case "tree_open":
-    this._displayTreeOpenResults(module, request);
+    this._displayTreeOpenResults(module, rpcRequest);
     break;
 
   case "tree_selection_changed":
-    this._displayTreeSelectionChangedResults(module, request);
+    this._displayTreeSelectionChangedResults(module, rpcRequest);
     break;
 
   case "database_name_changed":
-    this._clearAllFields(module, request);
+    this._clearAllFields(module, rpcRequest);
     break;
 
   default:
@@ -409,7 +409,7 @@ qx.Proto._buildPageBrowse = function(module, page)
 };
 
 
-qx.Proto._displayFindResults = function(module, request)
+qx.Proto._displayFindResults = function(module, rpcRequest)
 {
   var rowData = [];
   var fsm = module.fsm;
@@ -418,7 +418,7 @@ qx.Proto._displayFindResults = function(module, request)
   var maxLen = 0;
 
   // Obtain the result object
-  result = request.getUserData("result").data;
+  result = rpcRequest.getUserData("result").data;
 
   if (result && result["length"])
   {
@@ -497,18 +497,18 @@ qx.Proto._displayFindResults = function(module, request)
 };
 
 
-qx.Proto._displayTreeOpenResults = function(module, request)
+qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
 {
   var t;
   var trs;
   var child;
 
   // Obtain the result object
-  var result = request.getUserData("result").data;
+  var result = rpcRequest.getUserData("result").data;
 
   // We also need some of the original parameters passed to the request
-  var parent = request.getUserData("parent");
-  var attributes = request.getUserData("attributes");
+  var parent = rpcRequest.getUserData("parent");
+  var attributes = rpcRequest.getUserData("attributes");
 
   // Any children?
   if (! result || result["length"] == 0)
@@ -548,12 +548,12 @@ qx.Proto._displayTreeOpenResults = function(module, request)
 };
 
 
-qx.Proto._displayTreeSelectionChangedResults = function(module, request)
+qx.Proto._displayTreeSelectionChangedResults = function(module, rpcRequest)
 {
   var fsm = module.fsm;
 
   // Obtain the result object
-  var result = request.getUserData("result").data;
+  var result = rpcRequest.getUserData("result").data;
 
   // If we received an empty list, ...
   if (result == null)
@@ -612,10 +612,10 @@ qx.Proto._displayTreeSelectionChangedResults = function(module, request)
 };
 
 
-qx.Proto._clearAllFields = function(module, request)
+qx.Proto._clearAllFields = function(module, rpcRequest)
 {
   // Obtain the result object
-  var result = request.getUserData("result").data;
+  var result = rpcRequest.getUserData("result").data;
 
   // Retrieve the database handle
   module.dbHandle = result;

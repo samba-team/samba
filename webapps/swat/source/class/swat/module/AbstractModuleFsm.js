@@ -151,10 +151,10 @@ qx.Proto.addAwaitRpcResultState = function(module)
         function(fsm, event)
         {
           // Get the request object
-          var request = _this.getCurrentRpcRequest();
+          var rpcRequest = _this.getCurrentRpcRequest();
 
           // Issue an abort for the pending request
-          request.abort();
+          rpcRequest.request.abort();
         }
     });
   state.addTransition(trans);
@@ -174,14 +174,14 @@ qx.Proto.addAwaitRpcResultState = function(module)
         function(fsm, event)
         {
           // Get the request object
-          var request = _this.getCurrentRpcRequest();
+          var rpcRequest = _this.getCurrentRpcRequest();
           
           // Generate the result for a completed request
-          request.setUserData("result",
-                              {
-                                  type : "complete",
-                                  data : event.getData()
-                              });
+          rpcRequest.setUserData("result",
+                                  {
+                                      type : "complete",
+                                      data : event.getData()
+                                  });
         }
     });
   state.addTransition(trans);
@@ -201,14 +201,14 @@ qx.Proto.addAwaitRpcResultState = function(module)
         function(fsm, event)
         {
           // Get the request object
-          var request = _this.getCurrentRpcRequest();
+          var rpcRequest = _this.getCurrentRpcRequest();
           
           // Generate the result for a completed request
-          request.setUserData("result",
-                              {
-                                  type : "failed",
-                                  data : event.getData()
-                              });
+          rpcRequest.setUserData("result",
+                                  {
+                                      type : "failed",
+                                      data : event.getData()
+                                  });
         }
     });
   state.addTransition(trans);
@@ -221,68 +221,64 @@ qx.Proto.addAwaitRpcResultState = function(module)
  * @param fsm {qx.util.fsm.FiniteStateMachine}
  *   The finite state machine issuing this remote procedure call.
  *
- * @param service {String}
+ * @param service {string}
  *   The name of the remote service which provides the specified method.
  *
- * @param method {String}
+ * @param method {string}
  *   The name of the method within the specified service.
  *
  * @param params {Array}
  *   The parameters to be passed to the specified method.
  *
- * @return {qx.io.remote.Request}
+ * @return {Object}
  *   The request object for the just-issued RPC request.
  */
 qx.Proto.callRpc = function(fsm, service, method, params)
 {
   // Create an object to hold a copy of the parameters.  (We need a
   // qx.core.Object() to be able to store this in the finite state machine.)
-  var o = new qx.core.Object();
+  var rpcRequest = new qx.core.Object();
 
-  // copy the parameters; we'll prefix our copy with additional params
-  o.allParams = params.slice(0);
+  // Save the service name
+  rpcRequest.service = service;
 
-  // prepend the method
-  o.allParams.unshift(method);
+  // Copy the parameters; we'll prefix our copy with additional params
+  rpcRequest.params = params.slice(0);
 
-  // prepend the flag indicating to coalesce failure events
-  o.allParams.unshift(true);
+  // Prepend the method
+  rpcRequest.params.unshift(method);
 
-  // prepend the service name
-  o.allParams.unshift(service);
+  // Prepend the flag indicating to coalesce failure events
+  rpcRequest.params.unshift(true);
 
-  // Save the complete parameter list in case authentication fails and we need
-  // to reissue the request.
-  fsm.addObject("swat.module.rpc_params", o);
-  
   // Retrieve the RPC object */
   var rpc = fsm.getObject("swat.module.rpc");
 
   // Set the service name
-  rpc.setServiceName(o.allParams[0]);
+  rpc.setServiceName(rpcRequest.service);
 
   // Issue the request, skipping the already-specified service name
-  var request =
+  rpcRequest.request =
     qx.io.remote.Rpc.prototype.callAsyncListeners.apply(rpc,
-                                                        o.allParams.slice(1));
+                                                        rpcRequest.params);
 
-  // Make the request object available to the AwaitRpcResult state
-  this.pushRpcRequest(request);
+  // Make the rpc request object available to the AwaitRpcResult state
+  this.pushRpcRequest(rpcRequest);
 
   // Give 'em what they came for
-  return request;
+  return rpcRequest;
 };
 
 
 /**
  * Push an RPC request onto the request stack.
  *
- * @param request {qx.io.remote.Request}
- *   The just-issued request
+ * @param request {Object}
+ *   The just-issued rpc request object
  */
-qx.Proto.pushRpcRequest = function(request)
+qx.Proto.pushRpcRequest = function(rpcRequest)
 {
-  this._requests.push(request);
+  this._requests.push(rpcRequest);
 };
 
 
@@ -290,8 +286,8 @@ qx.Proto.pushRpcRequest = function(request)
  * Retrieve the most recent RPC request from the request stack and pop the
  * stack.
  *
- * @return {qx.io.remote.Request}
- *   The request from the top of the request stack
+ * @return {Object}
+ *   The rpc request object from the top of the request stack
  */
 qx.Proto.popRpcRequest = function()
 {
@@ -300,16 +296,16 @@ qx.Proto.popRpcRequest = function()
     throw new Error("Attempt to pop an RPC request when list is empty.");
   }
 
-  var request = this._requests.pop();
-  return request;
+  var rpcRequest = this._requests.pop();
+  return rpcRequest;
 };
 
 
 /**
  * Retrieve the most recent RPC request.
  *
- * @return {qx.io.remote.Request}
- *   The request at the top of the request stack
+ * @return {Object}
+ *   The rpc request object at the top of the request stack
  */
 qx.Proto.getCurrentRpcRequest = function()
 {

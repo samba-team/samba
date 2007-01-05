@@ -1,7 +1,13 @@
 <%
 /* Return true to allow access; false otherwise */
-function json_authenticate(serviceComponents, method)
+function json_authenticate(serviceComponents, method, scriptTransportId)
 {
+    // Don't allow any access via ScriptTransport, for now.
+    if (scriptTransportId != jsonrpc.Constant.ScriptTransport.NotInUse)
+    {
+        return false;
+    }
+
     return true;
 }
 

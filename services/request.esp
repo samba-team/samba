@@ -292,6 +292,8 @@ if (request["REQUEST_METHOD"] == "POST" &&
 }
 else if (request["REQUEST_METHOD"] == "GET" &&
          form["_ScriptTransport_id"] != undefined &&
+         form["_ScriptTransport_id"] !=
+           jsonrpc.Constant.ScriptTransport.NotInUse &&
          form["_ScriptTransport_data"] != undefined)
 {
     /* We have what looks like a valid ScriptTransport request */
@@ -455,8 +457,17 @@ if (! valid)
     return;
 }
 
-/* Ensure the logged-in user is allowed to issue the requested method */
-if (! json_authenticate(serviceComponents, jsonInput.method))
+/*
+ * Ensure the logged-in user is allowed to issue the requested method.  We
+ * provide the scriptTransportId as one of the determining factors because
+ * accepting requests via ScriptTransport is dangerous.  Only methods which
+ * one might allow when unauthenticated should be allowed via ScriptTransport
+ * as it is easy for a rogue site to trick a user into bypassing
+ * authentication.
+ */
+if (! json_authenticate(serviceComponents,
+                        jsonInput.method,
+                        scriptTransportId))
 {
     error.setError(jsonrpc.Constant.ErrorCode.PermissionDenied,
                    "Permission denied");

@@ -43,15 +43,15 @@ qx.Proto.buildFsm = function(module)
           if (fsm.getPreviousState() == "State_AwaitRpcResult")
           {
             // Yup.  Display the result.  We need to get the request object
-            var request = _this.popRpcRequest();
+            var rpcRequest = _this.popRpcRequest();
 
             // Display the result
             var gui = swat.module.ldbbrowse.Gui.getInstance();
-            gui.displayData(module, request);
+            gui.displayData(module, rpcRequest);
 
             // Dispose of the request
-            request.dispose();
-            request = null;
+            rpcRequest.request.dispose();
+            rpcRequest.request = null;
           }
         },
 
