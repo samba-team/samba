@@ -210,7 +210,8 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     mp_int_read_unsigned(&dec, p0, size - 1);
     free(p0);
 
-    res = rsa_rsaep(&dec, &e, &n, &enc);
+    res = mp_int_exptmod(&dec, &e, &n, &enc);
+
     mp_int_clear(&dec);
     mp_int_clear(&e);
     mp_int_clear(&n);
@@ -263,7 +264,8 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 	return -4;
     }
 
-    res = rsa_rsavp(&s, &e, &n, &us);
+    res = mp_int_exptmod(&s, &e, &n, &us);
+
     mp_int_clear(&s);
     mp_int_clear(&n);
     mp_int_clear(&e);
