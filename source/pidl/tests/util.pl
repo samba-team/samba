@@ -3,7 +3,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 55;
+use Test::More tests => 56;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -49,7 +49,7 @@ ok(property_matches({PROPERTIES => {x => "data"}}, "x", "data"));
 ok(property_matches({PROPERTIES => {x => "data"}}, "x", "^([dat]+)\$"));
 
 # ParseExpr()
-#is("", ParseExpr("", {}));
+is(undef, ParseExpr("", {}, undef));
 is("a", ParseExpr("a", {"b" => "2"}, undef));
 is("2", ParseExpr("a", {"a" => "2"}, undef));
 is("2 * 2", ParseExpr("a*a", {"a" => "2"}, undef));
