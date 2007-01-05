@@ -8,9 +8,11 @@ Changes in release 0.8
 
  * GSS-API mechglue from FreeBSD
 
- * Updated SPNEGO supporting RFC4178
+ * Updated SPNEGO to support RFC4178
 
  * Support for Cryptosystem Negotiation Extension (RFC 4537)
+
+ * A new X.509 library (hx509) and related crypto functions.
 
  * KDC will return the "response too big" error to force TCP retries
    for large (default 1400 bytes) UDP replies.  This is common for
