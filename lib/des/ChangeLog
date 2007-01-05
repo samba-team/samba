@@ -1,5 +1,11 @@
-2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa-imath.c: Add timing info to rsa keygen.
+	
+	* test_rsa.c: don't include <imath/rsamath.h>
+	
+2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* imath: prune off stuff we dont use
 
 	* imath/import.sh: Prune off stuff we don't use from imathsource
