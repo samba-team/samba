@@ -1,13 +1,13 @@
-dn: CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: 409
 name: 409
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 
-dn: CN=user-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=user-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: user-Display
@@ -26,7 +26,7 @@ shellPropertyPages: 1,{f5d121ed-c8ac-11d0-bcdb-00c04fd8d5b6}
 adminContextMenu: 1,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 adminMultiselectPropertyPages: 1,{50d30564-9911-11d1-b9af-00c04fd8d5b0}
 
-dn: CN=group-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=group-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: group-Display
@@ -40,7 +40,7 @@ shellPropertyPages: 2,{dde2c5e9-c8ae-11d0-bcdb-00c04fd8d5b6}
 shellPropertyPages: 1,{f5d121ee-c8ac-11d0-bcdb-00c04fd8d5b6}
 adminContextMenu: 1,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 
-dn: CN=domainDNS-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=domainDNS-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: domainDNS-Display
@@ -54,7 +54,7 @@ shellPropertyPages: 1,{f5d121ef-c8ac-11d0-bcdb-00c04fd8d5b6}
 adminContextMenu: 2,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 adminContextMenu: 1,{6BA3F852-23C6-11D1-B91F-00A0C9A06D2D}
 
-dn: CN=computer-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=computer-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: computer-Display
@@ -72,7 +72,7 @@ shellPropertyPages: 1,{f5d121f4-c8ac-11d0-bcdb-00c04fd8d5b6}
 adminContextMenu: 1,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 createWizardExt: 1,{D6D8C25A-4E83-11d2-8424-00C04FA372D4}
 
-dn: CN=organizationalUnit-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=organizationalUnit-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: organizationalUnit-Display
@@ -88,7 +88,7 @@ shellPropertyPages: 1,{f2c3faae-c8ac-11d0-bcdb-00c04fd8d5b6}
 adminContextMenu: 2,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 adminContextMenu: 1,{6BA3F852-23C6-11D1-B91F-00A0C9A06D2D}
 
-dn: CN=container-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=container-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: container-Display
@@ -103,7 +103,7 @@ adminContextMenu: 3,{EEBD2F15-87EE-4F93-856F-6AD7E31787B3}
 adminContextMenu: 2,{08eb4fa6-6ffd-11d1-b0e0-00c04fd8dca6}
 adminContextMenu: 1,{6BA3F852-23C6-11D1-B91F-00A0C9A06D2D}
 
-dn: CN=default-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+dn: CN=default-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: displaySpecifier
 cn: default-Display

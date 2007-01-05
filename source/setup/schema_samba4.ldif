@@ -9,7 +9,7 @@
 #
 
 
-dn: cn=ntpwdHash,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=ntpwdHash,${SCHEMADN}
 cn: ntpwdHash
 name: NTPWDHash
 objectClass: top
@@ -24,7 +24,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.1
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: cn=lmpwdHash,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=lmpwdHash,${SCHEMADN}
 cn: lmpwdHash
 name: lmpwdHash
 objectClass: top
@@ -39,7 +39,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.2
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: cn=sambaNtPwdHistory,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=sambaNtPwdHistory,${SCHEMADN}
 cn: sambaNtPwdHistory
 name: sambaNtPwdHistory
 objectClass: top
@@ -54,7 +54,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.3
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: cn=sambaLmPwdHistory,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=sambaLmPwdHistory,${SCHEMADN}
 cn: sambaLmPwdHistory
 name: sambaLmPwdHistory
 objectClass: top
@@ -69,7 +69,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.4
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-dn: cn=sambaPassword,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=sambaPassword,${SCHEMADN}
 cn: sambaPassword
 name: sambaPassword
 objectClass: top
@@ -84,7 +84,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.5
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: cn=dnsDomain,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=dnsDomain,${SCHEMADN}
 cn: dnsDomain
 name: dnsDomain
 objectClass: top
@@ -99,7 +99,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.6
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-dn: cn=privilege,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=privilege,${SCHEMADN}
 cn: privilege
 name: privilege
 objectClass: top
@@ -115,7 +115,7 @@ attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
 
-dn: CN=unixName,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=unixName,${SCHEMADN}
 cn: unixName
 name: unixName
 objectClass: top
@@ -130,7 +130,7 @@ attributeID: 1.3.6.1.4.1.7165.4.1.9
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-dn: cn=krb5Key,CN=Schema,CN=Configuration,${BASEDN}
+dn: cn=krb5Key,${SCHEMADN}
 cn: krb5Key
 name: krb5Key
 objectClass: top

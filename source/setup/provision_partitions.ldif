@@ -1,12 +1,12 @@
 dn: @PARTITION
-partition: CN=Schema,CN=Configuration,${BASEDN}:schema.ldb
-partition: CN=Configuration,${BASEDN}:configuration.ldb
+partition: ${SCHEMADN}:schema.ldb
+partition: ${CONFIGDN}:configuration.ldb
 partition: ${BASEDN}:${LDAPBACKEND}
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
-modules:CN=Schema,CN=Configuration,${BASEDN}:objectguid
-modules:CN=Configuration,${BASEDN}:objectguid
+modules:${SCHEMADN}:objectguid
+modules:${CONFIGDN}:objectguid
 modules:${BASEDN}:${LDAPMODULES}
 
 #Add modules to the list to activate them by default

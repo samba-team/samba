@@ -6,7 +6,7 @@ description: Container for SAM account templates
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 ###
@@ -34,7 +34,7 @@ primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
 sAMAccountType: 805306368
-objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Person,${SCHEMADN}
 
 dn: CN=TemplateComputer,CN=Templates
 objectClass: top
@@ -56,7 +56,7 @@ primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
 sAMAccountType: 805306369
-objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Computer,${SCHEMADN}
 
 dn: CN=TemplateTrustingDomain,CN=Templates
 objectClass: top
@@ -84,7 +84,7 @@ cn: TemplateGroup
 instanceType: 4
 groupType: -2147483646
 sAMAccountType: 268435456
-objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Group,${SCHEMADN}
 
 # Currently this isn't used, we don't have a way to detect it different from an incoming alias
 #
@@ -104,7 +104,7 @@ objectClass: foreignSecurityPrincipalTemplate
 cn: TemplateForeignSecurityPrincipal
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Foreign-Security-Principal,${SCHEMADN}
 
 dn: CN=TemplateSecret,CN=Templates
 objectClass: top

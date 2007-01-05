@@ -44,16 +44,16 @@ passwordAttribute: krb5key
 
 # the rootDSE module looks in this record for its base data
 dn: cn=ROOTDSE
-subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
-dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+subschemaSubentry: CN=Aggregate,${SCHEMADN}
+dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 defaultNamingContext: ${BASEDN}
 rootDomainNamingContext: ${BASEDN}
-configurationNamingContext: CN=Configuration,${BASEDN}
-schemaNamingContext: CN=Schema,CN=Configuration,${BASEDN}
+configurationNamingContext: ${CONFIGDN}
+schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 3
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
-serverName: CN=${NETBIOSNAME},CN=Servers,${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+serverName: CN=${NETBIOSNAME},CN=Servers,${DEFAULTSITE},CN=Sites,${CONFIGDN}
 domainFunctionality: 0
 forestFunctionality: 0
 domainControllerFunctionality: 2

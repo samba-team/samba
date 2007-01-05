@@ -6,7 +6,7 @@ description: Default container for domain controllers
 instanceType: 4
 showInAdvancedViewOnly: FALSE
 systemFlags: 2348810240
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=ForeignSecurityPrincipals,${BASEDN}
@@ -17,7 +17,7 @@ description: Default container for security identifiers (SIDs) associated with o
 instanceType: 4
 showInAdvancedViewOnly: FALSE
 systemFlags: 2348810240
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=System,${BASEDN}
@@ -28,7 +28,7 @@ description: Builtin system settings
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
 dn: CN=RID Manager$,CN=System,${BASEDN}
@@ -38,9 +38,9 @@ cn: RID Manager$
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
-objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=RID-Manager,${SCHEMADN}
 isCriticalSystemObject: TRUE
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 rIDAvailablePool: 4611686014132423217
 
 dn: CN=DomainUpdates,CN=System,${BASEDN}
@@ -49,7 +49,7 @@ objectClass: container
 cn: DomainUpdates
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 
 dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${BASEDN}
 objectClass: top
@@ -57,7 +57,7 @@ objectClass: container
 cn: Windows2003Update
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,${SCHEMADN}
 revision: 8
 
 dn: CN=Infrastructure,${BASEDN}
@@ -67,9 +67,9 @@ cn: Infrastructure
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
-objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Infrastructure-Update,${SCHEMADN}
 isCriticalSystemObject: TRUE
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 
 dn: CN=Builtin,${BASEDN}
 objectClass: top
@@ -92,6 +92,6 @@ objectSid: S-1-5-32
 serverState: 1
 uASCompat: 1
 modifiedCount: 1
-objectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Builtin-Domain,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
