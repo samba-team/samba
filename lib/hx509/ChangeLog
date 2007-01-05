@@ -1,4 +1,22 @@
+2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ref: Replace with Marcus Brinkmann of g10 Code GmbH pkcs11
+	headerfile that is compatible with GPL (file taken from scute)
+
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_ca.in: Test to generate key and use them.
+
+	* hxtool.c: handle other keys the pkcs10 requested keys
+
+	* hxtool-commands.in: add generate key commands
+
+	* req.c (_hx509_request_to_pkcs10): PKCS10 needs to have a subject
+
+	* hxtool-commands.in: Spelling.
+
+	* ca.c (hx509_ca_tbs_set_proxy): allow negative pathLenConstraint
+	to signal no limit
 
 	* ks_file.c: Try all formats on the binary file before giving up,
 	this way we can handle binary rsa keys too.
