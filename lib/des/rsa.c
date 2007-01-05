@@ -367,10 +367,11 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
     k->q = heim_int2BN(&data.prime2);
     k->dmp1 = heim_int2BN(&data.exponent1);
     k->dmq1 = heim_int2BN(&data.exponent2);
+    k->iqmp = heim_int2BN(&data.coefficient);
     free_RSAPrivateKey(&data);
 
     if (k->n == NULL || k->e == NULL || k->d == NULL || k->p == NULL ||
-	k->q == NULL || k->dmp1 == NULL || k->dmq1 == NULL) 
+	k->q == NULL || k->dmp1 == NULL || k->dmq1 == NULL || k->iqmp == NULL) 
     {
 	RSA_free(k);
 	return NULL;
@@ -395,6 +396,7 @@ i2d_RSAPrivateKey(RSA *rsa, unsigned char **pp)
     ret |= bn2heim_int(rsa->q, &data.prime2);
     ret |= bn2heim_int(rsa->dmp1, &data.exponent1);
     ret |= bn2heim_int(rsa->dmq1, &data.exponent2);
+    ret |= bn2heim_int(rsa->iqmp, &data.coefficient);
     if (ret) {
 	free_RSAPrivateKey(&data);
 	return -1;
