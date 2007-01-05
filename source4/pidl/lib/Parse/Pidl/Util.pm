@@ -26,12 +26,9 @@ sub MyDumper($)
 # see if a pidl property list contains a given property
 sub has_property($$)
 {
-	my($e) = shift;
-	my($p) = shift;
+	my($e, $p) = @_;
 
-	if (!defined $e->{PROPERTIES}) {
-		return undef;
-	}
+	return undef if (not defined($e->{PROPERTIES}));
 
 	return $e->{PROPERTIES}->{$p};
 }
@@ -40,9 +37,7 @@ sub has_property($$)
 # see if a pidl property matches a value
 sub property_matches($$$)
 {
-	my($e) = shift;
-	my($p) = shift;
-	my($v) = shift;
+	my($e,$p,$v) = @_;
 
 	if (!defined has_property($e, $p)) {
 		return undef;
@@ -59,7 +54,7 @@ sub property_matches($$$)
 sub is_constant($)
 {
 	my $s = shift;
-	if (defined $s && $s =~ /^\d/) {
+	if (defined $s && $s =~ /^\d$/) {
 		return 1;
 	}
 	return 0;
@@ -72,7 +67,7 @@ sub make_str($)
 	if (substr($str, 0, 1) eq "\"") {
 		return $str;
 	}
-	return "\"" . $str . "\"";
+	return "\"$str\"";
 }
 
 sub print_uuid($)
@@ -80,6 +75,7 @@ sub print_uuid($)
 	my ($uuid) = @_;
 	$uuid =~ s/"//g;
 	my ($time_low,$time_mid,$time_hi,$clock_seq,$node) = split /-/, $uuid;
+	return undef if not defined($node);
 
 	my @clock_seq = $clock_seq =~ /(..)/g;
 	my @node = $node =~ /(..)/g;
@@ -106,7 +102,7 @@ sub ParseExpr($$)
 
 	die("Undefined value in ParseExpr") if not defined($expr);
 
-	my @tokens = split /((?:[A-Za-z_])(?:(?:(?:[A-Za-z0-9_.])|(?:->))+))/, $expr;
+	my @tokens = split /((?:[A-Za-z_])(?:(?:(?:[A-Za-z0-9_.])|(?:->))+)?)/, $expr;
 	my $ret = "";
 
 	foreach my $t (@tokens) {
