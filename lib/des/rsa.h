@@ -121,7 +121,7 @@ struct RSA {
     void *mt_blinding;
 };
 
-#define RSA_FLAG_SIGN_VER		0x40
+#define RSA_FLAG_NO_BLINDING		0x0080
 
 #define RSA_PKCS1_PADDING		1
 #define RSA_PKCS1_OAEP_PADDING		4
