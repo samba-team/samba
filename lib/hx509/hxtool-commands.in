@@ -482,6 +482,11 @@ command = {
 		help = "Lifetime of certificate"
 	}
 	option = {
+		long = "serial-number"
+		type = "string"
+		help = "serial-number of certificate"
+	}
+	option = {
 		long = "path-length"
 		type = "integer"
 		help = "Maximum path length (CA and proxy certificates), -1 no limit"
@@ -507,9 +512,9 @@ command = {
 		help = "pkcs10 request"
 	}
 	option = {
-		long = "key"
+		long = "out-key"
 		type = "string"
-		help = "Key-pair"
+		help = "out key"
 	}
 	option = {
 		long = "generate-key"
