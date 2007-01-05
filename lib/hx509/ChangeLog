@@ -1,5 +1,15 @@
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: test reissueing ca certificate (xxx time
+	validAfter).
+
+	* hxtool.c: Allow setting serialNumber (needed for reissuing
+	certificates) Change --key argument to --out-key.
+
+	* hxtool-commands.in (issue-certificate): Allow setting
+	serialNumber (needed for reissuing certificates), Change --key
+	argument to --out-key.
+
 	* ref: Replace with Marcus Brinkmann of g10 Code GmbH pkcs11
 	headerfile that is compatible with GPL (file taken from scute)
 

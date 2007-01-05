@@ -1,5 +1,11 @@
-2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Change --key argument to --out-key.
+
+	* kuser/kimpersonate.1: mangle my name
+	
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* doc/setup.texi: describe how to use hx509 to create
 	certificates.
 
