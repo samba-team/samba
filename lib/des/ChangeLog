@@ -1,4 +1,12 @@
+2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa-imath.c: Add keyblinding, add a commented out CRT based RSA.
+
+	* rsa.c: Add iqmp.
+
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.c: add missing ;
 
 	* rsa.c: Add i2d_RSAPrivateKey.
 
