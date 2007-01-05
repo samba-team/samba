@@ -1,4 +1,4 @@
-dn: CN=Users,${BASEDN}
+dn: CN=Users,${DOMAINDN}
 changetype: modify
 replace: description
 description: Default container for upgraded user accounts

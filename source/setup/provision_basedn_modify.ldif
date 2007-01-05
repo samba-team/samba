@@ -1,7 +1,7 @@
 ###############################
 # Domain Naming Context
 ###############################
-dn: ${BASEDN}
+dn: ${DOMAINDN}
 changetype: modify
 replace: dnsDomain
 dnsDomain: ${DNSDOMAIN}
@@ -58,7 +58,7 @@ replace: msDS-Behavior-Version
 msDS-Behavior-Version: 0
 -
 replace: ridManagerReference
-ridManagerReference: CN=RID Manager$,CN=System,${BASEDN}
+ridManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}
 -
 replace: uASCompat
 uASCompat: 1

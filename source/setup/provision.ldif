@@ -1,4 +1,4 @@
-dn: CN=Domain Controllers,${BASEDN}
+dn: CN=Domain Controllers,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: Domain Controllers
@@ -9,7 +9,7 @@ systemFlags: 2348810240
 objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=ForeignSecurityPrincipals,${BASEDN}
+dn: CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: ForeignSecurityPrincipals
@@ -20,7 +20,7 @@ systemFlags: 2348810240
 objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=System,${BASEDN}
+dn: CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: System
@@ -31,7 +31,7 @@ systemFlags: 2348810240
 objectCategory: CN=Container,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
-dn: CN=RID Manager$,CN=System,${BASEDN}
+dn: CN=RID Manager$,CN=System,${DOMAINDN}
 objectclass: top
 objectclass: rIDManager
 cn: RID Manager$
@@ -43,7 +43,7 @@ isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 rIDAvailablePool: 4611686014132423217
 
-dn: CN=DomainUpdates,CN=System,${BASEDN}
+dn: CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: DomainUpdates
@@ -51,7 +51,7 @@ instanceType: 4
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,${SCHEMADN}
 
-dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${BASEDN}
+dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: Windows2003Update
@@ -60,7 +60,7 @@ showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,${SCHEMADN}
 revision: 8
 
-dn: CN=Infrastructure,${BASEDN}
+dn: CN=Infrastructure,${DOMAINDN}
 objectclass: top
 objectclass: infrastructureUpdate
 cn: Infrastructure
@@ -71,7 +71,7 @@ objectCategory: CN=Infrastructure-Update,${SCHEMADN}
 isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 
-dn: CN=Builtin,${BASEDN}
+dn: CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: builtinDomain
 cn: Builtin
