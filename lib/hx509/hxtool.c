@@ -1366,7 +1366,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (opt->generate_key_string) {
 	hx509_private_key key;
 	
-	get_key(opt->key_string, 
+	get_key(opt->out_key_string, 
 		opt->generate_key_string,
 		opt->key_bits_integer,
 		&key);
@@ -1403,6 +1403,15 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, ret, 1, "hx509_ca_tbs_init");
 	
+    if (opt->serial_number_string) {
+	heim_integer serialNumber;
+
+	der_parse_hex_heim_integer(opt->serial_number_string,
+				   &serialNumber);
+	ret = hx509_ca_tbs_set_serialnumber(context, tbs, &serialNumber);
+	der_free_heim_integer(&serialNumber);
+    }
+
     ret = hx509_ca_tbs_set_spki(context, tbs, &spki);
     if (ret)
 	hx509_err(context, ret, 1, "hx509_ca_tbs_set_spki");
