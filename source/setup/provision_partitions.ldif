@@ -9,13 +9,5 @@ modules:${SCHEMADN}:${SCHEMADN_MOD}
 modules:${CONFIGDN}:${CONFIGDN_MOD}
 modules:${DOMAINDN}:${DOMAINDN_MOD}
 
-#Add modules to the list to activate them by default
-#beware often order is important
-#
-# Some Known ordering constraints:
-# - rootdse must be first, as it makes redirects from "" -> cn=rootdse
-# - samldb must be before password_hash, because password_hash checks that the objectclass is of type person (filled in by samldb)
-# - partition must be last
-
 dn: @MODULES
-@LIST: rootdse,kludge_acl,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectclass,rdn_name,partition
+@LIST: ${MODULES_LIST}
