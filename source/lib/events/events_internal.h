@@ -24,7 +24,7 @@
 
 struct event_ops {
 	/* conntext init */
-	int (*context_init)(struct event_context *ev, void *private_data);
+	int (*context_init)(struct event_context *ev);
 
 	/* fd_event functions */
 	struct fd_event *(*add_fd)(struct event_context *ev,
@@ -41,6 +41,12 @@ struct event_ops {
 					 struct timeval next_event,
 					 event_timed_handler_t handler,
 					 void *private_data);
+	/* disk aio event functions */
+	struct aio_event *(*add_aio)(struct event_context *ev,
+				     TALLOC_CTX *mem_ctx,
+				     struct iocb *iocb, 
+				     event_aio_handler_t handler, 
+				     void *private_data);
 
 	/* loop functions */
 	int (*loop_once)(struct event_context *ev);
@@ -71,11 +77,24 @@ struct timed_event {
 	void *additional_data;
 };
 
+/* aio event is private to the aio backend */
+struct aio_event;
+
 struct event_context {	
 	/* the specific events implementation */
 	const struct event_ops *ops;
+
+	/* list of timed events - used by common code */
+	struct timed_event *timed_events;
+
 	/* this is private for the events_ops implementation */
 	void *additional_data;
 };
 
-const struct event_ops *event_standard_get_ops(void);
+
+NTSTATUS event_register_backend(const char *name, const struct event_ops *ops);
+
+struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
+					   struct timeval, event_timed_handler_t, void *);
+void common_event_loop_timer(struct event_context *);
+struct timeval common_event_loop_delay(struct event_context *);

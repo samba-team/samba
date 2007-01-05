@@ -43,7 +43,7 @@ static int gtk_event_context_destructor(struct event_context *ev)
 /*
   create a gtk_event_context structure.
 */
-static int gtk_event_context_init(struct event_context *ev, void *private_data)
+static int gtk_event_context_init(struct event_context *ev)
 {
 	talloc_set_destructor(ev, gtk_event_context_destructor);
 	return 0;
@@ -339,16 +339,13 @@ static const struct event_ops gtk_event_ops = {
 	.loop_wait	= gtk_event_loop_wait,
 };
 
-const struct event_ops *gtk_event_get_ops(void)
-{
-	return &gtk_event_ops;
-}
-
 int gtk_event_loop(void)
 {
 	int ret;
 
-	gtk_event_context_global = event_context_init_ops(NULL, &gtk_event_ops, NULL);
+	event_register_backend("gtk", &gtk_event_ops);
+
+	gtk_event_context_global = event_context_init_byname(NULL, "gtk");
 	if (!gtk_event_context_global) return -1;
 
 	ret = event_loop_wait(gtk_event_context_global);

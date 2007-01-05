@@ -1,5 +1,13 @@
 # LIB GTK SMB subsystem
 
+##############################
+[MODULE::EVENTS_GTK]
+OBJ_FILES = common/gtk_events.o
+SUBSYSTEM = gtksamba
+INIT_FUNCTION = events_gtk_init
+PRIVATE_DEPENDENCIES = gtk
+##############################
+
 [LIBRARY::gtksamba]
 VERSION = 0.0.1
 SO_VERSION = 0
@@ -7,9 +15,8 @@ DESCRIPTION = Common Samba-related widgets for GTK+ applications
 PUBLIC_HEADERS = common/gtk-smb.h common/select.h
 OBJ_FILES = common/gtk-smb.o \
 		common/select.o \
-		common/gtk_events.o \
 		common/credentials.o
-PRIVATE_DEPENDENCIES = CHARSET LIBSAMBA-UTIL gtk RPC_NDR_SAMR
+PRIVATE_DEPENDENCIES = CHARSET LIBSAMBA-UTIL gtk RPC_NDR_SAMR EVENTS_GTK
 
 [BINARY::gregedit]
 INSTALLDIR = BINDIR

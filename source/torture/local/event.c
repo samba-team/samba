@@ -25,10 +25,6 @@
 #include "system/filesys.h"
 #include "torture/torture.h"
 
-const struct event_ops *event_standard_get_ops(void);
-const struct event_ops *event_liboop_get_ops(void);
-const struct event_ops *gtk_event_get_ops(void);
-
 static int write_fd, read_fd;
 static struct fd_event *fde;
 static int te_count;
@@ -80,14 +76,18 @@ static bool test_event_context(struct torture_context *torture_ctx,
 {
 	struct event_context *ev_ctx;
 	int fd[2] = { -1, -1 };
-	BOOL try_epoll = (BOOL)test_data;
+	const char *backend = (const char *)test_data;
 	TALLOC_CTX *mem_ctx = torture_ctx;
 
-	ev_ctx = event_context_init_ops(mem_ctx, 
-									event_standard_get_ops(), 
-									&try_epoll);
-
 	test = torture_ctx;
+
+	ev_ctx = event_context_init_byname(mem_ctx, backend);
+	if (ev_ctx == NULL) {
+		torture_comment(test, "event backend '%s' not supported\n", backend);
+		return true;
+	}
+
+	torture_comment(test, "Testing event backend '%s'\n", backend);
 
 	/* reset globals */
 	write_fd = -1;
@@ -101,9 +101,11 @@ static bool test_event_context(struct torture_context *torture_ctx,
 	read_fd = fd[0];
 	write_fd = fd[1];
 
-	fde = event_add_fd(ev_ctx, ev_ctx, read_fd, EVENT_FD_READ, fde_handler, &read_fd);
+	fde = event_add_fd(ev_ctx, ev_ctx, read_fd, EVENT_FD_READ, 
+			   fde_handler, &read_fd);
 
-	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), timed_handler, fde);
+	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), 
+			timed_handler, fde);
 
 	event_loop_wait(ev_ctx);
 
@@ -117,14 +119,14 @@ static bool test_event_context(struct torture_context *torture_ctx,
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "EVENT");
+	const char **list = event_backend_list(suite);
+	int i;
 
-	torture_suite_add_simple_tcase(suite, "standard with select",
-								   test_event_context,
-								   (void *)False);
-
-	torture_suite_add_simple_tcase(suite, "standard try epoll (or select)",
-								   test_event_context,
-								   (void *)True);
+	for (i=0;list && list[i];i++) {
+		torture_suite_add_simple_tcase(suite, list[i],
+					       test_event_context,
+					       (const void *)list[i]);
+	}
 
 	return suite;
 }

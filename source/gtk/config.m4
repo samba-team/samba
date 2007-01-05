@@ -7,6 +7,7 @@ SMB_ENABLE(gwcrontab, NO)
 SMB_ENABLE(gwsam, NO)
 SMB_ENABLE(gepdump, NO)
 SMB_ENABLE(gwsvcctl, NO)
+SMB_ENABLE(EVENTS_GTK, NO)
 
 if test t$SMB_ENABLE_gtk = tYES; then
 	SMB_ENABLE(gtksamba, YES)
@@ -15,5 +16,6 @@ if test t$SMB_ENABLE_gtk = tYES; then
 	SMB_ENABLE(gwsam, YES)
 	SMB_ENABLE(gwsvcctl, YES)
 	SMB_ENABLE(gepdump, YES)
+	SMB_ENABLE(EVENTS_GTK, YES)
 	AC_DEFINE(HAVE_GTK, 1, [Whether GTK+ is available])
 fi
