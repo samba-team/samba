@@ -47,7 +47,6 @@ RCSID("$Id$");
 #include <roken.h>
 
 #include "imath/imath.h"
-#include "imath/rsamath.h"
 #include "imath/iprime.h"
 
 #define USE_CRT 0
