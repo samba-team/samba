@@ -699,13 +699,36 @@ function provision_guess()
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
 	subobj.DOMAINDN_LDB = "users.ldb";
-	subobj.DOMAINDN_MOD = "objectguid";
 	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
 	subobj.CONFIGDN_LDB = "configuration.ldb";
-	subobj.CONFIGDN_MOD = "objectguid";
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
 	subobj.SCHEMADN_LDB = "schema.ldb";
+
+	//Add modules to the list to activate them by default
+	//beware often order is important
+	//
+	// Some Known ordering constraints:
+	// - rootdse must be first, as it makes redirects from "" -> cn=rootdse
+	// - samldb must be before password_hash, because password_hash checks
+	//   that the objectclass is of type person (filled in by samldb)
+	// - partition must be last
+	// - each partition has its own module list then
+	modules_list        = new Array("rootdse",
+					"kludge_acl",
+					"paged_results",
+					"server_sort",
+					"extended_dn",
+					"asq",
+					"samldb",
+					"password_hash",
+					"operational",
+					"objectclass",
+					"rdn_name",
+					"partition");
+	subobj.MODULES_LIST = join(",", modules_list);
+	subobj.DOMAINDN_MOD = "objectguid";
+	subobj.CONFIGDN_MOD = "objectguid";
 	subobj.SCHEMADN_MOD = "objectguid";
 
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
