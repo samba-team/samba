@@ -169,7 +169,7 @@ rm -rf ${hversion}
 
 echo "Fetching ${hversion} using $fetchmethod"
 case "$fetchmethod" in
-wget|ftp)
+wget|ftp|fetch)
 	${fetchmethod} $url > /dev/null
 	res=$?
 	;;
