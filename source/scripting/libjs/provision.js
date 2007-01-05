@@ -499,6 +499,10 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	message("Setting up sam.ldb attributes\n");
 	setup_add_ldif("provision_init.ldif", info, samdb, false);
+
+	message("Setting up sam.ldb rootDSE\n");
+	setup_add_ldif("provision_rootdse_add.ldif", info, samdb, false);
+
 	message("Erasing data from partitions\n");
 	ldb_erase_partitions(info, samdb, ldapbackend);
 	
@@ -566,6 +570,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 		message("Setting up sam.ldb index\n");
 		setup_add_ldif("provision_index.ldif", info, samdb, false);
 
+		message("Setting up sam.ldb rootDSE marking as syncronized\n");
+		setup_modify_ldif("provision_rootdse_modify.ldif", info, samdb, false);
+
 		var commit_ok = samdb.transaction_commit();
 		if (!commit_ok) {
 			info.message("ldb commit failed: " + samdb.errstring() + "\n");
@@ -596,6 +603,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	message("Setting up sam.ldb index\n");
 	setup_add_ldif("provision_index.ldif", info, samdb, false);
+
+	message("Setting up sam.ldb rootDSE marking as syncronized\n");
+	setup_modify_ldif("provision_rootdse_modify.ldif", info, samdb, false);
 
 	var commit_ok = samdb.transaction_commit();
 	if (!commit_ok) {
