@@ -134,7 +134,7 @@ rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
     /* C2 = 1/q mod p  (iqmp) */
     /* u = (v2 - v1)C2 mod p. */
     mp_int_sub(&v2, &v1, &u);
-    if (MP_SIGN(&u) == MP_NEG) {
+    if (mp_int_compare_zero(&u) < 0) {
 	mp_int_add(&u, p, &t);
 	mp_int_swap(&u, &t);
     }
