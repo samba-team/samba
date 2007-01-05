@@ -366,6 +366,11 @@ qx.Proto.displayData = function(module, result)
   // Create a function for formatting dates
   var dateFormat = function(unixepoch)
   {
+    if (unixepoch == 0)
+    {
+      return "";
+    }
+
     var d = new Date(unixepoch * 1000);
     return (d.getFullYear() + "-" +
             ("0" + (d.getMonth() + 1)).substr(-2) + "-" +

@@ -45,7 +45,7 @@ qx.Class._stopTimer = function(fsm)
 qx.Proto.buildFsm = function(module)
 {
   var fsm = module.fsm;
-  var thisClass = this;
+  var _this = this;
 
   /*
    * State: Idle
@@ -67,10 +67,7 @@ qx.Proto.buildFsm = function(module)
           if (fsm.getPreviousState() == "State_AwaitRpcResult")
           {
             // Yup.  Display the result.  We need to get the request object
-            var request = fsm.getObject("swat.module.fsmUtils.request");
-
-            // We don't need the request object to be saved any more
-            fsm.removeObject("swat.module.fsmUtils.request");
+            var request = _this.popRpcRequest();
 
             // Display the result
             var gui = swat.module.statistics.Gui.getInstance();
@@ -141,15 +138,11 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          var rpc = fsm.getObject("swat.module.rpc");
-
-          rpc.setServiceName("samba.management");
-          var request = rpc.callAsyncListeners(true, // coalesce failure events
-                                               "get_statistics",
-                                               true,
-                                               true);
-          // Make the request object available to the AwaitRpcResult state
-          fsm.addObject("swat.module.fsmUtils.request", request);
+          // Issue a Get Statistics call
+          _this.callRpc(fsm,
+                        "samba.management",
+                        "get_statistics",
+                        [ true, true ]);
         }
     });
   state.addTransition(trans);
