@@ -203,15 +203,19 @@ $(IDL_HEADER_FILES) \
 	$(IDL_NDR_SERVER_C_FILES) $(IDL_SWIG_FILES) \
 	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES): idl
 
-idl_full: pidl/lib/Parse/Pidl/IDL.pm
+idl_full: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL $(PIDL_ARGS)
 
-idl: pidl/lib/Parse/Pidl/IDL.pm
+idl: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL $(PIDL_ARGS)
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
-	-$(YAPP) -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp ||\
-		touch pidl/lib/Parse/Pidl/IDL.pm
+	-$(YAPP) -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp ||\
+		touch pidl/lib/Parse/Pidl/IDL.pm 
+
+pidl/lib/Parse/Pidl/Expr.pm: pidl/idl.yp
+	-$(YAPP) -m 'Parse::Pidl::Expr' -o pidl/lib/Parse/Pidl/Expr.pm pidl/expr.yp ||\
+		touch pidl/lib/Parse/Pidl/Expr.pm 
 
 smb_interfaces: pidl/smb_interfaces.pm
 	$(PERL) -Ipidl $(srcdir)/script/build_smb_interfaces.pl \
