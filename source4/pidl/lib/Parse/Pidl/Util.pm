@@ -12,6 +12,8 @@ $VERSION = '0.01';
 
 use strict;
 
+use Parse::Pidl::Expr;
+
 #####################################################################
 # a dumper wrapper to prevent dependence on the Data::Dumper module
 # unless we actually need it
@@ -97,22 +99,19 @@ sub useUintEnums()
 
 sub ParseExpr($$)
 {
-	my($expr,$varlist) = @_;
+	my($expr, $varlist) = @_;
 
 	die("Undefined value in ParseExpr") if not defined($expr);
 
-	my @tokens = split /((?:[A-Za-z_])(?:(?:(?:[A-Za-z0-9_.])|(?:->))+)?)/, $expr;
-	my $ret = "";
-
-	foreach my $t (@tokens) {
-		if (defined($varlist->{$t})) {
-			$ret .= $varlist->{$t};
-		} else {
-			$ret .= $t;
-		}
-	}
-
-	return $ret;
+	my $x = new Parse::Pidl::Expr();
+	
+	return $x->Run($expr, sub { my $x = shift; die(MyDumper($x)); },
+		# Lookup fn 
+		sub { my $x = shift; 
+			  return($varlist->{$x}) if (defined($varlist->{$x})); 
+			  return $x;
+		  },
+		undef);
 }
 
 1;
