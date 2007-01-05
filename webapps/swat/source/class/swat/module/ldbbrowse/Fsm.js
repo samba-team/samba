@@ -20,6 +20,7 @@ function()
 qx.Proto.buildFsm = function(module)
 {
   var fsm = module.fsm;
+  var _this = this;
 
   /*
    * State: Idle
@@ -42,10 +43,7 @@ qx.Proto.buildFsm = function(module)
           if (fsm.getPreviousState() == "State_AwaitRpcResult")
           {
             // Yup.  Display the result.  We need to get the request object
-            var request = fsm.getObject("swat.module.fsmUtils.request");
-
-            // We don't need the request object to be saved any more
-            fsm.removeObject("swat.module.fsmUtils.request");
+            var request = _this.popRpcRequest();
 
             // Display the result
             var gui = swat.module.ldbbrowse.Gui.getInstance();
@@ -107,9 +105,6 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          // Obtain the RPC object
-          var rpc = fsm.getObject("swat.module.rpc");
-
           // Get our module descriptor
           var module = fsm.getObject("swat.module.module");
 
@@ -128,21 +123,21 @@ qx.Proto.buildFsm = function(module)
           // We want all attributes
           var attributes = [ "*" ];
 
-          rpc.setServiceName("samba.ldb");
-          var request = rpc.callAsyncListeners(true, // coalesce failure events
-                                               "search",
-                                               dbHandle,
-                                               searchExpr,
-                                               baseDN,
-                                               scope,
-                                               attributes);
+          // Issue a Search call
+          var request = _this.callRpc(fsm,
+                                      "samba.ldb",
+                                      "search",
+                                      [
+                                       dbHandle,
+                                       searchExpr,
+                                       baseDN,
+                                       scope,
+                                       attributes
+                                      ]);
 
           // When we get the result, we'll need to know what type of request
           // we made.
           request.setUserData("requestType", "find");
-
-          // Save the request object
-          fsm.addObject("swat.module.fsmUtils.request", request);
         }
     });
   state.addTransition(trans);
@@ -207,23 +202,23 @@ qx.Proto.buildFsm = function(module)
           // Build the search expression
           var searchExpr = "(objectclass=*)";
 
-          // Obtain the RPC object
-          var rpc = fsm.getObject("swat.module.rpc");
-
           // Get our module descriptor
           var module = fsm.getObject("swat.module.module");
 
           // Retrieve the database handle
           var dbHandle = module.dbHandle;
 
-          rpc.setServiceName("samba.ldb");
-          var request = rpc.callAsyncListeners(true, // coalesce failure events
-                                               "search",
-                                               dbHandle,
-                                               searchExpr,
-                                               baseDN,
-                                               scope,
-                                               attributes);
+          // Issue a Get Statistics call
+          var request = _this.callRpc(fsm,
+                                      "samba.ldb",
+                                      "search",
+                                      [
+                                       dbHandle,
+                                       searchExpr,
+                                       baseDN,
+                                       scope,
+                                       attributes
+                                      ]);
 
           // When we get the result, we'll need to know what type of request
           // we made.
@@ -232,9 +227,6 @@ qx.Proto.buildFsm = function(module)
           // We'll also need some of our parameters
           request.setUserData("parent", parent);
           request.setUserData("attributes", attributes);
-
-          // Save the request object
-          fsm.addObject("swat.module.fsmUtils.request", request);
         }
     });
   state.addTransition(trans);
@@ -306,30 +298,27 @@ qx.Proto.buildFsm = function(module)
           // Build the search expression
           var searchExpr = "(objectclass=*)";
 
-          // Obtain the RPC object
-          var rpc = fsm.getObject("swat.module.rpc");
-
           // Get our module descriptor
           var module = fsm.getObject("swat.module.module");
 
           // Retrieve the database handle
           var dbHandle = module.dbHandle;
 
-          rpc.setServiceName("samba.ldb");
-          var request = rpc.callAsyncListeners(true, // coalesce failure events
-                                               "search",
-                                               dbHandle,
-                                               searchExpr,
-                                               baseDN,
-                                               scope,
-                                               attributes);
+          // Issue a Get Statistics call
+          var request = _this.callRpc(fsm,
+                                      "samba.ldb",
+                                      "search",
+                                      [
+                                       dbHandle,
+                                       searchExpr,
+                                       baseDN,
+                                       scope,
+                                       attributes
+                                      ]);
 
           // When we get the result, we'll need to know what type of request
           // we made.
           request.setUserData("requestType", "tree_selection_changed");
-
-          // Save the request object
-          fsm.addObject("swat.module.fsmUtils.request", request);
         }
     });
   state.addTransition(trans);
@@ -351,23 +340,18 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          // Obtain the RPC object
-          var rpc = fsm.getObject("swat.module.rpc");
-
           // Obtain the name of the database to be connected to
           var dbName = fsm.getObject("dbName").getValue();
 
-          rpc.setServiceName("samba.ldb");
-          var request = rpc.callAsyncListeners(true, // coalesce failure events
-                                               "connect",
-                                               dbName);
+          // Issue a Get Statistics call
+          var request = _this.callRpc(fsm,
+                                      "samba.ldb",
+                                      "connect",
+                                      [ dbName ]);
 
           // When we get the result, we'll need to know what type of request
           // we made.
           request.setUserData("requestType", "database_name_changed");
-
-          // Save the request object
-          fsm.addObject("swat.module.fsmUtils.request", request);
         }
     });
   state.addTransition(trans);
