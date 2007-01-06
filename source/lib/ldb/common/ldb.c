@@ -779,6 +779,112 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 	return LDB_SUCCESS;
 }
 
+int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+{
+	struct ldb_result *res;
+	
+ 	if (!context) {
+		ldb_set_errstring(ldb, "NULL Context in callback");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_get_type(context, struct ldb_result);
+	if (!res || !ares) {
+		ldb_set_errstring(ldb, "NULL res or ares in callback");
+		goto error;
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	case LDB_REPLY_REFERRAL:
+	case LDB_REPLY_DONE:
+		ldb_set_errstring(ldb, "invalid ares type in callback");
+		goto error;
+	case LDB_REPLY_EXTENDED:
+		/* TODO: we should really support controls on entries and referrals too! */
+		res->extended = talloc_move(res, &ares->response);
+		res->controls = talloc_move(res, &ares->controls);
+		break;		
+	}
+	talloc_free(ares);
+	return LDB_SUCCESS;
+
+error:
+	talloc_free(ares);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+int ldb_build_extended_req(struct ldb_request **ret_req,
+			   struct ldb_context *ldb,
+			   void *mem_ctx,
+			   const char *oid,
+			   void *data,
+			   struct ldb_control **controls,
+			   void *context,
+			   ldb_request_callback_t callback)
+{
+	struct ldb_request *req;
+
+	*ret_req = NULL;
+
+	req = talloc(mem_ctx, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->operation = LDB_EXTENDED;
+	req->op.extended.oid = oid;
+	req->op.extended.data = data;
+	req->controls = controls;
+	req->context = context;
+	req->callback = callback;
+
+	*ret_req = req;
+
+	return LDB_SUCCESS;
+}
+
+int ldb_extended(struct ldb_context *ldb, 
+		 const char *oid,
+		 void *data,
+		 struct ldb_result **_res)
+{
+	struct ldb_request *req;
+	int ret;
+	struct ldb_result *res;
+
+	*_res = NULL;
+
+	res = talloc_zero(ldb, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_extended_req(&req, ldb, ldb,
+				     oid, data, NULL,
+				     res, ldb_extended_default_callback);
+	if (ret != LDB_SUCCESS) goto done;
+
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
+
+	ret = ldb_request(ldb, req);
+	
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+
+done:
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+	}
+
+	*_res = res;
+	return ret;
+}
+
 /*
   note that ldb_search() will automatically replace a NULL 'base' value with the 
   defaultNamingContext from the rootDSE if available.

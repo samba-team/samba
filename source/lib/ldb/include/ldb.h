@@ -674,16 +674,17 @@ enum ldb_state {
 	LDB_ASYNC_DONE
 };
 
+struct ldb_extended {
+	const char *oid;
+	void *data;
+};
+
 struct ldb_result {
 	unsigned int count;
 	struct ldb_message **msgs;
 	char **refs;
+	struct ldb_extended *extended;
 	struct ldb_control **controls;
-};
-
-struct ldb_extended {
-	const char *oid;
-	void *data;
 };
 
 struct ldb_reply {
