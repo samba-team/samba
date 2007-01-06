@@ -311,10 +311,26 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	return replmd_modify_originating(module, req);
 }
 
+static int replmd_extended_replicated_objects(struct ldb_module *module, struct ldb_request *req)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_extended_replicated_objects\n");
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_REPLICATED_OBJECTS_OID) == 0) {
+		return replmd_extended_replicated_objects(module, req);
+	}
+
+	return ldb_next_request(module, req);
+}
+
 static const struct ldb_module_ops replmd_ops = {
 	.name          = "repl_meta_data",
 	.add           = replmd_add,
 	.modify        = replmd_modify,
+	.extended      = replmd_extended,
 };
 
 int repl_meta_data_module_init(void)

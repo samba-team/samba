@@ -34,6 +34,11 @@ struct dsdb_control_replicated_object {
 	uint8_t __dummy;
 };
 
+#define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
+struct dsdb_extended_replicated_objects {
+	uint8_t __dummy;
+};
+
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/samr.h"
