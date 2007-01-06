@@ -121,32 +121,30 @@ rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
 		      mp_int dmp1, mp_int dmq1, mp_int iqmp,
 		      mp_int out)
 {
-    mpz_t v1, v2, t, u;
-    mp_int_init(&v1); mp_int_init(&v2); mp_int_init(&t);
-    mp_int_init(&u);
+    mpz_t vp, vq, u;
+    mp_int_init(&vp); mp_int_init(&vq); mp_int_init(&u);
     
-    /* v1 = c ^ (d mod (q - 1)) mod q */
-    /* v2 = c ^ (d mod (p - 1)) mod p */
-    mp_int_exptmod(in, dmq1, q, &v1);
-    mp_int_exptmod(in, dmp1, p, &v2);
+    /* vq = c ^ (d mod (q - 1)) mod q */
+    /* vp = c ^ (d mod (p - 1)) mod p */
+    mp_int_mod(in, p, &u);
+    mp_int_exptmod(&u, dmp1, p, &vp);
+    mp_int_mod(in, q, &u);
+    mp_int_exptmod(&u, dmq1, q, &vq);
     
     /* C2 = 1/q mod p  (iqmp) */
-    /* u = (v2 - v1)C2 mod p. */
-    mp_int_sub(&v2, &v1, &u);
-    if (mp_int_compare_zero(&u) < 0) {
-	mp_int_add(&u, p, &t);
-	mp_int_swap(&u, &t);
-    }
-    mp_int_mul(&u, iqmp, &t);
-    mp_int_mod(&t, p, &u);
+    /* u = (vp - vq)C2 mod p. */
+    mp_int_sub(&vp, &vq, &u);
+    if (mp_int_compare_zero(&u) < 0)
+	mp_int_add(&u, p, &u);
+    mp_int_mul(&u, iqmp, &u);
+    mp_int_mod(&u, p, &u);
     
-    /* c ^ d mod n = v1 + u q */
-    mp_int_mul(&u, q, &t);
-    mp_int_add(&t, &v1, out);
+    /* c ^ d mod n = vq + u q */
+    mp_int_mul(&u, q, &u);
+    mp_int_add(&u, &vq, out);
     
-    mp_int_clear(&v1);
-    mp_int_clear(&v2);
-    mp_int_clear(&t);
+    mp_int_clear(&vp);
+    mp_int_clear(&vq);
     mp_int_clear(&u);
 
     return MP_OK;
@@ -598,7 +596,7 @@ imath_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
     CHECK(mp_int_mod(&d, &t1, &dmp1), MP_OK);
     /* calculate dmq1		dmq1 = d mod (q-1) */
     CHECK(mp_int_mod(&d, &t2, &dmq1), MP_OK);
-    /* calculate iqmp 		iqmp = q mod p */
+    /* calculate iqmp 		iqmp = 1/q mod p */
     CHECK(mp_int_invmod(&q, &p, &iqmp), MP_OK);
 
     /* fill in RSA key */
