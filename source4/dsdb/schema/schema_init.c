@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
@@ -795,4 +796,37 @@ const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 	}
 
 	return NULL;
+}
+
+int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
+{
+	int ret;
+
+	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	talloc_steal(ldb, schema);
+
+	return LDB_SUCCESS;
+}
+
+const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
+{
+	const void *p;
+	const struct dsdb_schema *schema;
+
+	/* see if we have a cached copy */
+	p = ldb_get_opaque(ldb, "dsdb_schema");
+	if (!p) {
+		return NULL;
+	}
+
+	schema = talloc_get_type(p, struct dsdb_schema);
+	if (!schema) {
+		return NULL;
+	}
+
+	return schema;
 }
