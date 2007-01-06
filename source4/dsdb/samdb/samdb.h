@@ -29,6 +29,11 @@ struct drsuapi_DsReplicaObject;
 struct drsuapi_DsReplicaOIDMapping_Ctr;
 struct drsuapi_DsReplicaAttribute;
 
+#define DSDB_CONTROL_REPLICATED_OBJECT_OID "1.3.6.1.4.1.7165.4.3.1"
+struct dsdb_control_replicated_object {
+	uint8_t __dummy;
+};
+
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/samr.h"

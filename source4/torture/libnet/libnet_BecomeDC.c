@@ -182,16 +182,16 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"                                \"server_sort\",\n"
 		"                                \"extended_dn\",\n"
 		"                                \"asq\",\n"
-		"                                //\"samldb\",should only handle originating changes...\n"
+		"                                \"samldb\",\n"
 		"                                \"password_hash\",\n"
 		"                                \"operational\",\n"
 		"                                \"objectclass\",\n"
 		"                                \"rdn_name\",\n"
 		"                                \"partition\");\n"
 		"subobj.MODULES_LIST = join(\",\", modules_list);\n"
-		"subobj.DOMAINDN_MOD = \"objectguid\";\n"
-		"subobj.CONFIGDN_MOD = \"objectguid\";\n"
-		"subobj.SCHEMADN_MOD = \"objectguid\";\n"
+		"subobj.DOMAINDN_MOD = \"repl_meta_data\";\n"
+		"subobj.CONFIGDN_MOD = \"repl_meta_data\";\n"
+		"subobj.SCHEMADN_MOD = \"repl_meta_data\";\n"
 		"\n"
 		"var paths = provision_default_paths(subobj);\n"
 		"paths.samdb = \"%s\";\n"
@@ -265,6 +265,9 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 	struct drsuapi_DsReplicaMetaData *name_d;
 	struct replPropertyMetaData1 *rdn_m;
 	struct drsuapi_DsReplicaObjMetaData *rdn_mc;
+	struct ldb_request *req;
+	struct ldb_control **ctrls;
+	struct dsdb_control_replicated_object *ctrl;
 	int ret;
 
 	if (!obj->object.identifier) {
@@ -424,7 +427,37 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjMetaDataCtr, &mdc);
 	}
 
-	ret = ldb_add(s->ldb, msg);
+	/*
+	 * apply the record to the ldb
+	 * using an ldb_control so indicate
+	 * that it's a replicated change
+	 */
+	ret = ldb_msg_sanity_check(s->ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+	ctrls = talloc_array(msg, struct ldb_control *, 2);
+	W_ERROR_HAVE_NO_MEMORY(ctrls);
+	ctrls[0] = talloc(ctrls, struct ldb_control);
+	W_ERROR_HAVE_NO_MEMORY(ctrls[0]);
+	ctrls[1] = NULL;
+
+	ctrl = talloc(ctrls, struct dsdb_control_replicated_object);
+	W_ERROR_HAVE_NO_MEMORY(ctrl);
+	ctrls[0]->oid		= DSDB_CONTROL_REPLICATED_OBJECT_OID;
+	ctrls[0]->critical	= True;
+	ctrls[0]->data		= ctrl;
+
+	ret = ldb_build_add_req(&req, s->ldb, msg, msg, ctrls, NULL, NULL);
+	if (ret != LDB_SUCCESS) {
+		return WERR_FOOBAR;
+	}
+	ldb_set_timeout(s->ldb, req, 0); /* use default timeout */
+	ret = ldb_request(s->ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	talloc_free(req);
 	if (ret != LDB_SUCCESS) {
 		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
 			DEBUG(0,("record exists (ignored): %s: %d\n",
