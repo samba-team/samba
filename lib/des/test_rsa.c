@@ -350,7 +350,7 @@ main(int argc, char **argv)
 
 	BN_free(e);
 	
-	{
+	for (i = 0; i < 8; i++) {
 	    unsigned char sha1[20];
 	    RAND_bytes(sha1, sizeof(sha1));
 	    check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
