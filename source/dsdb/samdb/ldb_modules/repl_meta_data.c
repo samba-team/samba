@@ -40,8 +40,11 @@
  */
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "lib/ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "dsdb/samdb/samdb.h"
 
 static struct ldb_message_element *replmd_find_attribute(const struct ldb_message *msg, const char *name)
 {
@@ -108,8 +111,24 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	return 0;
 }
 
-/* add_record: add objectGUID attribute */
-static int replmd_add(struct ldb_module *module, struct ldb_request *req)
+static int replmd_add_replicated(struct ldb_module *module, struct ldb_request *req, struct ldb_control *ctrl)
+{
+	struct ldb_control **saved_ctrls;
+	int ret;
+
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_add_replicated\n");
+
+	if (!save_controls(ctrl, req, &saved_ctrls)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_next_request(module, req);
+	req->controls = saved_ctrls;
+
+	return ret;
+}
+
+static int replmd_add_originating(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message_element *attribute;
@@ -121,12 +140,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	time_t t = time(NULL);
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_add_record\n");
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ldb_next_request(module, req);
-	}
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_add_originating\n");
 
 	if ((attribute = replmd_find_attribute(req->op.add.message, "objectGUID")) != NULL ) {
 		return ldb_next_request(module, req);
@@ -192,8 +206,42 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-/* modify_record: update timestamps */
-static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
+static int replmd_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *ctrl;
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ctrl = get_control_from_list(req->controls, DSDB_CONTROL_REPLICATED_OBJECT_OID);
+	if (ctrl) {
+		/* handle replicated objects different */
+		return replmd_add_replicated(module, req, ctrl);
+	}
+
+	return replmd_add_originating(module, req);
+}
+
+static int replmd_modify_replicated(struct ldb_module *module, struct ldb_request *req, struct ldb_control *ctrl)
+{
+	struct ldb_control **saved_ctrls;
+	int ret;
+
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_modify_replicated\n");
+
+	if (!save_controls(ctrl, req, &saved_ctrls)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_next_request(module, req);
+	req->controls = saved_ctrls;
+
+	return ret;
+}
+
+static int replmd_modify_originating(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -201,12 +249,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	time_t t = time(NULL);
 	uint64_t seq_num;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ldb_next_request(module, req);
-	}
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_modify_originating\n");
 
 	down_req = talloc(req, struct ldb_request);
 	if (down_req == NULL) {
@@ -248,6 +291,24 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	return ret;
+}
+
+static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *ctrl;
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ctrl = get_control_from_list(req->controls, DSDB_CONTROL_REPLICATED_OBJECT_OID);
+	if (ctrl) {
+		/* handle replicated objects different */
+		return replmd_modify_replicated(module, req, ctrl);
+	}
+
+	return replmd_modify_originating(module, req);
 }
 
 static const struct ldb_module_ops replmd_ops = {
