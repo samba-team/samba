@@ -49,8 +49,6 @@ RCSID("$Id$");
 #include "imath/imath.h"
 #include "imath/iprime.h"
 
-#define USE_CRT 0
-
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)
 {
@@ -343,7 +341,7 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	blind(&in, &b, &e, &n);
     }
 
-    if (USE_CRT && rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
+    if (rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
 	mpz_t p, q, dmp1, dmq1, iqmp;
 
 	BN2mpz(&p, rsa->p);
@@ -434,7 +432,7 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 	blind(&in, &b, &e, &n);
     }
 
-    if (USE_CRT && rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
+    if (rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
 	mpz_t p, q, dmp1, dmq1, iqmp;
 
 	BN2mpz(&p, rsa->p);
@@ -607,7 +605,7 @@ imath_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
     rsa->n = mpz2BN(&n);
     rsa->d = mpz2BN(&d);
     rsa->dmp1 = mpz2BN(&dmp1);
-    rsa->dmq1 = mpz2BN(&dmp1);
+    rsa->dmq1 = mpz2BN(&dmq1);
     rsa->iqmp = mpz2BN(&iqmp);
 
     ret = 1;
