@@ -683,8 +683,7 @@ struct ldb_result {
 
 struct ldb_extended {
 	const char *oid;
-	const char *value;
-	int value_len;
+	void *data;
 };
 
 struct ldb_reply {
@@ -714,7 +713,7 @@ struct ldb_add {
 	const struct ldb_message *message;
 };
 
-struct  ldb_modify {
+struct ldb_modify {
 	const struct ldb_message *message;
 };
 
@@ -756,9 +755,10 @@ struct ldb_request {
 		struct ldb_modify mod;
 		struct ldb_delete del;
 		struct ldb_rename rename;
+		struct ldb_extended extended;
+		struct ldb_sequence_number seq_num;
 		struct ldb_register_control reg_control;
 		struct ldb_register_partition reg_partition;
-		struct ldb_sequence_number seq_num;
 	} op;
 
 	struct ldb_control **controls;
