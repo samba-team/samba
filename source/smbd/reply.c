@@ -3770,6 +3770,10 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBmkdir);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
 
 	status = create_directory(conn, directory);
 
