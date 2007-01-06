@@ -533,6 +533,10 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, rename);
 		ret = module->ops->rename(module, req);
 		break;
+	case LDB_EXTENDED:
+		FIRST_OP(ldb, extended);
+		ret = module->ops->extended(module, req);
+		break;
 	case LDB_SEQUENCE_NUMBER:
 		FIRST_OP(ldb, sequence_number);
 		ret = module->ops->sequence_number(module, req);
