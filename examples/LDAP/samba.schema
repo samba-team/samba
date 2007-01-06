@@ -17,6 +17,8 @@
 ## Samba4
 ## 1.3.6.1.4.1.7165.4.1.x - attributetypes
 ## 1.3.6.1.4.1.7165.4.2.x - objectclasses
+## 1.3.6.1.4.1.7165.4.3.x - LDB/LDAP Controls
+## 1.3.6.1.4.1.7165.4.255.x - mapped OIDs due to conflicts between AD and standards-track
 ##
 ## ----- READ THIS WHEN ADDING A NEW ATTRIBUTE OR OBJECT CLASS ------
 ##
