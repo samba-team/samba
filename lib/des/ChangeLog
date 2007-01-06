@@ -1,10 +1,13 @@
 2007-01-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa-imath.c: With this crt works, but something is wrong in the
+	key generation, so keep it turned off for now.
+
 	* test_rsa.c: Allow testing effect of key-blinding
 
-	* rsa-imath.c: Add timing info to rsa keygen.
+	* test_rsa.c: Add timing info to rsa keygen.
 	
-	* test_rsa.c: don't include <imath/rsamath.h>
+	* rsa-imath.c: don't include <imath/rsamath.h>
 	
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 	
