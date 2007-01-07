@@ -676,7 +676,7 @@ enum ldb_state {
 
 struct ldb_extended {
 	const char *oid;
-	void *data;
+	void *data; /* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 };
 
 struct ldb_result {
@@ -1118,7 +1118,8 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
   \param ldb the context associated with the database (from ldb_init())
   \param mem_ctx a talloc emmory context (used as parent of ret_req)
   \param oid the OID of the extended operation.
-  \param data void pointer a the extended operation specific parameters
+  \param data a void pointer a the extended operation specific parameters,
+  it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it  
   \param controls an array of controls
   \param context the callback function context
   \param the callback function to handle the async replies
@@ -1129,7 +1130,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 			   struct ldb_context *ldb,
 			   void *mem_ctx,
 			   const char *oid,
-			   void *data,
+			   void *data,/* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 			   struct ldb_control **controls,
 			   void *context,
 			   ldb_request_callback_t callback);
@@ -1141,7 +1142,8 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 
   \param ldb the context associated with the database (from ldb_init())
   \param oid the OID of the extended operation.
-  \param data void pointer a the extended operation specific parameters
+  \param data a void pointer a the extended operation specific parameters,
+  it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it  
   \param res the result of the extended operation
 
   \return result code (LDB_SUCCESS if the extended operation returned fine,
@@ -1149,7 +1151,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 */
 int ldb_extended(struct ldb_context *ldb, 
 		 const char *oid,
-		 void *data,
+		 void *data,/* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 		 struct ldb_result **res);
 
 /**
