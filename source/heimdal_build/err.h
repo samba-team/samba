@@ -1,7 +1,3 @@
-#ifdef HAVE_ERR_H
-#include <err.h>
-#else
-
 #ifndef	_ERR_H
 #define	_ERR_H	1
 
@@ -11,4 +7,3 @@ void warnx(const char *format, ...);
 void warn(const char *format, ...);
 
 #endif	/* err.h */
-#endif /* HAVE_ERR_H */
