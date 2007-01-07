@@ -2,6 +2,7 @@
    Partitions ldb module
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
+   Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
 
    * NOTICE: this module is NOT released under the GNU LGPL license as
    * other ldb code. This module is release under the GNU GPL v2 or
@@ -30,10 +31,12 @@
  *  Description: Implement LDAP partitions
  *
  *  Author: Andrew Bartlett
+ *  Author: Stefan Metzmacher
  */
 
 #include "includes.h"
 #include "ldb/include/includes.h"
+#include "dsdb/samdb/samdb.h"
 
 struct partition {
 	struct ldb_module *module;
@@ -84,7 +87,7 @@ static struct ldb_handle *partition_init_handle(struct ldb_request *req, struct 
 
 struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
 						struct ldb_context *ldb,
-						struct ldb_module *module) 
+						struct ldb_module *module)
 {
 	struct ldb_module *current;
 	static const struct ldb_module_ops ops; /* zero */
@@ -568,6 +571,45 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	return LDB_SUCCESS;
 }
 
+static int partition_extended_replicated_objects(struct ldb_module *module, struct ldb_request *req)
+{
+	struct dsdb_extended_replicated_objects *ext;
+
+	ext = talloc_get_type(req->op.extended.data, struct dsdb_extended_replicated_objects);
+	if (!ext) {
+		return LDB_ERR_OTHER;
+	}
+
+	return partition_replicate(module, req, ext->partition_dn);
+}
+
+/* extended */
+static int partition_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_handle *h;
+	struct partition_context *ac;
+
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_REPLICATED_OBJECTS_OID) == 0) {
+		return partition_extended_replicated_objects(module, req);
+	}
+
+	/* 
+	 * as the extended operation has no dn
+	 * we need to send it to all partitions
+	 */
+
+	h = partition_init_handle(req, module);
+	if (!h) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* return our own handle to deal with this call */
+	req->handle = h;
+			
+	ac = talloc_get_type(h->private_data, struct partition_context);
+			
+	return partition_send_all(module, ac, req);
+}
+
 static int sort_compare(void *void1,
 			void *void2, void *opaque)
 {
@@ -878,10 +920,11 @@ static const struct ldb_module_ops partition_ops = {
 	.modify            = partition_modify,
 	.del               = partition_delete,
 	.rename            = partition_rename,
+	.extended          = partition_extended,
+	.sequence_number   = partition_sequence_number,
 	.start_transaction = partition_start_trans,
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
-	.sequence_number   = partition_sequence_number,
 	.wait              = partition_wait
 };
 

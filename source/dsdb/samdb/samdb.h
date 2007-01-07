@@ -28,6 +28,7 @@ struct drsuapi_DsNameInfo1;
 struct drsuapi_DsReplicaObject;
 struct drsuapi_DsReplicaOIDMapping_Ctr;
 struct drsuapi_DsReplicaAttribute;
+struct ldb_dn;
 
 #define DSDB_CONTROL_REPLICATED_OBJECT_OID "1.3.6.1.4.1.7165.4.3.1"
 struct dsdb_control_replicated_object {
@@ -36,7 +37,7 @@ struct dsdb_control_replicated_object {
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_objects {
-	uint8_t __dummy;
+	struct ldb_dn *partition_dn;
 };
 
 #include "librpc/gen_ndr/security.h"
