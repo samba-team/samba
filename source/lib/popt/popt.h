@@ -440,7 +440,7 @@ int poptConfigFileToString(FILE *fp, /*@out@*/ char ** argstrp, int flags)
  * @return		error string
  */
 /*@-redecl@*/
-/*@observer@*/ const char *const poptStrerror(const int error)
+/*@observer@*/ const char *poptStrerror(const int error)
 	/*@*/;
 /*@=redecl@*/
 
