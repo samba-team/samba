@@ -2026,9 +2026,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 	
 	if (!has_wild) {
-		char *dir;
-		const char *fname;
-
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
 		error = can_delete(conn,directory,dirtype,bad_path);
@@ -2039,12 +2036,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			count++;
 		}
 
-		if (parent_dirname_talloc(tmp_talloc_ctx(), orig_name,
-					  &dir, &fname)) {
-			notify_action(conn, dir, fname, -1,
-				      NOTIFY_ACTION_REMOVED);
-			TALLOC_FREE(dir); /* not strictly necessary */
-		}
+		notify_fname(conn, orig_name, -1, NOTIFY_ACTION_REMOVED);
 
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
