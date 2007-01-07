@@ -21,7 +21,7 @@ PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
 
 # no more use configurabled part below (hopefully)
 
-usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime]"
+usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs|fetch|afs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime] [--distcheck] [--test-environment env]"
 
 date=`date +%Y%m%d`
 if [ "$?" != 0 ]; then
