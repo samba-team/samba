@@ -541,6 +541,20 @@ void notify_action(connection_struct *conn, const char *parent,
 	TALLOC_FREE(lck);
 }
 
+void notify_fname(connection_struct *conn, const char *path,
+		  uint32 filter, uint32 action)
+{
+	char *parent;
+	const char *name;
+
+	if (!parent_dirname_talloc(tmp_talloc_ctx(), path, &parent, &name)) {
+		return;
+	}
+
+	notify_action(conn, parent, name, filter, action);
+	TALLOC_FREE(parent);
+}
+
 static void notify_fsp(files_struct *fsp, struct notify_message *msg)
 {
 	struct notify_change *change, *changes;
