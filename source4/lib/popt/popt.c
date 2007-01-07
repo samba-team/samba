@@ -1155,7 +1155,7 @@ const char * poptBadOption(poptContext con, int flags)
     /*@=nullderef@*/
 }
 
-const char *const poptStrerror(const int error)
+const char *poptStrerror(const int error)
 {
     switch (error) {
       case POPT_ERROR_NOARG:
