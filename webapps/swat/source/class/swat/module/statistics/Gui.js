@@ -82,7 +82,7 @@ qx.Proto.buildGui = function(module)
     dest.setRowHeight(row, 16);
 
     // Add the caption
-    o = new qx.ui.basic.Label(caption);
+    var o = new qx.ui.basic.Label(caption);
     dest.add(o, 0, row);
 
     // Add the text field that will contain varying data

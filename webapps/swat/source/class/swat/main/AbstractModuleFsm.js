@@ -109,12 +109,25 @@ qx.Proto.addAwaitRpcResultState = function(module)
       },
 
       "onentry" :
-        function(fsm, state)
+        function(fsm, event)
         {
-          // If we're coming from some other state...
-          if (fsm.getPreviousState() != "State_AwaitRpcResult")
+          var bAuthCompleted = false;
+
+          // See if we just completed an authentication
+          if (fsm.getPreviousState() == "State_Authenticate" &&
+              event.getType() == "complete")
+          {
+            bAuthCompleted = true;
+          }
+_this.debug("bAuthCompleted=" + bAuthCompleted);
+
+          // If we didn't just complete an authentication and we're coming
+          // from some other state...
+          if (! bAuthCompleted &&
+              fsm.getPreviousState() != "State_AwaitRpcResult")
           {
             // ... then push the previous state onto the state stack
+_this.warn("PUSHING STATE");
             fsm.pushState(false);
           }
         },
@@ -144,27 +157,63 @@ qx.Proto.addAwaitRpcResultState = function(module)
    * Cause: "failed" (on RPC) where reason is PermissionDenied
    */
   var trans = new qx.util.fsm.Transition(
-    "Transition_AwaitRpcResult_to_GetAuthInfo",
+    "Transition_AwaitRpcResult_to_Authenticate",
     {
       "nextState" :
-        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
+        "State_Authenticate",
 
       "predicate" :
         function(fsm, event)
         {
           var error = event.getData(); // retrieve the JSON-RPC error
 
-          // Did we get get origin=Server, code=PermissionDenied ?
+          // Did we get get origin=Server, and either
+          // code=NotLoggedIn or code=SessionExpired ? 
           var origins = swat.main.AbstractModuleFsm.JsonRpc_Origin;
           var serverErrors = swat.main.AbstractModuleFsm.JsonRpc_ServerError;
           if (error.origin == origins.Server &&
-              error.code == serverErrors.PermissionDenied)
+              (error.code == serverErrors.NotLoggedIn ||
+               error.code == serverErrors.SessionExpired))
           {
             return true;
           }
 
           // fall through to next transition, also for "failed"
           return false;
+        },
+
+      "ontransition" :
+        function(fsm, event)
+        {
+          var caption;
+
+          var error = event.getData(); // retrieve the JSON-RPC error
+          var serverErrors = swat.main.AbstractModuleFsm.JsonRpc_ServerError;
+
+          switch(error.code)
+          {
+          case serverErrors.NotLoggedIn:
+            caption = "Please log in.";
+            break;
+
+          case serverErrors.SessionExpired:
+          default:
+            caption = "Session Expired.  Please log in.";
+            break;
+          }
+
+          // Retrieve the modal authentication window.
+
+          var loginWin = swat.main.Authenticate.getInstance(module);
+
+          // Set the caption
+          loginWin.setCaption(caption);
+
+          // Set the domain info
+          loginWin.setInfo(error.info);
+
+          // Open the authentication window
+          loginWin.open();
         }
     });
   state.addTransition(trans);
@@ -247,6 +296,153 @@ qx.Proto.addAwaitRpcResultState = function(module)
         }
     });
   state.addTransition(trans);
+
+  /*
+   * State: Authenticate
+   *
+   * Transition on:
+   *  "execute" on login_button
+   */
+  var state = new qx.util.fsm.State(
+    "State_Authenticate",
+    {
+      "onentry" :
+        function(fsm, event)
+        {
+          // Retrieve the login window object
+          var win = module.fsm.getObject("login_window");
+
+          // Clear the password field
+          win.password.setValue("");
+
+          // If there's no value selected for domain...
+          if (win.domain.getValue() == null)
+          {
+            // ... then select the first value
+            win.domain.setSelected(win.domain.getList().getFirstChild());
+          }
+
+          // Retrieve the current RPC request
+          var rpcRequest = _this.getCurrentRpcRequest();
+
+          // Did we just return from an RPC request and was it a login request?
+          if (fsm.getPreviousState() == "State_AwaitRpcResult" &&
+              rpcRequest.service == "samba.system" &&
+              rpcRequest.params.length > 1 &&
+              rpcRequest.params[1] == "login")
+          {
+            // Yup.  Display the result.  Pop the old request off the stack
+            var loginRequest = _this.popRpcRequest();
+
+            // Retrieve the result
+            var result = loginRequest.getUserData("result");
+
+            // Did we succeed?
+            if (result.type == "failed")
+            {
+              // Nope.  Just reset the caption, and remain in this state.
+              win.setCaption("Login Failed.  Try again.");
+            }
+            else
+            {
+              // Login was successful.  Generate an event that will transition
+              // us back to the AwaitRpcResult state to again await the result
+              // of the original RPC request.
+              win.dispatchEvent(new qx.event.type.Event("complete"), true);
+
+              // Reissue the original request.  (We already popped the login
+              // request off the stack, so the current request is the original
+              // one.)
+              var origRequest = _this.getCurrentRpcRequest();
+              
+              // Retrieve the RPC object */
+              var rpc = fsm.getObject("swat.main.rpc");
+
+              // Set the service name
+              rpc.setServiceName(origRequest.service);
+
+              // Reissue the request
+              origRequest.request =
+                qx.io.remote.Rpc.prototype.callAsyncListeners.apply(
+                  rpc,
+                  origRequest.params);
+
+              // Clear the password field, for good measure
+              win.password.setValue("");
+
+              // Close the login window
+              win.close();
+            }
+
+            // Dispose of the login request
+            loginRequest.request.dispose();
+            loginRequest.request = null;
+          }
+        },
+
+      "events" :
+      {
+        "execute"  :
+        {
+          "login_button" :
+            "Transition_Authenticate_to_AwaitRpcResult_via_button_login"
+        },
+
+        "complete"  :
+        {
+          "login_window" :
+            "Transition_Authenticate_to_AwaitRpcResult_via_complete"
+        }
+      }
+    });
+  fsm.addState(state);
+
+  /*
+   * Transition: Authenticate to AwaitRpcResult
+   *
+   * Cause: "execute" on login_button
+   */
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Authenticate_to_AwaitRpcResult_via_button_login",
+    {
+      "nextState" :
+        "State_AwaitRpcResult",
+
+      "ontransition" :
+        function(fsm, event)
+        {
+          // Retrieve the login window object
+          var win = fsm.getObject("login_window");
+
+          // Issue a Login call
+          _this.callRpc(fsm,
+                        "samba.system",
+                        "login",
+                        [
+                          win.userName.getValue(),
+                          win.password.getValue(),
+                          win.domain.getValue()
+                        ]);
+        }
+    });
+  state.addTransition(trans);
+
+  /*
+   * Transition: Authenticate to AwaitRpcResult
+   *
+   * Cause: "complete" on login_window
+   *
+   * We've already re-issued the original request, so we have nothing to do
+   * here but transition back to the AwaitRpcResult state to again await the
+   * result of the original request.
+   */
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Authenticate_to_AwaitRpcResult_via_complete",
+    {
+      "nextState" :
+        "State_AwaitRpcResult"
+    });
+  state.addTransition(trans);
 };
 
 
@@ -292,7 +488,7 @@ qx.Proto.callRpc = function(fsm, service, method, params)
   // Set the service name
   rpc.setServiceName(rpcRequest.service);
 
-  // Issue the request, skipping the already-specified service name
+  // Issue the request
   rpcRequest.request =
     qx.io.remote.Rpc.prototype.callAsyncListeners.apply(rpc,
                                                         rpcRequest.params);
@@ -435,21 +631,46 @@ qx.Class.JsonRpc_ServerError =
    */
   PermissionDenied      : 6,
 
+  /*** Errors generated by this server which are not qooxdoo-standard ***/
+
   /*
-   * Error code, value 7: Unexpected Output
+   * Error code, value 1000: Unexpected Output
    *
    * The called method illegally generated output to the browser, which would
    * have preceeded the JSON-RPC data.
    */
-  UnexpectedOutput      : 7,
+  UnexpectedOutput      : 1000,
 
   /*
-   * Error code, value 8: Resource Error
+   * Error code, value 1001: Resource Error
    *
-   * Too many resources were requested, a system limitation on the total
-   * number of resources has been reached, or a resource or resource id was
-   * misused.
+   * Too many resources were requested, a system limitation on the total number
+   * of resources has been reached, or a resource or resource id was misused.
    */
-  ResourceError         : 8
+  ResourceError         : 1001,
 
+  /*
+   * Error code, value 1002: Not Logged In
+   *
+   * The user has logged out and must re-authenticate, or this is a brand new
+   * session and the user must log in.
+   *
+   */
+  NotLoggedIn           : 1002,
+
+  /*
+   * Error code, value 1003: Session Expired
+   *
+   * The session has expired and the user must re-authenticate.
+   *
+   */
+  SessionExpired        : 1003,
+
+  /*
+   * Error code, value 1004: Login Failed
+   *
+   * An attempt to log in failed.
+   *
+   */
+  LoginFailed           : 1004
 };

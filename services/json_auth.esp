@@ -1,13 +1,67 @@
 <%
+libinclude("auth.js");
+
 /* Return true to allow access; false otherwise */
-function json_authenticate(serviceComponents, method, scriptTransportId)
+function json_authenticate(serviceComponents, method, scriptTransportId, error)
 {
-    // Don't allow any access via ScriptTransport, for now.
+    // Don't allow any access via ScriptTransport, for now.  There are serious
+    // potential security exploits that will need to be protected against when
+    // we do want to allow use of ScriptTransport.  -- djl
     if (scriptTransportId != jsonrpc.Constant.ScriptTransport.NotInUse)
     {
+        error.setError(jsonrpc.Constant.ServerError.PermissionDenied,
+                       "Permission denied");
         return false;
     }
 
+    // Does the requested method require authentication?
+    if (! _authentication_required(serviceComponents, method))
+    {
+        // Nope.  Let 'em in.
+        return true;
+    }
+
+    // Did our session expire?
+    if (request['SESSION_EXPIRED'] == "True")
+    {
+        // Yup.
+        error.setError(jsonrpc.Constant.ServerError.SessionExpired,
+                       "Session expired");
+        error.setInfo(getDomainList());
+        return false;
+    }
+
+    // Are we authenticated?
+    if (! session.AUTHENTICATED)
+    {
+        // Nope.
+        error.setError(jsonrpc.Constant.ServerError.NotLoggedIn,
+                       "Not logged in");
+        error.setInfo(getDomainList());
+        return false;
+    }
+
+    return true;
+}
+
+
+/*
+ * Return true if authentication is required for the specified method;
+ * false otherwise.
+ */
+function _authentication_required(serviceComponents, method)
+{
+    var m = join(".", serviceComponents) + "." + method;
+
+    // See if this method requires authentication
+    if (m == "samba.system.login" ||
+        m == "samba.system.logout")
+    {
+        // Nope.
+        return false;
+    }
+
+    // Anything not listed above requires authentication
     return true;
 }
 

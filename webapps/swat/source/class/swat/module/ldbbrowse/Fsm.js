@@ -37,7 +37,7 @@ qx.Proto.buildFsm = function(module)
     "State_Idle",
     {
       "onentry" :
-        function(fsm, state)
+        function(fsm, event)
         {
           // Did we just return from an RPC request?
           if (fsm.getPreviousState() == "State_AwaitRpcResult")

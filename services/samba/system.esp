@@ -17,6 +17,90 @@ jsonrpc_include("resources.esp");
 
 
 /**
+ * Authenticate and log in
+ *
+ * @param params[0]
+ *   User name
+ *
+ * @param params[1]
+ *   Password
+ *
+ * @param params[2]
+ *   Domain
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: "Logged in"
+ *   Failure: error event, origin=Server, code=LoginFailed
+ */
+function _login(params, error)
+{
+    var ret;
+    var creds = credentials_init();
+
+    creds.set_username(params[0]);
+    creds.set_password(params[1]);
+    creds.set_domain(params[2]);
+    creds.set_workstation(request['REMOTE_HOST']);
+    auth = userAuth(creds, request['REMOTE_SOCKET_ADDRESS']);
+
+    if (auth == undefined)
+    {
+        error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+        error.setError(jsonrpc.Constant.ServerError.LoginFailed,
+                       "Invalid login.");
+        ret = error;
+    }
+    else if (auth.result)
+    {
+        session.AUTHENTICATED = true;
+        session.authinfo = new Object();
+
+        session.authinfo.username = auth.username;
+        session.authinfo.domain = auth.domain;
+        session.authinfo.credentials = creds;
+        session.authinfo.session_info = auth.session_info;
+
+        ret = "Logged in";
+    }    
+    else if (auth.report == undefined)
+    {
+        error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+        error.setError(jsonrpc.Constant.ServerError.LoginFailed,
+                       "Login failed.");
+        ret = error;
+    }
+    else
+    {
+        error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+        error.setError(jsonrpc.Constant.ServerError.LoginFailed,
+                       "Login failed: " + auth.report);
+        ret = error;
+    }
+
+    return ret;
+}
+jsonrpc.method.login = _login;
+
+
+
+/**
+ * Retrieve the list of open resources (for debugging)
+ *
+ * @return "Logged out"
+ */
+function _logout(params, error)
+{
+    session.AUTHENTICATED = false;
+    return "Logged out";
+}
+jsonrpc.method.logout = _logout;
+
+
+
+/**
  * Retrieve the list of open resources (for debugging)
  */
 function _get_open_resources(params, error)
