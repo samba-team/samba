@@ -10,6 +10,7 @@
 /*
 #require(swat.main.Module)
 #require(swat.main.AbstractModule)
+#require(swat.main.Authenticate);
 */
 
 /**
@@ -22,21 +23,22 @@ function()
 });
 
 /*
- * Register our supported modules
+ * Register our supported modules.  The order listed here is the order they
+ * will appear in the Modules menu.
  */
 
 //#require(swat.module.statistics.Statistics)
 new swat.main.Module("Status and Statistics",
-                       swat.module.statistics.Statistics);
+                     swat.module.statistics.Statistics);
 
 //#require(swat.module.ldbbrowse.LdbBrowse)
 new swat.main.Module("LDB Browser",
-                       swat.module.ldbbrowse.LdbBrowse);
+                     swat.module.ldbbrowse.LdbBrowse);
 
 //#require(swat.module.documentation.Documentation)
 //#require(api.Viewer)
 new swat.main.Module("API Documentation",
-                       swat.module.documentation.Documentation);
+                     swat.module.documentation.Documentation);
 
 
 /*

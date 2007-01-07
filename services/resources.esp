@@ -39,7 +39,7 @@ function _resourcesCreate()
         {
             /* Yup. */
             error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
-            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+            error.setError(jsonrpc.Constant.ServerError.ResourceError,
                            "Session limit on resources (" +
                            RESOURCE_LIMIT +
                            ") exceeded.");
@@ -79,7 +79,7 @@ function _resourcesCreate()
         {
             /* Nope. */
             error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
-            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+            error.setError(jsonrpc.Constant.ServerError.ResourceError,
                            "Resource not found.");
             return error;
         }
@@ -130,7 +130,7 @@ function _resourcesCreate()
         {
             /* Nope. */
             error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
-            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+            error.setError(jsonrpc.Constant.ServerError.ResourceError,
                            "Resource not found.");
             return error;
         }
