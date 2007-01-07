@@ -229,6 +229,8 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	BOOL nt_status_support;
+	uint16_t attr;
+
 
 	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
 		d_printf("talloc_init failed\n");
@@ -385,8 +387,13 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
-	{
-		uint16_t attr;
+	if (lp_parm_bool(-1, "torture", "w2k3", False) ||
+	    lp_parm_bool(-1, "torture", "samba3", False)) {
+
+		/*
+		 * XP and w2k don't show this behaviour, but I think
+		 * Samba3 should follow W2k3
+		 */
 
 		status = smbcli_getatr(cli_nt->tree, "", &attr, NULL, NULL);
 		CHECK_STATUS(status, NT_STATUS_OK);
@@ -397,22 +404,21 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 				 |FILE_ATTRIBUTE_DIRECTORY);
 			ret = False;
 		}
-
-		status = smbcli_setatr(cli_nt->tree, "",
-				       FILE_ATTRIBUTE_DIRECTORY, -1);
-		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
-		status = smbcli_setatr(cli_dos->tree, "",
-				       FILE_ATTRIBUTE_DIRECTORY, -1);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess));
-
-		status = smbcli_setatr(cli_nt->tree, ".",
-				       FILE_ATTRIBUTE_DIRECTORY, -1);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
-		status = smbcli_setatr(cli_dos->tree, ".",
-				       FILE_ATTRIBUTE_DIRECTORY, -1);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 	}
-		
+
+	status = smbcli_setatr(cli_nt->tree, "",
+			       FILE_ATTRIBUTE_DIRECTORY, -1);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	status = smbcli_setatr(cli_dos->tree, "",
+			       FILE_ATTRIBUTE_DIRECTORY, -1);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess));
+	
+	status = smbcli_setatr(cli_nt->tree, ".",
+			       FILE_ATTRIBUTE_DIRECTORY, -1);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_setatr(cli_dos->tree, ".",
+			       FILE_ATTRIBUTE_DIRECTORY, -1);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	/* Try the same set with openX. */
 
