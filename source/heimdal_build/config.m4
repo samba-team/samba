@@ -31,12 +31,19 @@ esac
 
 ])
 
-
+dnl Not all systems have err.h, so we provide a replacement. Heimdal
+dnl unconditionally #includes <err.h>, so we need to create an err.h,
+dnl but we can't just have a static one because we don't want to use
+dnl it on systems that have a real err.h. If the system has a real
+dnl err.h, we should use that (eg. on Darwin, the declarations get
+dnl linker attributes added, so we can't guarantee that our local
+dnl declarations will be correct). Phew!
+AC_CHECK_HEADERS([err.h], [],
+	[ cp heimdal/lib/roken/err.hin heimdal_build/err.h ])
 
 AC_CHECK_HEADERS([				\
 	crypt.h					\
 	curses.h				\
-	err.h					\
 	errno.h					\
 	inttypes.h				\
 	netdb.h					\
@@ -89,6 +96,7 @@ AC_CHECK_FUNCS([				\
 	closefrom				\
 	hstrerror				\
 	err					\
+	warn					\
 	errx					\
 	warnx					\
 	flock					\
