@@ -145,17 +145,17 @@ test_ap(krb5_context context,
 						      KRB5_AUTHDATA_WIN2K_PAC,
 						      &data);
 	if (ret)
-	    krb5_errx(context, 1, "get pac");
+	    krb5_err(context, 1, ret, "get pac");
 
 	ret = krb5_pac_parse(context, data.data, data.length, &pac);
 	if (ret)
-	    krb5_errx(context, 1, "pac parse");
+	    krb5_err(context, 1, ret, "pac parse");
 	
 
 	ret = krb5_pac_verify(context, pac, ticket->ticket.authtime,
 			       ticket->client, &ticket->ticket.key, NULL);
 	if (ret)
-	    krb5_errx(context, 1, "pac verify");
+	    krb5_err(context, 1, ret, "pac verify");
 
 	krb5_pac_free(context, pac);
     }
