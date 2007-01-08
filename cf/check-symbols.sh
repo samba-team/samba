@@ -5,7 +5,7 @@
 LANG=C
 export LANG
 
-esym="__i686.get_pc_thunk"
+esym="__i686.get_pc_thunk fc_softc"
 symbols=
 
 # AIX has different default output format
