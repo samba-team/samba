@@ -59,10 +59,10 @@ static struct testcase {
     {"krbtgt", "FOO.SE", "FOO.SE", "FOO.SE", 2,
      {"krbtgt", "FOO.SE"}, NULL, 0, 0},
 
-    {"foo", "bar", "BAZ", "BAZ", 2,
-     {"foo", "bar"}, NULL, 0, 0},
-    {"foo", "bar", "BAZ", "BAZ", 2,
-     {"foo", "bar"},
+    {"foo", "bar2", "BAZ", "BAZ", 2,
+     {"foo", "bar2"}, NULL, 0, 0},
+    {"foo", "bar2", "BAZ", "BAZ", 2,
+     {"foo", "bar2"},
      "[libdefaults]\n"
      "	v4_name_convert = {\n"
      "		host = {\n"
@@ -70,8 +70,8 @@ static struct testcase {
      "		}\n"
      "}\n",
     HEIM_ERR_V4_PRINC_NO_CONV, 0},
-    {"foo", "bar", "BAZ", "BAZ", 2,
-     {"foo5", "bar.baz"},
+    {"foo", "bar2", "BAZ", "BAZ", 2,
+     {"foo5", "bar2.baz"},
      "[realms]\n"
      "  BAZ = {\n"
      "		v4_name_convert = {\n"
