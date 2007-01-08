@@ -1032,7 +1032,8 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	if (!ok) {
 		END_PROFILE(SMBsetatr);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS, ERRnoaccess);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
