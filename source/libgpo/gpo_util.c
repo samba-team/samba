@@ -267,7 +267,7 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglev
 		}
 		dump_gp_ext(&gp_ext, lvl);
 	}
-};
+}
 
 void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 {
