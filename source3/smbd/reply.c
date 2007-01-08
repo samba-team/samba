@@ -2032,9 +2032,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
+			notify_fname(conn, orig_name, -1,
+				     NOTIFY_ACTION_REMOVED);
 		}
-
-		notify_fname(conn, orig_name, -1, NOTIFY_ACTION_REMOVED);
 
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
@@ -2092,10 +2092,12 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
-				if (SMB_VFS_UNLINK(conn,fname) == 0)
+				if (SMB_VFS_UNLINK(conn,fname) == 0) {
 					count++;
-				notify_action(conn, directory, dname,
-					      -1, NOTIFY_ACTION_REMOVED);
+					notify_action(
+						conn, directory, dname,
+						-1, NOTIFY_ACTION_REMOVED);
+				}
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dir_hnd);
