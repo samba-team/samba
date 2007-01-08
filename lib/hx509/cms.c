@@ -1193,6 +1193,8 @@ hx509_cms_create_signed_1(hx509_context context,
 		hx509_clear_error_string(context);
 		goto out;
 	    }
+	    if (sd.certificates->val[i].length != size)
+		_hx509_abort("internal ASN.1 encoder error");
 	}
     }
 
