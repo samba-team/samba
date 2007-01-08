@@ -80,7 +80,7 @@ static struct testcase {
      "			}\n"
      "		}\n"
      "		v4_instance_convert = {\n"
-     "			bar = bar.baz\n"
+     "			bar2 = bar2.baz\n"
      "		}\n"
      "  }\n",
      0, 0},
