@@ -496,6 +496,22 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_setatr(cli_dos->tree, invname, 0, 0);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadfile));
 
+	status = smbcli_unlink(cli_nt->tree, invpath);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	status = smbcli_unlink(cli_dos->tree, invpath);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	/*
+	 * W2k3 returns INVALID_PARAMETER for a wildcard unlink if the
+	 * directory does not exist. They seem to use the t2ffirst, this also
+	 * returns INVALID_PARAMETER under this condition.
+	 */
+
+	status = smbcli_unlink(cli_nt->tree, "test.txt\\*.*");
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	status = smbcli_unlink(cli_dos->tree, "test.txt\\*.*");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidparam));
+
 	/*
 	 * reply_search returns STATUS_NO_MORE_FILES on invalid path
 	 */
@@ -621,11 +637,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 		CHECK_STATUS(status, NT_STATUS_OK);
 #endif
 	}
-
-	status = smbcli_unlink(cli_nt->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_unlink(cli_dos->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_mkdir(cli_nt->tree, invpath);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
