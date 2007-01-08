@@ -2711,12 +2711,8 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
 	DEBUG(10,("set_bad_path_error: err = %d bad_path = %d\n",
 			err, (int)bad_path ));
 
-	if(err == ENOENT) {
-		if (bad_path) {
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		} else {
-			return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		}
+	if ((err == ENOENT) && bad_path) {
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 	return UNIXERROR(def_class,def_code);
 }
