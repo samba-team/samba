@@ -4,6 +4,9 @@ Samba4 developer howto
 tridge@samba.org, December 2004
 
 
+A more up to date version of this howto can be found in the wiki 
+at http://wiki.samba.org/index.php/Samba4/HOWTO.
+
 This is a very basic document on how to setup a simple Samba4
 server. This is aimed at developers who are already familiar with
 Samba3 and wish to participate in Samba4 development. This is not
