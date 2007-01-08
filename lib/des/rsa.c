@@ -387,6 +387,11 @@ i2d_RSAPrivateKey(RSA *rsa, unsigned char **pp)
     size_t size;
     int ret;
 
+    if (rsa->n == NULL || rsa->e == NULL || rsa->d == NULL || rsa->p == NULL ||
+	rsa->q == NULL || rsa->dmp1 == NULL || rsa->dmq1 == NULL ||
+	rsa->iqmp == NULL)
+	return -1;
+
     memset(&data, 0, sizeof(data));
 
     ret  = bn2heim_int(rsa->n, &data.modulus);
