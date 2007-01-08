@@ -639,7 +639,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (!check_name(fname,conn)) {
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS,ERRbadpath);
 	}
 
 #if 0
@@ -1265,7 +1266,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	/* All file access must go through check_name() */
 	if (!check_name(fname,conn)) {
 		restore_case_semantics(conn, file_attributes);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		return set_bad_path_error(errno, False, outbuf, ERRDOS,ERRbadpath);
 	}
     
 #if 0
