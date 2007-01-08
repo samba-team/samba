@@ -106,7 +106,12 @@ init_ccapi(krb5_context context)
     }
 
 #ifdef HAVE_DLOPEN
-    cc_handle = dlopen(lib, 0);
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+    cc_handle = dlopen(lib, RTLD_LAZY);
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
 	krb5_set_error_string(context, "Failed to load %s", lib);

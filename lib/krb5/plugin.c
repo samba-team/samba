@@ -89,7 +89,11 @@ loadlib(krb5_context context,
 	return ENOMEM;
     }
 
-    (*e)->dsohandle = dlopen(lib, 0);
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+    (*e)->dsohandle = dlopen(lib, RTLD_LAZY);
     if ((*e)->dsohandle == NULL) {
 	free(*e);
 	krb5_set_error_string(context, "Failed to load %s: %s", 
