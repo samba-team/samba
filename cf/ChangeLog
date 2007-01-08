@@ -1,3 +1,7 @@
+2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: Add fc_softc for AIX as ignore syms.
+	
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-frag.m4: Check if iruserok needs a prototype.
