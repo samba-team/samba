@@ -1,5 +1,11 @@
 2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c (loadlib): pass RTLD_LAZY to dlopen, without
+	it linux is unhappy.
+
+	* lib/krb5/plugin.c (loadlib): pass RTLD_LAZY to dlopen, without
+	it linux is unhappy.
+
 	* lib/krb5/name-45-test.c: One of the hosts I sometimes uses is
 	named "bar.domain", this make one of the tests pass when it
 	shouldn't.
