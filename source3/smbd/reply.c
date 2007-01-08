@@ -979,7 +979,6 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
 	pstring fname;
 	int outsize = 0;
-	BOOL ok=False;
 	int mode;
 	time_t mtime;
 	SMB_STRUCT_STAT sbuf;
@@ -1022,15 +1021,14 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		else
 			mode &= ~aDIR;
 
-		ok = (file_set_dosmode(conn,fname,mode,&sbuf,False) == 0);
-	} else {
-		ok = True;
+		if (file_set_dosmode(conn,fname,mode,&sbuf,False) != 0) {
+			END_PROFILE(SMBsetatr);
+			return set_bad_path_error(errno, False, outbuf,
+						  ERRDOS, ERRnoaccess);
+		}
 	}
 
-	if (ok)
-		ok = set_filetime(conn,fname,mtime);
-  
-	if (!ok) {
+	if (!set_filetime(conn,fname,mtime)) {
 		END_PROFILE(SMBsetatr);
 		return set_bad_path_error(errno, False, outbuf,
 					  ERRDOS, ERRnoaccess);
