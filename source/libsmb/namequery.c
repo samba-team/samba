@@ -1505,14 +1505,14 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 	   just return the list of DC's.  Or maybe we just failed. */
 		   
 	if ( (num_addresses == 0) ) {
-		if ( !done_auto_lookup ) {
-			if (internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order)) {
-				return NT_STATUS_OK;
-			} else {
-				return NT_STATUS_NO_LOGON_SERVERS;
-			}
-		} else {
+		if ( done_auto_lookup ) {
 			DEBUG(4,("get_dc_list: no servers found\n")); 
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
+		if (internal_resolve_name(domain, 0x1C, ip_list, count,
+					  resolve_order)) {
+			return NT_STATUS_OK;
+		} else {
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 	}
