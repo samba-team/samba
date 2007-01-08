@@ -34,6 +34,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -3005,7 +3006,16 @@ static mp_result s_udiv(mp_int a, mp_int b)
 
   /* Solve for quotient digits, store in q.digits in reverse order */
   while(r.digits >= da) {
-    assert(qpos <= q.alloc);
+    if (qpos > q.alloc) {
+      char buf[1024];
+      printf("qpos = %d q.alloc = %d da = %d ua = %d\n",
+	     (int)qpos, (int)q.alloc, (int)da, (int)ua);
+      mp_int_to_string(a, 10, buf, sizeof(buf));
+      printf("a = %s\n", buf);
+      mp_int_to_string(b, 10, buf, sizeof(buf));
+      printf("b = %s\n", buf);
+      assert(qpos <= q.alloc);
+    }	
 
     if(s_ucmp(b, &r) > 0) {
       r.digits -= 1;
