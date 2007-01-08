@@ -263,6 +263,9 @@ BOOL torture_samba3_hide(struct torture_context *torture)
 		return False;
 	}
 
+	smbcli_chmod(cli->tree, fname, UNIX_R_USR|UNIX_W_USR);
+	smbcli_unlink(cli->tree, fname);
+	
 	return True;
 }
 
