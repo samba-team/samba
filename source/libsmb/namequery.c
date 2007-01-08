@@ -1507,6 +1507,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 	if ( (num_addresses == 0) ) {
 		if ( done_auto_lookup ) {
 			DEBUG(4,("get_dc_list: no servers found\n")); 
+			SAFE_FREE(auto_ip_list);
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 		if (internal_resolve_name(domain, 0x1C, ip_list, count,
@@ -1519,6 +1520,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
+		SAFE_FREE(auto_ip_list);
 		return NT_STATUS_NO_MEMORY;
 	}
 
