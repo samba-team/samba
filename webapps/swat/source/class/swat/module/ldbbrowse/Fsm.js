@@ -47,7 +47,28 @@ qx.Proto.buildFsm = function(module)
 
             // Display the result
             var gui = swat.module.ldbbrowse.Gui.getInstance();
-            gui.displayData(module, rpcRequest);
+
+            // Did we get a Resource Not Found error?  We'll get this after a
+            // session timeout, because the request is retried but can't
+            // succeed because the database has been closed by the session
+            // timing out.
+            var result = rpcRequest.getUserData("result");
+            var origins = swat.main.AbstractModuleFsm.JsonRpc_Origin;
+            var serverErrors = swat.main.AbstractModuleFsm.JsonRpc_ServerError;
+            if (result.type == "failed" &&
+                result.data.origin == origins.Server &&
+                result.data.code == serverErrors.ResourceError)
+            {
+              // Yup.  Re-open the database
+              var dbName = fsm.getObject("dbName");
+              dbName.dispatchEvent(new qx.event.type.Event("changeSelection"),
+                                   true);
+            }
+            else
+            {
+              // Otherwise, display the result
+              gui.displayData(module, rpcRequest);
+            }
 
             // Dispose of the request
             rpcRequest.request.dispose();
