@@ -1899,7 +1899,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 ********************************************************************/
 
 static NTSTATUS can_delete(connection_struct *conn, char *fname,
-			   uint32 dirtype, BOOL bad_path)
+			   uint32 dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1913,13 +1913,6 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 	}
 
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
-	        if(errno == ENOENT) {
-			if (bad_path) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			} else {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-		}
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -2031,7 +2024,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(conn,directory,dirtype,bad_path);
+		error = can_delete(conn,directory,dirtype);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -2092,8 +2085,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(conn, fname, dirtype,
-						   bad_path);
+				error = can_delete(conn, fname, dirtype);
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
