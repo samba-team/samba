@@ -11,10 +11,9 @@
  * Swat authentication window class
  */
 qx.OO.defineClass("swat.main.Authenticate", qx.ui.window.Window,
-function(module)
+function()
 {
   var o;
-  var fsm = module.fsm;
 
   qx.ui.window.Window.call(this);
 
@@ -101,25 +100,35 @@ function(module)
                                     return new qx.ui.form.Button("Login");
                                   });
 
-  // Save this login button since we receive events on it
-  fsm.addObject("login_button", this.login);
-
-  // We want to receive "execute" events on this button
-  this.login.addEventListener("execute", fsm.eventListener, fsm);
-
   // Add the grid to the window
   this.add(grid);
 
   // Add this window to the document
   this.addToDocument();
-
-  // Save this window object
-  fsm.addObject("login_window", this);
-
-  // We want to receive "complete" events on this button (which we generate)
-  this.addEventListener("complete", fsm.eventListener, fsm);
 });
 
+
+qx.Proto.addToFsm = function(fsm)
+{
+  // Have we already been here for this fsm?
+  if (fsm.getObject("login_window"))
+  {
+    // Yup.  Everything's already done.  See ya!
+    return;
+  }
+
+  // Save the login button since we receive events on it
+  fsm.addObject("login_button", this.login);
+
+  // We want to receive "execute" events on this button
+  this.login.addEventListener("execute", fsm.eventListener, fsm);
+
+  // Save the window object
+  fsm.addObject("login_window", this);
+
+  // We want to receive "complete" events on this window (which we generate)
+  this.addEventListener("complete", fsm.eventListener, fsm);
+};
 
 
 qx.Proto.setInfo = function(info)
@@ -141,12 +150,4 @@ qx.Proto.setInfo = function(info)
 /**
  * Singleton Instance Getter
  */
-qx.Class.getInstance = function(module)
-{
-  if (! this._instance)
-  {
-    this._instance = new this(module);
-  }
-
-  return this._instance;
-};
+qx.Class.getInstance = qx.util.Return.returnInstance;

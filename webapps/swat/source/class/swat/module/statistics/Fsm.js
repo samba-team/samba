@@ -19,6 +19,9 @@ function()
 
 qx.Class._startTimer = function(fsm)
 {
+  // First, for good house keeping, ensure no timer exists
+  swat.module.statistics.Fsm._stopTimer(fsm);
+
   // Create a timer instance to expire in a few seconds
   var timer = new qx.client.Timer(5000);
   timer.addEventListener("interval", fsm.eventListener, fsm);
@@ -46,6 +49,7 @@ qx.Proto.buildFsm = function(module)
 {
   var fsm = module.fsm;
   var _this = this;
+  var _module = module;
 
   /*
    * State: Idle
@@ -78,7 +82,10 @@ qx.Proto.buildFsm = function(module)
             rpcRequest.request = null;
 
             // Restart the timer.
-            swat.module.statistics.Fsm._startTimer(fsm);
+            if (_module.visible)
+            {
+              swat.module.statistics.Fsm._startTimer(fsm);
+            }
           }
         },
 
@@ -164,6 +171,7 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
+          _module.visible = true;
           swat.module.statistics.Fsm._startTimer(fsm);
         }
     });
@@ -186,6 +194,7 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
+          _module.visible = false;
           swat.module.statistics.Fsm._stopTimer(fsm);
         }
     });
