@@ -119,7 +119,6 @@ qx.Proto.addAwaitRpcResultState = function(module)
           {
             bAuthCompleted = true;
           }
-_this.debug("bAuthCompleted=" + bAuthCompleted);
 
           // If we didn't just complete an authentication and we're coming
           // from some other state...
@@ -127,7 +126,6 @@ _this.debug("bAuthCompleted=" + bAuthCompleted);
               fsm.getPreviousState() != "State_AwaitRpcResult")
           {
             // ... then push the previous state onto the state stack
-_this.warn("PUSHING STATE");
             fsm.pushState(false);
           }
         },
@@ -203,8 +201,10 @@ _this.warn("PUSHING STATE");
           }
 
           // Retrieve the modal authentication window.
+          var loginWin = swat.main.Authenticate.getInstance();
 
-          var loginWin = swat.main.Authenticate.getInstance(module);
+          // Ensure that it's saved in the current finite state machine
+          loginWin.addToFsm(fsm);
 
           // Set the caption
           loginWin.setCaption(caption);
@@ -310,7 +310,7 @@ _this.warn("PUSHING STATE");
         function(fsm, event)
         {
           // Retrieve the login window object
-          var win = module.fsm.getObject("login_window");
+          var win = fsm.getObject("login_window");
 
           // Clear the password field
           win.password.setValue("");
