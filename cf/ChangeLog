@@ -1,5 +1,7 @@
 2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken-frag.m4: More headerfiles for iruserok prototype check.
+
 	* check-symbols.sh: Add fc_softc for AIX as ignore syms.
 	
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
