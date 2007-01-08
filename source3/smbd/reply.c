@@ -1995,6 +1995,11 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	*directory = *mask = 0;
 	
 	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		return has_wild
+			? NT_STATUS_INVALID_PARAMETER
+			: NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
 
 	/*
 	 * Feel my pain, this code needs rewriting *very* badly! -- vl
