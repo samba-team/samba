@@ -948,7 +948,8 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	if (!ok) {
 		END_PROFILE(SMBgetatr);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadfile);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS,ERRbadfile);
 	}
  
 	outsize = set_message(outbuf,10,0,True);
@@ -4006,7 +4007,8 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
 	if (!ok) {
 		END_PROFILE(SMBrmdir);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRbadpath);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS, ERRbadpath);
 	}
  
 	outsize = set_message(outbuf,0,0,False);

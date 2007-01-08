@@ -807,7 +807,8 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
     
 	if (!check_name(fname,conn)) {
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS, ERRnoaccess);
 	}
 
 	if (open_ofun == 0) {
@@ -1725,7 +1726,8 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 	if(!check_name(directory,conn)) {
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		return set_bad_path_error(errno, False, outbuf,
+					  ERRDOS,ERRbadpath);
 	}
 
 	p = strrchr_m(directory,'/');
@@ -2906,11 +2908,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
 					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+					return set_bad_path_error(
+						errno, False, outbuf,
+						ERRDOS,ERRbadpath);
 				}
 			} else if (SMB_VFS_STAT(conn,fname,&sbuf)) {
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return set_bad_path_error(errno, False, outbuf,
+							  ERRDOS,ERRbadpath);
 			}
 
 			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
@@ -2954,18 +2959,21 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 		if (!check_name(fname,conn)) {
 			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return set_bad_path_error(errno, False, outbuf,
+						  ERRDOS,ERRbadpath);
 		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return set_bad_path_error(errno, False, outbuf,
+							  ERRDOS,ERRbadpath);
 			}
 		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return set_bad_path_error(errno, False, outbuf,
+						  ERRDOS,ERRbadpath);
 		}
 
 		delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
@@ -3811,7 +3819,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			pstrcpy(fname, fsp->fsp_name);
 			if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return set_bad_path_error(errno, False, outbuf,
+							  ERRDOS,ERRbadpath);
 			}
 		} else if (fsp && fsp->print_file) {
 			/*
@@ -3863,11 +3872,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
 			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return set_bad_path_error(errno, False, outbuf,
+						  ERRDOS,ERRbadpath);
 		}    
 
 		if(!check_name(fname, conn)) {
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return set_bad_path_error(errno, False, outbuf,
+						  ERRDOS,ERRbadpath);
 		}
 
 	}
@@ -4860,7 +4871,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	if (!check_name(directory,conn)) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,
+		return set_bad_path_error(errno, False, outbuf, ERRDOS,
 					  ERRnoaccess);
 	}
 
