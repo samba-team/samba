@@ -948,8 +948,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	if (!ok) {
 		END_PROFILE(SMBgetatr);
-		return set_bad_path_error(errno, False, outbuf,
-					  ERRDOS,ERRbadfile);
+		return UNIXERROR(ERRDOS, ERRbadfile);
 	}
  
 	outsize = set_message(outbuf,10,0,True);
@@ -1024,15 +1023,13 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 		if (file_set_dosmode(conn,fname,mode,&sbuf,False) != 0) {
 			END_PROFILE(SMBsetatr);
-			return set_bad_path_error(errno, False, outbuf,
-						  ERRDOS, ERRnoaccess);
+			return UNIXERROR(ERRDOS, ERRnoaccess);
 		}
 	}
 
 	if (!set_filetime(conn,fname,mtime)) {
 		END_PROFILE(SMBsetatr);
-		return set_bad_path_error(errno, False, outbuf,
-					  ERRDOS, ERRnoaccess);
+		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
@@ -1212,7 +1209,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			if (dptr_num < 0) {
 				if(dptr_num == -2) {
 					END_PROFILE(SMBsearch);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnofids);
+					if ((errno == ENOENT) && bad_path) {
+						return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+					}
+					return UNIXERROR(ERRDOS, ERRnofids);
 				}
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
@@ -4007,8 +4007,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
 	if (!ok) {
 		END_PROFILE(SMBrmdir);
-		return set_bad_path_error(errno, False, outbuf,
-					  ERRDOS, ERRbadpath);
+		return UNIXERROR(ERRDOS, ERRbadpath);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
