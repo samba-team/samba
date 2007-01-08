@@ -219,7 +219,10 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 			break;
 		}
 	}
-	SMB_ASSERT(req != NULL);
+
+	if (req == NULL) {
+		smb_panic("notify_req not found in fsp's requests\n");
+	}
 
 	DLIST_REMOVE(fsp->notify->requests, req);
 	DLIST_REMOVE(notify_changes_by_mid, req->mid_map);
