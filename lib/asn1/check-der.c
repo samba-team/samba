@@ -739,10 +739,11 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
     return ret;
 }
 
+static unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
+
 static int
 test_heim_oid_format(void)
 {
-    unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
     heim_oid sha1 = { 6, sha1_oid_tree };
     int ret = 0;
 
