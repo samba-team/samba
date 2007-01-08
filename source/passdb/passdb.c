@@ -1445,10 +1445,11 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		  pdb_get_username(sampass), (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
 
 	if (LastBadPassword == (time_t)0) {
-		DEBUG(1,("pdb_update_autolock_flag: Account %s administratively locked out with no \
-bad password time. Leaving locked out.\n",
-			pdb_get_username(sampass) ));
-			return True;
+		DEBUG(1,("pdb_update_autolock_flag: Account %s "
+			 "administratively locked out with no bad password "
+			 "time. Leaving locked out.\n",
+			 pdb_get_username(sampass) ));
+		return True;
 	}
 
 	if ((time(NULL) > (LastBadPassword + (time_t) duration * 60))) {
