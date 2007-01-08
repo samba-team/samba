@@ -1,3 +1,8 @@
+2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* imath/imath.c: More verbose debugging in case of assertion
+	failure. XXX temporary for AIX problem.
+	
 2007-01-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa-imath.c: Fix a silly typo, and with that enable CRT since
