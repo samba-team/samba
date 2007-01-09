@@ -126,6 +126,18 @@ openssl pkcs12 \
     -caname sub-ca \
     -caname ca
 
+openssl pkcs12 \
+    -keypbe NONE \
+    -certpbe NONE \
+    -export \
+    -in test.crt \
+    -inkey test.key \
+    -passout pass:foobar \
+    -out test-nopw.p12 \
+    -name "friendlyname-cert" \
+    -certfile ca.crt \
+    -caname ca
+
 openssl smime \
     -sign \
     -nodetach \
