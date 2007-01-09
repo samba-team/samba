@@ -82,6 +82,9 @@ static const unsigned char saved_pac[] = {
 	0x83, 0xb3, 0x13, 0x3f, 0xfc, 0x5c, 0x41, 0xad, 0xe2, 0x64, 0x83, 0xe0, 0x00, 0x00, 0x00, 0x00
 };
 
+static int type_1_length = 2;
+static int type_2_length = 2;
+
 static const krb5_keyblock kdc_keyblock = {
     ETYPE_ARCFOUR_HMAC_MD5,
     { 16, "\xB2\x86\x75\x71\x48\xAF\x7F\xD2\x52\xC5\x36\x03\xA1\x50\xB7\xE7" }
@@ -222,6 +225,60 @@ main(int argc, char **argv)
 	if (len != 5)
 	    krb5_errx(context, 1, "list wrong length");
 	free(list);
+    }
+
+    /* make a copy and try to reproduce it */
+    {
+	uint32_t *list;
+	size_t len, i;
+	struct krb5_pac *pac2;
+
+	ret = krb5_pac_init(context, &pac2);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_init");
+
+	/* our two user buffer plus the three "system" buffers */
+	ret = krb5_pac_get_types(context, pac, &len, &list);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_get_types");
+
+	for (i = 0; i < len; i++) {
+	    /* skip server_cksum, privsvr_cksum, and logon_name */
+	    if (list[i] == 6 || list[i] == 7 || list[i] == 10)
+		continue;
+
+	    ret = krb5_pac_get_buffer(context, pac, list[i], &data);
+	    if (ret)
+		krb5_err(context, 1, ret, "krb5_pac_get_buffer");
+
+	    if (list[i] == 1 && type_1_length != data.length)
+		krb5_errx(context, 1, "type 1 have wrong length");
+	    if (list[i] == 2 && type_2_length != data.length)
+		krb5_errx(context, 1, "type 2 have wrong length");
+
+	    ret = krb5_pac_add_buffer(context, pac2, list[i], &data);
+	    if (ret)
+		krb5_err(context, 1, ret, "krb5_pac_add_buffer");
+	    krb5_data_free(&data);
+	}
+	free(list);
+	
+	ret = _krb5_pac_sign(context, pac2, authtime, p, 
+			     &member_keyblock, &kdc_keyblock, &data);
+	if (ret)
+	    krb5_err(context, 1, ret, "_krb5_pac_sign 4");
+	
+	krb5_pac_free(context, pac2);
+
+	ret = krb5_pac_parse(context, data.data, data.length, &pac2);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_parse 4");
+	
+	ret = krb5_pac_verify(context, pac2, authtime, p,
+			      &member_keyblock, &kdc_keyblock);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pac_verify 4");
+	
     }
 
     krb5_pac_free(context, pac);
