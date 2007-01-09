@@ -21,6 +21,13 @@ PRIVATE_DEPENDENCIES = NDR_NFS4ACL SAMDB ntvfs_posix
 ################################################
 
 ################################################
+[MODULE::pvfs_aio]
+SUBSYSTEM = ntvfs
+OBJ_FILES = pvfs_aio.o
+PRIVATE_DEPENDENCIES = LIBAIO_LINUX
+################################################
+
+################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
 SUBSYSTEM = ntvfs
@@ -56,6 +63,6 @@ OBJ_FILES = \
 		xattr_system.o \
 		xattr_tdb.o
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
-PUBLIC_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING
+PUBLIC_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio
 # End MODULE ntvfs_posix
 ################################################
