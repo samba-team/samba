@@ -1977,7 +1977,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 {
 	pstring directory;
 	pstring mask;
-	pstring orig_name;
 	char *p;
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
@@ -1994,11 +1993,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			: NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	/*
-	 * Feel my pain, this code needs rewriting *very* badly! -- vl
-	 */
-	pstrcpy(orig_name, name);
-	
 	p = strrchr_m(name,'/');
 	if (!p) {
 		pstrcpy(directory,".");
@@ -2030,7 +2024,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
-			notify_fname(conn, orig_name, -1,
+			notify_fname(conn, directory, -1,
 				     NOTIFY_ACTION_REMOVED);
 		}
 
@@ -2041,8 +2035,13 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
 
-		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, mask, dirtype);
+		if (!check_name(directory,conn)) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		if (!(dir_hnd = OpenDir(conn, directory, mask, dirtype))) {
+			return NT_STATUS_NO_SUCH_FILE;
+		}
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
