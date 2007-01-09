@@ -1,5 +1,10 @@
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: rename all files to PEM files, since that is what
+	they are.
+
+	* hxtool.c: copy out the key with the self signed CA cert
+
 	* Factor out private key operation out of the signing, operations,
 	support import, export, and generation of private keys. Add
 	support for writing PEM and PKCS12 files with private keys in them.
