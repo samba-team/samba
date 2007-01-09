@@ -270,7 +270,7 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
     for (i = 0; i < len; i++)
 	p->pac->buffers[i].offset_lo += PAC_INFO_BUFFER_SIZE;
 
-    offset = data->length + PAC_INFO_BUFFER_SIZE;
+    offset = p->data.length + PAC_INFO_BUFFER_SIZE;
 
     p->pac->buffers[len - 1].type = type;
     p->pac->buffers[len - 1].buffersize = data->length;
