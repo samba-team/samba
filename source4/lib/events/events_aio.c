@@ -268,9 +268,6 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 			uint16_t flags = 0;
 			int j;
 
-//			DEBUG(0,("EVENT finished=%p fde=%p ep=%p\n", finished, fde, ep));
-			//printf("GOT %d aio epoll events\n", event->res);
-
 			aio_ev->is_epoll_set = 0;
 
 			for (j=0; j<event->res; j++, ep++) {
