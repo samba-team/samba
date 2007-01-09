@@ -1,4 +1,13 @@
+2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-pkinit.in: Prefix key with FILE:
+	
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* plugin/Makefile.am: EXTRA_DIST += krb5.conf.in
+
+	* plugin/check-pac.in: test explicit requested pac and explicit
+	negative requested pac.
 
 	* kdc/ap-req.c: Make it possible to turn off PAC check, its
 	default on.

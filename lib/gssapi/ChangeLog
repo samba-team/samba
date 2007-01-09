@@ -1,5 +1,7 @@
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Include build (private) prototypes header files.
+
 	* Makefile.am (ntlmsrc): add ntlm/ntlm-private.h
 	
 2006-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
