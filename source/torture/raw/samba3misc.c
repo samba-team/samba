@@ -25,7 +25,6 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "torture/raw/proto.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -220,20 +219,16 @@ static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int
 
 BOOL torture_samba3_badpath(struct torture_context *torture)
 {
-	struct smbcli_state *cli_nt = NULL;
-	struct smbcli_state *cli_dos = NULL;
+	struct smbcli_state *cli_nt;
+	struct smbcli_state *cli_dos;
 	const char *fname = "test.txt";
 	const char *dirname = "testdir";
-	const char *invname = "testdir\\notthere.txt";
-	const char *invpath = "test.txt\\test.txt";
 	char *fpath;
 	int fnum;
 	NTSTATUS status;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	BOOL nt_status_support;
-	uint16_t attr;
-
 
 	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
 		d_printf("talloc_init failed\n");
@@ -266,7 +261,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	smbcli_unlink(cli_nt->tree, fname);
 	smbcli_deltree(cli_nt->tree, dirname);
 
 	status = smbcli_mkdir(cli_nt->tree, dirname);
@@ -302,14 +296,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	fnum = smbcli_open(cli_nt->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		d_printf("Could not create file %s: %s\n", fpath,
-			 smbcli_errstr(cli_nt->tree));
-		goto fail;
-	}
-	smbcli_close(cli_nt->tree, fnum);
-
-	fnum = smbcli_open(cli_nt->tree, fname, O_RDWR | O_CREAT, DENY_NONE);
-	if (fnum == -1) {
-		d_printf("Could not create file %s: %s\n", fname,
 			 smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -354,11 +340,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_chkpath(cli_dos->tree, "<\\bla");
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
-	status = smbcli_chkpath(cli_nt->tree, "");
-	CHECK_STATUS(status, NT_STATUS_OK);
-	status = smbcli_chkpath(cli_dos->tree, "");
-	CHECK_STATUS(status, NT_STATUS_OK);
-
 	/*
 	 * .... And the same gang against getatr. Note that the DOS error codes
 	 * differ....
@@ -399,39 +380,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
-	if (lp_parm_bool(-1, "torture", "w2k3", False) ||
-	    lp_parm_bool(-1, "torture", "samba3", False)) {
-
-		/*
-		 * XP and w2k don't show this behaviour, but I think
-		 * Samba3 should follow W2k3
-		 */
-
-		status = smbcli_getatr(cli_nt->tree, "", &attr, NULL, NULL);
-		CHECK_STATUS(status, NT_STATUS_OK);
-		if (attr != (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY)) {
-			d_printf("(%s) getatr(\"\") returned 0x%x, expected "
-				 "0x%x\n", __location__, attr,
-				 FILE_ATTRIBUTE_HIDDEN
-				 |FILE_ATTRIBUTE_DIRECTORY);
-			ret = False;
-		}
-	}
-
-	status = smbcli_setatr(cli_nt->tree, "",
-			       FILE_ATTRIBUTE_DIRECTORY, -1);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
-	status = smbcli_setatr(cli_dos->tree, "",
-			       FILE_ATTRIBUTE_DIRECTORY, -1);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess));
-	
-	status = smbcli_setatr(cli_nt->tree, ".",
-			       FILE_ATTRIBUTE_DIRECTORY, -1);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
-	status = smbcli_setatr(cli_dos->tree, ".",
-			       FILE_ATTRIBUTE_DIRECTORY, -1);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
-
 	/* Try the same set with openX. */
 
 	status = raw_smbcli_open(cli_nt->tree, "..", O_RDONLY, DENY_NONE, NULL);
@@ -464,212 +412,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = raw_smbcli_open(cli_dos->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
-	/*
-	 * Walk the Samba3 unix_convert bad_path handling. Some interesting
-	 * error paths around...
-	 */
-
-	status = smbcli_chkpath(cli_nt->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_chkpath(cli_dos->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_getatr(cli_nt->tree, invpath, NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_getatr(cli_dos->tree, invpath, NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_setatr(cli_nt->tree, invpath, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_setatr(cli_dos->tree, invpath, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_setatr(cli_nt->tree, invpath, FILE_ATTRIBUTE_NORMAL,
-			       0);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_setatr(cli_dos->tree, invpath, FILE_ATTRIBUTE_NORMAL,
-			       0);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_setatr(cli_nt->tree, invname, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-	status = smbcli_setatr(cli_dos->tree, invname, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadfile));
-
-	status = smbcli_unlink(cli_nt->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_unlink(cli_dos->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	/*
-	 * W2k3 returns INVALID_PARAMETER for a wildcard unlink if the
-	 * directory does not exist. They seem to use the t2ffirst, this also
-	 * returns INVALID_PARAMETER under this condition.
-	 */
-
-	status = smbcli_unlink(cli_nt->tree, "test.txt\\*.*");
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-	status = smbcli_unlink(cli_dos->tree, "test.txt\\*.*");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidparam));
-
-	/*
-	 * reply_search returns STATUS_NO_MORE_FILES on invalid path
-	 */
-
-	goto done; 		/* We're not yet fully there, but keep it
-				 * in */
-
-	status = torture_single_search(cli_nt, mem_ctx, invpath,
-				       RAW_SEARCH_SEARCH,
-				       RAW_SEARCH_DATA_SEARCH, 0, NULL);
-	CHECK_STATUS(status, STATUS_NO_MORE_FILES);
-	status = torture_single_search(cli_dos, mem_ctx, invpath,
-				       RAW_SEARCH_SEARCH,
-				       RAW_SEARCH_DATA_SEARCH, 0, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnofiles));
-
-	/*
-	 * ... whereas t2search gets you NT_STATUS_INVALID_PARAMETER
-	 */
-
-	status = torture_single_search(cli_nt, mem_ctx, dirname,
-				       RAW_SEARCH_TRANS2,
-				       RAW_SEARCH_DATA_STANDARD, 0xf, NULL);
-	CHECK_STATUS(status, STATUS_NO_MORE_FILES);
-	status = torture_single_search(cli_dos, mem_ctx, dirname,
-				       RAW_SEARCH_TRANS2,
-				       RAW_SEARCH_DATA_STANDARD, 0xf, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnofiles));
-
-	status = torture_single_search(cli_nt, mem_ctx, invpath,
-				       RAW_SEARCH_TRANS2,
-				       RAW_SEARCH_DATA_STANDARD, 0xf, NULL);
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-	status = torture_single_search(cli_dos, mem_ctx, invpath,
-				       RAW_SEARCH_TRANS2,
-				       RAW_SEARCH_DATA_STANDARD, 0xf, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidparam));
-
-	{
-		union smb_open o;
-		o.openold.level = RAW_OPEN_OPEN;
-		o.openold.in.open_mode = 0;
-		o.openold.in.search_attrs = 0;
-		o.openold.in.fname = invpath;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-		ZERO_STRUCT(o);
-		o.openx.level = RAW_OPEN_OPENX;
-		o.openx.in.fname = invpath;
-		o.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-		ZERO_STRUCT(o);
-		o.mknew.level = RAW_OPEN_MKNEW;
-		o.mknew.in.fname = invpath;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-		ZERO_STRUCT(o);
-		o.ntcreatex.level = RAW_OPEN_NTCREATEX;
-		o.ntcreatex.in.fname = invpath;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-		ZERO_STRUCT(o);
-		o.nttrans.level = RAW_OPEN_NTTRANS_CREATE;
-		o.nttrans.in.fname = invpath;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-		/*
-		 * TODO: Check t2open
-		 */
-
-#if 0
-		/*
-		 * This call seems completely broken on W2k3. It gives back a
-		 * fid, and when you later want to close it the server returns
-		 * INVALID_HANDLE....
-		 */
-
-		/*
-		 * W2k3 puts the ctemp files into the root of the share, it
-		 * seems to ignore the directory given. And, the file name
-		 * given back seems to be bogus. The real file name is
-		 * prepended with a "t"...
-		 */
-
-		ZERO_STRUCT(o);
-		o.ctemp.level = RAW_OPEN_CTEMP;
-		o.ctemp.in.directory = invpath;
-
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &o);
-		if (NT_STATUS_IS_OK(status)) {
-			smbcli_nt_delete_on_close(
-				cli_nt->tree, o.ctemp.out.file.fnum, True);
-			smbcli_close(cli_nt->tree, o.ctemp.out.file.fnum);
-		}
-		CHECK_STATUS(status, NT_STATUS_OK);
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &o);
-		if (NT_STATUS_IS_OK(status)) {
-			smbcli_nt_delete_on_close(
-				cli_nt->tree, o.ctemp.out.file.fnum, True);
-			smbcli_close(cli_nt->tree, o.ctemp.out.file.fnum);
-		}
-		CHECK_STATUS(status, NT_STATUS_OK);
-#endif
-	}
-
-	status = smbcli_mkdir(cli_nt->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_mkdir(cli_dos->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_rmdir(cli_nt->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_rmdir(cli_dos->tree, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_rename(cli_nt->tree, invpath, "");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
-	status = smbcli_rename(cli_dos->tree, invpath, "");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
-
-	status = smbcli_rename(cli_nt->tree, "", invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
-	status = smbcli_rename(cli_dos->tree, "", invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
-
-	status = smbcli_rename(cli_nt->tree, invpath, invpath);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_rename(cli_dos->tree, invpath, invpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
-	status = smbcli_qpathinfo(cli_nt->tree, invpath, NULL, NULL, NULL,
-				  NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	status = smbcli_qpathinfo(cli_dos->tree, invpath, NULL, NULL, NULL,
-				  NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
-
 	goto done;
 
  fail:
@@ -678,7 +420,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
  done:
 	if (cli_nt != NULL) {
 		smbcli_deltree(cli_nt->tree, dirname);
-		smbcli_unlink(cli_nt->tree, fname);
 		torture_close_connection(cli_nt);
 	}
 	if (cli_dos != NULL) {
