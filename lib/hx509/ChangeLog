@@ -1,5 +1,8 @@
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c (collect_private_key): Missing CKA_MODULUS is ok
+	too (XXX why should these be fetched given they are not used).
+
 	* test_ca.in: rename all files to PEM files, since that is what
 	they are.
 
