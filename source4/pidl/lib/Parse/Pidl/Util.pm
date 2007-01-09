@@ -6,7 +6,7 @@ package Parse::Pidl::Util;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(has_property property_matches ParseExpr is_constant make_str print_uuid MyDumper);
+@EXPORT = qw(has_property property_matches ParseExpr ParseExprExt is_constant make_str print_uuid MyDumper);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
@@ -113,6 +113,23 @@ sub ParseExpr($$$)
 			  return $x;
 		  },
 		undef);
+}
+
+sub ParseExprExt($$$$)
+{
+	my($expr, $varlist, $e, $deref) = @_;
+
+	die("Undefined value in ParseExpr") if not defined($expr);
+
+	my $x = new Parse::Pidl::Expr();
+	
+	return $x->Run($expr, sub { my $x = shift; error($e, $x); },
+		# Lookup fn 
+		sub { my $x = shift; 
+			  return($varlist->{$x}) if (defined($varlist->{$x})); 
+			  return $x;
+		  },
+		$deref);
 }
 
 1;
