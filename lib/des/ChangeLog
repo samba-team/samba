@@ -1,5 +1,10 @@
-2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa.c: Correct the test if the rsa is a complete RSA private
+	key.
+	
+2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* imath/imath.c: More verbose debugging in case of assertion
 	failure. XXX temporary for AIX problem.
 	
