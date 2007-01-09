@@ -237,6 +237,25 @@ command = {
 	help = "Validate content of certificates"
 }
 command = {
+	name = "certificate-copy"
+	name = "cc"
+	option = {
+		long = "in-pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "out-pass"
+		type = "string"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	min_args="2"
+	argument="in-certificates-1 ... out-certificate"
+	help = "Copy in certificates stores into out certificate store"
+}
+command = {
 	name = "ocsp-fetch"
 	option = {
 		long = "pass"
@@ -510,11 +529,6 @@ command = {
 		long = "req"
 		type = "string"
 		help = "pkcs10 request"
-	}
-	option = {
-		long = "out-key"
-		type = "string"
-		help = "out key"
 	}
 	option = {
 		long = "generate-key"

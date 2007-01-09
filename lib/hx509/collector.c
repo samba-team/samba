@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -101,7 +101,7 @@ free_private_key(struct private_key *key)
 {
     free_AlgorithmIdentifier(&key->alg);
     if (key->private_key)
-	_hx509_free_private_key(&key->private_key);
+	_hx509_private_key_free(&key->private_key);
     der_free_octet_string(&key->localKeyId);
     free(key);
 }
@@ -188,10 +188,8 @@ match_localkeyid(hx509_context context,
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == 0) {
 	
-	if (value->private_key) {
+	if (value->private_key)
 	    _hx509_cert_assign_key(cert, value->private_key);
-	    value->private_key = NULL;
-	}
 	hx509_cert_free(cert);
     }
     return ret;
@@ -229,7 +227,6 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
 	ret = _hx509_match_keys(c, value->private_key);
 	if (ret) {
 	    _hx509_cert_assign_key(c, value->private_key);
-	    value->private_key = NULL;
 	    hx509_cert_free(c);
 	    found = 0;
 	    break;
@@ -246,9 +243,9 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
 }
 
 int
-_hx509_collector_collect(hx509_context context, 
-			 struct hx509_collector *c,
-			 hx509_certs *ret_certs)
+_hx509_collector_collect_certs(hx509_context context, 
+			       struct hx509_collector *c,
+			       hx509_certs *ret_certs)
 {
     hx509_certs certs;
     int ret, i;
@@ -278,6 +275,37 @@ _hx509_collector_collect(hx509_context context,
 
     return 0;
 }
+
+int
+_hx509_collector_collect_private_keys(hx509_context context, 
+				      struct hx509_collector *c,
+				      hx509_private_key **keys)
+{
+    int i, nkeys;
+
+    *keys = NULL;
+
+    for (i = 0, nkeys = 0; i < c->val.len; i++)
+	if (c->val.data[i]->private_key)
+	    nkeys++;
+
+    *keys = calloc(nkeys + 1, sizeof(**keys));
+    if (*keys == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    for (i = 0, nkeys = 0; i < c->val.len; i++) {
+ 	if (c->val.data[i]->private_key) {
+	    (*keys)[nkeys++] = c->val.data[i]->private_key;
+	    c->val.data[i]->private_key = NULL;
+	}
+    }
+    (*keys)[nkeys++] = NULL;
+
+    return 0;
+}
+
 
 void
 _hx509_collector_free(struct hx509_collector *c)

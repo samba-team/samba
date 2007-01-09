@@ -122,6 +122,24 @@ hx509_certs_init(hx509_context context,
     return 0;
 }
 
+int
+hx509_certs_store(hx509_context context,
+		  hx509_certs certs,
+		  int flags,
+		  hx509_lock lock)
+{
+    if (certs->ops->store == NULL) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "keystore if type %s doesn't support "
+			       "store operation",
+			       certs->ops->name);
+	return EINVAL;
+    }
+
+    return (*certs->ops->store)(context, certs, certs->ops_data, flags, lock);
+}
+
+
 void
 hx509_certs_free(hx509_certs *certs)
 {
@@ -380,4 +398,42 @@ _hx509_pi_printf(int (*func)(void *, char *), void *ctx,
 	return;
     (*func)(ctx, str);
     free(str);
+}
+
+int
+_hx509_certs_keys_get(hx509_context context, 
+		      hx509_certs certs, 
+		      hx509_private_key **keys)
+{
+    if (certs->ops->getkeys == NULL) {
+	*keys = NULL;
+	return 0;
+    }
+    return (*certs->ops->getkeys)(context, certs, certs->ops_data, keys);
+}
+
+int
+_hx509_certs_keys_add(hx509_context context, 
+		      hx509_certs certs, 
+		      hx509_private_key key)
+{
+    if (certs->ops->addkey == NULL) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "keystore if type %s doesn't support "
+			       "key add operation",
+			       certs->ops->name);
+	return EINVAL;
+    }
+    return (*certs->ops->addkey)(context, certs, certs->ops_data, key);
+}
+
+
+void
+_hx509_certs_keys_free(hx509_context context,
+		       hx509_private_key *keys)
+{
+    int i;
+    for (i = 0; keys[i]; i++)
+	_hx509_private_key_free(&keys[i]);
+    free(keys);
 }

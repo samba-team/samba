@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -540,6 +540,38 @@ pcert_validate(struct validate_options *opt, int argc, char **argv)
     return 0;
 }
 
+int
+certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
+{
+    hx509_certs certs;
+    hx509_lock lock;
+    int ret;
+
+    hx509_lock_init(context, &lock);
+    lock_strings(lock, &opt->in_pass_strings);
+
+    ret = hx509_certs_init(context, argv[argc - 1], 
+			   HX509_CERTS_CREATE, lock, &certs);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init");
+
+    while(argc-- > 1) {
+	int ret;
+	ret = hx509_certs_append(context, certs, lock, argv[0]);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_append");
+	argv++;
+    }
+
+    ret = hx509_certs_store(context, certs, 0, NULL);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_store");
+
+    hx509_certs_free(&certs);
+
+    return 0;
+}
+
 struct verify {
     hx509_verify_ctx ctx;
     hx509_certs chain;
@@ -801,24 +833,25 @@ ocsp_print(struct ocsp_print_options *opt, int argc, char **argv)
 static int
 read_private_key(const char *fn, hx509_private_key *key)
 {
-    void *data;
-    size_t len;
+    hx509_private_key *keys;
+    hx509_certs certs;
     int ret;
     
     *key = NULL;
 
-    ret = _hx509_map_file(fn, &data, &len, NULL);
+    ret = hx509_certs_init(context, fn, 0, NULL, &certs);
     if (ret)
-	err(1, "read_private_key: map_file: %s: %d", fn, ret);
-    
-    ret = _hx509_parse_private_key(context,
-				   oid_id_pkcs1_rsaEncryption(),
-				   data,
-				   len,
-				   key);
-    _hx509_unmap_file(data, len);
+	hx509_err(context, ret, 1, "hx509_certs_init: %s", fn);
+
+    ret = _hx509_certs_keys_get(context, certs, &keys);
+    hx509_certs_free(&certs);
     if (ret)
-	errx(1, "read_private_key: _hx509_parse_private_key: %d", ret);
+	hx509_err(context, ret, 1, "hx509_certs_keys_get");
+    if (keys[0] == NULL)
+	errx(1, "no keys in key store: %s", fn);
+
+    *key = _hx509_private_key_ref(keys[0]);
+    _hx509_certs_keys_free(context, keys);
 
     return 0;
 }
@@ -944,7 +977,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, ret, 1, "_hx509_request_to_pkcs10");
 
-    _hx509_free_private_key(&signer);
+    _hx509_private_key_free(&signer);
     _hx509_request_free(&req);
 
     if (ret == 0)
@@ -1269,6 +1302,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     hx509_certs cacerts = NULL;
     hx509_cert signer = NULL, cert = NULL;
     hx509_private_key private_key = NULL;
+    hx509_private_key cert_key = NULL;
     hx509_name subject = NULL;
     SubjectPublicKeyInfo spki;
     int delta = 0;
@@ -1319,7 +1353,8 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (ret)
 	    hx509_err(context, ret, 1, "no CA certificate found");
     } else if (opt->self_signed_flag) {
-	if (opt->generate_key_string == NULL && opt->ca_private_key_string == NULL)
+	if (opt->generate_key_string == NULL
+	    && opt->ca_private_key_string == NULL)
 	    errx(1, "no signing private key");
     } else
 	errx(1, "missing ca key");
@@ -1364,19 +1399,19 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->generate_key_string) {
-	hx509_private_key key;
 	
-	get_key(opt->out_key_string, 
-		opt->generate_key_string,
-		opt->key_bits_integer,
-		&key);
-
-	ret = _hx509_private_key2SPKI(context, key, &spki);
+	ret = _hx509_generate_private_key(context, 
+					  oid_id_pkcs1_rsaEncryption(),
+					  &cert_key);
+	if (ret)
+	    hx509_err(context, ret, 1, "generate private key");
+	
+	ret = _hx509_private_key2SPKI(context, cert_key, &spki);
 	if (ret)
 	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);
 
 	if (opt->self_signed_flag)
-	    private_key = key;
+	    private_key = cert_key;
     }
 
     if (opt->subject_string) {
@@ -1451,19 +1486,29 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, ret, 1, "hx509_ca_sign");
     }
 
-    {
-	Certificate *c = _hx509_get_cert(cert);
-	heim_octet_string data;
-	size_t size;
-
-	ASN1_MALLOC_ENCODE(Certificate, data.data, data.length, c, &size, ret);
+    if (cert_key) {
+	ret = _hx509_cert_assign_key(cert, cert_key);
 	if (ret)
-	    err(1, "malloc out of memory");
-	if (data.length != size)
-	    _hx509_abort("internal ASN.1 encoder error");
+	    hx509_err(context, ret, 1, "_hx509_cert_assign_key");
+    }	    
 
-	rk_dumpdata(opt->certificate_string, data.data, data.length);
-	free(data.data);
+    {
+	hx509_certs certs;
+
+	ret = hx509_certs_init(context, opt->certificate_string, 
+			       HX509_CERTS_CREATE, NULL, &certs);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_certs_init");
+
+	ret = hx509_certs_add(context, certs, cert);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_certs_add");
+
+	ret = hx509_certs_store(context, certs, 0, NULL);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_store");
+
+	hx509_certs_free(&certs);
     }
 
     return 0;

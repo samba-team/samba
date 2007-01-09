@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -236,8 +236,8 @@ int
 _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
 {
     if (cert->private_key)
-	_hx509_free_private_key(&cert->private_key);
-    cert->private_key = private_key;
+	_hx509_private_key_free(&cert->private_key);
+    cert->private_key = _hx509_private_key_ref(private_key);
     return 0;
 }
 
@@ -258,7 +258,7 @@ hx509_cert_free(hx509_cert cert)
 	(cert->release)(cert, cert->ctx);
 
     if (cert->private_key)
-	_hx509_free_private_key(&cert->private_key);
+	_hx509_private_key_free(&cert->private_key);
 
     free_Certificate(cert->data);
     free(cert->data);
@@ -1069,6 +1069,14 @@ hx509_private_key
 _hx509_cert_private_key(hx509_cert p)
 {
     return p->private_key;
+}
+
+int
+_hx509_cert_private_key_exportable(hx509_cert p)
+{
+    if (p->private_key == NULL)
+	return 0;
+    return _hx509_private_key_exportable(p->private_key);
 }
 
 int

@@ -148,5 +148,20 @@ ${hxtool} crypto-available \
 cmp test ${srcdir}/tst-crypto-available3 > /dev/null || \
 	{ echo "available3 failure"; exit 1; }
 
+echo "copy keystore FILE existing -> FILE"
+${hxtool} certificate-copy \
+    FILE:${srcdir}/data/test.crt,${srcdir}/data/test.key \
+    FILE:out.pem || exit 1
+
+echo "copy keystore FILE -> FILE"
+${hxtool} certificate-copy \
+    FILE:out.pem \
+    FILE:out2.pem || exit 1
+
+echo "copy keystore FILE -> PKCS12"
+${hxtool} certificate-copy \
+    FILE:out.pem \
+    PKCS12:out2.pem || exit 1
+
 
 exit 0

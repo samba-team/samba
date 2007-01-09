@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2005 Kungliga Tekniska Högskolan
+# Copyright (c) 2005 - 2007 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -44,7 +44,7 @@ fi
 
 ${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
-	 --key=$srcdir/data/key.der \
+	 --key=FILE:$srcdir/data/key.der \
 	 request.out || exit 1
 
 ${hxtool} pkcs10-print \
@@ -53,5 +53,5 @@ ${hxtool} pkcs10-print \
 ${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
 	 --dnsname=nutcracker.it.su.se \
-	 --key=$srcdir/data/key.der \
+	 --key=FILE:$srcdir/data/key.der \
 	 request.out || exit 1

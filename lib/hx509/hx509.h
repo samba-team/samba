@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -92,6 +92,9 @@ typedef enum {
     HX509_QUERY_OPTION_KU_KEYCERTSIGN = 4,
     HX509_QUERY_OPTION_END = 0xffff
 } hx509_query_option;
+
+/* flags to hx509_certs_init */
+#define HX509_CERTS_CREATE				0x01
 
 /* flags to hx509_set_error_string */
 #define HX509_ERROR_APPEND				0x01

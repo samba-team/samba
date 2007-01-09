@@ -616,7 +616,7 @@ collect_private_key(hx509_context context,
     localKeyId.data = query[0].pValue;
     localKeyId.length = query[0].ulValueLen;
 
-    ret = _hx509_new_private_key(&key);
+    ret = _hx509_private_key_init(&key, NULL, NULL);
     if (ret)
 	return ret;
 
@@ -661,7 +661,7 @@ collect_private_key(hx509_context context,
 					   &localKeyId);
 
     if (ret) {
-	_hx509_free_private_key(&key);
+	_hx509_private_key_free(&key);
 	return ret;
     }
     return 0;
@@ -790,7 +790,7 @@ p11_list_keys(hx509_context context,
     if (ret)
 	goto out;
 
-    ret = _hx509_collector_collect(context, collector, &slot->certs);
+    ret = _hx509_collector_collect_certs(context, collector, &slot->certs);
 
 out:
     _hx509_collector_free(collector);
@@ -1164,6 +1164,7 @@ static struct hx509_keyset_ops keyset_pkcs11 = {
     "PKCS11",
     0,
     p11_init,
+    NULL,
     p11_free,
     NULL,
     NULL,

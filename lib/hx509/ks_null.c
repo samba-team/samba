@@ -82,6 +82,7 @@ struct hx509_keyset_ops keyset_null = {
     "NULL",
     0,
     null_init,
+    NULL,
     null_free,
     NULL,
     NULL,

@@ -1,4 +1,18 @@
+2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Factor out private key operation out of the signing, operations,
+	support import, export, and generation of private keys. Add
+	support for writing PEM and PKCS12 files with private keys in them.
+ 
+	* data/gen-req.sh: Generate a no password pkcs12 file.
+	
+2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: Check for internal ASN1 encoder error.
+	
 2007-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: Drop most of the pkcs11 files.
 
 	* test_ca.in: test reissueing ca certificate (xxx time
 	validAfter).

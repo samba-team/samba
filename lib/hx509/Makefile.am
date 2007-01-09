@@ -138,6 +138,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	$(TESTS) \
 	hxtool-commands.c hxtool-commands.h *.tmp \
 	request.out \
+	out.pem out2.pem \
 	sd.data sd.data.out \
 	ev.data ev.data.out \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \

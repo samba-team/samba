@@ -207,6 +207,7 @@ static struct hx509_keyset_ops keyset_dir = {
     "DIR",
     0,
     dir_init,
+    NULL,
     dir_free,
     NULL,
     NULL,

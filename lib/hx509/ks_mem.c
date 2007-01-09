@@ -42,8 +42,11 @@ RCSID("Id$");
 
 struct mem_data {
     char *name;
-    unsigned long len;
-    hx509_cert *val;
+    struct {
+	unsigned long len;
+	hx509_cert *val;
+    } certs;
+    hx509_private_key *keys;
 };
 
 static int
@@ -72,9 +75,11 @@ mem_free(hx509_certs certs, void *data)
     struct mem_data *mem = data;
     unsigned long i;
     
-    for (i = 0; i < mem->len; i++)
-	hx509_cert_free(mem->val[i]);
-    free(mem->val);
+    for (i = 0; i < mem->certs.len; i++)
+	hx509_cert_free(mem->certs.val[i]);
+    free(mem->certs.val);
+    for (i = 0; mem->keys && mem->keys[i]; i++)
+	_hx509_private_key_free(&mem->keys[i]);
     free(mem->name);
     free(mem);
 
@@ -87,13 +92,14 @@ mem_add(hx509_context context, hx509_certs certs, void *data, hx509_cert c)
     struct mem_data *mem = data;
     hx509_cert *val;
 
-    val = realloc(mem->val, (mem->len + 1) * sizeof(mem->val[0]));
+    val = realloc(mem->certs.val, 
+		  (mem->certs.len + 1) * sizeof(mem->certs.val[0]));
     if (val == NULL)
 	return ENOMEM;
 
-    mem->val = val;
-    mem->val[mem->len] = hx509_cert_ref(c);
-    mem->len++;
+    mem->certs.val = val;
+    mem->certs.val[mem->certs.len] = hx509_cert_ref(c);
+    mem->certs.len++;
 
     return 0;
 }
@@ -125,12 +131,12 @@ mem_iter(hx509_context contexst,
     unsigned long *iter = cursor;
     struct mem_data *mem = data;
 
-    if (*iter >= mem->len) {
+    if (*iter >= mem->certs.len) {
 	*cert = NULL;
 	return 0;
     }
 
-    *cert = hx509_cert_ref(mem->val[*iter]);
+    *cert = hx509_cert_ref(mem->certs.val[*iter]);
     (*iter)++;
     return 0;
 }
@@ -145,16 +151,69 @@ mem_iter_end(hx509_context context,
     return 0;
 }
 
+static int
+mem_getkeys(hx509_context context,
+	     hx509_certs certs,
+	     void *data,
+	     hx509_private_key **keys)
+{
+    struct mem_data *mem = data;
+    int i;
+
+    for (i = 0; mem->keys && mem->keys[i]; i++)
+	;
+    *keys = calloc(i, sizeof(**keys));
+    for (i = 0; mem->keys && mem->keys[i]; i++) {
+	(*keys)[i] = _hx509_private_key_ref(mem->keys[i]);
+	if ((*keys)[i] == NULL) {
+	    while (--i >= 0)
+		_hx509_private_key_free(&(*keys)[i]);
+	    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	    return ENOMEM;
+	}
+    }	    
+    (*keys)[i] = NULL;
+    return 0;
+}
+
+static int
+mem_addkey(hx509_context context,
+	   hx509_certs certs,
+	   void *data,
+	   hx509_private_key key)
+{
+    struct mem_data *mem = data;
+    void *ptr;
+    int i;
+
+    for (i = 0; mem->keys && mem->keys[i]; i++)
+	;
+    ptr = realloc(mem->keys, (i + 2) * sizeof(*mem->keys));
+    if (ptr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+    mem->keys = ptr;
+    mem->keys[i++] = _hx509_private_key_ref(key);
+    mem->keys[i++] = NULL;
+    return 0;
+}
+
+
 static struct hx509_keyset_ops keyset_mem = {
     "MEMORY",
     0,
     mem_init,
+    NULL,
     mem_free,
     mem_add,
     NULL,
     mem_iter_start,
     mem_iter,
-    mem_iter_end
+    mem_iter_end,
+    NULL,
+    mem_getkeys,
+    mem_addkey
 };
 
 void

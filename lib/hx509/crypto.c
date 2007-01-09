@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,14 +42,22 @@ enum crypto_op_type {
     COT_SIGN
 };
 
-struct hx509_private_key {
-    const struct signature_alg *md;
-    const heim_oid *signature_alg;
-    struct {
-	RSA *rsa;
-    } private_key;
-    /* new crypto layer */
-    void *key;
+
+struct hx509_private_key_ops {
+    const char *pemtype;
+    const heim_oid *(*key_oid)(void);
+    int (*get_spki)(hx509_context,
+		    const hx509_private_key,
+		    SubjectPublicKeyInfo *);
+    int (*export)(hx509_context context,
+		  const hx509_private_key,
+		  heim_octet_string *);
+    int (*import)(hx509_context,
+		  const void *data,
+		  size_t len,
+		  hx509_private_key private_key);
+    int (*generate_private_key)(hx509_context context,
+				hx509_private_key private_key);
     int (*handle_alg)(const hx509_private_key,
 		      const AlgorithmIdentifier *,
 		      enum crypto_op_type);
@@ -60,18 +68,27 @@ struct hx509_private_key {
 		AlgorithmIdentifier *,
 		heim_octet_string *);
 #if 0
-    const AlgorithmIdentifier *
-        (*preferred_sig_alg)(const hx509_private_key_key,
-			     const hx509_peer_info);
+    const AlgorithmIdentifier *(*preferred_sig_alg)
+	(const hx509_private_key,
+	 const hx509_peer_info);
     int (*unwrap)(hx509_context context,
 		  const hx509_private_key,
 		  const AlgorithmIdentifier *,
 		  const heim_octet_string *,
 		  heim_octet_string *);
-    int (*get_spki)(hx509_context context,
-		    const hx509_private_key_key,
-		    SubjectPublicKeyInfo *);
 #endif
+};
+
+struct hx509_private_key {
+    unsigned int ref;
+    const struct signature_alg *md;
+    const heim_oid *signature_alg;
+    union {
+	RSA *rsa;
+	void *keydata;
+    } private_key;
+    /* new crypto layer */
+    hx509_private_key_ops *ops;
 };
 
 /*
@@ -106,13 +123,9 @@ struct signature_alg {
 			    const heim_octet_string *,
 			    AlgorithmIdentifier *,
 			    heim_octet_string *);
-    int (*parse_private_key)(hx509_context,
-			     const struct signature_alg *,
-			     const void *data,
-			     size_t len,
-			     hx509_private_key private_key);
-    int (*private_key2SPKI)(hx509_private_key private_key,
-			    SubjectPublicKeyInfo *spki);
+    int (*private_key2SPKI)(hx509_context,
+			    hx509_private_key,
+			    SubjectPublicKeyInfo *);
 };
 
 /*
@@ -330,11 +343,10 @@ rsa_create_signature(hx509_context context,
 }
 
 static int
-rsa_parse_private_key(hx509_context context,
-		      const struct signature_alg *sig_alg,
-		      const void *data,
-		      size_t len,
-		      hx509_private_key private_key)
+rsa_private_key_import(hx509_context context,
+		       const void *data,
+		       size_t len,
+		       hx509_private_key private_key)
 {
     const unsigned char *p = data;
 
@@ -351,7 +363,8 @@ rsa_parse_private_key(hx509_context context,
 }
 
 static int
-rsa_private_key2SPKI(hx509_private_key private_key,
+rsa_private_key2SPKI(hx509_context context,
+		     hx509_private_key private_key,
 		     SubjectPublicKeyInfo *spki)
 {
     int len, ret;
@@ -361,14 +374,17 @@ rsa_private_key2SPKI(hx509_private_key private_key,
     len = i2d_RSAPublicKey(private_key->private_key.rsa, NULL);
 
     spki->subjectPublicKey.data = malloc(len);
-    if (spki->subjectPublicKey.data == NULL)
+    if (spki->subjectPublicKey.data == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "malloc - out of memory");
 	return ENOMEM;
+    }
     spki->subjectPublicKey.length = len * 8;
 
     ret = _hx509_set_digest_alg(&spki->algorithm,
 				oid_id_pkcs1_rsaEncryption(), 
 				"\x05\x00", 2);
     if (ret) {
+	hx509_set_error_string(context, 0, ret, "malloc - out of memory");
 	free(spki->subjectPublicKey.data);
 	spki->subjectPublicKey.data = NULL;
 	spki->subjectPublicKey.length = 0;
@@ -382,6 +398,90 @@ rsa_private_key2SPKI(hx509_private_key private_key,
 
     return 0;
 }
+
+static int
+cb_func(int a, int b, BN_GENCB *c)
+{
+    return 1;
+}
+
+static int
+rsa_generate_private_key(hx509_context context, hx509_private_key private_key)
+{
+    BN_GENCB cb;
+    BIGNUM *e;
+    int ret;
+
+    static const int default_rsa_e = 65537;
+    static const int default_rsa_bits = 1024;
+
+    private_key->private_key.rsa = RSA_new();
+    if (private_key->private_key.rsa == NULL) {
+	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+			       "Failed to generate RSA key");
+	return HX509_PARSING_KEY_FAILED;
+    }
+    
+    e = BN_new();
+    BN_set_word(e, default_rsa_e);
+
+    BN_GENCB_set(&cb, cb_func, NULL);
+    ret = RSA_generate_key_ex(private_key->private_key.rsa, 
+			      default_rsa_bits, e, &cb);
+    BN_free(e);
+    if (ret != 1) {
+	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+			       "Failed to generate RSA key");
+	return HX509_PARSING_KEY_FAILED;
+    }
+    private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
+
+    return 0;
+}
+
+static int 
+rsa_private_key_export(hx509_context context,
+		       const hx509_private_key key,
+		       heim_octet_string *data)
+{
+    int ret;
+
+    data->data = NULL;
+    data->length = 0;
+
+    ret = i2d_RSAPrivateKey(key->private_key.rsa, NULL);
+    if (ret <= 0) {
+	ret = EINVAL;
+	hx509_set_error_string(context, 0, ret,
+			       "Private key is not exportable");
+	return ret;
+    }
+
+    data->data = malloc(ret);
+    if (data->data == NULL) {
+	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "malloc out of memory");
+	return ret;
+    }
+    data->length = ret;
+    
+    {
+	unsigned char *p = data->data;
+	i2d_RSAPrivateKey(key->private_key.rsa, &p);
+    }
+
+    return 0;
+}
+
+
+static hx509_private_key_ops rsa_private_key_ops = {
+    "RSA PRIVATE KEY",
+    oid_id_pkcs1_rsaEncryption,
+    rsa_private_key2SPKI,
+    rsa_private_key_export,
+    rsa_private_key_import,
+    rsa_generate_private_key
+};
 
 
 /*
@@ -473,14 +573,13 @@ dsa_verify_signature(hx509_context context,
     return ret;
 }
 
+#if 0
 static int
 dsa_parse_private_key(hx509_context context,
-		      const struct signature_alg *sig_alg,
 		      const void *data,
 		      size_t len,
 		      hx509_private_key private_key)
 {
-#if 0
     const unsigned char *p = data;
 
     private_key->private_key.dsa = 
@@ -490,12 +589,12 @@ dsa_parse_private_key(hx509_context context,
     private_key->signature_alg = oid_id_dsa_with_sha1();
 
     return 0;
-#else
+/* else */
     hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 			   "No support to parse DSA keys");
     return HX509_PARSING_KEY_FAILED;
-#endif
 }
+#endif
 
 
 static int
@@ -699,7 +798,6 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key,
     rsa_private_key2SPKI
 };
 
@@ -712,7 +810,6 @@ static struct signature_alg rsa_with_sha256_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key,
     rsa_private_key2SPKI
 };
 
@@ -725,7 +822,6 @@ static struct signature_alg rsa_with_sha1_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key,
     rsa_private_key2SPKI
 };
 
@@ -738,7 +834,6 @@ static struct signature_alg rsa_with_md5_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key,
     rsa_private_key2SPKI
 };
 
@@ -751,7 +846,6 @@ static struct signature_alg rsa_with_md2_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key,
     rsa_private_key2SPKI
 };
 
@@ -764,7 +858,6 @@ static struct signature_alg dsa_sha1_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     dsa_verify_signature,
     /* create_signature */ NULL,
-    dsa_parse_private_key
 };
 
 static struct signature_alg sha256_alg = {
@@ -838,18 +931,28 @@ find_sig_alg(const heim_oid *oid)
     return NULL;
 }
 
-static const struct signature_alg *
-find_key_alg(const heim_oid *oid)
+/*
+ *
+ */
+
+static struct hx509_private_key_ops *private_algs[] = {
+    &rsa_private_key_ops,
+    NULL
+};
+
+static hx509_private_key_ops *
+find_private_alg(const heim_oid *oid)
 {
     int i;
-    for (i = 0; sig_algs[i]; i++) {
-	if (sig_algs[i]->key_oid == NULL)
+    for (i = 0; private_algs[i]; i++) {
+	if (private_algs[i]->key_oid == NULL)
 	    continue;
-	if (der_heim_oid_cmp((*sig_algs[i]->key_oid)(), oid) == 0)
-	    return sig_algs[i];
+	if (der_heim_oid_cmp((*private_algs[i]->key_oid)(), oid) == 0)
+	    return private_algs[i];
     }
     return NULL;
 }
+
 
 int
 _hx509_verify_signature(hx509_context context,
@@ -916,11 +1019,11 @@ _hx509_create_signature(hx509_context context,
 {
     const struct signature_alg *md;
 
-    if (signer && signer->handle_alg &&
-	(*signer->handle_alg)(signer, alg, COT_SIGN))
+    if (signer && signer->ops && signer->ops->handle_alg &&
+	(*signer->ops->handle_alg)(signer, alg, COT_SIGN))
     {
-	return (*signer->sign)(context, signer, alg, data, 
-			       signatureAlgorithm, sig);
+	return (*signer->ops->sign)(context, signer, alg, data, 
+				    signatureAlgorithm, sig);
     }
 
     md = find_sig_alg(&alg->algorithm);
@@ -1089,28 +1192,26 @@ _hx509_parse_private_key(hx509_context context,
 			 size_t len,
 			 hx509_private_key *private_key)
 {
-    const struct signature_alg *md;
+    struct hx509_private_key_ops *ops;
     int ret;
 
     *private_key = NULL;
 
-    md = find_key_alg(key_oid);
-    if (md == NULL) {
+    ops = find_private_alg(key_oid);
+    if (ops == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;
     }
 
-    ret = _hx509_new_private_key(private_key);
+    ret = _hx509_private_key_init(private_key, ops, NULL);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
     }
 
-    ret = (*md->parse_private_key)(context, md, data, len, *private_key);
+    ret = (*ops->import)(context, data, len, *private_key);
     if (ret)
-	_hx509_free_private_key(private_key);
-    else
-	(*private_key)->md = md;
+	_hx509_private_key_free(private_key);
 
     return ret;
 }
@@ -1124,13 +1225,42 @@ _hx509_private_key2SPKI(hx509_context context,
 			hx509_private_key private_key,
 			SubjectPublicKeyInfo *spki)
 {
-    const struct signature_alg *md = private_key->md;
-    if (md->private_key2SPKI == NULL) {
+    const struct hx509_private_key_ops *ops = private_key->ops;
+    if (ops == NULL || ops->get_spki == NULL) {
 	hx509_set_error_string(context, 0, HX509_UNIMPLEMENTED_OPERATION,
 			       "Private key have no key2SPKI function");
 	return HX509_UNIMPLEMENTED_OPERATION;
     }
-    return (*md->private_key2SPKI)(private_key, spki);
+    return (*ops->get_spki)(context, private_key, spki);
+}
+
+int
+_hx509_generate_private_key(hx509_context context,
+			    const heim_oid *key_oid,
+			    hx509_private_key *private_key)
+{
+    struct hx509_private_key_ops *ops;
+    int ret;
+
+    *private_key = NULL;
+
+    ops = find_private_alg(key_oid);
+    if (ops == NULL) {
+	hx509_clear_error_string(context);
+	return HX509_SIG_ALG_NO_SUPPORTED;
+    }
+
+    ret = _hx509_private_key_init(private_key, ops, NULL);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	return ret;
+    }
+
+    ret = (*ops->generate_private_key)(context, *private_key);
+    if (ret)
+	_hx509_private_key_free(private_key);
+
+    return ret;
 }
 
 
@@ -1259,17 +1389,47 @@ hx509_signature_rsa(void)
 { return &_hx509_signature_rsa_data; }
 
 int
-_hx509_new_private_key(hx509_private_key *key)
+_hx509_private_key_init(hx509_private_key *key,
+			hx509_private_key_ops *ops,
+			void *keydata)
 {
     *key = calloc(1, sizeof(**key));
     if (*key == NULL)
 	return ENOMEM;
+    (*key)->ref = 1;
+    (*key)->ops = ops;
+    (*key)->private_key.keydata = keydata;
     return 0;
 }
 
-int
-_hx509_free_private_key(hx509_private_key *key)
+hx509_private_key
+_hx509_private_key_ref(hx509_private_key key)
 {
+    if (key->ref <= 0)
+	_hx509_abort("refcount <= 0");
+    key->ref++;
+    if (key->ref == 0)
+	_hx509_abort("refcount == 0");
+    return key;
+}
+
+const char *
+_hx509_private_pem_name(hx509_private_key key)
+{
+    return key->ops->pemtype;
+}
+
+int
+_hx509_private_key_free(hx509_private_key *key)
+{
+    if (key == NULL || *key == NULL)
+	return 0;
+
+    if ((*key)->ref <= 0)
+	_hx509_abort("refcount <= 0");
+    if (--(*key)->ref > 0)
+	return 0;
+
     if ((*key)->private_key.rsa)
 	RSA_free((*key)->private_key.rsa);
     (*key)->private_key.rsa = NULL;
@@ -1288,6 +1448,41 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
     key->md = &pkcs1_rsa_sha1_alg;
 }
 
+int 
+_hx509_private_key_oid(hx509_context context,
+		       const hx509_private_key key,
+		       heim_oid *data)
+{
+    int ret;
+    ret = der_copy_oid((*key->ops->key_oid)(), data);
+    if (ret)
+	hx509_set_error_string(context, 0, ret, "malloc out of memory");
+    return ret;
+}
+
+int
+_hx509_private_key_exportable(hx509_private_key key)
+{
+    if (key->ops->export == NULL)
+	return 0;
+    return 1;
+}
+
+int 
+_hx509_private_key_export(hx509_context context,
+			  const hx509_private_key key,
+			  heim_octet_string *data)
+{
+    if (key->ops->export == NULL) {
+	hx509_clear_error_string(context);
+	return HX509_UNIMPLEMENTED_OPERATION;
+    }
+    return (*key->ops->export)(context, key, data);
+}
+
+/*
+ *
+ */
 
 struct hx509cipher {
     const char *name;
@@ -2082,6 +2277,7 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
     rsa->q = BN_dup(private_key->private_key.rsa->q);
     rsa->dmp1 = BN_dup(private_key->private_key.rsa->dmp1);
     rsa->dmq1 = BN_dup(private_key->private_key.rsa->dmq1);
+    rsa->iqmp = BN_dup(private_key->private_key.rsa->iqmp);
 
     if (rsa->n == NULL || rsa->e == NULL || 
 	rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL ||

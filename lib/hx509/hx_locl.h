@@ -77,6 +77,8 @@ typedef struct hx509_path hx509_path;
 
 typedef void (*_hx509_cert_release_func)(struct hx509_cert_data *, void *);
 
+typedef struct hx509_private_key_ops hx509_private_key_ops;
+
 #include <hx509-private.h>
 #include <hx509_err.h>
 
@@ -146,6 +148,7 @@ struct hx509_keyset_ops {
     int flags;
     int (*init)(hx509_context, hx509_certs, void **, 
 		int, const char *, hx509_lock);
+    int (*store)(hx509_context, hx509_certs, void *, int, hx509_lock);
     int (*free)(hx509_certs, void *);
     int (*add)(hx509_context, hx509_certs, void *, hx509_cert);
     int (*query)(hx509_context, hx509_certs, void *, 
@@ -155,6 +158,8 @@ struct hx509_keyset_ops {
     int (*iter_end)(hx509_context, hx509_certs, void *, void *);
     int (*printinfo)(hx509_context, hx509_certs, 
 		     void *, int (*)(void *, char *), void *);
+    int (*getkeys)(hx509_context, hx509_certs, void *, hx509_private_key **);
+    int (*addkey)(hx509_context, hx509_certs, void *, hx509_private_key);
 };
 
 struct _hx509_password {

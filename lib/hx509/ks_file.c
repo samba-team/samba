@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,6 +36,7 @@ RCSID("$Id$");
 
 struct ks_file {
     hx509_certs certs;
+    char *fn;
 };
 
 struct header {
@@ -430,8 +431,12 @@ parse_pem_file(hx509_context context,
 		break;
 	    }
 
-	    p = malloc(i);
+	    p = emalloc(i);
 	    i = base64_decode(buf, p);
+	    if (i < 0) {
+		free(p);
+		goto out;
+	    }
 	    
 	    data = erealloc(data, len + i);
 	    memcpy(((char *)data) + len, p, i);
@@ -459,6 +464,7 @@ parse_pem_file(hx509_context context,
 				       "Found no matching PEM format for %s",
 				       type);
 	    }
+	out:
 	    free(data);
 	    data = NULL;
 	    len = 0;
@@ -498,9 +504,10 @@ file_init(hx509_context context,
 	  hx509_certs certs, void **data, int flags, 
 	  const char *residue, hx509_lock lock)
 {
-    char *files = NULL, *p, *pnext;
+    char *p, *pnext;
     struct ks_file *f = NULL;
-    struct hx509_collector *c;
+    struct hx509_collector *c = NULL;
+    hx509_private_key *keys = NULL;
     int ret;
 
     *data = NULL;
@@ -508,25 +515,41 @@ file_init(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    c = _hx509_collector_alloc(context, lock);
-    if (c == NULL)
-	return ENOMEM;
-
     f = calloc(1, sizeof(*f));
     if (f == NULL) {
 	hx509_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
+	return ENOMEM;
     }
 
-    files = strdup(residue);
-    if (files == NULL) {
+    f->fn = strdup(residue);
+    if (f->fn == NULL) {
 	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
 
-    for (p = files; p != NULL; p = pnext) {
+    /* 
+     * XXX this is broken, the function should parse the file before
+     * overwriting it
+     */
+
+    if (flags & HX509_CERTS_CREATE) {
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+			       0, lock, &f->certs);
+	if (ret)
+	    goto out;
+	*data = f;
+	return 0;
+    }
+
+    c = _hx509_collector_alloc(context, lock);
+    if (c == NULL) {
+	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	goto out;
+    }
+
+    for (p = f->fn; p != NULL; p = pnext) {
 	int found_data;
 
 	pnext = strchr(p, ',');
@@ -559,15 +582,29 @@ file_init(hx509_context context,
 	}
     }
 
-    ret = _hx509_collector_collect(context, c, &f->certs);
+    ret = _hx509_collector_collect_certs(context, c, &f->certs);
+    if (ret)
+	goto out;
+
+    ret = _hx509_collector_collect_private_keys(context, c, &keys);
+    if (ret == 0) {
+	int i;
+
+	for (i = 0; keys[i]; i++)
+	    _hx509_certs_keys_add(context, f->certs, keys[i]);
+	_hx509_certs_keys_free(context, keys);
+    }
+
 out:
     if (ret == 0)
 	*data = f;
-    else
+    else {
+	if (f->fn)
+	    free(f->fn);
 	free(f);
-    free(files);
-
-    _hx509_collector_free(c);
+    }
+    if (c)
+	_hx509_collector_free(c);
     return ret;
 }
 
@@ -576,11 +613,117 @@ file_free(hx509_certs certs, void *data)
 {
     struct ks_file *f = data;
     hx509_certs_free(&f->certs);
+    free(f->fn);
     free(f);
     return 0;
 }
 
+static void
+pem_header(FILE *f, const char *type, const char *str)
+{
+    fprintf(f, "-----%s %s-----\n", type, str);
+}
 
+static int
+dump_pem_file(hx509_context context, const char *header,
+	      FILE *f, const void *data, size_t size)
+{
+    const char *p = data;
+    size_t length;
+    char *line;
+
+#define ENCODE_LINE_LENGTH	54
+    
+    pem_header(f, "BEGIN", header);
+
+    while (size > 0) {
+	ssize_t l;
+	
+	length = size;
+	if (length > ENCODE_LINE_LENGTH)
+	    length = ENCODE_LINE_LENGTH;
+	
+	l = base64_encode(p, length, &line);
+	if (l < 0) {
+	    hx509_set_error_string(context, 0, ENOMEM,
+				   "malloc - out of memory");
+	    return ENOMEM;
+	}
+	size -= length;
+	fprintf(f, "%s\n", line);
+	p += length;
+	free(line);
+    }
+
+    pem_header(f, "END", header);
+
+    return 0;
+}
+
+static int
+store_private_key(hx509_context context, FILE *f, hx509_private_key key)
+{
+    heim_octet_string data;
+    int ret;
+
+    ret = _hx509_private_key_export(context, key, &data);
+    if (ret == 0)
+	dump_pem_file(context, _hx509_private_pem_name(key), f,
+		      data.data, data.length);
+    free(data.data);
+    return ret;
+}
+
+static int
+store_func(hx509_context context, void *ctx, hx509_cert c)
+{
+    FILE *f = (FILE *)ctx;
+    size_t size;
+    heim_octet_string data;
+    int ret;
+
+    ASN1_MALLOC_ENCODE(Certificate, data.data, data.length, 
+		       _hx509_get_cert(c), &size, ret);
+    if (ret)
+	return ret;
+    if (data.length != size)
+	_hx509_abort("internal ASN.1 encoder error");
+    
+    dump_pem_file(context, "CERTIFICATE", f, data.data, data.length);
+    free(data.data);
+
+    if (_hx509_cert_private_key_exportable(c))
+	store_private_key(context, f, _hx509_cert_private_key(c));
+
+    return 0;
+}
+
+static int
+file_store(hx509_context context, 
+	   hx509_certs certs, void *data, int flags, hx509_lock lock)
+{
+    struct ks_file *f = data;
+    FILE *fh;
+    int ret;
+
+    fh = fopen(f->fn, "w");
+    if (fh == NULL) {
+	hx509_set_error_string(context, 0, ENOENT,
+			       "Failed to open file %s for writing");
+	return ENOENT;
+    }
+
+    ret = hx509_certs_iter(context, f->certs, store_func, fh);
+    fclose(fh);
+    return ret;
+}
+
+static int 
+file_add(hx509_context context, hx509_certs certs, void *data, hx509_cert c)
+{
+    struct ks_file *f = data;
+    return hx509_certs_add(context, f->certs, c);
+}
 
 static int 
 file_iter_start(hx509_context context,
@@ -608,17 +751,40 @@ file_iter_end(hx509_context context,
     return hx509_certs_end_seq(context, f->certs, cursor);
 }
 
+static int
+file_getkeys(hx509_context context,
+	     hx509_certs certs,
+	     void *data,
+	     hx509_private_key **keys)
+{
+    struct ks_file *f = data;
+    return _hx509_certs_keys_get(context, f->certs, keys);
+}
+
+static int
+file_addkey(hx509_context context,
+	     hx509_certs certs,
+	     void *data,
+	     hx509_private_key key)
+{
+    struct ks_file *f = data;
+    return _hx509_certs_keys_add(context, f->certs, key);
+}
 
 static struct hx509_keyset_ops keyset_file = {
     "FILE",
     0,
     file_init,
+    file_store,
     file_free,
-    NULL,
+    file_add,
     NULL,
     file_iter_start,
     file_iter,
-    file_iter_end
+    file_iter_end,
+    NULL,
+    file_getkeys,
+    file_addkey
 };
 
 void
