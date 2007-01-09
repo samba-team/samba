@@ -1092,23 +1092,31 @@ process_pa_data_to_md(krb5_context context,
     (*out_md)->len = 0;
     (*out_md)->val = NULL;
     
-    if (in_md->len != 0) {
+    /*
+     * Make sure we don't sent both ENC-TS and PK-INIT pa data, no
+     * need to expose our password protecting our PKCS12 key.
+     */
+
+    if (ctx->pk_init_ctx) {
+
+	ret = pa_data_to_md_pkinit(context, a, creds->client, ctx, *out_md);
+	if (ret)
+	    return ret;
+
+    } else if (in_md->len != 0) {
 	struct pa_info_data paid, *ppaid;
-
+	
 	memset(&paid, 0, sizeof(paid));
-
+	
 	paid.etype = ENCTYPE_NULL;
 	ppaid = process_pa_info(context, creds->client, a, &paid, in_md);
-
+	
 	pa_data_to_md_ts_enc(context, a, creds->client, ctx, ppaid, *out_md);
 	if (ppaid)
 	    free_paid(context, ppaid);
     }
 
     pa_data_add_pac_request(context, ctx, *out_md);
-    ret = pa_data_to_md_pkinit(context, a, creds->client, ctx, *out_md);
-    if (ret)
-	return ret;
 
     if ((*out_md)->len == 0) {
 	free(*out_md);
