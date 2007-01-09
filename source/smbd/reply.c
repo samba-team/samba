@@ -2032,6 +2032,17 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
+		/* Ensure we check bad_path in the wcard case. 
+		 * This may not be correct w.r.t. Windows (needs
+		 * smbtorture test cases which will be forthcoming)
+		 * but prevents us from continuing in the obvious
+		 * bad path case. This is merely a placeholder. JRA.
+		 */
+
+		if (!rc && bad_path) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
 
