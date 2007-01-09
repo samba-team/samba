@@ -28,7 +28,10 @@ struct drsuapi_DsNameInfo1;
 struct drsuapi_DsReplicaObject;
 struct drsuapi_DsReplicaOIDMapping_Ctr;
 struct drsuapi_DsReplicaAttribute;
+struct drsuapi_DsGetNCChangesCtr1;
+struct drsuapi_DsGetNCChangesCtr6;
 struct ldb_dn;
+struct ldb_message;
 
 #define DSDB_CONTROL_REPLICATED_OBJECT_OID "1.3.6.1.4.1.7165.4.3.1"
 struct dsdb_control_replicated_object {
@@ -36,8 +39,15 @@ struct dsdb_control_replicated_object {
 };
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
+struct dsdb_extended_replicated_object {
+	struct ldb_message *msg;
+};
+
 struct dsdb_extended_replicated_objects {
 	struct ldb_dn *partition_dn;
+
+	uint32_t num_objects;
+	struct dsdb_extended_replicated_object *objects;
 };
 
 #include "librpc/gen_ndr/security.h"

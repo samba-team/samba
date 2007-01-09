@@ -17,7 +17,8 @@ OBJ_FILES = \
 		common/sidmap.o \
 		common/flag_mapping.o \
 		schema/schema_init.o \
-		schema/schema_syntax.o
+		schema/schema_syntax.o \
+		repl/replicated_objects.o
 #
 # End SUBSYSTEM SAMDB
 ################################################
