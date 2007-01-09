@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -19,6 +19,7 @@ my $e = {
 	'PROPERTIES' => {},
 	'POINTERS' => 0,
 	'TYPE' => 'uint8',
+	'PARENT' => { TYPE => 'STRUCT' },
 	'LINE' => 42 };
 
 is_deeply(GetElementLevelTable($e), [
@@ -57,8 +58,9 @@ is_deeply($ne->{LEVELS},  [
 $e = {
 	'FILE' => 'foo.idl',
 	'NAME' => 'v',
-	'PROPERTIES' => {},
+	'PROPERTIES' => {"unique" => 1},
 	'POINTERS' => 1,
+	'PARENT' => { TYPE => 'STRUCT' },
 	'TYPE' => 'uint8',
 	'LINE' => 42 };
 
@@ -67,7 +69,7 @@ is_deeply(GetElementLevelTable($e), [
 		LEVEL_INDEX => 0,
 		IS_DEFERRED => 0,
 		TYPE => 'POINTER',
-		POINTER_TYPE => undef,
+		POINTER_TYPE => "unique",
 		POINTER_INDEX => 0,
 		LEVEL => 'EMBEDDED'
 	},
@@ -88,9 +90,10 @@ is_deeply(GetElementLevelTable($e), [
 $e = {
 	'FILE' => 'foo.idl',
 	'NAME' => 'v',
-	'PROPERTIES' => {},
+	'PROPERTIES' => {"unique" => 1},
 	'POINTERS' => 2,
 	'TYPE' => 'uint8',
+	'PARENT' => { TYPE => 'STRUCT' },
 	'LINE' => 42 };
 
 is_deeply(GetElementLevelTable($e), [
@@ -98,7 +101,7 @@ is_deeply(GetElementLevelTable($e), [
 		LEVEL_INDEX => 0,
 		IS_DEFERRED => 0,
 		TYPE => 'POINTER',
-		POINTER_TYPE => undef,
+		POINTER_TYPE => "unique",
 		POINTER_INDEX => 0,
 		LEVEL => 'EMBEDDED'
 	},
@@ -106,7 +109,7 @@ is_deeply(GetElementLevelTable($e), [
 		LEVEL_INDEX => 1,
 		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
-		POINTER_TYPE => undef,
+		POINTER_TYPE => "unique",
 		POINTER_INDEX => 1,
 		LEVEL => 'EMBEDDED'
 	},
@@ -122,7 +125,7 @@ is_deeply(GetElementLevelTable($e), [
 	}
 ]);
 
-# Case 2 : ref pointers
+# Case 3 : ref pointers
 #
 $e = {
 	'FILE' => 'foo.idl',
@@ -130,6 +133,7 @@ $e = {
 	'PROPERTIES' => {"ref" => 1},
 	'POINTERS' => 1,
 	'TYPE' => 'uint8',
+	'PARENT' => { TYPE => 'STRUCT' },
 	'LINE' => 42 };
 
 is_deeply(GetElementLevelTable($e), [
@@ -143,6 +147,39 @@ is_deeply(GetElementLevelTable($e), [
 	},
 	{
 		'IS_DEFERRED' => 1,
+		'LEVEL_INDEX' => 1,
+		'DATA_TYPE' => 'uint8',
+		'CONVERT_FROM' => undef,
+		'CONTAINS_DEFERRED' => 0,
+		'TYPE' => 'DATA',
+		'IS_SURROUNDING' => 0,
+		'CONVERT_TO' => undef
+	}
+]);
+
+
+# Case 4 : top-level ref pointers
+#
+$e = {
+	'FILE' => 'foo.idl',
+	'NAME' => 'v',
+	'PROPERTIES' => {"ref" => 1},
+	'POINTERS' => 1,
+	'TYPE' => 'uint8',
+	'PARENT' => { TYPE => 'FUNCTION' },
+	'LINE' => 42 };
+
+is_deeply(GetElementLevelTable($e), [
+	{
+		LEVEL_INDEX => 0,
+		IS_DEFERRED => 0,
+		TYPE => 'POINTER',
+		POINTER_TYPE => "ref",
+		POINTER_INDEX => 0,
+		LEVEL => 'TOP'
+	},
+	{
+		'IS_DEFERRED' => 0,
 		'LEVEL_INDEX' => 1,
 		'DATA_TYPE' => 'uint8',
 		'CONVERT_FROM' => undef,
