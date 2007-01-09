@@ -35,6 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -837,7 +838,7 @@ sub ValidProperties($$)
 	return unless defined $e->{PROPERTIES};
 
 	foreach my $key (keys %{$e->{PROPERTIES}}) {
-		fatal($e, el_name($e) . ": unknown property '$key'")
+		warning($e, el_name($e) . ": unknown property '$key'")
 			unless defined($property_list{$key});
 
    		fatal($e, el_name($e) . ": property '$key' not allowed on '$t'")
