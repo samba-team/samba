@@ -147,7 +147,8 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct kludge_acl_context *ac;
 	struct ldb_request *down_req;
-	int ret;
+	struct kludge_private_data *data;
+	int ret, i;
 
 	req->handle = NULL;
 
@@ -155,6 +156,8 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	data = talloc_get_type(module->private_data, struct kludge_private_data);
 
 	ac->module = module;
 	ac->up_context = req->context;
@@ -172,6 +175,25 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	down_req->op.search.tree = req->op.search.tree;
 	down_req->op.search.attrs = req->op.search.attrs;
 	
+
+	/*  FIXME: I hink we should copy the tree and keep the original
+	 *  unmodified. SSS */
+	/* replace any attributes in the parse tree that are private,
+	   so we don't allow a search for 'sambaPassword=penguin',
+	   just as we would not allow that attribute to be returned */
+	switch (ac->user_type) {
+	case SYSTEM:
+	case ADMINISTRATOR:
+		break;
+	default:
+		/* remove password attributes */
+		for (i = 0; data && data->password_attrs && data->password_attrs[i]; i++) {
+			ldb_parse_tree_attr_replace(down_req->op.search.tree, 
+						    data->password_attrs[i],
+						    "kludgeACLredactedattribute");
+		}
+	}
+
 	down_req->controls = req->controls;
 
 	down_req->context = ac;
