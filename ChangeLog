@@ -1,5 +1,10 @@
-2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/klist.c (print_cred_verbose): include ticket length in the
+	verbose output
+	
+2007-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/acache.c (loadlib): pass RTLD_LAZY to dlopen, without
 	it linux is unhappy.
 
