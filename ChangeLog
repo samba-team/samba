@@ -1,5 +1,16 @@
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/test_pac.c: move around to code test on real PAC.
+
+	* lib/krb5/pac.c: A tiny 2 char diffrence that make the code work
+	for real.
+
+	* lib/krb5/test_pac.c: Test more PAC (note that the values used in
+	this test is wrong, they have to be fixed when the pac code is
+	fixed).
+
+	* doc/setup.texi: Update to new hxtool issue-certificate usage
+
 	* lib/krb5/init_creds_pw.c: Make sure we don't sent both ENC-TS
 	and PK-INIT pa data, no need to expose our password protecting our
 	PKCS12 key.
