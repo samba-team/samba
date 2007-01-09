@@ -167,6 +167,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	    }
 	}
 	free_Ticket(&t);
+	printf("Ticket length: %lu\n", (unsigned long)cred->ticket.length);
     }
     printf("Auth time:  %s\n", printable_time_long(cred->times.authtime));
     if(cred->times.authtime != cred->times.starttime)
