@@ -1,5 +1,9 @@
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c: Make sure we don't sent both ENC-TS
+	and PK-INIT pa data, no need to expose our password protecting our
+	PKCS12 key.
+
 	* kuser/klist.c (print_cred_verbose): include ticket length in the
 	verbose output
 	
