@@ -170,7 +170,8 @@ RSA_check_key(const RSA *key)
      * and then decrypt/verify.
      */
 
-    if (rsa->q == NULL || rsa->dmp1 == NULL || rsa->dmq1 == NULL)
+    if ((rsa->d == NULL || rsa->n == NULL) &&
+	(rsa->p == NULL || rsa->q || rsa->dmp1 == NULL || rsa->dmq1 == NULL || rsa->iqmp == NULL))
 	return 0;
 
     buffer = malloc(RSA_size(rsa));
