@@ -1368,6 +1368,10 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = _hx509_private_key2SPKI(context, private_key, &spki);
 	if (ret)
 	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);
+
+	if (opt->self_signed_flag)
+	    cert_key = private_key;
+
     }
 
     if (opt->req_string) {
