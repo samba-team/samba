@@ -100,20 +100,20 @@ ${kadmin} check ${R} || exit 1
 echo "Setting up certificates"
 ${hxtool} request-create \
 	 --subject="CN=kdc,DC=test,DC=h5l,DC=se" \
-	 --key=${keyfile2} \
+	 --key=FILE:${keyfile2} \
 	 req-kdc.der || exit 1
 ${hxtool} request-create \
 	 --subject="CN=bar,DC=test,DC=h5l,DC=se" \
-	 --key=${keyfile2} \
+	 --key=FILE:${keyfile2} \
 	 req-pkinit.der || exit 1
 
 echo "issue self-signed ca cert"
 ${hxtool} issue-certificate \
 	  --self-signed \
 	  --issue-ca \
-	  --ca-private-key=${keyfile} \
+	  --ca-private-key=FILE:${keyfile} \
           --subject="CN=CA,DC=test,DC=h5l,DC=se" \
-	  --certificate="ca.crt" || exit 1
+	  --certificate="FILE:ca.crt" || exit 1
 
 echo "issue kdc certificate"
 ${hxtool} issue-certificate \
@@ -121,7 +121,7 @@ ${hxtool} issue-certificate \
 	  --type="pkinit-kdc" \
           --pk-init-principal="krbtgt/TEST.H5L.SE@TEST.H5L.SE" \
 	  --req="req-kdc.der" \
-	  --certificate="kdc.crt" || exit 1
+	  --certificate="FILE:kdc.crt" || exit 1
 
 echo "issue user certificate"
 ${hxtool} issue-certificate \
@@ -129,7 +129,7 @@ ${hxtool} issue-certificate \
 	  --type="pkinit-client" \
           --pk-init-principal="bar@TEST.H5L.SE" \
 	  --req="req-pkinit.der" \
-	  --certificate="pkinit.crt" || exit 1
+	  --certificate="FILE:pkinit.crt" || exit 1
 
 echo foo > ${objdir}/foopassword
 
