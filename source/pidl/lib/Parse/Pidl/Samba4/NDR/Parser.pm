@@ -10,12 +10,14 @@ package Parse::Pidl::Samba4::NDR::Parser;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(is_charset_array);
+@EXPORT_OK = qw(check_null_pointer);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
-use Parse::Pidl::Util qw(has_property ParseExpr print_uuid);
+use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
+use Parse::Pidl qw(warning);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -165,29 +167,6 @@ sub deindent()
 }
 
 #####################################################################
-# check that a variable we get from ParseExpr isn't a null pointer
-sub check_null_pointer($)
-{
-	my $size = shift;
-	if ($size =~ /^\*/) {
-		my $size2 = substr($size, 1);
-		pidl "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
-	}
-}
-
-#####################################################################
-# check that a variable we get from ParseExpr isn't a null pointer, 
-# putting the check at the end of the structure/function
-sub check_null_pointer_deferred($)
-{
-	my $size = shift;
-	if ($size =~ /^\*/) {
-		my $size2 = substr($size, 1);
-		defer "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
-	}
-}
-
-#####################################################################
 # declare a function public or static, depending on its attributes
 sub fn_declare($$$)
 {
@@ -325,6 +304,61 @@ sub ParseArrayPushHeader($$$$$)
 	return $length;
 }
 
+sub check_null_pointer($$$)
+{
+	my ($element, $env, $print_fn) = @_;
+
+	return sub ($) {
+		my $expandedvar = shift;
+		my $check = 0;
+
+		# Figure out the number of pointers in $ptr
+		$expandedvar =~ s/^(\**)//;
+		my $ptr = $1;
+
+		my $var = undef;
+		foreach (keys %$env) {
+			if ($env->{$_} eq $expandedvar) {
+				$var = $_;
+				last;
+			}
+		}
+		
+		if (defined($var)) {
+			my $e;
+			# lookup ptr in $e
+			foreach (@{$element->{PARENT}->{ELEMENTS}}) {
+				if ($_->{NAME} eq $var) {
+					$e = $_;
+					last;
+				}
+			}
+
+			$e or die("Environment doesn't match siblings");
+
+			# See if pointer at pointer level $level
+			# needs to be checked.
+			foreach my $l (@{$e->{LEVELS}}) {
+				if ($l->{TYPE} eq "POINTER" and 
+					$l->{POINTER_INDEX} == length($ptr)) {
+					# No need to check ref pointers
+					$check = ($l->{POINTER_TYPE} ne "ref");
+					last;
+				}
+
+				if ($l->{TYPE} eq "DATA") {
+					warning($element, "too much dereferences for `$var'");
+				}
+			}
+		} else {
+			warning($element, "unknown dereferenced expression `$expandedvar'");
+			$check = 1;
+		}
+		
+		$print_fn->("if ($ptr$expandedvar == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;") if $check;
+	}
+}
+
 #####################################################################
 # parse an array - pull side
 sub ParseArrayPullHeader($$$$$)
@@ -339,20 +373,18 @@ sub ParseArrayPullHeader($$$$$)
 	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
 		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
 	} else {
-		$length = $size = ParseExpr($l->{SIZE_IS}, $env, $e);
+		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e, 
+		                               check_null_pointer($e, $env, \&pidl));
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
 		pidl "NDR_CHECK(ndr_pull_array_size(ndr, " . get_pointer_to($var_name) . "));";
 	}
 
-
 	if ($l->{IS_VARYING}) {
 		pidl "NDR_CHECK(ndr_pull_array_length($ndr, " . get_pointer_to($var_name) . "));";
 		$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
 	}
-
-	check_null_pointer($length);
 
 	if ($length ne $size) {
 		pidl "if ($length > $size) {";
@@ -363,20 +395,18 @@ sub ParseArrayPullHeader($$$$$)
 	}
 
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
-		my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
 		defer "if ($var_name) {";
 		defer_indent;
-		check_null_pointer_deferred($size);
+		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e, check_null_pointer($e, $env, \&defer));
 		defer "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 		defer_deindent;
 		defer "}";
 	}
 
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e);
 		defer "if ($var_name) {";
 		defer_indent;
-		check_null_pointer_deferred($length);
+		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e, check_null_pointer($e, $env, \&defer));
 		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 		defer_deindent;
 		defer "}"
@@ -661,7 +691,7 @@ sub ParsePtrPush($$$)
 	my ($e,$l,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
-		check_null_pointer(get_value_of($var_name));
+		pidl "if ($var_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
 		if ($l->{LEVEL} eq "EMBEDDED") {
 			pidl "NDR_CHECK(ndr_push_ref_ptr(ndr));";
 		}
@@ -774,9 +804,7 @@ sub ParseElementPrint($$$)
 sub ParseSwitchPull($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env, $e);
-
-	check_null_pointer($switch_var);
+	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e, check_null_pointer($e, $env, \&pidl));
 
 	$var_name = get_pointer_to($var_name);
 	pidl "NDR_CHECK(ndr_pull_set_switch_value($ndr, $var_name, $switch_var));";
@@ -787,9 +815,8 @@ sub ParseSwitchPull($$$$$$)
 sub ParseSwitchPush($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env, $e);
+	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e, check_null_pointer($e, $env, \&pidl));
 
-	check_null_pointer($switch_var);
 	$var_name = get_pointer_to($var_name);
 	pidl "NDR_CHECK(ndr_push_set_switch_value($ndr, $var_name, $switch_var));";
 }
@@ -2014,7 +2041,6 @@ sub AllocateArrayLevel($$$$$)
 
 	my $var = ParseExpr($e->{NAME}, $env, $e);
 
-	check_null_pointer($size);
 	my $pl = GetPrevLevel($e, $l);
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
@@ -2093,8 +2119,7 @@ sub ParseFunctionPull($)
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
-			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env, $e);
-			check_null_pointer($size);
+			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e, check_null_pointer($e, $env, \&pidl));
 			
 			pidl "NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";
 
