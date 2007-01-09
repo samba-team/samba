@@ -157,6 +157,11 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 
 	event_backend_init();
 
+#if _SAMBA_BUILD_
+	if (name == NULL) {
+		name = lp_parm_string(-1, "event", "backend");
+	}
+#endif
 	if (name == NULL) {
 		name = "standard";
 	}
@@ -250,7 +255,6 @@ int event_loop_wait(struct event_context *ev)
 	return ev->ops->loop_wait(ev);
 }
 
-#if _SAMBA_BUILD_
 /*
   find an event context that is a parent of the given memory context,
   or create a new event context as a child of the given context if
@@ -264,9 +268,7 @@ struct event_context *event_context_find(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
 	if (ev == NULL) {		
-		ev = event_context_init_byname(mem_ctx, 
-					       lp_parm_string(-1, "event", "backend"));
+		ev = event_context_init(mem_ctx);
 	}
 	return ev;
 }
-#endif
