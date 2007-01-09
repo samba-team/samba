@@ -532,6 +532,7 @@ WERROR reg_delete_path(const struct nt_user_token *token,
 	p = strchr(path, '\\');
 
 	if ((p == NULL) || (p[1] == '\0')) {
+		SAFE_FREE(path);
 		return WERR_INVALID_PARAM;
 	}
 
