@@ -1899,7 +1899,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 ********************************************************************/
 
 static NTSTATUS can_delete(connection_struct *conn, char *fname,
-			   uint32 dirtype)
+			   uint32 dirtype, BOOL bad_path)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1913,6 +1913,13 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 	}
 
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
+	        if(errno == ENOENT) {
+			if (bad_path) {
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+		}
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -1977,6 +1984,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 {
 	pstring directory;
 	pstring mask;
+	pstring orig_name;
 	char *p;
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
@@ -1987,12 +1995,12 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	*directory = *mask = 0;
 	
 	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		return has_wild
-			? NT_STATUS_INVALID_PARAMETER
-			: NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
 
+	/*
+	 * Feel my pain, this code needs rewriting *very* badly! -- vl
+	 */
+	pstrcpy(orig_name, name);
+	
 	p = strrchr_m(name,'/');
 	if (!p) {
 		pstrcpy(directory,".");
@@ -2018,84 +2026,82 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(conn,directory,dirtype);
+		error = can_delete(conn,directory,dirtype,bad_path);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
-			notify_fname(conn, directory, -1,
+			notify_fname(conn, orig_name, -1,
 				     NOTIFY_ACTION_REMOVED);
 		}
 
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
-		long offset = 0;
 		
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
 
-		if (!check_name(directory,conn)) {
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-		}
-
-		if (!(dir_hnd = OpenDir(conn, directory, mask, dirtype))) {
-			return NT_STATUS_NO_SUCH_FILE;
-		}
+		if (check_name(directory,conn))
+			dir_hnd = OpenDir(conn, directory, mask, dirtype);
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
 		   We don't implement this yet XXXX
 		*/
 		
-		error = NT_STATUS_NO_SUCH_FILE;
+		if (dir_hnd) {
+			long offset = 0;
+			error = NT_STATUS_NO_SUCH_FILE;
 
-		while ((dname = ReadDirName(dir_hnd, &offset))) {
-			SMB_STRUCT_STAT st;
-			pstring fname;
-			BOOL sys_direntry = False;
-			pstrcpy(fname,dname);
+			while ((dname = ReadDirName(dir_hnd, &offset))) {
+				SMB_STRUCT_STAT st;
+				pstring fname;
+				BOOL sys_direntry = False;
+				pstrcpy(fname,dname);
 
-			if (!is_visible_file(conn, directory, dname, &st, True)) {
-				continue;
-			}
+				if (!is_visible_file(conn, directory, dname, &st, True)) {
+					continue;
+				}
 
-			/* Quick check for "." and ".." */
-			if (fname[0] == '.') {
-				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-					if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
-						sys_direntry = True;
-					} else {
-						continue;
+				/* Quick check for "." and ".." */
+				if (fname[0] == '.') {
+					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+						if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
+							sys_direntry = True;
+						} else {
+							continue;
+						}
 					}
 				}
-			}
 
-			if(!mask_match(fname, mask, conn->case_sensitive))
-				continue;
+				if(!mask_match(fname, mask, conn->case_sensitive))
+					continue;
 				
-			if (sys_direntry) {
-				error = NT_STATUS_OBJECT_NAME_INVALID;
-				DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
-					 fname, mask));
-				break;
-			}
+				if (sys_direntry) {
+					error = NT_STATUS_OBJECT_NAME_INVALID;
+					DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
+						fname, mask));
+					break;
+				}
 
-			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-			error = can_delete(conn, fname, dirtype);
-			if (!NT_STATUS_IS_OK(error)) {
-				continue;
+				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+				error = can_delete(conn, fname, dirtype,
+						   bad_path);
+				if (!NT_STATUS_IS_OK(error)) {
+					continue;
+				}
+				if (SMB_VFS_UNLINK(conn,fname) == 0) {
+					count++;
+					notify_action(
+						conn, directory, dname,
+						-1, NOTIFY_ACTION_REMOVED);
+				}
+				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
-			if (SMB_VFS_UNLINK(conn,fname) == 0) {
-				count++;
-				notify_action(
-					conn, directory, dname,
-					-1, NOTIFY_ACTION_REMOVED);
-			}
-			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
+			CloseDir(dir_hnd);
 		}
-		CloseDir(dir_hnd);
 	}
 	
 	if (count == 0 && NT_STATUS_IS_OK(error)) {
