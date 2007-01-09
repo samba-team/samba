@@ -2031,6 +2031,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
+		long offset = 0;
 		
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
@@ -2048,56 +2049,53 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		   We don't implement this yet XXXX
 		*/
 		
-		if (dir_hnd) {
-			long offset = 0;
-			error = NT_STATUS_NO_SUCH_FILE;
+		error = NT_STATUS_NO_SUCH_FILE;
 
-			while ((dname = ReadDirName(dir_hnd, &offset))) {
-				SMB_STRUCT_STAT st;
-				pstring fname;
-				BOOL sys_direntry = False;
-				pstrcpy(fname,dname);
+		while ((dname = ReadDirName(dir_hnd, &offset))) {
+			SMB_STRUCT_STAT st;
+			pstring fname;
+			BOOL sys_direntry = False;
+			pstrcpy(fname,dname);
 
-				if (!is_visible_file(conn, directory, dname, &st, True)) {
-					continue;
-				}
+			if (!is_visible_file(conn, directory, dname, &st, True)) {
+				continue;
+			}
 
-				/* Quick check for "." and ".." */
-				if (fname[0] == '.') {
-					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
-							sys_direntry = True;
-						} else {
-							continue;
-						}
+			/* Quick check for "." and ".." */
+			if (fname[0] == '.') {
+				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+					if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
+						sys_direntry = True;
+					} else {
+						continue;
 					}
 				}
-
-				if(!mask_match(fname, mask, conn->case_sensitive))
-					continue;
-				
-				if (sys_direntry) {
-					error = NT_STATUS_OBJECT_NAME_INVALID;
-					DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
-						fname, mask));
-					break;
-				}
-
-				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(conn, fname, dirtype);
-				if (!NT_STATUS_IS_OK(error)) {
-					continue;
-				}
-				if (SMB_VFS_UNLINK(conn,fname) == 0) {
-					count++;
-					notify_action(
-						conn, directory, dname,
-						-1, NOTIFY_ACTION_REMOVED);
-				}
-				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
-			CloseDir(dir_hnd);
+
+			if(!mask_match(fname, mask, conn->case_sensitive))
+				continue;
+				
+			if (sys_direntry) {
+				error = NT_STATUS_OBJECT_NAME_INVALID;
+				DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
+					 fname, mask));
+				break;
+			}
+
+			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+			error = can_delete(conn, fname, dirtype);
+			if (!NT_STATUS_IS_OK(error)) {
+				continue;
+			}
+			if (SMB_VFS_UNLINK(conn,fname) == 0) {
+				count++;
+				notify_action(
+					conn, directory, dname,
+					-1, NOTIFY_ACTION_REMOVED);
+			}
+			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 		}
+		CloseDir(dir_hnd);
 	}
 	
 	if (count == 0 && NT_STATUS_IS_OK(error)) {
