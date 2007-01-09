@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "librpc/gen_ndr/security.h"
+#include "lib/events/events.h"
 
 /*
   read from a file
@@ -75,6 +75,16 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		ret = pvfs_stream_read(pvfs, f->handle, 
 				       rd->readx.out.data, maxcnt, rd->readx.in.offset);
 	} else {
+#if HAVE_LINUX_AIO
+		/* possibly try an aio read */
+		if ((req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC) &&
+		    (pvfs->flags & PVFS_FLAG_LINUX_AIO)) {
+			status = pvfs_aio_pread(req, rd, f, maxcnt);
+			if (NT_STATUS_IS_OK(status)) {
+				return NT_STATUS_OK;
+			}
+		}
+#endif
 		ret = pread(f->handle->fd, 
 			    rd->readx.out.data, 
 			    maxcnt,

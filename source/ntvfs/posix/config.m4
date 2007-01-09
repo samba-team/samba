@@ -29,3 +29,9 @@ if test x"$ac_cv_func_ext_blkid_get_cache" = x"yes"; then
 	AC_DEFINE(HAVE_LIBBLKID,1,[Whether we have blkid support (e2fsprogs)])
 	SMB_ENABLE(BLKID,YES)
 fi
+
+AC_CHECK_HEADERS(libaio.h)
+SMB_ENABLE(pvfs_aio,NO)
+if test x"$ac_cv_header_libaio_h" = x"yes"; then
+	SMB_ENABLE(pvfs_aio,YES)
+fi
