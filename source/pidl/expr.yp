@@ -110,7 +110,11 @@ sub _Dereference($$)
 sub _Error($)
 {
 	my ($self) = @_;
-	$self->YYData->{ERROR}->("Parse error in `".$self->YYData->{FULL_INPUT}."' near `". $self->YYData->{LAST_TOKEN} . "'");
+	if (defined($self->YYData->{LAST_TOKEN})) {
+		$self->YYData->{ERROR}->("Parse error in `".$self->YYData->{FULL_INPUT}."' near `". $self->YYData->{LAST_TOKEN} . "'");
+	} else {
+		$self->YYData->{ERROR}->("Parse error in `".$self->YYData->{FULL_INPUT}."'");
+	}
 }
 
 sub Run {

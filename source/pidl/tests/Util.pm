@@ -18,14 +18,22 @@ my $warnings = "";
 undef &Parse::Pidl::warning;
 *Parse::Pidl::warning = sub { 
 	my ($e, $l) = @_;
-	$warnings .= "$e->{FILE}:$e->{LINE}: $l\n";
+	if (defined($e)) {
+		$warnings .= "$e->{FILE}:$e->{LINE}: $l\n";
+	} else {
+		$warnings .= "$l\n";
+	}
 };
 
 my $errors = "";
 undef &Parse::Pidl::error;
 *Parse::Pidl::error = sub { 
 	my ($e, $l) = @_;
-	$errors .= "$e->{FILE}:$e->{LINE}: $l\n";
+	if (defined($e)) {
+		$errors .= "$e->{FILE}:$e->{LINE}: $l\n";
+	} else {
+		$errors .= "$l\n";
+	}
 };
 
 use Test::More;
