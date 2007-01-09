@@ -624,14 +624,12 @@ collect_private_key(hx509_context context,
     if (rsa == NULL)
 	_hx509_abort("out of memory");
 
-    rsa->n = getattr_bn(p, slot, session, object, CKA_MODULUS);
-    if (rsa->n == NULL)
-	_hx509_abort("CKA_MODULUS missing");
     /* 
-     * The exponent should always be present according to the pkcs11
-     * specification, but some smartcards leaves it out, let ignore
-     * any failure to fetch it.
+     * The exponent and modulus should always be present according to
+     * the pkcs11 specification, but some smartcards leaves it out,
+     * let ignore any failure to fetch it.
      */
+    rsa->n = getattr_bn(p, slot, session, object, CKA_MODULUS);
     rsa->e = getattr_bn(p, slot, session, object, CKA_PUBLIC_EXPONENT);
 
     p11rsa = calloc(1, sizeof(*p11rsa));
