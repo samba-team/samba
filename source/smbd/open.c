@@ -309,8 +309,6 @@ static NTSTATUS open_file(files_struct *fsp,
 							    fsp);
 			}
 
-			notify_action(conn, parent_dir, name, -1,
-				      NOTIFY_ACTION_ADDED);
 		}
 
 	} else {
@@ -1943,9 +1941,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 	if (lp_inherit_owner(SNUM(conn))) {
 		change_dir_owner_to_parent(conn, parent_dir, name, psbuf);
 	}
-
-	notify_action(conn, parent_dir, dirname, FILE_NOTIFY_CHANGE_DIR_NAME,
-		      NOTIFY_ACTION_ADDED);
 
 	return NT_STATUS_OK;
 }

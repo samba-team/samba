@@ -361,50 +361,6 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	return NULL;
 }
 
-/*
- * Same as file_find_di_first/next, but also finds non-fd opens.
- *
- * Jeremy, do we really need the fsp->fh->fd != -1 ??
- */
-
-struct files_struct *fsp_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
-{
-	files_struct *fsp;
-
-	if (fsp_fi_cache.dev == dev && fsp_fi_cache.inode == inode) {
-		/* Positive or negative cache hit. */
-		return fsp_fi_cache.fsp;
-	}
-
-	fsp_fi_cache.dev = dev;
-	fsp_fi_cache.inode = inode;
-
-	for (fsp=Files;fsp;fsp=fsp->next) {
-		if ((fsp->dev == dev) && (fsp->inode == inode)) {
-			/* Setup positive cache. */
-			fsp_fi_cache.fsp = fsp;
-			return fsp;
-		}
-	}
-
-	/* Setup negative cache. */
-	fsp_fi_cache.fsp = NULL;
-	return NULL;
-}
-
-struct files_struct *fsp_find_di_next(files_struct *start_fsp)
-{
-	files_struct *fsp;
-
-	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-		if ( (fsp->dev == start_fsp->dev)
-		     && (fsp->inode == start_fsp->inode) )
-			return fsp;
-	}
-
-	return NULL;
-}
-
 /****************************************************************************
  Find a fsp that is open for printing.
 ****************************************************************************/
@@ -482,8 +438,6 @@ void file_free(files_struct *fsp)
 	} else {
 		fsp->fh->ref_count--;
 	}
-
-	TALLOC_FREE(fsp->notify);
 
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
