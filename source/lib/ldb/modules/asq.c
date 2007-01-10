@@ -282,19 +282,30 @@ static int asq_build_multiple_requests(struct asq_context *ac, struct ldb_handle
 	return LDB_SUCCESS;
 }
 
-static int asq_search_continue(struct ldb_handle *h)
+static int asq_search_continue(struct ldb_handle *handle)
 {
 	struct asq_context *ac;
 	int ret;
+    
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ac = talloc_get_type(h->private_data, struct asq_context);
+	if (handle->state == LDB_ASYNC_DONE) {
+		return handle->status;
+	}
+
+	ac = talloc_get_type(handle->private_data, struct asq_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	switch (ac->step) {
 	case ASQ_INIT:
 		/* check the search is well formed */
 		if (ac->orig_req->op.search.scope != LDB_SCOPE_BASE) {
 			ac->asq_ret = ASQ_CTRL_UNWILLING_TO_PERFORM;
-			return asq_terminate(h);
+			return asq_terminate(handle);
 		}
 
 		ac->req_attrs = ac->orig_req->op.search.attrs;
@@ -310,43 +321,70 @@ static int asq_search_continue(struct ldb_handle *h)
 	
 		ac->step = ASQ_SEARCH_BASE;
 
+		handle->state = LDB_ASYNC_PENDING;
+		handle->status = LDB_SUCCESS;
+
 		return ldb_request(ac->module->ldb, ac->base_req);
 
 	case ASQ_SEARCH_BASE:
 
+		ret = ldb_wait(ac->base_req->handle, LDB_WAIT_NONE);
+		
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+
+		if (ac->base_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->base_req->handle->status;
+			goto done;
+		}
+		if (ac->base_req->handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
+		}
+
 		/* build up the requests call chain */
-		ret = asq_build_multiple_requests(ac, h);
+		ret = asq_build_multiple_requests(ac, handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		if (h->state == LDB_ASYNC_DONE) {
+		if (handle->state == LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
 		ac->step = ASQ_SEARCH_MULTI;
 
-		/* no break nor return,
-		 * the set of requests is performed in ASQ_SEARCH_MULTI
-		 */
-		/* fall through */
+		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
 
 	case ASQ_SEARCH_MULTI:
 
-		if (ac->cur_req >= ac->num_reqs) {
-			return asq_terminate(h);
+		ret = ldb_wait(ac->reqs[ac->cur_req]->handle, LDB_WAIT_NONE);
+		
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->reqs[ac->cur_req]->handle->status != LDB_SUCCESS) {
+			handle->status = ac->reqs[ac->cur_req]->handle->status;
 		}
 
-		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+		if (ac->reqs[ac->cur_req]->handle->state == LDB_ASYNC_DONE) {
+			ac->cur_req++;
+
+			if (ac->cur_req >= ac->num_reqs) {
+				return asq_terminate(handle);
+			}
+
+			return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+		}
 
 	default:
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		break;
 	}
 
-	/* this is reached only in case of error */
-	/* FIXME: fire an async reply ? */
-	h->status = ret;
-	h->state = LDB_ASYNC_DONE;
+done:
+	handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
 
@@ -387,82 +425,12 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	return asq_search_continue(h);
 }
 
-static int asq_wait_none(struct ldb_handle *handle)
-{
-	struct asq_context *ac;
-	int ret;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	handle->state = LDB_ASYNC_PENDING;
-	handle->status = LDB_SUCCESS;
-
-	ac = talloc_get_type(handle->private_data, struct asq_context);
-	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	switch (ac->step) {
-	case ASQ_SEARCH_BASE:
-		ret = ldb_wait(ac->base_req->handle, LDB_WAIT_NONE);
-		
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-
-		if (ac->base_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->base_req->handle->status;
-			goto done;
-		}
-		if (ac->base_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		return asq_search_continue(handle);
-
-	case ASQ_SEARCH_MULTI:
-
-		ret = ldb_wait(ac->reqs[ac->cur_req]->handle, LDB_WAIT_NONE);
-		
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->reqs[ac->cur_req]->handle->status != LDB_SUCCESS) {
-			handle->status = ac->reqs[ac->cur_req]->handle->status;
-		}
-
-		if (ac->reqs[ac->cur_req]->handle->state == LDB_ASYNC_DONE) {
-			ac->cur_req++;
-		}
-
-		return asq_search_continue(handle);
-
-	default:
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = LDB_SUCCESS;
-
-done:
-	handle->state = LDB_ASYNC_DONE;
-	return ret;
-}
-
 static int asq_wait_all(struct ldb_handle *handle)
 {
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = asq_wait_none(handle);
+		ret = asq_search_continue(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -476,7 +444,7 @@ static int asq_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	if (type == LDB_WAIT_ALL) {
 		return asq_wait_all(handle);
 	} else {
-		return asq_wait_none(handle);
+		return asq_search_continue(handle);
 	}
 }
 
