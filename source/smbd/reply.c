@@ -1827,6 +1827,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
+		if (dirtype == 0) {
+			dirtype = FILE_ATTRIBUTE_NORMAL;
+		}
 		status = can_delete(conn,directory,dirtype);
 		if (!NT_STATUS_IS_OK(status))
 			return status;
