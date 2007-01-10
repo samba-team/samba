@@ -1838,7 +1838,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
-		if (dirtype == aDIR && mask[0] == '*' && mask[1] == '\0') {
+		if (((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) && ms_has_wild(mask)) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
