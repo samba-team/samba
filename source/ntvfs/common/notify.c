@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_notify.h"
 #include "lib/util/dlinklist.h"
 #include "ntvfs/sysdep/sys_notify.h"
+#include "cluster/cluster.h"
 
 struct notify_context {
 	struct tdb_wrap *w;

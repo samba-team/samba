@@ -46,6 +46,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
 #include "ntvfs/ntvfs.h"
+#include "cluster/cluster.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
