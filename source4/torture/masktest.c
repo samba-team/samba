@@ -1,7 +1,3 @@
-/*
-  use popt_common code
-*/
-
 /* 
    Unix SMB/CIFS implementation.
    mask_match tester
