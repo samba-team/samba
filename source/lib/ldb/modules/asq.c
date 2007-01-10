@@ -38,11 +38,12 @@
 
 struct asq_context {
 
-	enum {ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
+	enum {ASQ_INIT, ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
 
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
+	struct ldb_request *orig_req;
+
+	struct ldb_asq_control *asq_ctrl;
 
 	const char * const *req_attrs;
 	char *req_attribute;
@@ -63,14 +64,12 @@ struct asq_context {
 	struct ldb_control **controls;
 };
 
-static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+static struct ldb_handle *init_handle(struct ldb_request *req, struct ldb_module *module)
 {
 	struct asq_context *ac;
 	struct ldb_handle *h;
 
-	h = talloc_zero(mem_ctx, struct ldb_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
@@ -90,9 +89,9 @@ static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 	h->state = LDB_ASYNC_INIT;
 	h->status = LDB_SUCCESS;
 
+	ac->step = ASQ_INIT;
 	ac->module = module;
-	ac->up_context = context;
-	ac->up_callback = callback;
+	ac->orig_req = req;
 
 	return h;
 }
@@ -147,7 +146,7 @@ static int asq_terminate(struct ldb_handle *handle)
 
 	ares->controls[i + 1] = NULL;
 
-	ac->up_callback(ac->module->ldb, ac->up_context, ares);
+	ac->orig_req->callback(ac->module->ldb, ac->orig_req->context, ares);
 
 	return LDB_SUCCESS;
 }
@@ -198,7 +197,7 @@ static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_
 
 		/* pass the message up to the original callback as we
 		 * do not have to elaborate on it any further */
-		return ac->up_callback(ac->module->ldb, ac->up_context, ares);
+		return ac->orig_req->callback(ac->module->ldb, ac->orig_req->context, ares);
 		
 	} else { /* ignore any REFERRAL or DONE reply */
 		talloc_free(ares);
@@ -210,95 +209,37 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int asq_search(struct ldb_module *module, struct ldb_request *req)
+static int asq_build_first_request(struct asq_context *ac)
 {
-	struct ldb_control *control;
-	struct ldb_asq_control *asq_ctrl;
-	struct asq_context *ac;
-	struct ldb_handle *h;
 	char **base_attrs;
-	int ret;
 
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_ASQ_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
+	ac->base_req = talloc_zero(ac, struct ldb_request);
+	if (ac->base_req == NULL) return LDB_ERR_OPERATIONS_ERROR;
 
-	req->handle = NULL;
-
-	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb,
-				  "Async interface called with NULL callback function or NULL context");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	asq_ctrl = talloc_get_type(control->data, struct ldb_asq_control);
-	if (!asq_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	h = init_handle(req, module, req->context, req->callback);
-	if (!h) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac = talloc_get_type(h->private_data, struct asq_context);
-
-	req->handle = h;
-
-	/* check the search is well formed */
-	if (req->op.search.scope != LDB_SCOPE_BASE) {
-		ac->asq_ret = ASQ_CTRL_UNWILLING_TO_PERFORM;
-		return asq_terminate(h);
-	}
-
-	ac->req_attrs = req->op.search.attrs;
-	ac->req_attribute = talloc_strdup(ac, asq_ctrl->source_attribute);
-	if (ac->req_attribute == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	/* get the object to retrieve the DNs to search */
-	ac->base_req = talloc_zero(req, struct ldb_request);
-	if (ac->base_req == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	ac->base_req->operation = req->operation;
-	ac->base_req->op.search.base = req->op.search.base;
+	ac->base_req->operation = ac->orig_req->operation;
+	ac->base_req->op.search.base = ac->orig_req->op.search.base;
 	ac->base_req->op.search.scope = LDB_SCOPE_BASE;
-	ac->base_req->op.search.tree = req->op.search.tree;
+	ac->base_req->op.search.tree = ac->orig_req->op.search.tree;
 	base_attrs = talloc_array(ac->base_req, char *, 2);
-	if (base_attrs == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	base_attrs[0] = talloc_strdup(base_attrs, asq_ctrl->source_attribute);
-	if (base_attrs[0] == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (base_attrs == NULL) return LDB_ERR_OPERATIONS_ERROR;
+
+	base_attrs[0] = talloc_strdup(base_attrs, ac->asq_ctrl->source_attribute);
+	if (base_attrs[0] == NULL) return LDB_ERR_OPERATIONS_ERROR;
+
 	base_attrs[1] = NULL;
 	ac->base_req->op.search.attrs = (const char * const *)base_attrs;
 
 	ac->base_req->context = ac;
 	ac->base_req->callback = asq_base_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->base_req);
-
-	ac->step = ASQ_SEARCH_BASE;
-
-	ret = ldb_request(module->ldb, ac->base_req);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->base_req);
 
 	return LDB_SUCCESS;
 }
 
-static int asq_requests(struct ldb_handle *handle) {
-	struct asq_context *ac;
+static int asq_build_multiple_requests(struct asq_context *ac, struct ldb_handle *handle)
+{
 	struct ldb_message_element *el;
 	int i;
-
-	ac = talloc_get_type(handle->private_data, struct asq_context);
-	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	/* look up the DNs */
 	if (ac->base_res == NULL) {
@@ -311,7 +252,6 @@ static int asq_requests(struct ldb_handle *handle) {
 		return asq_terminate(handle);
 	}
 
-	/* build up the requests call chain */
 	ac->num_reqs = el->num_values;
 	ac->cur_req = 0;
 	ac->reqs = talloc_array(ac, struct ldb_request *, ac->num_reqs);
@@ -339,9 +279,112 @@ static int asq_requests(struct ldb_handle *handle) {
 		ldb_set_timeout_from_prev_req(ac->module->ldb, ac->base_req, ac->reqs[i]);
 	}
 
-	ac->step = ASQ_SEARCH_MULTI;
-
 	return LDB_SUCCESS;
+}
+
+static int asq_search_continue(struct ldb_handle *h)
+{
+	struct asq_context *ac;
+	int ret;
+
+	ac = talloc_get_type(h->private_data, struct asq_context);
+
+	switch (ac->step) {
+	case ASQ_INIT:
+		/* check the search is well formed */
+		if (ac->orig_req->op.search.scope != LDB_SCOPE_BASE) {
+			ac->asq_ret = ASQ_CTRL_UNWILLING_TO_PERFORM;
+			return asq_terminate(h);
+		}
+
+		ac->req_attrs = ac->orig_req->op.search.attrs;
+		ac->req_attribute = talloc_strdup(ac, ac->asq_ctrl->source_attribute);
+		if (ac->req_attribute == NULL)
+			return LDB_ERR_OPERATIONS_ERROR;
+
+		/* get the object to retrieve the DNs to search */
+		ret = asq_build_first_request(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	
+		ac->step = ASQ_SEARCH_BASE;
+
+		return ldb_request(ac->module->ldb, ac->base_req);
+
+	case ASQ_SEARCH_BASE:
+
+		/* build up the requests call chain */
+		ret = asq_build_multiple_requests(ac, h);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		if (h->state == LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
+		}
+
+		ac->step = ASQ_SEARCH_MULTI;
+
+		/* no break nor return,
+		 * the set of requests is performed in ASQ_SEARCH_MULTI
+		 */
+		/* fall through */
+
+	case ASQ_SEARCH_MULTI:
+
+		if (ac->cur_req >= ac->num_reqs) {
+			return asq_terminate(h);
+		}
+
+		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+
+	default:
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		break;
+	}
+
+	/* this is reached only in case of error */
+	/* FIXME: fire an async reply ? */
+	h->status = ret;
+	h->state = LDB_ASYNC_DONE;
+	return ret;
+}
+
+static int asq_search(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *control;
+	struct asq_context *ac;
+	struct ldb_handle *h;
+
+	/* check if there's a paged request control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_ASQ_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
+
+	req->handle = NULL;
+
+	if (!req->callback || !req->context) {
+		ldb_set_errstring(module->ldb,
+				  "Async interface called with NULL callback function or NULL context");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	h = init_handle(req, module);
+	if (!h) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac = talloc_get_type(h->private_data, struct asq_context);
+
+	ac->asq_ctrl = talloc_get_type(control->data, struct ldb_asq_control);
+	if (!ac->asq_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	req->handle = h;
+
+	return asq_search_continue(h);
 }
 
 static int asq_wait_none(struct ldb_handle *handle)
@@ -382,21 +425,9 @@ static int asq_wait_none(struct ldb_handle *handle)
 			return LDB_SUCCESS;
 		}
 
-		ret = asq_requests(handle);
-
-		/* no break nor return,
-		 * the set of requests is performed in ASQ_SEARCH_MULTI
-		 */
-		/* fall through */
+		return asq_search_continue(handle);
 
 	case ASQ_SEARCH_MULTI:
-
-		if (ac->reqs[ac->cur_req]->handle == NULL) {
-			ret = ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
 
 		ret = ldb_wait(ac->reqs[ac->cur_req]->handle, LDB_WAIT_NONE);
 		
@@ -412,11 +443,7 @@ static int asq_wait_none(struct ldb_handle *handle)
 			ac->cur_req++;
 		}
 
-		if (ac->cur_req < ac->num_reqs) {
-			return LDB_SUCCESS;
-		}
-
-		return asq_terminate(handle);
+		return asq_search_continue(handle);
 
 	default:
 		ret = LDB_ERR_OPERATIONS_ERROR;
