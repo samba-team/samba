@@ -408,7 +408,7 @@ _PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 	/* find the entry, and delete it */
 	for (i=0;i<file.num_entries;i++) {
 		if (file_handle == file.entries[i].file_handle &&
-		    odb->ntvfs_ctx->server_id == file.entries[i].server) {
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
 			if (file.entries[i].delete_on_close) {
 				file.delete_on_close = True;
 			}
@@ -455,7 +455,7 @@ _PUBLIC_ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 	/* find the entry, and delete it */
 	for (i=0;i<file.num_pending;i++) {
 		if (private == file.pending[i].notify_ptr &&
-		    odb->ntvfs_ctx->server_id == file.pending[i].server) {
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.pending[i].server)) {
 			if (i < file.num_pending-1) {
 				memmove(file.pending+i, file.pending+i+1, 
 					(file.num_pending - (i+1)) * 

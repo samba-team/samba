@@ -57,7 +57,7 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
   receive a completion message for a wait
 */
 static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uint32_t msg_type, 
-			       uint32_t src, DATA_BLOB *data)
+			       struct server_id src, DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = private;
 	struct ntvfs_request *req;

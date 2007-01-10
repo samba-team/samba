@@ -112,7 +112,7 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	struct finddcs_state *state =
 		talloc_get_type(ctx->async.private_data, struct finddcs_state);
 	struct irpc_request *ireq;
-	uint32_t *nbt_servers;
+	struct server_id *nbt_servers;
 	const char *address;
 
 	state->ctx->status = resolve_name_recv(ctx, state, &address);
@@ -134,7 +134,7 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	}
 
 	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		fallback_node_status(state);
 		return;
 	}

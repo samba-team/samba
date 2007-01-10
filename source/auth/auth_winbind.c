@@ -157,13 +157,13 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
-	uint32_t *winbind_servers;
+	struct server_id *winbind_servers;
 	struct winbind_check_password_state *s;
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
 
 	winbind_servers = irpc_servers_byname(ctx->auth_ctx->msg_ctx, "winbind_server");
-	if ((winbind_servers == NULL) || (winbind_servers[0] == 0)) {
+	if ((winbind_servers == NULL) || (winbind_servers[0].id == 0)) {
 		DEBUG(0, ("Winbind authentication for [%s]\\[%s] failed, " 
 			  "no winbind_server running!\n",
 			  user_info->client.domain_name, user_info->client.account_name));

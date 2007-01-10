@@ -292,7 +292,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 struct auth_session_info *session_info,
 				 struct event_context *event_ctx,
 				 struct messaging_context *msg_ctx,
-				 uint32_t server_id,
+				 struct server_id server_id,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
@@ -344,7 +344,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					struct auth_session_info *session_info,
 					struct event_context *event_ctx,
 					struct messaging_context *msg_ctx,
-					uint32_t server_id,
+					struct server_id server_id,
 					uint32_t state_flags,
 					struct dcesrv_connection **dce_conn_p)
 {

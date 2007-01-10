@@ -28,6 +28,7 @@
 #include "smbd/service.h"
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
+#include "cluster/cluster.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */
 #define SERVER_TCP_LOW_PORT  1024
@@ -134,7 +135,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
 	srv_conn->private       = private_data;
 	srv_conn->model_ops     = model_ops;
 	srv_conn->socket	= sock;
-	srv_conn->server_id	= 0;
+	srv_conn->server_id	= cluster_id(0);
 	srv_conn->ops           = stream_ops;
 	srv_conn->msg_ctx	= msg_ctx;
 	srv_conn->event.ctx	= ev;
@@ -151,7 +152,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
 */
 static void stream_new_connection(struct event_context *ev,
 				  struct socket_context *sock, 
-				  uint32_t server_id, void *private)
+				  struct server_id server_id, void *private)
 {
 	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
 	struct stream_connection *srv_conn;
@@ -191,10 +192,10 @@ static void stream_new_connection(struct event_context *ev,
 	s = socket_get_my_addr(sock, ev);
 	if (s && c) {
 		const char *title;
-		title = talloc_asprintf(s, "conn[%s] c[%s:%u] s[%s:%u] server_id[%d]",
+		title = talloc_asprintf(s, "conn[%s] c[%s:%u] s[%s:%u] server_id[%s]",
 					stream_socket->ops->name, 
 					c->addr, c->port, s->addr, s->port,
-					server_id);
+					cluster_id_string(s, server_id));
 		if (title) {
 			stream_connection_set_title(srv_conn, title);
 		}

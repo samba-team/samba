@@ -184,7 +184,7 @@ struct ntvfs_context {
 
 	struct share_config *config;
 
-	uint32_t server_id;
+	struct server_id server_id;
 	struct event_context *event_ctx;
 	struct messaging_context *msg_ctx;
 

@@ -32,13 +32,14 @@
 #include "librpc/rpc/dcerpc_table.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc.h"
+#include "cluster/cluster.h"
 
 /*
   state of a irpc 'connection'
 */
 struct ejs_irpc_connection {
 	const char *server_name;
-	uint32_t *dest_ids;
+	struct server_id *dest_ids;
 	struct messaging_context *msg_ctx;
 };
 
@@ -78,7 +79,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 	/* create a messaging context, looping as we have no way to
 	   allocate temporary server ids automatically */
 	for (i=0;i<10000;i++) {
-		p->msg_ctx = messaging_init(p, EJS_ID_BASE + i, ev);
+		p->msg_ctx = messaging_init(p, cluster_id(EJS_ID_BASE + i), ev);
 		if (p->msg_ctx) break;
 	}
 	if (p->msg_ctx == NULL) {
@@ -88,7 +89,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 	}
 
 	p->dest_ids = irpc_servers_byname(p->msg_ctx, p->server_name);
-	if (p->dest_ids == NULL || p->dest_ids[0] == 0) {
+	if (p->dest_ids == NULL || p->dest_ids[0].id == 0) {
 		talloc_free(p);
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
@@ -214,7 +215,7 @@ static int ejs_irpc_call(int eid, struct MprVar *io,
 		goto done;
 	}
 
-	for (count=0;p->dest_ids[count];count++) /* noop */ ;
+	for (count=0;p->dest_ids[count].id;count++) /* noop */ ;
 
 	/* we need to make a call per server */
 	reqs = talloc_array(ejs, struct irpc_request *, count);

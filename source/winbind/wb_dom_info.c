@@ -91,7 +91,7 @@ static void get_dom_info_recv_addrs(struct composite_context *ctx)
 	struct get_dom_info_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct get_dom_info_state);
-	uint32_t *nbt_servers;
+	struct server_id *nbt_servers;
 	struct irpc_request *ireq;
 
 	state->ctx->status = resolve_name_recv(ctx, state->info,
@@ -100,7 +100,7 @@ static void get_dom_info_recv_addrs(struct composite_context *ctx)
 
 	nbt_servers = irpc_servers_byname(state->service->task->msg_ctx,
 					  "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
 		return;
 	}

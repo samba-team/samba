@@ -26,6 +26,7 @@
 #define __PROCESS_MODEL_H__
 
 #include "lib/socket/socket.h"
+#include "smbd/service_task.h"
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
@@ -46,12 +47,12 @@ struct model_ops {
 	/* function to accept new connection */
 	void (*accept_connection)(struct event_context *, struct socket_context *, 
 				  void (*)(struct event_context *, struct socket_context *, 
-					   uint32_t , void *), 
+					   struct server_id , void *), 
 				  void *);
 
 	/* function to create a task */
 	void (*new_task)(struct event_context *, 
-			 void (*)(struct event_context *, uint32_t, void *),
+			 void (*)(struct event_context *, struct server_id, void *),
 			 void *);
 
 	/* function to terminate a connection or task */
