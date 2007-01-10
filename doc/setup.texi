@@ -1293,6 +1293,8 @@ lha@@EXAMPLE.ORG:CN=Love,UID=lha
 
 @section Use hxtool to create certificates
 
+@subsection Generate certificates
+
 First you need to generate a CA certificate, change the --subject to
 something appropriate, the CA certificate will be valid for 10 years.
 
@@ -1341,6 +1343,15 @@ hxtool issue-certificate \
     --certificate="FILE:user.pem"
 @end example
 
+@subsection Validate certificate
+
+hxtool also contains a tool that will validate certificates according to
+rules from PKIX document. The checks are not complete, but a good test
+to check if you got all of the basic bits right in your certificates.
+
+@example
+hxtool validate FILE:user.pem
+@end example
 
 @section Use OpenSSL to create certificates
 
