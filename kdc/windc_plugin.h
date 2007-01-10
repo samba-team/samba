@@ -57,14 +57,15 @@ typedef krb5_error_code
 
 typedef krb5_error_code 
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
-			       struct hdb_entry_ex *, krb5_pac);
+			       const krb5_principal,
+			       struct hdb_entry_ex *,  struct hdb_entry_ex *, krb5_pac *);
 
 typedef krb5_error_code 
 (*krb5plugin_windc_client_access)(
     void *, krb5_context, struct hdb_entry_ex *, KDC_REQ *);
 
 
-#define KRB5_WINDC_PLUGING_MINOR		1
+#define KRB5_WINDC_PLUGING_MINOR		2
 
 typedef struct krb5plugin_windc_ftable {
     int			minor_version;
