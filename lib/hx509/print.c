@@ -44,6 +44,8 @@ struct hx509_validate_ctx_data {
 struct cert_status {
     unsigned int selfsigned:1;
     unsigned int isca:1;
+    unsigned int isproxy:1;
+    unsigned int haveSAN:1;
     unsigned int haveIAN:1;
     unsigned int haveSKI:1;
     unsigned int haveAKI:1;
@@ -164,6 +166,10 @@ validate_print(hx509_validate_ctx ctx, int flags, const char *fmt, ...)
     va_end(va);
 }
 
+/* 
+ * Dont Care, SHOULD critical, SHOULD NOT critical, MUST critical,
+ * MUST NOT critical
+ */
 enum critical_flag { D_C = 0, S_C, S_N_C, M_C, M_N_C };
 
 static int
@@ -401,6 +407,7 @@ check_subjectAltName(hx509_validate_ctx ctx,
 		     enum critical_flag cf,
 		     const Extension *e)
 {
+    status->haveSAN = 1;
     return check_altName(ctx, status, "subject", cf, e);
 }
 
@@ -453,6 +460,18 @@ check_basicConstraints(hx509_validate_ctx ctx,
     return 0;
 }
 
+static int
+check_proxyCertInfo(hx509_validate_ctx ctx, 
+		    struct cert_status *status,
+		    enum critical_flag cf, 
+		    const Extension *e)
+{
+    status->isproxy = 1;
+
+    return 0;
+}
+
+
 struct {
     const char *name;
     const heim_oid *(*oid)(void);
@@ -485,6 +504,7 @@ struct {
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
+    { "proxyCertInfo", &oid_id_pe_proxyCertInfo, check_proxyCertInfo, M_C },
     { NULL }
 };
 
@@ -618,10 +638,6 @@ hx509_validate_cert(hx509_context context,
 	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 			   "CA certificate have no SubjectKeyIdentifier\n");
 
-	if (!status.haveSKI)
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
-			   "CA certificate have no SubjectKeyIdentifier\n");
-
     } else {
 	if (!status.haveAKI)
 	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
@@ -633,6 +649,19 @@ hx509_validate_cert(hx509_context context,
     if (!status.haveSKI)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 		       "Doesn't have SubjectKeyIdentifier\n");
+
+    if (status.isproxy && status.isca)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Proxy and CA at the same time!\n");
+
+    if (status.isproxy) {
+	if (status.haveSAN)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Proxy and have SAN\n");
+	if (status.haveIAN)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Proxy and have IAN\n");
+    }
 
     return 0;
 }
