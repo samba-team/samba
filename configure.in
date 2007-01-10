@@ -52,6 +52,8 @@ AC_C___ATTRIBUTE__
 
 AC_PROG_LIBTOOL
 
+AM_CONDITIONAL(ENABLE_SHARED, test "$enable_shared" = "yes")
+
 rk_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
 rk_TEST_PACKAGE(openldap,
