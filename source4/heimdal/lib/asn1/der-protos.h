@@ -82,6 +82,11 @@ der_copy_utf8string (
 	const heim_utf8_string */*from*/,
 	heim_utf8_string */*to*/);
 
+int
+der_copy_visible_string (
+	const heim_visible_string */*from*/,
+	heim_visible_string */*to*/);
+
 void
 der_free_bit_string (heim_bit_string */*k*/);
 
@@ -111,6 +116,9 @@ der_free_universal_string (heim_universal_string */*k*/);
 
 void
 der_free_utf8string (heim_utf8_string */*str*/);
+
+void
+der_free_visible_string (heim_visible_string */*str*/);
 
 int
 der_get_bit_string (
@@ -252,6 +260,13 @@ der_get_utf8string (
 	size_t */*size*/);
 
 int
+der_get_visible_string (
+	const unsigned char */*p*/,
+	size_t /*len*/,
+	heim_visible_string */*str*/,
+	size_t */*size*/);
+
+int
 der_heim_bit_string_cmp (
 	const heim_bit_string */*p*/,
 	const heim_bit_string */*q*/);
@@ -331,6 +346,9 @@ der_length_utctime (const time_t */*t*/);
 
 size_t
 der_length_utf8string (const heim_utf8_string */*data*/);
+
+size_t
+der_length_visible_string (const heim_visible_string */*data*/);
 
 int
 der_match_tag (
@@ -502,6 +520,13 @@ der_put_utf8string (
 	unsigned char */*p*/,
 	size_t /*len*/,
 	const heim_utf8_string */*str*/,
+	size_t */*size*/);
+
+int
+der_put_visible_string (
+	unsigned char */*p*/,
+	size_t /*len*/,
+	const heim_visible_string */*str*/,
 	size_t */*size*/);
 
 int

@@ -33,23 +33,24 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: release_name.c,v 1.10 2006/10/07 22:15:26 lha Exp $");
+RCSID("$Id: release_name.c,v 1.11 2006/11/13 18:02:37 lha Exp $");
 
 OM_uint32 _gsskrb5_release_name
            (OM_uint32 * minor_status,
             gss_name_t * input_name
            )
 {
+    krb5_context context;
     krb5_principal name = (krb5_principal)*input_name;
-
-    GSSAPI_KRB5_INIT ();
 
     if (minor_status)
       *minor_status = 0;
 
+    GSSAPI_KRB5_INIT (&context);
+
     *input_name = GSS_C_NO_NAME;
 
-    krb5_free_principal(_gsskrb5_context, name);
+    krb5_free_principal(context, name);
 
     return GSS_S_COMPLETE;
 }

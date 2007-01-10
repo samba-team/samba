@@ -65,7 +65,7 @@
 #if 1
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: vis.c,v 1.9 2005/04/12 11:29:15 lha Exp $");
+RCSID("$Id: vis.c,v 1.13 2006/12/15 11:49:22 lha Exp $");
 #endif
 #include <roken.h>
 #ifndef _DIAGASSERT
@@ -107,6 +107,20 @@ __weak_alias(vis,_vis)
 #else
 #define BELL '\007'
 #endif
+
+char ROKEN_LIB_FUNCTION
+	*rk_vis (char *, int, int, int);
+char ROKEN_LIB_FUNCTION
+	*rk_svis (char *, int, int, int, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_strvis (char *, const char *, int);
+int ROKEN_LIB_FUNCTION
+	rk_strsvis (char *, const char *, int, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_strvisx (char *, const char *, size_t, int);
+int ROKEN_LIB_FUNCTION
+	rk_strsvisx (char *, const char *, size_t, int, const char *);
+
 
 #define isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
 #define iswhite(c)	(c == ' ' || c == '\t' || c == '\n')
@@ -208,9 +222,9 @@ do {									   \
  * svis - visually encode characters, also encoding the characters
  * 	  pointed to by `extra'
  */
-#ifndef HAVE_SVIS
+
 char * ROKEN_LIB_FUNCTION
-svis(char *dst, int c, int flag, int nextc, const char *extra)
+rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
 {
 	_DIAGASSERT(dst != NULL);
 	_DIAGASSERT(extra != NULL);
@@ -219,7 +233,6 @@ svis(char *dst, int c, int flag, int nextc, const char *extra)
 	*dst = '\0';
 	return(dst);
 }
-#endif
 
 
 /*
@@ -237,9 +250,9 @@ svis(char *dst, int c, int flag, int nextc, const char *extra)
  *	Strsvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-#ifndef HAVE_STRSVIS
+
 int ROKEN_LIB_FUNCTION
-strsvis(char *dst, const char *src, int flag, const char *extra)
+rk_strsvis(char *dst, const char *src, int flag, const char *extra)
 {
 	char c;
 	char *start;
@@ -253,12 +266,10 @@ strsvis(char *dst, const char *src, int flag, const char *extra)
 	*dst = '\0';
 	return (dst - start);
 }
-#endif
 
 
-#ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
-strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
+rk_strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 {
 	char c;
 	char *start;
@@ -274,15 +285,13 @@ strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 	*dst = '\0';
 	return (dst - start);
 }
-#endif
 
 
 /*
  * vis - visually encode characters
  */
-#ifndef HAVE_VIS
 char * ROKEN_LIB_FUNCTION
-vis(char *dst, int c, int flag, int nextc)
+rk_vis(char *dst, int c, int flag, int nextc)
 {
 	char extra[MAXEXTRAS];
 
@@ -293,7 +302,6 @@ vis(char *dst, int c, int flag, int nextc)
 	*dst = '\0';
 	return (dst);
 }
-#endif
 
 
 /*
@@ -306,25 +314,22 @@ vis(char *dst, int c, int flag, int nextc)
  *	Strvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-#ifndef HAVE_STRVIS
+
 int ROKEN_LIB_FUNCTION
-strvis(char *dst, const char *src, int flag)
+rk_strvis(char *dst, const char *src, int flag)
 {
 	char extra[MAXEXTRAS];
 
 	MAKEEXTRALIST(flag, extra);
-	return (strsvis(dst, src, flag, extra));
+	return (rk_strsvis(dst, src, flag, extra));
 }
-#endif
 
 
-#ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
-strvisx(char *dst, const char *src, size_t len, int flag)
+rk_strvisx(char *dst, const char *src, size_t len, int flag)
 {
 	char extra[MAXEXTRAS];
 
 	MAKEEXTRALIST(flag, extra);
-	return (strsvisx(dst, src, len, flag, extra));
+	return (rk_strsvisx(dst, src, len, flag, extra));
 }
-#endif

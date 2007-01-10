@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: headers.h,v 1.18 2006/10/17 02:22:17 lha Exp $ 
+ * $Id: headers.h,v 1.22 2007/01/04 00:15:34 lha Exp $ 
  */
 
 #ifndef __HEADERS_H__
@@ -72,6 +72,9 @@
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
@@ -89,9 +92,13 @@
 #include <krb5.h>
 #include <krb5_locl.h>
 #include <digest_asn1.h>
+#include <kx509_asn1.h>
 #include <hdb.h>
 #include <hdb_err.h>
 #include <der.h>
+
+#include <heimntlm.h>
+#include <windc_plugin.h>
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))

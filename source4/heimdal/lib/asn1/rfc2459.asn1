@@ -406,12 +406,30 @@ CRLReason ::= ENUMERATED {
 	aACompromise           (10)
 }
 
+id-pkix OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
+            dod(6) internet(1) security(5) mechanisms(5) pkix(7) }
+
+id-pkix-on OBJECT IDENTIFIER ::= { id-pkix 8 }
+id-pkix-on-dnsSRV OBJECT IDENTIFIER ::= { id-pkix-on 7 }
+
+id-pkix-kp OBJECT IDENTIFIER ::= { id-pkix 3 }
+id-pkix-kp-serverAuth OBJECT IDENTIFIER ::= { id-pkix-kp 1 }
+id-pkix-kp-clientAuth OBJECT IDENTIFIER ::= { id-pkix-kp 2 }
+id-pkix-kp-emailProtection OBJECT IDENTIFIER ::= { id-pkix-kp 4 }
+id-pkix-kp-timeStamping OBJECT IDENTIFIER ::= { id-pkix-kp 8 }
+id-pkix-kp-OCSPSigning OBJECT IDENTIFIER ::= { id-pkix-kp 9 }
+
 -- RFC 3820 Proxy Certificate Profile
 
-id-pkix-pe OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
-            dod(6) internet(1) security(5) mechanisms(5) pkix(7) 1 }
+id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix 1 }
 
 id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
+
+id-pkix-ppl  OBJECT IDENTIFIER ::= { id-pkix 21 }
+
+id-pkix-ppl-anyLanguage     OBJECT IDENTIFIER ::= { id-pkix-ppl 0 }
+id-pkix-ppl-inheritAll      OBJECT IDENTIFIER ::= { id-pkix-ppl 1 }
+id-pkix-ppl-independent     OBJECT IDENTIFIER ::= { id-pkix-ppl 2 }
 
 ProxyPolicy ::= SEQUENCE {
 	policyLanguage		OBJECT IDENTIFIER,

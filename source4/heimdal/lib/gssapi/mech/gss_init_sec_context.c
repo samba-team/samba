@@ -27,7 +27,23 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_init_sec_context.c,v 1.3 2006/07/06 22:30:09 lha Exp $");
+RCSID("$Id: gss_init_sec_context.c,v 1.4 2006/11/14 12:33:11 lha Exp $");
+
+static gss_cred_id_t
+_gss_mech_cred_find(gss_cred_id_t cred_handle, gss_OID mech_type)
+{
+	struct _gss_cred *cred = (struct _gss_cred *)cred_handle;
+	struct _gss_mechanism_cred *mc;
+
+	if (cred == NULL)
+		return GSS_C_NO_CREDENTIAL;
+
+	SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		if (gss_oid_equal(mech_type, mc->gmc_mech_oid))
+			return mc->gmc_cred;
+	}
+	return GSS_C_NO_CREDENTIAL;
+}
 
 OM_uint32
 gss_init_sec_context(OM_uint32 * minor_status,
@@ -49,8 +65,6 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	struct _gss_name *name = (struct _gss_name *) target_name;
 	struct _gss_mechanism_name *mn;
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
-	struct _gss_cred *cred = (struct _gss_cred *) initiator_cred_handle;
-	struct _gss_mechanism_cred *mc;
 	gss_cred_id_t cred_handle;
 	int allocated_ctx;
 	gss_OID mech_type = input_mech_type;
@@ -97,15 +111,7 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	/*
 	 * If we have a cred, find the cred for this mechanism.
 	 */
-	cred_handle = GSS_C_NO_CREDENTIAL;
-	if (cred) {
-		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
-			if (gss_oid_equal(mech_type, mc->gmc_mech_oid)) {
-				cred_handle = mc->gmc_cred;
-				break;
-			}
-		}
-	}
+	cred_handle = _gss_mech_cred_find(initiator_cred_handle, mech_type);
 
 	major_status = m->gm_init_sec_context(minor_status,
 	    cred_handle,

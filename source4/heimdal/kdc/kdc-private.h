@@ -15,6 +15,13 @@ _kdc_add_KRB5SignedPath (
 	EncTicketPart */*tkt*/);
 
 krb5_error_code
+_kdc_add_inital_verified_cas (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	pk_client_params */*params*/,
+	EncTicketPart */*tkt*/);
+
+krb5_error_code
 _kdc_as_rep (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
@@ -88,6 +95,15 @@ _kdc_do_kaserver (
 	krb5_data */*reply*/,
 	const char */*from*/,
 	struct sockaddr_in */*addr*/);
+
+krb5_error_code
+_kdc_do_kx509 (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	const Kx509Request */*req*/,
+	krb5_data */*reply*/,
+	const char */*from*/,
+	struct sockaddr */*addr*/);
 
 krb5_error_code
 _kdc_do_version4 (
@@ -183,6 +199,20 @@ _kdc_maybe_version4 (
 	int /*len*/);
 
 krb5_error_code
+_kdc_pac_generate (
+	krb5_context /*context*/,
+	hdb_entry_ex */*client*/,
+	krb5_pac */*pac*/);
+
+krb5_error_code
+_kdc_pac_verify (
+	krb5_context /*context*/,
+	const krb5_principal /*client_principal*/,
+	hdb_entry_ex */*client*/,
+	hdb_entry_ex */*server*/,
+	krb5_pac */*pac*/);
+
+krb5_error_code
 _kdc_pk_check_client (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
@@ -230,6 +260,30 @@ _kdc_tgs_rep (
 	KDC_REQ */*req*/,
 	krb5_data */*data*/,
 	const char */*from*/,
-	struct sockaddr */*from_addr*/);
+	struct sockaddr */*from_addr*/,
+	int /*datagram_reply*/);
+
+krb5_error_code
+_kdc_tkt_add_if_relevant_ad (
+	krb5_context /*context*/,
+	EncTicketPart */*tkt*/,
+	int /*type*/,
+	const krb5_data */*data*/);
+
+krb5_error_code
+_kdc_try_kx509_request (
+	void */*ptr*/,
+	size_t /*len*/,
+	Kx509Request */*req*/,
+	size_t */*size*/);
+
+krb5_error_code
+_kdc_windc_client_access (
+	krb5_context /*context*/,
+	struct hdb_entry_ex */*client*/,
+	KDC_REQ */*req*/);
+
+krb5_error_code
+_kdc_windc_init (krb5_context /*context*/);
 
 #endif /* __kdc_private_h__ */

@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_set_cred_option.c,v 1.7 2006/07/01 08:50:49 lha Exp $");
+RCSID("$Id: gss_set_cred_option.c,v 1.8 2006/11/13 08:59:43 lha Exp $");
 
 OM_uint32
 gss_set_cred_option (OM_uint32 *minor_status,
@@ -102,7 +102,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	
 			major_status = m->gm_set_cred_option(minor_status,
 			    &mc->gmc_cred, object, value);
-			if (major_status == GSS_S_BAD_MECH)
+			if (major_status == GSS_S_COMPLETE)
 				one_ok = 1;
 		}
 	}

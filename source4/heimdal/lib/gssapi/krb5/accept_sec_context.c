@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: accept_sec_context.c,v 1.65 2006/11/07 14:52:05 lha Exp $");
+RCSID("$Id: accept_sec_context.c,v 1.66 2006/11/13 18:00:54 lha Exp $");
 
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
@@ -41,20 +41,21 @@ krb5_keytab _gsskrb5_keytab;
 OM_uint32
 _gsskrb5_register_acceptor_identity (const char *identity)
 {
+    krb5_context context;
     krb5_error_code ret;
 
-    ret = _gsskrb5_init();
+    ret = _gsskrb5_init(&context);
     if(ret)
 	return GSS_S_FAILURE;
     
     HEIMDAL_MUTEX_lock(&gssapi_keytab_mutex);
 
     if(_gsskrb5_keytab != NULL) {
-	krb5_kt_close(_gsskrb5_context, _gsskrb5_keytab);
+	krb5_kt_close(context, _gsskrb5_keytab);
 	_gsskrb5_keytab = NULL;
     }
     if (identity == NULL) {
-	ret = krb5_kt_default(_gsskrb5_context, &_gsskrb5_keytab);
+	ret = krb5_kt_default(context, &_gsskrb5_keytab);
     } else {
 	char *p;
 
@@ -63,7 +64,7 @@ _gsskrb5_register_acceptor_identity (const char *identity)
 	    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
 	    return GSS_S_FAILURE;
 	}
-	ret = krb5_kt_resolve(_gsskrb5_context, p, &_gsskrb5_keytab);
+	ret = krb5_kt_resolve(context, p, &_gsskrb5_keytab);
 	free(p);
     }
     HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
@@ -120,6 +121,7 @@ static OM_uint32
 gsskrb5_accept_delegated_token
 (OM_uint32 * minor_status,
  gsskrb5_ctx ctx,
+ krb5_context context,
  gss_cred_id_t * delegated_cred_handle
     )
 {
@@ -131,33 +133,31 @@ gsskrb5_accept_delegated_token
 
     /* XXX Create a new delegated_cred_handle? */
     if (delegated_cred_handle == NULL) {
-	kret = krb5_cc_default (_gsskrb5_context, &ccache);
+	kret = krb5_cc_default (context, &ccache);
     } else {
 	*delegated_cred_handle = NULL;
-	kret = krb5_cc_gen_new (_gsskrb5_context, &krb5_mcc_ops, &ccache);
+	kret = krb5_cc_gen_new (context, &krb5_mcc_ops, &ccache);
     }
     if (kret) {
 	ctx->flags &= ~GSS_C_DELEG_FLAG;
 	goto out;
     }
 
-    kret = krb5_cc_initialize(_gsskrb5_context, ccache, ctx->source);
+    kret = krb5_cc_initialize(context, ccache, ctx->source);
     if (kret) {
 	ctx->flags &= ~GSS_C_DELEG_FLAG;
 	goto out;
     }
       
-    krb5_auth_con_removeflags(_gsskrb5_context,
+    krb5_auth_con_removeflags(context,
 			      ctx->auth_context,
 			      KRB5_AUTH_CONTEXT_DO_TIME,
 			      &ac_flags);
-    kret = krb5_rd_cred2(_gsskrb5_context,
+    kret = krb5_rd_cred2(context,
 			 ctx->auth_context,
 			 ccache,
 			 &ctx->fwd_data);
-    if (kret)
-	_gsskrb5_set_error_string();
-    krb5_auth_con_setflags(_gsskrb5_context,
+    krb5_auth_con_setflags(context,
 			   ctx->auth_context,
 			   ac_flags);
     if (kret) {
@@ -181,16 +181,16 @@ gsskrb5_accept_delegated_token
 	handle = (gsskrb5_cred) *delegated_cred_handle;
     
 	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
-	krb5_cc_close(_gsskrb5_context, ccache);
+	krb5_cc_close(context, ccache);
 	ccache = NULL;
     }
 
 out:
     if (ccache) {
 	if (delegated_cred_handle == NULL)
-	    krb5_cc_close(_gsskrb5_context, ccache);
+	    krb5_cc_close(context, ccache);
 	else
-	    krb5_cc_destroy(_gsskrb5_context, ccache);
+	    krb5_cc_destroy(context, ccache);
     }
     return ret;
 }
@@ -198,13 +198,14 @@ out:
 static OM_uint32
 gsskrb5_acceptor_ready(OM_uint32 * minor_status,
 		       gsskrb5_ctx ctx,
+		       krb5_context context,
 		       gss_cred_id_t *delegated_cred_handle)
 {
     OM_uint32 ret;
     int32_t seq_number;
     int is_cfx = 0;
 
-    krb5_auth_getremoteseqnumber (_gsskrb5_context,
+    krb5_auth_getremoteseqnumber (context,
 				  ctx->auth_context,
 				  &seq_number);
 
@@ -222,7 +223,7 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
      * isn't a mutual authentication context
      */
     if (!(ctx->flags & GSS_C_MUTUAL_FLAG) && _gssapi_msg_order_f(ctx->flags)) {
-	krb5_auth_con_setlocalseqnumber(_gsskrb5_context,
+	krb5_auth_con_setlocalseqnumber(context,
 					ctx->auth_context,
 					seq_number);
     }
@@ -233,6 +234,7 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
     if (ctx->fwd_data.length > 0 && (ctx->flags & GSS_C_DELEG_FLAG)) {
 	ret = gsskrb5_accept_delegated_token(minor_status,
 					     ctx,
+					     context,
 					     delegated_cred_handle);
 	if (ret)
 	    return ret;
@@ -250,6 +252,7 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
 static OM_uint32
 gsskrb5_acceptor_start(OM_uint32 * minor_status,
 		       gsskrb5_ctx ctx,
+		       krb5_context context,
 		       const gss_cred_id_t acceptor_cred_handle,
 		       const gss_buffer_t input_token_buffer,
 		       const gss_channel_bindings_t input_chan_bindings,
@@ -301,49 +304,46 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	krb5_rd_req_in_ctx in = NULL;
 	krb5_rd_req_out_ctx out = NULL;
 
-	kret = krb5_rd_req_in_ctx_alloc(_gsskrb5_context, &in);
+	kret = krb5_rd_req_in_ctx_alloc(context, &in);
 	if (kret == 0)
-	    kret = krb5_rd_req_in_set_keytab(_gsskrb5_context, in, keytab);
+	    kret = krb5_rd_req_in_set_keytab(context, in, keytab);
 	if (kret) {
 	    if (in)
-		krb5_rd_req_in_ctx_free(_gsskrb5_context, in);
+		krb5_rd_req_in_ctx_free(context, in);
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return ret;
 	}
 
-	kret = krb5_rd_req_ctx(_gsskrb5_context,
+	kret = krb5_rd_req_ctx(context,
 			       &ctx->auth_context,
 			       &indata,
 			       (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL : acceptor_cred->principal,
 			       in, &out);
-	krb5_rd_req_in_ctx_free(_gsskrb5_context, in);
+	krb5_rd_req_in_ctx_free(context, in);
 	if (kret) {
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return ret;
 	}
 
 	/*
 	 * We need to remember some data on the context_handle.
 	 */
-	kret = krb5_rd_req_out_get_ap_req_options(_gsskrb5_context, out,
+	kret = krb5_rd_req_out_get_ap_req_options(context, out,
 						  &ap_options);
 	if (kret == 0)
-	    kret = krb5_rd_req_out_get_ticket(_gsskrb5_context, out, 
+	    kret = krb5_rd_req_out_get_ticket(context, out, 
 					      &ctx->ticket);
 	if (kret == 0)
-	    kret = krb5_rd_req_out_get_keyblock(_gsskrb5_context, out,
+	    kret = krb5_rd_req_out_get_keyblock(context, out,
 						&ctx->service_keyblock);
 	ctx->lifetime = ctx->ticket->ticket.endtime;
 
-	krb5_rd_req_out_ctx_free(_gsskrb5_context, out);
+	krb5_rd_req_out_ctx_free(context, out);
 	if (kret) {
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return ret;
 	}
     }
@@ -353,22 +353,20 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
      * We need to copy the principal names to the context and the
      * calling layer.
      */
-    kret = krb5_copy_principal(_gsskrb5_context,
+    kret = krb5_copy_principal(context,
 			       ctx->ticket->client,
 			       &ctx->source);
     if (kret) {
 	ret = GSS_S_FAILURE;
 	*minor_status = kret;
-	_gsskrb5_set_error_string ();
     }
 
-    kret = krb5_copy_principal(_gsskrb5_context, 
+    kret = krb5_copy_principal(context, 
 			       ctx->ticket->server,
 			       &ctx->target);
     if (kret) {
 	ret = GSS_S_FAILURE;
 	*minor_status = kret;
-	_gsskrb5_set_error_string ();
 	return ret;
     }
     
@@ -376,18 +374,17 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
      * We need to setup some compat stuff, this assumes that
      * context_handle->target is already set.
      */
-    ret = _gss_DES3_get_mic_compat(minor_status, ctx);
+    ret = _gss_DES3_get_mic_compat(minor_status, ctx, context);
     if (ret)
 	return ret;
 
     if (src_name != NULL) {
-	kret = krb5_copy_principal (_gsskrb5_context,
+	kret = krb5_copy_principal (context,
 				    ctx->ticket->client,
 				    (gsskrb5_name*)src_name);
 	if (kret) {
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return ret;
 	}
     }
@@ -398,13 +395,12 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     {
 	krb5_authenticator authenticator;
       
-	kret = krb5_auth_con_getauthenticator(_gsskrb5_context,
+	kret = krb5_auth_con_getauthenticator(context,
 					      ctx->auth_context,
 					      &authenticator);
 	if(kret) {
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return ret;
 	}
 
@@ -415,22 +411,21 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 						&ctx->flags,
 						&ctx->fwd_data);
 
-	    krb5_free_authenticator(_gsskrb5_context, &authenticator);
+	    krb5_free_authenticator(context, &authenticator);
 	    if (ret) {
 		return ret;
 	    }
         } else {
 	    krb5_crypto crypto;
 
-	    kret = krb5_crypto_init(_gsskrb5_context, 
+	    kret = krb5_crypto_init(context, 
 				    ctx->auth_context->keyblock, 
 				    0, &crypto);
 	    if(kret) {
-		krb5_free_authenticator(_gsskrb5_context, &authenticator);
+		krb5_free_authenticator(context, &authenticator);
 
 		ret = GSS_S_FAILURE;
 		*minor_status = kret;
-		_gsskrb5_set_error_string ();
 		return ret;
 	    }
 
@@ -439,16 +434,15 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	     * GSSAPI checksum here 
 	     */
 
-	    kret = krb5_verify_checksum(_gsskrb5_context,
+	    kret = krb5_verify_checksum(context,
 					crypto, KRB5_KU_AP_REQ_AUTH_CKSUM, NULL, 0,
 					authenticator->cksum);
-	    krb5_free_authenticator(_gsskrb5_context, &authenticator);
-	    krb5_crypto_destroy(_gsskrb5_context, crypto);
+	    krb5_free_authenticator(context, &authenticator);
+	    krb5_crypto_destroy(context, crypto);
 
 	    if(kret) {
 		ret = GSS_S_BAD_SIG;
 		*minor_status = kret;
-		_gsskrb5_set_error_string ();
 		return ret;
 	    }
 
@@ -467,23 +461,22 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	    
 	if (is_cfx != 0 
 	    || (ap_options & AP_OPTS_USE_SUBKEY)) {
-	    kret = krb5_auth_con_addflags(_gsskrb5_context,
+	    kret = krb5_auth_con_addflags(context,
 					  ctx->auth_context,
 					  KRB5_AUTH_CONTEXT_USE_SUBKEY,
 					  NULL);
 	    ctx->more_flags |= ACCEPTOR_SUBKEY;
 	}
 	    
-	kret = krb5_mk_rep(_gsskrb5_context,
+	kret = krb5_mk_rep(context,
 			   ctx->auth_context,
 			   &outbuf);
 	if (kret) {
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return GSS_S_FAILURE;
 	}
 	    
-	if (ctx->flags & GSS_C_DCE_STYLE) {
+	if (IS_DCE_STYLE(ctx)) {
 	    output_token->length = outbuf.length;
 	    output_token->value = outbuf.data;
 	} else {
@@ -510,6 +503,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     
     if (time_rec) {
 	ret = _gsskrb5_lifetime_left(minor_status,
+				     context,
 				     ctx->lifetime,
 				     time_rec);
 	if (ret) {
@@ -521,7 +515,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
      * When GSS_C_DCE_STYLE is in use, we need ask for a AP-REP from
      * the client.
      */
-    if (ctx->flags & GSS_C_DCE_STYLE) {
+    if (IS_DCE_STYLE(ctx)) {
 	/*
 	 * Return flags to caller, but we haven't processed
 	 * delgations yet
@@ -533,7 +527,8 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	return GSS_S_CONTINUE_NEEDED;
     }
 
-    ret = gsskrb5_acceptor_ready(minor_status, ctx, delegated_cred_handle);
+    ret = gsskrb5_acceptor_ready(minor_status, ctx, context, 
+				 delegated_cred_handle);
 
     if (ret_flags)
 	*ret_flags = ctx->flags;
@@ -544,6 +539,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 static OM_uint32
 acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
 			   gsskrb5_ctx ctx,
+			   krb5_context context,
 			   const gss_cred_id_t acceptor_cred_handle,
 			   const gss_buffer_t input_token_buffer,
 			   const gss_channel_bindings_t input_chan_bindings,
@@ -572,29 +568,26 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
      * the remote seq_number to the old value
      */
     {
-	kret = krb5_auth_con_getlocalseqnumber(_gsskrb5_context,
+	kret = krb5_auth_con_getlocalseqnumber(context,
 					       ctx->auth_context,
 					       &l_seq_number);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
 
-	kret = krb5_auth_getremoteseqnumber(_gsskrb5_context,
+	kret = krb5_auth_getremoteseqnumber(context,
 					    ctx->auth_context,
 					    &r_seq_number);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
 
-	kret = krb5_auth_con_setremoteseqnumber(_gsskrb5_context,
+	kret = krb5_auth_con_setremoteseqnumber(context,
 						ctx->auth_context,
 						l_seq_number);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
@@ -609,19 +602,18 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
 	krb5_ap_rep_enc_part *repl;
 	int32_t auth_flags;
 		
-	krb5_auth_con_removeflags(_gsskrb5_context,
+	krb5_auth_con_removeflags(context,
 				  ctx->auth_context,
 				  KRB5_AUTH_CONTEXT_DO_TIME,
 				  &auth_flags);
 
-	kret = krb5_rd_rep(_gsskrb5_context, ctx->auth_context, &inbuf, &repl);
+	kret = krb5_rd_rep(context, ctx->auth_context, &inbuf, &repl);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
-	krb5_free_ap_rep_enc_part(_gsskrb5_context, repl);
-	krb5_auth_con_setflags(_gsskrb5_context, ctx->auth_context, auth_flags);
+	krb5_free_ap_rep_enc_part(context, repl);
+	krb5_auth_con_setflags(context, ctx->auth_context, auth_flags);
     }
 
     /* We need to check the liftime */
@@ -629,6 +621,7 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
 	OM_uint32 lifetime_rec;
 
 	ret = _gsskrb5_lifetime_left(minor_status,
+				     context,
 				     ctx->lifetime,
 				     &lifetime_rec);
 	if (ret) {
@@ -645,12 +638,11 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
     if (ret_flags) *ret_flags = ctx->flags;
 
     if (src_name) {
-	kret = krb5_copy_principal(_gsskrb5_context,
+	kret = krb5_copy_principal(context,
 				   ctx->source,
 				   (gsskrb5_name*)src_name);
 	if (kret) {
 	    *minor_status = kret;
-	    _gsskrb5_set_error_string ();
 	    return GSS_S_FAILURE;
 	}
     }
@@ -664,20 +656,19 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
     {
 	int32_t tmp_r_seq_number, tmp_l_seq_number;
 
-	kret = krb5_auth_getremoteseqnumber(_gsskrb5_context,
+	kret = krb5_auth_getremoteseqnumber(context,
 					    ctx->auth_context,
 					    &tmp_r_seq_number);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
 
-	kret = krb5_auth_con_getlocalseqnumber(_gsskrb5_context,
+	kret = krb5_auth_con_getlocalseqnumber(context,
 					       ctx->auth_context,
 					       &tmp_l_seq_number);
 	if (kret) {
-	    _gsskrb5_set_error_string ();
+
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
@@ -695,17 +686,17 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
      * the old one for the GSS_wrap() calls
      */
     {
-	kret = krb5_auth_con_setremoteseqnumber(_gsskrb5_context,
+	kret = krb5_auth_con_setremoteseqnumber(context,
 						ctx->auth_context,
 						r_seq_number);	
 	if (kret) {
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
     }
 
-    return gsskrb5_acceptor_ready(minor_status, ctx, delegated_cred_handle);
+    return gsskrb5_acceptor_ready(minor_status, ctx, context, 
+				  delegated_cred_handle);
 }
 
 
@@ -722,10 +713,11 @@ _gsskrb5_accept_sec_context(OM_uint32 * minor_status,
 			    OM_uint32 * time_rec,
 			    gss_cred_id_t * delegated_cred_handle)
 {
+    krb5_context context;
     OM_uint32 ret;
     gsskrb5_ctx ctx;
 
-    GSSAPI_KRB5_INIT();
+    GSSAPI_KRB5_INIT(&context);
 
     output_token->length = 0;
     output_token->value = NULL;
@@ -738,6 +730,7 @@ _gsskrb5_accept_sec_context(OM_uint32 * minor_status,
     if (*context_handle == GSS_C_NO_CONTEXT) {
 	ret = _gsskrb5_create_ctx(minor_status,
 				  context_handle,
+				  context,
 				  input_chan_bindings,
 				  ACCEPTOR_START);
 	if (ret)
@@ -758,6 +751,7 @@ _gsskrb5_accept_sec_context(OM_uint32 * minor_status,
     case ACCEPTOR_START:
 	ret = gsskrb5_acceptor_start(minor_status,
 				     ctx,
+				     context,
 				     acceptor_cred_handle,
 				     input_token_buffer,
 				     input_chan_bindings,
@@ -771,6 +765,7 @@ _gsskrb5_accept_sec_context(OM_uint32 * minor_status,
     case ACCEPTOR_WAIT_FOR_DCESTYLE:
 	ret = acceptor_wait_for_dcestyle(minor_status,
 					 ctx,
+					 context,
 					 acceptor_cred_handle,
 					 input_token_buffer,
 					 input_chan_bindings,

@@ -23,3 +23,5 @@ if test "$ac_foo" = yes; then
 fi
 ])
 
+AC_WARNING_ENABLE([obsolete])
+AU_DEFUN([AC_CHECK_VAR], [rk_CHECK_VAR([$2], [$1])], [foo])

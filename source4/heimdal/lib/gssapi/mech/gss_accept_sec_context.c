@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_accept_sec_context.c,v 1.7 2006/11/10 03:30:12 lha Exp $");
+RCSID("$Id: gss_accept_sec_context.c,v 1.9 2006/12/15 20:12:20 lha Exp $");
 
 static OM_uint32
 parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
@@ -91,6 +91,8 @@ parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
 
 static gss_OID_desc krb5_mechanism =
     {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
+static gss_OID_desc ntlm_mechanism =
+    {10, rk_UNCONST("\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a")};
 static gss_OID_desc spnego_mechanism =
     {6, rk_UNCONST("\x2b\x06\x01\x05\x05\x02")};
 
@@ -112,7 +114,14 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 	 * Lets guess what mech is really is, callback function to mech ??
 	 */
 
-	if (input->length != 0 && ((const char *)input->value)[0] == 0x6E) {
+	if (input->length > 8 && 
+	    memcmp((const char *)input->value, "NTLMSSP\x00", 8) == 0)
+	{
+		*mech_oid = ntlm_mechanism;
+		return GSS_S_COMPLETE;
+	} else if (input->length != 0 &&
+		   ((const char *)input->value)[0] == 0x6E)
+	{
 		/* Could be a raw AP-REQ (check for APPLICATION tag) */
 		*mech_oid = krb5_mechanism;
 		return GSS_S_COMPLETE;

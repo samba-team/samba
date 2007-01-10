@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_cred.c,v 1.12 2006/10/07 22:15:06 lha Exp $");
+RCSID("$Id: inquire_cred.c,v 1.13 2006/11/13 18:02:21 lha Exp $");
 
 OM_uint32 _gsskrb5_inquire_cred
 (OM_uint32 * minor_status,
@@ -44,6 +44,7 @@ OM_uint32 _gsskrb5_inquire_cred
  gss_OID_set * mechanisms
     )
 {
+    krb5_context context;
     gss_cred_id_t aqcred_init = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t aqcred_accept = GSS_C_NO_CREDENTIAL;
     gsskrb5_cred acred = NULL, icred = NULL;
@@ -55,6 +56,8 @@ OM_uint32 _gsskrb5_inquire_cred
 	*output_name = NULL;
     if (mechanisms)
 	*mechanisms = GSS_C_NO_OID_SET;
+
+    GSSAPI_KRB5_INIT (&context);
 
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
 	ret = _gsskrb5_acquire_cred(minor_status, 
@@ -105,7 +108,7 @@ OM_uint32 _gsskrb5_inquire_cred
 		goto out;
 	} else if (acred && acred->usage == GSS_C_ACCEPT) {
 	    krb5_principal princ;
-	    *minor_status = krb5_sname_to_principal(_gsskrb5_context, NULL,
+	    *minor_status = krb5_sname_to_principal(context, NULL,
 						    NULL, KRB5_NT_SRV_HST, 
 						    &princ);
 	    if (*minor_status) {
@@ -115,7 +118,7 @@ OM_uint32 _gsskrb5_inquire_cred
 	    *output_name = (gss_name_t)princ;
 	} else {
 	    krb5_principal princ;
-	    *minor_status = krb5_get_default_principal(_gsskrb5_context,
+	    *minor_status = krb5_get_default_principal(context,
 						       &princ);
 	    if (*minor_status) {
 		ret = GSS_S_FAILURE;
@@ -131,6 +134,7 @@ OM_uint32 _gsskrb5_inquire_cred
 	if (icred) ilife = icred->lifetime;
 
 	ret = _gsskrb5_lifetime_left(minor_status, 
+				     context,
 				     min(alife,ilife),
 				     lifetime);
 	if (ret)

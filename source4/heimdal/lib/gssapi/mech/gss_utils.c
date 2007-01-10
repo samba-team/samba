@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_utils.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_utils.c,v 1.3 2006/12/18 13:01:25 lha Exp $");
 
 OM_uint32
 _gss_copy_oid(OM_uint32 *minor_status,
@@ -46,6 +46,17 @@ _gss_copy_oid(OM_uint32 *minor_status,
 	return (GSS_S_COMPLETE);
 }
 
+OM_uint32
+_gss_free_oid(OM_uint32 *minor_status, gss_OID oid)
+{
+	*minor_status = 0;
+	if (oid->elements) {
+	    free(oid->elements);
+	    oid->elements = NULL;
+	    oid->length = 0;
+	}
+	return (GSS_S_COMPLETE);
+}
 
 OM_uint32
 _gss_copy_buffer(OM_uint32 *minor_status,

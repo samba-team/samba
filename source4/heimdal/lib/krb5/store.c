@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store.c,v 1.59 2006/08/18 08:39:13 lha Exp $");
+RCSID("$Id: store.c,v 1.60 2006/12/17 22:49:37 lha Exp $");
 
 #define BYTEORDER_IS(SP, V) (((SP)->flags & KRB5_STORAGE_BYTEORDER_MASK) == (V))
 #define BYTEORDER_IS_LE(SP) BYTEORDER_IS((SP), KRB5_STORAGE_BYTEORDER_LE)
@@ -577,6 +577,7 @@ krb5_ret_principal(krb5_storage *sp,
     p->name.name_string.val = calloc(ncomp, sizeof(*p->name.name_string.val));
     if(p->name.name_string.val == NULL && ncomp != 0){
 	free(p->realm);
+	free(p);
 	return ENOMEM;
     }
     for(i = 0; i < ncomp; i++){

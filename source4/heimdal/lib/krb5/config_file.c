@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: config_file.c,v 1.54 2006/04/02 00:59:19 lha Exp $");
+RCSID("$Id: config_file.c,v 1.55 2006/12/04 23:35:54 lha Exp $");
 
 #ifndef HAVE_NETINFO
 
@@ -158,8 +158,7 @@ parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
 	char *p;
 
 	++*lineno;
-	if (buf[strlen(buf) - 1] == '\n')
-	    buf[strlen(buf) - 1] = '\0';
+	buf[strcspn(buf, "\r\n")] = '\0';
 	p = buf;
 	while(isspace((unsigned char)*p))
 	    ++p;
@@ -255,8 +254,7 @@ krb5_config_parse_debug (struct fileptr *f,
 	char *p;
 
 	++*lineno;
-	if(buf[strlen(buf) - 1] == '\n')
-	    buf[strlen(buf) - 1] = '\0';
+	buf[strcspn(buf, "\r\n")] = '\0';
 	p = buf;
 	while(isspace((unsigned char)*p))
 	    ++p;

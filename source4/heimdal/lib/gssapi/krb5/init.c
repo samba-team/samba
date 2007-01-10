@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003, 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,79 +33,51 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init.c,v 1.9 2006/10/07 22:14:58 lha Exp $");
+RCSID("$Id: init.c,v 1.10 2006/11/13 18:02:12 lha Exp $");
 
-static HEIMDAL_MUTEX _gsskrb5_context_mutex = HEIMDAL_MUTEX_INITIALIZER;
+static HEIMDAL_MUTEX context_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static int created_key;
-static HEIMDAL_thread_key gssapi_context_key;
+static HEIMDAL_thread_key context_key;
 
 static void
-gssapi_destroy_thread_context(void *ptr)
+destroy_context(void *ptr)
 {
-    struct gssapi_thr_context *ctx = ptr;
+    krb5_context context = ptr;
 
-    if (ctx == NULL)
+    if (context == NULL)
 	return;
-    if (ctx->error_string)
-	free(ctx->error_string);
-    HEIMDAL_MUTEX_destroy(&ctx->mutex);
-    free(ctx);
-}
-
-
-struct gssapi_thr_context *
-_gsskrb5_get_thread_context(int createp)
-{
-    struct gssapi_thr_context *ctx;
-    int ret;
-
-    HEIMDAL_MUTEX_lock(&_gsskrb5_context_mutex);
-
-    if (!created_key)
-	abort();
-    ctx = HEIMDAL_getspecific(gssapi_context_key);
-    if (ctx == NULL) {
-	if (!createp)
-	    goto fail;
-	ctx = malloc(sizeof(*ctx));
-	if (ctx == NULL)
-	    goto fail;
-	ctx->error_string = NULL;
-	HEIMDAL_MUTEX_init(&ctx->mutex);
-	HEIMDAL_setspecific(gssapi_context_key, ctx, ret);
-	if (ret)
-	    goto fail;
-    }
-    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
-    return ctx;
- fail:
-    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
-    if (ctx)
-	free(ctx);
-    return NULL;
+    krb5_free_context(context);
 }
 
 krb5_error_code
-_gsskrb5_init (void)
+_gsskrb5_init (krb5_context *context)
 {
     krb5_error_code ret = 0;
 
-    HEIMDAL_MUTEX_lock(&_gsskrb5_context_mutex);
+    HEIMDAL_MUTEX_lock(&context_mutex);
 
-    if(_gsskrb5_context == NULL)
-	ret = krb5_init_context (&_gsskrb5_context);
-    if (ret == 0 && !created_key) {
-	HEIMDAL_key_create(&gssapi_context_key, 
-			   gssapi_destroy_thread_context,
-			   ret);
+    if (!created_key) {
+	HEIMDAL_key_create(&context_key, destroy_context, ret);
 	if (ret) {
-	    krb5_free_context(_gsskrb5_context);
-	    _gsskrb5_context = NULL;
-	} else
-	    created_key = 1;
+	    HEIMDAL_MUTEX_unlock(&context_mutex);
+	    return ret;
+	}
+	created_key = 1;
     }
+    HEIMDAL_MUTEX_unlock(&context_mutex);
 
-    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
+    *context = HEIMDAL_getspecific(context_key);
+    if (*context == NULL) {
+
+	ret = krb5_init_context(context);
+	if (ret == 0) {
+	    HEIMDAL_setspecific(context_key, *context, ret);
+	    if (ret) {
+		krb5_free_context(*context);
+		*context = NULL;
+	    }
+	}
+    }
 
     return ret;
 }

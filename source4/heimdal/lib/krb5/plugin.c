@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: plugin.c,v 1.2 2006/11/12 21:39:43 lha Exp $");
+RCSID("$Id: plugin.c,v 1.4 2007/01/09 17:46:01 lha Exp $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -89,7 +89,11 @@ loadlib(krb5_context context,
 	return ENOMEM;
     }
 
-    (*e)->dsohandle = dlopen(lib, 0);
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+    (*e)->dsohandle = dlopen(lib, RTLD_LAZY);
     if ((*e)->dsohandle == NULL) {
 	free(*e);
 	krb5_set_error_string(context, "Failed to load %s: %s", 

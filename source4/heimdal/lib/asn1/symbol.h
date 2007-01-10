@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: symbol.h,v 1.13 2005/12/06 19:59:52 lha Exp $ */
+/* $Id: symbol.h,v 1.14 2006/12/28 17:15:05 lha Exp $ */
 
 #ifndef _SYMBOL_H
 #define _SYMBOL_H
@@ -60,7 +60,8 @@ enum typetype {
     TUTCTime, 
     TUTF8String,
     TBMPString,
-    TUniversalString
+    TUniversalString,
+    TVisibleString
 };
 
 typedef enum typetype Typetype;

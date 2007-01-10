@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: unwrap.c,v 1.38 2006/10/18 15:59:28 lha Exp $");
+RCSID("$Id: unwrap.c,v 1.39 2006/11/13 18:02:51 lha Exp $");
 
 static OM_uint32
 unwrap_des
@@ -175,6 +175,7 @@ static OM_uint32
 unwrap_des3
            (OM_uint32 * minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
             const gss_buffer_t input_message_buffer,
             gss_buffer_t output_message_buffer,
             int * conf_state,
@@ -226,18 +227,16 @@ unwrap_des3
       /* decrypt data */
       krb5_data tmp;
 
-      ret = krb5_crypto_init(_gsskrb5_context, key,
+      ret = krb5_crypto_init(context, key,
 			     ETYPE_DES3_CBC_NONE, &crypto);
       if (ret) {
-	  _gsskrb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
-      ret = krb5_decrypt(_gsskrb5_context, crypto, KRB5_KU_USAGE_SEAL,
+      ret = krb5_decrypt(context, crypto, KRB5_KU_USAGE_SEAL,
 			 p, input_message_buffer->length - len, &tmp);
-      krb5_crypto_destroy(_gsskrb5_context, crypto);
+      krb5_crypto_destroy(context, crypto);
       if (ret) {
-	  _gsskrb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
@@ -259,10 +258,9 @@ unwrap_des3
 
   p -= 28;
 
-  ret = krb5_crypto_init(_gsskrb5_context, key,
+  ret = krb5_crypto_init(context, key,
 			 ETYPE_DES3_CBC_NONE, &crypto);
   if (ret) {
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_FAILURE;
@@ -271,15 +269,14 @@ unwrap_des3
       DES_cblock ivec;
 
       memcpy(&ivec, p + 8, 8);
-      ret = krb5_decrypt_ivec (_gsskrb5_context,
+      ret = krb5_decrypt_ivec (context,
 			       crypto,
 			       KRB5_KU_USAGE_SEQ,
 			       p, 8, &seq_data,
 			       &ivec);
   }
-  krb5_crypto_destroy (_gsskrb5_context, crypto);
+  krb5_crypto_destroy (context, crypto);
   if (ret) {
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_FAILURE;
@@ -325,21 +322,19 @@ unwrap_des3
   csum.checksum.length = 20;
   csum.checksum.data   = cksum;
 
-  ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
+  ret = krb5_crypto_init(context, key, 0, &crypto);
   if (ret) {
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
 
-  ret = krb5_verify_checksum (_gsskrb5_context, crypto,
+  ret = krb5_verify_checksum (context, crypto,
 			      KRB5_KU_USAGE_SIGN,
 			      p + 20,
 			      input_message_buffer->length - len + 8,
 			      &csum);
-  krb5_crypto_destroy (_gsskrb5_context, crypto);
+  krb5_crypto_destroy (context, crypto);
   if (ret) {
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -367,6 +362,7 @@ OM_uint32 _gsskrb5_unwrap
            )
 {
   krb5_keyblock *key;
+  krb5_context context;
   OM_uint32 ret;
   krb5_keytype keytype;
   gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
@@ -374,17 +370,18 @@ OM_uint32 _gsskrb5_unwrap
   output_message_buffer->value = NULL;
   output_message_buffer->length = 0;
 
+  GSSAPI_KRB5_INIT (&context);
+
   if (qop_state != NULL)
       *qop_state = GSS_C_QOP_DEFAULT;
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
-  ret = _gsskrb5i_get_token_key(ctx, &key);
+  ret = _gsskrb5i_get_token_key(ctx, context, &key);
   HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
   if (ret) {
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  krb5_enctype_to_keytype (_gsskrb5_context, key->keytype, &keytype);
+  krb5_enctype_to_keytype (context, key->keytype, &keytype);
 
   *minor_status = 0;
 
@@ -395,22 +392,22 @@ OM_uint32 _gsskrb5_unwrap
 			conf_state, qop_state, key);
       break;
   case KEYTYPE_DES3 :
-      ret = unwrap_des3 (minor_status, ctx,
+      ret = unwrap_des3 (minor_status, ctx, context,
 			 input_message_buffer, output_message_buffer,
 			 conf_state, qop_state, key);
       break;
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
-      ret = _gssapi_unwrap_arcfour (minor_status, ctx,
+      ret = _gssapi_unwrap_arcfour (minor_status, ctx, context,
 				    input_message_buffer, output_message_buffer,
 				    conf_state, qop_state, key);
       break;
   default :
-      ret = _gssapi_unwrap_cfx (minor_status, ctx,
+      ret = _gssapi_unwrap_cfx (minor_status, ctx, context,
 				input_message_buffer, output_message_buffer,
 				conf_state, qop_state, key);
       break;
   }
-  krb5_free_keyblock (_gsskrb5_context, key);
+  krb5_free_keyblock (context, key);
   return ret;
 }

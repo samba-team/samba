@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_copy.c,v 1.18 2006/10/14 05:34:19 lha Exp $");
+RCSID("$Id: gen_copy.c,v 1.19 2006/12/28 17:14:42 lha Exp $");
 
 static int used_fail;
 
@@ -201,6 +201,9 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	break;
     case TUniversalString:
 	copy_primitive ("universal_string", from, to);
+	break;
+    case TVisibleString:
+	copy_primitive ("visible_string", from, to);
 	break;
     case TTag:
 	copy_type (from, to, t->subtype, preserve);

@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c,v 1.50 2006/10/19 16:27:44 lha Exp $");
+RCSID("$Id: der_get.c,v 1.51 2006/12/28 17:14:25 lha Exp $");
 
 #include <version.h>
 
@@ -212,6 +212,13 @@ der_get_universal_string (const unsigned char *p, size_t len,
     }
     if (size) *size = len;
     return 0;
+}
+
+int
+der_get_visible_string (const unsigned char *p, size_t len, 
+			heim_visible_string *str, size_t *size)
+{
+    return der_get_general_string(p, len, str, size);
 }
 
 int

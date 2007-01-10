@@ -1,4 +1,4 @@
--- $Id: digest.asn1,v 1.9 2006/08/25 11:57:54 lha Exp $
+-- $Id: digest.asn1,v 1.10 2006/12/15 19:13:39 lha Exp $
 
 DIGEST DEFINITIONS ::=
 BEGIN
@@ -58,9 +58,43 @@ DigestResponse ::= SEQUENCE  {
     hash-a1		[3] OCTET STRING OPTIONAL
 }
 
+NTLMInit ::= SEQUENCE {
+    flags		[0] INTEGER (0..4294967295),
+    hostname		[1] UTF8String OPTIONAL,
+    domain		[1] UTF8String OPTIONAL
+}
+
+NTLMInitReply ::= SEQUENCE {
+    flags		[0] INTEGER (0..4294967295),
+    opaque		[1] OCTET STRING,
+    targetname		[2] UTF8String,
+    challange		[3] OCTET STRING,
+    targetinfo		[4] OCTET STRING OPTIONAL
+}
+
+NTLMRequest ::= SEQUENCE {
+    flags		[0] INTEGER (0..4294967295),
+    opaque		[1] OCTET STRING,
+    username		[2] UTF8String,
+    targetname		[3] UTF8String,
+    targetinfo		[4] OCTET STRING OPTIONAL,
+    lm			[5] OCTET STRING,
+    ntlm		[6] OCTET STRING,
+    sessionkey		[7] OCTET STRING OPTIONAL
+}
+
+NTLMResponse ::= SEQUENCE {
+    success		[0] BOOLEAN,
+    flags		[1] INTEGER (0..4294967295),
+    sessionkey		[2] OCTET STRING OPTIONAL,
+    tickets		[3] SEQUENCE OF OCTET STRING OPTIONAL
+}
+
 DigestReqInner ::= CHOICE {
     init		[0] DigestInit,
-    digestRequest	[1] DigestRequest
+    digestRequest	[1] DigestRequest,
+    ntlmInit		[2] NTLMInit,
+    ntlmRequest		[3] NTLMRequest
 }
 
 DigestREQ ::= [APPLICATION 128] SEQUENCE {
@@ -71,7 +105,9 @@ DigestREQ ::= [APPLICATION 128] SEQUENCE {
 DigestRepInner ::= CHOICE {
     error		[0] DigestError,
     initReply		[1] DigestInitReply,
-    response		[2] DigestResponse
+    response		[2] DigestResponse,
+    ntlmInitReply	[3] NTLMInitReply,
+    ntlmResponse	[4] NTLMResponse
 }
 
 DigestREP ::= [APPLICATION 129] SEQUENCE {

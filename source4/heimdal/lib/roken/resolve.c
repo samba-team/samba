@@ -504,7 +504,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     memset(&state, 0, sizeof(state));
     if(res_ninit(&state))
 	return NULL; /* is this the best we can do? */
-#elif defined(HAVE__RES) && defined(HAVE_DECL__RES)
+#elif defined(HAVE__RES)
     u_long old_options = 0;
 #endif
     
@@ -520,7 +520,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	if (_resolve_debug) {
 #ifdef HAVE_RES_NSEARCH
 	    state.options |= RES_DEBUG;
-#elif defined(HAVE__RES) && defined(HAVE_DECL__RES)
+#elif defined(HAVE__RES)
 	    old_options = _res.options;
 	    _res.options |= RES_DEBUG;
 #endif
@@ -540,7 +540,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	len = res_search(domain, rr_class, rr_type, reply, size);
 #endif
 	if (_resolve_debug) {
-#if defined(HAVE__RES) && defined(HAVE_DECL__RES) && !defined(HAVE_RES_NSEARCH)
+#if defined(HAVE__RES) && !defined(HAVE_RES_NSEARCH)
 	    _res.options = old_options;
 #endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",

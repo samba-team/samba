@@ -37,7 +37,7 @@
 #include <dlfcn.h>
 #endif
 
-RCSID("$Id: acache.c,v 1.16 2006/10/19 11:41:38 lha Exp $");
+RCSID("$Id: acache.c,v 1.17 2007/01/08 15:31:01 lha Exp $");
 
 /* XXX should we fetch these for each open ? */
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
@@ -106,7 +106,12 @@ init_ccapi(krb5_context context)
     }
 
 #ifdef HAVE_DLOPEN
-    cc_handle = dlopen(lib, 0);
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+    cc_handle = dlopen(lib, RTLD_LAZY);
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
 	krb5_set_error_string(context, "Failed to load %s", lib);

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse.y,v 1.27 2005/12/14 09:44:36 lha Exp $ */
+/* $Id: parse.y,v 1.29 2006/12/28 17:15:02 lha Exp $ */
 
 %{
 #ifdef HAVE_CONFIG_H
@@ -45,7 +45,7 @@
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id: parse.y,v 1.27 2005/12/14 09:44:36 lha Exp $");
+RCSID("$Id: parse.y,v 1.29 2006/12/28 17:15:02 lha Exp $");
 
 static Type *new_type (Typetype t);
 static struct constraint_spec *new_constraint_spec(enum ctype);
@@ -537,8 +537,10 @@ Constraint	: '(' ConstraintSpec ')'
 		{
 		    $$ = $2;
 		}
+		;
 
 ConstraintSpec	: GeneralConstraint
+		;
 
 GeneralConstraint: ContentsConstraint
 		| UserDefinedConstraint
@@ -656,6 +658,11 @@ RestrictedCharactedStringType: kw_GeneralString
 		{
 			$$ = new_tag(ASN1_C_UNIV, UT_PrintableString, 
 				     TE_EXPLICIT, new_type(TPrintableString));
+		}
+		| kw_VisibleString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_VisibleString, 
+				     TE_EXPLICIT, new_type(TVisibleString));
 		}
 		| kw_IA5String
 		{

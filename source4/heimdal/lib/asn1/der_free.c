@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_free.c,v 1.13 2006/10/14 05:30:47 lha Exp $");
+RCSID("$Id: der_free.c,v 1.14 2006/12/28 17:14:21 lha Exp $");
 
 void
 der_free_general_string (heim_general_string *str)
@@ -77,6 +77,13 @@ der_free_universal_string (heim_universal_string *k)
     free(k->data);
     k->data = NULL;
     k->length = 0;
+}
+
+void
+der_free_visible_string (heim_visible_string *str)
+{
+    free(*str);
+    *str = NULL;
 }
 
 void
