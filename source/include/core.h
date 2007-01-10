@@ -108,4 +108,5 @@ enum announce_as {/* Types of machine we can announce as. */
 	ANNOUNCE_AS_NT_WORKSTATION=4
 };
 
+
 #endif /* _SAMBA_CORE_H */

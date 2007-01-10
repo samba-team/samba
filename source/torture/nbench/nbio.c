@@ -53,24 +53,7 @@ static struct {
 	double bytes, warmup_bytes;
 	int line;
 	int done;
-	double max_latency;
-	struct timeval starttime;
 } *children;
-
-void nbio_time_reset(void)
-{
-	children[nbio_id].starttime = timeval_current();	
-}
-
-void nbio_time_delay(double targett)
-{
-	double elapsed = timeval_elapsed(&children[nbio_id].starttime);
-	if (targett > elapsed) {
-		msleep(1000*(targett - elapsed));
-	} else if (elapsed - targett > children[nbio_id].max_latency) {
-		children[nbio_id].max_latency = elapsed - targett;
-	}
-}
 
 double nbio_result(void)
 {
@@ -80,19 +63,6 @@ double nbio_result(void)
 		total += children[i].bytes - children[i].warmup_bytes;
 	}
 	return 1.0e-6 * total / timeval_elapsed2(&tv_start, &tv_end);
-}
-
-double nbio_latency(void)
-{
-	int i;
-	double max_latency = 0;
-	for (i=0;i<nprocs;i++) {
-		if (children[i].max_latency > max_latency) {
-			max_latency = children[i].max_latency;
-			children[i].max_latency = 0;
-		}
-	}
-	return max_latency;
 }
 
 BOOL nb_tick(void)
@@ -152,9 +122,9 @@ void nb_alarm(int sig)
 		       nprocs, lines/nprocs, 
 		       nbio_result(), t);
 	} else {
-		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec  latency %.2f msec \n", 
+		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec   \n", 
 		       nprocs, lines/nprocs, 
-		       nbio_result(), t, nbio_latency() * 1.0e3);
+		       nbio_result(), t);
 	}
 
 	fflush(stdout);
@@ -473,7 +443,7 @@ void nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	io.readx.in.remaining = 0;
 	io.readx.in.read_for_execute = False;
 	io.readx.out.data     = buf;
-	
+		
 	ret = smb_raw_read(c->tree, &io);
 
 	free(buf);
