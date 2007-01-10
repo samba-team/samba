@@ -1,3 +1,10 @@
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* imath/imath.c (s_udiv): make a copy of a and b before we start
+	to make sure there is something un-tainted to print in cause of
+	failure. XXX remove this delta
+	(s_embar): make static
+	
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa.c: Correct the test if the rsa is a complete RSA private
