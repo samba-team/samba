@@ -556,7 +556,7 @@ hx509_validate_cert(hx509_context context,
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "Not version 3 certificate\n");
     
-    if ((t->version || *t->version < 2) && t->extensions)
+    if ((t->version == NULL || *t->version < 2) && t->extensions)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Not version 3 certificate with extensions\n");
 	
