@@ -107,7 +107,9 @@ static bool test_event_context(struct torture_context *torture_ctx,
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), 
 			timed_handler, fde);
 
-	event_loop_wait(ev_ctx);
+	while (fde) {
+		event_loop_once(ev_ctx);
+	}
 
 	close(read_fd);
 	close(write_fd);
