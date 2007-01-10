@@ -94,7 +94,8 @@ _kdc_pac_verify(krb5_context context,
 	krb5_set_error_string(context, "Can't verify WINDC, no function");
 	return EINVAL;
     }
-    return (windcft->pac_verify)(windcctx, context, client_principal, client, server, pac);
+    return (windcft->pac_verify)(windcctx, context, 
+				 client_principal, client, server, pac);
 }
 
 krb5_error_code

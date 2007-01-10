@@ -58,7 +58,9 @@ typedef krb5_error_code
 typedef krb5_error_code 
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
 			       const krb5_principal,
-			       struct hdb_entry_ex *,  struct hdb_entry_ex *, krb5_pac *);
+			       struct hdb_entry_ex *, 
+			       struct hdb_entry_ex *,
+			       krb5_pac *);
 
 typedef krb5_error_code 
 (*krb5plugin_windc_client_access)(
