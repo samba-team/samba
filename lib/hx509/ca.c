@@ -678,7 +678,8 @@ ca_sign(hx509_context context,
 	}
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-	ret = add_extension(context, tbsc, 0,
+	/* Critical if this is a CA */
+	ret = add_extension(context, tbsc, tbs->flags.ca,
 			    oid_id_x509_ce_basicConstraints(),
 			    &data);
 	free(data.data);
