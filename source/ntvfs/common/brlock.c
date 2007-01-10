@@ -32,6 +32,7 @@
 #include "db_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
+#include "cluster/cluster.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
