@@ -284,7 +284,7 @@ static mp_result s_brmu(mp_int z, mp_int m);
 static int       s_reduce(mp_int x, mp_int m, mp_int mu, mp_int q1, mp_int q2);
 
 /* Modular exponentiation, using Barrett reduction */
-mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c);
+static mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c);
 
 /* Unsigned magnitude division.  Assumes |a| > |b|.  Allocates
    temporaries; overwrites a with quotient, b with remainder. */
@@ -2900,7 +2900,7 @@ static int       s_reduce(mp_int x, mp_int m, mp_int mu, mp_int q1, mp_int q2)
 
 /* Perform modular exponentiation using Barrett's method, where mu is
    the reduction constant for m.  Assumes a < m, b > 0. */
-mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
+static mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
 {
   mp_digit  *db, *dbt, umu, d;
   mpz_t     temp[3]; 
@@ -2981,10 +2981,14 @@ mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
 static mp_result s_udiv(mp_int a, mp_int b)
 {
   mpz_t     q, r, t;
+  mpz_t     ac, bc;
   mp_size   ua, ub, qpos = 0;
   mp_digit *da, btop;
   mp_result res = MP_OK;
   int       k, skip = 0;
+
+  mp_int_init(&ac);
+  mp_int_init(&bc);
 
   /* Force signs to positive */
   MP_SIGN(a) = MP_ZPOS;
@@ -2997,6 +3001,9 @@ static mp_result s_udiv(mp_int a, mp_int b)
   if((res = mp_int_init_size(&q, ua)) != MP_OK) return res;
   if((res = mp_int_init_size(&t, ua + 1)) != MP_OK) goto CLEANUP;
 
+  if((res = mp_int_init_copy(&ac, a)) != MP_OK) goto CLEANUP;
+  if((res = mp_int_init_copy(&bc, b)) != MP_OK) goto CLEANUP;
+
   da = MP_DIGITS(a);
   r.digits = da + ua - 1;  /* The contents of r are shared with a */
   r.used   = 1;
@@ -3008,12 +3015,12 @@ static mp_result s_udiv(mp_int a, mp_int b)
   while(r.digits >= da) {
     if (qpos > q.alloc) {
       char buf[1024];
-      printf("qpos = %d q.alloc = %d da = %d ua = %d\n",
-	     (int)qpos, (int)q.alloc, (int)da, (int)ua);
-      mp_int_to_string(a, 10, buf, sizeof(buf));
-      printf("a = %s\n", buf);
-      mp_int_to_string(b, 10, buf, sizeof(buf));
-      printf("b = %s\n", buf);
+      printf("qpos = %d q.alloc = %d ua = %d\n",
+	     (int)qpos, (int)q.alloc, (int)ua);
+      mp_int_to_string(&ac, 10, buf, sizeof(buf));
+      printf("ac = %s\n", buf);
+      mp_int_to_string(&bc, 10, buf, sizeof(buf));
+      printf("bc = %s\n", buf);
       assert(qpos <= q.alloc);
     }	
 
@@ -3072,6 +3079,8 @@ static mp_result s_udiv(mp_int a, mp_int b)
   mp_int_clear(&t);
  CLEANUP:
   mp_int_clear(&q);
+  mp_int_clear(&ac);
+  mp_int_clear(&bc);
   return res;
 }
 
