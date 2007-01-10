@@ -36,6 +36,13 @@
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/samr.h"
 #include "lib/socket/netif.h"
+#include "heimdal/kdc/windc_plugin.h"
+#include "heimdal/lib/krb5/krb5_locl.h"
+#include "heimdal/kdc/kdc_locl.h"
+
+
+/* Disgusting hack to get a mem_ctx into the hdb plugin, when used as a keytab */
+TALLOC_CTX *kdc_mem_ctx;
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {
@@ -527,6 +534,16 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 	return NT_STATUS_OK;
 }
 
+static struct krb5plugin_windc_ftable windc_plugin_table = {
+	.minor_version = KRB5_WINDC_PLUGING_MINOR,
+	.init = samba_kdc_plugin_init,
+	.fini = samba_kdc_plugin_fini,
+	.pac_generate = samba_kdc_get_pac,
+	.pac_verify = samba_kdc_reget_pac,
+	.client_access = samba_kdc_check_client_access,
+};
+
+
 /*
   startup the kdc task
 */
@@ -571,6 +588,9 @@ static void kdc_task_init(struct task_server *task)
 	}
 	krb5_kdc_default_config(kdc->config);
 
+	kdc->config->enable_pkinit = lp_parm_bool(-1, "kdc", "pkinit", True);
+	kdc->config->enable_pkinit_princ_in_cert = lp_parm_bool(-1, "kdc", "pkinit_princ_in_cert", True);
+
 	initialize_krb5_error_table();
 
 	ret = smb_krb5_init_context(kdc, &kdc->smb_krb5_context);
@@ -603,6 +623,20 @@ static void kdc_task_init(struct task_server *task)
 		task_server_terminate(task, "kdc: failed to register hdb keytab");
 		return;
 	}
+
+	kdc_mem_ctx = kdc->smb_krb5_context;
+
+	/* Registar WinDC hooks */
+	ret = _krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+				    PLUGIN_TYPE_DATA, "windc",
+				    &windc_plugin_table);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register hdb keytab");
+		return;
+	}
+
+	_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
+
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc);
 	if (!NT_STATUS_IS_OK(status)) {

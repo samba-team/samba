@@ -14,10 +14,4 @@
 typedef socklen_t krb5_socklen_t;
 typedef ssize_t krb5_ssize_t;
 
-#ifdef VOID_RETSIGTYPE
-#define SIGRETURN(x) return
-#else
-#define SIGRETURN(x) return (RETSIGTYPE)(x)
-#endif
-
 #endif /* __krb5_types_h__ */

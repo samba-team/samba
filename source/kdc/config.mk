@@ -17,6 +17,7 @@ PUBLIC_DEPENDENCIES = \
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::HDB_LDB]
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
+PUBLIC_PROTO_HEADER = pac_glue.h
 OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
