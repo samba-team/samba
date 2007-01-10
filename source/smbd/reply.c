@@ -1679,6 +1679,7 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype)
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
 	files_struct *fsp;
+	uint32 dirtype_orig = dirtype;
 	NTSTATUS status;
 
 	DEBUG(10,("can_delete: %s, dirtype = %d\n", fname, dirtype ));
@@ -1693,11 +1694,6 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype)
 
 	fattr = dos_mode(conn,fname,&sbuf);
 
-	if (dirtype & 0x8000) {
-		/* These will never be set for POSIX. */
-		return NT_STATUS_NO_SUCH_FILE;
-	}
-
 	if (dirtype == FILE_ATTRIBUTE_NORMAL) {
 		dirtype = aDIR|aARCH|aRONLY;
 	}
@@ -1711,6 +1707,11 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype)
 		if (fattr & aDIR) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	if (dirtype_orig & 0x8000) {
+		/* These will never be set for POSIX. */
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
