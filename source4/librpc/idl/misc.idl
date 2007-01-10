@@ -44,5 +44,9 @@ interface misc
 		SAMR_REJECT_COMPLEXITY = 5
 	} samr_RejectReason;
 
-
+	/* id used to identify a endpoint, possibly in a cluster */
+	typedef [public] struct {
+		uint32 id;
+		uint32 node;
+	} server_id;
 }

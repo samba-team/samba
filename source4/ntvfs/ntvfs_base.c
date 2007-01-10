@@ -154,7 +154,7 @@ _PUBLIC_ BOOL ntvfs_interface_differs(const struct ntvfs_critical_sizes *const i
 NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, enum ntvfs_type type,
 			       enum protocol_types protocol,
 			       struct event_context *ev, struct messaging_context *msg,
-			       uint32_t server_id, struct ntvfs_context **_ctx)
+			       struct server_id server_id, struct ntvfs_context **_ctx)
 {
 	const char **handlers = share_string_list_option(mem_ctx, scfg, SHARE_NTVFS_HANDLER);
 	int i;

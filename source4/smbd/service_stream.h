@@ -37,7 +37,7 @@
 struct stream_connection {
 	const struct stream_server_ops *ops;
 	const struct model_ops *model_ops;
-	uint32_t server_id;
+	struct server_id server_id;
 	void *private;
 
 	struct {

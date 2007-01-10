@@ -37,7 +37,7 @@
 
 struct notify_context {
 	struct tdb_wrap *w;
-	uint32_t server;
+	struct server_id server;
 	struct messaging_context *messaging_ctx;
 	struct notify_list *list;
 	struct notify_array *array;
@@ -61,7 +61,7 @@ struct notify_list {
 
 static NTSTATUS notify_remove_all(struct notify_context *notify);
 static void notify_handler(struct messaging_context *msg_ctx, void *private, 
-			   uint32_t msg_type, uint32_t server_id, DATA_BLOB *data);
+			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
 
 /*
   destroy the notify context
@@ -78,7 +78,7 @@ static int notify_destructor(struct notify_context *notify)
   talloc_free(). We need the messaging_ctx to allow for notifications
   via internal messages
 */
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server, 
+struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
 				   struct share_config *scfg)
@@ -241,7 +241,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
   handle incoming notify messages
 */
 static void notify_handler(struct messaging_context *msg_ctx, void *private, 
-			   uint32_t msg_type, uint32_t server_id, DATA_BLOB *data)
+			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
 {
 	struct notify_context *notify = talloc_get_type(private, struct notify_context);
 	NTSTATUS status;
@@ -460,7 +460,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 
 	for (i=0;i<d->num_entries;i++) {
 		if (private == d->entries[i].private &&
-		    notify->server == d->entries[i].server) {
+		    cluster_id_equal(&notify->server, &d->entries[i].server)) {
 			break;
 		}
 	}
@@ -508,7 +508,7 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 	for (depth=0;depth<notify->array->num_depths;depth++) {
 		struct notify_depth *d = &notify->array->depth[depth];
 		for (i=0;i<d->num_entries;i++) {
-			if (notify->server == d->entries[i].server) {
+			if (cluster_id_equal(&notify->server, &d->entries[i].server)) {
 				if (i < d->num_entries-1) {
 					memmove(&d->entries[i], &d->entries[i+1], 
 						sizeof(d->entries[i])*(d->num_entries-(i+1)));

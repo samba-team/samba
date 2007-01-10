@@ -92,7 +92,8 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	r.in.in_data = value;
 
 	test_debug = True;
-	status = IRPC_CALL(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
+	status = IRPC_CALL(data->msg_ctx1, cluster_id(MSG_ID2), 
+			   rpcecho, ECHO_ADDONE, &r, test);
 	test_debug = False;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
 
@@ -120,8 +121,9 @@ static bool test_echodata(struct torture_context *tctx,
 	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
-	status = IRPC_CALL(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, 
-					   mem_ctx);
+	status = IRPC_CALL(data->msg_ctx1, cluster_id(MSG_ID2), 
+			   rpcecho, ECHO_ECHODATA, &r, 
+			   mem_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "EchoData failed");
 
 	/* check the answer */
@@ -177,8 +179,9 @@ static bool test_speed(struct torture_context *tctx,
 	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, 
-							  &r, mem_ctx);
+		irpc = IRPC_CALL_SEND(data->msg_ctx1, cluster_id(MSG_ID2), 
+				      rpcecho, ECHO_ADDONE, 
+				      &r, mem_ctx);
 		torture_assert(tctx, irpc != NULL, "AddOne send failed");
 
 		irpc->async.fn = irpc_callback;
@@ -214,11 +217,15 @@ static BOOL irpc_setup(struct torture_context *tctx, void **_data)
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
 	data->ev = event_context_init(tctx);
-	torture_assert(tctx, data->msg_ctx1 = messaging_init(tctx, MSG_ID1, data->ev),
-				   "Failed to init first messaging context");
+	torture_assert(tctx, data->msg_ctx1 = 
+		       messaging_init(tctx, 
+				      cluster_id(MSG_ID1), data->ev),
+		       "Failed to init first messaging context");
 
-	torture_assert(tctx, data->msg_ctx2 = messaging_init(tctx, MSG_ID2, data->ev),
-				   "Failed to init second messaging context");
+	torture_assert(tctx, data->msg_ctx2 = 
+		       messaging_init(tctx, 
+				      cluster_id(MSG_ID2), data->ev),
+		       "Failed to init second messaging context");
 
 	/* register the server side function */
 	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);

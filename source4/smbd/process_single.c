@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "smbd/process_model.h"
 #include "system/filesys.h"
+#include "cluster/cluster.h"
 
 /*
   called when the process model is selected
@@ -39,7 +40,7 @@ static void single_model_init(struct event_context *ev)
 static void single_accept_connection(struct event_context *ev, 
 				     struct socket_context *sock,
 				     void (*new_conn)(struct event_context *, struct socket_context *, 
-						      uint32_t , void *), 
+						      struct server_id , void *), 
 				     void *private)
 {
 	NTSTATUS status;
@@ -61,18 +62,18 @@ static void single_accept_connection(struct event_context *ev,
 
 	talloc_steal(private, sock);
 
-	new_conn(ev, sock2, socket_get_fd(sock2), private);
+	new_conn(ev, sock2, cluster_id(socket_get_fd(sock2)), private);
 }
 
 /*
   called to startup a new task
 */
 static void single_new_task(struct event_context *ev, 
-			    void (*new_task)(struct event_context *, uint32_t, void *), 
+			    void (*new_task)(struct event_context *, struct server_id, void *), 
 			    void *private)
 {
 	static uint32_t taskid = 0x10000000;
-	new_task(ev, taskid++, private);
+	new_task(ev, cluster_id(taskid++), private);
 }
 
 
