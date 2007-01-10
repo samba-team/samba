@@ -15,6 +15,9 @@
 #define MaxHostNameLen (64+4)
 #define MaxPathLen (1024+4)
 
+/* We want PKINIT */
+#define PKINIT 1
+
 #define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4 0.8pre"}
 
 #define VERSION "Samba"

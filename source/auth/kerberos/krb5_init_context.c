@@ -441,8 +441,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ret;
 	}
 
-	(*smb_krb5_context)->krb5_context->mem_ctx = *smb_krb5_context;
-
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
 

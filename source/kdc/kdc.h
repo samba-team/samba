@@ -25,13 +25,13 @@
 #include "auth/kerberos/kerberos.h"
 #include "heimdal/kdc/kdc.h"
 #include "heimdal/lib/hdb/hdb.h"
-#include "kdc/pac-glue.h"
+#include "kdc/pac_glue.h"
 
 struct kdc_server;
 struct socket_address;
 
-NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx, 
-			    krb5_context context, struct HDB **db, const char *arg);
+extern TALLOC_CTX *kdc_mem_ctx;
+
 BOOL kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
@@ -50,3 +50,9 @@ struct kdc_server {
 };
 
 
+struct hdb_ldb_private {
+	struct ldb_context *samdb;
+	struct ldb_message *msg;
+	struct ldb_message *realm_ref_msg;
+	hdb_entry_ex *entry_ex;
+};

@@ -434,10 +434,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
 	private->samdb = (struct ldb_context *)db->hdb_db;
 	
-	entry_ex->check_client_access = hdb_ldb_check_client_access;
-	entry_ex->authz_data_tgs_req = hdb_ldb_authz_data_tgs_req;
-	entry_ex->authz_data_as_req = hdb_ldb_authz_data_as_req;
-
 out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
@@ -1029,8 +1025,8 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
-	/* Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_ldb_create(context->mem_ctx, context, db, arg);
+	/* The global kdc_mem_ctx, Disgusting, ugly hack, but it means one less private hook */
+	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, context, db, arg);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return 0;
