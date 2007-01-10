@@ -208,7 +208,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
  *
  * @return stored password's key
  **/
-const char *trust_keystr(const char *domain)
+static const char *trust_keystr(const char *domain)
 {
 	static fstring keystr;
 
@@ -427,8 +427,8 @@ static size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize,
  *
  * @return size of structure unpacked from buffer
  **/
-size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize,
-				   TRUSTED_DOM_PASS* pass)
+static size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize,
+					  TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
 	
