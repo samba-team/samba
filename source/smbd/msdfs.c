@@ -326,8 +326,8 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath,
 	pstring localpath;
 	int consumed_level = 1;
 	char *p;
-	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
 	pstring reqpath;
 
 	if (!dp || !conn) {
@@ -349,7 +349,9 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath,
 
 	DEBUG(10,("resolve_dfs_path: Conn path = %s req_path = %s\n", conn->connectpath, dp->reqpath));
 
-	unix_convert(dp->reqpath,conn,0,&bad_path,&sbuf);
+	status = unix_convert(dp->reqpath,conn,NULL,&sbuf);
+	/* Should we terminate on status != NT_STATUS_OK ???? */
+
 	/* JRA... should we strlower the last component here.... ? */
 	pstrcpy(localpath, dp->reqpath);
 

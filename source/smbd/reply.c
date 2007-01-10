@@ -37,143 +37,6 @@ extern struct current_user current_user;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
- Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
- We're assuming here that '/' is not the second byte in any multibyte char
- set (a safe assumption). '\\' *may* be the second byte in a multibyte char
- set.
-****************************************************************************/
-
-NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
-{
-	char *d = destname;
-	const char *s = srcname;
-	NTSTATUS ret = NT_STATUS_OK;
-	BOOL start_of_name_component = True;
-	unsigned int num_bad_components = 0;
-
-	while (*s) {
-		if (IS_DIRECTORY_SEP(*s)) {
-			/*
-			 * Safe to assume is not the second part of a mb char as this is handled below.
-			 */
-			/* Eat multiple '/' or '\\' */
-			while (IS_DIRECTORY_SEP(*s)) {
-				s++;
-			}
-			if ((d != destname) && (*s != '\0')) {
-				/* We only care about non-leading or trailing '/' or '\\' */
-				*d++ = '/';
-			}
-
-			start_of_name_component = True;
-			continue;
-		}
-
-		if (start_of_name_component) {
-			if ((s[0] == '.') && (s[1] == '.') && (IS_DIRECTORY_SEP(s[2]) || s[2] == '\0')) {
-				/* Uh oh - "/../" or "\\..\\"  or "/..\0" or "\\..\0" ! */
-
-				/*
-				 * No mb char starts with '.' so we're safe checking the directory separator here.
-				 */
-
-				/* If  we just added a '/' - delete it */
-				if ((d > destname) && (*(d-1) == '/')) {
-					*(d-1) = '\0';
-					d--;
-				}
-
-				/* Are we at the start ? Can't go back further if so. */
-				if (d <= destname) {
-					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-					break;
-				}
-				/* Go back one level... */
-				/* We know this is safe as '/' cannot be part of a mb sequence. */
-				/* NOTE - if this assumption is invalid we are not in good shape... */
-				/* Decrement d first as d points to the *next* char to write into. */
-				for (d--; d > destname; d--) {
-					if (*d == '/')
-						break;
-				}
-				s += 2; /* Else go past the .. */
-				/* We're still at the start of a name component, just the previous one. */
-
-				if (num_bad_components) {
-					/* Hmmm. Should we only decrement the bad_components if
-					   we're removing a bad component ? Need to check this. JRA. */
-					num_bad_components--;
-				}
-
-				continue;
-
-			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_DIRECTORY_SEP(s[1]))) {
-				/* Component of pathname can't be "." only. */
-				ret =  NT_STATUS_OBJECT_NAME_INVALID;
-				num_bad_components++;
-				*d++ = *s++;
-				continue;
-			}
-		}
-
-		if (!(*s & 0x80)) {
-			if (*s <= 0x1f) {
-				return NT_STATUS_OBJECT_NAME_INVALID;
-			}
-			switch (*s) {
-				case '*':
-				case '?':
-				case '<':
-				case '>':
-				case '"':
-					return NT_STATUS_OBJECT_NAME_INVALID;
-				default:
-					*d++ = *s++;
-					break;
-			}
-		} else {
-			size_t siz;
-			/* Get the size of the next MB character. */
-			next_codepoint(s,&siz);
-			switch(siz) {
-				case 5:
-					*d++ = *s++;
-					/*fall through*/
-				case 4:
-					*d++ = *s++;
-					/*fall through*/
-				case 3:
-					*d++ = *s++;
-					/*fall through*/
-				case 2:
-					*d++ = *s++;
-					/*fall through*/
-				case 1:
-					*d++ = *s++;
-					break;
-				default:
-					DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
-					*d = '\0';
-					return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-		if (start_of_name_component && num_bad_components) {
-			num_bad_components++;
-		}
-		start_of_name_component = False;
-	}
-
-	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
-		if (num_bad_components > 1) {
-			ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-		}
-	}
-
-	*d = '\0';
-	return ret;
-}
-
-/****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
  path or anything including wildcards.
  We're assuming here that '/' is not the second byte in any multibyte char
@@ -181,15 +44,16 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
  set.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *p_contains_wcard)
+NTSTATUS check_path_syntax_internal(pstring destname, const pstring srcname, BOOL windows_path, BOOL *p_contains_wcard)
 {
 	char *d = destname;
 	const char *s = srcname;
 	NTSTATUS ret = NT_STATUS_OK;
 	BOOL start_of_name_component = True;
-	unsigned int num_bad_components = 0;
 
-	*p_contains_wcard = False;
+	if (p_contains_wcard) {
+		*p_contains_wcard = False;
+	}
 
 	while (*s) {
 		if (IS_DIRECTORY_SEP(*s)) {
@@ -238,36 +102,34 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 				}
 				s += 2; /* Else go past the .. */
 				/* We're still at the start of a name component, just the previous one. */
-
-				if (num_bad_components) {
-					/* Hmmm. Should we only decrement the bad_components if
-					   we're removing a bad component ? Need to check this. JRA. */
-					num_bad_components--;
-				}
-
 				continue;
 
 			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_DIRECTORY_SEP(s[1]))) {
-				/* Component of pathname can't be "." only. */
-				ret =  NT_STATUS_OBJECT_NAME_INVALID;
-				num_bad_components++;
-				*d++ = *s++;
-				continue;
+				if (!windows_path) {
+					/* Eat the '.' */
+					s++;
+					continue;
+				}
 			}
+
 		}
 
 		if (!(*s & 0x80)) {
-			if (*s <= 0x1f) {
-				return NT_STATUS_OBJECT_NAME_INVALID;
-			}
-			if (!*p_contains_wcard) {
+			if (windows_path) {
+				if (*s <= 0x1f) {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
 				switch (*s) {
 					case '*':
 					case '?':
 					case '<':
 					case '>':
 					case '"':
-						*p_contains_wcard = True;
+						if (p_contains_wcard) {
+							*p_contains_wcard = True;
+						} else {
+							return NT_STATUS_OBJECT_NAME_INVALID;
+						}
 						break;
 					default:
 						break;
@@ -295,27 +157,36 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 					*d++ = *s++;
 					break;
 				default:
-					DEBUG(0,("check_path_syntax_wcard: character length assumptions invalid !\n"));
+					DEBUG(0,("check_path_syntax_internal: character length assumptions invalid !\n"));
 					*d = '\0';
 					return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
-		if (start_of_name_component && num_bad_components) {
-			num_bad_components++;
-		}
 		start_of_name_component = False;
-	}
-
-	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
-		/* For some strange reason being called from findfirst changes
-		   the num_components number to cause the error return to change. JRA. */
-		if (num_bad_components > 2) {
-			ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-		}
 	}
 
 	*d = '\0';
 	return ret;
+}
+
+/****************************************************************************
+ Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
+ No wildcards allowed.
+****************************************************************************/
+
+NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
+{
+	return check_path_syntax_internal(destname, srcname, True, NULL);
+}
+
+/****************************************************************************
+ Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
+ Wildcards allowed.
+****************************************************************************/
+
+NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *p_contains_wcard)
+{
+	return check_path_syntax_internal(destname, srcname, True, p_contains_wcard);
 }
 
 /****************************************************************************
@@ -324,101 +195,9 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
  set (a safe assumption).
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
+static NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 {
-	char *d = destname;
-	const char *s = srcname;
-	NTSTATUS ret = NT_STATUS_OK;
-	BOOL start_of_name_component = True;
-
-	while (*s) {
-		if (*s == '/') {
-			/*
-			 * Safe to assume is not the second part of a mb char as this is handled below.
-			 */
-			/* Eat multiple '/' or '\\' */
-			while (*s == '/') {
-				s++;
-			}
-			if ((d != destname) && (*s != '\0')) {
-				/* We only care about non-leading or trailing '/' */
-				*d++ = '/';
-			}
-
-			start_of_name_component = True;
-			continue;
-		}
-
-		if (start_of_name_component) {
-			if ((s[0] == '.') && (s[1] == '.') && (s[2] == '/' || s[2] == '\0')) {
-				/* Uh oh - "/../" or "/..\0" ! */
-
-				/*
-				 * No mb char starts with '.' so we're safe checking the directory separator here.
-				 */
-
-				/* If  we just added a '/' - delete it */
-				if ((d > destname) && (*(d-1) == '/')) {
-					*(d-1) = '\0';
-					d--;
-				}
-
-				/* Are we at the start ? Can't go back further if so. */
-				if (d <= destname) {
-					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-					break;
-				}
-				/* Go back one level... */
-				/* We know this is safe as '/' cannot be part of a mb sequence. */
-				/* NOTE - if this assumption is invalid we are not in good shape... */
-				/* Decrement d first as d points to the *next* char to write into. */
-				for (d--; d > destname; d--) {
-					if (*d == '/')
-						break;
-				}
-				s += 2; /* Else go past the .. */
-				continue;
-
-			} else if ((s[0] == '.') && ((s[1] == '\0') || (s[1] == '/'))) {
-				/* Eat the '.' */
-				s++;
-				continue;
-			}
-		}
-
-		if (!(*s & 0x80)) {
-			*d++ = *s++;
-		} else {
-			size_t siz;
-			/* Get the size of the next MB character. */
-			next_codepoint(s,&siz);
-			switch(siz) {
-				case 5:
-					*d++ = *s++;
-					/*fall through*/
-				case 4:
-					*d++ = *s++;
-					/*fall through*/
-				case 3:
-					*d++ = *s++;
-					/*fall through*/
-				case 2:
-					*d++ = *s++;
-					/*fall through*/
-				case 1:
-					*d++ = *s++;
-					break;
-				default:
-					DEBUG(0,("check_path_syntax_posix: character length assumptions invalid !\n"));
-					*d = '\0';
-					return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-		start_of_name_component = False;
-	}
-
-	*d = '\0';
-	return ret;
+	return check_path_syntax_internal(destname, srcname, False, NULL);
 }
 
 /****************************************************************************
@@ -823,7 +602,6 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int outsize = 0;
 	pstring name;
 	BOOL ok = False;
-	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
@@ -845,10 +623,10 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
-	unix_convert(name,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(name,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBchkpth);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 
 	if (check_name(name,conn)) {
@@ -871,8 +649,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			 * the parent directory is valid but not the
 			 * last component - it returns NT_STATUS_OBJECT_NAME_NOT_FOUND
 			 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
-			 * if the path is invalid. This is different from set_bad_path_error()
-			 * in the non-NT error case.
+			 * if the path is invalid.
 			 */
 			END_PROFILE(SMBchkpth);
 			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
@@ -902,7 +679,6 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int mode=0;
 	SMB_OFF_T size=0;
 	time_t mtime=0;
-	BOOL bad_path = False;
 	char *p;
 	NTSTATUS status;
 
@@ -927,10 +703,10 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		mtime = 0;
 		ok = True;
 	} else {
-		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if (bad_path) {
+		status = unix_convert(fname,conn,NULL,&sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBgetatr);
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			return ERROR_NT(status);
 		}
 		if (check_name(fname,conn)) {
 			if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0) {
@@ -948,7 +724,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	if (!ok) {
 		END_PROFILE(SMBgetatr);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadfile);
+		return UNIXERROR(ERRDOS,ERRbadfile);
 	}
  
 	outsize = set_message(outbuf,10,0,True);
@@ -983,7 +759,6 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int mode;
 	time_t mtime;
 	SMB_STRUCT_STAT sbuf;
-	BOOL bad_path = False;
 	char *p;
 	NTSTATUS status;
 
@@ -998,10 +773,10 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsetatr);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 
 	if (fname[0] == '.' && fname[1] == '\0') {
@@ -1034,7 +809,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	if (!ok) {
 		END_PROFILE(SMBsetatr);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
@@ -1123,7 +898,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL check_descend = False;
 	BOOL expect_close = False;
 	BOOL can_open = True;
-	BOOL bad_path = False;
 	NTSTATUS nt_status;
 	BOOL mask_contains_wcard = False;
 	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
@@ -1165,7 +939,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 		pstrcpy(directory,path);
 		pstrcpy(dir2,path);
-		unix_convert(directory,conn,0,&bad_path,&sbuf);
+		nt_status = unix_convert(directory,conn,NULL,&sbuf);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			END_PROFILE(SMBsearch);
+			return ERROR_NT(nt_status);
+		}
 		unix_format(dir2);
 
 		if (!check_name(directory,conn))
@@ -1214,7 +992,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			if (dptr_num < 0) {
 				if(dptr_num == -2) {
 					END_PROFILE(SMBsearch);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnofids);
+					return UNIXERROR(ERRDOS, ERRnofids);
 				}
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
@@ -1379,7 +1157,6 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	time_t mtime=0;
 	int info;
 	SMB_STRUCT_STAT sbuf;
-	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	int deny_mode;
@@ -1401,10 +1178,10 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopen);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
     
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
@@ -1488,7 +1265,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int mtime=0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
-	BOOL bad_path = False;
 	files_struct *fsp;
 	NTSTATUS status;
 	SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
@@ -1520,10 +1296,10 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, smb_ofun,
@@ -1669,7 +1445,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int outsize = 0;
 	uint32 fattr = SVAL(inbuf,smb_vwv0);
 	struct utimbuf times;
-	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	SMB_STRUCT_STAT sbuf;
@@ -1693,10 +1468,10 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 
 	if (fattr & aVOLID) {
@@ -1760,7 +1535,6 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring fname;
 	int outsize = 0;
 	uint32 fattr = SVAL(inbuf,smb_vwv0);
-	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	int tmpfd;
@@ -1784,10 +1558,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
   
 	tmpfd = smb_mkstemp(fname);
@@ -1900,8 +1674,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-static NTSTATUS can_delete(connection_struct *conn, char *fname,
-			   uint32 dirtype, BOOL bad_path)
+static NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1915,22 +1688,56 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 	}
 
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
-	        if(errno == ENOENT) {
-			if (bad_path) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			} else {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-		}
 		return map_nt_error_from_unix(errno);
 	}
 
 	fattr = dos_mode(conn,fname,&sbuf);
 
+	if (dirtype & 0x8000) {
+		/* These will never be set for POSIX. */
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	if (dirtype == FILE_ATTRIBUTE_NORMAL) {
+		dirtype = aDIR|aARCH|aRONLY;
+	}
+
+	dirtype &= (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM);
+	if (!dirtype) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	if (!dir_check_ftype(conn, fattr, dirtype)) {
+		if (fattr & aDIR) {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+#if 0
+	if ((fattr & dirtype) & FILE_ATTRIBUTE_DIRECTORY) {
+                return NT_STATUS_FILE_IS_A_DIRECTORY;
+        }
+
+        if ((fattr & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM)) {
+                return NT_STATUS_NO_SUCH_FILE;
+        }
+
+	if (dirtype & 0xFF00) {
+		/* These will never be set for POSIX. */
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	dirtype &= 0xFF;
+	if (!dirtype) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
 	/* Can't delete a directory. */
 	if (fattr & aDIR) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
+#endif
 
 #if 0 /* JRATEST */
 	else if (dirtype & aDIR) /* Asked for a directory and it isn't. */
@@ -1953,9 +1760,6 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 		if (fattr & aRONLY) {
 			return NT_STATUS_CANNOT_DELETE;
 		}
-	}
-	if ((fattr & ~dirtype) & (aHIDDEN | aSYSTEM)) {
-		return NT_STATUS_NO_SUCH_FILE;
 	}
 
 	/* On open checks the open itself will check the share mode, so
@@ -1987,14 +1791,15 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	pstring mask;
 	char *p;
 	int count=0;
-	NTSTATUS error = NT_STATUS_OK;
-	BOOL bad_path = False;
-	BOOL rc = True;
+	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf;
 	
 	*directory = *mask = 0;
 	
-	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
+	status = unix_convert(name,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	
 	p = strrchr_m(name,'/');
 	if (!p) {
@@ -2015,15 +1820,15 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	
-	if (!rc && mangle_is_mangled(mask,conn->params))
+	if (!VALID_STAT(sbuf) && mangle_is_mangled(mask,conn->params))
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 	
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(conn,directory,dirtype,bad_path);
-		if (!NT_STATUS_IS_OK(error))
-			return error;
+		status = can_delete(conn,directory,dirtype);
+		if (!NT_STATUS_IS_OK(status))
+			return status;
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
@@ -2032,15 +1837,8 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
-		/* Ensure we check bad_path in the wcard case. 
-		 * This may not be correct w.r.t. Windows (needs
-		 * smbtorture test cases which will be forthcoming)
-		 * but prevents us from continuing in the obvious
-		 * bad path case. This is merely a placeholder. JRA.
-		 */
-
-		if (!rc && bad_path) {
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		if (dirtype == aDIR && mask[0] == '*' && mask[1] == '\0') {
+			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
 		if (strequal(mask,"????????.???"))
@@ -2056,12 +1854,11 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		
 		if (dir_hnd) {
 			long offset = 0;
-			error = NT_STATUS_NO_SUCH_FILE;
+			status = NT_STATUS_NO_SUCH_FILE;
 
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				SMB_STRUCT_STAT st;
 				pstring fname;
-				BOOL sys_direntry = False;
 				pstrcpy(fname,dname);
 
 				if (!is_visible_file(conn, directory, dname, &st, True)) {
@@ -2071,28 +1868,16 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
 					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						if (dirtype & FILE_ATTRIBUTE_DIRECTORY) {
-							sys_direntry = True;
-						} else {
-							continue;
-						}
+						continue;
 					}
 				}
 
 				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 				
-				if (sys_direntry) {
-					error = NT_STATUS_OBJECT_NAME_INVALID;
-					DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
-						fname, mask));
-					break;
-				}
-
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(conn, fname, dirtype,
-						   bad_path);
-				if (!NT_STATUS_IS_OK(error)) {
+				status = can_delete(conn, fname, dirtype);
+				if (!NT_STATUS_IS_OK(status)) {
 					continue;
 				}
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
@@ -2103,11 +1888,11 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		}
 	}
 	
-	if (count == 0 && NT_STATUS_IS_OK(error)) {
-		error = map_nt_error_from_unix(errno);
+	if (count == 0 && NT_STATUS_IS_OK(status)) {
+		status = map_nt_error_from_unix(errno);
 	}
 
-	return error;
+	return status;
 }
 
 /****************************************************************************
@@ -3767,7 +3552,6 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring directory;
 	int outsize;
 	NTSTATUS status;
-	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
 
 	START_PROFILE(SMBmkdir);
@@ -3780,10 +3564,10 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
-	unix_convert(directory,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(directory,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmkdir);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 
 	status = create_directory(conn, directory);
@@ -3970,7 +3754,6 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring directory;
 	int outsize = 0;
 	BOOL ok = False;
-	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	START_PROFILE(SMBrmdir);
@@ -3983,10 +3766,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
-	unix_convert(directory,conn, NULL,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(directory,conn, NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBrmdir);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
   
 	if (check_name(directory,conn)) {
@@ -3996,7 +3779,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
 	if (!ok) {
 		END_PROFILE(SMBrmdir);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRbadpath);
+		return UNIXERROR(ERRDOS, ERRbadpath);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
@@ -4164,24 +3947,16 @@ static BOOL rename_path_prefix_equal(const char *src, const char *dest)
 NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, uint32 attrs, BOOL replace_if_exists)
 {
 	SMB_STRUCT_STAT sbuf;
-	BOOL bad_path = False;
 	pstring newname_last_component;
-	NTSTATUS error = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	BOOL dest_exists;
-	BOOL rcdest = True;
 	struct share_mode_lock *lck = NULL;
 
 	ZERO_STRUCT(sbuf);
-	rcdest = unix_convert(newname,conn,newname_last_component,&bad_path,&sbuf);
 
-	/* Quick check for "." and ".." */
-	if (!bad_path && newname_last_component[0] == '.') {
-		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-	if (!rcdest && bad_path) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	status = unix_convert(newname,conn,newname_last_component,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Ensure newname contains a '/' */
@@ -4243,14 +4018,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	error = can_rename(conn,newname,attrs,&sbuf);
+	status = can_rename(conn,newname,attrs,&sbuf);
 
-	if (dest_exists && !NT_STATUS_IS_OK(error)) {
+	if (dest_exists && !NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-			nt_errstr(error), fsp->fsp_name,newname));
-		if (NT_STATUS_EQUAL(error,NT_STATUS_SHARING_VIOLATION))
-			error = NT_STATUS_ACCESS_DENIED;
-		return error;
+			nt_errstr(status), fsp->fsp_name,newname));
+		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
+			status = NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 
 	if (rename_path_prefix_equal(fsp->fsp_name, newname)) {
@@ -4270,15 +4045,15 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 	TALLOC_FREE(lck);
 
 	if (errno == ENOTDIR || errno == EISDIR) {
-		error = NT_STATUS_OBJECT_NAME_COLLISION;
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
 	} else {
-		error = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
 	}
 		
 	DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
-		nt_errstr(error), fsp->fsp_name,newname));
+		nt_errstr(status), fsp->fsp_name,newname));
 
-	return error;
+	return status;
 }
 
 /****************************************************************************
@@ -4293,12 +4068,8 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	pstring last_component_src;
 	pstring last_component_dest;
 	char *p;
-	BOOL bad_path_src = False;
-	BOOL bad_path_dest = False;
 	int count=0;
-	NTSTATUS error = NT_STATUS_OK;
-	BOOL rc = True;
-	BOOL rcdest = True;
+	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	struct share_mode_lock *lck = NULL;
 
@@ -4307,27 +4078,14 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	rc = unix_convert(name,conn,last_component_src,&bad_path_src,&sbuf1);
-	if (!rc && bad_path_src) {
-		if (ms_has_wild(last_component_src))
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	status = unix_convert(name,conn,last_component_src,&sbuf1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* Quick check for "." and ".." */
-	if (last_component_src[0] == '.') {
-		if (!last_component_src[1] || (last_component_src[1] == '.' && !last_component_src[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
-	}
-
-	rcdest = unix_convert(newname,conn,last_component_dest,&bad_path_dest,&sbuf2);
-
-	/* Quick check for "." and ".." */
-	if (last_component_dest[0] == '.') {
-		if (!last_component_dest[1] || (last_component_dest[1] == '.' && !last_component_dest[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
+	status = unix_convert(newname,conn,last_component_dest,&sbuf2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
@@ -4359,7 +4117,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask, conn->params))
+	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params))
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 
 	if (!has_wild) {
@@ -4444,25 +4202,19 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
-			error = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				nt_errstr(error), directory,newname));
+				nt_errstr(status), directory,newname));
 
-			return error;
+			return status;
 		}
 
-		if (!rcdest && bad_path_dest) {
-			if (ms_has_wild(last_component_dest))
-				return NT_STATUS_OBJECT_NAME_INVALID;
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-		}
+		status = can_rename(conn,directory,attrs,&sbuf1);
 
-		error = can_rename(conn,directory,attrs,&sbuf1);
-
-		if (!NT_STATUS_IS_OK(error)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				nt_errstr(error), directory,newname));
-			return error;
+				nt_errstr(status), directory,newname));
+			return status;
 		}
 
 		/*
@@ -4498,14 +4250,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 
 		TALLOC_FREE(lck);
 		if (errno == ENOTDIR || errno == EISDIR)
-			error = NT_STATUS_OBJECT_NAME_COLLISION;
+			status = NT_STATUS_OBJECT_NAME_COLLISION;
 		else
-			error = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
 		
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-			nt_errstr(error), directory,newname));
+			nt_errstr(status), directory,newname));
 
-		return error;
+		return status;
 	} else {
 		/*
 		 * Wildcards - process each file that matches.
@@ -4522,8 +4274,8 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		
 		if (dir_hnd) {
 			long offset = 0;
-			error = NT_STATUS_NO_SUCH_FILE;
-/*			Was error = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
+			status = NT_STATUS_NO_SUCH_FILE;
+/*			Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
 			
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				pstring fname;
@@ -4549,19 +4301,19 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					continue;
 				
 				if (sysdir_entry) {
-					error = NT_STATUS_OBJECT_NAME_INVALID;
+					status = NT_STATUS_OBJECT_NAME_INVALID;
 					break;
 				}
 
-				error = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
 				if (!vfs_object_exist(conn, fname, &sbuf1)) {
-					error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(error)));
+					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(status)));
 					continue;
 				}
-				error = can_rename(conn,fname,attrs,&sbuf1);
-				if (!NT_STATUS_IS_OK(error)) {
+				status = can_rename(conn,fname,attrs,&sbuf1);
+				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;
 				}
@@ -4577,14 +4329,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					rename_open_files(conn, NULL, sbuf1.st_dev, sbuf1.st_ino, newname);
 					DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
 					count++;
-					error = NT_STATUS_OK;
+					status = NT_STATUS_OK;
 					continue;
 				}
 
 				if (!replace_if_exists && 
                                     vfs_file_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
-					error = NT_STATUS_OBJECT_NAME_COLLISION;
+					status = NT_STATUS_OBJECT_NAME_COLLISION;
 					continue;
 				}
 				
@@ -4597,7 +4349,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				if (!SMB_VFS_RENAME(conn,fname,destname)) {
 					rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
 					count++;
-					error = NT_STATUS_OK;
+					status = NT_STATUS_OK;
 				}
 				TALLOC_FREE(lck);
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
@@ -4605,6 +4357,8 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			CloseDir(dir_hnd);
 		}
 
+#if 0
+	/* Don't think needed any more - JRA. */
 		if (!NT_STATUS_EQUAL(error,NT_STATUS_NO_SUCH_FILE)) {
 			if (!rcdest && bad_path_dest) {
 				if (ms_has_wild(last_component_dest))
@@ -4612,13 +4366,15 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
 		}
+#endif
+
 	}
 	
-	if (count == 0 && NT_STATUS_IS_OK(error)) {
-		error = map_nt_error_from_unix(errno);
+	if (count == 0 && NT_STATUS_IS_OK(status)) {
+		status = map_nt_error_from_unix(errno);
 	}
 	
-	return error;
+	return status;
 }
 
 /****************************************************************************
@@ -4803,11 +4559,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	int ofun = SVAL(inbuf,smb_vwv1);
 	int flags = SVAL(inbuf,smb_vwv2);
 	BOOL target_is_directory=False;
-	BOOL bad_path1 = False;
-	BOOL bad_path2 = False;
 	BOOL path_contains_wcard1 = False;
 	BOOL path_contains_wcard2 = False;
-	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	NTSTATUS status;
 	START_PROFILE(SMBcopy);
@@ -4838,8 +4591,17 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
 	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
 
-	rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
-	unix_convert(newname,conn,0,&bad_path2,&sbuf2);
+	status = unix_convert(name,conn,NULL,&sbuf1);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_NT(status);
+	}
+
+	status = unix_convert(newname,conn,NULL,&sbuf2);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_NT(status);
+	}
 
 	target_is_directory = VALID_STAT_OF_DIR(sbuf2);
 
@@ -4879,7 +4641,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask, conn->params))
+	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params))
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 
 	has_wild = path_contains_wcard1;
@@ -4944,20 +4706,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			return(UNIXERROR(ERRHRD,ERRgeneral));
 		}
 
-		if (exists) {
-			END_PROFILE(SMBcopy);
-			return ERROR_DOS(ERRDOS,error);
-		} else {
-			if((errno == ENOENT) && (bad_path1 || bad_path2) &&
-			   !use_nt_status()) {
-				/* Samba 3.0.22 has ERRDOS/ERRbadpath in the
-				 * DOS error code case
-				 */
-				return ERROR_DOS(ERRDOS, ERRbadpath);
-			}
-			END_PROFILE(SMBcopy);
-			return(UNIXERROR(ERRDOS,error));
-		}
+		END_PROFILE(SMBcopy);
+		return ERROR_DOS(ERRDOS,error);
 	}
   
 	outsize = set_message(outbuf,1,0,True);

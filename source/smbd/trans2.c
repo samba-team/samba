@@ -751,7 +751,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	SMB_INO_T inode = 0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
-	BOOL bad_path = False;
 	files_struct *fsp;
 	struct ea_list *ea_list = NULL;
 	uint16 flags = 0;
@@ -801,13 +800,13 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	status = unix_convert(fname,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
     
 	if (!check_name(fname,conn)) {
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+		return UNIXERROR(ERRDOS,ERRnoaccess);
 	}
 
 	if (open_ofun == 0) {
@@ -1662,7 +1661,6 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	BOOL dont_descend = False;
 	BOOL out_of_space = False;
 	int space_remaining;
-	BOOL bad_path = False;
 	BOOL mask_contains_wcard = False;
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ea_ctx = NULL;
@@ -1720,12 +1718,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	RESOLVE_DFSPATH_WCARD(directory, conn, inbuf, outbuf);
 
-	unix_convert(directory,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	ntstatus = unix_convert(directory,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ERROR_NT(ntstatus);
 	}
 	if(!check_name(directory,conn)) {
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		return UNIXERROR(ERRDOS,ERRbadpath);
 	}
 
 	p = strrchr_m(directory,'/');
@@ -2702,25 +2700,6 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 	return outsize;
 }
 
-/****************************************************************************
- Utility function to set bad path error.
-****************************************************************************/
-
-int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint32 def_code)
-{
-	DEBUG(10,("set_bad_path_error: err = %d bad_path = %d\n",
-			err, (int)bad_path ));
-
-	if(err == ENOENT) {
-		if (bad_path) {
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		} else {
-			return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		}
-	}
-	return UNIXERROR(def_class,def_code);
-}
-
 #if defined(HAVE_POSIX_ACLS)
 /****************************************************************************
  Utility function to count the number of entries in a POSIX acl.
@@ -2863,7 +2842,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *base_name;
 	char *p;
 	SMB_OFF_T pos = 0;
-	BOOL bad_path = False;
 	BOOL delete_pending = False;
 	int len;
 	time_t create_time, mtime, atime;
@@ -2910,11 +2888,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
 					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+					return UNIXERROR(ERRDOS,ERRbadpath);
 				}
 			} else if (SMB_VFS_STAT(conn,fname,&sbuf)) {
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return UNIXERROR(ERRDOS,ERRbadpath);
 			}
 
 			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
@@ -2952,24 +2930,24 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if (bad_path) {
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		status = unix_convert(fname,conn,NULL,&sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
 		if (!check_name(fname,conn)) {
 			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return UNIXERROR(ERRDOS,ERRbadpath);
 		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
 				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return UNIXERROR(ERRDOS,ERRbadpath);
 			}
 		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return UNIXERROR(ERRDOS,ERRbadpath);
 		}
 
 		delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
@@ -3690,8 +3668,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newname)
 {
-	BOOL bad_path_oldname = False;
-	BOOL bad_path_newname = False;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	pstring last_component_oldname;
 	pstring last_component_newname;
@@ -3700,21 +3676,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
+	status = unix_convert(oldname,conn,last_component_oldname,&sbuf1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* No wildcards. */
-	if (ms_has_wild(newname) || ms_has_wild(oldname)) {
+	if (ms_has_wild(oldname)) {
 		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-	}
-
-	unix_convert(oldname,conn,last_component_oldname,&bad_path_oldname,&sbuf1);
-	if (bad_path_oldname) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-
-	/* Quick check for "." and ".." */
-	if (last_component_oldname[0] == '.') {
-		if (!last_component_oldname[1] || (last_component_oldname[1] == '.' && !last_component_oldname[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
 	}
 
 	/* source must already exist. */
@@ -3726,16 +3695,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
-	if (bad_path_newname) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	status = unix_convert(newname,conn,last_component_newname,&sbuf2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* Quick check for "." and ".." */
-	if (last_component_newname[0] == '.') {
-		if (!last_component_newname[1] || (last_component_newname[1] == '.' && !last_component_newname[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
+	/* No wildcards. */
+	if (ms_has_wild(newname)) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 	}
 
 	/* Disallow if newname already exists. */
@@ -3785,7 +3752,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	SMB_STRUCT_STAT sbuf;
 	pstring fname;
 	int fd = -1;
-	BOOL bad_path = False;
 	files_struct *fsp = NULL;
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
@@ -3815,7 +3781,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			pstrcpy(fname, fsp->fsp_name);
 			if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+				return UNIXERROR(ERRDOS,ERRbadpath);
 			}
 		} else if (fsp && fsp->print_file) {
 			/*
@@ -3856,9 +3822,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
-		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if (bad_path) {
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		status = unix_convert(fname,conn,NULL,&sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
 
 		/*
@@ -3867,11 +3833,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
 			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return UNIXERROR(ERRDOS,ERRbadpath);
 		}    
 
 		if(!check_name(fname, conn)) {
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+			return UNIXERROR(ERRDOS,ERRbadpath);
 		}
 
 	}
@@ -4808,7 +4774,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	char *pdata = *ppdata;
 	pstring directory;
 	SMB_STRUCT_STAT sbuf;
-	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
 
@@ -4826,9 +4791,9 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	unix_convert(directory,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	status = unix_convert(directory,conn,NULL,&sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
 
 	/* Any data in this call is an EA list. */
@@ -4864,8 +4829,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	if (!check_name(directory,conn)) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,
-					  ERRnoaccess);
+		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
 
 	status = create_directory(conn, directory);

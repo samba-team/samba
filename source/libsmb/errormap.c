@@ -1511,6 +1511,7 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
 	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND },
 	{ ENOTDIR, ERRDOS, ERRbadpath,  NT_STATUS_NOT_A_DIRECTORY },
+	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
 	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
 	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
 	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
@@ -1532,9 +1533,6 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #endif
 #ifdef EROFS
 	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
-#endif
-#ifdef ENAMETOOLONG
-	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
 #endif
 #ifdef EFBIG
 	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },

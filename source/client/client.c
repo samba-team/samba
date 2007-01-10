@@ -1709,6 +1709,34 @@ static int cmd_del(void)
 }
 
 /****************************************************************************
+ Wildcard delete some files.
+****************************************************************************/
+
+static int cmd_wdel(void)
+{
+	pstring mask;
+	pstring buf;
+	uint16 attribute = aSYSTEM | aHIDDEN;
+
+	//attribute |= aDIR | aARCH;
+	attribute = aDIR;
+	
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("wdel <wcard>\n");
+		return 1;
+	}
+	pstrcat(mask,buf);
+
+	if (!cli_unlink_full(cli, mask, attribute)) {
+		d_printf("%s deleting remote files %s\n",cli_errstr(cli),mask);
+	}
+	return 0;
+}
+
+
+/****************************************************************************
 ****************************************************************************/
 
 static int cmd_open(void)
@@ -3059,6 +3087,7 @@ static struct
   {"unlock",cmd_unlock,"unlock <fnum> <hex-start> <hex-len> : remove a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
+  {"wdel",cmd_wdel,"<mask> wildcard delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},

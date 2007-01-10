@@ -494,7 +494,7 @@ BOOL cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *f
  Delete a file.
 ****************************************************************************/
 
-BOOL cli_unlink(struct cli_state *cli, const char *fname)
+BOOL cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs)
 {
 	char *p;
 
@@ -507,7 +507,7 @@ BOOL cli_unlink(struct cli_state *cli, const char *fname)
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
+	SSVAL(cli->outbuf,smb_vwv0, attrs);
   
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
@@ -524,6 +524,15 @@ BOOL cli_unlink(struct cli_state *cli, const char *fname)
 	}
 
 	return True;
+}
+
+/****************************************************************************
+ Delete a file.
+****************************************************************************/
+
+BOOL cli_unlink(struct cli_state *cli, const char *fname)
+{
+	return cli_unlink_full(cli, fname, aSYSTEM | aHIDDEN);
 }
 
 /****************************************************************************

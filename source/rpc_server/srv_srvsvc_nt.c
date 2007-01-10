@@ -1791,7 +1791,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	pstring qualname;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -1826,8 +1825,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	unix_convert(filename, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(filename, conn, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
@@ -1906,7 +1905,6 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -1941,8 +1939,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	unix_convert(filename, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(filename, conn, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
