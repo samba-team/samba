@@ -3,7 +3,7 @@
    Copyright Andrew Tridgell <tridge@samba.org> 2000
    Copyright Tim Potter <tpot@samba.org> 2000
    Copyright Andrew Bartlett <abartlet@samba.org> 2002
-   Copyright Guenther Deschner <gd@samba.org> 2005-2006
+   Copyright Guenther Deschner <gd@samba.org> 2005-2007
 
    largely based on pam_userdb by Cristian Gafton <gafton@redhat.com> 
    also contains large slabs of code from pam_unix by Elliot Lee <sopwith@redhat.com>
@@ -378,6 +378,70 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 	}
 }
 
+static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, time_t next_change, time_t now) 
+{
+	int days = 0;
+	struct tm tm_now, tm_next_change;
+
+	if ((next_change < 0) ||
+	    (next_change < now) ||
+	    (next_change > now + DAYS_TO_WARN_BEFORE_PWD_EXPIRES * SECONDS_PER_DAY)) {
+		return False;
+	}
+
+	if ((localtime_r(&now, &tm_now) == NULL) || 
+	    (localtime_r(&next_change, &tm_next_change) == NULL)) {
+		return False;
+	}
+
+	days = (tm_next_change.tm_yday+tm_next_change.tm_year*365) - (tm_now.tm_yday+tm_now.tm_year*365);
+
+	if (days == 0) {
+		_make_remark(pamh, PAM_TEXT_INFO, "Your password expires today");
+		return True;
+	} 
+	
+	if (days > 0 && days < DAYS_TO_WARN_BEFORE_PWD_EXPIRES) {
+		_make_remark_format(pamh, PAM_TEXT_INFO, "Your password will expire in %d %s", 
+			days, (days > 1) ? "days":"day");
+		return True;
+	}
+
+	return False;
+}
+
+static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winbindd_response *response)
+{
+	time_t now = time(NULL);
+	time_t next_change = 0;
+
+	/* accounts with ACB_PWNOEXP set never receive a warning */
+	if (response->data.auth.info3.acct_flags & ACB_PWNOEXP) {
+		return;
+	}
+
+	/* check if the info3 must change timestamp has been set */
+	next_change = response->data.auth.info3.pass_must_change_time;
+
+	if (_pam_send_password_expiry_message(pamh, next_change, now)) {
+		return;
+	}
+
+	/* now check for the global password policy */
+	if (response->data.auth.policy.expire <= 0) {
+		return;
+	}
+
+	next_change = response->data.auth.info3.pass_last_set_time + 
+		      response->data.auth.policy.expire;
+
+	if (_pam_send_password_expiry_message(pamh, next_change, now)) {
+		return;
+	}
+
+	/* no warning sent */
+}
+
 /* talk to winbindd */
 static int winbind_auth_request(pam_handle_t * pamh,
 				int ctrl, 
@@ -538,16 +602,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	/* warn a user if the password is about to expire soon */
-	if ( ! (response.data.auth.info3.acct_flags & ACB_PWNOEXP) &&
-	    (response.data.auth.policy.expire) && 
-	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire > time(NULL) ) ) {
-
-		int days = (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire -
-			    time(NULL))/ SECONDS_PER_DAY;
-		if (days <= DAYS_TO_WARN_BEFORE_PWD_EXPIRES) {
-			_make_remark_format(pamh, PAM_TEXT_INFO, "Your password will expire in %d days", days);
-		}
-	}
+	_pam_warn_password_expires_in_future(pamh, &response);
 
 	if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
 		_make_remark(pamh, PAM_ERROR_MSG, "Logging on using cached account. Network ressources can be unavailable");
@@ -1556,7 +1611,7 @@ struct pam_module _pam_winbind_modstruct = {
  * Copyright (c) Andrew Tridgell  <tridge@samba.org>   2000
  * Copyright (c) Tim Potter       <tpot@samba.org>     2000
  * Copyright (c) Andrew Bartlettt <abartlet@samba.org> 2002
- * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2006
+ * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2007
  * Copyright (c) Jan Rêkorajski 1999.
  * Copyright (c) Andrew G. Morgan 1996-8.
  * Copyright (c) Alex O. Yuriev, 1996.
