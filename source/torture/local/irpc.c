@@ -25,6 +25,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "torture/torture.h"
+#include "cluster/cluster.h"
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
