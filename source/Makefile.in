@@ -1714,7 +1714,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
 installman: installdirs
-	@$(SHELL) SMBMOUNT_PROGS="@SMBMOUNT_PROGS@" \
+	@SMBMOUNT_PROGS="@SMBMOUNT_PROGS@" $(SHELL) \
 		$(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
