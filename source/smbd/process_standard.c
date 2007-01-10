@@ -28,8 +28,8 @@
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
-
 #include "system/filesys.h"
+#include "cluster/cluster.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
@@ -58,7 +58,7 @@ static void standard_model_init(struct event_context *ev)
 static void standard_accept_connection(struct event_context *ev, 
 				       struct socket_context *sock, 
 				       void (*new_conn)(struct event_context *, struct socket_context *, 
-							uint32_t , void *), 
+							struct server_id , void *), 
 				       void *private)
 {
 	NTSTATUS status;
@@ -126,7 +126,7 @@ static void standard_accept_connection(struct event_context *ev,
 	talloc_free(s);
 
 	/* setup this new connection */
-	new_conn(ev2, sock2, pid, private);
+	new_conn(ev2, sock2, cluster_id(pid), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -141,7 +141,7 @@ static void standard_accept_connection(struct event_context *ev,
   called to create a new server task
 */
 static void standard_new_task(struct event_context *ev, 
-			      void (*new_task)(struct event_context *, uint32_t , void *), 
+			      void (*new_task)(struct event_context *, struct server_id , void *), 
 			      void *private)
 {
 	pid_t pid;
@@ -179,7 +179,7 @@ static void standard_new_task(struct event_context *ev,
 	setproctitle("task server_id[%d]", pid);
 
 	/* setup this new connection */
-	new_task(ev2, pid, private);
+	new_task(ev2, cluster_id(pid), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

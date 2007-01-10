@@ -29,7 +29,7 @@
 static uint32_t msg_pong;
 
 static void ping_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
+			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	NTSTATUS status;
 	status = messaging_send(msg, src, msg_pong, data);
@@ -39,14 +39,14 @@ static void ping_message(struct messaging_context *msg, void *private,
 }
 
 static void pong_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
+			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	int *count = private;
 	(*count)++;
 }
 
 static void exit_message(struct messaging_context *msg, void *private, 
-			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
+			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	talloc_free(private);
 	exit(0);
@@ -71,14 +71,14 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 	ev = event_context_init(mem_ctx);
 
-	msg_server_ctx = messaging_init(mem_ctx, 1, ev);
+	msg_server_ctx = messaging_init(mem_ctx, cluster_id(1), ev);
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init ping messaging context");
 		
 	messaging_register_tmp(msg_server_ctx, NULL, ping_message, &msg_ping);
 	messaging_register_tmp(msg_server_ctx, mem_ctx, exit_message, &msg_exit);
 
-	msg_client_ctx = messaging_init(mem_ctx, 2, ev);
+	msg_client_ctx = messaging_init(mem_ctx, cluster_id(2), ev);
 
 	torture_assert(tctx, msg_client_ctx != NULL, "msg_client_ctx messaging_init() failed");
 
@@ -94,8 +94,8 @@ static bool test_ping_speed(struct torture_context *tctx)
 		data.data = discard_const_p(uint8_t, "testing");
 		data.length = strlen((const char *)data.data);
 
-		status1 = messaging_send(msg_client_ctx, 1, msg_ping, &data);
-		status2 = messaging_send(msg_client_ctx, 1, msg_ping, NULL);
+		status1 = messaging_send(msg_client_ctx, cluster_id(1), msg_ping, &data);
+		status2 = messaging_send(msg_client_ctx, cluster_id(1), msg_ping, NULL);
 
 		torture_assert_ntstatus_ok(tctx, status1, "msg1 failed");
 		ping_count++;
@@ -115,7 +115,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	}
 
 	torture_comment(tctx, "sending exit");
-	messaging_send(msg_client_ctx, 1, msg_exit, NULL);
+	messaging_send(msg_client_ctx, cluster_id(1), msg_exit, NULL);
 
 	torture_assert_int_equal(tctx, ping_count, pong_count, "ping test failed");
 

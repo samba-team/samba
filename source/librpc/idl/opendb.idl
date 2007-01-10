@@ -7,13 +7,15 @@
    ntvfs/common/opendb.c
 */
 
+import "misc.idl";
+
 [
   pointer_default(unique)
 ]
 interface opendb
 {
 	typedef struct {
-		uint32 server;
+		server_id server;
 		uint32 stream_id;
 		uint32 share_access;
 		uint32 access_mask;
@@ -25,7 +27,7 @@ interface opendb
 	} opendb_entry;
 
 	typedef struct {
-		uint32 server;
+		server_id server;
 		pointer notify_ptr;
 	} opendb_pending;
 

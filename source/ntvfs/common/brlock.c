@@ -47,7 +47,7 @@ struct brl_context;
   lock is the same as another lock
 */
 struct lock_context {
-	uint32_t server;
+	struct server_id server;
 	uint16_t smbpid;
 	struct brl_context *ctx;
 };
@@ -74,7 +74,7 @@ struct brl_handle {
 /* this struct is typicaly attached to tcon */
 struct brl_context {
 	struct tdb_wrap *w;
-	uint32_t server;
+	struct server_id server;
 	struct messaging_context *messaging_ctx;
 };
 
@@ -83,7 +83,7 @@ struct brl_context {
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server, 
+struct brl_context *brl_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 			     struct messaging_context *messaging_ctx)
 {
 	char *path;
@@ -130,7 +130,7 @@ struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *n
 */
 static BOOL brl_same_context(struct lock_context *ctx1, struct lock_context *ctx2)
 {
-	return (ctx1->server == ctx2->server &&
+	return (cluster_id_equal(&ctx1->server, &ctx2->server) &&
 		ctx1->smbpid == ctx2->smbpid &&
 		ctx1->ctx == ctx2->ctx);
 }
@@ -249,7 +249,7 @@ static NTSTATUS brl_lock_failed(struct brl_handle *brlh, struct lock_struct *loc
 	 * if the current lock matches the last failed lock on the file handle
 	 * and starts at the same offset, then FILE_LOCK_CONFLICT should be returned
 	 */
-	if (lock->context.server == brlh->last_lock.context.server &&
+	if (cluster_id_equal(&lock->context.server, &brlh->last_lock.context.server) &&
 	    lock->context.ctx == brlh->last_lock.context.ctx &&
 	    lock->ntvfs == brlh->last_lock.ntvfs &&
 	    lock->start == brlh->last_lock.start) {
@@ -535,7 +535,7 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 		
 		if (lock->lock_type >= PENDING_READ_LOCK &&
 		    lock->notify_ptr == notify_ptr &&
-		    lock->context.server == brl->server) {
+		    cluster_id_equal(&lock->context.server, &brl->server)) {
 			/* found it - delete it */
 			if (count == 1) {
 				if (tdb_delete(brl->w->tdb, kbuf) != 0) {
@@ -648,7 +648,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 		struct lock_struct *lock = &locks[i];
 
 		if (lock->context.ctx == brl &&
-		    lock->context.server == brl->server &&
+		    cluster_id_equal(&lock->context.server, &brl->server) &&
 		    lock->ntvfs == brlh->ntvfs) {
 			/* found it - delete it */
 			if (count > 1 && i < count-1) {

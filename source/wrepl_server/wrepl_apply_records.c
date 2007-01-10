@@ -904,7 +904,7 @@ static void r_do_late_release_demand_handler(struct irpc_request *ireq)
 static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
 {
 	struct irpc_request *ireq;
-	uint32_t *nbt_servers;
+	struct server_id *nbt_servers;
 	struct nbtd_proxy_wins_release_demand r;
 	uint32_t i;
 
@@ -912,7 +912,7 @@ static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
 		 nbt_name_string(state, &state->replica.name)));
 
 	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1032,7 +1032,7 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 {
 	struct irpc_request *ireq;
 	struct r_do_challenge_state *state;
-	uint32_t *nbt_servers;
+	struct server_id *nbt_servers;
 	const char **addrs;
 	uint32_t i;
 
@@ -1052,7 +1052,7 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 	talloc_steal(state, replica->addresses);
 
 	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1094,7 +1094,7 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 {
 	NTSTATUS status;
 	struct irpc_request *ireq;
-	uint32_t *nbt_servers;
+	struct server_id *nbt_servers;
 	const char **addrs;
 	struct winsdb_addr **addresses;
 	struct nbtd_proxy_wins_release_demand r;
@@ -1114,7 +1114,7 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 		 nbt_name_string(mem_ctx, &replica->name)));
 
 	nbt_servers = irpc_servers_byname(partner->service->task->msg_ctx, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

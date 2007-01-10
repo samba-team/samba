@@ -50,7 +50,8 @@ struct task_state {
   called by the process model code when the new task starts up. This then calls
   the server specific startup code
 */
-static void task_server_callback(struct event_context *event_ctx, uint32_t server_id, void *private)
+static void task_server_callback(struct event_context *event_ctx, 
+				 struct server_id server_id, void *private)
 {
 	struct task_state *state = talloc_get_type(private, struct task_state);
 	struct task_server *task;

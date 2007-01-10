@@ -192,7 +192,7 @@ struct dcesrv_connection {
 	struct messaging_context *msg_ctx;
 
 	/* the server_id that will be used for this connection */
-	uint32_t server_id;
+	struct server_id server_id;
 
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;

@@ -27,8 +27,10 @@ struct task_server {
 	struct event_context *event_ctx;
 	const struct model_ops *model_ops;
 	struct messaging_context *msg_ctx;
-	uint32_t server_id;
+	struct server_id server_id;
 	void *private;
 };
+
+
 
 #endif /* __SERVICE_TASK_H__ */
