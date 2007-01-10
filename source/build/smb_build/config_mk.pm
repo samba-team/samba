@@ -117,7 +117,7 @@ use vars qw(@parsed_files);
 ###########################################################
 # The parsing function which parses the file
 #
-# $result = _parse_config_mk($filename)
+# $result = _parse_config_mk($input, $srcdir, $builddir, $filename)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -133,6 +133,7 @@ sub run_config_mk($$$$)
 
 	my $parsing_file = $filename;
 	my $retry_parsing_file = undef;
+	my $basedir;
 
 	$ENV{samba_builddir} = $builddir;
 	$ENV{samba_srcdir} = $srcdir;
@@ -157,8 +158,12 @@ sub run_config_mk($$$$)
 		}
 	}
 
-	push (@parsed_files, $parsing_file);
-	
+        if ($parsing_file =~ /\|$/) { 
+	        $basedir = $builddir;
+	} else {
+	        $basedir = dirname($filename);
+		push (@parsed_files, $parsing_file);
+	}
 	
 	my @lines = <CONFIG_MK>;
 	close(CONFIG_MK);
@@ -236,7 +241,7 @@ sub run_config_mk($$$$)
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
 		$input->{$name}{MK_FILE} = $parsing_file;
-		$input->{$name}{BASEDIR} = dirname($filename);
+		$input->{$name}{BASEDIR} = $basedir;
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
