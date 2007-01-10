@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c,v 1.28 2006/09/04 14:28:54 lha Exp $");
+RCSID("$Id: init_creds.c,v 1.30 2006/11/23 16:27:36 lha Exp $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -130,9 +130,10 @@ _krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
 
 
 void KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
+krb5_get_init_creds_opt_free(krb5_context context,
+			     krb5_get_init_creds_opt *opt)
 {
-    if (opt->opt_private == NULL)
+    if (opt == NULL || opt->opt_private == NULL)
 	return;
     if (opt->opt_private->refcount < 1) /* abort ? */
 	return;

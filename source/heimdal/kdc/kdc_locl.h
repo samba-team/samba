@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h,v 1.74 2005/12/12 12:23:33 lha Exp $ 
+ * $Id: kdc_locl.h,v 1.76 2006/12/26 17:18:14 lha Exp $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -54,6 +54,8 @@ extern int enable_http;
 #define DETACH_IS_DEFAULT FALSE
 
 extern int detach_from_console;
+
+extern const struct units _kdc_digestunits[];
 
 #define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
 #define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"

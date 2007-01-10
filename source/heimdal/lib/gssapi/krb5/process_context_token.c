@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: process_context_token.c,v 1.4 2006/10/07 22:15:19 lha Exp $");
+RCSID("$Id: process_context_token.c,v 1.5 2006/11/13 18:02:30 lha Exp $");
 
 OM_uint32 _gsskrb5_process_context_token (
 	OM_uint32          *minor_status,
@@ -41,6 +41,7 @@ OM_uint32 _gsskrb5_process_context_token (
 	const gss_buffer_t token_buffer
     )
 {
+    krb5_context context;
     OM_uint32 ret = GSS_S_FAILURE;
     gss_buffer_desc empty_buffer;
     gss_qop_t qop_state;
@@ -48,10 +49,13 @@ OM_uint32 _gsskrb5_process_context_token (
     empty_buffer.length = 0;
     empty_buffer.value = NULL;
 
+    GSSAPI_KRB5_INIT (&context);
+
     qop_state = GSS_C_QOP_DEFAULT;
 
     ret = _gsskrb5_verify_mic_internal(minor_status, 
 				       (gsskrb5_ctx)context_handle,
+				       context,
 				       token_buffer, &empty_buffer,
 				       GSS_C_QOP_DEFAULT, "\x01\x02");
 

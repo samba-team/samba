@@ -36,7 +36,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_sec_context_option.c,v 1.8 2006/11/08 23:06:42 lha Exp $");
+RCSID("$Id: set_sec_context_option.c,v 1.10 2006/12/14 11:02:16 lha Exp $");
 
 static OM_uint32
 get_bool(OM_uint32 *minor_status,
@@ -58,9 +58,10 @@ _gsskrb5_set_sec_context_option
             const gss_OID desired_object,
             const gss_buffer_t value)
 {
+    krb5_context context;
     OM_uint32 maj_stat;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     if (value == GSS_C_NO_BUFFER) {
 	*minor_status = EINVAL;
@@ -96,7 +97,7 @@ _gsskrb5_set_sec_context_option
 	if (maj_stat != GSS_S_COMPLETE)
 	    return maj_stat;
 
-	krb5_set_dns_canonicalize_hostname(_gsskrb5_context, flag);
+	krb5_set_dns_canonicalize_hostname(context, flag);
 	return GSS_S_COMPLETE;
 
     } else if (gss_oid_equal(desired_object, GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X)) {
@@ -128,14 +129,14 @@ _gsskrb5_set_sec_context_option
 	    return GSS_S_CALL_INACCESSIBLE_READ;
 	}
 	str = malloc(value->length + 1);
-	if (str) {
+	if (str == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
 	}
 	memcpy(str, value->value, value->length);
 	str[value->length] = '\0';
 
-	krb5_set_default_realm(_gsskrb5_context, str);
+	krb5_set_default_realm(context, str);
 	free(str);
 
 	*minor_status = 0;
@@ -144,7 +145,7 @@ _gsskrb5_set_sec_context_option
     } else if (gss_oid_equal(desired_object, GSS_KRB5_SEND_TO_KDC_X)) {
 
 	if (value == NULL || value->length == 0) {
-	    krb5_set_send_to_kdc_func(_gsskrb5_context, NULL, NULL);
+	    krb5_set_send_to_kdc_func(context, NULL, NULL);
 	} else {
 	    struct gsskrb5_send_to_kdc c;
 
@@ -153,7 +154,7 @@ _gsskrb5_set_sec_context_option
 		return GSS_S_FAILURE;
 	    }
 	    memcpy(&c, value->value, sizeof(c));
-	    krb5_set_send_to_kdc_func(_gsskrb5_context,
+	    krb5_set_send_to_kdc_func(context,
 				      (krb5_send_to_kdc_func)c.func, 
 				      c.ptr);
 	}

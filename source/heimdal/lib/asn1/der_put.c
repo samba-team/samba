@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_put.c,v 1.33 2005/07/12 06:27:23 lha Exp $");
+RCSID("$Id: der_put.c,v 1.34 2006/12/28 17:14:33 lha Exp $");
 
 /*
  * All encoding functions take a pointer `p' to first position in
@@ -228,6 +228,13 @@ der_put_universal_string (unsigned char *p, size_t len,
     }
     if (size) *size = data->length * 4;
     return 0;
+}
+
+int
+der_put_visible_string (unsigned char *p, size_t len, 
+			 const heim_visible_string *str, size_t *size)
+{
+    return der_put_general_string(p, len, str, size);
 }
 
 int

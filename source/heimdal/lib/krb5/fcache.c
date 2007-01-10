@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: fcache.c,v 1.52 2006/04/02 01:04:37 lha Exp $");
+RCSID("$Id: fcache.c,v 1.54 2006/12/15 21:35:52 lha Exp $");
 
 typedef struct krb5_fcache{
     char *filename;
@@ -699,6 +699,62 @@ fcc_get_version(krb5_context context,
     return FCACHE(id)->version;
 }
 		    
+struct fcache_iter {
+    int first;
+};
+
+static krb5_error_code
+fcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
+{
+    struct fcache_iter *iter;
+
+    iter = calloc(1, sizeof(*iter));
+    if (iter == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }    
+    iter->first = 1;
+    *cursor = iter;
+    return 0;
+}
+
+static krb5_error_code
+fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
+{
+    struct fcache_iter *iter = cursor;
+    krb5_error_code ret;
+    const char *fn;
+    char *expandedfn = NULL;
+
+    if (!iter->first) {
+	krb5_clear_error_string(context);
+	return KRB5_CC_END;
+    }
+    iter->first = 0;
+
+    fn = krb5_cc_default_name(context);
+    if (strncasecmp(fn, "FILE:", 5) != 0) {
+	ret = _krb5_expand_default_cc_name(context, 
+					   KRB5_DEFAULT_CCNAME_FILE,
+					   &expandedfn);
+	if (ret)
+	    return ret;
+    }
+    ret = krb5_cc_resolve(context, fn, id);
+    if (expandedfn)
+	free(expandedfn);
+    
+    return ret;
+}
+
+static krb5_error_code
+fcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
+{
+    struct fcache_iter *iter = cursor;
+    free(iter);
+    return 0;
+}
+
 const krb5_cc_ops krb5_fcc_ops = {
     "FILE",
     fcc_get_name,
@@ -715,5 +771,8 @@ const krb5_cc_ops krb5_fcc_ops = {
     fcc_end_get,
     fcc_remove_cred,
     fcc_set_flags,
-    fcc_get_version
+    fcc_get_version,
+    fcc_get_cache_first,
+    fcc_get_cache_next,
+    fcc_end_cache_get
 };

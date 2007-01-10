@@ -344,5 +344,6 @@ __gss_get_mechanism(gss_OID /* oid */);
 
 gssapi_mech_interface __gss_spnego_initialize(void);
 gssapi_mech_interface __gss_krb5_initialize(void);
+gssapi_mech_interface __gss_ntlm_initialize(void);
 
 #endif /* GSSAPI_MECH_H */

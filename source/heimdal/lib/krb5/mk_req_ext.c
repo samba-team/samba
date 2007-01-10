@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_req_ext.c,v 1.32 2006/03/19 20:33:13 lha Exp $");
+RCSID("$Id: mk_req_ext.c,v 1.33 2006/12/27 12:07:22 lha Exp $");
 
 krb5_error_code
 _krb5_mk_req_internal(krb5_context context,
@@ -91,7 +91,9 @@ _krb5_mk_req_internal(krb5_context context,
 				       in_data->length,
 				       &c);
 	} else if(ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5 ||
-		  ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56) {
+		  ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56 ||
+		  ac->keyblock->keytype == ETYPE_DES_CBC_MD4 ||
+		  ac->keyblock->keytype == ETYPE_DES_CBC_MD5) {
 	    /* this is to make MS kdc happy */ 
 	    ret = krb5_create_checksum(context, 
 				       NULL,

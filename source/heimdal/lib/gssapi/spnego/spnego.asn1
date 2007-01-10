@@ -1,4 +1,4 @@
--- $Id: spnego.asn1,v 1.1.1.1 2006/06/28 08:34:45 lha Exp $
+-- $Id: spnego.asn1,v 1.3 2006/12/18 18:28:49 lha Exp $
 
 SPNEGO DEFINITIONS ::=
 BEGIN
@@ -22,13 +22,20 @@ NegHints ::= SEQUENCE {
     hintAddress    [1]  OCTET STRING                           OPTIONAL
 } 
 
+NegTokenInitWin ::= SEQUENCE {
+                            mechTypes       [0] MechTypeList,
+                            reqFlags        [1] ContextFlags   OPTIONAL,
+                            mechToken       [2] OCTET STRING   OPTIONAL,
+			    negHints        [3] NegHints       OPTIONAL
+			     }
+
 NegTokenInit ::= SEQUENCE {
                             mechTypes       [0] MechTypeList,
                             reqFlags        [1] ContextFlags   OPTIONAL,
                             mechToken       [2] OCTET STRING   OPTIONAL,
-                            negHints        [3] NegHints       OPTIONAL,
-			    mechListMIC	    [4] OCTET STRING   OPTIONAL
+			    mechListMIC	    [3] OCTET STRING   OPTIONAL
                          }
+
 
 -- NB: negResult is not OPTIONAL in the new SPNEGO spec but
 -- Windows clients do not always send it
@@ -46,6 +53,10 @@ NegTokenResp ::= SEQUENCE {
 NegotiationToken ::= CHOICE {
 	negTokenInit[0]		NegTokenInit,
 	negTokenResp[1]		NegTokenResp
+}
+
+NegotiationTokenWin ::= CHOICE {
+	negTokenInit[0]		NegTokenInitWin
 }
 
 END

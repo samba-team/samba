@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c,v 1.112 2006/06/06 21:22:54 lha Exp $");
+RCSID("$Id: get_cred.c,v 1.113 2006/11/21 05:14:01 lha Exp $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -458,7 +458,7 @@ get_cred_kdc_usage(krb5_context context,
 
 	ret = krb5_create_checksum(context,
 				   crypto,
-				   KRB5_KU_TGS_IMPERSONATE,
+				   KRB5_KU_OTHER_CKSUM,
 				   0,
 				   data.data,
 				   data.length, 

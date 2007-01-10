@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.6 2006/11/10 00:39:50 lha Exp $ */
+/* $Id: gssapi.h,v 1.7 2006/12/15 20:02:54 lha Exp $ */
 
 #ifndef GSSAPI_GSSAPI_H_
 #define GSSAPI_GSSAPI_H_
@@ -299,6 +299,12 @@ extern gss_OID GSS_C_NT_EXPORT_NAME;
  */
 
 extern gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
+
+/*
+ * NTLM mechanism
+ */
+
+extern gss_OID GSS_NTLM_MECHANISM;
 
 /* Major status codes */
 

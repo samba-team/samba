@@ -33,13 +33,14 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: release_cred.c,v 1.13 2006/10/07 22:15:24 lha Exp $");
+RCSID("$Id: release_cred.c,v 1.14 2006/11/13 18:02:34 lha Exp $");
 
 OM_uint32 _gsskrb5_release_cred
            (OM_uint32 * minor_status,
             gss_cred_id_t * cred_handle
            )
 {
+    krb5_context context;
     gsskrb5_cred cred;
 
     *minor_status = 0;
@@ -50,21 +51,21 @@ OM_uint32 _gsskrb5_release_cred
     cred = (gsskrb5_cred)*cred_handle;
     *cred_handle = GSS_C_NO_CREDENTIAL;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
     if (cred->principal != NULL)
-        krb5_free_principal(_gsskrb5_context, cred->principal);
+        krb5_free_principal(context, cred->principal);
     if (cred->keytab != NULL)
-	krb5_kt_close(_gsskrb5_context, cred->keytab);
+	krb5_kt_close(context, cred->keytab);
     if (cred->ccache != NULL) {
 	const krb5_cc_ops *ops;
-	ops = krb5_cc_get_ops(_gsskrb5_context, cred->ccache);
+	ops = krb5_cc_get_ops(context, cred->ccache);
 	if (cred->cred_flags & GSS_CF_DESTROY_CRED_ON_RELEASE)
-	    krb5_cc_destroy(_gsskrb5_context, cred->ccache);
+	    krb5_cc_destroy(context, cred->ccache);
 	else 
-	    krb5_cc_close(_gsskrb5_context, cred->ccache);
+	    krb5_cc_close(context, cred->ccache);
     }
     _gsskrb5_release_oid_set(NULL, &cred->mechanisms);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);

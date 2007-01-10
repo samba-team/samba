@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_free.c,v 1.16 2006/10/14 05:33:58 lha Exp $");
+RCSID("$Id: gen_free.c,v 1.17 2006/12/28 17:14:54 lha Exp $");
 
 static void
 free_primitive (const char *typename, const char *name)
@@ -159,6 +159,9 @@ free_type (const char *name, const Type *t, int preserve)
 	break;
     case TUniversalString:
 	free_primitive ("universal_string", name);
+	break;
+    case TVisibleString:
+	free_primitive ("visible_string", name);
 	break;
     case TTag:
 	free_type (name, t->subtype, preserve);

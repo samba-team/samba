@@ -35,7 +35,7 @@
  */
 
 /* 
- * $Id: kdc.h,v 1.9 2006/10/09 15:34:07 lha Exp $ 
+ * $Id: kdc.h,v 1.11 2006/12/28 21:06:56 lha Exp $ 
  */
 
 #ifndef __KDC_H__
@@ -81,7 +81,11 @@ typedef struct krb5_kdc_configuration {
     int pkinit_dh_min_bits;
 
     int enable_digest;
+    int digests_allowed;
+
     size_t max_datagram_reply_length;
+
+    int enable_kx509;
 
 } krb5_kdc_configuration;
 

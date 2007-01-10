@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_sec_context_by_oid.c,v 1.11 2006/11/07 14:34:35 lha Exp $");
+RCSID("$Id: inquire_sec_context_by_oid.c,v 1.12 2006/11/13 18:02:27 lha Exp $");
 
 static int
 oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)
@@ -106,6 +106,7 @@ enum keytype { ACCEPTOR_KEY, INITIATOR_KEY, TOKEN_KEY };
 static OM_uint32 inquire_sec_context_get_subkey
            (OM_uint32 *minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
 	    enum keytype keytype,
             gss_buffer_set_t *data_set)
 {
@@ -127,19 +128,13 @@ static OM_uint32 inquire_sec_context_get_subkey
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     switch(keytype) {
     case ACCEPTOR_KEY:
-	ret = _gsskrb5i_get_acceptor_subkey(context_handle, &key);
-	if (ret)
-	    _gsskrb5_set_error_string ();
+	ret = _gsskrb5i_get_acceptor_subkey(context_handle, context, &key);
 	break;
     case INITIATOR_KEY:
-	ret = _gsskrb5i_get_initiator_subkey(context_handle, &key);
-	if (ret)
-	    _gsskrb5_set_error_string ();
+	ret = _gsskrb5i_get_initiator_subkey(context_handle, context, &key);
 	break;
     case TOKEN_KEY:
-	ret = _gsskrb5i_get_token_key(context_handle, &key);
-	if (ret)
-	    _gsskrb5_set_error_string ();
+	ret = _gsskrb5i_get_token_key(context_handle, context, &key);
 	break;
     default:
 	_gsskrb5_set_status("%d is not a valid subkey type", keytype);
@@ -156,17 +151,13 @@ static OM_uint32 inquire_sec_context_get_subkey
     }
 
     ret = krb5_store_keyblock(sp, *key);
-    krb5_free_keyblock (_gsskrb5_context, key);
-    if (ret) {
-	_gsskrb5_set_error_string ();
+    krb5_free_keyblock (context, key);
+    if (ret)
 	goto out;
-    }
 
     ret = krb5_storage_to_data(sp, &data);
-    if (ret) {
-	_gsskrb5_set_error_string ();
+    if (ret)
 	goto out;
-    }
 
     {
 	gss_buffer_desc value;
@@ -193,6 +184,7 @@ out:
 static OM_uint32 inquire_sec_context_authz_data
            (OM_uint32 *minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
             unsigned ad_type,
             gss_buffer_set_t *data_set)
 {
@@ -211,13 +203,12 @@ static OM_uint32 inquire_sec_context_authz_data
 	return GSS_S_NO_CONTEXT;
     }
 
-    ret = krb5_ticket_get_authorization_data_type(_gsskrb5_context,
+    ret = krb5_ticket_get_authorization_data_type(context,
 						  context_handle->ticket,
 						  ad_type,
 						  &data);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) {
-	_gsskrb5_set_error_string ();
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -276,6 +267,7 @@ static OM_uint32 inquire_sec_context_has_updated_spnego
 static OM_uint32
 export_lucid_sec_context_v1(OM_uint32 *minor_status,
 			    gsskrb5_ctx context_handle,
+			    krb5_context context,
 			    gss_buffer_set_t *data_set)
 {
     krb5_storage *sp = NULL;
@@ -287,8 +279,6 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     krb5_data data;
     
     *minor_status = 0;
-
-    GSSAPI_KRB5_INIT ();
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
@@ -307,12 +297,12 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     if (ret) goto out;
     ret = krb5_store_int32(sp, context_handle->lifetime);
     if (ret) goto out;
-    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+    krb5_auth_con_getlocalseqnumber (context,
 				     context_handle->auth_context,
 				     &number);
     ret = krb5_store_uint32(sp, (uint32_t)0); /* store top half as zero */
     ret = krb5_store_uint32(sp, (uint32_t)number);
-    krb5_auth_getremoteseqnumber (_gsskrb5_context,
+    krb5_auth_getremoteseqnumber (context,
 				  context_handle->auth_context,
 				  &number);
     ret = krb5_store_uint32(sp, (uint32_t)0); /* store top half as zero */
@@ -320,7 +310,7 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     ret = krb5_store_int32(sp, (is_cfx) ? 1 : 0);
     if (ret) goto out;
 
-    ret = _gsskrb5i_get_token_key(context_handle, &key);
+    ret = _gsskrb5i_get_token_key(context_handle, context, &key);
     if (ret) goto out;
 
     if (is_cfx == 0) {
@@ -387,7 +377,7 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
 
 out:
     if (key)
-	krb5_free_keyblock (_gsskrb5_context, key);
+	krb5_free_keyblock (context, key);
     if (sp)
 	krb5_storage_free(sp);
     if (ret) {
@@ -485,7 +475,6 @@ out:
     if (sp)
 	krb5_storage_free(sp);
     if (ret) {
-	_gsskrb5_set_error_string ();
 	*minor_status = ret;
 	maj_stat = GSS_S_FAILURE;
     }
@@ -501,6 +490,7 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
             const gss_OID desired_object,
             gss_buffer_set_t *data_set)
 {
+    krb5_context context;
     const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
     unsigned suffix;
 
@@ -508,6 +498,8 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 	*minor_status = EINVAL;
 	return GSS_S_NO_CONTEXT;
     }
+
+    GSSAPI_KRB5_INIT (&context);
 
     if (gss_oid_equal(desired_object, GSS_KRB5_GET_TKT_FLAGS_X)) {
 	return inquire_sec_context_tkt_flags(minor_status,
@@ -520,16 +512,19 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
     } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_SUBKEY_X)) {
 	return inquire_sec_context_get_subkey(minor_status,
 					      ctx,
+					      context,
 					      TOKEN_KEY,
 					      data_set);
     } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_INITIATOR_SUBKEY_X)) {
 	return inquire_sec_context_get_subkey(minor_status,
 					      ctx,
+					      context,
 					      INITIATOR_KEY,
 					      data_set);
     } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_ACCEPTOR_SUBKEY_X)) {
 	return inquire_sec_context_get_subkey(minor_status,
 					      ctx,
+					      context,
 					      ACCEPTOR_KEY,
 					      data_set);
     } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_AUTHTIME_X)) {
@@ -539,6 +534,7 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 				&suffix)) {
 	return inquire_sec_context_authz_data(minor_status,
 					      ctx,
+					      context,
 					      suffix,
 					      data_set);
     } else if (oid_prefix_equal(desired_object,
@@ -547,6 +543,7 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 	if (suffix == 1)
 	    return export_lucid_sec_context_v1(minor_status,
 					       ctx,
+					       context,
 					       data_set);
 	*minor_status = 0;
 	return GSS_S_FAILURE;

@@ -73,15 +73,6 @@ _krb5_extract_ticket (
 	krb5_decrypt_proc /*decrypt_proc*/,
 	krb5_const_pointer /*decryptarg*/);
 
-int
-_krb5_find_type_in_ad (
-	krb5_context /*context*/,
-	int /*type*/,
-	krb5_data */*data*/,
-	krb5_boolean */*found*/,
-	krb5_keyblock */*sessionkey*/,
-	const AuthorizationData */*ad*/);
-
 void
 _krb5_free_krbhst_info (krb5_krbhst_info */*hi*/);
 
@@ -299,36 +290,15 @@ _krb5_oid_to_enctype (
 	const heim_oid */*oid*/,
 	krb5_enctype */*etype*/);
 
-void
-_krb5_pac_free (
-	krb5_context /*context*/,
-	struct krb5_pac */*pac*/);
-
-krb5_error_code
-_krb5_pac_parse (
-	krb5_context /*context*/,
-	const void */*ptr*/,
-	size_t /*len*/,
-	struct krb5_pac **/*pac*/);
-
 krb5_error_code
 _krb5_pac_sign (
 	krb5_context /*context*/,
 	struct krb5_pac */*p*/,
 	time_t /*authtime*/,
 	krb5_principal /*principal*/,
-	krb5_keyblock */*server_key*/,
-	krb5_keyblock */*priv_key*/,
+	const krb5_keyblock */*server_key*/,
+	const krb5_keyblock */*priv_key*/,
 	krb5_data */*data*/);
-
-krb5_error_code
-_krb5_pac_verify (
-	krb5_context /*context*/,
-	struct krb5_pac */*pac*/,
-	time_t /*authtime*/,
-	krb5_principal /*principal*/,
-	krb5_keyblock */*server*/,
-	krb5_keyblock */*privsvr*/);
 
 krb5_error_code
 _krb5_parse_moduli (

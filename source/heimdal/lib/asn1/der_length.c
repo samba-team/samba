@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_length.c,v 1.19 2006/10/14 05:26:06 lha Exp $");
+RCSID("$Id: der_length.c,v 1.20 2006/12/28 17:14:28 lha Exp $");
 
 size_t
 _heim_len_unsigned (unsigned val)
@@ -164,6 +164,12 @@ size_t
 der_length_universal_string (const heim_universal_string *data)
 {
     return data->length * 4;
+}
+
+size_t
+der_length_visible_string (const heim_visible_string *data)
+{
+    return strlen(*data);
 }
 
 size_t

@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: rsa.h,v 1.5 2006/05/07 11:34:02 lha Exp $
+ * $Id: rsa.h,v 1.9 2007/01/05 20:26:23 lha Exp $
  */
 
 #ifndef _HEIM_RSA_H
@@ -59,7 +59,9 @@
 #define RSA_private_decrypt hc_RSA_private_decrypt
 #define RSA_sign hc_RSA_sign
 #define RSA_verify hc_RSA_verify
+#define RSA_generate_key_ex hc_RSA_generate_key_ex
 #define d2i_RSAPrivateKey hc_d2i_RSAPrivateKey
+#define i2d_RSAPrivateKey hc_i2d_RSAPrivateKey
 #define i2d_RSAPublicKey hc_i2d_RSAPublicKey
 
 /*
@@ -119,9 +121,10 @@ struct RSA {
     void *mt_blinding;
 };
 
-#define RSA_FLAG_SIGN_VER		0x40
+#define RSA_FLAG_NO_BLINDING		0x0080
 
 #define RSA_PKCS1_PADDING		1
+#define RSA_PKCS1_OAEP_PADDING		4
 #define RSA_PKCS1_PADDING_SIZE		11
 
 /*
@@ -162,7 +165,11 @@ int RSA_sign(int, const unsigned char *, unsigned int,
 int RSA_verify(int, const unsigned char *, unsigned int,
 	       unsigned char *, unsigned int, RSA *);
 
+int	RSA_generate_key_ex(RSA *, int, BIGNUM *, BN_GENCB *);
+
 RSA *	d2i_RSAPrivateKey(RSA *, const unsigned char **, size_t);
+int	i2d_RSAPrivateKey(RSA *, unsigned char **);
+
 int	i2d_RSAPublicKey(RSA *, unsigned char **);
 
 #endif /* _HEIM_RSA_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: krb5tgs.c,v 1.16 2006/10/22 15:54:37 lha Exp $");
+RCSID("$Id: krb5tgs.c,v 1.25 2007/01/04 12:49:45 lha Exp $");
 
 /*
  * return the realm of a krbtgt-ticket or NULL
@@ -119,7 +119,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     if (server && principals) {
 	ret = add_KRB5SignedPathPrincipals(principals, server);
 	if (ret)
-	    goto out;
+	    return ret;
     }
 
     {
@@ -131,7 +131,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 	ASN1_MALLOC_ENCODE(KRB5SignedPathData, data.data, data.length,
 			   &spd, &size, ret);
 	if (ret)
-	    goto out;
+	    return ret;
 	if (data.length != size)
 	    krb5_abortx(context, "internal asn.1 encoder error");
     }
@@ -159,12 +159,12 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     krb5_crypto_destroy(context, crypto);
     free(data.data);
     if (ret)
-	goto out;
+	return ret;
 
     ASN1_MALLOC_ENCODE(KRB5SignedPath, data.data, data.length, &sp, &size, ret);
     free_Checksum(&sp.cksum);
     if (ret)
-	goto out;
+	return ret;
     if (data.length != size)
 	krb5_abortx(context, "internal asn.1 encoder error");
 
@@ -174,46 +174,11 @@ _kdc_add_KRB5SignedPath(krb5_context context,
      * authorization data field.
      */
 
-    if (tkt->authorization_data == NULL) {
-	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
-	if (tkt->authorization_data == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-    }
+    ret = _kdc_tkt_add_if_relevant_ad(context, tkt,
+				      KRB5_AUTHDATA_SIGNTICKET, &data);
+    krb5_data_free(&data);
 
-    /* add the entry to the last element */
-    {
-	AuthorizationData ad = { 0, NULL };
-	AuthorizationDataElement ade;
-
-	ade.ad_type = KRB5_AUTHDATA_SIGNTICKET;
-	ade.ad_data = data;
-
-	ret = add_AuthorizationData(&ad, &ade);
-	krb5_data_free(&data);
-	if (ret)
-	    return ret;
-
-	ASN1_MALLOC_ENCODE(AuthorizationData, data.data, data.length, 
-			   &ad, &size, ret);
-	free_AuthorizationData(&ad);
-	if (ret)
-	    return ret;
-	if (data.length != size)
-	    krb5_abortx(context, "internal asn.1 encoder error");
-	
-	ade.ad_type = KRB5_AUTHDATA_IF_RELEVANT;
-	ade.ad_data = data;
-
-	ret = add_AuthorizationData(tkt->authorization_data, &ade);
-	krb5_data_free(&data);
-	if (ret)
-	    return ret;
-    }
-
-out:
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
@@ -307,6 +272,87 @@ check_KRB5SignedPath(krb5_context context,
     return 0;
 }
 
+/*
+ *
+ */
+
+static krb5_error_code
+check_PAC(krb5_context context,
+	  krb5_kdc_configuration *config,
+	  const krb5_principal client_principal,
+	  hdb_entry_ex *client,
+	  hdb_entry_ex *server,
+	  const EncryptionKey *server_key,
+	  const EncryptionKey *krbtgt_key,
+	  EncTicketPart *tkt,
+	  krb5_data *rspac,
+	  int *require_signedpath)
+{
+    AuthorizationData *ad = tkt->authorization_data;
+    unsigned i, j;
+    krb5_error_code ret;
+
+    if (ad == NULL || ad->len == 0)
+	return 0;
+
+    for (i = 0; i < ad->len; i++) {
+	AuthorizationData child;
+
+	if (ad->val[i].ad_type != KRB5_AUTHDATA_IF_RELEVANT)
+	    continue;
+
+	ret = decode_AuthorizationData(ad->val[i].ad_data.data,
+				       ad->val[i].ad_data.length,
+				       &child,
+				       NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode "
+				  "IF_RELEVANT with %d", ret);
+	    return ret;
+	}
+	for (j = 0; j < child.len; j++) {
+
+	    if (child.val[j].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
+		krb5_pac pac;
+
+		/* Found PAC */
+		ret = krb5_pac_parse(context,
+				     child.val[j].ad_data.data,
+				     child.val[j].ad_data.length,
+				     &pac);
+		free_AuthorizationData(&child);
+		if (ret)
+		    return ret;
+
+		ret = krb5_pac_verify(context, pac, tkt->authtime, 
+				      client_principal,
+				      krbtgt_key, NULL);
+		if (ret) {
+		    krb5_pac_free(context, pac);
+		    return ret;
+		}
+
+		ret = _kdc_pac_verify(context, client_principal, 
+				      client, server, &pac);
+		if (ret) {
+		    krb5_pac_free(context, pac);
+		    return ret;
+		}
+		*require_signedpath = 0;
+
+		ret = _krb5_pac_sign(context, pac, tkt->authtime,
+				     client_principal,
+				     server_key, krbtgt_key, rspac);
+
+		krb5_pac_free(context, pac);
+
+		return ret;
+	    }
+	}
+	free_AuthorizationData(&child);
+    }
+    return 0;
+}
 
 /*
  *
@@ -610,9 +656,10 @@ tgs_make_reply(krb5_context context,
 	       KDC_REQ_BODY *b, 
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt, 
-	       const EncTicketPart *adtkt, 
+	       const EncryptionKey *ekey,
+	       const krb5_keyblock *sessionkey,
+	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
-	       krb5_ticket *tgs_ticket,
 	       hdb_entry_ex *server, 
 	       const char *server_name, 
 	       hdb_entry_ex *client, 
@@ -620,7 +667,7 @@ tgs_make_reply(krb5_context context,
 	       hdb_entry_ex *krbtgt,
 	       krb5_enctype krbtgt_etype,
 	       KRB5SignedPathPrincipals *spp,
-	       EncryptionKey *tgtkey,
+	       const krb5_data *rspac,
 	       const char **e_text,
 	       krb5_data *reply)
 {
@@ -629,32 +676,6 @@ tgs_make_reply(krb5_context context,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
-    krb5_enctype etype;
-    Key *skey;
-    const EncryptionKey *ekey;
-    AuthorizationData *new_auth_data = NULL;
-    
-    if(adtkt) {
-	int i;
-	ekey = &adtkt->key;
-	for(i = 0; i < b->etype.len; i++)
-	    if (b->etype.val[i] == adtkt->key.keytype)
-		break;
-	if(i == b->etype.len) {
-	    krb5_clear_error_string(context);
-	    return KRB5KDC_ERR_ETYPE_NOSUPP;
-	}
-	etype = b->etype.val[i];
-    }else{
-	ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
-			      &skey, &etype);
-	if(ret) {
-	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", server_name);
-	    return ret;
-	}
-	ekey = &skey->key;
-    }
     
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -768,26 +789,47 @@ tgs_make_reply(krb5_context context,
     et.flags.anonymous   = tgt->flags.anonymous;
     et.flags.ok_as_delegate = server->entry.flags.ok_as_delegate;
 	    
-    
-    krb5_generate_random_keyblock(context, etype, &et.key);
+    if (auth_data) {
+	/* XXX Check enc-authorization-data */
+	et.authorization_data = calloc(1, sizeof(*et.authorization_data));
+	if (et.authorization_data == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ret = copy_AuthorizationData(auth_data, et.authorization_data);
+	if (ret)
+	    goto out;
 
-    if (server->authz_data_tgs_req) {
-	    ret = server->authz_data_tgs_req(context, server,
-					     client_principal, 
-					     tgs_ticket->ticket.authorization_data,
-					     tgs_ticket->ticket.authtime,
-					     tgtkey,
-					     ekey, 
-					     &et.key, 
-					     &new_auth_data);
-	    if (ret) {
-		    new_auth_data = NULL;
+	/* Filter out type KRB5SignedPath */
+	ret = find_KRB5SignedPath(context, et.authorization_data, NULL);
+	if (ret == 0) {
+	    if (et.authorization_data->len == 1) {
+		free_AuthorizationData(et.authorization_data);
+		free(et.authorization_data);
+		et.authorization_data = NULL;
+	    } else {
+		AuthorizationData *ad = et.authorization_data;
+		free_AuthorizationDataElement(&ad->val[ad->len - 1]);
+		ad->len--;
 	    }
+	}
     }
 
-    /* XXX Check enc-authorization-data */
-    et.authorization_data = new_auth_data;
+    if(rspac->length) {
+	/*
+	 * No not need to filter out the any PAC from the
+	 * auth_data since its signed by the KDC.
+	 */
+	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					  KRB5_AUTHDATA_WIN2K_PAC,
+					  rspac);
+	if (ret)
+	    goto out;
+    }
 
+    ret = krb5_copy_keyblock_contents(context, sessionkey, &et.key);
+    if (ret)
+	goto out;
     et.crealm = tgt->crealm;
     et.cname = tgt_name->name;
 	    
@@ -795,6 +837,10 @@ tgs_make_reply(krb5_context context,
     /* MIT must have at least one last_req */
     ek.last_req.len = 1;
     ek.last_req.val = calloc(1, sizeof(*ek.last_req.val));
+    if (ek.last_req.val == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
     ek.nonce = b->nonce;
     ek.flags = et.flags;
     ek.authtime = et.authtime;
@@ -817,7 +863,7 @@ tgs_make_reply(krb5_context context,
 					  krbtgt,
 					  krbtgt_etype,
 					  NULL,
-					  NULL,
+					  spp,
 					  &et);
 	    if (ret)
 		goto out;
@@ -835,8 +881,8 @@ tgs_make_reply(krb5_context context,
        etype list, even if we don't want a session key with
        DES3? */
     ret = _kdc_encode_reply(context, config, 
-			    &rep, &et, &ek, etype,
-			    adtkt ? 0 : server->entry.kvno, 
+			    &rep, &et, &ek, et.key.keytype,
+			    kvno, 
 			    ekey, 0, &tgt->key, e_text, reply);
 out:
     free_TGS_REP(&rep);
@@ -973,8 +1019,7 @@ tgs_parse_request(krb5_context context,
 		  const struct sockaddr *from_addr,
 		  time_t **csec,
 		  int **cusec,
-		  AuthorizationData **auth_data,
-		  EncryptionKey **tgtkey)
+		  AuthorizationData **auth_data)
 {
     krb5_ap_req ap_req;
     krb5_error_code ret;
@@ -1060,8 +1105,6 @@ tgs_parse_request(krb5_context context,
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
 	goto out;
     }
-
-    *tgtkey = &tkey->key;
     
     if (b->kdc_options.validate)
 	verify_ap_req_flags = KRB5_VERIFY_AP_REQ_IGNORE_INVALID;
@@ -1201,8 +1244,8 @@ tgs_build_reply(krb5_context context,
 		const char *from,
 		const char **e_text,
 		AuthorizationData *auth_data,
-		EncryptionKey *tgtkey,
-	const struct sockaddr *from_addr)
+		const struct sockaddr *from_addr,
+		int datagram_reply)
 {
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL;
@@ -1211,6 +1254,10 @@ tgs_build_reply(krb5_context context,
     hdb_entry_ex *server = NULL, *client = NULL;
     EncTicketPart *tgt = &ticket->ticket;
     KRB5SignedPathPrincipals *spp = NULL;
+    const EncryptionKey *ekey;
+    krb5_keyblock sessionkey;
+    krb5_kvno kvno;
+    krb5_data rspac;
 
     PrincipalName *s;
     Realm r;
@@ -1219,7 +1266,9 @@ tgs_build_reply(krb5_context context,
     char opt_str[128];
     int require_signedpath = 0;
 
+    memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
+    krb5_data_zero(&rspac);
 
     s = b->sname;
     r = b->realm;
@@ -1436,7 +1485,7 @@ server_lookup:
 
 	    ret = krb5_verify_checksum(context,
 				       crypto,
-				       KRB5_KU_TGS_IMPERSONATE,
+				       KRB5_KU_OTHER_CKSUM,
 				       datack.data, 
 				       datack.length, 
 				       &self.cksum);
@@ -1617,6 +1666,67 @@ server_lookup:
 	goto out;
     }
 	
+    /*
+     * Select enctype, return key and kvno.
+     */
+
+    {
+	krb5_enctype etype;
+
+	if(b->kdc_options.enc_tkt_in_skey) {
+	    int i;
+	    ekey = &adtkt.key;
+	    for(i = 0; i < b->etype.len; i++)
+		if (b->etype.val[i] == adtkt.key.keytype)
+		    break;
+	    if(i == b->etype.len) {
+		krb5_clear_error_string(context);
+		return KRB5KDC_ERR_ETYPE_NOSUPP;
+	    }
+	    etype = b->etype.val[i];
+	    kvno = 0;
+	} else {
+	    Key *skey;
+	    
+	    ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
+				  &skey, &etype);
+	    if(ret) {
+		kdc_log(context, config, 0, 
+			"Server (%s) has no support for etypes", spp);
+		return ret;
+	    }
+	    ekey = &skey->key;
+	    kvno = server->entry.kvno;
+	}
+	
+	ret = krb5_generate_random_keyblock(context, etype, &sessionkey);
+	if (ret)
+	    goto out;
+    }
+
+    /* check PAC if there is one */
+    {
+	Key *tkey;
+
+	ret = hdb_enctype2key(context, &krbtgt->entry, 
+			      krbtgt_etype, &tkey);
+	if(ret) {
+	    kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC check");
+	    goto out;
+	}
+
+	ret = check_PAC(context, config, client_principal, 
+			client, server, ekey, &tkey->key, 
+			tgt, &rspac, &require_signedpath);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "check_PAC check failed for %s (%s) from %s with %s",
+		    spn, cpn, from, krb5_get_err_text(context, ret));
+	    goto out;
+	}
+    }
+
     /* also check the krbtgt for signature */
     ret = check_KRB5SignedPath(context,
 			       config,
@@ -1640,9 +1750,10 @@ server_lookup:
 			 b, 
 			 client_principal,
 			 tgt, 
-			 b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
+			 ekey,
+			 &sessionkey,
+			 kvno,
 			 auth_data,
-			 ticket,
 			 server, 
 			 spn,
 			 client, 
@@ -1650,7 +1761,7 @@ server_lookup:
 			 krbtgt, 
 			 krbtgt_etype,
 			 spp,
-			 tgtkey,
+			 &rspac,
 			 e_text,
 			 reply);
 	
@@ -1658,6 +1769,8 @@ out:
     free(spn);
     free(cpn);
 	    
+    krb5_data_free(&rspac);
+    krb5_free_keyblock_contents(context, &sessionkey);
     if(server)
 	_kdc_free_ent(context, server);
     if(client)
@@ -1685,7 +1798,8 @@ _kdc_tgs_rep(krb5_context context,
 	     KDC_REQ *req, 
 	     krb5_data *data,
 	     const char *from,
-	     struct sockaddr *from_addr)
+	     struct sockaddr *from_addr,
+	     int datagram_reply)
 {
     AuthorizationData *auth_data = NULL;
     krb5_error_code ret;
@@ -1696,8 +1810,6 @@ _kdc_tgs_rep(krb5_context context,
     krb5_ticket *ticket = NULL;
     const char *e_text = NULL;
     krb5_enctype krbtgt_etype = ETYPE_NULL;
-    EncryptionKey *tgtkey = NULL;
-
 
     time_t *csec = NULL;
     int *cusec = NULL;
@@ -1726,8 +1838,7 @@ _kdc_tgs_rep(krb5_context context,
 			    &e_text,
 			    from, from_addr,
 			    &csec, &cusec,
-			    &auth_data, 			  
-			    &tgtkey);
+			    &auth_data);
     if (ret) {
 	kdc_log(context, config, 0, 
 		"Failed parsing TGS-REQ from %s", from);
@@ -1745,12 +1856,19 @@ _kdc_tgs_rep(krb5_context context,
 			  from,
 			  &e_text,
 			  auth_data,
-			  tgtkey,
-			  from_addr);
+			  from_addr,
+			  datagram_reply);
     if (ret) {
 	kdc_log(context, config, 0, 
 		"Failed building TGS-REP to %s", from);
 	goto out;
+    }
+
+    /* */
+    if (datagram_reply && data->length > config->max_datagram_reply_length) {
+	krb5_data_free(data);
+	ret = KRB5KRB_ERR_RESPONSE_TOO_BIG;
+	e_text = "Reply packet too large";
     }
 
 out:

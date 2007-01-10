@@ -46,12 +46,6 @@ _gss_spnego_add_cred (
 	OM_uint32 * /*initiator_time_rec*/,
 	OM_uint32 * acceptor_time_rec );
 
-int
-_gss_spnego_add_mech_type (
-	gss_OID /*mech_type*/,
-	int /*includeMSCompatOID*/,
-	MechTypeList */*mechtypelist*/);
-
 OM_uint32
 _gss_spnego_alloc_cred (
 	OM_uint32 */*minor_status*/,
@@ -112,13 +106,6 @@ _gss_spnego_duplicate_name (
 	gss_name_t * dest_name );
 
 OM_uint32
-_gss_spnego_encode_response (
-	OM_uint32 */*minor_status*/,
-	const NegTokenResp */*resp*/,
-	gss_buffer_t /*data*/,
-	u_char **/*ret_buf*/);
-
-OM_uint32
 _gss_spnego_export_name (
 	OM_uint32 * /*minor_status*/,
 	const gss_name_t /*input_name*/,
@@ -141,8 +128,8 @@ _gss_spnego_get_mic (
 OM_uint32
 _gss_spnego_import_name (
 	OM_uint32 * /*minor_status*/,
-	const gss_buffer_t /*input_name_buffer*/,
-	const gss_OID /*input_name_type*/,
+	const gss_buffer_t /*name_buffer*/,
+	const gss_OID /*name_type*/,
 	gss_name_t * output_name );
 
 OM_uint32
@@ -154,6 +141,8 @@ _gss_spnego_import_sec_context (
 OM_uint32
 _gss_spnego_indicate_mechtypelist (
 	OM_uint32 */*minor_status*/,
+	gss_name_t /*target_name*/,
+	OM_uint32 (*/*func*/)(gss_name_t, gss_OID),
 	int /*includeMSCompatOID*/,
 	const gssspnego_cred /*cred_handle*/,
 	MechTypeList */*mechtypelist*/,
@@ -269,12 +258,6 @@ _gss_spnego_seal (
 	gss_buffer_t /*input_message_buffer*/,
 	int * /*conf_state*/,
 	gss_buffer_t output_message_buffer );
-
-OM_uint32
-_gss_spnego_select_mech (
-	OM_uint32 */*minor_status*/,
-	MechType */*mechType*/,
-	gss_OID */*mech_p*/);
 
 OM_uint32
 _gss_spnego_set_sec_context_option (

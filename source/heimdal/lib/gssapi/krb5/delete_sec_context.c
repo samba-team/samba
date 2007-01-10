@@ -33,16 +33,17 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: delete_sec_context.c,v 1.19 2006/10/07 22:14:28 lha Exp $");
+RCSID("$Id: delete_sec_context.c,v 1.20 2006/11/13 18:01:32 lha Exp $");
 
 OM_uint32
 _gsskrb5_delete_sec_context(OM_uint32 * minor_status,
 			    gss_ctx_id_t * context_handle,
 			    gss_buffer_t output_token)
 {
+    krb5_context context;
     gsskrb5_ctx ctx;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     *minor_status = 0;
 
@@ -59,17 +60,17 @@ _gsskrb5_delete_sec_context(OM_uint32 * minor_status,
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    krb5_auth_con_free (_gsskrb5_context, ctx->auth_context);
+    krb5_auth_con_free (context, ctx->auth_context);
     if(ctx->source)
-	krb5_free_principal (_gsskrb5_context, ctx->source);
+	krb5_free_principal (context, ctx->source);
     if(ctx->target)
-	krb5_free_principal (_gsskrb5_context, ctx->target);
+	krb5_free_principal (context, ctx->target);
     if (ctx->ticket)
-	krb5_free_ticket (_gsskrb5_context, ctx->ticket);
+	krb5_free_ticket (context, ctx->ticket);
     if(ctx->order)
 	_gssapi_msg_order_destroy(&ctx->order);
     if (ctx->service_keyblock)
-	krb5_free_keyblock (_gsskrb5_context, ctx->service_keyblock);
+	krb5_free_keyblock (context, ctx->service_keyblock);
     krb5_data_free(&ctx->fwd_data);
 
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);

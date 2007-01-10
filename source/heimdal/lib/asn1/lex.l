@@ -32,7 +32,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: lex.l,v 1.27 2005/09/13 18:17:16 lha Exp $ */
+/* $Id: lex.l,v 1.31 2006/10/21 11:57:22 lha Exp $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -58,6 +58,12 @@ static void unterminated(const char *, unsigned);
 
 %}
 
+/* This is for broken old lexes (solaris 10 and hpux) */
+%e 2000
+%p 5000
+%a 5000
+%n 1000
+%o 10000
 
 %%
 ABSENT			{ return kw_ABSENT; }

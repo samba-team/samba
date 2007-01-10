@@ -33,11 +33,12 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: compat.c,v 1.13 2006/10/07 22:14:17 lha Exp $");
+RCSID("$Id: compat.c,v 1.14 2006/11/13 18:01:23 lha Exp $");
 
 
 static krb5_error_code
-check_compat(OM_uint32 *minor_status, krb5_const_principal name, 
+check_compat(OM_uint32 *minor_status, 
+	     krb5_context context, krb5_const_principal name, 
 	     const char *option, krb5_boolean *compat, 
 	     krb5_boolean match_val)
 {
@@ -46,27 +47,27 @@ check_compat(OM_uint32 *minor_status, krb5_const_principal name,
     krb5_principal match;
 
 
-    p = krb5_config_get_strings(_gsskrb5_context, NULL, "gssapi",
+    p = krb5_config_get_strings(context, NULL, "gssapi",
 				option, NULL);
     if(p == NULL)
 	return 0;
 
     match = NULL;
     for(q = p; *q; q++) {
-	ret = krb5_parse_name(_gsskrb5_context, *q, &match);
+	ret = krb5_parse_name(context, *q, &match);
 	if (ret)
 	    break;
 
-	if (krb5_principal_match(_gsskrb5_context, name, match)) {
+	if (krb5_principal_match(context, name, match)) {
 	    *compat = match_val;
 	    break;
 	}
 	
-	krb5_free_principal(_gsskrb5_context, match);
+	krb5_free_principal(context, match);
 	match = NULL;
     }
     if (match)
-	krb5_free_principal(_gsskrb5_context, match);
+	krb5_free_principal(context, match);
     krb5_config_free_strings(p);
 
     if (ret) {
@@ -83,17 +84,19 @@ check_compat(OM_uint32 *minor_status, krb5_const_principal name,
  */
 
 OM_uint32
-_gss_DES3_get_mic_compat(OM_uint32 *minor_status, gsskrb5_ctx ctx)
+_gss_DES3_get_mic_compat(OM_uint32 *minor_status,
+			 gsskrb5_ctx ctx,
+			 krb5_context context)
 {
     krb5_boolean use_compat = FALSE;
     OM_uint32 ret;
 
     if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
-	ret = check_compat(minor_status, ctx->target, 
+	ret = check_compat(minor_status, context, ctx->target, 
 			   "broken_des3_mic", &use_compat, TRUE);
 	if (ret)
 	    return ret;
-	ret = check_compat(minor_status, ctx->target, 
+	ret = check_compat(minor_status, context, ctx->target, 
 			   "correct_des3_mic", &use_compat, FALSE);
 	if (ret)
 	    return ret;

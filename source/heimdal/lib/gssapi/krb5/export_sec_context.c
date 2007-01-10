@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: export_sec_context.c,v 1.11 2006/10/07 22:14:42 lha Exp $");
+RCSID("$Id: export_sec_context.c,v 1.12 2006/11/13 18:01:55 lha Exp $");
 
 OM_uint32
 _gsskrb5_export_sec_context (
@@ -42,6 +42,7 @@ _gsskrb5_export_sec_context (
     gss_buffer_t interprocess_token
     )
 {
+    krb5_context context;
     const gsskrb5_ctx ctx = (const gsskrb5_ctx) *context_handle;
     krb5_storage *sp;
     krb5_auth_context ac;
@@ -52,7 +53,7 @@ _gsskrb5_export_sec_context (
     OM_uint32 minor;
     krb5_error_code kret;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 

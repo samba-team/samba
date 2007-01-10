@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.225 2006/11/10 03:36:32 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.231 2007/01/04 13:27:27 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -635,6 +635,69 @@ get_pa_etype_info2(krb5_context context,
 }
 
 /*
+ *
+ */
+
+static void
+log_as_req(krb5_context context,
+	   krb5_kdc_configuration *config,
+	   krb5_enctype cetype,
+	   krb5_enctype setype,
+	   const KDC_REQ_BODY *b)
+{
+    krb5_error_code ret;
+    struct rk_strpool *p = NULL;
+    char *str;
+    int i;
+    
+    for (i = 0; i < b->etype.len; i++) {
+	ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
+	if (ret == 0) {
+	    p = rk_strpoolprintf(p, "%s", str);
+	    free(str);
+	} else
+	    p = rk_strpoolprintf(p, "%d", b->etype.val[i]);
+	if (p && i + 1 < b->etype.len)
+	    p = rk_strpoolprintf(p, ", ");
+	if (p == NULL) {
+	    kdc_log(context, config, 0, "out of memory");
+	    return;
+	}
+    }
+    if (p == NULL)
+	p = rk_strpoolprintf(p, "no encryption types");
+    
+    str = rk_strpoolcollect(p);
+    kdc_log(context, config, 0, "Client supported enctypes: %s", str);
+    free(str);
+
+    {
+	char *cet;
+	char *set;
+
+	ret = krb5_enctype_to_string(context, cetype, &cet);
+	if(ret == 0) {
+	    ret = krb5_enctype_to_string(context, setype, &set);
+	    if (ret == 0) {
+		kdc_log(context, config, 5, "Using %s/%s", cet, set);
+		free(set);
+	    }
+	    free(cet);
+	}
+	if (ret != 0)
+	    kdc_log(context, config, 5, "Using e-types %d/%d", cetype, setype);
+    }
+    
+    {
+	char str[128];
+	unparse_flags(KDCOptions2int(b->kdc_options), asn1_KDCOptions_units(), 
+		      str, sizeof(str));
+	if(*str)
+	    kdc_log(context, config, 2, "Requested flags: %s", str);
+    }
+}
+
+/*
  * verify the flags on `client' and `server', returning 0
  * if they are OK and generating an error messages and returning
  * and error code otherwise.
@@ -798,6 +861,39 @@ _kdc_check_addresses(krb5_context context,
     return result;
 }
 
+/*
+ *
+ */
+
+static krb5_boolean
+send_pac_p(krb5_context context, KDC_REQ *req)
+{
+    krb5_error_code ret;
+    PA_PAC_REQUEST pacreq;
+    PA_DATA *pa;
+    int i = 0;
+    
+    pa = _kdc_find_padata(req, &i, KRB5_PADATA_PA_PAC_REQUEST);
+    if (pa == NULL)
+	return TRUE;
+
+    ret = decode_PA_PAC_REQUEST(pa->padata_value.data,
+				pa->padata_value.length,
+				&pacreq,
+				NULL);
+    if (ret)
+	return TRUE;
+    i = pacreq.include_pac;
+    free_PA_PAC_REQUEST(&pacreq);
+    if (i == 0)
+	return FALSE;
+    return TRUE;
+}
+
+/*
+ *
+ */
+
 krb5_error_code
 _kdc_as_rep(krb5_context context, 
 	    krb5_kdc_configuration *config,
@@ -882,19 +978,16 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
+    ret = _kdc_windc_client_access(context, client, req);
+    if(ret)
+	goto out;
+
     ret = _kdc_check_flags(context, config, 
 			   client, client_name,
 			   server, server_name,
 			   TRUE);
     if(ret)
 	goto out;
-
-    if (client->check_client_access) {
-	ret = client->check_client_access(context, client, 
-					  b->addresses);
-	if(ret)
-	    goto out;
-    }
 
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
@@ -1224,57 +1317,7 @@ _kdc_as_rep(krb5_context context,
 	}
     }
 
-    {
-	struct rk_strpool *p = NULL;
-	char *str;
-	int i;
-
-	for (i = 0; i < b->etype.len; i++) {
-	    ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
-	    if (ret == 0) {
-		p = rk_strpoolprintf(p, "%s", str);
-		free(str);
-	    } else
-		p = rk_strpoolprintf(p, "%d", b->etype.val[i]);
-	    if (p && i + 1 < b->etype.len)
-		p = rk_strpoolprintf(p, ", ");
-	    if (p == NULL) {
-		kdc_log(context, config, 0, "out of memory");
-		goto out;
-	    }
-	}
-	if (p == NULL)
-	    p = rk_strpoolprintf(p, "no encryption types");
-
-	str = rk_strpoolcollect(p);
-	kdc_log(context, config, 0, "Client supported enctypes: %s", str);
-	free(str);
-    }
-    {
-	char *cet;
-	char *set;
-
-	ret = krb5_enctype_to_string(context, cetype, &cet);
-	if(ret == 0) {
-	    ret = krb5_enctype_to_string(context, setype, &set);
-	    if (ret == 0) {
-		kdc_log(context, config, 5, "Using %s/%s", cet, set);
-		free(set);
-	    }
-	    free(cet);
-	}
-	if (ret != 0)
-	    kdc_log(context, config, 5, "Using e-types %d/%d", cetype, setype);
-    }
-    
-    {
-	char str[128];
-	unparse_flags(KDCOptions2int(f), asn1_KDCOptions_units(), 
-		      str, sizeof(str));
-	if(*str)
-	    kdc_log(context, config, 2, "Requested flags: %s", str);
-    }
-    
+    log_as_req(context, config, cetype, setype, b);
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey
        || (f.request_anonymous && !config->allow_anonymous)) {
@@ -1330,7 +1373,9 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    krb5_generate_random_keyblock(context, sessionetype, &et.key);
+    ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
+    if (ret)
+	goto out;
     copy_PrincipalName(&rep.cname, &et.cname);
     copy_Realm(&rep.crealm, &et.crealm);
     
@@ -1469,6 +1514,12 @@ _kdc_as_rep(krb5_context context,
 				  &reply_key, rep.padata);
 	if (ret)
 	    goto out;
+	ret = _kdc_add_inital_verified_cas(context,
+					   config,
+					   pkp,
+					   &et);
+	if (ret)
+	    goto out;
     }
 #endif
 
@@ -1479,16 +1530,37 @@ _kdc_as_rep(krb5_context context,
 	rep.padata = NULL;
     }
 
-    /* Add the PAC, via a HDB abstraction */
-    if (client->authz_data_as_req) {
-	    ret = client->authz_data_as_req(context, client, 
-					    req->padata, 
-					    et.authtime,
-					    &skey->key,
-					    &et.key,
-					    &et.authorization_data);
-	    if (ret) 
-		    goto out;
+    /* Add the PAC */
+    if (send_pac_p(context, req)) {
+	krb5_pac p = NULL;
+	krb5_data data;
+
+	ret = _kdc_pac_generate(context, client, &p);
+	if (ret) {
+	    kdc_log(context, config, 0, "PAC generation failed for -- %s", 
+		    client_name);
+	    goto out;
+	}
+	if (p != NULL) {
+	    ret = _krb5_pac_sign(context, p, et.authtime,
+				 client->entry.principal,
+				 &skey->key, /* Server key */ 
+				 &skey->key, /* FIXME: should be krbtgt key */
+				 &data);
+	    krb5_pac_free(context, p);
+	    if (ret) {
+		kdc_log(context, config, 0, "PAC signing failed for -- %s", 
+			client_name);
+		goto out;
+	    }
+
+	    ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					      KRB5_AUTHDATA_WIN2K_PAC,
+					      &data);
+	    krb5_data_free(&data);
+	    if (ret)
+		goto out;
+	}
     }
 
     _kdc_log_timestamp(context, config, "AS-REQ", et.authtime, et.starttime, 
@@ -1551,4 +1623,65 @@ out2:
     if(server)
 	_kdc_free_ent(context, server);
     return ret;
+}
+
+/*
+ * Add the AuthorizationData `data´ of `type´ to the last element in
+ * the sequence of authorization_data in `tkt´ wrapped in an IF_RELEVANT
+ */
+
+krb5_error_code
+_kdc_tkt_add_if_relevant_ad(krb5_context context,
+			    EncTicketPart *tkt,
+			    int type,
+			    const krb5_data *data)
+{
+    krb5_error_code ret;
+    size_t size;
+
+    if (tkt->authorization_data == NULL) {
+	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
+	if (tkt->authorization_data == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    return ENOMEM;
+	}
+    }
+	
+    /* add the entry to the last element */
+    {
+	AuthorizationData ad = { 0, NULL };
+	AuthorizationDataElement ade;
+
+	ade.ad_type = type;
+	ade.ad_data = *data;
+
+	ret = add_AuthorizationData(&ad, &ade);
+	if (ret) {
+	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    return ret;
+	}
+
+	ade.ad_type = KRB5_AUTHDATA_IF_RELEVANT;
+
+	ASN1_MALLOC_ENCODE(AuthorizationData, 
+			   ade.ad_data.data, ade.ad_data.length, 
+			   &ad, &size, ret);
+	free_AuthorizationData(&ad);
+	if (ret) {
+	    krb5_set_error_string(context, "ASN.1 encode of "
+				  "AuthorizationData failed");
+	    return ret;
+	}
+	if (ade.ad_data.length != size)
+	    krb5_abortx(context, "internal asn.1 encoder error");
+	
+	ret = add_AuthorizationData(tkt->authorization_data, &ade);
+	der_free_octet_string(&ade.ad_data);
+	if (ret) {
+	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    return ret;
+	}
+    }
+
+    return 0;
 }

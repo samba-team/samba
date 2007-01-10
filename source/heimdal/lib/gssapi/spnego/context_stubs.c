@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: context_stubs.c,v 1.8 2006/10/07 22:27:01 lha Exp $");
+RCSID("$Id: context_stubs.c,v 1.9 2006/12/18 12:59:44 lha Exp $");
 
 static OM_uint32
 spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
@@ -282,7 +282,21 @@ OM_uint32 _gss_spnego_compare_name
             int * name_equal
            )
 {
-    return gss_compare_name(minor_status, name1, name2, name_equal);
+    spnego_name n1 = (spnego_name)name1;
+    spnego_name n2 = (spnego_name)name2;
+
+    *name_equal = 0;
+
+    if (!gss_oid_equal(&n1->type, &n2->type))
+	return GSS_S_COMPLETE;
+    if (n1->value.length != n2->value.length)
+	return GSS_S_COMPLETE;
+    if (memcmp(n1->value.value, n2->value.value, n2->value.length) != 0)
+	return GSS_S_COMPLETE;
+
+    *name_equal = 1;
+
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32 _gss_spnego_display_name
@@ -292,19 +306,51 @@ OM_uint32 _gss_spnego_display_name
             gss_OID * output_name_type
            )
 {
-    return gss_display_name(minor_status, input_name,
+    spnego_name name = (spnego_name)input_name;
+
+    *minor_status = 0;
+
+    if (name->mech == GSS_C_NO_NAME)
+	return GSS_S_FAILURE;
+
+    return gss_display_name(minor_status, name->mech,
 			    output_name_buffer, output_name_type);
 }
 
 OM_uint32 _gss_spnego_import_name
            (OM_uint32 * minor_status,
-            const gss_buffer_t input_name_buffer,
-            const gss_OID input_name_type,
+            const gss_buffer_t name_buffer,
+            const gss_OID name_type,
             gss_name_t * output_name
            )
 {
-    return gss_import_name(minor_status, input_name_buffer,
-			   input_name_type, output_name);
+    spnego_name name;
+    OM_uint32 maj_stat;
+
+    *minor_status = 0;
+
+    name = calloc(1, sizeof(*name));
+    if (name == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    
+    maj_stat = _gss_copy_oid(minor_status, name_type, &name->type);
+    if (maj_stat) {
+	free(name);
+	return GSS_S_FAILURE;
+    }
+    
+    maj_stat = _gss_copy_buffer(minor_status, name_buffer, &name->value);
+    if (maj_stat) {
+	gss_name_t rname = (gss_name_t)name;
+	_gss_spnego_release_name(minor_status, &rname);
+	return GSS_S_FAILURE;
+    }
+    name->mech = GSS_C_NO_NAME;
+    *output_name = (gss_name_t)name;
+
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32 _gss_spnego_export_name
@@ -313,8 +359,17 @@ OM_uint32 _gss_spnego_export_name
             gss_buffer_t exported_name
            )
 {
-    return gss_export_name(minor_status, input_name,
-			   exported_name);
+    spnego_name name;
+    *minor_status = 0;
+
+    if (input_name == GSS_C_NO_NAME)
+	return GSS_S_BAD_NAME;
+
+    name = (spnego_name)input_name;
+    if (name->mech == GSS_C_NO_NAME)
+	return GSS_S_BAD_NAME;
+
+    return gss_export_name(minor_status, name->mech, exported_name);
 }
 
 OM_uint32 _gss_spnego_release_name
@@ -322,7 +377,20 @@ OM_uint32 _gss_spnego_release_name
             gss_name_t * input_name
            )
 {
-    return gss_release_name(minor_status, input_name);
+    *minor_status = 0;
+
+    if (*input_name != GSS_C_NO_NAME) {
+	OM_uint32 junk;
+	spnego_name name = (spnego_name)*input_name;
+	_gss_free_oid(&junk, &name->type);
+	gss_release_buffer(&junk, &name->value);
+	if (name->mech != GSS_C_NO_NAME)
+	    gss_release_name(&junk, &name->mech);
+	free(name);
+
+	*input_name = GSS_C_NO_NAME;
+    }
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32 _gss_spnego_inquire_context (

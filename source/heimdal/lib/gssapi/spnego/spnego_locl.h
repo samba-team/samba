@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: spnego_locl.h,v 1.12 2006/11/07 19:53:40 lha Exp $ */
+/* $Id: spnego_locl.h,v 1.15 2006/12/18 15:42:03 lha Exp $ */
 
 #ifndef SPNEGO_LOCL_H
 #define SPNEGO_LOCL_H
@@ -67,6 +67,7 @@
 #include <gssapi_mech.h>
 
 #include "spnego_asn1.h"
+#include "mech/utils.h"
 #include <der.h>
 
 #include <roken.h>
@@ -86,12 +87,28 @@ typedef struct {
 	OM_uint32		mech_time_rec;
 	gss_name_t		mech_src_name;
 	gss_cred_id_t		delegated_cred_id;
-	int			open : 1;
-	int			local : 1;
-	int			require_mic : 1;
-	int			verified_mic : 1;
+	unsigned int		open : 1;
+	unsigned int		local : 1;
+	unsigned int		require_mic : 1;
+	unsigned int		verified_mic : 1;
+	unsigned int		maybe_open : 1;
 	HEIMDAL_MUTEX		ctx_id_mutex;
+
+	gss_name_t		target_name;
+
+	u_char			oidbuf[17];
+ 	size_t			oidlen;
+
 } *gssspnego_ctx;
+
+typedef struct {
+	gss_OID_desc		type;
+	gss_buffer_desc		value;
+	gss_name_t		mech;
+} *spnego_name;
+
+extern gss_OID_desc _gss_spnego_mskrb_mechanism_oid_desc;
+extern gss_OID_desc _gss_spnego_krb5_mechanism_oid_desc;
 
 #include <spnego/spnego-private.h>
 

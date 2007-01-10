@@ -499,10 +499,11 @@ krb5_boolean KRB5_LIB_FUNCTION
 krb5_c_is_keyed_cksum (krb5_cksumtype /*ctype*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_keylength (
+krb5_c_keylengths (
 	krb5_context /*context*/,
 	krb5_enctype /*enctype*/,
-	size_t */*len*/);
+	size_t */*ilen*/,
+	size_t */*keylen*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_c_make_checksum (
@@ -1520,6 +1521,12 @@ krb5_enctype_disable (
 	krb5_enctype /*enctype*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_enctype_keybits (
+	krb5_context /*context*/,
+	krb5_enctype /*type*/,
+	size_t */*keybits*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_keysize (
 	krb5_context /*context*/,
 	krb5_enctype /*type*/,
@@ -2021,7 +2028,9 @@ krb5_get_init_creds_opt_alloc (
 	krb5_get_init_creds_opt **/*opt*/);
 
 void KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_free (krb5_get_init_creds_opt */*opt*/);
+krb5_get_init_creds_opt_free (
+	krb5_context /*context*/,
+	krb5_get_init_creds_opt */*opt*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_get_error (
@@ -2188,6 +2197,9 @@ krb5_get_server_rcache (
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context /*context*/);
+
+krb5_log_facility * KRB5_LIB_FUNCTION
+krb5_get_warn_dest (krb5_context /*context*/);
 
 size_t
 krb5_get_wrapped_length (
@@ -2609,11 +2621,171 @@ krb5_net_write_block (
 	size_t /*len*/,
 	time_t /*timeout*/);
 
+krb5_error_code
+krb5_ntlm_alloc (
+	krb5_context /*context*/,
+	krb5_ntlm */*ntlm*/);
+
+krb5_error_code
+krb5_ntlm_free (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/);
+
+krb5_error_code
+krb5_ntlm_init_get_challange (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_data */*challange*/);
+
+krb5_error_code
+krb5_ntlm_init_get_flags (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	uint32_t */*flags*/);
+
+krb5_error_code
+krb5_ntlm_init_get_opaque (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_data */*opaque*/);
+
+krb5_error_code
+krb5_ntlm_init_get_targetinfo (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_data */*data*/);
+
+krb5_error_code
+krb5_ntlm_init_get_targetname (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	char **/*name*/);
+
+krb5_error_code
+krb5_ntlm_init_request (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_realm /*realm*/,
+	krb5_ccache /*ccache*/,
+	uint32_t /*flags*/,
+	const char */*hostname*/,
+	const char */*domainname*/);
+
+krb5_error_code
+krb5_ntlm_rep_get_sessionkey (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_data */*data*/);
+
+krb5_boolean
+krb5_ntlm_rep_get_status (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/);
+
+krb5_error_code
+krb5_ntlm_req_set_flags (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	uint32_t /*flags*/);
+
+krb5_error_code
+krb5_ntlm_req_set_lm (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	void */*hash*/,
+	size_t /*len*/);
+
+krb5_error_code
+krb5_ntlm_req_set_ntlm (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	void */*hash*/,
+	size_t /*len*/);
+
+krb5_error_code
+krb5_ntlm_req_set_opaque (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_data */*opaque*/);
+
+krb5_error_code
+krb5_ntlm_req_set_session (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	void */*sessionkey*/,
+	size_t /*length*/);
+
+krb5_error_code
+krb5_ntlm_req_set_targetname (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	const char */*targetname*/);
+
+krb5_error_code
+krb5_ntlm_req_set_username (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	const char */*username*/);
+
+krb5_error_code
+krb5_ntlm_request (
+	krb5_context /*context*/,
+	krb5_ntlm /*ntlm*/,
+	krb5_realm /*realm*/,
+	krb5_ccache /*ccache*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_openlog (
 	krb5_context /*context*/,
 	const char */*program*/,
 	krb5_log_facility **/*fac*/);
+
+krb5_error_code
+krb5_pac_add_buffer (
+	krb5_context /*context*/,
+	struct krb5_pac */*p*/,
+	uint32_t /*type*/,
+	const krb5_data */*data*/);
+
+void
+krb5_pac_free (
+	krb5_context /*context*/,
+	struct krb5_pac */*pac*/);
+
+krb5_error_code
+krb5_pac_get_buffer (
+	krb5_context /*context*/,
+	struct krb5_pac */*p*/,
+	uint32_t /*type*/,
+	krb5_data */*data*/);
+
+krb5_error_code
+krb5_pac_get_types (
+	krb5_context /*context*/,
+	struct krb5_pac */*p*/,
+	size_t */*len*/,
+	uint32_t **/*types*/);
+
+krb5_error_code
+krb5_pac_init (
+	krb5_context /*context*/,
+	struct krb5_pac **/*pac*/);
+
+krb5_error_code
+krb5_pac_parse (
+	krb5_context /*context*/,
+	const void */*ptr*/,
+	size_t /*len*/,
+	struct krb5_pac **/*pac*/);
+
+krb5_error_code
+krb5_pac_verify (
+	krb5_context /*context*/,
+	const struct krb5_pac */*pac*/,
+	time_t /*authtime*/,
+	krb5_const_principal /*principal*/,
+	const krb5_keyblock */*server*/,
+	const krb5_keyblock */*privsvr*/);
 
 int KRB5_LIB_FUNCTION
 krb5_padata_add (
@@ -2903,6 +3075,12 @@ krb5_rd_req_in_set_keytab (
 	krb5_context /*context*/,
 	krb5_rd_req_in_ctx /*in*/,
 	krb5_keytab /*keytab*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_pac_check (
+	krb5_context /*context*/,
+	krb5_rd_req_in_ctx /*in*/,
+	krb5_boolean /*flag*/);
 
 void KRB5_LIB_FUNCTION
 krb5_rd_req_out_ctx_free (
@@ -3514,6 +3692,11 @@ krb5_ticket_get_client (
 	krb5_context /*context*/,
 	const krb5_ticket */*ticket*/,
 	krb5_principal */*client*/);
+
+time_t KRB5_LIB_FUNCTION
+krb5_ticket_get_endtime (
+	krb5_context /*context*/,
+	const krb5_ticket */*ticket*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_server (

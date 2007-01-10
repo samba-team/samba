@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: log.c,v 1.39 2006/04/24 15:09:27 lha Exp $");
+RCSID("$Id: log.c,v 1.40 2006/11/21 08:08:46 lha Exp $");
 
 struct facility {
     int min;

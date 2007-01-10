@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.68 2006/11/07 17:11:31 lha Exp $");
+RCSID("$Id: rd_req.c,v 1.70 2007/01/04 11:27:20 lha Exp $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -513,6 +513,7 @@ krb5_verify_ap_req2(krb5_context context,
 struct krb5_rd_req_in_ctx {
     krb5_keytab keytab;
     krb5_keyblock *keyblock;
+    krb5_boolean no_pac_check;
 };
 
 struct krb5_rd_req_out_ctx {
@@ -544,6 +545,16 @@ krb5_rd_req_in_set_keytab(krb5_context context,
     in->keytab = keytab; /* XXX should make copy */
     return 0;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_pac_check(krb5_context context, 
+			     krb5_rd_req_in_ctx in,
+			     krb5_boolean flag)
+{
+    in->no_pac_check = !flag;
+    return 0;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_in_set_keyblock(krb5_context context, 
@@ -822,6 +833,36 @@ krb5_rd_req_ctx(krb5_context context,
 			     &o->ap_req_options,
 			     &o->ticket);
 
+    if (ret)
+	goto out;
+
+    /* If there is a PAC, verify its server signature */
+    if (inctx->no_pac_check == FALSE) {
+	krb5_pac pac;
+	krb5_data data;
+
+	ret = krb5_ticket_get_authorization_data_type(context,
+						      o->ticket,
+						      KRB5_AUTHDATA_WIN2K_PAC,
+						      &data);
+	if (ret == 0) {
+	    ret = krb5_pac_parse(context, data.data, data.length, &pac);
+	    krb5_data_free(&data);
+	    if (ret)
+		goto out;
+	
+	    ret = krb5_pac_verify(context,
+				  pac, 
+				  o->ticket->ticket.authtime,
+				  o->ticket->client, 
+				  o->keyblock, 
+				  NULL);
+	    krb5_pac_free(context, pac);
+	    if (ret)
+		goto out;
+	}
+	ret = 0;
+    }
 out:
     if (ret || outctx == NULL) {
 	krb5_rd_req_out_ctx_free(context, o);

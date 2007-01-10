@@ -10,6 +10,7 @@ __gss_krb5_initialize (void);
 OM_uint32
 __gsskrb5_ccache_lifetime (
 	OM_uint32 */*minor_status*/,
+	krb5_context /*context*/,
 	krb5_ccache /*id*/,
 	krb5_principal /*principal*/,
 	OM_uint32 */*lifetime*/);
@@ -17,7 +18,8 @@ __gsskrb5_ccache_lifetime (
 OM_uint32
 _gss_DES3_get_mic_compat (
 	OM_uint32 */*minor_status*/,
-	gsskrb5_ctx /*ctx*/);
+	gsskrb5_ctx /*ctx*/,
+	krb5_context /*context*/);
 
 OM_uint32
 _gssapi_decapsulate (
@@ -44,6 +46,7 @@ OM_uint32
 _gssapi_get_mic_arcfour (
 	OM_uint32 * /*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	gss_qop_t /*qop_req*/,
 	const gss_buffer_t /*message_buffer*/,
 	gss_buffer_t /*message_token*/,
@@ -59,6 +62,7 @@ OM_uint32
 _gssapi_mic_cfx (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	gss_qop_t /*qop_req*/,
 	const gss_buffer_t /*message_buffer*/,
 	gss_buffer_t /*message_token*/,
@@ -99,6 +103,7 @@ OM_uint32
 _gssapi_unwrap_arcfour (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_buffer_t /*input_message_buffer*/,
 	gss_buffer_t /*output_message_buffer*/,
 	int */*conf_state*/,
@@ -109,6 +114,7 @@ OM_uint32
 _gssapi_unwrap_cfx (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_buffer_t /*input_message_buffer*/,
 	gss_buffer_t /*output_message_buffer*/,
 	int */*conf_state*/,
@@ -125,6 +131,7 @@ OM_uint32
 _gssapi_verify_mic_arcfour (
 	OM_uint32 * /*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_buffer_t /*message_buffer*/,
 	const gss_buffer_t /*token_buffer*/,
 	gss_qop_t * /*qop_state*/,
@@ -135,6 +142,7 @@ OM_uint32
 _gssapi_verify_mic_cfx (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_buffer_t /*message_buffer*/,
 	const gss_buffer_t /*token_buffer*/,
 	gss_qop_t */*qop_state*/,
@@ -150,6 +158,7 @@ OM_uint32
 _gssapi_wrap_arcfour (
 	OM_uint32 * /*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	int /*conf_req_flag*/,
 	gss_qop_t /*qop_req*/,
 	const gss_buffer_t /*input_message_buffer*/,
@@ -161,6 +170,7 @@ OM_uint32
 _gssapi_wrap_cfx (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	int /*conf_req_flag*/,
 	gss_qop_t /*qop_req*/,
 	const gss_buffer_t /*input_message_buffer*/,
@@ -172,6 +182,7 @@ OM_uint32
 _gssapi_wrap_size_arcfour (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*ctx*/,
+	krb5_context /*context*/,
 	int /*conf_req_flag*/,
 	gss_qop_t /*qop_req*/,
 	OM_uint32 /*req_output_size*/,
@@ -182,6 +193,7 @@ OM_uint32
 _gssapi_wrap_size_cfx (
 	OM_uint32 */*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	int /*conf_req_flag*/,
 	gss_qop_t /*qop_req*/,
 	OM_uint32 /*req_output_size*/,
@@ -268,6 +280,7 @@ OM_uint32
 _gsskrb5_create_ctx (
 	 OM_uint32 * /*minor_status*/,
 	gss_ctx_id_t * /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_channel_bindings_t /*input_chan_bindings*/,
 	enum gss_ctx_id_t_state /*state*/);
 
@@ -359,9 +372,6 @@ _gsskrb5_export_sec_context (
 	gss_ctx_id_t * /*context_handle*/,
 	gss_buffer_t interprocess_token );
 
-char *
-_gsskrb5_get_error_string (void);
-
 ssize_t
 _gsskrb5_get_mech (
 	const u_char */*ptr*/,
@@ -375,9 +385,6 @@ _gsskrb5_get_mic (
 	gss_qop_t /*qop_req*/,
 	const gss_buffer_t /*message_buffer*/,
 	gss_buffer_t message_token );
-
-struct gssapi_thr_context *
-_gsskrb5_get_thread_context (int /*createp*/);
 
 OM_uint32
 _gsskrb5_get_tkt_flags (
@@ -412,7 +419,7 @@ _gsskrb5_indicate_mechs (
 	gss_OID_set * mech_set );
 
 krb5_error_code
-_gsskrb5_init (void);
+_gsskrb5_init (krb5_context */*context*/);
 
 OM_uint32
 _gsskrb5_init_sec_context (
@@ -496,6 +503,7 @@ _gsskrb5_krb5_ccache_name (
 OM_uint32
 _gsskrb5_lifetime_left (
 	OM_uint32 */*minor_status*/,
+	krb5_context /*context*/,
 	OM_uint32 /*lifetime*/,
 	OM_uint32 */*lifetime_rec*/);
 
@@ -551,9 +559,6 @@ _gsskrb5_set_cred_option (
 	gss_cred_id_t */*cred_handle*/,
 	const gss_OID /*desired_object*/,
 	const gss_buffer_t /*value*/);
-
-void
-_gsskrb5_set_error_string (void);
 
 OM_uint32
 _gsskrb5_set_sec_context_option (
@@ -635,6 +640,7 @@ OM_uint32
 _gsskrb5_verify_mic_internal (
 	OM_uint32 * /*minor_status*/,
 	const gsskrb5_ctx /*context_handle*/,
+	krb5_context /*context*/,
 	const gss_buffer_t /*message_buffer*/,
 	const gss_buffer_t /*token_buffer*/,
 	gss_qop_t * /*qop_state*/,
@@ -661,6 +667,7 @@ _gsskrb5_wrap_size_limit (
 
 krb5_error_code
 _gsskrb5cfx_max_wrap_length_cfx (
+	krb5_context /*context*/,
 	krb5_crypto /*crypto*/,
 	int /*conf_req_flag*/,
 	size_t /*input_length*/,
@@ -668,6 +675,7 @@ _gsskrb5cfx_max_wrap_length_cfx (
 
 krb5_error_code
 _gsskrb5cfx_wrap_length_cfx (
+	krb5_context /*context*/,
 	krb5_crypto /*crypto*/,
 	int /*conf_req_flag*/,
 	size_t /*input_length*/,
@@ -677,6 +685,7 @@ _gsskrb5cfx_wrap_length_cfx (
 
 krb5_error_code
 _gsskrb5i_address_to_krb5addr (
+	krb5_context /*context*/,
 	OM_uint32 /*gss_addr_type*/,
 	gss_buffer_desc */*gss_addr*/,
 	int16_t /*port*/,
@@ -685,16 +694,19 @@ _gsskrb5i_address_to_krb5addr (
 krb5_error_code
 _gsskrb5i_get_acceptor_subkey (
 	const gsskrb5_ctx /*ctx*/,
+	krb5_context /*context*/,
 	krb5_keyblock **/*key*/);
 
 krb5_error_code
 _gsskrb5i_get_initiator_subkey (
 	const gsskrb5_ctx /*ctx*/,
+	krb5_context /*context*/,
 	krb5_keyblock **/*key*/);
 
 OM_uint32
 _gsskrb5i_get_token_key (
 	const gsskrb5_ctx /*ctx*/,
+	krb5_context /*context*/,
 	krb5_keyblock **/*key*/);
 
 void

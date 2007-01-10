@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c,v 1.7 2006/10/09 11:13:30 lha Exp $");
+RCSID("$Id: gss_mech_switch.c,v 1.8 2006/12/15 20:05:43 lha Exp $");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -169,6 +169,8 @@ add_builtin(gssapi_mech_interface mech)
 {
     struct _gss_mech_switch *m;
     OM_uint32 minor_status;
+    if (!mech) 
+        return 0;
 
     m = malloc(sizeof(*m));
     if (m == NULL)
@@ -214,6 +216,7 @@ _gss_load_mech(void)
 
 	add_builtin(__gss_krb5_initialize());
 	add_builtin(__gss_spnego_initialize());
+	add_builtin(__gss_ntlm_initialize());
 
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {

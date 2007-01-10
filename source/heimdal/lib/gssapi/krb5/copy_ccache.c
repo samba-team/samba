@@ -33,11 +33,12 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: copy_ccache.c,v 1.16 2006/11/08 02:42:50 lha Exp $");
+RCSID("$Id: copy_ccache.c,v 1.17 2006/11/13 18:01:29 lha Exp $");
 
 #if 0
 OM_uint32
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
+		     krb5_context context,
 		     gss_cred_id_t cred,
 		     krb5_ccache out)
 {
@@ -51,11 +52,10 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    kret = krb5_cc_copy_cache(_gsskrb5_context, cred->ccache, out);
+    kret = krb5_cc_copy_cache(context, cred->ccache, out);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     if (kret) {
 	*minor_status = kret;
-	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
     *minor_status = 0;
@@ -71,13 +71,14 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 		     krb5_keytab keytab,
 		     gss_cred_id_t *cred)
 {
+    krb5_context context;
     krb5_error_code kret;
     gsskrb5_cred handle;
     OM_uint32 ret;
 
     *cred = NULL;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     handle = calloc(1, sizeof(*handle));
     if (handle == NULL) {
@@ -94,11 +95,10 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 
 	handle->usage |= GSS_C_INITIATE;
 
-	kret = krb5_cc_get_principal(_gsskrb5_context, id,
+	kret = krb5_cc_get_principal(context, id,
 				     &handle->principal);
 	if (kret) {
 	    free(handle);
-	    _gsskrb5_set_error_string ();
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
@@ -106,11 +106,11 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 	if (keytab_principal) {
 	    krb5_boolean match;
 
-	    match = krb5_principal_compare(_gsskrb5_context,
+	    match = krb5_principal_compare(context,
 					   handle->principal,
 					   keytab_principal);
 	    if (match == FALSE) {
-		krb5_free_principal(_gsskrb5_context, handle->principal);
+		krb5_free_principal(context, handle->principal);
 		free(handle);
 		_gsskrb5_clear_status ();
 		*minor_status = EINVAL;
@@ -119,21 +119,22 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 	}
 
 	ret = __gsskrb5_ccache_lifetime(minor_status,
-					   id,
-					   handle->principal,
-					   &handle->lifetime);
+					context,
+					id,
+					handle->principal,
+					&handle->lifetime);
 	if (ret != GSS_S_COMPLETE) {
-	    krb5_free_principal(_gsskrb5_context, handle->principal);
+	    krb5_free_principal(context, handle->principal);
 	    free(handle);
 	    return ret;
 	}
 
 
-	kret = krb5_cc_get_full_name(_gsskrb5_context, id, &str);
+	kret = krb5_cc_get_full_name(context, id, &str);
 	if (kret)
 	    goto out;
 
-	kret = krb5_cc_resolve(_gsskrb5_context, str, &handle->ccache);
+	kret = krb5_cc_resolve(context, str, &handle->ccache);
 	free(str);
 	if (kret)
 	    goto out;
@@ -146,18 +147,18 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 	handle->usage |= GSS_C_ACCEPT;
 
 	if (keytab_principal && handle->principal == NULL) {
-	    kret = krb5_copy_principal(_gsskrb5_context, 
+	    kret = krb5_copy_principal(context, 
 				       keytab_principal, 
 				       &handle->principal);
 	    if (kret)
 		goto out;
 	}
 
-	kret = krb5_kt_get_full_name(_gsskrb5_context, keytab, &str);
+	kret = krb5_kt_get_full_name(context, keytab, &str);
 	if (kret)
 	    goto out;
 
-	kret = krb5_kt_resolve(_gsskrb5_context, str, &handle->keytab);
+	kret = krb5_kt_resolve(context, str, &handle->keytab);
 	free(str);
 	if (kret)
 	    goto out;
@@ -180,9 +181,8 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 
 out:
-    _gsskrb5_set_error_string ();
     if (handle->principal)
-	krb5_free_principal(_gsskrb5_context, handle->principal);
+	krb5_free_principal(context, handle->principal);
     HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
     free(handle);
     *minor_status = kret;

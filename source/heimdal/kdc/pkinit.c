@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.74 2006/11/10 03:37:43 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.86 2007/01/04 12:54:09 lha Exp $");
 
 #ifdef PKINIT
 
@@ -68,6 +68,8 @@ struct pk_client_params {
     DH *dh;
     EncryptionKey reply_key;
     char *dh_group_name;
+    hx509_peer_info peer;
+    hx509_certs client_anchors;
 };
 
 struct pk_principal_mapping {
@@ -180,6 +182,10 @@ _kdc_pk_free_client_param(krb5_context context,
     krb5_free_keyblock_contents(context, &client_params->reply_key);
     if (client_params->dh_group_name)
 	free(client_params->dh_group_name);
+    if (client_params->peer)
+	hx509_peer_info_free(client_params->peer);
+    if (client_params->client_anchors)
+	hx509_certs_free(&client_params->client_anchors);
     memset(client_params, 0, sizeof(*client_params));
     free(client_params);
 }
@@ -302,8 +308,10 @@ get_dh_param(krb5_context context,
     ret = _krb5_dh_group_ok(context, config->pkinit_dh_min_bits, 
 			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
 			    &client_params->dh_group_name);
-    if (ret)
+    if (ret) {
+	/* XXX send back proposal of better group */
 	goto out;
+    }
 
     dh = DH_new();
     if (dh == NULL) {
@@ -353,64 +361,6 @@ get_dh_param(krb5_context context,
     free_DomainParameters(&dhparam);
     return ret;
 }
-
-#if 0
-/* 
- * XXX We only need this function if there are several certs for the
- * KDC to choose from, and right now, we can't handle that so punt for
- * now.
- *
- * If client has sent a list of CA's trusted by him, make sure our
- * CA is in the list.
- *
- */
-
-static void
-verify_trusted_ca(PA_PK_AS_REQ_19 *r)
-{
-
-    if (r.trustedCertifiers != NULL) {
-	X509_NAME *kdc_issuer;
-	X509 *kdc_cert;
-
-	kdc_cert = sk_X509_value(kdc_identity->cert, 0);
-	kdc_issuer = X509_get_issuer_name(kdc_cert);
-     
-	/* XXX will work for heirarchical CA's ? */
-	/* XXX also serial_number should be compared */
-
-	ret = KRB5_KDC_ERR_KDC_NOT_TRUSTED;
-	for (i = 0; i < r.trustedCertifiers->len; i++) {
-	    TrustedCA_19 *ca = &r.trustedCertifiers->val[i];
-
-	    switch (ca->element) {
-	    case choice_TrustedCA_19_caName: {
-		X509_NAME *name;
-		unsigned char *p;
-
-		p = ca->u.caName.data;
-		name = d2i_X509_NAME(NULL, &p, ca->u.caName.length);
-		if (name == NULL) /* XXX should this be a failure instead ? */
-		    break;
-		if (X509_NAME_cmp(name, kdc_issuer) == 0)
-		    ret = 0;
-		X509_NAME_free(name);
-		break;
-	    }
-	    case choice_TrustedCA_19_issuerAndSerial:
-		/* IssuerAndSerialNumber issuerAndSerial */
-		break;
-	    default:
-		break;
-	    }
-	    if (ret == 0)
-		break;
-	}
-	if (ret)
-	    goto out;
-    }
-}
-#endif /* 0 */
 
 krb5_error_code
 _kdc_pk_rd_padata(krb5_context context,
@@ -483,7 +433,61 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 	
-	/* XXX look at r.trustedCertifiers and r.kdcPkId */
+	/* XXX look at r.kdcPkId */
+	if (r.trustedCertifiers) {
+	    ExternalPrincipalIdentifiers *edi = r.trustedCertifiers;
+	    unsigned int i;
+
+	    ret = hx509_certs_init(kdc_identity->hx509ctx,
+				   "MEMORY:client-anchors",
+				   0, NULL,
+				   &client_params->client_anchors);
+	    if (ret) {
+		krb5_set_error_string(context, "Can't allocate client anchors: %d", ret);
+		goto out;
+
+	    }
+	    for (i = 0; i < edi->len; i++) {
+		IssuerAndSerialNumber iasn;
+		hx509_query *q;
+		hx509_cert cert;
+		size_t size;
+
+		if (edi->val[i].issuerAndSerialNumber == NULL)
+		    continue;
+
+		ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+		if (ret) {
+		    krb5_set_error_string(context, 
+					  "Failed to allocate hx509_query");
+		    goto out;
+		}
+		
+		ret = decode_IssuerAndSerialNumber(edi->val[i].issuerAndSerialNumber->data,
+						   edi->val[i].issuerAndSerialNumber->length,
+						   &iasn,
+						   &size);
+		if (ret || size != 0) {
+		    hx509_query_free(kdc_identity->hx509ctx, q);
+		    continue;
+		}
+		ret = hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
+		free_IssuerAndSerialNumber(&iasn);
+		if (ret)
+		    continue;
+
+		ret = hx509_certs_find(kdc_identity->hx509ctx,
+				       kdc_identity->certs,
+				       q,
+				       &cert);
+		hx509_query_free(kdc_identity->hx509ctx, q);
+		if (ret)
+		    continue;
+		hx509_certs_add(kdc_identity->hx509ctx, 
+				client_params->client_anchors, cert);
+		hx509_cert_free(cert);
+	    }
+	}
 
 	ret = hx509_cms_unwrap_ContentInfo(&r.signedAuthPack,
 					   &contentInfoOid,
@@ -606,6 +610,23 @@ _kdc_pk_rd_padata(krb5_context context,
 	if (ap.clientPublicValue) {
 	    ret = get_dh_param(context, config, 
 			       ap.clientPublicValue, client_params);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
+	}
+
+	if (ap.supportedCMSTypes) {
+	    ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
+					&client_params->peer);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
+	    ret = hx509_peer_info_set_cms_algs(kdc_identity->hx509ctx,
+					       client_params->peer,
+					       ap.supportedCMSTypes->val,
+					       ap.supportedCMSTypes->len);
 	    if (ret) {
 		free_AuthPack(&ap);
 		goto out;
@@ -752,7 +773,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 					buf.length,
 					NULL,
 					cert,
-					kdc_identity->anchors,
+					client_params->peer,
+					client_params->client_anchors,
 					kdc_identity->certpool,
 					&signed_data);
 	hx509_cert_free(cert);
@@ -864,7 +886,8 @@ pk_mk_pa_reply_dh(krb5_context context,
 					buf.length,
 					NULL,
 					cert,
-					kdc_identity->anchors,
+					client_params->peer,
+					client_params->client_anchors,
 					kdc_identity->certpool,
 					&signed_data);
 	*kdc_cert = cert;
@@ -948,8 +971,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
-	    krb5_generate_random_keyblock(context, enctype, 
-					  &client_params->reply_key);
+	    ret = krb5_generate_random_keyblock(context, enctype, 
+						&client_params->reply_key);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
@@ -1039,8 +1066,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	pa_type = KRB5_PADATA_PK_AS_REP_19;
 	rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
-	krb5_generate_random_keyblock(context, enctype, 
-				      &client_params->reply_key);
+	ret = krb5_generate_random_keyblock(context, enctype, 
+					    &client_params->reply_key);
+	if (ret) {
+	    free_PA_PK_AS_REP_Win2k(&rep);
+	    goto out;
+	}
 	ret = pk_mk_pa_reply_enckey(context,
 				    client_params,
 				    req,
@@ -1337,6 +1368,35 @@ add_principal_mapping(krb5_context context,
    return 0;
 }
 
+krb5_error_code
+_kdc_add_inital_verified_cas(krb5_context context,
+			     krb5_kdc_configuration *config,
+			     pk_client_params *params,
+			     EncTicketPart *tkt)
+{
+    AD_INITIAL_VERIFIED_CAS cas;
+    krb5_error_code ret;
+    krb5_data data;
+    size_t size;
+
+    memset(&cas, 0, sizeof(cas));
+    
+    /* XXX add CAs to cas here */
+
+    ASN1_MALLOC_ENCODE(AD_INITIAL_VERIFIED_CAS, data.data, data.length,
+		       &cas, &size, ret);
+    if (ret)
+	return ret;
+    if (data.length != size)
+	krb5_abortx(context, "internal asn.1 encoder error");
+
+    ret = _kdc_tkt_add_if_relevant_ad(context, tkt, 
+				      ad_initial_verified_cas, &data);
+    krb5_data_free(&data);
+    return ret;
+}
+
+
 
 krb5_error_code
 _kdc_pk_initialize(krb5_context context,
@@ -1372,7 +1432,7 @@ _kdc_pk_initialize(krb5_context context,
 			   NULL,
 			   NULL);
     if (ret) {
-	krb5_warn(context, ret, "PKINIT: failed to load");
+	krb5_warn(context, ret, "PKINIT: ");
 	config->enable_pkinit = 0;
 	return ret;
     }
@@ -1411,7 +1471,7 @@ _kdc_pk_initialize(krb5_context context,
 				       NULL,
 				       FALSE,
 				       "kdc",
-				       "pki-allow-proxy-certificate",
+				       "pkinit_allow_proxy_certificate",
 				       NULL);
     _krb5_pk_allow_proxy_certificate(kdc_identity, ret);
 
@@ -1419,7 +1479,7 @@ _kdc_pk_initialize(krb5_context context,
 					  NULL,
 					  HDB_DB_DIR "/pki-mapping",
 					  "kdc",
-					  "pki-mappings-file",
+					  "pkinit_mappings_file",
 					  NULL);
     f = fopen(file, "r");
     if (f == NULL) {

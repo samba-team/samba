@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: display_status.c,v 1.16 2006/10/07 22:14:33 lha Exp $");
+RCSID("$Id: display_status.c,v 1.17 2006/11/13 18:01:38 lha Exp $");
 
 static const char *
 calling_error(OM_uint32 v)
@@ -114,117 +114,87 @@ supplementary_error(OM_uint32 v)
 void
 _gsskrb5_clear_status (void)
 {
-    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(1);
-    if (ctx == NULL)
+    krb5_context context;
+
+    if (_gsskrb5_init (&context) != 0)
 	return;
-    HEIMDAL_MUTEX_lock(&ctx->mutex);
-    if (ctx->error_string)
-	free(ctx->error_string);
-    ctx->error_string = NULL;
-    HEIMDAL_MUTEX_unlock(&ctx->mutex);
+    krb5_clear_error_string(context);
 }
 
 void
 _gsskrb5_set_status (const char *fmt, ...)
 {
-    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(1);
+    krb5_context context;
     va_list args;
+    char *str;
 
-    if (ctx == NULL)
+    if (_gsskrb5_init (&context) != 0)
 	return;
-    HEIMDAL_MUTEX_lock(&ctx->mutex);
+
     va_start(args, fmt);
-    if (ctx->error_string)
-	free(ctx->error_string);
-    /* ignore failures, will use status code instead */
-    vasprintf(&ctx->error_string, fmt, args);
+    vasprintf(&str, fmt, args);
     va_end(args);
-    HEIMDAL_MUTEX_unlock(&ctx->mutex);
-}
-
-void
-_gsskrb5_set_error_string (void)
-{
-    char *e;
-
-    e = krb5_get_error_string(_gsskrb5_context);
-    if (e) {
-	_gsskrb5_set_status("%s", e);
-	krb5_free_error_string(_gsskrb5_context, e);
-    } else
-	_gsskrb5_clear_status();
-}
-
-char *
-_gsskrb5_get_error_string (void)
-{
-    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(0);
-    char *ret;
-
-    if (ctx == NULL)
-	return NULL;
-    HEIMDAL_MUTEX_lock(&ctx->mutex);
-    ret = ctx->error_string;
-    ctx->error_string = NULL;
-    HEIMDAL_MUTEX_unlock(&ctx->mutex);
-    return ret;
+    if (str) {
+	krb5_set_error_string(context, str);
+	free(str);
+    }
 }
 
 OM_uint32 _gsskrb5_display_status
-           (OM_uint32		*minor_status,
-	    OM_uint32		 status_value,
-	    int			 status_type,
-	    const gss_OID	 mech_type,
-	    OM_uint32		*message_context,
-	    gss_buffer_t	 status_string)
+(OM_uint32		*minor_status,
+ OM_uint32		 status_value,
+ int			 status_type,
+ const gss_OID	 mech_type,
+ OM_uint32		*message_context,
+ gss_buffer_t	 status_string)
 {
-  char *buf;
+    krb5_context context;
+    char *buf;
 
-  GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
-  status_string->length = 0;
-  status_string->value = NULL;
+    status_string->length = 0;
+    status_string->value = NULL;
 
-  if (gss_oid_equal(mech_type, GSS_C_NO_OID) == 0 &&
-      gss_oid_equal(mech_type, GSS_KRB5_MECHANISM) == 0) {
-      *minor_status = 0;
-      return GSS_C_GSS_CODE;
-  }
+    if (gss_oid_equal(mech_type, GSS_C_NO_OID) == 0 &&
+	gss_oid_equal(mech_type, GSS_KRB5_MECHANISM) == 0) {
+	*minor_status = 0;
+	return GSS_C_GSS_CODE;
+    }
 
-  if (status_type == GSS_C_GSS_CODE) {
-      if (GSS_SUPPLEMENTARY_INFO(status_value))
-	  asprintf(&buf, "%s", 
-		   supplementary_error(GSS_SUPPLEMENTARY_INFO(status_value)));
-      else
-	  asprintf (&buf, "%s %s",
-		    calling_error(GSS_CALLING_ERROR(status_value)),
-		    routine_error(GSS_ROUTINE_ERROR(status_value)));
-  } else if (status_type == GSS_C_MECH_CODE) {
-      buf = _gsskrb5_get_error_string ();
-      if (buf == NULL) {
-	  const char *tmp = krb5_get_err_text (_gsskrb5_context,
-					       status_value);
-	  if (tmp == NULL)
-	      asprintf(&buf, "unknown mech error-code %u",
-		       (unsigned)status_value);
-	  else
-	      buf = strdup(tmp);
-      }
-  } else {
-      *minor_status = EINVAL;
-      return GSS_S_BAD_STATUS;
-  }
+    if (status_type == GSS_C_GSS_CODE) {
+	if (GSS_SUPPLEMENTARY_INFO(status_value))
+	    asprintf(&buf, "%s", 
+		     supplementary_error(GSS_SUPPLEMENTARY_INFO(status_value)));
+	else
+	    asprintf (&buf, "%s %s",
+		      calling_error(GSS_CALLING_ERROR(status_value)),
+		      routine_error(GSS_ROUTINE_ERROR(status_value)));
+    } else if (status_type == GSS_C_MECH_CODE) {
+	buf = krb5_get_error_string(context);
+	if (buf == NULL) {
+	    const char *tmp = krb5_get_err_text (context, status_value);
+	    if (tmp == NULL)
+		asprintf(&buf, "unknown mech error-code %u",
+			 (unsigned)status_value);
+	    else
+		buf = strdup(tmp);
+	}
+    } else {
+	*minor_status = EINVAL;
+	return GSS_S_BAD_STATUS;
+    }
 
-  if (buf == NULL) {
-      *minor_status = ENOMEM;
-      return GSS_S_FAILURE;
-  }
+    if (buf == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
 
-  *message_context = 0;
-  *minor_status = 0;
+    *message_context = 0;
+    *minor_status = 0;
 
-  status_string->length = strlen(buf);
-  status_string->value  = buf;
+    status_string->length = strlen(buf);
+    status_string->value  = buf;
   
-  return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE;
 }
