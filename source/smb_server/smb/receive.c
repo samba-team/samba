@@ -494,7 +494,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		}
 	}
 
-	DEBUG(5,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->server_id));
+	DEBUG(5,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->server_id.id));
 
 	/* this must be called before we do any reply */
 	if (flags & SIGNING_NO_REPLY) {
