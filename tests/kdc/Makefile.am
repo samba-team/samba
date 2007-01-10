@@ -7,7 +7,7 @@ noinst_DATA = krb5.conf krb5-pkinit.conf
 check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
 
-SCRIPT_TESTS = check-kdc check-digest check-pkinit
+SCRIPT_TESTS = check-kdc check-digest check-pkinit check-uu
 TESTS = $(SCRIPT_TESTS)
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
@@ -20,6 +20,11 @@ check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
 	chmod +x check-kdc.tmp
 	mv check-kdc.tmp check-kdc
+
+check-uu: check-uu.in Makefile
+	$(do_subst) < $(srcdir)/check-uu.in > check-uu.tmp
+	chmod +x check-uu.tmp
+	mv check-uu.tmp check-uu
 
 check-pkinit: check-pkinit.in Makefile krb5-pkinit.conf
 	$(do_subst) < $(srcdir)/check-pkinit.in > check-pkinit.tmp
@@ -48,6 +53,7 @@ CLEANFILES= \
 	cdigest-reply \
 	check-digest.tmp \
 	check-kdc.tmp \
+	check-uu.tmp \
 	check-pkinit.tmp \
 	client-cache \
 	current-db* \
@@ -67,14 +73,17 @@ CLEANFILES= \
 	pkinit.crt \
 	kdc.crt \
 	ca.crt \
+	uuserver.log \
 	tempfile
 
 
 EXTRA_DIST = \
 	check-kdc.in \
+	check-uu.in \
 	check-pkinit.in \
 	check-digest.in \
 	krb5.conf.in \
 	krb5-pkinit.conf.in \
 	wait-kdc.sh \
-	pki-mapping
+	pki-mapping \
+	uuserver.txt
