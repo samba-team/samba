@@ -40,14 +40,17 @@ pac_generate(void *ctx, krb5_context context,
 
 static krb5_error_code 
 pac_verify(void *ctx, krb5_context context,
-	   struct hdb_entry_ex *client, krb5_pac pac)
+	   const krb5_principal client_principal,
+	   struct hdb_entry_ex *client, 
+	   struct hdb_entry_ex *server,
+	   krb5_pac *pac)
 {
     krb5_error_code ret;
     krb5_data data;
 
     krb5_warnx(context, "pac_verify");
 
-    ret = krb5_pac_get_buffer(context, pac, 1, &data);
+    ret = krb5_pac_get_buffer(context, *pac, 1, &data);
     if (ret)
 	return ret;
 
