@@ -1,10 +1,3 @@
-/*
-  add to build farm
-  add masktest and locktest too
-  add -W flag
-  convert to popt_common
-*/
-
 /* 
    Unix SMB/CIFS implementation.
    generic testing tool
@@ -361,7 +354,6 @@ static int gen_int_range(uint_t min, uint_t max)
 static uint16_t gen_root_fid(int instance)
 {
 	if (gen_chance(5)) return gen_fnum(instance);
-	if (gen_chance(2)) return BAD_HANDLE;
 	return 0;
 }
 

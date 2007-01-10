@@ -72,7 +72,6 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	SSVAL(req->out.body, 0x02, io->in.oplock_flags);
 	SIVAL(req->out.body, 0x04, io->in.impersonation);
-	/* are these 16 bytes the root_fid (vl) */
 	SIVAL(req->out.body, 0x08, io->in.unknown3[0]);
 	SIVAL(req->out.body, 0x0C, io->in.unknown3[1]);
 	SIVAL(req->out.body, 0x10, io->in.unknown3[2]);

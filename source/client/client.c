@@ -1,8 +1,3 @@
-/*
-  fix -I
-  put in subdir does in \
-*/
-
 /* 
    Unix SMB/CIFS implementation.
    SMB client

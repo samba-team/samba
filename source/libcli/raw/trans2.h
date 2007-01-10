@@ -1,8 +1,3 @@
-/*
-  NTFS filesystem internals
-  
-*/
-
 /* 
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
