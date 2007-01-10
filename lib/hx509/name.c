@@ -299,6 +299,13 @@ _hx509_name_cmp(const Name *n1, const Name *n2)
 }
 
 int
+hx509_name_cmp(hx509_name n1, hx509_name n2)
+{
+    return _hx509_name_cmp(&n1->der_name, &n2->der_name);
+}
+
+
+int
 _hx509_name_from_Name(const Name *n, hx509_name *name)
 {
     int ret;
