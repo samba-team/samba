@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -121,8 +121,15 @@ proto (int sock, const char *service)
     if (status)
 	krb5_err(context, 1, status, "krb5_sendauth");
     
-    fprintf (stderr, "User is `%.*s'\n", (int)client_name.length,
-	    (char *)client_name.data);
+    {
+	char *str;
+	krb5_unparse_name(context, in_creds.server, &str);
+	fprintf (stderr, "User is `%s'\n", str);
+	free(str);
+	krb5_unparse_name(context, in_creds.client, &str);
+	fprintf (stderr, "Server is `%s'\n", str);
+	free(str);
+    }
 
     krb5_data_zero (&data);
     krb5_data_zero (&packet);
