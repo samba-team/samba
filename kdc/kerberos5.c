@@ -1549,7 +1549,9 @@ _kdc_as_rep(krb5_context context,
 	if (p != NULL) {
 	    ret = _krb5_pac_sign(context, p, et.authtime,
 				 client->entry.principal,
-				 &et.key, &skey->key, &data);
+				 &skey->key, /* Server key */ 
+				 &skey->key, /* FIXME: should be krbtgt key */
+				 &data);
 	    krb5_pac_free(context, p);
 	    if (ret) {
 		kdc_log(context, config, 0, "PAC signing failed for -- %s", 
