@@ -375,7 +375,21 @@ static int net_sam_policy_set(int argc, const char **argv)
 
 	account_policy = argv[0];
 	field = account_policy_name_to_fieldnum(account_policy);
-	value = strtoul(argv[1], &endptr, 10);
+
+	if (strequal(argv[1], "forever") || strequal(argv[1], "never")
+	    || strequal(argv[1], "off")) {
+		value = -1;
+	}
+	else {
+		value = strtoul(argv[1], &endptr, 10);
+
+		if ((endptr == argv[1]) || (endptr[0] != '\0')) {
+			d_printf("Unable to set policy \"%s\"! Invalid value "
+				 "\"%s\".\n", 
+				 account_policy, argv[1]); 
+			return -1;
+		}
+	}
 
 	if (field == 0) {
 		const char **names;
@@ -398,12 +412,6 @@ static int net_sam_policy_set(int argc, const char **argv)
 			  "value!\n");
 	}
 
-	if ((endptr == argv[1]) || (endptr[0] != '\0')) {
-		d_printf("Unable to set policy \"%s\"! Invalid value %s.\n", 
-			  account_policy, argv[1]); 
-		return -1;
-	}
-		
 	if (!pdb_set_account_policy(field, value)) {
 		d_fprintf(stderr, "Valid account policy, but unable to "
 			  "set value!\n");
