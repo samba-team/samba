@@ -85,6 +85,9 @@ ${kadmin} check ${R2} || exit 1
 
 echo foo > ${objdir}/foopassword
 
+echo "Empty log"
+> messages.log
+
 echo Starting kdc
 ${kdc} &
 kdcpid=$!
@@ -98,6 +101,10 @@ fi
 trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 ec=0
+
+echo "Check that WINDC module was loaded "
+grep "windc init" messages.log >/dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
 
 echo "Getting client initial tickets"; > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
