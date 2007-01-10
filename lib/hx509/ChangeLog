@@ -1,3 +1,16 @@
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* print.c: BasicConstraints vs criticality bit is complicated and
+	not really possible to evaluate on its own, silly RFC3280.
+
+	* ca.c: Make basicConstraints critical if this is a CA.
+
+	* print.c: fix the version vs extension test
+
+	* print.c: More validation checks.
+
+	* name.c (hx509_name_cmp): add
+	
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_p11.c (collect_private_key): Missing CKA_MODULUS is ok

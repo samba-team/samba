@@ -1,5 +1,7 @@
 2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Hint about hxtool validate.
+
 	* appl/test/uu_server.c: print both "server" and "client"
 
 	* kdc/krb5tgs.c: Rename keys to be more obvious what they do.
