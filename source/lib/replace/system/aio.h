@@ -1,11 +1,11 @@
 #ifndef _system_aio_h
-#define _system_aoi_h
+#define _system_aio_h
 /* 
    Unix SMB/CIFS implementation.
 
-   async io include wrappers
+   AIO system include wrappers
 
-   Copyright (C) Stefan Metzmacher 2006
+   Copyright (C) Andrew Tridgell 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_LIBAIO_H 1
+#if HAVE_LIBAIO_H
 #include <libaio.h>
 #endif
 
