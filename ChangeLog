@@ -1,3 +1,29 @@
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Rename keys to be more obvious what they do.
+
+	* kdc/kerberos5.c: Use other keys to sign PAC with. From Andrew
+	Bartlett
+	
+	* kdc/windc.c: ident, spelling.
+
+	* kdc/windc_plugin.h: indent.
+
+	* kdc/krb5tgs.c: Pass down server entry to verify_pac function.
+	from Andrew Bartlett
+
+	* kdc/windc.c: pass down server entry to verify_pac function, from
+	Andrew Bartlett
+
+	* kdc/windc_plugin.h: pass down server entry to verify_pac
+	function, from Andrew Bartlett
+
+	* configure.in: Provide a automake symbol ENABLE_SHARED if shared
+	libraries are built.
+
+	* lib/krb5/rd_req.c (krb5_rd_req_ctx): Use the correct keyblock
+	when verifying the PAC.  From Andrew Bartlett.
+	
 2007-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_pac.c: move around to code test on real PAC.
