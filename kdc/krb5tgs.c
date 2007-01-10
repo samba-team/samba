@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -279,10 +279,12 @@ check_KRB5SignedPath(krb5_context context,
 static krb5_error_code
 check_PAC(krb5_context context,
 	  krb5_kdc_configuration *config,
+	  const krb5_principal client_principal,
 	  hdb_entry_ex *client,
-	  const EncryptionKey *ekey,
+	  hdb_entry_ex *server,
+	  const EncryptionKey *server_key,
+	  const EncryptionKey *krbtgt_key,
 	  EncTicketPart *tkt,
-	  const EncryptionKey *sessionkey,
 	  krb5_data *rspac,
 	  int *require_signedpath)
 {
@@ -323,15 +325,15 @@ check_PAC(krb5_context context,
 		    return ret;
 
 		ret = krb5_pac_verify(context, pac, tkt->authtime, 
-				      client->entry.principal,
-				      &tkt->key,
-				      ekey);
+				      client_principal,
+				      krbtgt_key, NULL);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
 		}
 
-		ret = _kdc_pac_verify(context, client, pac);
+		ret = _kdc_pac_verify(context, client_principal, 
+				      client, server, &pac);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
@@ -339,8 +341,8 @@ check_PAC(krb5_context context,
 		*require_signedpath = 0;
 
 		ret = _krb5_pac_sign(context, pac, tkt->authtime,
-				     client->entry.principal,
-				     sessionkey, ekey, rspac);
+				     client_principal,
+				     server_key, krbtgt_key, rspac);
 
 		krb5_pac_free(context, pac);
 
@@ -1714,8 +1716,9 @@ server_lookup:
 	    goto out;
 	}
 
-	ret = check_PAC(context, config, client, &tkey->key, 
-			tgt, &sessionkey, &rspac, &require_signedpath);
+	ret = check_PAC(context, config, client_principal, 
+			client, server, ekey, &tkey->key, 
+			tgt, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "check_PAC check failed for %s (%s) from %s with %s",
