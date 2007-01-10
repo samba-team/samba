@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.255 2006/11/12 08:33:07 lha Exp $ */
+/* $Id: krb5.h,v 1.259 2007/01/03 18:51:52 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -77,8 +77,10 @@ typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 
 struct krb5_digest;
 typedef struct krb5_digest *krb5_digest;
+struct krb5_ntlm;
+typedef struct krb5_ntlm *krb5_ntlm;
 
-struct krb5_pac;
+typedef struct krb5_pac *krb5_pac;
 
 typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
 typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
@@ -216,8 +218,6 @@ typedef enum krb5_key_usage {
     /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
-    KRB5_KU_TGS_IMPERSONATE = -17,
-    /* Checksum type used in the impersonate field */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
@@ -716,6 +716,7 @@ typedef struct krb5_krbhst_data *krb5_krbhst_handle;
 #define KRB5_KRBHST_ADMIN	2
 #define KRB5_KRBHST_CHANGEPW	3
 #define KRB5_KRBHST_KRB524	4
+#define KRB5_KRBHST_KCA		5
 
 typedef struct krb5_krbhst_info {
     enum { KRB5_KRBHST_UDP,

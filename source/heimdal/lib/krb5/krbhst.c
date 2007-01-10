@@ -35,7 +35,7 @@
 #include <resolve.h>
 #include "locate_plugin.h"
 
-RCSID("$Id: krbhst.c,v 1.58 2006/11/12 20:05:20 lha Exp $");
+RCSID("$Id: krbhst.c,v 1.61 2006/11/30 17:23:08 lha Exp $");
 
 static int
 string_to_proto(const char *string)
@@ -493,7 +493,7 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     if (ret != 0)
 	return 0;
 
-    memset(&hints, 0, sizeof(hints));
+    make_hints(&hints, krbhst_get_default_proto(kd));
     ret = getaddrinfo(host, port, &hints, &ai);
     if (ret)
 	return 0;
@@ -521,7 +521,7 @@ plugin_get_hosts(krb5_context context,
 		 struct krb5_krbhst_data *kd,
 		 enum locate_service_type type)
 {
-    struct krb5_plugin *list, *e;
+    struct krb5_plugin *list = NULL, *e;
     krb5_error_code ret;
 
     ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, "resolve", &list);
@@ -619,6 +619,13 @@ admin_get_next(krb5_context context,
 {
     krb5_error_code ret;
 
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_kadmin);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
+
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "admin_server");
 	kd->flags |= KD_CONFIG;
@@ -659,6 +666,13 @@ kpasswd_get_next(krb5_context context,
 		 krb5_krbhst_info **host)
 {
     krb5_error_code ret;
+
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_kpasswd);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
 
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "kpasswd_server");
@@ -705,6 +719,13 @@ krb524_get_next(krb5_context context,
 		struct krb5_krbhst_data *kd,
 		krb5_krbhst_info **host)
 {
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_krb524);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
+
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "krb524_server");
 	if(get_next(kd, host))

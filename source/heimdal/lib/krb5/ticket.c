@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: ticket.c,v 1.15 2006/10/14 09:53:19 lha Exp $");
+RCSID("$Id: ticket.c,v 1.18 2006/12/28 20:49:18 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
@@ -97,6 +97,13 @@ krb5_ticket_get_server(krb5_context context,
     return krb5_copy_principal(context, ticket->server, server);
 }
 
+time_t KRB5_LIB_FUNCTION
+krb5_ticket_get_endtime(krb5_context context,
+			const krb5_ticket *ticket)
+{
+    return ticket->ticket.endtime;
+}
+
 static int
 find_type_in_ad(krb5_context context,
 		int type, 
@@ -107,10 +114,6 @@ find_type_in_ad(krb5_context context,
 		const AuthorizationData *ad,
 		int level)
 {
-    /* It is not an error if nothing in here, that is reported by *found */
-    /* Setting a default error causes found to be set to FALSE, on
-     * recursion to an second embedded authz data even if the first
-     * element contains the required type */
     krb5_error_code ret = 0;
     int i;
 
@@ -148,8 +151,8 @@ find_type_in_ad(krb5_context context,
 				      "IF_RELEVANT with %d", ret);
 		goto out;
 	    }
-	    ret = find_type_in_ad(context, type, data, found, 0, sessionkey,
-				  &child, level + 1);
+	    ret = find_type_in_ad(context, type, data, found, FALSE,
+				  sessionkey, &child, level + 1);
 	    free_AuthorizationData(&child);
 	    if (ret)
 		goto out;
@@ -232,19 +235,6 @@ out:
     return ret;
 }
 
-int
-_krb5_find_type_in_ad(krb5_context context,
-		      int type, 
-		      krb5_data *data,
-		      krb5_boolean *found,
-		      krb5_keyblock *sessionkey,
-		      const AuthorizationData *ad)
-{
-    krb5_data_zero(data);
-    return find_type_in_ad(context, type, data, found, TRUE, sessionkey, ad, 0);
-}
-
-
 /*
  * Extract the authorization data type of `type' from the
  * 'ticket'. Store the field in `data'. This function is to use for
@@ -259,7 +249,9 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 {
     AuthorizationData *ad;
     krb5_error_code ret;
-    krb5_boolean found = 0;
+    krb5_boolean found = FALSE;
+
+    krb5_data_zero(data);
 
     ad = ticket->ticket.authorization_data;
     if (ticket->ticket.authorization_data == NULL) {
@@ -267,8 +259,8 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 	return ENOENT; /* XXX */
     }
 
-    ret = _krb5_find_type_in_ad(context, type, data, &found, &ticket->ticket.key,
-				ticket->ticket.authorization_data);
+    ret = find_type_in_ad(context, type, data, &found, TRUE,
+			  &ticket->ticket.key, ad, 0);
     if (ret)
 	return ret;
     if (!found) {

@@ -33,12 +33,13 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: verify_mic.c,v 1.36 2006/10/18 15:59:30 lha Exp $");
+RCSID("$Id: verify_mic.c,v 1.37 2006/11/13 18:02:54 lha Exp $");
 
 static OM_uint32
 verify_mic_des
            (OM_uint32 * minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
@@ -131,6 +132,7 @@ static OM_uint32
 verify_mic_des3
            (OM_uint32 * minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
@@ -164,10 +166,9 @@ verify_mic_des3
     return GSS_S_BAD_MIC;
   p += 4;
 
-  ret = krb5_crypto_init(_gsskrb5_context, key,
+  ret = krb5_crypto_init(context, key,
 			 ETYPE_DES3_CBC_NONE, &crypto);
   if (ret){
-      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -180,14 +181,13 @@ retry:
   else
       memcpy(ivec, p + 8, 8);
 
-  ret = krb5_decrypt_ivec (_gsskrb5_context,
+  ret = krb5_decrypt_ivec (context,
 			   crypto,
 			   KRB5_KU_USAGE_SEQ,
 			   p, 8, &seq_data, ivec);
   if (ret) {
       if (docompat++) {
-	  _gsskrb5_set_error_string ();
-	  krb5_crypto_destroy (_gsskrb5_context, crypto);
+	  krb5_crypto_destroy (context, crypto);
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       } else
@@ -197,7 +197,7 @@ retry:
   if (seq_data.length != 8) {
       krb5_data_free (&seq_data);
       if (docompat++) {
-	  krb5_crypto_destroy (_gsskrb5_context, crypto);
+	  krb5_crypto_destroy (context, crypto);
 	  return GSS_S_BAD_MIC;
       } else
 	  goto retry;
@@ -215,7 +215,7 @@ retry:
 
   krb5_data_free (&seq_data);
   if (cmp != 0) {
-      krb5_crypto_destroy (_gsskrb5_context, crypto);
+      krb5_crypto_destroy (context, crypto);
       *minor_status = 0;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_BAD_MIC;
@@ -223,7 +223,7 @@ retry:
 
   ret = _gssapi_msg_order_check(context_handle->order, seq_number);
   if (ret) {
-      krb5_crypto_destroy (_gsskrb5_context, crypto);
+      krb5_crypto_destroy (context, crypto);
       *minor_status = 0;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return ret;
@@ -233,7 +233,7 @@ retry:
 
   tmp = malloc (message_buffer->length + 8);
   if (tmp == NULL) {
-      krb5_crypto_destroy (_gsskrb5_context, crypto);
+      krb5_crypto_destroy (context, crypto);
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       *minor_status = ENOMEM;
       return GSS_S_FAILURE;
@@ -246,21 +246,20 @@ retry:
   csum.checksum.length = 20;
   csum.checksum.data   = p + 8;
 
-  ret = krb5_verify_checksum (_gsskrb5_context, crypto,
+  ret = krb5_verify_checksum (context, crypto,
 			      KRB5_KU_USAGE_SIGN,
 			      tmp, message_buffer->length + 8,
 			      &csum);
   free (tmp);
   if (ret) {
-      _gsskrb5_set_error_string ();
-      krb5_crypto_destroy (_gsskrb5_context, crypto);
+      krb5_crypto_destroy (context, crypto);
       *minor_status = ret;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_BAD_MIC;
   }
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
-  krb5_crypto_destroy (_gsskrb5_context, crypto);
+  krb5_crypto_destroy (context, crypto);
   return GSS_S_COMPLETE;
 }
 
@@ -268,6 +267,7 @@ OM_uint32
 _gsskrb5_verify_mic_internal
            (OM_uint32 * minor_status,
             const gsskrb5_ctx context_handle,
+	    krb5_context context,
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
@@ -279,39 +279,40 @@ _gsskrb5_verify_mic_internal
     krb5_keytype keytype;
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    ret = _gsskrb5i_get_token_key(context_handle, &key);
+    ret = _gsskrb5i_get_token_key(context_handle, context, &key);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) {
-	_gsskrb5_set_error_string ();
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
     *minor_status = 0;
-    krb5_enctype_to_keytype (_gsskrb5_context, key->keytype, &keytype);
+    krb5_enctype_to_keytype (context, key->keytype, &keytype);
     switch (keytype) {
     case KEYTYPE_DES :
-	ret = verify_mic_des (minor_status, context_handle,
+	ret = verify_mic_des (minor_status, context_handle, context,
 			      message_buffer, token_buffer, qop_state, key,
 			      type);
 	break;
     case KEYTYPE_DES3 :
-	ret = verify_mic_des3 (minor_status, context_handle,
+	ret = verify_mic_des3 (minor_status, context_handle, context,
 			       message_buffer, token_buffer, qop_state, key,
 			       type);
 	break;
     case KEYTYPE_ARCFOUR :
     case KEYTYPE_ARCFOUR_56 :
 	ret = _gssapi_verify_mic_arcfour (minor_status, context_handle,
+					  context,
 					  message_buffer, token_buffer,
 					  qop_state, key, type);
 	break;
     default :
 	ret = _gssapi_verify_mic_cfx (minor_status, context_handle,
+				      context,
 				      message_buffer, token_buffer, qop_state,
 				      key);
 	break;
     }
-    krb5_free_keyblock (_gsskrb5_context, key);
+    krb5_free_keyblock (context, key);
     
     return ret;
 }
@@ -325,13 +326,17 @@ _gsskrb5_verify_mic
             gss_qop_t * qop_state
 	    )
 {
+    krb5_context context;
     OM_uint32 ret;
+
+    GSSAPI_KRB5_INIT (&context);
 
     if (qop_state != NULL)
 	*qop_state = GSS_C_QOP_DEFAULT;
 
     ret = _gsskrb5_verify_mic_internal(minor_status, 
-				       (gsskrb5_ctx)context_handle, 
+				       (gsskrb5_ctx)context_handle,
+				       context,
 				       message_buffer, token_buffer,
 				       qop_state, "\x01\x01");
 

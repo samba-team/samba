@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.93 2006/10/20 18:13:31 lha Exp $ */
+/* $Id: krb5_locl.h,v 1.97 2006/12/15 16:46:51 lha Exp $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -239,10 +239,10 @@ typedef struct krb5_context_data {
     int large_msg_size;
     int dns_canonicalize_hostname;
     struct send_to_kdc *send_to_kdc;
-    void *mem_ctx;                      /* Some parts of Samba4 need a valid 
-                                           memory context (under the event 
-					   context) to use */
 } krb5_context_data;
+
+#define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
+#define KRB5_DEFAULT_CCNAME_API "API:"
 
 /*
  * Configurable options
@@ -250,9 +250,9 @@ typedef struct krb5_context_data {
 
 #ifndef KRB5_DEFAULT_CCNAME
 #ifdef __APPLE__
-#define KRB5_DEFAULT_CCNAME "API:"
+#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_API
 #else
-#define KRB5_DEFAULT_CCNAME "FILE:/tmp/krb5cc_%{uid}"
+#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_FILE
 #endif
 #endif
 

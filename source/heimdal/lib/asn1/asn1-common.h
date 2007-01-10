@@ -1,4 +1,4 @@
-/* $Id: asn1-common.h,v 1.6 2006/10/14 05:09:47 lha Exp $ */
+/* $Id: asn1-common.h,v 1.7 2006/12/28 17:14:10 lha Exp $ */
 
 #include <stddef.h>
 #include <time.h>
@@ -32,6 +32,7 @@ typedef struct heim_universal_string {
     uint32_t *data;
 } heim_universal_string;
 
+typedef char *heim_visible_string;
 
 typedef struct heim_oid {
     size_t length;

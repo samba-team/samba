@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include <hex.h>
 
-RCSID("$Id: der_format.c,v 1.6 2006/10/21 18:24:15 lha Exp $");
+RCSID("$Id: der_format.c,v 1.8 2006/11/27 10:32:21 lha Exp $");
 
 int
 der_parse_hex_heim_integer (const char *p, heim_integer *data)
@@ -110,10 +110,13 @@ der_print_heim_oid (const heim_oid *oid, char delim, char **str)
     struct rk_strpool *p = NULL;
     int i;
 
+    if (oid->length == 0)
+	return EINVAL;
+
     for (i = 0; i < oid->length ; i++) {
-	p = rk_strpoolprintf(p, "%d%s", 
-			     oid->components[i],
-			     i < oid->length - 1 ? " " : "");
+	p = rk_strpoolprintf(p, "%d", oid->components[i]);
+	if (p && i < oid->length - 1)
+	    p = rk_strpoolprintf(p, "%c", delim);
 	if (p == NULL) {
 	    *str = NULL;
 	    return ENOMEM;

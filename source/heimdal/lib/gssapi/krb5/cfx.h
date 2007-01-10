@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: cfx.h,v 1.7 2006/07/19 14:16:33 lha Exp $ */
+/* $Id: cfx.h,v 1.8 2006/11/13 18:01:17 lha Exp $ */
 
 #ifndef GSSAPI_CFX_H_
 #define GSSAPI_CFX_H_ 1
@@ -61,20 +61,5 @@ typedef struct gss_cfx_delete_token_desc_struct {
 	u_char Filler[5];
 	u_char SND_SEQ[8];
 } gss_cfx_delete_token_desc, *gss_cfx_delete_token;
-
-krb5_error_code
-_gsskrb5cfx_wrap_length_cfx(krb5_crypto crypto,
-			    int conf_req_flag,
-			    size_t input_length,
-			    size_t *output_length,
-			    size_t *cksumsize,
-			    uint16_t *padlength);
-
-krb5_error_code
-_gsskrb5cfx_max_wrap_length_cfx(krb5_crypto crypto,
-				int conf_req_flag,
-				size_t input_length,
-				OM_uint32 *output_length);
-
 
 #endif /* GSSAPI_CFX_H_ */

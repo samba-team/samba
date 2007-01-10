@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: arcfour.c,v 1.30 2006/11/07 19:05:16 lha Exp $");
+RCSID("$Id: arcfour.c,v 1.31 2006/11/13 18:01:08 lha Exp $");
 
 /*
  * Implements draft-brezak-win2k-krb-rc4-hmac-04.txt
@@ -114,7 +114,8 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
 
 
 static krb5_error_code
-arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
+arcfour_mic_cksum(krb5_context context,
+		  krb5_keyblock *key, unsigned usage,
 		  u_char *sgn_cksum, size_t sgn_cksum_sz,
 		  const u_char *v1, size_t l1,
 		  const void *v2, size_t l2,
@@ -138,13 +139,13 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
     memcpy(ptr + l1, v2, l2);
     memcpy(ptr + l1 + l2, v3, l3);
     
-    ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
 	free(ptr);
 	return ret;
     }
     
-    ret = krb5_create_checksum(_gsskrb5_context,
+    ret = krb5_create_checksum(context,
 			       crypto,
 			       usage,
 			       0,
@@ -155,7 +156,7 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
 	memcpy(sgn_cksum, CKSUM.checksum.data, sgn_cksum_sz);
 	free_Checksum(&CKSUM);
     }
-    krb5_crypto_destroy(_gsskrb5_context, crypto);
+    krb5_crypto_destroy(context, crypto);
 
     return ret;
 }
@@ -164,6 +165,7 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
 OM_uint32
 _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 			const gsskrb5_ctx context_handle,
+			krb5_context context,
 			gss_qop_t qop_req,
 			const gss_buffer_t message_buffer,
 			gss_buffer_t message_token,
@@ -200,7 +202,8 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 
     p = NULL;
 
-    ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SIGN,
+    ret = arcfour_mic_cksum(context,
+			    key, KRB5_KU_USAGE_SIGN,
 			    p0 + 16, 8,  /* SGN_CKSUM */
 			    p0, 8, /* TOK_ID, SGN_ALG, Filer */
 			    message_buffer->value, message_buffer->length,
@@ -211,7 +214,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
 
-    ret = arcfour_mic_key(_gsskrb5_context, key,
+    ret = arcfour_mic_key(context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -221,13 +224,13 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
     }
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+    krb5_auth_con_getlocalseqnumber (context,
 				     context_handle->auth_context,
 				     &seq_number);
     p = p0 + 8; /* SND_SEQ */
     _gsskrb5_encode_be_om_uint32(seq_number, p);
     
-    krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
+    krb5_auth_con_setlocalseqnumber (context,
 				     context_handle->auth_context,
 				     ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -248,6 +251,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 OM_uint32
 _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 			   const gsskrb5_ctx context_handle,
+			   krb5_context context,
 			   const gss_buffer_t message_buffer,
 			   const gss_buffer_t token_buffer,
 			   gss_qop_t * qop_state,
@@ -279,7 +283,8 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	return GSS_S_BAD_MIC;
     p += 4;
 
-    ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SIGN,
+    ret = arcfour_mic_cksum(context,
+			    key, KRB5_KU_USAGE_SIGN,
 			    cksum_data, sizeof(cksum_data),
 			    p - 8, 8,
 			    message_buffer->value, message_buffer->length,
@@ -289,7 +294,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
 
-    ret = arcfour_mic_key(_gsskrb5_context, key,
+    ret = arcfour_mic_key(context, key,
 			  cksum_data, sizeof(cksum_data),
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -339,6 +344,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 OM_uint32
 _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 		     const gsskrb5_ctx context_handle,
+		     krb5_context context,
 		     int conf_req_flag,
 		     gss_qop_t qop_req,
 		     const gss_buffer_t input_message_buffer,
@@ -396,13 +402,13 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     p = NULL;
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+    krb5_auth_con_getlocalseqnumber (context,
 				     context_handle->auth_context,
 				     &seq_number);
 
     _gsskrb5_encode_be_om_uint32(seq_number, p0 + 8);
 
-    krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
+    krb5_auth_con_setlocalseqnumber (context,
 				     context_handle->auth_context,
 				     ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -420,7 +426,8 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     if (!IS_DCE_STYLE(context_handle))
 	p[input_message_buffer->length] = 1; /* padding */
 
-    ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
+    ret = arcfour_mic_cksum(context,
+			    key, KRB5_KU_USAGE_SEAL,
 			    p0 + 16, 8, /* SGN_CKSUM */ 
 			    p0, 8, /* TOK_ID, SGN_ALG, SEAL_ALG, Filler */
 			    p0 + 24, 8, /* Confounder */
@@ -442,7 +449,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	for (i = 0; i < 16; i++)
 	    Klocaldata[i] = ((u_char *)key->keyvalue.data)[i] ^ 0xF0;
     }
-    ret = arcfour_mic_key(_gsskrb5_context, &Klocal,
+    ret = arcfour_mic_key(context, &Klocal,
 			  p0 + 8, 4, /* SND_SEQ */
 			  k6_data, sizeof(k6_data));
     memset(Klocaldata, 0, sizeof(Klocaldata));
@@ -463,7 +470,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
-    ret = arcfour_mic_key(_gsskrb5_context, key,
+    ret = arcfour_mic_key(context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -490,6 +497,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 
 OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 				 const gsskrb5_ctx context_handle,
+				 krb5_context context,
 				 const gss_buffer_t input_message_buffer,
 				 gss_buffer_t output_message_buffer,
 				 int *conf_state,
@@ -562,7 +570,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return GSS_S_BAD_MIC;
     p = NULL;
 
-    ret = arcfour_mic_key(_gsskrb5_context, key,
+    ret = arcfour_mic_key(context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -601,7 +609,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	for (i = 0; i < 16; i++)
 	    Klocaldata[i] = ((u_char *)key->keyvalue.data)[i] ^ 0xF0;
     }
-    ret = arcfour_mic_key(_gsskrb5_context, &Klocal,
+    ret = arcfour_mic_key(context, &Klocal,
 			  SND_SEQ, 4,
 			  k6_data, sizeof(k6_data));
     memset(Klocaldata, 0, sizeof(Klocaldata));
@@ -643,7 +651,8 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	output_message_buffer->length -= padlen;
     }
 
-    ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
+    ret = arcfour_mic_cksum(context,
+			    key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
 			    p0, 8, 
 			    Confounder, sizeof(Confounder),
@@ -721,6 +730,7 @@ max_wrap_length_arcfour(const gsskrb5_ctx ctx,
 OM_uint32
 _gssapi_wrap_size_arcfour(OM_uint32 *minor_status,
 			  const gsskrb5_ctx ctx,
+			  krb5_context context,
 			  int conf_req_flag,
 			  gss_qop_t qop_req,
 			  OM_uint32 req_output_size,
@@ -730,9 +740,8 @@ _gssapi_wrap_size_arcfour(OM_uint32 *minor_status,
     krb5_error_code ret;
     krb5_crypto crypto;
 
-    ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret != 0) {
-	_gsskrb5_set_error_string();
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -740,13 +749,12 @@ _gssapi_wrap_size_arcfour(OM_uint32 *minor_status,
     ret = max_wrap_length_arcfour(ctx, crypto,
 				  req_output_size, max_input_size);
     if (ret != 0) {
-	_gsskrb5_set_error_string();
 	*minor_status = ret;
-	krb5_crypto_destroy(_gsskrb5_context, crypto);
+	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
-    krb5_crypto_destroy(_gsskrb5_context, crypto);
+    krb5_crypto_destroy(context, crypto);
 
     return GSS_S_COMPLETE;
 }

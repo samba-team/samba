@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c,v 1.99 2006/10/18 06:53:22 lha Exp $");
+RCSID("$Id: principal.c,v 1.100 2006/12/17 22:53:39 lha Exp $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)

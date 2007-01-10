@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_cred_by_oid.c,v 1.4 2006/10/07 22:15:10 lha Exp $");
+RCSID("$Id: inquire_cred_by_oid.c,v 1.5 2006/11/13 18:02:24 lha Exp $");
 
 OM_uint32 _gsskrb5_inquire_cred_by_oid
 	   (OM_uint32 * minor_status,
@@ -40,10 +40,13 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 	    const gss_OID desired_object,
 	    gss_buffer_set_t *data_set)
 {
+    krb5_context context;
     gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
     krb5_error_code ret;
     gss_buffer_desc buffer;
     char *str;
+
+    GSSAPI_KRB5_INIT (&context);
 
     if (gss_oid_equal(desired_object, GSS_KRB5_COPY_CCACHE_X) == 0) {
 	*minor_status = EINVAL;
@@ -58,11 +61,10 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 	return GSS_S_FAILURE;
     }
 
-    ret = krb5_cc_get_full_name(_gsskrb5_context, cred->ccache, &str);
+    ret = krb5_cc_get_full_name(context, cred->ccache, &str);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     if (ret) {
 	*minor_status = ret;
-	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
 

@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.69 2006/10/14 05:11:52 lha Exp $");
+RCSID("$Id: gen.c,v 1.70 2006/12/28 17:14:37 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -135,6 +135,9 @@ init_generate (const char *filename, const char *base)
 	     "  size_t length;\n"
 	     "  uint32_t *data;\n"
 	     "} heim_universal_string;\n\n");
+    fprintf (headerfile,
+	     "typedef char *heim_visible_string;\n\n"
+	     );
     fprintf (headerfile,
 	     "typedef struct heim_oid {\n"
 	     "  size_t length;\n"
@@ -504,6 +507,10 @@ define_asn1 (int level, Type *t)
 	space(level);
 	fprintf (headerfile, "UniversalString");
 	break;
+    case TVisibleString:
+	space(level);
+	fprintf (headerfile, "VisibleString");
+	break;
     case TOID :
 	space(level);
 	fprintf(headerfile, "OBJECT IDENTIFIER");
@@ -735,6 +742,10 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
     case TUniversalString:
 	space(level);
 	fprintf (headerfile, "heim_universal_string %s;\n", name);
+	break;
+    case TVisibleString:
+	space(level);
+	fprintf (headerfile, "heim_visible_string %s;\n", name);
 	break;
     case TOID :
 	space(level);
