@@ -41,6 +41,15 @@ struct hx509_validate_ctx_data {
     void *ctx;
 };
 
+struct cert_status {
+    unsigned int selfsigned:1;
+    unsigned int isca:1;
+    unsigned int haveIAN:1;
+    unsigned int haveSKI:1;
+    unsigned int haveAKI:1;
+};
+
+
 /*
  *
  */
@@ -158,7 +167,9 @@ validate_print(hx509_validate_ctx ctx, int flags, const char *fmt, ...)
 enum critical_flag { D_C = 0, S_C, S_N_C, M_C, M_N_C };
 
 static int
-check_Null(hx509_validate_ctx ctx, enum critical_flag cf, const Extension *e)
+check_Null(hx509_validate_ctx ctx,
+	   struct cert_status *status,
+	   enum critical_flag cf, const Extension *e)
 {
     switch(cf) {
     case D_C:
@@ -191,12 +202,52 @@ check_Null(hx509_validate_ctx ctx, enum critical_flag cf, const Extension *e)
 
 static int
 check_subjectKeyIdentifier(hx509_validate_ctx ctx, 
+			   struct cert_status *status,
 			   enum critical_flag cf,
 			   const Extension *e)
 {
-    check_Null(ctx, cf, e);
+    SubjectKeyIdentifier si;
+    size_t size;
+    int ret;
+
+    status->haveSKI = 1;
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_SubjectKeyIdentifier(e->extnValue.data, 
+				      e->extnValue.length,
+				      &si, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SubjectKeyIdentifier failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SKI ahve extra bits on the end");
+	return 1;
+    }
+    if (si.length == 0)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "SKI is too short (0 bytes)");
+    if (si.length > 20)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "SKI is too long");
+    free_SubjectKeyIdentifier(&si);
+
     return 0;
 }
+
+static int
+check_authorityKeyIdentifier(hx509_validate_ctx ctx, 
+			     struct cert_status *status,
+			     enum critical_flag cf,
+			     const Extension *e)
+{
+    status->haveAKI = 1;
+    check_Null(ctx, status, cf, e);
+    return 0;
+}
+
 
 static int
 check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
@@ -209,12 +260,14 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
     ret = decode_KRB5PrincipalName(a->data, a->length,
 				   &kn, &size);
     if (ret) {
-	printf("Decoding kerberos name in SAN failed: %d", ret);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding kerberos name in SAN failed: %d", ret);
 	return 1;
     }
 
     if (size != a->length) {
-	printf("Decoding kerberos name have extra bits on the end");
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding kerberos name have extra bits on the end");
 	return 1;
     }
 
@@ -249,6 +302,7 @@ struct {
 
 static int
 check_altName(hx509_validate_ctx ctx,
+	      struct cert_status *status,
 	      const char *name,
 	      enum critical_flag cf,
 	      const Extension *e)
@@ -257,7 +311,7 @@ check_altName(hx509_validate_ctx ctx,
     size_t size;
     int ret, i;
 
-    check_Null(ctx, cf, e);
+    check_Null(ctx, status, cf, e);
 
     if (e->extnValue.length == 0) {
 	printf("%sAltName empty, not allowed", name);
@@ -343,23 +397,27 @@ check_altName(hx509_validate_ctx ctx,
 
 static int
 check_subjectAltName(hx509_validate_ctx ctx,
+		     struct cert_status *status,
 		     enum critical_flag cf,
 		     const Extension *e)
 {
-    return check_altName(ctx, "subject", cf, e);
+    return check_altName(ctx, status, "subject", cf, e);
 }
 
 static int
 check_issuerAltName(hx509_validate_ctx ctx,
+		    struct cert_status *status,
 		     enum critical_flag cf,
 		     const Extension *e)
 {
-    return check_altName(ctx, "issuer", cf, e);
+    status->haveIAN = 1;
+    return check_altName(ctx, status, "issuer", cf, e);
 }
 
 
 static int
 check_basicConstraints(hx509_validate_ctx ctx, 
+		       struct cert_status *status,
 		       enum critical_flag cf, 
 		       const Extension *e)
 {
@@ -367,7 +425,7 @@ check_basicConstraints(hx509_validate_ctx ctx,
     size_t size;
     int ret;
 
-    check_Null(ctx, cf, e);
+    check_Null(ctx, status, cf, e);
     
     ret = decode_BasicConstraints(e->extnValue.data, e->extnValue.length,
 				  &b, &size);
@@ -384,6 +442,14 @@ check_basicConstraints(hx509_validate_ctx ctx,
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "\tpathLenConstraint: %d\n", *b.pathLenConstraint);
 
+    if (b.cA) {
+	if (*b.cA)
+	    status->isca = 1;
+	else
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			   "cA is FALSE, not allowed to be\n");
+    }
+
     return 0;
 }
 
@@ -391,6 +457,7 @@ struct {
     const char *name;
     const heim_oid *(*oid)(void);
     int (*func)(hx509_validate_ctx ctx, 
+		struct cert_status *status,
 		enum critical_flag cf, 
 		const Extension *);
     enum critical_flag cf;
@@ -413,7 +480,7 @@ struct {
     { ext(cRLDistributionPoints, Null), S_N_C },
     { ext(certificatePolicies, Null) },
     { ext(policyMappings, Null), M_N_C },
-    { ext(authorityKeyIdentifier, Null), M_N_C },
+    { ext(authorityKeyIdentifier, authorityKeyIdentifier), M_N_C },
     { ext(policyConstraints, Null), D_C },
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
@@ -459,30 +526,41 @@ hx509_validate_cert(hx509_context context,
 {
     Certificate *c = _hx509_get_cert(cert);
     TBSCertificate *t = &c->tbsCertificate;
-    hx509_name name;
+    hx509_name issuer, subject;
     char *str;
+    struct cert_status status;
+
+    memset(&status, 0, sizeof(status));
 
     if (_hx509_cert_get_version(c) != 3)
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "Not version 3 certificate\n");
     
-    if (t->version && *t->version < 2 && t->extensions)
+    if ((t->version || *t->version < 2) && t->extensions)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Not version 3 certificate with extensions\n");
 	
-    _hx509_name_from_Name(&t->subject, &name);
-    hx509_name_to_string(name, &str);
-    hx509_name_free(&name);
+    if (_hx509_cert_get_version(c) >= 3 && t->extensions == NULL)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Version 3 certificate without extensions\n");
+
+    _hx509_name_from_Name(&t->subject, &subject);
+    hx509_name_to_string(subject, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "subject name: %s\n", str);
     free(str);
 
-    _hx509_name_from_Name(&t->issuer, &name);
-    hx509_name_to_string(name, &str);
-    hx509_name_free(&name);
+    _hx509_name_from_Name(&t->issuer, &issuer);
+    hx509_name_to_string(issuer, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "issuer name: %s\n", str);
     free(str);
+
+    if (hx509_name_cmp(subject, issuer) == 0)
+	status.selfsigned = 1;
+
+    hx509_name_free(&subject);
+    hx509_name_free(&issuer);
 
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "Validity:\n");
@@ -528,11 +606,33 @@ hx509_validate_cert(hx509_context context,
 			   "checking extention: %s\n",
 			   check_extension[j].name);
 	    (*check_extension[j].func)(ctx,
+				       &status,
 				       check_extension[j].cf,
 				       &t->extensions->val[i]);
 	}
     } else
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "no extentions\n");
 	
+    if (status.isca) {
+	if (!status.haveSKI)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "CA certificate have no SubjectKeyIdentifier\n");
+
+	if (!status.haveSKI)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "CA certificate have no SubjectKeyIdentifier\n");
+
+    } else {
+	if (!status.haveAKI)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Is not CA and doesn't have "
+			   "AuthorityKeyIdentifier\n");
+    }
+	    
+
+    if (!status.haveSKI)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Doesn't have SubjectKeyIdentifier\n");
+
     return 0;
 }
