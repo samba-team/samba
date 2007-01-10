@@ -510,6 +510,9 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	dest[size] = 0;
 
+	/* trim it so talloc_append_string() works */
+	dest = talloc_realloc_size(ctx, dest, size+1);
+
 	return dest;
 }
 
@@ -548,6 +551,9 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 	}
 
 	dest[size] = 0;
+
+	/* trim it so talloc_append_string() works */
+	dest = talloc_realloc_size(ctx, dest, size+1);
 
 	return dest;
 }
