@@ -150,12 +150,6 @@ test_ap(krb5_context context,
 	ret = krb5_pac_parse(context, data.data, data.length, &pac);
 	if (ret)
 	    krb5_err(context, 1, ret, "pac parse");
-	
-
-	ret = krb5_pac_verify(context, pac, ticket->ticket.authtime,
-			       ticket->client, &ticket->ticket.key, NULL);
-	if (ret)
-	    krb5_err(context, 1, ret, "pac verify");
 
 	krb5_pac_free(context, pac);
     }
