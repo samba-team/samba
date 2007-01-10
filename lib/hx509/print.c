@@ -450,8 +450,12 @@ check_basicConstraints(hx509_validate_ctx ctx,
 		       "\tpathLenConstraint: %d\n", *b.pathLenConstraint);
 
     if (b.cA) {
-	if (*b.cA)
+	if (*b.cA) {
+	    if (!e->critical)
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "Is a CA and not BasicConstraints CRITICAL\n");
 	    status->isca = 1;
+	}
 	else
 	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "cA is FALSE, not allowed to be\n");
@@ -487,7 +491,7 @@ struct {
     { ext(keyUsage, Null), S_C },
     { ext(subjectAltName, subjectAltName), M_N_C },
     { ext(issuerAltName, issuerAltName), S_N_C },
-    { ext(basicConstraints, basicConstraints), M_C },
+    { ext(basicConstraints, basicConstraints), D_C },
     { ext(cRLNumber, Null), M_N_C },
     { ext(cRLReason, Null), M_N_C },
     { ext(holdInstructionCode, Null), M_N_C },
