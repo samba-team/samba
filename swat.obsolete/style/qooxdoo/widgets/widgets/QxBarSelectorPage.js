@@ -1,2 +1,0 @@
-/* Copyright (c): 2002-2005 (Germany): United Internet, 1&1, GMX, Schlund+Partner, Alturo */
-function QxBarSelectorPage(vTab){QxTabPage.call(this,vTab);};QxBarSelectorPage.extend(QxTabPage,"QxBarSelectorPage");
