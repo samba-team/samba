@@ -1,5 +1,7 @@
 2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* plugin/windc.c: Update to validate function signature change.
+
 	* Makefile.am: Only traverse into plugin if there is shared
 	library support.
 	
