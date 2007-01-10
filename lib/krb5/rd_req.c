@@ -855,7 +855,7 @@ krb5_rd_req_ctx(krb5_context context,
 				  pac, 
 				  o->ticket->ticket.authtime,
 				  o->ticket->client, 
-				  &o->ticket->ticket.key, 
+				  o->keyblock, 
 				  NULL);
 	    krb5_pac_free(context, pac);
 	    if (ret)
