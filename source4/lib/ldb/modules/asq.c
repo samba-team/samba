@@ -339,22 +339,25 @@ static int asq_search_continue(struct ldb_handle *handle)
 			handle->status = ac->base_req->handle->status;
 			goto done;
 		}
-		if (ac->base_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
+
+		if (ac->base_req->handle->state == LDB_ASYNC_DONE) {
+
+			/* build up the requests call chain */
+			ret = asq_build_multiple_requests(ac, handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			if (handle->state == LDB_ASYNC_DONE) {
+				return LDB_SUCCESS;
+			}
+
+			ac->step = ASQ_SEARCH_MULTI;
+
+			return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
 		}
 
-		/* build up the requests call chain */
-		ret = asq_build_multiple_requests(ac, handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		if (handle->state == LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		ac->step = ASQ_SEARCH_MULTI;
-
-		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+		/* request still pending, return to cycle again */
+		return LDB_SUCCESS;
 
 	case ASQ_SEARCH_MULTI:
 
@@ -371,12 +374,15 @@ static int asq_search_continue(struct ldb_handle *handle)
 		if (ac->reqs[ac->cur_req]->handle->state == LDB_ASYNC_DONE) {
 			ac->cur_req++;
 
-			if (ac->cur_req >= ac->num_reqs) {
-				return asq_terminate(handle);
+			if (ac->cur_req < ac->num_reqs) {
+				return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
 			}
 
-			return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+			return asq_terminate(handle);
 		}
+
+		/* request still pending, return to cycle again */
+		return LDB_SUCCESS;
 
 	default:
 		ret = LDB_ERR_OPERATIONS_ERROR;
