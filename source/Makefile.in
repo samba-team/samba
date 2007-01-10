@@ -163,7 +163,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@
 
-BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) @EXTRA_BIN_PROGS@
+BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) @EXTRA_BIN_PROGS@ @SMBMOUNT_PROGS@
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
@@ -1714,7 +1714,8 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
 installman: installdirs
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
+	@$(SHELL) SMBMOUNT_PROGS="@SMBMOUNT_PROGS@" \
+		$(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
 
