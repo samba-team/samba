@@ -25,6 +25,7 @@
 #include "kdc/kdc.h"
 #include "dsdb/common/flags.h"
 #include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
@@ -32,25 +33,93 @@
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
 
-#include "heimdal/lib/krb5/krb5_locl.h"
+krb5_error_code	samba_kdc_plugin_init(krb5_context context, void **ptr) 
+{
+	*ptr = NULL;
+	return 0;
+}
+
+void	samba_kdc_plugin_fini(void *ptr) 
+{
+	return;
+}
+
+static krb5_error_code make_pac(krb5_context context,
+				TALLOC_CTX *mem_ctx, 
+				struct auth_serversupplied_info *server_info,
+				krb5_pac *pac) 
+{
+	struct PAC_LOGON_INFO_CTR logon_info;
+	struct netr_SamInfo3 *info3;
+	krb5_data pac_data;
+	NTSTATUS nt_status;
+	DATA_BLOB pac_out;
+	krb5_error_code ret;
+
+	ZERO_STRUCT(logon_info);
+
+	nt_status = auth_convert_server_info_saminfo3(mem_ctx, server_info, &info3);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
+		return EINVAL;
+	}
+
+	logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+
+	logon_info.info->info3 = *info3;
+
+	nt_status = ndr_push_struct_blob(&pac_out, mem_ctx, &logon_info,
+					 (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
+		return EINVAL;
+	}
+
+	ret = krb5_data_copy(&pac_data, pac_out.data, pac_out.length);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = krb5_pac_init(context, pac);
+	if (ret != 0) {
+		krb5_data_free(&pac_data);
+		return ret;
+	}
+
+	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &pac_data);
+	krb5_data_free(&pac_data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return ret;
+}
 
 /* Given the right private pointer from hdb_ldb, get a PAC from the attached ldb messages */
-static krb5_error_code samba_get_pac(krb5_context context, 
-				     struct hdb_ldb_private *private,
-				     krb5_principal client, 
-				     const krb5_keyblock *krbtgt_keyblock, 
-				     const krb5_keyblock *server_keyblock, 
-				     time_t tgs_authtime,
-				     krb5_data *pac)
+krb5_error_code samba_kdc_get_pac(void *priv,
+				  krb5_context context, 
+				  struct hdb_entry_ex *client,
+				  krb5_pac *pac)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
-	DATA_BLOB tmp_blob;
+	struct hdb_ldb_private *private = talloc_get_type(client->ctx, struct hdb_ldb_private);
 	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
+	unsigned int userAccountControl;
 
 	if (!mem_ctx) {
 		return ENOMEM;
+	}
+
+	/* The user account may be set not to want the PAC */
+	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
+	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
+		*pac = NULL;
+		return 0;
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, private->samdb, 
@@ -65,270 +134,99 @@ static krb5_error_code samba_get_pac(krb5_context context,
 		return ENOMEM;
 	}
 
-	ret = kerberos_create_pac(mem_ctx, server_info, 
-				  context, 
-				  krbtgt_keyblock,
-				  server_keyblock,
-				  client,
-				  tgs_authtime,
-				  &tmp_blob);
+	ret = make_pac(context, mem_ctx, server_info, pac);
 
-	if (ret) {
-		DEBUG(1, ("PAC encoding failed: %s\n", 
-			  smb_get_krb5_error_message(context, ret, mem_ctx)));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	ret = krb5_data_copy(pac, tmp_blob.data, tmp_blob.length);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
-/* Wrap the PAC in the right ASN.1.  Will always free 'pac', on success or failure */
-static krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData **out) 
-{
-	krb5_error_code ret;
-
-	unsigned char *buf;
-	size_t buf_size;
-	size_t len;
-	
-	AD_IF_RELEVANT if_relevant;
-	AuthorizationData *auth_data;
-
-	if_relevant.len = 1;
-	if_relevant.val = malloc(sizeof(*if_relevant.val));
-	if (!if_relevant.val) {
-		krb5_data_free(pac);
-		*out = NULL;
-		return ENOMEM;
-	}
-
-	if_relevant.val[0].ad_type = KRB5_AUTHDATA_WIN2K_PAC;
-	if_relevant.val[0].ad_data.data = NULL;
-	if_relevant.val[0].ad_data.length = 0;
-	
-	/* pac.data will be freed with this */
-	if_relevant.val[0].ad_data.data = pac->data;
-	if_relevant.val[0].ad_data.length = pac->length;
-	
-	ASN1_MALLOC_ENCODE(AuthorizationData, buf, buf_size, &if_relevant, &len, ret);
-	free_AuthorizationData(&if_relevant);
-	if (ret) {
-		*out = NULL;
-		return ret;
-	}		
-	
-	auth_data = malloc(sizeof(*auth_data));
-	if (!auth_data) {
-		free(buf);
-		*out = NULL;
-		return ret;
-	}		
-	auth_data->len = 1;
-	auth_data->val = malloc(sizeof(*auth_data->val));
-	if (!auth_data->val) {
-		free(buf);
-		free(auth_data);
-		*out = NULL;
-		return ret;
-	}
-	auth_data->val[0].ad_type = KRB5_AUTHDATA_IF_RELEVANT;
-	auth_data->val[0].ad_data.length = len;
-	auth_data->val[0].ad_data.data = buf;
-
-	*out = auth_data;
-	return 0;
-}
-
-
-/* Given a hdb_entry, create a PAC out of the private data 
-
-   Don't create it if the client has the UF_NO_AUTH_DATA_REQUIRED bit
-   set, or if they specificaly asked not to get it.
-*/
-
-krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
-					  METHOD_DATA* pa_data_seq,
-					  time_t authtime,
-					  const EncryptionKey *tgtkey,
-					  const EncryptionKey *sessionkey,
-					  AuthorizationData **out)
-{
-	krb5_error_code ret;
-	int i;
-	krb5_data pac;
-	krb5_boolean pac_wanted = TRUE;
-	unsigned int userAccountControl;
-	struct PA_PAC_REQUEST pac_request;
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
-	
-	/* The user account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
-	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
-		*out = NULL;
-		return 0;
-	}
-
-	/* The user may not want a PAC */
-	for (i=0; i<pa_data_seq->len; i++) {
-		if (pa_data_seq->val[i].padata_type == KRB5_PADATA_PA_PAC_REQUEST) {
-			ret = decode_PA_PAC_REQUEST(pa_data_seq->val[i].padata_value.data, 
-						    pa_data_seq->val[i].padata_value.length, 
-						    &pac_request, NULL);
-			if (ret == 0) {
-				pac_wanted = !!pac_request.include_pac;
-			}
-			free_PA_PAC_REQUEST(&pac_request);
-			break;
-		}
-	}
-
-	if (!pac_wanted) {
-		*out = NULL;
-		return 0;
-	}	
-
-	/* Get PAC from Samba */
-	ret = samba_get_pac(context,
-			    private,
-			    entry_ex->entry.principal,
-			    tgtkey,
-			    tgtkey,
-			    authtime,
-			    &pac);
-
-	if (ret) {
-		*out = NULL;
-		return ret;
-	}
-	
-	return wrap_pac(context, &pac, out);
-}
-
 /* Resign (and reform, including possibly new groups) a PAC */
 
-krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
-					   krb5_principal client, 
-					   AuthorizationData *in, 
-					   time_t authtime,
-					   const EncryptionKey *tgtkey,
-					   const EncryptionKey *servicekey,
-					   const EncryptionKey *sessionkey,
-					   AuthorizationData **out)
+krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
+				const krb5_principal client_principal,
+				struct hdb_entry_ex *client,  
+				struct hdb_entry_ex *server, krb5_pac *pac)
 {
 	NTSTATUS nt_status;
 	krb5_error_code ret;
 
 	unsigned int userAccountControl;
 
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
-	krb5_data k5pac_in, k5pac_out;
-	DATA_BLOB pac_in, pac_out;
+	struct hdb_ldb_private *private = talloc_get_type(server->ctx, struct hdb_ldb_private);
+	krb5_data k5pac_in;
+	DATA_BLOB pac_in;
 
-	struct PAC_LOGON_INFO *logon_info;
+	struct PAC_LOGON_INFO_CTR logon_info;
 	union netr_Validation validation;
 	struct auth_serversupplied_info *server_info_out;
 
-	krb5_boolean found = FALSE;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
 	
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+
 	/* The service account may be set not to want the PAC */
 	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
-		*out = NULL;
+		*pac = NULL;
 		return 0;
 	}
 
-	ret = _krb5_find_type_in_ad(context, KRB5_AUTHDATA_WIN2K_PAC,
-				    &k5pac_in, &found, sessionkey, in);
-	if (ret || !found) {
-		*out = NULL;
-		return 0;
-	}
-
-	mem_ctx = talloc_new(private);
-	if (!mem_ctx) {
-		krb5_data_free(&k5pac_in);
-		*out = NULL;
-		return ENOMEM;
+	ret = krb5_pac_get_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &k5pac_in);
+	if (ret != 0) {
+		return ret;
 	}
 
 	pac_in = data_blob_talloc(mem_ctx, k5pac_in.data, k5pac_in.length);
 	krb5_data_free(&k5pac_in);
 	if (!pac_in.data) {
 		talloc_free(mem_ctx);
-		*out = NULL;
 		return ENOMEM;
 	}
 		
-	/* Parse the PAC again, for the logon info */
-	nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info,
-					    pac_in,
-					    context,
-					    tgtkey, 
-					    tgtkey, 
-					    client, authtime, 
-					    &ret);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("Failed to parse PAC in TGT: %s/%s\n", 
-			  nt_errstr(nt_status), error_message(ret)));
+	nt_status = ndr_pull_struct_blob(&pac_in, mem_ctx, &logon_info, 
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
+	if (!NT_STATUS_IS_OK(nt_status) || !logon_info.info) {
 		talloc_free(mem_ctx);
-		*out = NULL;
-		return ret;
+		DEBUG(0,("can't parse the PAC LOGON_INFO\n"));
+		return EINVAL;
 	}
 
 	/* Pull this right into the normal auth sysstem structures */
-	validation.sam3 = &logon_info->info3;
+	validation.sam3 = &logon_info.info->info3;
 	nt_status = make_server_info_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
 							 &server_info_out); 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		*out = NULL;
 		return ENOMEM;
 	}
 
-	/* And make a new PAC, possibly containing new groups */
-	ret = kerberos_create_pac(mem_ctx, 
-				  server_info_out,
-				  context,
-				  tgtkey,
-				  servicekey,
-				  client,
-				  authtime,
-				  &pac_out);
+	/* We will compleatly regenerate this pac */
+	krb5_pac_free(context, *pac);
 
-	if (ret != 0) {
-		talloc_free(mem_ctx);
-		*out = NULL;
-		return ret;
-	}
+	ret = make_pac(context, mem_ctx, server_info_out, pac);
 
-	ret = krb5_data_copy(&k5pac_out, pac_out.data, pac_out.length);
-	if (ret != 0) {
-		talloc_free(mem_ctx);
-		*out = NULL;
-		return ret;
-	}
-
-	return wrap_pac(context, &k5pac_out, out);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 /* Given an hdb entry (and in particular it's private member), consult
  * the account_ok routine in auth/auth_sam.c for consistancy */
 
-krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
-					    HostAddresses *addresses)
+
+krb5_error_code samba_kdc_check_client_access(void *priv, 
+					      krb5_context context, hdb_entry_ex *entry_ex, 
+					      KDC_REQ *req)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->ctx);
 	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	char *name, *workstation = NULL;
+	HostAddresses *addresses = req->req_body.addresses;
 	int i;
 
 	if (!tmp_ctx) {

@@ -30,7 +30,7 @@ interface krb5pac
 		samr_RidWithAttributeArray res_groups;
     	} PAC_LOGON_INFO;
 
-	typedef struct {
+	typedef [public] struct {
 		[value(0x00081001)] uint32 unknown1;
 		[value(0xCCCCCCCC)] uint32 unknown2;
 		[value(NDR_ROUND(ndr_size_PAC_LOGON_INFO(info, ndr->flags)+4,8))] uint32 _ndr_size;

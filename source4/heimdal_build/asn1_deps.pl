@@ -7,14 +7,15 @@ use File::Basename;
 
 my $file = shift;
 my $prefix = shift;
+my $dirname = shift;
 my $options = join(' ', @ARGV);
 my $x_file;
 my @x_files = ();
 my $c_file;
 my @c_files = ();
-if (not defined ($prefix)) { $prefix = "asn1"; }
+my $o_file;
+my @o_files = ();
 
-$dirname = dirname($file);
 $basename = basename($file);
 if (not defined $options) {
     $options = "";
@@ -24,23 +25,34 @@ my $header = "$dirname/$prefix.h";
 
 print "$header: $file bin/asn1_compile\n";
 print "\t\@echo \"Compiling ASN1 file $file\"\n";
-print "\t\@startdir=`pwd` && cd $dirname && " . ' $$startdir/bin/asn1_compile ' . "$options $basename $prefix\n\n";
+print "\t\@startdir=`pwd` && cd $dirname && " . ' $$startdir/bin/asn1_compile ' . " $options " . '$$startdir/' . "$file $prefix\n\n";
 
 open(IN,$file) or die("Can't open $file: $!");
 foreach(<IN>) {
-	if (/^([A-Za-z0-9_-]+)[ \t]*::= /) {
+	if (/^([\w]+[\w\-]+)(\s+OBJECT IDENTIFIER)?\s*::=/) {
 		my $output = $1;
 		$output =~ s/-/_/g;
 		$c_file = "$dirname/asn1_$output.c";
 		$x_file = "$dirname/asn1_$output.x";
+		$o_file = "$dirname/asn1_$output.o";
 		print "$x_file: $header\n";
 		print "$c_file: $dirname/asn1_$output.x\n";
 		print "\t\@cp $x_file $c_file\n\n";
 		push @x_files, $x_file;
 		push @c_files, $c_file;
+		push @o_files, $o_file;
 	}
 }
 close(IN);
+
+print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
+print "CFLAGS = -Iheimdal_build -I$dirname\n";
+print "OBJ_FILES = ";
+foreach $o_file (@o_files) {
+    print "\\\n\t$o_file ";
+}
+print "\nPRIVATE_DEPENDENCIES = HEIMDAL_ASN1\n\n";
+
 print "clean:: \n";
 print "\t\@echo \"Deleting ASN1 output files generated from $file\"";
 print "\n\t\@rm -f $header";
