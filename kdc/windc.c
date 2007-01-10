@@ -91,7 +91,7 @@ _kdc_pac_verify(krb5_context context,
 		krb5_pac *pac)
 {
     if (windcft == NULL) {
-	krb5_set_error_string(context, "Can't verify WINDC, no function");
+	krb5_set_error_string(context, "Can't verify PAC, no function");
 	return EINVAL;
     }
     return (windcft->pac_verify)(windcctx, context, 
