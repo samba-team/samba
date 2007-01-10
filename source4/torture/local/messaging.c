@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 #include "torture/torture.h"
+#include "cluster/cluster.h"
 
 
 static uint32_t msg_pong;
