@@ -1028,6 +1028,39 @@ static bool test_autofree(void)
 	return true;
 }
 
+static bool test_incref(void)
+{
+	void *top = talloc_new(NULL);
+	char *a = talloc_strdup(top, "/");
+	char *b = talloc_strdup(a,"/b");
+	char *c = talloc_strdup(b,"/b/a");
+	
+	// Make a have some more children
+	talloc_strdup(a,"/c");
+	talloc_strdup(a,"/d");
+	talloc_strdup(a,"/e");
+	
+	// Now b has some more other children.
+	talloc_strdup(b,"/b/b");
+	
+	//Now we incref c presumably because we want to keep it valid:
+	talloc_increase_ref_count(c);
+	
+	// I am freeing a here, but I expect c to still be valid because I have
+	// increased reference for it just above.
+	talloc_free(a);
+
+	talloc_report_full(NULL, stdout);
+	
+	// This is where talloc aborts, valgrind indicates a double free
+	talloc_free(c);
+
+	CHECK_BLOCKS("top", top, 1);
+	
+	return true;
+};
+
+
 struct torture_context;
 bool torture_local_talloc(struct torture_context *tctx)
 {
@@ -1044,6 +1077,7 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_ref4();
 	ret &= test_unlink1(); 
 	ret &= test_misc();
+	ret &= test_incref();
 	ret &= test_realloc();
 	ret &= test_realloc_child(); 
 	ret &= test_steal(); 

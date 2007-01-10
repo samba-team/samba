@@ -24,6 +24,7 @@
 #include "torture/util.h"
 #include "torture/torture.h"
 #include "system/filesys.h"
+#include "system/locale.h"
 #include "pstring.h"
 
 #include "torture/nbench/proto.h"
@@ -44,7 +45,6 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	pstring line;
 	char *cname;
 	FILE *f;
-	const char **params;
 	BOOL correct = True;
 
 	if (torture_nprocs == 1) {
@@ -64,9 +64,13 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 		return False;
 	}
 
+
 again:
+	nbio_time_reset();
+
 	while (fgets(line, sizeof(line)-1, f)) {
 		NTSTATUS status;
+		const char **params0, **params;
 
 		nbench_line_count++;
 
@@ -74,8 +78,15 @@ again:
 
 		all_string_sub(line,"client1", cname, sizeof(line));
 		
-		params = str_list_make_shell(NULL, line, " ");
+		params = params0 = str_list_make_shell(NULL, line, " ");
 		i = str_list_length(params);
+
+		if (i > 0 && isdigit(params[0][0])) {
+			double targett = strtod(params[0], NULL);
+			nbio_time_delay(targett);
+			params++;
+			i--;
+		}
 
 		if (i < 2 || params[0][0] == '#') continue;
 
@@ -146,7 +157,7 @@ again:
 			printf("[%d] Unknown operation %s\n", nbench_line_count, params[0]);
 		}
 
-		talloc_free(params);
+		talloc_free(params0);
 		
 		if (nb_tick()) goto done;
 	}
