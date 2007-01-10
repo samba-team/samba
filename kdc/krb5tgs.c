@@ -656,7 +656,7 @@ tgs_make_reply(krb5_context context,
 	       KDC_REQ_BODY *b, 
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt, 
-	       const EncryptionKey *ekey,
+	       const EncryptionKey *serverkey,
 	       const krb5_keyblock *sessionkey,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
@@ -883,7 +883,7 @@ tgs_make_reply(krb5_context context,
     ret = _kdc_encode_reply(context, config, 
 			    &rep, &et, &ek, et.key.keytype,
 			    kvno, 
-			    ekey, 0, &tgt->key, e_text, reply);
+			    serverkey, 0, &tgt->key, e_text, reply);
 out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
