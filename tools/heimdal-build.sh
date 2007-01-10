@@ -88,7 +88,7 @@ do
 		;;
 	--distcheck)
 		distcheck=yes
-		shift 2
+		shift
 		;;
 	--result-directory)
 		resultdir="$2"
