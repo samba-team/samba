@@ -1,5 +1,11 @@
 2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/ap-req.c: --verify-pac no means verify existance of PAC in
+	ticket, the signature checking is done by the kerberos library.
+
+	* kdc/check-digest.in: display messages.log and help that that
+	tells us what went wrong.
+
 	* plugin/windc.c: Update to validate function signature change.
 
 	* Makefile.am: Only traverse into plugin if there is shared
