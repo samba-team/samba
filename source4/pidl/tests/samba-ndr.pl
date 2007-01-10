@@ -31,12 +31,12 @@ my $fn = check_null_pointer({
 			},
 		]
 	}
-}, { bla => "r->in.bla" }, \&print_fn); 
+}, { bla => "r->in.bla" }, \&print_fn, "return;"); 
 
 
 test_warnings("", sub { $fn->("r->in.bla"); });
 
-is($output, "if (r->in.bla == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;");
+is($output, "if (r->in.bla == NULL) return;");
 
 # Test case 2: Simple ref pointer dereference
 
@@ -55,7 +55,7 @@ $fn = check_null_pointer({
 			},
 		]
 	}
-}, { bla => "r->in.bla" }, \&print_fn); 
+}, { bla => "r->in.bla" }, \&print_fn, undef); 
 
 test_warnings("", sub { $fn->("r->in.bla"); });
 
@@ -77,7 +77,7 @@ $fn = check_null_pointer({
 			},
 		]
 	}
-}, { bla => "r->in.bla" }, \&print_fn); 
+}, { bla => "r->in.bla" }, \&print_fn, undef); 
 
 test_warnings("nofile:1: too much dereferences for `bla'\n", 
 	          sub { $fn->("r->in.bla"); });
@@ -104,12 +104,12 @@ $fn = check_null_pointer({
 			},
 		]
 	}
-}, { bla => "r->in.bla" }, \&print_fn); 
+}, { bla => "r->in.bla" }, \&print_fn, "return;"); 
 
 test_warnings("",
 	          sub { $fn->("*r->in.bla"); });
 
-is($output, "if (*r->in.bla == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;");
+is($output, "if (*r->in.bla == NULL) return;");
 
 # Test case 5: Unknown variable
 
@@ -127,9 +127,9 @@ $fn = check_null_pointer({
 			},
 		]
 	}
-}, { }, \&print_fn); 
+}, { }, \&print_fn, "return;"); 
 
 test_warnings("nofile:2: unknown dereferenced expression `r->in.bla'\n",
 	          sub { $fn->("r->in.bla"); });
 
-is($output, "if (r->in.bla == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;");
+is($output, "if (r->in.bla == NULL) return;");
