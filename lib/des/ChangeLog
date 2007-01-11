@@ -1,5 +1,10 @@
-2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath/imath.c (s_udiv): Allocate one more for q, remove debug
+	printfs
+	
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* imath/imath.c (s_udiv): make a copy of a and b before we start
 	to make sure there is something un-tainted to print in cause of
 	failure. XXX remove this delta
