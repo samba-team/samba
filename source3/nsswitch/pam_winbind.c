@@ -420,6 +420,11 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winb
 		return;
 	}
 
+	/* no point in sending a warning if this is a grace logon */
+	if (PAM_WB_GRACE_LOGON(response->data.auth.info3.user_flgs)) {
+		return;
+	}
+
 	/* check if the info3 must change timestamp has been set */
 	next_change = response->data.auth.info3.pass_must_change_time;
 
@@ -586,6 +591,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	/* handle the case where the auth was ok, but the password must expire right now */
 	/* good catch from Ralf Haferkamp: an expiry of "never" is translated to -1 */
 	if ( ! (response.data.auth.info3.acct_flags & ACB_PWNOEXP) &&
+	     ! (PAM_WB_GRACE_LOGON(response.data.auth.info3.user_flgs)) &&
 	    (response.data.auth.policy.expire > 0) && 
 	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire < time(NULL))) {
 
@@ -604,9 +610,20 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	/* warn a user if the password is about to expire soon */
 	_pam_warn_password_expires_in_future(pamh, &response);
 
-	if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
-		_make_remark(pamh, PAM_ERROR_MSG, "Logging on using cached account. Network ressources can be unavailable");
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"User %s logged on using cached account\n", user);
+	/* inform about logon type */
+	if (PAM_WB_GRACE_LOGON(response.data.auth.info3.user_flgs)) {
+
+		_make_remark(pamh, PAM_ERROR_MSG, 
+			"Grace login. Please change your password as soon you're online again");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+			"User %s logged on using grace logon\n", user);
+
+	} else if (PAM_WB_CACHED_LOGON(response.data.auth.info3.user_flgs)) {
+
+		_make_remark(pamh, PAM_ERROR_MSG, 
+			"Logging on using cached account. Network ressources can be unavailable");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+			"User %s logged on using cached account\n", user);
 	}
 
 	/* save the CIFS homedir for pam_cifs / pam_mount */
