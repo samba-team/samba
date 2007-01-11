@@ -1,5 +1,31 @@
-2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: remove files created by tests
+
+	* error.c: constify
+
+	* name.c: constify
+
+	* revoke.c: constify
+
+	* hx_locl.h: constify
+
+	* keyset.c: constify
+
+	* ks_p11.c: constify
+
+	* hx_locl.h: make printinfo char * argument const.
+
+	* cms.c: move _hx509_set_digest_alg from cms.c to crypto.c since
+	its only used there.
+
+	* crypto.c: remove no longer used stuff, move set_digest_alg here
+	from cms.c since its only used here.
+
+	* Makefile.am: add data/test-nopw.p12 to EXTRA_DIST
+	
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* print.c: BasicConstraints vs criticality bit is complicated and
 	not really possible to evaluate on its own, silly RFC3280.
 
