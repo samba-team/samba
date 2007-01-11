@@ -57,4 +57,5 @@ EXTRA_DIST = \
 	check-gssmask.in \
 	check-spnego.in \
 	check-context.in \
+	ntlm-user-file.txt \
 	krb5.conf.in
