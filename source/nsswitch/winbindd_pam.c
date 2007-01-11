@@ -826,26 +826,12 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 		must_change_time = nt_time_to_unix(my_info3->pass_must_change_time);
 		if (must_change_time != 0 && must_change_time < time(NULL)) {
-			return NT_STATUS_PASSWORD_EXPIRED;
+			/* we allow grace logons when the password has expired */
+			my_info3->user_flgs |= LOGON_GRACE_LOGON;
+			/* return NT_STATUS_PASSWORD_EXPIRED; */
+			goto success;
 		}
 	
-		/* FIXME: we possibly should handle logon hours as well (does xp when
-		 * offline?) see auth/auth_sam.c:sam_account_ok for details */
-
-		unix_to_nt_time(&my_info3->logon_time, time(NULL));
-		my_info3->bad_pw_count = 0;
-
-		result = winbindd_update_creds_by_info3(domain,
-							state->mem_ctx,
-							state->request.data.auth.user,
-							state->request.data.auth.pass,
-							my_info3);
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(1,("winbindd_dual_pam_auth_cached: failed to update creds: %s\n",
-				nt_errstr(result)));
-			return result;
-		}
-
 #ifdef HAVE_KRB5
 		/* FIXME: what else points out that the remote domain is AD ? */
 		if (!strequal(domain->name, domain->alt_name) &&
@@ -909,6 +895,24 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			}
 		}
 #endif /* HAVE_KRB5 */
+ success:
+		/* FIXME: we possibly should handle logon hours as well (does xp when
+		 * offline?) see auth/auth_sam.c:sam_account_ok for details */
+
+		unix_to_nt_time(&my_info3->logon_time, time(NULL));
+		my_info3->bad_pw_count = 0;
+
+		result = winbindd_update_creds_by_info3(domain,
+							state->mem_ctx,
+							state->request.data.auth.user,
+							state->request.data.auth.pass,
+							my_info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(1,("winbindd_dual_pam_auth_cached: failed to update creds: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+
 		return NT_STATUS_OK;
 
 	}

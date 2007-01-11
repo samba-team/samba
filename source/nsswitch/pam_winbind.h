@@ -164,4 +164,7 @@ do {                             \
 
 /* from include/rpc_netlogon.h */
 #define LOGON_CACHED_ACCOUNT		0x00000004
+#define LOGON_GRACE_LOGON		0x01000000
 
+#define PAM_WB_CACHED_LOGON(x) (x & LOGON_CACHED_ACCOUNT)
+#define PAM_WB_GRACE_LOGON(x)  ((LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON) == ( x & (LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON)))
