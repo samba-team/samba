@@ -336,12 +336,32 @@ evaluates the policy.
 @node Creating a CA certificate, Issuing a server certificate, Setting up a CA, Top
 @section Creating a CA certificate
 
+Creating a CA certificate should be more the just creating a
+certificate, there is the policy of the CA. If its just you and your
+friend that is playing around then it probably doesn't matter what the
+policy is. But then it comes to trust in an organisation, it will
+probably matter more whom your users and sysadmins will trust.
+
+At the same time, try to keep thing simple, its not very hard to run a
+Certificate authority and the process to get new certificates should
+simple.
+
+You probably want to create a certificate with a long lifetime, 10 years
+at the shortest. This because you dont want to push out the certificate
+(as a trust anchor) to all you users once more. A trust anchor can't
+expire, but not all software works that way.
+
+Keep in mind the security requirements that will case. For example,
+SHA1 is going to be withdrawn in 2010, so make sure you have enough
+buffering in your choice of digest/hash algorithms and signature
+algorithms.
+
 @example
 hxtool issue-certificate \
     --self-signed \
     --issue-ca \
     --generate-key=rsa \
-    --subject="CN=CA,DC=test,DC=h5l,DC=se" \
+    --subject="CN=CertificateAuthority,DC=test,DC=h5l,DC=se" \
     --lifetime=10years \
     --certificate="FILE:ca.pem"
 @end example
@@ -378,7 +398,7 @@ hxtool issue-certificate \
 
 CMS is the Cryptographic Message System that among other, is used by
 S/MIME (secure email) and Kerberos PK-INIT. Its an extended version of
-the RSA standard PKCS7.
+the RSA, Inc standard PKCS7.
 
 @node CMS background, , CMS signing and encryption, Top
 @section CMS background
