@@ -40,6 +40,9 @@ hxtool="${TESTS_ENVIRONMENT} ./hxtool"
 if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
+if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
+    exit 77
+fi
 
 echo "cert -> root"
 ${hxtool} verify --missing-revoke \

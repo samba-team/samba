@@ -68,6 +68,10 @@ pkinit=no
 if ${hxtool} info | grep 'rsa: hx509 null RSA' > /dev/null ; then
     rsa=no
 fi
+if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
+    rsa=no
+fi
+
 if ${kinit} --help 2>&1 | grep "CA certificates" > /dev/null; then
     pkinit=yes
 fi

@@ -1,5 +1,9 @@
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* no random, no RSA/DH tests
+
+	* hxtool.c (info): print status of random generator
+
 	* Makefile.am: remove files created by tests
 
 	* error.c: constify
