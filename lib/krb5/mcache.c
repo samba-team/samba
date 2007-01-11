@@ -54,8 +54,6 @@ static struct krb5_mcache *mcc_head;
 
 #define MISDEAD(X)	((X)->dead)
 
-#define MCC_CURSOR(C) ((struct link*)(C))
-
 static const char*
 mcc_get_name(krb5_context context,
 	     krb5_ccache id)
