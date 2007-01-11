@@ -30,6 +30,7 @@ struct drsuapi_DsReplicaOIDMapping_Ctr;
 struct drsuapi_DsReplicaAttribute;
 struct drsuapi_DsGetNCChangesCtr1;
 struct drsuapi_DsGetNCChangesCtr6;
+struct replPropertyMetaDataBlob;
 struct ldb_dn;
 struct ldb_message;
 
@@ -41,6 +42,8 @@ struct dsdb_control_replicated_object {
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
+	struct ldb_val guid_value;
+	struct replPropertyMetaDataBlob *meta_data;
 };
 
 struct dsdb_extended_replicated_objects {

@@ -39,9 +39,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	WERROR status;
 	uint32_t i;
 	struct ldb_message *msg;
-	struct replPropertyMetaDataBlob md;
-	struct ldb_val md_value;
-	struct drsuapi_DsReplicaObjMetaDataCtr mdc;
+	struct replPropertyMetaDataBlob *md;
 	struct ldb_val guid_value;
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
@@ -53,7 +51,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	struct drsuapi_DsReplicaAttribute *name_a;
 	struct drsuapi_DsReplicaMetaData *name_d;
 	struct replPropertyMetaData1 *rdn_m;
-	struct drsuapi_DsReplicaObjMetaData *rdn_mc;
 	int ret;
 
 	if (!in->object.identifier) {
@@ -98,32 +95,26 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	md.version		= 1;
-	md.reserved		= 0;
-	md.ctr.ctr1.count	= in->meta_data_ctr->count;
-	md.ctr.ctr1.reserved	= 0;
-	md.ctr.ctr1.array	= talloc_array(mem_ctx,
-					       struct replPropertyMetaData1,
-					       md.ctr.ctr1.count + 1);
-	W_ERROR_HAVE_NO_MEMORY(md.ctr.ctr1.array);
+	md = talloc(mem_ctx, struct replPropertyMetaDataBlob);
+	W_ERROR_HAVE_NO_MEMORY(md);
 
-	mdc.count	= in->meta_data_ctr->count;
-	mdc.reserved	= 0;
-	mdc.array	= talloc_array(mem_ctx,
-				       struct drsuapi_DsReplicaObjMetaData,
-				       mdc.count + 1);
-	W_ERROR_HAVE_NO_MEMORY(mdc.array);
+	md->version		= 1;
+	md->reserved		= 0;
+	md->ctr.ctr1.count	= in->meta_data_ctr->count;
+	md->ctr.ctr1.reserved	= 0;
+	md->ctr.ctr1.array	= talloc_array(mem_ctx,
+					       struct replPropertyMetaData1,
+					       md->ctr.ctr1.count + 1); /* +1 because of the RDN attribute */
+	W_ERROR_HAVE_NO_MEMORY(md->ctr.ctr1.array);
 
 	for (i=0; i < in->meta_data_ctr->count; i++) {
 		struct drsuapi_DsReplicaAttribute *a;
 		struct drsuapi_DsReplicaMetaData *d;
 		struct replPropertyMetaData1 *m;
-		struct drsuapi_DsReplicaObjMetaData *mc;
 
 		a = &in->object.attribute_ctr.attributes[i];
 		d = &in->meta_data_ctr->meta_data[i];
-		m = &md.ctr.ctr1.array[i];
-		mc = &mdc.array[i];
+		m = &md->ctr.ctr1.array[i];
 
 		m->attid			= a->attid;
 		m->version			= d->version;
@@ -132,13 +123,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		m->orginating_usn		= d->orginating_usn;
 		m->local_usn			= 0;
 
-		mc->attribute_name		= dsdb_lDAPDisplayName_by_id(schema, a->attid);
-		mc->version			= d->version;
-		mc->originating_last_changed	= d->orginating_time;
-		mc->originating_dsa_invocation_id= d->orginating_invocation_id;
-		mc->originating_usn		= d->orginating_usn;
-		mc->local_usn			= 0;
-
 		if (d->orginating_time > whenChanged) {
 			whenChanged = d->orginating_time;
 		}
@@ -146,8 +130,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		if (a->attid == DRSUAPI_ATTRIBUTE_name) {
 			name_a = a;
 			name_d = d;
-			rdn_m = &md.ctr.ctr1.array[md.ctr.ctr1.count];
-			rdn_mc = &mdc.array[mdc.count];
+			rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];
 		}
 	}
 
@@ -184,36 +167,11 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
 	rdn_m->orginating_usn			= name_d->orginating_usn;
 	rdn_m->local_usn			= 0;
-	md.ctr.ctr1.count++;
+	md->ctr.ctr1.count++;
 
-	rdn_mc->attribute_name			= rdn_attr->lDAPDisplayName;
-	rdn_mc->version				= name_d->version;
-	rdn_mc->originating_last_changed	= name_d->orginating_time;
-	rdn_mc->originating_dsa_invocation_id	= name_d->orginating_invocation_id;
-	rdn_mc->originating_usn			= name_d->orginating_usn;
-	rdn_mc->local_usn			= 0;
-	mdc.count++;
-
-	nt_status = ndr_push_struct_blob(&md_value, msg, &md,
-					 (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ntstatus_to_werror(nt_status);
-	}
-	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &md_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
-		struct ldb_ldif ldif;
-		fprintf(stdout, "#\n");
-		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = msg;
-		ldb_ldif_write_file(ldb, stdout, &ldif);
-		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjMetaDataCtr, &mdc);
-	}
-
-	out->msg = msg;
+	out->msg	= msg;
+	out->guid_value	= guid_value;
+	out->meta_data	= md;
 	return WERR_OK;
 }
 
