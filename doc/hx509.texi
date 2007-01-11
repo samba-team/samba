@@ -1,0 +1,337 @@
+\input texinfo @c -*- texinfo -*-
+@c %**start of header
+@c $Id$
+@setfilename hx509.info
+@settitle HX509
+@iftex
+@afourpaper
+@end iftex
+@c some sensible characters, please?
+@tex
+\input latin1.tex
+@end tex
+@setchapternewpage on
+@syncodeindex pg cp
+@c %**end of header
+
+@c @include version.texi
+@set UPDATED $Date$
+@set EDITION 0.1
+@set VERSION 0.8
+
+@ifinfo
+@dircategory Security
+@direntry
+* hx509: (hx509).           The X.509 distribution from KTH
+@end direntry
+@end ifinfo
+
+@c title page
+@titlepage
+@title HX509
+@subtitle X.509 distribution from KTH
+@subtitle Edition @value{EDITION}, for version @value{VERSION}
+@subtitle 2007
+@author Love Hörnquist Åstrand
+@author last updated @value{UPDATED}
+
+@def@copynext{@vskip 20pt plus 1fil@penalty-1000}
+@def@copyrightstart{}
+@def@copyrightend{}
+@page
+@copyrightstart
+Copyright (c) 1994-2007 Kungliga Tekniska Högskolan
+(Royal Institute of Technology, Stockholm, Sweden).
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the Institute nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+@copynext
+
+Copyright (C) 1990 by the Massachusetts Institute of Technology
+
+Export of this software from the United States of America may
+require a specific license from the United States Government.
+It is the responsibility of any person or organization contemplating
+export to obtain such a license before exporting.
+
+WITHIN THAT CONSTRAINT, permission to use, copy, modify, and
+distribute this software and its documentation for any purpose and
+without fee is hereby granted, provided that the above copyright
+notice appear in all copies and that both that copyright notice and
+this permission notice appear in supporting documentation, and that
+the name of M.I.T. not be used in advertising or publicity pertaining
+to distribution of the software without specific, written prior
+permission.  M.I.T. makes no representations about the suitability of
+this software for any purpose.  It is provided "as is" without express
+or implied warranty.
+
+@copynext
+
+Copyright (c) 1988, 1990, 1993
+     The Regents of the University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+@copynext
+
+Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved.
+
+This software is not subject to any license of the American Telephone
+and Telegraph Company or of the Regents of the University of California.
+
+Permission is granted to anyone to use this software for any purpose on
+any computer system, and to alter it and redistribute it freely, subject
+to the following restrictions:
+
+1. The authors are not responsible for the consequences of use of this
+   software, no matter how awful, even if they arise from flaws in it.
+
+2. The origin of this software must not be misrepresented, either by
+   explicit claim or by omission.  Since few users ever read sources,
+   credits must appear in the documentation.
+
+3. Altered versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.  Since few users
+   ever read sources, credits must appear in the documentation.
+
+4. This notice may not be removed or altered.
+
+@copynext
+
+IMath is Copyright 2002-2005 Michael J. Fromberger
+You may use it subject to the following Licensing Terms:
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+@copynext
+
+Copyright (c) 2005 Doug Rabson
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+@copyrightend
+@end titlepage
+
+@macro manpage{man, section}
+@cite{\man\(\section\)}
+@end macro
+
+@c Less filling! Tastes great!
+@iftex
+@parindent=0pt
+@global@parskip 6pt plus 1pt
+@global@chapheadingskip = 15pt plus 4pt minus 2pt
+@global@secheadingskip = 12pt plus 3pt minus 2pt
+@global@subsecheadingskip = 9pt plus 2pt minus 2pt
+@end iftex
+@ifinfo
+@paragraphindent 0
+@end ifinfo
+
+@ifnottex
+@node Top, Introduction, (dir), (dir)
+@top Heimdal
+@end ifnottex
+
+This manual is last updated @value{UPDATED} for version
+@value{VERSION} of hx509.
+
+@menu
+* Introduction::
+* What is X.509 ?::
+* Setting up a CA::
+* CMS signing and encryption::
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Setting up a CA
+
+* Creating a CA certificate::
+@c * Issuing certificates::
+@c * Issuing a https server certificate::
+@c * Issuing a user certificate::
+@c * Issuing a proxy certificate::
+@c * Creating a user certificate::
+@c * Validating a certifiate::
+@c * Validating a certifiate path::
+
+CMS signing and encryption
+
+* CMS background::
+
+@end detailmenu
+@end menu
+
+@node Introduction, What is X.509 ?, Top, Top
+@chapter Introduction
+
+hx509 is a somewhat complete X.509 stack
+
+@node What is X.509 ?, Setting up a CA, Introduction, Top
+@chapter What is X.509, PKIX, PKCS7 and CMS ? 
+
+X.509 is from the begining created by CCITT (later ITU) for the X.500
+directory service. But today when people are talking about X.509 they
+are commonly referring to IETF's PKIX Certificate and CRL Profile of the
+X.509 v3 certificate standard, as specified in RFC 3280.
+
+ITU continues to develop the X.509 standard together in a complicated
+dance with IETF.
+
+X.509 is public key based security system that have associated data
+stored within a so called certificate. From the begning X.509 was a
+strict hierarchical system with one root. This didn't not work so over
+time X.509 got support for multiple policy roots, bridges, and mesh
+solutions. You can even use it as a peer to peer system, but this is not
+very common.
+
+@section Type of certificates
+
+There are several flavors of certificate in X.509.
+
+@itemize @bullet
+
+@item Trust anchors
+
+Trust anchors are strictly not certificate, but commonly stored in
+certificate since they ar easier to handle then. Trust anchor are the
+keys that you trust to validate other certificate. This is done by
+building a path from the certificate you wan to validate to to any of
+the trust anchors you have.
+
+@item End Entity (EE) certificates
+
+End entity certificates is the most common type of certificate. End
+entity certificates can't issue certificate them-self and is used to
+authenticate and authorize user and services.
+
+@item Certification Authority (CA) certificates
+
+Certificate authority are certificates that have the right to issue
+other certificate, they may be End entity certificates or Certificate
+Authority certificates. There is no limit to how many certificates a CA
+may issue, but there might other restrictions, like the maximum path
+deepth.
+
+@item Proxy certificates
+
+Remember that End Entity can't issue certificates by them own, its not
+really true. There there is an extension called proxy certificates,
+defined in RFC3820, that allows certificates to be issued by end entity
+certificates. The service that receives the proxy certificates must have
+explicitly turned on support for proxy certificates, so their use is
+somewhat limited.
+
+@end itemize
+
+@section Building a path
+
+The certificate tell who issued the certificate, by name or Key
+Identifier.
+
+@node Setting up a CA, Creating a CA certificate, What is X.509 ?, Top
+@chapter Setting up a CA
+
+@node Creating a CA certificate, CMS signing and encryption, Setting up a CA, Top
+@section Creating a CA certificate
+
+@node CMS signing and encryption, CMS background, Creating a CA certificate, Top
+@chapter CMS signing and encryption
+
+@node CMS background, , CMS signing and encryption, Top
+@section CMS background
+
+
+@c @shortcontents
+@contents
+
+@bye
