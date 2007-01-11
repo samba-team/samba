@@ -144,14 +144,9 @@ interface drsblobs {
 		[in] partialAttributeSetBlob blob
 		);
 
-	typedef struct {
-		hyper h4;
-		replUpToDateVectorCtr1 uptodateness_vector;
-	} ldapControlDirSyncExtraData;
-
 	typedef [nodiscriminant,gensize] union {
 		[case(0)];
-		[default] ldapControlDirSyncExtraData data;
+		[default] replUpToDateVectorBlob uptodateness_vector;
 	} ldapControlDirSyncExtra;
 
 	typedef struct {
@@ -159,7 +154,7 @@ interface drsblobs {
 		NTTIME time;
 		uint32 u2;
 		uint32 u3;
-		[value(ndr_size_ldapControlDirSyncExtra(&extra, extra.data.uptodateness_vector.count, 0))] 
+		[value(ndr_size_ldapControlDirSyncExtra(&extra, extra.uptodateness_vector.version, 0))] 
 			uint32 extra_length;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID guid1;
