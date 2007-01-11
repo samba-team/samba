@@ -13,4 +13,4 @@ dn: @INDEXLIST
 @IDXATTR: subClassOf
 @IDXATTR: dnsRoot
 @IDXATTR: nETBIOSName
-
+@IDXATTR: objectGUID
