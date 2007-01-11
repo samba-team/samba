@@ -2998,7 +2998,7 @@ static mp_result s_udiv(mp_int a, mp_int b)
   k = s_norm(a, b);
 
   ua = MP_USED(a); ub = MP_USED(b); btop = b->digits[ub - 1];
-  if((res = mp_int_init_size(&q, ua)) != MP_OK) return res;
+  if((res = mp_int_init_size(&q, ua + 1)) != MP_OK) return res;
   if((res = mp_int_init_size(&t, ua + 1)) != MP_OK) goto CLEANUP;
 
   if((res = mp_int_init_copy(&ac, a)) != MP_OK) goto CLEANUP;
@@ -3013,16 +3013,7 @@ static mp_result s_udiv(mp_int a, mp_int b)
 
   /* Solve for quotient digits, store in q.digits in reverse order */
   while(r.digits >= da) {
-    if (qpos > q.alloc) {
-      char buf[1024];
-      printf("qpos = %d q.alloc = %d ua = %d\n",
-	     (int)qpos, (int)q.alloc, (int)ua);
-      mp_int_to_string(&ac, 10, buf, sizeof(buf));
-      printf("ac = %s\n", buf);
-      mp_int_to_string(&bc, 10, buf, sizeof(buf));
-      printf("bc = %s\n", buf);
-      assert(qpos <= q.alloc);
-    }	
+    assert(qpos <= q.alloc);
 
     if(s_ucmp(b, &r) > 0) {
       r.digits -= 1;
