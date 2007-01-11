@@ -1,5 +1,9 @@
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/hx509.texi: More about issuing certificates.
+
+	* doc/hx509.texi: Start of a x.509 manual.
+
 	* include/Makefile.am: remove install headerfiles
 
 	* lib/krb5/test_pac.c: Use more interesting data to cause more
