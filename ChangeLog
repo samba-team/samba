@@ -1,5 +1,10 @@
-2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/rd_safe.c (krb5_rd_safe): set length before trying to
+	allocate data
+	
+2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* doc/setup.texi: Hint about hxtool validate.
 
 	* appl/test/uu_server.c: print both "server" and "client"
