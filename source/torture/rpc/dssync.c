@@ -412,9 +412,9 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			array[i].level);
 
 		r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
-		r.in.level		= array[i].level;
+		r.in.level		= &array[i].level;
 
-		switch (r.in.level) {
+		switch (*r.in.level) {
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
@@ -487,13 +487,13 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 		for (y=0; ;y++) {
 			ZERO_STRUCT(r.out);
 
-			if (r.in.level == 5) {
+			if (*r.in.level == 5) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
 					(long long)r.in.req.req5.highwatermark.tmp_highest_usn,
 					(long long)r.in.req.req5.highwatermark.highest_usn));
 			}
 
-			if (r.in.level == 8) {
+			if (*r.in.level == 8) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
 					(long long)r.in.req.req8.highwatermark.tmp_highest_usn,
 					(long long)r.in.req.req8.highwatermark.highest_usn));
@@ -512,10 +512,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 				ret = False;
 			}
 
-			if (ret == True && r.out.level == 1) {
+			if (ret == True && *r.out.level == 1) {
 				out_level = 1;
 				ctr1 = &r.out.ctr.ctr1;
-			} else if (ret == True && r.out.level == 2) {
+			} else if (ret == True && *r.out.level == 2) {
 				out_level = 1;
 				ctr1 = r.out.ctr.ctr2.ctr.mszip1.ctr1;
 			}
@@ -533,10 +533,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 				}
 			}
 
-			if (ret == True && r.out.level == 6) {
+			if (ret == True && *r.out.level == 6) {
 				out_level = 6;
 				ctr6 = &r.out.ctr.ctr6;
-			} else if (ret == True && r.out.level == 7
+			} else if (ret == True && *r.out.level == 7
 				   && r.out.ctr.ctr7.level == 6
 				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
 				out_level = 6;
