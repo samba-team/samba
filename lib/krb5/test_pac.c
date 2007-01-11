@@ -216,7 +216,7 @@ main(int argc, char **argv)
 	krb5_err(context, 1, ret, "krb5_pac_init");
 
     {
-	const krb5_data cdata = { 2, "\x00\x00" } ;
+	const krb5_data cdata = { 2, "\x00\x01" } ;
 
 	ret = krb5_pac_add_buffer(context, pac, 1, &cdata);
 	if (ret)
@@ -226,7 +226,7 @@ main(int argc, char **argv)
 	ret = krb5_pac_get_buffer(context, pac, 1, &data);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_get_buffer");
-	if (data.length != 2 || memcmp(data.data, "\x00\x00", 2) != 0)
+	if (data.length != 2 || memcmp(data.data, "\x00\x01", 2) != 0)
 	    krb5_errx(context, 1, "krb5_pac_get_buffer data not the same");
 	krb5_data_free(&data);
     }
@@ -242,7 +242,7 @@ main(int argc, char **argv)
 	ret = krb5_pac_get_buffer(context, pac, 1, &data);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_get_buffer");
-	if (data.length != 2 || memcmp(data.data, "\x00\x00", 2) != 0)
+	if (data.length != 2 || memcmp(data.data, "\x00\x01", 2) != 0)
 	    krb5_errx(context, 1, "krb5_pac_get_buffer data not the same");
 	krb5_data_free(&data);
 	/* */
