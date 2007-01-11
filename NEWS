@@ -55,7 +55,7 @@ The 'security' parameter has been split up. It is now only used to choose
 between the 'user' and 'share' security levels (the latter is not supported 
 in Samba 4 yet). The other values of this option and the 'domain master' and 
 'domain logons' parameters have been merged into a 'server role' parameter 
-that can be either 'bdc', 'pdc', 'member server' or 'standalone'. Note that 
+that can be either 'domain controller', 'member server' or 'standalone'. Note that 
 member server support does not work yet.
 
 The following parameters have been removed:
