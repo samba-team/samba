@@ -884,38 +884,6 @@ out:
     return ret;
 }
 
-int
-_hx509_set_digest_alg(DigestAlgorithmIdentifier *id,
-		      const heim_oid *oid,
-		      void *param, size_t length)
-{
-    int ret;
-    if (param) {
-	id->parameters = malloc(sizeof(*id->parameters));
-	if (id->parameters == NULL)
-	    return ENOMEM;
-	id->parameters->data = malloc(length);
-	if (id->parameters->data == NULL) {
-	    free(id->parameters);
-	    id->parameters = NULL;
-	    return ENOMEM;
-	}
-	memcpy(id->parameters->data, param, length);
-	id->parameters->length = length;
-    } else
-	id->parameters = NULL;
-    ret = der_copy_oid(oid, &id->algorithm);
-    if (ret) {
-	if (id->parameters) {
-	    free(id->parameters->data);
-	    free(id->parameters);
-	    id->parameters = NULL;
-	}
-	return ret;
-    }
-    return 0;
-}
-
 static int
 add_one_attribute(Attribute **attr,
 		  unsigned int *len,
