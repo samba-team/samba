@@ -107,8 +107,6 @@ struct signature_alg {
 
 #define SIG_DIGEST	0x100
 #define SIG_PUBLIC_SIG	0x200
-#define SIG_PUBLIC_ENC	0x400
-#define SIG_SECRET	0x800
 
     int (*verify_signature)(hx509_context context,
 			    const struct signature_alg *,
@@ -123,9 +121,6 @@ struct signature_alg {
 			    const heim_octet_string *,
 			    AlgorithmIdentifier *,
 			    heim_octet_string *);
-    int (*private_key2SPKI)(hx509_context,
-			    hx509_private_key,
-			    SubjectPublicKeyInfo *);
 };
 
 /*
@@ -141,6 +136,46 @@ heim_int2BN(const heim_integer *i)
     BN_set_negative(bn, i->negative);
     return bn;
 }
+
+/*
+ *
+ */
+
+static int
+set_digest_alg(DigestAlgorithmIdentifier *id,
+	       const heim_oid *oid,
+	       const void *param, size_t length)
+{
+    int ret;
+    if (param) {
+	id->parameters = malloc(sizeof(*id->parameters));
+	if (id->parameters == NULL)
+	    return ENOMEM;
+	id->parameters->data = malloc(length);
+	if (id->parameters->data == NULL) {
+	    free(id->parameters);
+	    id->parameters = NULL;
+	    return ENOMEM;
+	}
+	memcpy(id->parameters->data, param, length);
+	id->parameters->length = length;
+    } else
+	id->parameters = NULL;
+    ret = der_copy_oid(oid, &id->algorithm);
+    if (ret) {
+	if (id->parameters) {
+	    free(id->parameters->data);
+	    free(id->parameters);
+	    id->parameters = NULL;
+	}
+	return ret;
+    }
+    return 0;
+}
+
+/*
+ *
+ */
 
 static int
 rsa_verify_signature(hx509_context context,
@@ -284,8 +319,7 @@ rsa_create_signature(hx509_context context,
 	return HX509_ALG_NOT_SUPP;
 
     if (signatureAlgorithm) {
-	ret = _hx509_set_digest_alg(signatureAlgorithm,
-				    sig_oid, "\x05\x00", 2);
+	ret = set_digest_alg(signatureAlgorithm, sig_oid, "\x05\x00", 2);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    return ret;
@@ -380,9 +414,8 @@ rsa_private_key2SPKI(hx509_context context,
     }
     spki->subjectPublicKey.length = len * 8;
 
-    ret = _hx509_set_digest_alg(&spki->algorithm,
-				oid_id_pkcs1_rsaEncryption(), 
-				"\x05\x00", 2);
+    ret = set_digest_alg(&spki->algorithm,oid_id_pkcs1_rsaEncryption(), 
+			 "\x05\x00", 2);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "malloc - out of memory");
 	free(spki->subjectPublicKey.data);
@@ -642,8 +675,8 @@ sha256_create_signature(hx509_context context,
 
     if (signatureAlgorithm) {
 	int ret;
-	ret = _hx509_set_digest_alg(signatureAlgorithm,
-				    (*sig_alg->sig_oid)(), "\x05\x00", 2);
+	ret = set_digest_alg(signatureAlgorithm, (*sig_alg->sig_oid)(),
+			     "\x05\x00", 2);
 	if (ret)
 	    return ret;
     }
@@ -708,8 +741,8 @@ sha1_create_signature(hx509_context context,
 
     if (signatureAlgorithm) {
 	int ret;
-	ret = _hx509_set_digest_alg(signatureAlgorithm,
-				    (*sig_alg->sig_oid)(), "\x05\x00", 2);
+	ret = set_digest_alg(signatureAlgorithm, (*sig_alg->sig_oid)(), 
+			     "\x05\x00", 2);
 	if (ret)
 	    return ret;
     }
@@ -789,7 +822,7 @@ md2_verify_signature(hx509_context context,
     return 0;
 }
 
-static struct signature_alg pkcs1_rsa_sha1_alg = {
+static const struct signature_alg pkcs1_rsa_sha1_alg = {
     "rsa",
     oid_id_pkcs1_rsaEncryption,
     hx509_signature_rsa_with_sha1,
@@ -797,11 +830,10 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
-    rsa_create_signature,
-    rsa_private_key2SPKI
+    rsa_create_signature
 };
 
-static struct signature_alg rsa_with_sha256_alg = {
+static const struct signature_alg rsa_with_sha256_alg = {
     "rsa-with-sha256",
     oid_id_pkcs1_sha256WithRSAEncryption,
     hx509_signature_rsa_with_sha256,
@@ -809,11 +841,10 @@ static struct signature_alg rsa_with_sha256_alg = {
     oid_id_sha256,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
-    rsa_create_signature,
-    rsa_private_key2SPKI
+    rsa_create_signature
 };
 
-static struct signature_alg rsa_with_sha1_alg = {
+static const struct signature_alg rsa_with_sha1_alg = {
     "rsa-with-sha1",
     oid_id_pkcs1_sha1WithRSAEncryption,
     hx509_signature_rsa_with_sha1,
@@ -821,11 +852,10 @@ static struct signature_alg rsa_with_sha1_alg = {
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
-    rsa_create_signature,
-    rsa_private_key2SPKI
+    rsa_create_signature
 };
 
-static struct signature_alg rsa_with_md5_alg = {
+static const struct signature_alg rsa_with_md5_alg = {
     "rsa-with-md5",
     oid_id_pkcs1_md5WithRSAEncryption,
     hx509_signature_rsa_with_md5,
@@ -833,11 +863,10 @@ static struct signature_alg rsa_with_md5_alg = {
     oid_id_rsa_digest_md5,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
-    rsa_create_signature,
-    rsa_private_key2SPKI
+    rsa_create_signature
 };
 
-static struct signature_alg rsa_with_md2_alg = {
+static const struct signature_alg rsa_with_md2_alg = {
     "rsa-with-md2",
     oid_id_pkcs1_md2WithRSAEncryption,
     hx509_signature_rsa_with_md2,
@@ -845,11 +874,10 @@ static struct signature_alg rsa_with_md2_alg = {
     oid_id_rsa_digest_md2,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
-    rsa_create_signature,
-    rsa_private_key2SPKI
+    rsa_create_signature
 };
 
-static struct signature_alg dsa_sha1_alg = {
+static const struct signature_alg dsa_sha1_alg = {
     "dsa-with-sha1",
     oid_id_dsa_with_sha1,
     NULL,
@@ -860,7 +888,7 @@ static struct signature_alg dsa_sha1_alg = {
     /* create_signature */ NULL,
 };
 
-static struct signature_alg sha256_alg = {
+static const struct signature_alg sha256_alg = {
     "sha-256",
     oid_id_sha256,
     hx509_signature_sha256,
@@ -871,7 +899,7 @@ static struct signature_alg sha256_alg = {
     sha256_create_signature
 };
 
-static struct signature_alg sha1_alg = {
+static const struct signature_alg sha1_alg = {
     "sha1",
     oid_id_secsig_sha_1,
     hx509_signature_sha1,
@@ -882,7 +910,7 @@ static struct signature_alg sha1_alg = {
     sha1_create_signature
 };
 
-static struct signature_alg md5_alg = {
+static const struct signature_alg md5_alg = {
     "rsa-md5",
     oid_id_rsa_digest_md5,
     hx509_signature_md5,
@@ -892,7 +920,7 @@ static struct signature_alg md5_alg = {
     md5_verify_signature
 };
 
-static struct signature_alg md2_alg = {
+static const struct signature_alg md2_alg = {
     "rsa-md2",
     oid_id_rsa_digest_md2,
     hx509_signature_md2,
@@ -907,7 +935,7 @@ static struct signature_alg md2_alg = {
  * compatible" type (type is RSA, DSA, none, etc)
  */
 
-static struct signature_alg *sig_algs[] = {
+static const struct signature_alg *sig_algs[] = {
     &rsa_with_sha256_alg,
     &rsa_with_sha1_alg,
     &pkcs1_rsa_sha1_alg,
