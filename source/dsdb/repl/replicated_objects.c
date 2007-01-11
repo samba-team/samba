@@ -178,36 +178,22 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       const char *partition_dn,
 					       const struct dsdb_schema *schema,
-					       uint32_t ctr_level,
-					       const struct drsuapi_DsGetNCChangesCtr1 *ctr1,
-					       const struct drsuapi_DsGetNCChangesCtr6 *ctr6,
+					       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+					       uint32_t object_count,
+					       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
+					       uint32_t linked_attributes_count,
+					       const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
+					       const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark,
+					       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
 					       TALLOC_CTX *mem_ctx,
 					       struct dsdb_extended_replicated_objects **_out)
 {
 	WERROR status;
 	struct dsdb_extended_replicated_objects *out;
 	struct ldb_result *ext_res;
-	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
-	uint32_t object_count;
-	struct drsuapi_DsReplicaObjectListItemEx *first_object;
-	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t i;
 	int ret;
-
-	switch (ctr_level) {
-	case 1:
-		mapping_ctr		= &ctr1->mapping_ctr;
-		object_count		= ctr1->object_count;
-		first_object		= ctr1->first_object;
-		break;
-	case 6:
-		mapping_ctr		= &ctr6->mapping_ctr;
-		object_count		= ctr6->object_count;
-		first_object		= ctr6->first_object;
-		break;
-	default:
-		return WERR_INVALID_PARAM;
-	}
 
 	status = dsdb_verify_oid_mappings(schema, mapping_ctr);
 	W_ERROR_NOT_OK_RETURN(status);
