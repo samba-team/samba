@@ -497,13 +497,9 @@ function upgrade_smbconf(oldconf,mark)
 	}
 
 	if (oldconf.get("domain logons") == "True") {
-		if (oldconf.get("domain master") == "True") {
-			newconf.set("server role", "pdc");
-		} else {
-			newconf.set("server role", "bdc");
-		}
+		newconf.set("server role", "domain controller");
 	} else {
-		if (oldconf.get("domain master") == "True") {
+		if (oldconf.get("security") == "user") {
 			newconf.set("server role", "standalone");
 		} else {
 			newconf.set("server role", "member server");
