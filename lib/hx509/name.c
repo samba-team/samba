@@ -41,7 +41,7 @@ RCSID("$Id$");
  */
 
 static const struct {
-    char *n;
+    const char *n;
     const heim_oid *(*o)(void);
 } no[] = {
     { "C", oid_id_at_countryName },
@@ -92,14 +92,15 @@ quote_string(const char *f, size_t len, size_t *rlen)
 
 
 static int
-append_string(char **str, size_t *total_len, char *ss, size_t len, int quote)
+append_string(char **str, size_t *total_len, const char *ss, 
+	      size_t len, int quote)
 {
     char *s, *qs;
 
     if (quote)
 	qs = quote_string(ss, len, &len);
     else
-	qs = ss;
+	qs = rk_UNCONST(ss);
 
     s = realloc(*str, len + *total_len + 1);
     if (s == NULL)
@@ -200,11 +201,25 @@ _hx509_Name_to_string(const Name *n, char **str)
 		break;
 	    }
 	    case choice_DirectoryString_teletexString:
-		ss = "teletex-string"; /* XXX */
+		ss = malloc(ds->u.teletexString.length + 1);
+		if (ss == NULL)
+		    _hx509_abort("allocation failure"); /* XXX */
+		memcpy(ss, ds->u.teletexString.data, ds->u.teletexString.length);
+		ss[ds->u.teletexString.length] = '\0';
 		break;
-	    case choice_DirectoryString_universalString:
-		ss = "universalString"; /* XXX */
+	    case choice_DirectoryString_universalString: {
+		uint32_t *uni = ds->u.universalString.data;
+		size_t unilen = ds->u.universalString.length;
+		size_t k;
+
+		ss = malloc(unilen + 1);
+		if (ss == NULL)
+		    _hx509_abort("allocation failure"); /* XXX */
+		for (k = 0; k < unilen; k++)
+		    ss[k] = uni[k] & 0xff; /* XXX */
+		ss[k] = '\0';
 		break;
+	    }
 	    default:
 		_hx509_abort("unknown directory type: %d", ds->element);
 		exit(1);
@@ -214,8 +229,12 @@ _hx509_Name_to_string(const Name *n, char **str)
 	    append_string(str, &total_len, "=", 1, 0);
 	    len = strlen(ss);
 	    append_string(str, &total_len, ss, len, 1);
-	    if (ds->element == choice_DirectoryString_bmpString)
+	    if (ds->element == choice_DirectoryString_universalString ||
+		ds->element == choice_DirectoryString_bmpString ||
+		ds->element == choice_DirectoryString_teletexString)
+	    {
 		free(ss);
+	    }
 	    if (j + 1 < n->u.rdnSequence.val[i].len)
 		append_string(str, &total_len, "+", 1, 0);
 	}

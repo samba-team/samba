@@ -922,7 +922,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
     fprintf(out, "replies: %d\n", ocsp.ocsp.tbsResponseData.responses.len);
 
     for (i = 0; i < ocsp.ocsp.tbsResponseData.responses.len; i++) {
-	char *status;
+	const char *status;
 	switch (ocsp.ocsp.tbsResponseData.responses.val[i].certStatus.element) {
 	case choice_OCSPCertStatus_good:
 	    status = "good";

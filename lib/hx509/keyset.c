@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -386,7 +386,7 @@ hx509_certs_info(hx509_context context,
 
 void
 _hx509_pi_printf(int (*func)(void *, const char *), void *ctx,
-		 char *fmt, ...)
+		 const char *fmt, ...)
 {
     va_list ap;
     char *str;

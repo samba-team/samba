@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,7 +87,8 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
 }
 
 void
-hx509_set_error_string(hx509_context context, int flags, int code, const char *fmt, ...)
+hx509_set_error_string(hx509_context context, int flags, int code,
+		       const char *fmt, ...)
 {
     va_list ap;
 
@@ -125,7 +126,8 @@ hx509_get_error_string(hx509_context context, int error_code)
 }
 
 void
-hx509_err(hx509_context context, int exit_code, int error_code, char *fmt, ...)
+hx509_err(hx509_context context, int exit_code, 
+	  int error_code, const char *fmt, ...)
 {
     va_list ap;
     const char *msg;
