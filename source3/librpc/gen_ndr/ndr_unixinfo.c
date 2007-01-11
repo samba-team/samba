@@ -363,7 +363,6 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 		NDR_PULL_ALLOC(ndr, r->out.count);
 		*r->out.count = *r->in.count;
 		if (r->in.uids) {
-			if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.uids, *r->in.count));
 		}
 	}
@@ -388,7 +387,6 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_infos_0, 0);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 		if (r->out.infos) {
-			if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.infos, *r->out.count));
 		}
 	}
