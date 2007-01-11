@@ -662,7 +662,7 @@ static void driver_unix_convert(char *name,connection_struct *conn,
 	unix_format(name);
 	unix_clean_name(name);
 	trim_string(name,"/","/");
-	unix_convert(name, conn, saved_last_component, pst);
+	unix_convert(conn, name, False, saved_last_component, pst);
 }
 
 /*******************************************************************

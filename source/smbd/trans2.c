@@ -800,7 +800,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1718,7 +1718,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	RESOLVE_DFSPATH_WCARD(directory, conn, inbuf, outbuf);
 
-	ntstatus = unix_convert(directory,conn,NULL,&sbuf);
+	ntstatus = unix_convert(conn, directory, mask_contains_wcard, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
@@ -2930,7 +2930,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-		status = unix_convert(fname,conn,NULL,&sbuf);
+		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -3676,14 +3676,9 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(oldname,conn,last_component_oldname,&sbuf1);
+	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	/* No wildcards. */
-	if (ms_has_wild(oldname)) {
-		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 	}
 
 	/* source must already exist. */
@@ -3695,14 +3690,9 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = unix_convert(newname,conn,last_component_newname,&sbuf2);
+	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	/* No wildcards. */
-	if (ms_has_wild(newname)) {
-		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 	}
 
 	/* Disallow if newname already exists. */
@@ -3822,7 +3812,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
-		status = unix_convert(fname,conn,NULL,&sbuf);
+		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -4791,7 +4781,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	status = unix_convert(directory,conn,NULL,&sbuf);
+	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}

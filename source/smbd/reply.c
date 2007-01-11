@@ -44,15 +44,18 @@ extern BOOL global_encrypted_passwords_negotiated;
  set.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_internal(pstring destname, const pstring srcname, BOOL windows_path, BOOL *p_contains_wcard)
+NTSTATUS check_path_syntax_internal(pstring destname,
+					const pstring srcname,
+					BOOL windows_path, BOOL
+					*p_last_component_contains_wcard)
 {
 	char *d = destname;
 	const char *s = srcname;
 	NTSTATUS ret = NT_STATUS_OK;
 	BOOL start_of_name_component = True;
 
-	if (p_contains_wcard) {
-		*p_contains_wcard = False;
+	if (p_last_component_contains_wcard) {
+		*p_last_component_contains_wcard = False;
 	}
 
 	while (*s) {
@@ -70,6 +73,10 @@ NTSTATUS check_path_syntax_internal(pstring destname, const pstring srcname, BOO
 			}
 
 			start_of_name_component = True;
+			/* New component. */
+			if (p_last_component_contains_wcard) {
+				*p_last_component_contains_wcard = False;
+			}
 			continue;
 		}
 
@@ -125,10 +132,8 @@ NTSTATUS check_path_syntax_internal(pstring destname, const pstring srcname, BOO
 					case '<':
 					case '>':
 					case '"':
-						if (p_contains_wcard) {
-							*p_contains_wcard = True;
-						} else {
-							return NT_STATUS_OBJECT_NAME_INVALID;
+						if (p_last_component_contains_wcard) {
+							*p_last_component_contains_wcard = True;
 						}
 						break;
 					default:
@@ -181,7 +186,8 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
- Wildcards allowed.
+ Wildcards allowed - p_contains_wcard returns true if the last component contained
+ a wildcard.
 ****************************************************************************/
 
 NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *p_contains_wcard)
@@ -623,7 +629,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
-	status = unix_convert(name,conn,NULL,&sbuf);
+	status = unix_convert(conn, name, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBchkpth);
 		return ERROR_NT(status);
@@ -703,7 +709,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		mtime = 0;
 		ok = True;
 	} else {
-		status = unix_convert(fname,conn,NULL,&sbuf);
+		status = unix_convert(conn, fname, False, NULL,&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBgetatr);
 			return ERROR_NT(status);
@@ -773,7 +779,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsetatr);
 		return ERROR_NT(status);
@@ -939,7 +945,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 		pstrcpy(directory,path);
 		pstrcpy(dir2,path);
-		nt_status = unix_convert(directory,conn,NULL,&sbuf);
+		nt_status = unix_convert(conn, directory, mask_contains_wcard, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			END_PROFILE(SMBsearch);
 			return ERROR_NT(nt_status);
@@ -1178,7 +1184,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopen);
 		return ERROR_NT(status);
@@ -1296,7 +1302,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
 		return ERROR_NT(status);
@@ -1468,7 +1474,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		return ERROR_NT(status);
@@ -1558,7 +1564,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
 		return ERROR_NT(status);
@@ -1694,7 +1700,7 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype)
 
 	fattr = dos_mode(conn,fname,&sbuf);
 
-	if (dirtype == FILE_ATTRIBUTE_NORMAL) {
+	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
 		dirtype = aDIR|aARCH|aRONLY;
 	}
 
@@ -1797,7 +1803,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	
 	*directory = *mask = 0;
 	
-	status = unix_convert(name,conn,NULL,&sbuf);
+	status = unix_convert(conn, name, has_wild, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1841,7 +1847,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
-		if (((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) && ms_has_wild(mask)) {
+		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
@@ -3568,7 +3574,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
-	status = unix_convert(directory,conn,NULL,&sbuf);
+	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
@@ -3770,7 +3776,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
-	status = unix_convert(directory,conn, NULL,&sbuf);
+	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBrmdir);
 		return ERROR_NT(status);
@@ -3958,7 +3964,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 
 	ZERO_STRUCT(sbuf);
 
-	status = unix_convert(newname,conn,newname_last_component,&sbuf);
+	status = unix_convert(conn, newname, False, newname_last_component, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4082,12 +4088,12 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(name,conn,last_component_src,&sbuf1);
+	status = unix_convert(conn, name, has_wild, last_component_src, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = unix_convert(newname,conn,last_component_dest,&sbuf2);
+	status = unix_convert(conn, newname, True, last_component_dest, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4595,13 +4601,13 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
 	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
 
-	status = unix_convert(name,conn,NULL,&sbuf1);
+	status = unix_convert(conn, name, path_contains_wcard1, NULL, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
 	}
 
-	status = unix_convert(newname,conn,NULL,&sbuf2);
+	status = unix_convert(conn, newname, path_contains_wcard2, NULL, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);

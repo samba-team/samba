@@ -349,7 +349,7 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath,
 
 	DEBUG(10,("resolve_dfs_path: Conn path = %s req_path = %s\n", conn->connectpath, dp->reqpath));
 
-	status = unix_convert(dp->reqpath,conn,NULL,&sbuf);
+	status = unix_convert(conn, dp->reqpath, False, NULL, &sbuf);
 	/* Should we terminate on status != NT_STATUS_OK ???? */
 
 	/* JRA... should we strlower the last component here.... ? */

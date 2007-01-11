@@ -627,7 +627,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(conn, file_attributes);
 		
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
@@ -1254,7 +1254,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	status = unix_convert(fname,conn,NULL,&sbuf);
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
@@ -1572,15 +1572,10 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	/* No wildcards. */
-	if (ms_has_wild(newname) || ms_has_wild(oldname)) {
-		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-	}
-
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	status = unix_convert(oldname,conn,last_component_oldname,&sbuf1);
+	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1599,7 +1594,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	status = unix_convert(newname,conn,last_component_newname,&sbuf2);
+	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

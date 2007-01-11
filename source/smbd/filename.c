@@ -76,13 +76,18 @@ of the pathname is returned there. This is used in an exceptional
 case in reply_mv (so far). If saved_last_component == 0 then nothing
 is returned there.
 
+If last_component_wcard is true then a MS wildcard was detected and
+should be allowed in the last component of the path only.
+
 On exit from unix_convert, if *pst was not null, then the file stat
 struct will be returned if the file exists and was found, if not this
 stat struct will be filled with zeros (and this can be detected by checking
 for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
-NTSTATUS unix_convert(pstring name,connection_struct *conn,
+NTSTATUS unix_convert(connection_struct *conn,
+			pstring name,
+			BOOL allow_wcard_last_component,
 			char *saved_last_component, 
 			SMB_STRUCT_STAT *pst)
 {
@@ -255,23 +260,8 @@ NTSTATUS unix_convert(pstring name,connection_struct *conn,
 
 		if (ISDOT(start)) {
 			if (end) {
-				/* We're terminating here so we
-				 * can be a little slower and get
-				 * the error code right. Windows
-				 * treats the last part of the pathname
-				 * separately I think, so if the last
-				 * component is a wildcard then we treat
-				 * this ./ as "end of component" */
-
-				const char *p = strchr(end+1, '/');
-
-				if (!p && ms_has_wild(end+1)) {
-					/* Error code at the end of a pathname. */
-					return NT_STATUS_OBJECT_NAME_INVALID;
-				} else {
-					/* Error code within a pathname. */
-					return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				}
+				/* Error code within a pathname. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			} else {
 				/* Error code at the end of a pathname. */
 				return NT_STATUS_OBJECT_NAME_INVALID;
@@ -283,6 +273,12 @@ NTSTATUS unix_convert(pstring name,connection_struct *conn,
 
 		name_has_wildcard = ms_has_wild(start);
 
+		/* Wildcard not valid anywhere. */
+		if (name_has_wildcard && !allow_wcard_last_component) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+
+		/* Wildcards never valid within a pathname. */
 		if (name_has_wildcard && end) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
