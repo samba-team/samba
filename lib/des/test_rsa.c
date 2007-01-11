@@ -229,6 +229,9 @@ main(int argc, char **argv)
     
     printf("rsa %s\n", ENGINE_get_RSA(engine)->name);
 
+    if (RAND_status() != 1)
+	errx(77, "no functional random device, refusing to run tests");
+
     if (time_keygen) {
 	struct timeval tv1, tv2;
 	const int num = 10;

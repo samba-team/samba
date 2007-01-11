@@ -189,6 +189,9 @@ main(int argc, char **argv)
 	printf(" %s", ENGINE_get_DH(engine)->name);
     printf("\n");
 
+    if (RAND_status() != 1)
+	errx(77, "no functional random device, can't execute tests");
+
     if (rsa_flag && have_rsa) {
 	unsigned char buf[1024 * 4];
 	const unsigned char *p;
