@@ -256,6 +256,7 @@ EXTRA_DIST = \
 	data/kdc.crt \
 	data/kdc.key \
 	data/key.der \
+	data/key2.der \
 	data/nist-data \
 	data/no-proxy-test.crt \
 	data/no-proxy-test.key \
