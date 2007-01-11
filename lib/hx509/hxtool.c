@@ -1063,6 +1063,10 @@ info(void *opt, int argc, char **argv)
 	if (m != NULL)
 	    printf("dh: %s\n", m->name);
     }
+    {
+	int ret = RAND_status();
+	printf("rand: %s\n", ret == 1 ? "ok" : "not available");
+    }
 
     return 0;
 }
