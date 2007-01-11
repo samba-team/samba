@@ -252,12 +252,10 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 {
     krb5_error_code ret;
     void *ptr;
-    size_t len, offset, header_end;
+    size_t len, offset, header_end, old_end;
     uint32_t i;
 
-    len = p->pac->numbuffers + 1;
-    if (len < p->pac->numbuffers)
-	return EINVAL;
+    len = p->pac->numbuffers;
 
     ptr = realloc(p->pac,
 		  sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * len));
@@ -272,11 +270,12 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 
     offset = p->data.length + PAC_INFO_BUFFER_SIZE;
 
-    p->pac->buffers[len - 1].type = type;
-    p->pac->buffers[len - 1].buffersize = data->length;
-    p->pac->buffers[len - 1].offset_lo = offset;
-    p->pac->buffers[len - 1].offset_hi = 0;
+    p->pac->buffers[len].type = type;
+    p->pac->buffers[len].buffersize = data->length;
+    p->pac->buffers[len].offset_lo = offset;
+    p->pac->buffers[len].offset_hi = 0;
 
+    old_end = p->data.length;
     len = p->data.length + data->length + PAC_INFO_BUFFER_SIZE;
     if (len < p->data.length) {
 	krb5_set_error_string(context, "integer overrun");
@@ -292,14 +291,17 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 	return ret;
     }
 
-    /* make place for PAC INFO BUFFER header */
+    /* 
+     * make place for new PAC INFO BUFFER header
+     */
     header_end = PACTYPE_SIZE + (PAC_INFO_BUFFER_SIZE * p->pac->numbuffers);
-    memmove((unsigned char *)p->data.data + header_end,
-	    (unsigned char *)p->data.data + header_end + PAC_INFO_BUFFER_SIZE,
-	    PAC_INFO_BUFFER_SIZE);
+    memmove((unsigned char *)p->data.data + header_end + PAC_INFO_BUFFER_SIZE,
+	    (unsigned char *)p->data.data + header_end ,
+	    old_end - header_end);
+    memset((unsigned char *)p->data.data + header_end, 0, PAC_INFO_BUFFER_SIZE);
 
     /*
-     *
+     * copy in new data part
      */
 
     memcpy((unsigned char *)p->data.data + offset,
