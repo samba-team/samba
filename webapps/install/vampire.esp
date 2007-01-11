@@ -54,7 +54,7 @@ if (form['submit'] == "Migrate") {
 		f.display();
 	} else if (!provision_validate(subobj, writefln)) {
 		f.display();
-	} else if (strupper(lp.get("server role")) == "PDC") {
+	} else if (strupper(lp.get("server role")) == "domain controller") {
 		writefln("You need to set 'server role' to 'member server' before starting the migration process");
 	} else {
 		var creds = credentials_init();
@@ -104,7 +104,7 @@ You need to do the following to complete the process:
 
 <ul>
 <li>Install the <b>@@zonepath</b> zone file into your bind install, and restart bind
-<li>Change your smb.conf to set "server role = pdc"
+<li>Change your smb.conf to set "server role = domain controller"
 <li>Shutdown your existing PDC and any other DCs
 <li>Restart smbd
 </ul>
