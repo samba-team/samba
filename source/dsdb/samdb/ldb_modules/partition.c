@@ -50,6 +50,7 @@ struct partition_private_data {
 
 struct partition_context {
 	struct ldb_module *module;
+	struct ldb_handle *handle;
 	struct ldb_request *orig_req;
 
 	struct ldb_request **down_req;
@@ -57,7 +58,7 @@ struct partition_context {
 	int finished_requests;
 };
 
-static struct ldb_handle *partition_init_handle(struct ldb_request *req, struct ldb_module *module)
+static struct partition_context *partition_init_handle(struct ldb_request *req, struct ldb_module *module)
 {
 	struct partition_context *ac;
 	struct ldb_handle *h;
@@ -77,12 +78,15 @@ static struct ldb_handle *partition_init_handle(struct ldb_request *req, struct 
 		return NULL;
 	}
 
-	h->private_data = (void *)ac;
+	h->private_data	= ac;
 
 	ac->module = module;
+	ac->handle = h;
 	ac->orig_req = req;
 
-	return h;
+	req->handle = h;
+
+	return ac;
 }
 
 struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
@@ -264,17 +268,12 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	for (i=0; data->replicate && data->replicate[i]; i++) {
 		if (ldb_dn_compare(data->replicate[i], 
 				   dn) == 0) {
-			struct ldb_handle *h;
 			struct partition_context *ac;
 			
-			h = partition_init_handle(req, module);
-			if (!h) {
+			ac = partition_init_handle(req, module);
+			if (!ac) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			/* return our own handle to deal with this call */
-			req->handle = h;
-			
-			ac = talloc_get_type(h->private_data, struct partition_context);
 			
 			return partition_send_all(module, ac, req);
 		}
@@ -302,18 +301,13 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	 * partitions (for 'invisible' partition behaviour */
 	if (ldb_get_opaque(module->ldb, "global_catalog")) {
 		int ret, i;
-		struct ldb_handle *h;
 		struct partition_context *ac;
 		
-		h = partition_init_handle(req, module);
-		if (!h) {
+		ac = partition_init_handle(req, module);
+		if (!ac) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		/* return our own handle to deal with this call */
-		req->handle = h;
-		
-		ac = talloc_get_type(h->private_data, struct partition_context);
-		
+
 		/* Search from the base DN */
 		if (!req->op.search.base || ldb_dn_is_null(req->op.search.base)) {
 			return partition_send_all(module, ac, req);
@@ -330,7 +324,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 		/* Perhaps we didn't match any partitions.  Try the main partition, only */
 		if (ac->num_requests == 0) {
-			talloc_free(h);
+			talloc_free(ac);
 			return ldb_next_request(module, req);
 		}
 		
@@ -586,7 +580,6 @@ static int partition_extended_replicated_objects(struct ldb_module *module, stru
 /* extended */
 static int partition_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
 	struct partition_context *ac;
 
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_REPLICATED_OBJECTS_OID) == 0) {
@@ -598,14 +591,10 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	 * we need to send it to all partitions
 	 */
 
-	h = partition_init_handle(req, module);
-	if (!h) {
+	ac = partition_init_handle(req, module);
+	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	/* return our own handle to deal with this call */
-	req->handle = h;
-			
-	ac = talloc_get_type(h->private_data, struct partition_context);
 			
 	return partition_send_all(module, ac, req);
 }
