@@ -1,5 +1,15 @@
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath/imath.c: Update to imath-1.8 from Michael Fromberger
+	
+	Fixed a bug in s_udiv() affecting the computation of quotient
+	digits.  Thanks to Love Åstrand for isolating this bug.  Also in
+	this release, defining USELLONG=Y or USELLONG=N on the command
+	line for make will switch support for the "long long" data type on
+	or off without having to edit the Makefile.  The default is still
+	to permit use of "long long", even though the type is not standard
+	ANSI C90.
+
 	* imath/imath.c (s_udiv): Allocate one more for q, remove debug
 	printfs
 	
