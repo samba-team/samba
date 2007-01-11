@@ -184,13 +184,14 @@ krb5_rd_safe(krb5_context context,
     if (ret)
 	goto failure;
   
+    outbuf->length = safe.safe_body.user_data.length;
     outbuf->data   = malloc(outbuf->length);
     if (outbuf->data == NULL && outbuf->length != 0) {
 	ret = ENOMEM;
 	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_data_zero(outbuf);
 	goto failure;
     }
-    outbuf->length = safe.safe_body.user_data.length;
     memcpy (outbuf->data, safe.safe_body.user_data.data, outbuf->length);
 
     if ((auth_context->flags & 
