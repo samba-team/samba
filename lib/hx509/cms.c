@@ -1036,7 +1036,7 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     {
-	heim_octet_string data;
+	heim_octet_string sig;
 
 	ret = copy_AlgorithmIdentifier(&digest, &signer_info->digestAlgorithm);
 	if (ret) {
@@ -1049,7 +1049,7 @@ hx509_cms_create_signed_1(hx509_context context,
 				      &digest,
 				      sd.encapContentInfo.eContent,
 				      NULL,
-				      &data);
+				      &sig);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1058,10 +1058,10 @@ hx509_cms_create_signed_1(hx509_context context,
 	ASN1_MALLOC_ENCODE(MessageDigest,
 			   buf.data,
 			   buf.length,
-			   &data,
+			   &sig,
 			   &size,
 			   ret);
-	der_free_octet_string(&data);
+	der_free_octet_string(&sig);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
