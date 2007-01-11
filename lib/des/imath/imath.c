@@ -2981,14 +2981,10 @@ static mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
 static mp_result s_udiv(mp_int a, mp_int b)
 {
   mpz_t     q, r, t;
-  mpz_t     ac, bc;
   mp_size   ua, ub, qpos = 0;
   mp_digit *da, btop;
   mp_result res = MP_OK;
   int       k, skip = 0;
-
-  mp_int_init(&ac);
-  mp_int_init(&bc);
 
   /* Force signs to positive */
   MP_SIGN(a) = MP_ZPOS;
@@ -3000,9 +2996,6 @@ static mp_result s_udiv(mp_int a, mp_int b)
   ua = MP_USED(a); ub = MP_USED(b); btop = b->digits[ub - 1];
   if((res = mp_int_init_size(&q, ua + 1)) != MP_OK) return res;
   if((res = mp_int_init_size(&t, ua + 1)) != MP_OK) goto CLEANUP;
-
-  if((res = mp_int_init_copy(&ac, a)) != MP_OK) goto CLEANUP;
-  if((res = mp_int_init_copy(&bc, b)) != MP_OK) goto CLEANUP;
 
   da = MP_DIGITS(a);
   r.digits = da + ua - 1;  /* The contents of r are shared with a */
@@ -3070,8 +3063,6 @@ static mp_result s_udiv(mp_int a, mp_int b)
   mp_int_clear(&t);
  CLEANUP:
   mp_int_clear(&q);
-  mp_int_clear(&ac);
-  mp_int_clear(&bc);
   return res;
 }
 
