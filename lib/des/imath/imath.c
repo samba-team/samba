@@ -34,7 +34,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -2994,7 +2993,7 @@ static mp_result s_udiv(mp_int a, mp_int b)
   k = s_norm(a, b);
 
   ua = MP_USED(a); ub = MP_USED(b); btop = b->digits[ub - 1];
-  if((res = mp_int_init_size(&q, ua + 1)) != MP_OK) return res;
+  if((res = mp_int_init_size(&q, ua)) != MP_OK) return res;
   if((res = mp_int_init_size(&t, ua + 1)) != MP_OK) goto CLEANUP;
 
   da = MP_DIGITS(a);
@@ -3012,7 +3011,7 @@ static mp_result s_udiv(mp_int a, mp_int b)
       r.digits -= 1;
       r.used += 1;
       
-      if(++skip > 1)
+      if(++skip > 1 && qpos > 0) 
 	q.digits[qpos++] = 0;
       
       CLAMP(&r);
@@ -3021,15 +3020,19 @@ static mp_result s_udiv(mp_int a, mp_int b)
       mp_word  pfx = r.digits[r.used - 1];
       mp_word  qdigit;
       
-      if(r.used > 1 && (pfx < btop || r.digits[r.used - 2] == 0)) {
+      if(r.used > 1 && pfx <= btop) {
 	pfx <<= MP_DIGIT_BIT / 2;
 	pfx <<= MP_DIGIT_BIT / 2;
 	pfx |= r.digits[r.used - 2];
       }
 
       qdigit = pfx / btop;
-      if(qdigit > MP_DIGIT_MAX) 
-	qdigit = 1;
+      if(qdigit > MP_DIGIT_MAX) {
+	if(qdigit & MP_DIGIT_MAX)
+	  qdigit = MP_DIGIT_MAX;
+	else
+	  qdigit = 1;
+      }
       
       s_dbmul(MP_DIGITS(b), (mp_digit) qdigit, t.digits, ub);
       t.used = ub + 1; CLAMP(&t);
@@ -3046,7 +3049,7 @@ static mp_result s_udiv(mp_int a, mp_int b)
       skip = 0;
     }
   }
-  
+
   /* Put quotient digits in the correct order, and discard extra zeroes */
   q.used = qpos;
   REV(mp_digit, q.digits, qpos);
