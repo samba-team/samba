@@ -28,6 +28,7 @@ CLEANFILES =			\
 	hx509-protos.h		\
 	hx509.h			\
 	hx509_err.h		\
+	kx509_asn1.h		\
 	kx509_err.h		\
 	k524_err.h		\
 	kdc-protos.h		\
@@ -76,6 +77,7 @@ CLEANFILES =			\
 	roken.h			\
 	sl.h			\
 	windc_plugin.h		\
+	locate_plugin.h		\
 	xdbm.h
 
 DISTCLEANFILES = 	\
