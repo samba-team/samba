@@ -50,8 +50,8 @@ _PUBLIC_ NTSTATUS ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_fla
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m(r->name->name)*2));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term(r->name->name)*2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m(r->name->name) * 2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term(r->name->name) * 2));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -92,8 +92,8 @@ _PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *n
 {
 	ndr_print_struct(ndr, name, "initshutdown_String");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name->name)*2:r->name_len);
-	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name->name)*2:r->name_size);
+	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name->name) * 2:r->name_len);
+	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name->name) * 2:r->name_size);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
 	if (r->name) {
