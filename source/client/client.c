@@ -1716,17 +1716,21 @@ static int cmd_wdel(void)
 {
 	pstring mask;
 	pstring buf;
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute;
 
-	//attribute |= aDIR | aARCH;
-	attribute = aDIR;
-	
-	pstrcpy(mask,cur_dir);
-	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("wdel <wcard>\n");
+		d_printf("wdel 0x<attrib> <wcard>\n");
 		return 1;
 	}
+
+	attribute = (uint16)strtol(buf, (char **)NULL, 16);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("wdel 0x<attrib> <wcard>\n");
+		return 1;
+	}
+
+	pstrcpy(mask,cur_dir);
 	pstrcat(mask,buf);
 
 	if (!cli_unlink_full(cli, mask, attribute)) {
@@ -3087,7 +3091,7 @@ static struct
   {"unlock",cmd_unlock,"unlock <fnum> <hex-start> <hex-len> : remove a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
-  {"wdel",cmd_wdel,"<mask> wildcard delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"wdel",cmd_wdel,"<attrib> <mask> wildcard delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
