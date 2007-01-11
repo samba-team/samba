@@ -309,6 +309,7 @@ EXTRA_DIST = \
 	data/test-enveloped-rc2-64 \
 	data/test-ke-only.crt \
 	data/test-ke-only.key \
+	data/test-nopw.p12 \
 	data/test-pw.key \
 	data/test-signed-data \
 	data/test-signed-data-noattr \
