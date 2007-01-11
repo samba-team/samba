@@ -8,16 +8,16 @@ _PUBLIC_ NTSTATUS ndr_push_lsa_String(struct ndr_push *ndr, int ndr_flags, const
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2*strlen_m(r->string)));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2*strlen_m(r->string)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->string)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->string)));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->string) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*strlen_m(r->string)/2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * strlen_m(r->string) / 2));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*strlen_m(r->string)/2));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, 2*strlen_m(r->string)/2, sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * strlen_m(r->string) / 2));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, 2 * strlen_m(r->string) / 2, sizeof(uint16_t), CH_UTF16));
 		}
 	}
 	return NT_STATUS_OK;
@@ -51,10 +51,10 @@ _PUBLIC_ NTSTATUS ndr_pull_lsa_String(struct ndr_pull *ndr, int ndr_flags, struc
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
 		}
 		if (r->string) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size/2));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size / 2));
 		}
 		if (r->string) {
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->string, r->length/2));
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->string, r->length / 2));
 		}
 	}
 	return NT_STATUS_OK;
@@ -64,8 +64,8 @@ _PUBLIC_ void ndr_print_lsa_String(struct ndr_print *ndr, const char *name, cons
 {
 	ndr_print_struct(ndr, name, "lsa_String");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2*strlen_m(r->string):r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2*strlen_m(r->string):r->size);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->length);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->size);
 	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
 	if (r->string) {
@@ -79,16 +79,16 @@ _PUBLIC_ NTSTATUS ndr_push_lsa_StringLarge(struct ndr_push *ndr, int ndr_flags, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2*strlen_m(r->string)));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2*(strlen_m(r->string)+1)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->string)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * (strlen_m(r->string) + 1)));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->string) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*(strlen_m(r->string)+1)/2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * (strlen_m(r->string) + 1) / 2));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*strlen_m(r->string)/2));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, 2*strlen_m(r->string)/2, sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * strlen_m(r->string) / 2));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, 2 * strlen_m(r->string) / 2, sizeof(uint16_t), CH_UTF16));
 		}
 	}
 	return NT_STATUS_OK;
@@ -122,10 +122,10 @@ _PUBLIC_ NTSTATUS ndr_pull_lsa_StringLarge(struct ndr_pull *ndr, int ndr_flags, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
 		}
 		if (r->string) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size/2));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size / 2));
 		}
 		if (r->string) {
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->string, r->length/2));
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->string, r->length / 2));
 		}
 	}
 	return NT_STATUS_OK;
@@ -135,8 +135,8 @@ _PUBLIC_ void ndr_print_lsa_StringLarge(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "lsa_StringLarge");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2*strlen_m(r->string):r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2*(strlen_m(r->string)+1):r->size);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->length);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * (strlen_m(r->string) + 1):r->size);
 	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
 	if (r->string) {

@@ -245,10 +245,10 @@ NTSTATUS ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const st
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->bindata) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size/2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size / 2));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length/2));
-			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length/2; cntr_bindata_1++) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length / 2));
+			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length / 2; cntr_bindata_1++) {
 				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->bindata[cntr_bindata_1]));
 			}
 		}
@@ -285,17 +285,17 @@ NTSTATUS ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct n
 			NDR_PULL_ALLOC_N(ndr, r->bindata, ndr_get_array_size(ndr, &r->bindata));
 			_mem_save_bindata_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->bindata, 0);
-			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length/2; cntr_bindata_1++) {
+			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length / 2; cntr_bindata_1++) {
 				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->bindata[cntr_bindata_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bindata_1, 0);
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bindata_0, 0);
 		}
 		if (r->bindata) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->bindata, r->size/2));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->bindata, r->size / 2));
 		}
 		if (r->bindata) {
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->bindata, r->length/2));
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->bindata, r->length / 2));
 		}
 	}
 	return NT_STATUS_OK;
@@ -311,9 +311,9 @@ _PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "bindata", r->bindata);
 	ndr->depth++;
 	if (r->bindata) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "bindata", r->length/2);
+		ndr->print(ndr, "%s: ARRAY(%d)", "bindata", r->length / 2);
 		ndr->depth++;
-		for (cntr_bindata_1=0;cntr_bindata_1<r->length/2;cntr_bindata_1++) {
+		for (cntr_bindata_1=0;cntr_bindata_1<r->length / 2;cntr_bindata_1++) {
 			char *idx_1=NULL;
 			asprintf(&idx_1, "[%d]", cntr_bindata_1);
 			if (idx_1) {
@@ -3040,8 +3040,8 @@ NTSTATUS ndr_push_netr_DELTA_POLICY(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->eventauditoptions) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->maxauditeventcount+1));
-			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < r->maxauditeventcount+1; cntr_eventauditoptions_1++) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->maxauditeventcount + 1));
+			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < r->maxauditeventcount + 1; cntr_eventauditoptions_1++) {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->eventauditoptions[cntr_eventauditoptions_1]));
 			}
 		}
@@ -3107,7 +3107,7 @@ NTSTATUS ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int ndr_flags, struct 
 			NDR_PULL_ALLOC_N(ndr, r->eventauditoptions, ndr_get_array_size(ndr, &r->eventauditoptions));
 			_mem_save_eventauditoptions_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->eventauditoptions, 0);
-			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < r->maxauditeventcount+1; cntr_eventauditoptions_1++) {
+			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < r->maxauditeventcount + 1; cntr_eventauditoptions_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->eventauditoptions[cntr_eventauditoptions_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_eventauditoptions_1, 0);
@@ -3126,7 +3126,7 @@ NTSTATUS ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int ndr_flags, struct 
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown3));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown4));
 		if (r->eventauditoptions) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->eventauditoptions, r->maxauditeventcount+1));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->eventauditoptions, r->maxauditeventcount + 1));
 		}
 	}
 	return NT_STATUS_OK;
@@ -3144,9 +3144,9 @@ _PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "eventauditoptions", r->eventauditoptions);
 	ndr->depth++;
 	if (r->eventauditoptions) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "eventauditoptions", r->maxauditeventcount+1);
+		ndr->print(ndr, "%s: ARRAY(%d)", "eventauditoptions", r->maxauditeventcount + 1);
 		ndr->depth++;
-		for (cntr_eventauditoptions_1=0;cntr_eventauditoptions_1<r->maxauditeventcount+1;cntr_eventauditoptions_1++) {
+		for (cntr_eventauditoptions_1=0;cntr_eventauditoptions_1<r->maxauditeventcount + 1;cntr_eventauditoptions_1++) {
 			char *idx_1=NULL;
 			asprintf(&idx_1, "[%d]", cntr_eventauditoptions_1);
 			if (idx_1) {
@@ -6252,10 +6252,10 @@ NTSTATUS ndr_push_netr_BinaryString(struct ndr_push *ndr, int ndr_flags, const s
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->data) {
-				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size/2));
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size / 2));
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length/2));
-				for (cntr_data_1 = 0; cntr_data_1 < r->length/2; cntr_data_1++) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length / 2));
+				for (cntr_data_1 = 0; cntr_data_1 < r->length / 2; cntr_data_1++) {
 					NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->data[cntr_data_1]));
 				}
 			}
@@ -6297,17 +6297,17 @@ NTSTATUS ndr_pull_netr_BinaryString(struct ndr_pull *ndr, int ndr_flags, struct 
 				NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
 				_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
-				for (cntr_data_1 = 0; cntr_data_1 < r->length/2; cntr_data_1++) {
+				for (cntr_data_1 = 0; cntr_data_1 < r->length / 2; cntr_data_1++) {
 					NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->data[cntr_data_1]));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 			}
 			if (r->data) {
-				NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->size/2));
+				NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->size / 2));
 			}
 			if (r->data) {
-				NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->data, r->length/2));
+				NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->data, r->length / 2));
 			}
 		}
 		ndr->flags = _flags_save_STRUCT;
@@ -6328,9 +6328,9 @@ _PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *nam
 		ndr_print_ptr(ndr, "data", r->data);
 		ndr->depth++;
 		if (r->data) {
-			ndr->print(ndr, "%s: ARRAY(%d)", "data", r->length/2);
+			ndr->print(ndr, "%s: ARRAY(%d)", "data", r->length / 2);
 			ndr->depth++;
-			for (cntr_data_1=0;cntr_data_1<r->length/2;cntr_data_1++) {
+			for (cntr_data_1=0;cntr_data_1<r->length / 2;cntr_data_1++) {
 				char *idx_1=NULL;
 				asprintf(&idx_1, "[%d]", cntr_data_1);
 				if (idx_1) {

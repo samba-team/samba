@@ -2680,7 +2680,6 @@ NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, 
 		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.level));
 		if (r->in.ctr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.ctr, *r->in.level));
 		NDR_CHECK(ndr_push_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_buffer));
@@ -2691,7 +2690,6 @@ NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, 
 		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level));
 		if (r->out.ctr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, *r->out.level));
 		NDR_CHECK(ndr_push_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.totalentries));
@@ -2747,7 +2745,6 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, 
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.ctr, LIBNDR_FLAG_REF_ALLOC);
-		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.ctr, *r->in.level));
 		NDR_CHECK(ndr_pull_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
@@ -2779,7 +2776,6 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, 
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.ctr, LIBNDR_FLAG_REF_ALLOC);
-		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, *r->out.level));
 		NDR_CHECK(ndr_pull_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);

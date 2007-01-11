@@ -1064,7 +1064,6 @@ NTSTATUS ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const struct ec
 		if (r->in.foo2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_echo_Enum2(ndr, NDR_SCALARS, r->in.foo2));
 		if (r->in.foo3 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->in.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.foo3, *r->in.foo1));
 		NDR_CHECK(ndr_push_echo_Enum3(ndr, NDR_SCALARS, r->in.foo3));
 	}
@@ -1074,7 +1073,6 @@ NTSTATUS ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const struct ec
 		if (r->out.foo2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_echo_Enum2(ndr, NDR_SCALARS, r->out.foo2));
 		if (r->out.foo3 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->out.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.foo3, *r->out.foo1));
 		NDR_CHECK(ndr_push_echo_Enum3(ndr, NDR_SCALARS, r->out.foo3));
 	}
@@ -1108,7 +1106,6 @@ NTSTATUS ndr_pull_echo_TestEnum(struct ndr_pull *ndr, int flags, struct echo_Tes
 		}
 		_mem_save_foo3_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.foo3, LIBNDR_FLAG_REF_ALLOC);
-		if (r->in.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.foo3, *r->in.foo1));
 		NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_SCALARS, r->in.foo3));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_foo3_0, LIBNDR_FLAG_REF_ALLOC);
@@ -1139,7 +1136,6 @@ NTSTATUS ndr_pull_echo_TestEnum(struct ndr_pull *ndr, int flags, struct echo_Tes
 		}
 		_mem_save_foo3_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.foo3, LIBNDR_FLAG_REF_ALLOC);
-		if (r->out.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.foo3, *r->out.foo1));
 		NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_SCALARS, r->out.foo3));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_foo3_0, LIBNDR_FLAG_REF_ALLOC);
