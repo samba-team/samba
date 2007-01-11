@@ -235,9 +235,9 @@ This manual is last updated @value{UPDATED} for version
 
 Setting up a CA
 
-* Creating a CA certificate::
 @c * Issuing certificates::
-@c * Issuing a https server certificate::
+* Creating a CA certificate::
+* Issuing a server certificate::
 @c * Issuing a user certificate::
 @c * Issuing a proxy certificate::
 @c * Creating a user certificate::
@@ -254,7 +254,14 @@ CMS signing and encryption
 @node Introduction, What is X.509 ?, Top, Top
 @chapter Introduction
 
-hx509 is a somewhat complete X.509 stack
+hx509 is a somewhat complete X.509 stack that can handle CMS messages
+(crypto system used in S/MIME and Kerberos PK-INIT) and basic
+certificate processing tasks, path construction, path validation, OCSP
+and CRL validation, PKCS10 message construction, CMS Encrypted (shared
+secret encrypted), CMS SignedData (certificate signed), and CMS
+EnvelopedData (certificate encrypted).
+
+hx509 can use PKCS11 tokens, PKCS12 files, PEM files, DER encoded files.
 
 @node What is X.509 ?, Setting up a CA, Introduction, Top
 @chapter What is X.509, PKIX, PKCS7 and CMS ? 
@@ -315,17 +322,63 @@ somewhat limited.
 
 @section Building a path
 
-The certificate tell who issued the certificate, by name or Key
-Identifier.
+Before validating a path the path must be constructed. Given a
+certificate (EE, CA, Proxy, or any other type), the path construction
+algorith will try to find a path to one of the trust anchors.
+
+It start with looking at whom issued the certificate, by name or Key
+Identifier, and tries to find that certifiate while at the same time
+evaluates the policy.
 
 @node Setting up a CA, Creating a CA certificate, What is X.509 ?, Top
 @chapter Setting up a CA
 
-@node Creating a CA certificate, CMS signing and encryption, Setting up a CA, Top
+@node Creating a CA certificate, Issuing a server certificate, Setting up a CA, Top
 @section Creating a CA certificate
 
-@node CMS signing and encryption, CMS background, Creating a CA certificate, Top
+@example
+hxtool issue-certificate \
+    --self-signed \
+    --issue-ca \
+    --generate-key=rsa \
+    --subject="CN=CA,DC=test,DC=h5l,DC=se" \
+    --lifetime=10years \
+    --certificate="FILE:ca.pem"
+@end example
+
+@node Issuing a server certificate, CMS signing and encryption, Creating a CA certificate, Top
+@section Issuing a server certificate
+
+The first component should be a CN, and should contain the name of the
+https server, this is because of compatiblity with older software. The
+more modern way to do this is to use SubjectAltName with dNSName set,
+these can be added with the --hostname switch. When using jabber
+certificate its quite common to have serveral name since the many
+clients disagree on what the name in the certificate should be and what
+the hostname should be.
+
+This example show creating a https server certificate for the host
+www.test.h5l.se that also serves www2.test.h5l.se for compatiblity
+reasons.
+
+@example
+hxtool issue-certificate \
+    --ca-certificate=FILE:ca.pem \
+    --generate-key=rsa \
+    --type="https-server" \
+    --subject="CN=www.test.h5l.se,DC=test,DC=h5l,DC=se" \
+    --hostname="www.test.h5l.se" \
+    --hostname="www2.test.h5l.se" \
+    --certificate="FILE:cert-ee.pem"
+@end example
+
+
+@node CMS signing and encryption, CMS background, Issuing a server certificate, Top
 @chapter CMS signing and encryption
+
+CMS is the Cryptographic Message System that among other, is used by
+S/MIME (secure email) and Kerberos PK-INIT. Its an extended version of
+the RSA standard PKCS7.
 
 @node CMS background, , CMS signing and encryption, Top
 @section CMS background
