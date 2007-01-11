@@ -127,10 +127,10 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 		return GSS_S_COMPLETE;
 	} else if (input->length == 0) {
 		/* 
-		 * There is the a wiered mode of SPNEGO (in CIFS and
+		 * There is the a wierd mode of SPNEGO (in CIFS and
 		 * SASL GSS-SPENGO where the first token is zero
 		 * length and the acceptor returns a mech_list, lets
-		 * home that is what is happening now.
+		 * hope that is what is happening now.
 		 */
 		*mech_oid = spnego_mechanism;
 		return GSS_S_COMPLETE;
