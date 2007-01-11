@@ -144,7 +144,7 @@ struct hx509_query_data {
 };
 
 struct hx509_keyset_ops {
-    char *name;
+    const char *name;
     int flags;
     int (*init)(hx509_context, hx509_certs, void **, 
 		int, const char *, hx509_lock);

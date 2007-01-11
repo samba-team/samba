@@ -128,7 +128,8 @@ void
 hx509_err(hx509_context context, int exit_code, int error_code, char *fmt, ...)
 {
     va_list ap;
-    char *msg, *str;
+    const char *msg;
+    char *str;
 
     va_start(ap, fmt);
     vasprintf(&str, fmt, ap);

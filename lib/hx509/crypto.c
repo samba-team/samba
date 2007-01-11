@@ -96,7 +96,7 @@ struct hx509_private_key {
  */
 
 struct signature_alg {
-    char *name;
+    const char *name;
     const heim_oid *(*sig_oid)(void);
     const AlgorithmIdentifier *(*sig_alg)(void);
     const heim_oid *(*key_oid)(void);
@@ -1296,7 +1296,7 @@ _hx509_generate_private_key(hx509_context context,
  *
  */
 
-static const heim_octet_string null_entry_oid = { 2, "\x05\x00" };
+static const heim_octet_string null_entry_oid = { 2, rk_UNCONST("\x05\x00") };
 
 static const unsigned sha512_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 3 };
 const AlgorithmIdentifier _hx509_signature_sha512_data = { 

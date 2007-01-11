@@ -358,7 +358,7 @@ hx509_get_one_cert(hx509_context context, hx509_certs certs, hx509_cert *c)
 }
 
 static int
-certs_info_stdio(void *ctx, char *str)
+certs_info_stdio(void *ctx, const char *str)
 {
     FILE *f = ctx;
     fprintf(f, "%s\n", str);
@@ -368,7 +368,7 @@ certs_info_stdio(void *ctx, char *str)
 int
 hx509_certs_info(hx509_context context, 
 		 hx509_certs certs,
-		 int (*func)(void *, char *),
+		 int (*func)(void *, const char *),
 		 void *ctx)
 {
     if (func == NULL) {
@@ -385,7 +385,7 @@ hx509_certs_info(hx509_context context,
 }
 
 void
-_hx509_pi_printf(int (*func)(void *, char *), void *ctx,
+_hx509_pi_printf(int (*func)(void *, const char *), void *ctx,
 		 char *fmt, ...)
 {
     va_list ap;

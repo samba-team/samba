@@ -1113,7 +1113,7 @@ static int
 p11_printinfo(hx509_context context, 
 	      hx509_certs certs, 
 	      void *data,
-	      int (*func)(void *, char *),
+	      int (*func)(void *, const char *),
 	      void *ctx)
 {
     struct p11_module *p = data;
