@@ -8,7 +8,8 @@ MAKEINFOFLAGS = --no-split --css-include=$(srcdir)/heimdal.css
 
 TEXI2DVI = true # ARGH, make distcheck can't be disabled to not build dvifiles
 
-info_TEXINFOS = heimdal.texi
+info_TEXINFOS = heimdal.texi hx509.texi
+
 heimdal_TEXINFOS = \
 	ack.texi \
 	apps.texi \
