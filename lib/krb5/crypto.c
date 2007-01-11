@@ -57,8 +57,6 @@ struct krb5_crypto_data {
     struct key_usage *key_usage;
 };
 
-#define kcrypto_oid_enc(n) { sizeof(n)/sizeof(n[0]), n }
-
 #define CRYPTO_ETYPE(C) ((C)->et->type)
 
 /* bits for `flags' below */
