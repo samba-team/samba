@@ -260,6 +260,25 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 		if (ISDOT(start)) {
 			if (end) {
+				if (allow_wcard_last_component) {
+					/* We're terminating here so we
+					 * can be a little slower and get
+					 * the error code right. Windows
+					 * treats the last part of the pathname
+					 * separately I think, so if the last
+					 * component is a wildcard then we treat
+					 * this ./ as "end of component" */
+
+					const char *p = strchr(end+1, '/');
+
+					if (!p && ms_has_wild(end+1)) {
+						/* Error code at the end of a pathname. */
+						return NT_STATUS_OBJECT_NAME_INVALID;
+					} else {
+						/* Error code within a pathname. */
+						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					}
+				}
 				/* Error code within a pathname. */
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			} else {
