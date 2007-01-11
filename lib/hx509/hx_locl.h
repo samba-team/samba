@@ -157,7 +157,7 @@ struct hx509_keyset_ops {
     int (*iter)(hx509_context, hx509_certs, void *, void *, hx509_cert *);
     int (*iter_end)(hx509_context, hx509_certs, void *, void *);
     int (*printinfo)(hx509_context, hx509_certs, 
-		     void *, int (*)(void *, char *), void *);
+		     void *, int (*)(void *, const char *), void *);
     int (*getkeys)(hx509_context, hx509_certs, void *, hx509_private_key **);
     int (*addkey)(hx509_context, hx509_certs, void *, hx509_private_key);
 };
