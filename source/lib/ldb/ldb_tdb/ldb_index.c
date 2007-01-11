@@ -1323,6 +1323,11 @@ int ltdb_reindex(struct ldb_module *module)
 		return -1;
 	}
 
+	/* if we don't have indexes we have nothing todo */
+	if (ltdb->cache->indexlist->num_elements == 0) {
+		return 0;
+	}
+
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_index, module);
 	if (ret == -1) {
