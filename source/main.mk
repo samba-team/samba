@@ -81,6 +81,9 @@ showflags:
 	@echo '  SHLD       = $(SHLD)'
 	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
 	@echo '  SHLIBEXT   = $(SHLIBEXT)'
+	@echo '  srcdir     = $(srcdir)'
+	@echo '  builddir   = $(builddir)'
+	@echo '  pwd        = '`/bin/pwd`
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -141,7 +144,7 @@ installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader: headers installdirs
-	@$(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
@@ -283,47 +286,50 @@ realdistclean: distclean removebackup
 
 test: $(DEFAULT_TEST_TARGET)
 
+SELFTEST = builddir=$(builddir) srcdir=$(srcdir) \
+	    $(srcdir)/script/tests/selftest.sh ${selftest_prefix}
+
 test-swrap: all libraries
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(SELFTEST) all SOCKET_WRAPPER
 
 test-noswrap: all libraries
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all
+	$(SELFTEST) all
 
 quicktest: all
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(SELFTEST) quick SOCKET_WRAPPER
 
 testenv: all libraries
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
+	$(SELFTEST) xterm SOCKET_WRAPPER
 
 valgrindtest: valgrindtest-quick
 
 valgrindtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(SELFTEST) quick SOCKET_WRAPPER
 
 valgrindtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(SELFTEST) all SOCKET_WRAPPER
 
 valgrindtest-env: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
+	$(SELFTEST) xterm SOCKET_WRAPPER
 
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(SELFTEST) quick SOCKET_WRAPPER
 
 gdbtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(SELFTEST) all SOCKET_WRAPPER
 
 wintest: all
-	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} win
+	$(SELFTEST) win
 
 unused_macros:
 	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
@@ -334,17 +340,27 @@ unused_macros:
 
 .SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .$(SHLIBEXT) .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .idl .hd
 
+# Dependencies command
+DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
+    `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+# Dependencies for host objects
+HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
+    `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) $< -o $@
+# Dependencies for precompiled headers
+PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
+    $(CFLAGS) $< -o $@
+
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(DEPENDS)
 
 .c.hd:
 	@echo "Generating host-compiler dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) $< -o $@
+	@$(HDEPENDS)
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MT include/includes.h.gch -MT $@ $(CFLAGS) $< -o $@
+	@$(PCHDEPENDS)
 
 #
 # $< is broken in older BSD versions:
@@ -352,27 +368,47 @@ include/includes.d: include/includes.h
 # if it also exists. So better use $* which is foo/bar
 # and append .c manually to get foo/bar.c
 #
+
+# Run a static analysis checker
+CHECK = $(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
+
+# Run the configured compiler
+COMPILE = $(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
+
+# Run the compiler for the build host
+HCOMPILE = $(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(HOSTCC_CFLAGS) -c $*.c -o $@
+
+# Precompile headers
+PCHCOMPILE = @$(CC) -Ilib/replace \
+    `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
+
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
-		echo "Checking  $*.c with '$(CC_CHECKER)'"; \
-		$(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@; \
+		echo "Checking  $< with '$(CC_CHECKER)'"; \
+		$(CHECK) ; \
 	fi
-	@echo "Compiling $*.c"
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@ && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@" 1>&2;\
-		$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@ >/dev/null 2>&1
+	@echo "Compiling $<"
+	@-mkdir -p `dirname $@`
+	@$(COMPILE) && exit 0 ; \
+		@echo "The following command failed:" 1>&2;\
+		@echo "$(COMPILE)" 1>&2;\
+		@$(COMPILE) >/dev/null 2>&1
 
 .c.ho:
-	@echo "Compiling $*.c with host compiler"
-	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@ && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@" 1>&2;\
-		$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@ >/dev/null 2>&1
+	@echo "Compiling $< with host compiler"
+	@-mkdir -p `dirname $@`
+	@$(HCOMPILE) && exit 0;\
+		@echo "The following command failed:" 1>&2;\
+		@echo "$(HCOMPILE)" 1>&2;\
+		@$(HCOMPILE) >/dev/null 2>&1
 
 .h.h.gch:
 	@echo "Precompiling $<"
-	@$(CC) -Ilib/replace `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(PCHCOMPILE)
 
 .y.c:
 	@echo "Building $< with $(YACC)"
