@@ -29,6 +29,8 @@ windc_la_LDFLAGS = -module
 
 CLEANFILES= \
 	$(TESTS) \
+	server.keytab \
+	current-db* \
 	foopassword \
 	krb5.conf krb5.conf.tmp \
 	messages.log

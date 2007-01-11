@@ -43,6 +43,7 @@ CLEANFILES= \
 	foopassword \
 	barpassword \
 	krb5ccfile \
+	krb5ccfile-ds \
 	server.keytab \
 	krb5.conf \
 	current-db* \
