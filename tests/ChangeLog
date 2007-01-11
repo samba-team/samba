@@ -1,3 +1,11 @@
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* plugin/Makefile.am: remove files created by tests
+
+	* gss/Makefile.am: remove files created by tests
+
+	* gss/Makefile.am: add ntlm-user-file.txt
+
 2007-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/ap-req.c: --verify-pac no means verify existance of PAC in

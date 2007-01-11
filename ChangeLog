@@ -1,5 +1,16 @@
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* include/Makefile.am: remove install headerfiles
+
+	* lib/krb5/test_pac.c: Use more interesting data to cause more
+	errors.
+
+	* include/Makefile.am: remove install headerfiles
+
+	* lib/krb5/mcache.c: MCC_CURSOR not used, remove.
+
+	* lib/krb5/crypto.c: macro kcrypto_oid_enc now longer used
+
 	* lib/krb5/rd_safe.c (krb5_rd_safe): set length before trying to
 	allocate data
 	
