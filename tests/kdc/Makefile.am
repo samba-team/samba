@@ -86,4 +86,5 @@ EXTRA_DIST = \
 	krb5-pkinit.conf.in \
 	wait-kdc.sh \
 	pki-mapping \
+	ntlm-user-file.txt \
 	uuserver.txt
