@@ -391,7 +391,7 @@ pidl README by Andrew Tridgell.
 
 
 use strict;
-use FindBin qw($RealBin);
+use FindBin qw($RealBin $Script);
 use lib "$RealBin";
 use lib "$RealBin/lib";
 use Getopt::Long;
@@ -482,7 +482,7 @@ print "perl IDL parser and code generator
 Copyright (C) Andrew Tridgell <tridge\@samba.org>
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 
-Usage: pidl [options] [--] <idlfile> [<idlfile>...]
+Usage: $Script [options] [--] <idlfile> [<idlfile>...]
 
 Generic Options:
  --help                  this help page
@@ -770,7 +770,7 @@ $dcom
 }
 
 if (scalar(@ARGV) == 0) {
-	print "pidl: no input files\n";
+	print "$Script: no input files\n";
 	exit(1);
 }
 
