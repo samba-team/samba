@@ -473,6 +473,9 @@ function provision_become_dc(subobj, message, paths, session_info)
 	message("Erasing data from partitions\n");
 	ldb_erase_partitions(info, samdb, undefined);
 
+	message("Setting up " + paths.samdb + " indexes\n");
+	setup_add_ldif("provision_index.ldif", info, samdb, false);
+
 	ok = samdb.transaction_commit();
 	assert(ok);
 
