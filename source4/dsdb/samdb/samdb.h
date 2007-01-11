@@ -24,15 +24,16 @@
 #define __SAMDB_H__
 
 struct auth_session_info;
-struct drsuapi_DsNameInfo1;
-struct drsuapi_DsReplicaObject;
-struct drsuapi_DsReplicaOIDMapping_Ctr;
-struct drsuapi_DsReplicaAttribute;
-struct drsuapi_DsGetNCChangesCtr1;
-struct drsuapi_DsGetNCChangesCtr6;
-struct replPropertyMetaDataBlob;
-struct ldb_dn;
-struct ldb_message;
+struct dsdb_extended_replicated_object;
+struct dsdb_extended_replicated_objects;
+
+#include "librpc/gen_ndr/security.h"
+#include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/drsuapi.h"
+#include "librpc/gen_ndr/drsblobs.h"
+#include "dsdb/schema/schema.h"
+#include "dsdb/samdb/samdb_proto.h"
 
 #define DSDB_CONTROL_REPLICATED_OBJECT_OID "1.3.6.1.4.1.7165.4.3.1"
 struct dsdb_control_replicated_object {
@@ -52,11 +53,5 @@ struct dsdb_extended_replicated_objects {
 	uint32_t num_objects;
 	struct dsdb_extended_replicated_object *objects;
 };
-
-#include "librpc/gen_ndr/security.h"
-#include "lib/ldb/include/ldb.h"
-#include "librpc/gen_ndr/samr.h"
-#include "dsdb/schema/schema.h"
-#include "dsdb/samdb/samdb_proto.h"
 
 #endif /* __SAMDB_H__ */
