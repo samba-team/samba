@@ -106,6 +106,7 @@ struct test_become_dc_state {
 	struct ldb_context *ldb;
 
 	struct {
+		uint32_t object_count;
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
 	} schema_part;
@@ -232,256 +233,51 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	ret = ldb_transaction_start(s->ldb);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	return NT_STATUS_OK;
-}
-
-static WERROR test_object_to_ldb(struct test_become_dc_state *s,
-				 const struct libnet_BecomeDC_StoreChunk *c,
-				 struct drsuapi_DsReplicaObjectListItemEx *obj,
-				 TALLOC_CTX *mem_ctx,
-				 struct ldb_message **_msg)
-{
-	NTSTATUS nt_status;
-	WERROR status;
-	uint32_t i;
-	struct ldb_message *msg;
-	struct replPropertyMetaDataBlob md;
-	struct ldb_val md_value;
-	struct drsuapi_DsReplicaObjMetaDataCtr mdc;
-	struct ldb_val guid_value;
-	NTTIME whenChanged = 0;
-	time_t whenChanged_t;
-	const char *whenChanged_s;
-	const char *rdn_name;
-	const struct ldb_val *rdn_value;
-	const struct dsdb_attribute *rdn_attr;
-	uint32_t rdn_attid;
-	struct drsuapi_DsReplicaAttribute *name_a;
-	struct drsuapi_DsReplicaMetaData *name_d;
-	struct replPropertyMetaData1 *rdn_m;
-	struct drsuapi_DsReplicaObjMetaData *rdn_mc;
-	struct ldb_request *req;
-	struct ldb_control **ctrls;
-	struct dsdb_control_replicated_object *ctrl;
-	int ret;
-
-	if (!obj->object.identifier) {
-		return WERR_FOOBAR;
-	}
-
-	if (!obj->object.identifier->dn || !obj->object.identifier->dn[0]) {
-		return WERR_FOOBAR;
-	}
-
-	msg = ldb_msg_new(mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(msg);
-
-	msg->dn			= ldb_dn_new(msg, s->ldb, obj->object.identifier->dn);
-	W_ERROR_HAVE_NO_MEMORY(msg->dn);
-
-	rdn_name	= ldb_dn_get_rdn_name(msg->dn);
-	rdn_attr	= dsdb_attribute_by_lDAPDisplayName(s->schema, rdn_name);
-	if (!rdn_attr) {
-		return WERR_FOOBAR;
-	}
-	rdn_attid	= rdn_attr->attributeID_id;
-	rdn_value	= ldb_dn_get_rdn_val(msg->dn);
-
-	msg->num_elements	= obj->object.attribute_ctr.num_attributes;
-	msg->elements		= talloc_array(msg, struct ldb_message_element,
-					       msg->num_elements);
-	W_ERROR_HAVE_NO_MEMORY(msg->elements);
-
-	for (i=0; i < msg->num_elements; i++) {
-		status = dsdb_attribute_drsuapi_to_ldb(s->schema,
-						       &obj->object.attribute_ctr.attributes[i],
-						       msg->elements, &msg->elements[i]);
-		W_ERROR_NOT_OK_RETURN(status);
-	}
-
-	if (obj->object.attribute_ctr.num_attributes != 0 && !obj->meta_data_ctr) {
-		return WERR_FOOBAR;
-	}
-
-	if (obj->object.attribute_ctr.num_attributes != obj->meta_data_ctr->count) {
-		return WERR_FOOBAR;
-	}
-
-	md.version		= 1;
-	md.reserved		= 0;
-	md.ctr.ctr1.count	= obj->meta_data_ctr->count;
-	md.ctr.ctr1.reserved	= 0;
-	md.ctr.ctr1.array	= talloc_array(mem_ctx,
-					       struct replPropertyMetaData1,
-					       md.ctr.ctr1.count + 1);
-	W_ERROR_HAVE_NO_MEMORY(md.ctr.ctr1.array);
-
-	mdc.count	= obj->meta_data_ctr->count;
-	mdc.reserved	= 0;
-	mdc.array	= talloc_array(mem_ctx,
-				       struct drsuapi_DsReplicaObjMetaData,
-				       mdc.count + 1);
-	W_ERROR_HAVE_NO_MEMORY(mdc.array);
-
-	for (i=0; i < obj->meta_data_ctr->count; i++) {
-		struct drsuapi_DsReplicaAttribute *a;
-		struct drsuapi_DsReplicaMetaData *d;
-		struct replPropertyMetaData1 *m;
-		struct drsuapi_DsReplicaObjMetaData *mc;
-
-		a = &obj->object.attribute_ctr.attributes[i];
-		d = &obj->meta_data_ctr->meta_data[i];
-		m = &md.ctr.ctr1.array[i];
-		mc = &mdc.array[i];
-
-		m->attid			= a->attid;
-		m->version			= d->version;
-		m->orginating_time		= d->orginating_time;
-		m->orginating_invocation_id	= d->orginating_invocation_id;
-		m->orginating_usn		= d->orginating_usn;
-		m->local_usn			= 0;
-
-		mc->attribute_name		= dsdb_lDAPDisplayName_by_id(s->schema, a->attid);
-		mc->version			= d->version;
-		mc->originating_last_changed	= d->orginating_time;
-		mc->originating_dsa_invocation_id= d->orginating_invocation_id;
-		mc->originating_usn		= d->orginating_usn;
-		mc->local_usn			= 0;
-
-		if (d->orginating_time > whenChanged) {
-			whenChanged = d->orginating_time;
-		}
-
-		if (a->attid == DRSUAPI_ATTRIBUTE_name) {
-			name_a = a;
-			name_d = d;
-			rdn_m = &md.ctr.ctr1.array[md.ctr.ctr1.count];
-			rdn_mc = &mdc.array[mdc.count];
-		}
-	}
-
-	if (!name_d) {
-		return WERR_FOOBAR;
-	}
-
-	ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	nt_status = ndr_push_struct_blob(&guid_value, msg, &obj->object.identifier->guid,
-					 (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ntstatus_to_werror(nt_status);
-	}
-	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	whenChanged_t = nt_time_to_unix(whenChanged);
-	whenChanged_s = ldb_timestring(msg, whenChanged_t);
-	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
-	ret = ldb_msg_add_string(msg, "whenChanged", whenChanged_s);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	rdn_m->attid				= rdn_attid;
-	rdn_m->version				= name_d->version;
-	rdn_m->orginating_time			= name_d->orginating_time;
-	rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
-	rdn_m->orginating_usn			= name_d->orginating_usn;
-	rdn_m->local_usn			= 0;
-	md.ctr.ctr1.count++;
-
-	rdn_mc->attribute_name			= rdn_attr->lDAPDisplayName;
-	rdn_mc->version				= name_d->version;
-	rdn_mc->originating_last_changed	= name_d->orginating_time;
-	rdn_mc->originating_dsa_invocation_id	= name_d->orginating_invocation_id;
-	rdn_mc->originating_usn			= name_d->orginating_usn;
-	rdn_mc->local_usn			= 0;
-	mdc.count++;
-
-	nt_status = ndr_push_struct_blob(&md_value, msg, &md,
-					 (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ntstatus_to_werror(nt_status);
-	}
-	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &md_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
-		struct ldb_ldif ldif;
-		fprintf(stdout, "#\n");
-		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = msg;
-		ldb_ldif_write_file(s->ldb, stdout, &ldif);
-		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjMetaDataCtr, &mdc);
-	}
-
-	/*
-	 * apply the record to the ldb
-	 * using an ldb_control so indicate
-	 * that it's a replicated change
-	 */
-	ret = ldb_msg_sanity_check(s->ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-	ctrls = talloc_array(msg, struct ldb_control *, 2);
-	W_ERROR_HAVE_NO_MEMORY(ctrls);
-	ctrls[0] = talloc(ctrls, struct ldb_control);
-	W_ERROR_HAVE_NO_MEMORY(ctrls[0]);
-	ctrls[1] = NULL;
-
-	ctrl = talloc(ctrls, struct dsdb_control_replicated_object);
-	W_ERROR_HAVE_NO_MEMORY(ctrl);
-	ctrls[0]->oid		= DSDB_CONTROL_REPLICATED_OBJECT_OID;
-	ctrls[0]->critical	= True;
-	ctrls[0]->data		= ctrl;
-
-	ret = ldb_build_add_req(&req, s->ldb, msg, msg, ctrls, NULL, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-	ldb_set_timeout(s->ldb, req, 0); /* use default timeout */
-	ret = ldb_request(s->ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-	talloc_free(req);
-	if (ret != LDB_SUCCESS) {
-		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-			DEBUG(0,("record exists (ignored): %s: %d\n",
-				obj->object.identifier->dn, ret));
-		} else {
-			DEBUG(0,("Failed to add record: %s: %d\n",
-				obj->object.identifier->dn, ret));
-			return WERR_FOOBAR;
-		}
-	}
-
-	*_msg = msg;
-	return WERR_OK;
 }
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)
 {
 	WERROR status;
+	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+	uint32_t total_object_count;
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
-	int ret;
+	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+	struct dsdb_extended_replicated_objects *objs;
+	uint32_t i;
 
-	for (cur = s->schema_part.first_object; cur; cur = cur->next_object) {
-		uint32_t i;
+	switch (c->ctr_level) {
+	case 1:
+		mapping_ctr		= &c->ctr1->mapping_ctr;
+		total_object_count	= c->ctr1->total_object_count;
+		object_count		= s->schema_part.object_count;
+		first_object		= s->schema_part.first_object;
+		linked_attributes_count	= 0;
+		linked_attributes	= NULL;
+		new_highwatermark	= &c->ctr1->new_highwatermark;
+		uptodateness_vector	= NULL; /* TODO: map it */
+		break;
+	case 6:
+		mapping_ctr		= &c->ctr6->mapping_ctr;
+		total_object_count	= c->ctr6->total_object_count;
+		object_count		= s->schema_part.object_count;
+		first_object		= s->schema_part.first_object;
+		linked_attributes_count	= 0; /* TODO: ! */
+		linked_attributes	= NULL; /* TODO: ! */;
+		new_highwatermark	= &c->ctr6->new_highwatermark;
+		uptodateness_vector	= c->ctr6->uptodateness_vector;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (cur = first_object; cur; cur = cur->next_object) {
 		bool is_attr = false;
 		bool is_class = false;
 
@@ -549,25 +345,34 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		}
 	}
 
-	for (cur = s->schema_part.first_object; cur; cur = cur->next_object) {
-		struct ldb_message *msg;
-		status = test_object_to_ldb(s, c, cur, s, &msg);
-		if (!W_ERROR_IS_OK(status)) {
-			return werror_to_ntstatus(status);
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 c->partition->nc.dn,
+							 s->schema,
+							 mapping_ctr,
+							 object_count,
+							 first_object,
+							 linked_attributes_count,
+							 linked_attributes,
+							 new_highwatermark,
+							 uptodateness_vector,
+							 s, &objs);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
+	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+		for (i=0; i < objs->num_objects; i++) {
+			struct ldb_ldif ldif;
+			fprintf(stdout, "#\n");
+			ldif.changetype = LDB_CHANGETYPE_NONE;
+			ldif.msg = objs->objects[i].msg;
+			ldb_ldif_write_file(s->ldb, stdout, &ldif);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
 
-	ret = ldb_transaction_commit(s->ldb);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to commit the schema changes: %d\n", ret));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	ret = ldb_transaction_start(s->ldb);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
+	talloc_free(objs);
 	return NT_STATUS_OK;
 }
 
@@ -623,8 +428,10 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	}
 
 	if (!s->schema_part.first_object) {
+		s->schema_part.object_count = object_count;
 		s->schema_part.first_object = talloc_steal(s, first_object);
 	} else {
+		s->schema_part.object_count		+= object_count;
 		s->schema_part.last_object->next_object = talloc_steal(s->schema_part.last_object,
 								       first_object);
 	}
@@ -647,11 +454,12 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	uint32_t total_object_count;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
-	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+	struct dsdb_extended_replicated_objects *objs;
 	uint32_t i;
-	int ret;
 
 	switch (c->ctr_level) {
 	case 1:
@@ -661,6 +469,8 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		first_object		= c->ctr1->first_object;
 		linked_attributes_count	= 0;
 		linked_attributes	= NULL;
+		new_highwatermark	= &c->ctr1->new_highwatermark;
+		uptodateness_vector	= NULL; /* TODO: map it */
 		break;
 	case 6:
 		mapping_ctr		= &c->ctr6->mapping_ctr;
@@ -669,6 +479,8 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		first_object		= c->ctr6->first_object;
 		linked_attributes_count	= c->ctr6->linked_attributes_count;
 		linked_attributes	= c->ctr6->linked_attributes;
+		new_highwatermark	= &c->ctr6->new_highwatermark;
+		uptodateness_vector	= c->ctr6->uptodateness_vector;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -682,18 +494,33 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		c->partition->nc.dn, object_count));
 	}
 
-	status = dsdb_verify_oid_mappings(s->schema, mapping_ctr);
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 c->partition->nc.dn,
+							 s->schema,
+							 mapping_ctr,
+							 object_count,
+							 first_object,
+							 linked_attributes_count,
+							 linked_attributes,
+							 new_highwatermark,
+							 uptodateness_vector,
+							 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
-	for (cur = first_object; cur; cur = cur->next_object) {
-		struct ldb_message *msg;
-		status = test_object_to_ldb(s, c, cur, s, &msg);
-		if (!W_ERROR_IS_OK(status)) {
-			return werror_to_ntstatus(status);
+	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+		for (i=0; i < objs->num_objects; i++) {
+			struct ldb_ldif ldif;
+			fprintf(stdout, "#\n");
+			ldif.changetype = LDB_CHANGETYPE_NONE;
+			ldif.msg = objs->objects[i].msg;
+			ldb_ldif_write_file(s->ldb, stdout, &ldif);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
+	talloc_free(objs);
 
 	for (i=0; i < linked_attributes_count; i++) {
 		const struct dsdb_attribute *sa;
@@ -719,17 +546,6 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 				linked_attributes[i].value.blob->data,
 				linked_attributes[i].value.blob->length);
 		}
-	}
-
-	ret = ldb_transaction_commit(s->ldb);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to commit the changes: %d\n", ret));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	ret = ldb_transaction_start(s->ldb);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
