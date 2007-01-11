@@ -569,9 +569,9 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			array[i].level);
 
 		r.in.bind_handle	= &priv->bind_handle;
-		r.in.level		= array[i].level;
+		r.in.level		= &array[i].level;
 
-		switch (r.in.level) {
+		switch (*r.in.level) {
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;

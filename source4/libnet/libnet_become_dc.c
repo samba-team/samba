@@ -1618,13 +1618,15 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	struct composite_context *c = s->creq;
 	struct rpc_request *req;
 	struct drsuapi_DsGetNCChanges *r;
+	int32_t level;
 
 	r = talloc(s, struct drsuapi_DsGetNCChanges);
 	if (composite_nomem(r, c)) return;
 
+	r->in.level = &level;
 	r->in.bind_handle	= &drsuapi_h->bind_handle;
 	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
-		r->in.level				= 8;
+		level				= 8;
 		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
 		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req8.naming_context		= &partition->nc;
@@ -1640,7 +1642,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 		r->in.req.req8.mapping_ctr.num_mappings	= 0;
 		r->in.req.req8.mapping_ctr.mappings	= NULL;
 	} else {
-		r->in.level				= 5;
+		level				= 5;
 		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
 		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req5.naming_context		= &partition->nc;
@@ -1679,16 +1681,16 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 		return r->out.result;
 	}
 
-	if (r->out.level == 1) {
+	if (*r->out.level == 1) {
 		ctr_level = 1;
 		ctr1 = &r->out.ctr.ctr1;
-	} else if (r->out.level == 2) {
+	} else if (*r->out.level == 2) {
 		ctr_level = 1;
 		ctr1 = r->out.ctr.ctr2.ctr.mszip1.ctr1;
-	} else if (r->out.level == 6) {
+	} else if (*r->out.level == 6) {
 		ctr_level = 6;
 		ctr6 = &r->out.ctr.ctr6;
-	} else if (r->out.level == 7 &&
+	} else if (*r->out.level == 7 &&
 		   r->out.ctr.ctr7.level == 6 &&
 		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
 		ctr_level = 6;
