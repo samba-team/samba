@@ -3,8 +3,7 @@ WriteMakefile(
     'NAME'	=> 'Parse::Pidl',
     'VERSION_FROM' => 'lib/Parse/Pidl.pm',
 	'EXE_FILES' => [ 'pidl' ],
-	'test' => { 'TESTS' => 'tests/*.pl' },
-	'PMLIBDIRS' => [ 'lib/Parse/Pidl']
+	'test' => { 'TESTS' => 'tests/*.pl' }
 );
 
 sub MY::postamble {
