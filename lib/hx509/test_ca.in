@@ -116,6 +116,14 @@ ${hxtool} issue-certificate \
 	  --req="pkcs10-request.der" \
 	  --certificate="FILE:cert-ee.pem" || exit 1
 
+echo "issue certificate (jabber)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+          --jid="lha@test.h5l.se" \
+	  --req="pkcs10-request.der" \
+	  --certificate="FILE:cert-jabber.pem" || exit 1
+
 echo "issue self-signed cert"
 ${hxtool} issue-certificate \
 	  --self-signed \
