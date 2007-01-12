@@ -514,6 +514,19 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		 */
 		goto again;
 	}
+
+	if ((change_notify_fd() >= 0) && FD_ISSET(change_notify_fd(), &fds)) {
+
+		process_pending_change_notify_queue((time_t)0);
+
+		/*
+		 * Same comment as for oplock processing applies here. We
+		 * might have done I/O on the client socket.
+		 */
+
+		goto again;
+	}
+
 	
 	return receive_smb(smbd_server_fd(), buffer, 0);
 }
@@ -1112,7 +1125,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-void construct_reply_common(char *inbuf,char *outbuf)
+void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	set_message(outbuf,0,0,False);
 	

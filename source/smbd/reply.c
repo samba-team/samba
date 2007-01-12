@@ -3,7 +3,7 @@
    Main SMB reply routines
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett      2001
-   Copyright (C) Jeremy Allison 1992-2004.
+   Copyright (C) Jeremy Allison 1992-2007.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -761,7 +761,6 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
 	pstring fname;
 	int outsize = 0;
-	BOOL ok=False;
 	int mode;
 	time_t mtime;
 	SMB_STRUCT_STAT sbuf;
@@ -794,6 +793,11 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
+	if (!check_name(fname,conn)) {
+		END_PROFILE(SMBsetatr);
+		return UNIXERROR(ERRDOS, ERRnoaccess);
+	}
+
 	mode = SVAL(inbuf,smb_vwv0);
 	mtime = srv_make_unix_date3(inbuf+smb_vwv1);
   
@@ -803,17 +807,13 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		else
 			mode &= ~aDIR;
 
-		if (check_name(fname,conn)) {
-			ok = (file_set_dosmode(conn,fname,mode,&sbuf,False) == 0);
+		if (file_set_dosmode(conn,fname,mode,&sbuf,False) != 0) {
+			END_PROFILE(SMBsetatr);
+			return UNIXERROR(ERRDOS, ERRnoaccess);
 		}
-	} else {
-		ok = True;
 	}
 
-	if (ok)
-		ok = set_filetime(conn,fname,mtime);
-  
-	if (!ok) {
+	if (!set_filetime(conn,fname,mtime)) {
 		END_PROFILE(SMBsetatr);
 		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
@@ -4448,8 +4448,12 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Copy a file as part of a reply_copy.
 ******************************************************************/
 
-BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
-		      int count,BOOL target_is_directory, int *err_ret)
+/*
+ * TODO: check error codes on all callers
+ */
+
+NTSTATUS copy_file(char *src, char *dest1,connection_struct *conn, int ofun,
+		   int count, BOOL target_is_directory)
 {
 	SMB_STRUCT_STAT src_sbuf, sbuf2;
 	SMB_OFF_T ret=-1;
@@ -4458,9 +4462,8 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
  	uint32 dosattrs;
 	uint32 new_create_disposition;
 	NTSTATUS status;
+	int close_err;
  
-	*err_ret = 0;
-
 	pstrcpy(dest,dest1);
 	if (target_is_directory) {
 		char *p = strrchr_m(src,'/');
@@ -4474,7 +4477,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	}
 
 	if (!vfs_file_exist(conn,src,&src_sbuf)) {
-		return(False);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	if (!target_is_directory && count) {
@@ -4482,7 +4485,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	} else {
 		if (!map_open_params_to_ntcreate(dest1,0,ofun,
 				NULL, NULL, &new_create_disposition, NULL)) {
-			return(False);
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
@@ -4496,7 +4499,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 			NULL, &fsp1);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return(False);
+		return status;
 	}
 
 	dosattrs = dos_mode(conn, src, &src_sbuf);
@@ -4515,7 +4518,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(fsp1,ERROR_CLOSE);
-		return(False);
+		return status;
 	}
 
 	if ((ofun&3) == 1) {
@@ -4544,9 +4547,17 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	*err_ret = close_file(fsp2,NORMAL_CLOSE);
+	close_err = close_file(fsp2,NORMAL_CLOSE);
 
-	return(ret == (SMB_OFF_T)src_sbuf.st_size);
+	if (close_err != 0) {
+		return map_nt_error_from_unix(close_err);
+	}
+
+	if (ret != (SMB_OFF_T)src_sbuf.st_size) {
+		return NT_STATUS_DISK_FULL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -4659,13 +4670,14 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		if (resolve_wildcards(directory,newname) &&
-				copy_file(directory,newname,conn,ofun, count,target_is_directory,&err))
+		if (resolve_wildcards(directory,newname)
+		    && NT_STATUS_IS_OK(status = copy_file(
+					       directory,newname,conn,ofun,
+					       count,target_is_directory))) 
 			count++;
-		if(!count && err) {
-			errno = err;
+		if(!count && !NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBcopy);
-			return(UNIXERROR(ERRHRD,ERRgeneral));
+			return ERROR_NT(status);
 		}
 		if (!count) {
 			exists = vfs_file_exist(conn,directory,NULL);
@@ -4698,9 +4710,10 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 				error = ERRnoaccess;
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				pstrcpy(destname,newname);
-				if (resolve_wildcards(fname,destname) && 
-						copy_file(fname,destname,conn,ofun,
-						count,target_is_directory,&err))
+				if (resolve_wildcards(fname,destname)
+				    && NT_STATUS_IS_OK(status = copy_file(
+							       fname,destname,conn,ofun,
+							       count,target_is_directory)))
 					count++;
 				DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 			}

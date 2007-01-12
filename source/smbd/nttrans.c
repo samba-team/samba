@@ -1784,10 +1784,15 @@ int reply_ntrename(connection_struct *conn,
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
+					  char *outbuf, int length,
+					  int bufsize, 
+					  uint16 **ppsetup, uint32 setup_count,
+					  char **ppparams,
+					  uint32 parameter_count,
+					  char **ppdata, uint32 data_count,
+					  uint32 max_data_count,
+					  uint32 max_param_count)
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
@@ -2734,11 +2739,13 @@ static int handle_nttrans(connection_struct *conn,
 		case NT_TRANSACT_NOTIFY_CHANGE:
 		{
 			START_PROFILE_NESTED(NT_transact_notify_change);
-			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+			outsize = call_nt_transact_notify_change(
+				conn, inbuf, outbuf, size, bufsize, 
+				&state->setup, state->setup_count,
+				&state->param, state->total_param, 
+				&state->data, state->total_data,
+				state->max_data_return,
+				state->max_param_return);
 			END_PROFILE_NESTED(NT_transact_notify_change);
 			break;
 		}
