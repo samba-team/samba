@@ -283,6 +283,37 @@ out:
 }
     
 int
+hx509_ca_tbs_add_san_jid(hx509_context context,
+			 hx509_ca_tbs tbs,
+			 const char *jid)
+{
+    const PKIXXmppAddr ujid = (const PKIXXmppAddr)jid;
+    heim_octet_string os;
+    size_t size;
+    int ret;
+
+    os.length = 0;
+    os.data = NULL;
+
+    ASN1_MALLOC_ENCODE(PKIXXmppAddr, os.data, os.length, &ujid, &size, ret);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    if (size != os.length)
+	_hx509_abort("internal ASN.1 encoder error");
+    
+    ret = hx509_ca_tbs_add_san_otherName(context,
+					 tbs,
+					 oid_id_pkix_on_xmppAddr(),
+					 &os);
+    free(os.data);
+out:
+    return ret;
+}
+
+
+int
 hx509_ca_tbs_add_san_hostname(hx509_context context,
 			      hx509_ca_tbs tbs,
 			      const char *dnsname)
