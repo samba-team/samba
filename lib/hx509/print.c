@@ -603,9 +603,6 @@ hx509_validate_cert(hx509_context context,
     if (hx509_name_cmp(subject, issuer) == 0)
 	status.selfsigned = 1;
 
-    hx509_name_free(&subject);
-    hx509_name_free(&issuer);
-
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "Validity:\n");
 
@@ -686,6 +683,13 @@ hx509_validate_cert(hx509_context context,
 	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 			   "Proxy and have IAN\n");
     }
+
+    if (hx509_name_is_null_p(subject) && status.haveSAN)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "NULL subject DN and doesn't have a SAN\n");
+
+    hx509_name_free(&subject);
+    hx509_name_free(&issuer);
 
     return 0;
 }
