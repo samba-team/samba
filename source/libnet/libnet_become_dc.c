@@ -1618,15 +1618,18 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	struct composite_context *c = s->creq;
 	struct rpc_request *req;
 	struct drsuapi_DsGetNCChanges *r;
-	int32_t level;
 
 	r = talloc(s, struct drsuapi_DsGetNCChanges);
 	if (composite_nomem(r, c)) return;
 
-	r->in.level = &level;
+	r->in.level = talloc(r, int32_t);
+	if (composite_nomem(r->in.level, c)) return;
+	r->out.level = talloc(r, int32_t);
+	if (composite_nomem(r->out.level, c)) return;
+
 	r->in.bind_handle	= &drsuapi_h->bind_handle;
 	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
-		level				= 8;
+		*r->in.level				= 8;
 		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
 		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req8.naming_context		= &partition->nc;
@@ -1642,7 +1645,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 		r->in.req.req8.mapping_ctr.num_mappings	= 0;
 		r->in.req.req8.mapping_ctr.mappings	= NULL;
 	} else {
-		level				= 5;
+		*r->in.level				= 5;
 		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
 		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req5.naming_context		= &partition->nc;
