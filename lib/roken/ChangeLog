@@ -1,5 +1,9 @@
-2006-12-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* resolve.c: Try harder to call res_ndestroy().
+	
+2006-12-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: make sure built headers are copied to the
 	${build_topdir}/include
 	
