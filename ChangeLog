@@ -1,3 +1,8 @@
+2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/hx509.texi: add Application requirements and write about
+	xmpp/jabber.
+	
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/hx509.texi: More about issuing certificates.
