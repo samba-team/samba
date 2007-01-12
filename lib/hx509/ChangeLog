@@ -1,5 +1,14 @@
 2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: Don't issue certs with subject DN that is NULL and have no
+	SANs
+
+	* print.c: Fix previous test.
+
+	* print.c: Check there is a SAN if subject DN is NULL.
+
+	* test_ca.in: test email, null subject dn
+
 	* hxtool.c: Allow setting parameters to private key generation.
 
 	* hx_locl.h: Allow setting parameters to private key generation.
