@@ -402,7 +402,28 @@ that Extended Key Usage and Subect Altertive Names that is used.
 @node Application requirements, CMS signing and encryption, Issuing a user certificate, Top
 @section Application requirements
 
+Application have different requirements on certificates. This section
+tries to expand what they are and how to use hxtool to generate
+certificates for those services.
+
 @subsection HTTPS
+
+@example
+hxtool issue-certificate \
+	  --subject="cn=www.test.h5l.se,dc=test,dc=h5l,dc=se" \
+	  --type="https-server" \
+          --hostname="www.test.h5l.se" \
+          --hostname="www2.test.h5l.se" \
+          ...
+@end example
+
+@example
+hxtool issue-certificate \
+	  --subject="uid=testus,dc=test,dc=h5l,dc=se" \
+	  --type="https-client" 
+          ...
+@end example
+
 
 @subsection Email
 
@@ -410,9 +431,20 @@ that Extended Key Usage and Subect Altertive Names that is used.
 
 @subsection XMPP/Jabber
 
-The server certificate should have a dNSname that is the same as the
-user entered into the application, not the same as the hostname of the
-machine.
+The jabber server certificate should have a dNSname that is the same as
+the user entered into the application, not the same as the hostname of
+the machine.
+
+@example
+hxtool issue-certificate \
+	  --subject="cn=xmpp1.test.h5l.se,dc=test,dc=h5l,dc=se" \
+          --hostname="xmpp1.test.h5l.se" \
+          --hostname="test.h5l.se" \
+          ...
+@end example
+
+The certificate may also contain a jabber identifier (JID) that, if the
+receiver allows it, authorises the server or client to use that JID.
 
 When storing a JID inside the certificate, both for server and client,
 its stored inside a UTF8String within an otherName entity inside the
