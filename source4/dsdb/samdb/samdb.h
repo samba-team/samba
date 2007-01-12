@@ -50,6 +50,10 @@ struct dsdb_extended_replicated_object {
 struct dsdb_extended_replicated_objects {
 	struct ldb_dn *partition_dn;
 
+	const struct GUID *source_dsa_invocation_id;
+	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+
 	uint32_t num_objects;
 	struct dsdb_extended_replicated_object *objects;
 };
