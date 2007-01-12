@@ -651,7 +651,11 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	struct replUpToDateVectorBlob nuv;
 	struct ldb_val nuv_value;
 	struct ldb_message_element *nuv_el = NULL;
-	struct GUID *our_invocation_id;
+	const struct GUID *our_invocation_id;
+	struct ldb_message_element *orf_el = NULL;
+	struct repsFromToBlob nrf;
+	struct ldb_val *nrf_value = NULL;
+	struct ldb_message_element *nrf_el = NULL;
 	uint32_t i,j,ni=0;
 	uint64_t seq_num;
 	bool found = false;
@@ -836,6 +840,93 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	}
 	nuv_el->flags = LDB_FLAG_MOD_REPLACE;
 
+	/*
+	 * now create the new repsFrom value from the given repsFromTo1 structure
+	 */
+	ZERO_STRUCT(nrf);
+	nrf.version					= 1;
+	nrf.ctr.ctr1					= *ar->objs->source_dsa;
+	/* and fix some values... */
+	nrf.ctr.ctr1.consecutive_sync_failures		= 0;
+	nrf.ctr.ctr1.last_success			= now;
+	nrf.ctr.ctr1.last_attempt			= now;
+	nrf.ctr.ctr1.result_last_attempt		= WERR_OK;
+	nrf.ctr.ctr1.highwatermark.highest_usn		= nrf.ctr.ctr1.highwatermark.tmp_highest_usn;
+
+	/*
+	 * first see if we already have a repsFrom value for the current source dsa
+	 * if so we'll later replace this value
+	 */
+	orf_el = ldb_msg_find_element(ar->sub.search_msg, "repsFrom");
+	if (orf_el) {
+		for (i=0; i < orf_el->num_values; i++) {
+			struct repsFromToBlob *trf;
+
+			trf = talloc(ar->sub.mem_ctx, struct repsFromToBlob);
+			if (!trf) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+
+			nt_status = ndr_pull_struct_blob(&orf_el->values[i], trf, trf,
+							 (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
+			}
+
+			if (trf->version != 1) {
+				return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+			}
+
+			/*
+			 * we compare the source dsa objectGUID not the invocation_id
+			 * because we want only one repsFrom value per source dsa
+			 * and when the invocation_id of the source dsa has changed we don't need 
+			 * the old repsFrom with the old invocation_id
+			 */
+			if (!GUID_equal(&trf->ctr.ctr1.source_dsa_obj_guid,
+					&ar->objs->source_dsa->source_dsa_obj_guid)) {
+				talloc_free(trf);
+				continue;
+			}
+
+			talloc_free(trf);
+			nrf_value = &orf_el->values[i];
+			break;
+		}
+
+		/*
+		 * copy over all old values to the new ldb_message
+		 */
+		ret = ldb_msg_add_empty(msg, "repsFrom", 0, &nrf_el);
+		if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+		*nrf_el = *orf_el;
+	}
+
+	/*
+	 * if we haven't found an old repsFrom value for the current source dsa
+	 * we'll add a new value
+	 */
+	if (!nrf_value) {
+		struct ldb_val zero_value;
+		ZERO_STRUCT(zero_value);
+		ret = ldb_msg_add_value(msg, "repsFrom", &zero_value, &nrf_el);
+		if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
+		nrf_value = &nrf_el->values[nrf_el->num_values - 1];
+	}
+
+	/* we now fill the value which is already attached to ldb_message */
+	nt_status = ndr_push_struct_blob(nrf_value, msg, &nrf,
+					 (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
+	}
+
+	/* 
+	 * the ldb_message_element for the attribute, has all the old values and the new one
+	 * so we'll replace the whole attribute with all values
+	 */
+	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
+
+	/* prepare the ldb_modify() request */
 	ret = ldb_build_mod_req(&ar->sub.change_req,
 				ar->module->ldb,
 				ar->sub.mem_ctx,
@@ -906,6 +997,7 @@ static int replmd_replicated_uptodate_search(struct replmd_replicated_request *a
 	int ret;
 	static const char *attrs[] = {
 		"replUpToDateVector",
+		"repsFrom",
 		NULL
 	};
 
