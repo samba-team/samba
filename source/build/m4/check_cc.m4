@@ -72,7 +72,8 @@ if test -n "$VISIBILITY_CFLAGS"; then
 	OLD_CFLAGS="$CFLAGS"
 
 	CFLAGS="$CFLAGS $VISIBILITY_CFLAGS"
-	AC_TRY_RUN([
+	AC_TRY_LINK([],
+	[
 		void vis_foo1(void) {}
 		__attribute__((visibility("default"))) void vis_foo2(void) {}
 		#include "${srcdir-.}/build/tests/trivial.c"
