@@ -159,6 +159,31 @@ _PUBLIC_ BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
 	return True;
 }
 
+_PUBLIC_ int GUID_compare(const struct GUID *u1, const struct GUID *u2)
+{
+	if (u1->time_low != u2->time_low) {
+		return u1->time_low - u2->time_low;
+	}
+
+	if (u1->time_mid != u2->time_mid) {
+		return u1->time_mid - u2->time_mid;
+	}
+
+	if (u1->time_hi_and_version != u2->time_hi_and_version) {
+		return u1->time_hi_and_version - u2->time_hi_and_version;
+	}
+
+	if (u1->clock_seq[0] != u2->clock_seq[0]) {
+		return u1->clock_seq[0] - u2->clock_seq[0];
+	}
+
+	if (u1->clock_seq[1] != u2->clock_seq[1]) {
+		return u1->clock_seq[1] - u2->clock_seq[1];
+	}
+
+	return memcmp(u1->node, u2->node, 6);
+}
+
 /**
   its useful to be able to display these in debugging messages
 */
