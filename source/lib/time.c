@@ -1112,7 +1112,7 @@ struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 		return ret;
 	}
 
-	if (((time_t)d) >= TIME_T_MAX) {
+	if (d >= (uint64)TIME_T_MAX) {
 		ret.tv_sec = TIME_T_MAX;
 		ret.tv_nsec = 0;
 		return ret;
