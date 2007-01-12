@@ -392,7 +392,7 @@ PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --quiet --domain $DOMAIN --realm $REALM"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --simple-bind-dn=cn=Manager,$BASEDN --password=$PASSWORD --root=$ROOT"
-$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS
+$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS >&2
 
 LDAPI="ldapi://$LDAPDIR/ldapi"
 LDAPI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
@@ -400,9 +400,9 @@ export LDAPI
 export LDAPI_ESCAPE
 
 #This uses the provision we just did, to read out the schema
-$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema
+$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema >&2
 #Now create an LDAP baseDN
-$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-base
+$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-base >&2
 
 OLDPATH=$PATH
 PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
@@ -412,8 +412,8 @@ MODCONF=$LDAPDIR/modules.conf
 rm -f $MODCONF
 touch $MODCONF
 
-slaptest -u -f $SLAPD_CONF > /dev/null 2>&1 || {
-    echo "enabling slapd modules"
+slaptest -u -f $SLAPD_CONF >&2 || {
+    echo "enabling slapd modules" >&2
     cat > $MODCONF <<EOF 
 modulepath	/usr/lib/ldap
 moduleload	back_bdb
@@ -421,18 +421,17 @@ EOF
 }
 
 if slaptest -u -f $SLAPD_CONF; then
-    slapadd -f $SLAPD_CONF < $PRIVATEDIR/$DNSNAME.ldif || {
-	echo "slapadd failed"
+    slapadd -f $SLAPD_CONF < $PRIVATEDIR/$DNSNAME.ldif >/dev/null || {
+	echo "slapadd failed" >&2
     }
 
-    slaptest -f $SLAPD_CONF || {
-	echo "slaptest after database load failed"
+    slaptest -f $SLAPD_CONF >/dev/null || {
+	echo "slaptest after database load failed" >&2
     }
 fi
     
 PATH=$OLDPATH
 export PATH
-
 
 cat >$PRIVATEDIR/wins_config.ldif<<EOF
 dn: name=TORTURE_6,CN=PARTNERS
@@ -446,3 +445,29 @@ EOF
 
 $srcdir/bin/ldbadd -H $PRIVATEDIR/wins_config.ldb < $PRIVATEDIR/wins_config.ldif >/dev/null || exit 1
 
+echo "KRB5_CONFIG=$KRB5_CONFIG"
+echo "PREFIX_ABS=$PREFIX_ABS"
+echo "TEST_DATA_PREFIX=$TEST_DATA_PREFIX"
+echo "CONFIGURATION=$CONFIGURATION"
+echo "CONFFILE=$CONFFILE"
+echo "SLAPD_CONF=$SLAPD_CONF"
+echo "PIDDIR=$PIDDIR"
+echo "AUTH=$AUTH"
+echo "SERVER=$SERVER"
+echo "NETBIOSNAME=$NETBIOSNAME"
+echo "LDAPI=$LDAPI"
+echo "LDAPI_ESCAPE=$LDAPI_ESCAPE"
+echo "DOMAIN=$DOMAIN"
+echo "USERNAME=$USERNAME"
+echo "REALM=$REALM"
+echo "DNSNAME=$DNSNAME"
+echo "BASEDN=$BASEDN"
+echo "PASSWORD=$PASSWORD"
+echo "AUTH=$AUTH"
+echo "SRCDIR=$SRCDIR"
+echo "ROOT=$ROOT"
+echo "SERVER=$SERVER"
+echo "NETBIOSNAME=$NETBIOSNAME"
+echo "PREFIX=$PREFIX"
+echo "SMBD_LOGLEVEL=$SMBD_LOGLEVEL"
+echo "LDAPDIR=$LDAPDIR"
