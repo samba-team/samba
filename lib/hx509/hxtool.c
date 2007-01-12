@@ -1295,6 +1295,12 @@ eval_types(hx509_context context,
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
     }
 
+    if (opt->jid_string) {
+	ret = hx509_ca_tbs_add_san_jid(context, tbs, opt->jid_string);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_jid");
+    }
+
     return 0;
 }
 
