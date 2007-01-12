@@ -263,8 +263,7 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
     size_t size;
     int ret;
 
-    ret = decode_KRB5PrincipalName(a->data, a->length,
-				   &kn, &size);
+    ret = decode_KRB5PrincipalName(a->data, a->length, &kn, &size);
     if (ret) {
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Decoding kerberos name in SAN failed: %d", ret);
@@ -292,6 +291,26 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
 }
 
 static int
+check_xmpp_san(hx509_validate_ctx ctx, heim_any *a)
+{
+    PKIXXmppAddr jid;
+    size_t size;
+    int ret;
+
+    ret = decode_PKIXXmppAddr(a->data, a->length, &jid, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding JID in SAN failed: %d", ret);
+	return 1;
+    }
+
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "jid: %s", jid);
+    free_PKIXXmppAddr(&jid);
+
+    return 0;
+}
+
+static int
 check_dnssrv_san(hx509_validate_ctx ctx, heim_any *a)
 {
     return 0;
@@ -303,6 +322,7 @@ struct {
     int (*func)(hx509_validate_ctx, heim_any *);
 } check_altname[] = {
     { "pk-init", oid_id_pkinit_san, check_pkinit_san },
+    { "jabber", oid_id_pkix_on_xmppAddr, check_xmpp_san },
     { "dns-srv", oid_id_pkix_on_dnsSRV, check_dnssrv_san }
 };
 
