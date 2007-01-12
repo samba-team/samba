@@ -71,6 +71,7 @@
 
 struct hx509_keyset_ops;
 struct hx509_collector;
+struct hx509_generate_private_context;
 typedef struct hx509_path hx509_path;
 
 #include <hx509.h>

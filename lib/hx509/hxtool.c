@@ -857,7 +857,7 @@ read_private_key(const char *fn, hx509_private_key *key)
 }
 
 static void
-get_key(const char *fn, const char *type, int optbits, 
+get_key(const char *fn, const char *type, int optbits,
 	hx509_private_key *signer)
 {
     int ret;
@@ -1413,13 +1413,25 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->generate_key_string) {
-	
-	ret = _hx509_generate_private_key(context, 
-					  oid_id_pkcs1_rsaEncryption(),
+	struct hx509_generate_private_context *keyctx;
+
+	ret = _hx509_generate_private_key_init(context, 
+					       oid_id_pkcs1_rsaEncryption(),
+					       &keyctx);
+
+	if (opt->issue_ca_flag)
+	    _hx509_generate_private_key_is_ca(context, keyctx);
+
+	ret = _hx509_generate_private_key(context, keyctx,
 					  &cert_key);
+	_hx509_generate_private_key_free(&keyctx);
 	if (ret)
 	    hx509_err(context, ret, 1, "generate private key");
 	
+	if (opt->key_bits_integer)
+	    _hx509_generate_private_key_bits(context, keyctx,
+					     opt->key_bits_integer);
+
 	ret = _hx509_private_key2SPKI(context, cert_key, &spki);
 	if (ret)
 	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);

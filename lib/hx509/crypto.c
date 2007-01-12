@@ -42,6 +42,11 @@ enum crypto_op_type {
     COT_SIGN
 };
 
+struct hx509_generate_private_context {
+    const heim_oid *key_oid;
+    int isCA;
+    unsigned long num_bits;
+};
 
 struct hx509_private_key_ops {
     const char *pemtype;
@@ -56,8 +61,9 @@ struct hx509_private_key_ops {
 		  const void *data,
 		  size_t len,
 		  hx509_private_key private_key);
-    int (*generate_private_key)(hx509_context context,
-				hx509_private_key private_key);
+    int (*generate_private_key)(hx509_context,
+				struct hx509_generate_private_context *,
+				hx509_private_key);
     int (*handle_alg)(const hx509_private_key,
 		      const AlgorithmIdentifier *,
 		      enum crypto_op_type);
@@ -433,17 +439,13 @@ rsa_private_key2SPKI(hx509_context context,
 }
 
 static int
-cb_func(int a, int b, BN_GENCB *c)
+rsa_generate_private_key(hx509_context context, 
+			 struct hx509_generate_private_context *ctx,
+			 hx509_private_key private_key)
 {
-    return 1;
-}
-
-static int
-rsa_generate_private_key(hx509_context context, hx509_private_key private_key)
-{
-    BN_GENCB cb;
     BIGNUM *e;
     int ret;
+    unsigned long bits;
 
     static const int default_rsa_e = 65537;
     static const int default_rsa_bits = 1024;
@@ -458,9 +460,14 @@ rsa_generate_private_key(hx509_context context, hx509_private_key private_key)
     e = BN_new();
     BN_set_word(e, default_rsa_e);
 
-    BN_GENCB_set(&cb, cb_func, NULL);
-    ret = RSA_generate_key_ex(private_key->private_key.rsa, 
-			      default_rsa_bits, e, &cb);
+    bits = default_rsa_bits;
+
+    if (ctx->num_bits)
+	bits = ctx->num_bits;
+    else if (ctx->isCA)
+	bits *= 2;
+
+    ret = RSA_generate_key_ex(private_key->private_key.rsa, bits, e, NULL);
     BN_free(e);
     if (ret != 1) {
 	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
@@ -1263,8 +1270,56 @@ _hx509_private_key2SPKI(hx509_context context,
 }
 
 int
+_hx509_generate_private_key_init(hx509_context context,
+				 const heim_oid *oid,
+				 struct hx509_generate_private_context **ctx)
+{
+    *ctx = NULL;
+
+    if (der_heim_oid_cmp(oid, oid_id_pkcs1_rsaEncryption()) != 0) {
+	hx509_set_error_string(context, 0, EINVAL, 
+			       "private key not an RSA key");
+	return EINVAL;
+    }
+
+    *ctx = calloc(1, sizeof(**ctx));
+    if (*ctx == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+    (*ctx)->key_oid = oid;
+
+    return 0;
+}
+
+int
+_hx509_generate_private_key_is_ca(hx509_context context,
+				  struct hx509_generate_private_context *ctx)
+{
+    ctx->isCA = 1;
+    return 0;
+}
+
+int
+_hx509_generate_private_key_bits(hx509_context context,
+				 struct hx509_generate_private_context *ctx,
+				 unsigned long bits)
+{
+    ctx->num_bits = bits;
+    return 0;
+}
+
+
+void
+_hx509_generate_private_key_free(struct hx509_generate_private_context **ctx)
+{
+    free(*ctx);
+    *ctx = NULL;
+}
+
+int
 _hx509_generate_private_key(hx509_context context,
-			    const heim_oid *key_oid,
+			    struct hx509_generate_private_context *ctx,
 			    hx509_private_key *private_key)
 {
     struct hx509_private_key_ops *ops;
@@ -1272,7 +1327,7 @@ _hx509_generate_private_key(hx509_context context,
 
     *private_key = NULL;
 
-    ops = find_private_alg(key_oid);
+    ops = find_private_alg(ctx->key_oid);
     if (ops == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;
@@ -1284,7 +1339,7 @@ _hx509_generate_private_key(hx509_context context,
 	return ret;
     }
 
-    ret = (*ops->generate_private_key)(context, *private_key);
+    ret = (*ops->generate_private_key)(context, ctx, *private_key);
     if (ret)
 	_hx509_private_key_free(private_key);
 
