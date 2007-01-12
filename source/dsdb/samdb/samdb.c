@@ -1190,6 +1190,192 @@ failed:
 }
 
 /*
+  work out the ntds settings invocationId for the current open ldb
+*/
+const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *attrs[] = { "invocationId", NULL };
+	int ret;
+	struct ldb_result *res;
+	struct GUID *invocation_id;
+	
+	/* see if we have a cached copy */
+	invocation_id = ldb_get_opaque(ldb, "cache.invocation_id");
+	if (invocation_id) {
+		return invocation_id;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	if (ret) {
+		goto failed;
+	}
+	talloc_steal(tmp_ctx, res);
+
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	invocation_id = talloc(tmp_ctx, struct GUID);
+	if (!invocation_id) {
+		goto failed;
+	}
+
+	*invocation_id = samdb_result_guid(res->msgs[0], "invocationId");
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.invocation_id", invocation_id) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, invocation_id);
+	talloc_free(tmp_ctx);
+
+	return invocation_id;
+
+failed:
+	DEBUG(1,("Failed to find our own NTDS Settings invocationId in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
+bool samdb_set_ntds_invocation_id(struct ldb_context *ldb, const struct GUID *invocation_id_in)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct GUID *invocation_id_new;
+	struct GUID *invocation_id_old;
+
+	/* see if we have a cached copy */
+	invocation_id_old = ldb_get_opaque(ldb, "cache.invocation_id");
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	invocation_id_new = talloc(tmp_ctx, struct GUID);
+	if (!invocation_id_new) {
+		goto failed;
+	}
+
+	*invocation_id_new = *invocation_id_in;
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.invocation_id", invocation_id_new) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, invocation_id_new);
+	talloc_free(tmp_ctx);
+	talloc_free(invocation_id_old);
+
+	return true;
+
+failed:
+	DEBUG(1,("Failed to set our own cached invocationId in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return false;
+}
+
+/*
+  work out the ntds settings objectGUID for the current open ldb
+*/
+const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *attrs[] = { "objectGUID", NULL };
+	int ret;
+	struct ldb_result *res;
+	struct GUID *ntds_guid;
+	
+	/* see if we have a cached copy */
+	ntds_guid = ldb_get_opaque(ldb, "cache.ntds_guid");
+	if (ntds_guid) {
+		return ntds_guid;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	if (ret) {
+		goto failed;
+	}
+	talloc_steal(tmp_ctx, res);
+
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	ntds_guid = talloc(tmp_ctx, struct GUID);
+	if (!ntds_guid) {
+		goto failed;
+	}
+
+	*ntds_guid = samdb_result_guid(res->msgs[0], "objectGUID");
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.ntds_guid", ntds_guid) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, ntds_guid);
+	talloc_free(tmp_ctx);
+
+	return ntds_guid;
+
+failed:
+	DEBUG(1,("Failed to find our own NTDS Settings objectGUID in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
+bool samdb_set_ntds_objectGUID(struct ldb_context *ldb, const struct GUID *ntds_guid_in)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct GUID *ntds_guid_new;
+	struct GUID *ntds_guid_old;
+	
+	/* see if we have a cached copy */
+	ntds_guid_old = ldb_get_opaque(ldb, "cache.ntds_guid");
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ntds_guid_new = talloc(tmp_ctx, struct GUID);
+	if (!ntds_guid_new) {
+		goto failed;
+	}
+
+	*ntds_guid_new = *ntds_guid_in;
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.ntds_guid", ntds_guid_new) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, ntds_guid_new);
+	talloc_free(tmp_ctx);
+	talloc_free(ntds_guid_old);
+
+	return true;
+
+failed:
+	DEBUG(1,("Failed to set our own cached invocationId in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return false;
+}
+
+/*
   work out the server dn for the current open ldb
 */
 struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
