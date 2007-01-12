@@ -66,6 +66,16 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 					wr->writex.in.count,
 					wr->writex.in.offset);
 	} else {
+#if HAVE_LINUX_AIO
+		/* possibly try an aio write */
+		if ((req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC) &&
+		    (pvfs->flags & PVFS_FLAG_LINUX_AIO)) {
+			status = pvfs_aio_pwrite(req, wr, f);
+			if (NT_STATUS_IS_OK(status)) {
+				return NT_STATUS_OK;
+			}
+		}
+#endif
 		ret = pwrite(f->handle->fd, 
 			     wr->writex.in.data, 
 			     wr->writex.in.count,

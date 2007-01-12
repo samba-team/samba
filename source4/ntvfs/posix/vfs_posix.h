@@ -244,5 +244,7 @@ struct pvfs_acl_ops {
 
 NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
 			struct pvfs_file *f, uint32_t maxcnt);
+NTSTATUS pvfs_aio_pwrite(struct ntvfs_request *req, union smb_write *wr,
+			 struct pvfs_file *f);
 
 #endif /* _VFS_POSIX_H_ */
