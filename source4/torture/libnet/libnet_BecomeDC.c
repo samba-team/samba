@@ -264,6 +264,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	uint32_t i;
+	int ret;
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
 	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
@@ -376,6 +377,11 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 			DLIST_ADD_END(s->schema->classes, sc, struct dsdb_class *);
 		}
+	}
+
+	ret = dsdb_set_schema(s->ldb, s->schema);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
 	}
 
 	status = dsdb_extended_replicated_objects_commit(s->ldb,
