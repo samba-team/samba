@@ -394,17 +394,17 @@ PCHCOMPILE = @$(CC) -Ilib/replace \
 	@echo "Compiling $<"
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
-		@echo "The following command failed:" 1>&2;\
-		@echo "$(COMPILE)" 1>&2;\
-		@$(COMPILE) >/dev/null 2>&1
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE)" 1>&2;\
+		$(COMPILE) >/dev/null 2>&1
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
 	@-mkdir -p `dirname $@`
 	@$(HCOMPILE) && exit 0;\
-		@echo "The following command failed:" 1>&2;\
-		@echo "$(HCOMPILE)" 1>&2;\
-		@$(HCOMPILE) >/dev/null 2>&1
+		echo "The following command failed:" 1>&2;\
+		echo "$(HCOMPILE)" 1>&2;\
+		$(HCOMPILE) >/dev/null 2>&1
 
 .h.h.gch:
 	@echo "Precompiling $<"
