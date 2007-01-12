@@ -52,11 +52,16 @@ BOOL set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 				 DELETE_ACCESS)) ? GPFS_SHARE_WRITE : 0;
 	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
 		GPFS_SHARE_READ : 0;
-	deny |= (share_access & (FILE_SHARE_WRITE|FILE_SHARE_DELETE)) ?
-		0 : GPFS_DENY_WRITE;
-	deny |= (share_access & (FILE_SHARE_READ)) ?
-		0 : GPFS_DENY_READ;
 
+	if (allow == GPFS_SHARE_NONE) {
+		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
+	}
+	else {	
+		deny |= (share_access & (FILE_SHARE_WRITE|FILE_SHARE_DELETE)) ?
+			0 : GPFS_DENY_WRITE;
+		deny |= (share_access & (FILE_SHARE_READ)) ?
+			0 : GPFS_DENY_READ;
+	}
 	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
 		   access_mask, allow, share_access, deny));
 
