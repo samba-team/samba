@@ -56,8 +56,6 @@ void GetTimeOfDay(struct timeval *tval)
 #endif
 }
 
-#define TIME_FIXUP_CONSTANT 11644473600LL
-
 struct timespec convert_time_t_to_timespec(time_t t)
 {
 	struct timespec ts;
@@ -107,7 +105,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	t2 = t;
-	t2 += TIME_FIXUP_CONSTANT;
+	t2 += TIME_FIXUP_CONSTANT_INT;
 	t2 *= 1000*1000*10;
 
 	*nt = t2;
@@ -545,7 +543,7 @@ struct timeval timeval_until(const struct timeval *tv1,
 NTTIME timeval_to_nttime(const struct timeval *tv)
 {
 	return 10*(tv->tv_usec + 
-		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
+		  ((TIME_FIXUP_CONSTANT_INT + (uint64_t)tv->tv_sec) * 1000000));
 }
 
 /*******************************************************************
@@ -1074,13 +1072,6 @@ time_t cli_make_unix_date3(struct cli_state *cli, void *date_ptr)
 {
 	return make_unix_date3(date_ptr, cli->serverzone);
 }
-
-#if (SIZEOF_LONG == 8)
-#define TIME_FIXUP_CONSTANT_INT 11644473600L
-#elif (SIZEOF_LONG_LONG == 8)
-#define TIME_FIXUP_CONSTANT_INT 11644473600LL
-#endif
-
 
 /* Large integer version. */
 struct timespec nt_time_to_unix_timespec(NTTIME *nt)
