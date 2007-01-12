@@ -484,16 +484,25 @@ ca_sign(hx509_context context,
 	hx509_set_error_string(context, 0, ret, "No public key set");
 	return ret;
     }
-    if (tbs->subject == NULL && !tbs->flags.proxy) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret, "No subject name set");
-	return ret;
+    /*
+     * Don't put restrictions on proxy certificate's subject name, it
+     * will be generated below.
+     */
+    if (!tbs->flags.proxy) {
+	if (tbs->subject == NULL) {
+	    hx509_set_error_string(context, 0, EINVAL, "No subject name set");
+	    return EINVAL;
+	}
+	if (hx509_name_is_null_p(tbs->subject) && tbs->san.len == 0) {
+	    hx509_set_error_string(context, 0, EINVAL, 
+				   "NULL subject and no SubjectAltNames");
+	    return EINVAL;
+	}
     }
     if (tbs->flags.ca && tbs->flags.proxy) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret, "Can't be proxy and CA "
+	hx509_set_error_string(context, 0, EINVAL, "Can't be proxy and CA "
 			       "at the same time");
-	return ret;
+	return EINVAL;
     }
     if (tbs->flags.proxy) {
 	if (tbs->san.len > 0) {
