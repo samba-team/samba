@@ -32,10 +32,17 @@ struct pvfs_aio_read_state {
 	struct aio_event *ae;
 };
 
+struct pvfs_aio_write_state {
+	struct ntvfs_request *req;
+	union smb_write *wr;
+	struct pvfs_file *f;
+	struct aio_event *ae;
+};
+
 /*
   called when an aio read has finished
 */
-static void pvfs_aio_handler(struct event_context *ev, struct aio_event *ae, 
+static void pvfs_aio_read_handler(struct event_context *ev, struct aio_event *ae, 
 			     int ret, void *private)
 {
 	struct pvfs_aio_read_state *state = talloc_get_type(private, 
@@ -78,7 +85,7 @@ NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
         io_prep_pread(&iocb, f->handle->fd, rd->readx.out.data,
 		      maxcnt, rd->readx.in.offset);
 	state->ae = event_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb, 
-				  pvfs_aio_handler, state);
+				  pvfs_aio_read_handler, state);
 	if (state->ae == NULL) {
 		DEBUG(0,("Failed event_add_aio\n"));
 		talloc_free(state);
@@ -87,6 +94,70 @@ NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
 
 	state->req  = req;
 	state->rd   = rd;
+	state->f    = f;
+
+	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+
+	return NT_STATUS_OK;
+}
+
+
+
+
+/*
+  called when an aio write has finished
+*/
+static void pvfs_aio_write_handler(struct event_context *ev, struct aio_event *ae, 
+			     int ret, void *private)
+{
+	struct pvfs_aio_write_state *state = talloc_get_type(private, 
+							    struct pvfs_aio_write_state);
+	struct pvfs_file *f = state->f;
+	union smb_write *wr = state->wr;
+
+	if (ret < 0) {
+		/* errno is -ret on error */
+		state->req->async_states->status = pvfs_map_errno(f->pvfs, -ret);
+		state->req->async_states->send_fn(state->req);
+		return;
+	}
+
+	f->handle->seek_offset = wr->writex.in.offset + ret;
+
+	wr->writex.out.nwritten = ret;
+	wr->writex.out.remaining = 0;
+
+	talloc_steal(ev, state->ae);
+
+	state->req->async_states->status = NT_STATUS_OK;
+	state->req->async_states->send_fn(state->req);
+}
+
+
+/*
+  write to a file
+*/
+NTSTATUS pvfs_aio_pwrite(struct ntvfs_request *req, union smb_write *wr,
+			 struct pvfs_file *f)
+{
+	struct iocb iocb;
+	struct pvfs_aio_write_state *state;
+
+	state = talloc(req, struct pvfs_aio_write_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
+
+        io_prep_pwrite(&iocb, f->handle->fd, wr->writex.in.data,
+		       wr->writex.in.count, wr->writex.in.offset);
+	state->ae = event_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb, 
+				  pvfs_aio_write_handler, state);
+	if (state->ae == NULL) {
+		DEBUG(0,("Failed event_add_aio\n"));
+		talloc_free(state);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	state->req  = req;
+	state->wr   = wr;
 	state->f    = f;
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
