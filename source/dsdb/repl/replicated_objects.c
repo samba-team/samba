@@ -183,6 +183,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
 					       uint32_t linked_attributes_count,
 					       const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
+					       const struct GUID *source_dsa_invocation_id,
 					       const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark,
 					       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
 					       TALLOC_CTX *mem_ctx,
@@ -203,6 +204,10 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	out->partition_dn = ldb_dn_new(out, ldb, partition_dn);
 	W_ERROR_HAVE_NO_MEMORY(out->partition_dn);
+
+	out->source_dsa_invocation_id	= source_dsa_invocation_id;
+	out->new_highwatermark		= new_highwatermark;
+	out->uptodateness_vector	= uptodateness_vector;
 
 	out->num_objects	= object_count;
 	out->objects		= talloc_array(out,

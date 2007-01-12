@@ -139,6 +139,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	char *ejs;
 	int ret;
+	bool ok;
 
 	DEBUG(0,("New Server[%s] in Site[%s]\n",
 		p->dest_dsa->dns_name, p->dest_dsa->site_name));
@@ -233,6 +234,17 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
+	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -247,6 +259,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct GUID *source_dsa_invocation_id;
 	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
@@ -260,6 +273,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		first_object		= s->schema_part.first_object;
 		linked_attributes_count	= 0;
 		linked_attributes	= NULL;
+		source_dsa_invocation_id= &c->ctr1->source_dsa_invocation_id;
 		new_highwatermark	= &c->ctr1->new_highwatermark;
 		uptodateness_vector	= NULL; /* TODO: map it */
 		break;
@@ -270,6 +284,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		first_object		= s->schema_part.first_object;
 		linked_attributes_count	= 0; /* TODO: ! */
 		linked_attributes	= NULL; /* TODO: ! */;
+		source_dsa_invocation_id= &c->ctr6->source_dsa_invocation_id;
 		new_highwatermark	= &c->ctr6->new_highwatermark;
 		uptodateness_vector	= c->ctr6->uptodateness_vector;
 		break;
@@ -353,6 +368,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 							 first_object,
 							 linked_attributes_count,
 							 linked_attributes,
+							 source_dsa_invocation_id,
 							 new_highwatermark,
 							 uptodateness_vector,
 							 s, &objs);
@@ -456,6 +472,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct GUID *source_dsa_invocation_id;
 	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
@@ -469,6 +486,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		first_object		= c->ctr1->first_object;
 		linked_attributes_count	= 0;
 		linked_attributes	= NULL;
+		source_dsa_invocation_id= &c->ctr1->source_dsa_invocation_id;
 		new_highwatermark	= &c->ctr1->new_highwatermark;
 		uptodateness_vector	= NULL; /* TODO: map it */
 		break;
@@ -479,6 +497,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		first_object		= c->ctr6->first_object;
 		linked_attributes_count	= c->ctr6->linked_attributes_count;
 		linked_attributes	= c->ctr6->linked_attributes;
+		source_dsa_invocation_id= &c->ctr6->source_dsa_invocation_id;
 		new_highwatermark	= &c->ctr6->new_highwatermark;
 		uptodateness_vector	= c->ctr6->uptodateness_vector;
 		break;
@@ -502,6 +521,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 							 first_object,
 							 linked_attributes_count,
 							 linked_attributes,
+							 source_dsa_invocation_id,
 							 new_highwatermark,
 							 uptodateness_vector,
 							 s, &objs);
