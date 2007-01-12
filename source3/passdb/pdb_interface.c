@@ -961,6 +961,18 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 	return pdb->lookup_rids(pdb, domain_sid, num_rids, rids, names, attrs);
 }
 
+/* 
+ * NOTE: pdb_lookup_names is currently (2007-01-12) not used anywhere 
+ *       in the samba code.
+ *       Unlike _lsa_lookup_sids and _samr_lookup_rids, which eventually 
+ *       also ask pdb_lookup_rids, thus looking up a bunch of rids at a time, 
+ *       the pdb_ calls _lsa_lookup_names and _samr_lookup_names come
+ *       down to are pdb_getsampwnam and pdb_getgrnam instead of
+ *       pdb_lookup_names.
+ *       But in principle, it the call belongs to the API and might get
+ *       used in this context some day. 
+ */
+#if 0
 NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  int num_names,
 			  const char **names,
@@ -970,6 +982,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->lookup_names(pdb, domain_sid, num_names, names, rids, attrs);
 }
+#endif
 
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
@@ -1368,11 +1381,11 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	return ret;
 }
 
-NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
-					TALLOC_CTX *mem_ctx,
-					const DOM_SID *group,
-					uint32 **pp_member_rids,
-					size_t *p_num_members)
+static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
+					       TALLOC_CTX *mem_ctx,
+					       const DOM_SID *group,
+					       uint32 **pp_member_rids,
+					       size_t *p_num_members)
 {
 	gid_t gid;
 	uid_t *uids;
@@ -1410,12 +1423,12 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
-					    TALLOC_CTX *mem_ctx,
-					    struct samu *user,
-					    DOM_SID **pp_sids,
-					    gid_t **pp_gids,
-					    size_t *p_num_groups)
+static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
+						   TALLOC_CTX *mem_ctx,
+						   struct samu *user,
+						   DOM_SID **pp_sids,
+						   gid_t **pp_gids,
+						   size_t *p_num_groups)
 {
 	size_t i;
 	gid_t gid;
@@ -1549,12 +1562,12 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	return False;
 }
 
-NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
-				 const DOM_SID *domain_sid,
-				 int num_rids,
-				 uint32 *rids,
-				 const char **names,
-				 enum lsa_SidType *attrs)
+static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
+					const DOM_SID *domain_sid,
+					int num_rids,
+					uint32 *rids,
+					const char **names,
+					enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -1612,12 +1625,13 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	return result;
 }
 
-NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
-				  const DOM_SID *domain_sid,
-				  int num_names,
-				  const char **names,
-				  uint32 *rids,
-				  enum lsa_SidType *attrs)
+#if 0
+static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
+					 const DOM_SID *domain_sid,
+					 int num_names,
+					 const char **names,
+					 uint32 *rids,
+					 enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -1668,6 +1682,7 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 
 	return result;
 }
+#endif
 
 static struct pdb_search *pdb_search_init(enum pdb_search_type type)
 {
