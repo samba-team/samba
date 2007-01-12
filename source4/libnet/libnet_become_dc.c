@@ -2154,13 +2154,12 @@ struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLO
 	if (composite_nomem(s->dest_dsa.netbios_name, c)) return c;
 
 	/* Destination DSA dns_name construction */
-	tmp_name		= strlower_talloc(s, s->dest_dsa.netbios_name);
+	tmp_name	= strlower_talloc(s, s->dest_dsa.netbios_name);
 	if (composite_nomem(tmp_name, c)) return c;
-	s->dest_dsa.dns_name	= talloc_asprintf(s, "%s.%s",
-						  tmp_name,
-				  		  s->domain.dns_name);
-	talloc_free(tmp_name);
-	if (composite_nomem(s->dest_dsa.dns_name, c)) return c;
+	tmp_name	= talloc_asprintf_append(tmp_name, ".%s",s->domain.dns_name);
+	if (composite_nomem(tmp_name, c)) return c;
+	s->dest_dsa.dns_name	= tmp_name;
+
 	/* Callback function pointers */
 	s->callbacks = r->in.callbacks;
 
