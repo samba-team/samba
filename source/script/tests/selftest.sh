@@ -52,7 +52,7 @@ export PKG_CONFIG_PATH
 
 incdir=`dirname $ARG0`
 echo -n "PROVISIONING..."
-. $incdir/mktestsetup.sh $PREFIX || exit 1
+. $incdir/mktestsetup.sh $PREFIX >/dev/null || exit 1
 echo "DONE"
 
 PATH=bin:$PATH
