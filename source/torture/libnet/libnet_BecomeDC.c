@@ -259,38 +259,56 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
-	const struct GUID *source_dsa_invocation_id;
-	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
+	struct repsFromTo1 *s_dsa;
+	char *tmp_dns_name;
 	uint32_t i;
+
+	s_dsa			= talloc_zero(s, struct repsFromTo1);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
 
 	switch (c->ctr_level) {
 	case 1:
-		mapping_ctr		= &c->ctr1->mapping_ctr;
-		total_object_count	= c->ctr1->total_object_count;
-		object_count		= s->schema_part.object_count;
-		first_object		= s->schema_part.first_object;
-		linked_attributes_count	= 0;
-		linked_attributes	= NULL;
-		source_dsa_invocation_id= &c->ctr1->source_dsa_invocation_id;
-		new_highwatermark	= &c->ctr1->new_highwatermark;
-		uptodateness_vector	= NULL; /* TODO: map it */
+		mapping_ctr			= &c->ctr1->mapping_ctr;
+		total_object_count		= c->ctr1->total_object_count;
+		object_count			= s->schema_part.object_count;
+		first_object			= s->schema_part.first_object;
+		linked_attributes_count		= 0;
+		linked_attributes		= NULL;
+		s_dsa->highwatermark		= c->ctr1->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr1->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr1->source_dsa_invocation_id;
+		uptodateness_vector		= NULL; /* TODO: map it */
 		break;
 	case 6:
-		mapping_ctr		= &c->ctr6->mapping_ctr;
-		total_object_count	= c->ctr6->total_object_count;
-		object_count		= s->schema_part.object_count;
-		first_object		= s->schema_part.first_object;
-		linked_attributes_count	= 0; /* TODO: ! */
-		linked_attributes	= NULL; /* TODO: ! */;
-		source_dsa_invocation_id= &c->ctr6->source_dsa_invocation_id;
-		new_highwatermark	= &c->ctr6->new_highwatermark;
-		uptodateness_vector	= c->ctr6->uptodateness_vector;
+		mapping_ctr			= &c->ctr6->mapping_ctr;
+		total_object_count		= c->ctr6->total_object_count;
+		object_count			= s->schema_part.object_count;
+		first_object			= s->schema_part.first_object;
+		linked_attributes_count		= 0; /* TODO: ! */
+		linked_attributes		= NULL; /* TODO: ! */;
+		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr6->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr6->source_dsa_invocation_id;
+		uptodateness_vector		= c->ctr6->uptodateness_vector;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
+
+	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	tmp_dns_name	= talloc_asprintf_append(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	s_dsa->other_info->dns_name = tmp_dns_name;
 
 	for (cur = first_object; cur; cur = cur->next_object) {
 		bool is_attr = false;
@@ -368,8 +386,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 							 first_object,
 							 linked_attributes_count,
 							 linked_attributes,
-							 source_dsa_invocation_id,
-							 new_highwatermark,
+							 s_dsa,
 							 uptodateness_vector,
 							 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
@@ -388,6 +405,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		}
 	}
 
+	talloc_free(s_dsa);
 	talloc_free(objs);
 	return NT_STATUS_OK;
 }
@@ -472,38 +490,56 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
-	const struct GUID *source_dsa_invocation_id;
-	const struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
+	struct repsFromTo1 *s_dsa;
+	char *tmp_dns_name;
 	uint32_t i;
+
+	s_dsa			= talloc_zero(s, struct repsFromTo1);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
 
 	switch (c->ctr_level) {
 	case 1:
-		mapping_ctr		= &c->ctr1->mapping_ctr;
-		total_object_count	= c->ctr1->total_object_count;
-		object_count		= c->ctr1->object_count;
-		first_object		= c->ctr1->first_object;
-		linked_attributes_count	= 0;
-		linked_attributes	= NULL;
-		source_dsa_invocation_id= &c->ctr1->source_dsa_invocation_id;
-		new_highwatermark	= &c->ctr1->new_highwatermark;
-		uptodateness_vector	= NULL; /* TODO: map it */
+		mapping_ctr			= &c->ctr1->mapping_ctr;
+		total_object_count		= c->ctr1->total_object_count;
+		object_count			= c->ctr1->object_count;
+		first_object			= c->ctr1->first_object;
+		linked_attributes_count		= 0;
+		linked_attributes		= NULL;
+		s_dsa->highwatermark		= c->ctr1->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr1->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr1->source_dsa_invocation_id;
+		uptodateness_vector		= NULL; /* TODO: map it */
 		break;
 	case 6:
-		mapping_ctr		= &c->ctr6->mapping_ctr;
-		total_object_count	= c->ctr6->total_object_count;
-		object_count		= c->ctr6->object_count;
-		first_object		= c->ctr6->first_object;
-		linked_attributes_count	= c->ctr6->linked_attributes_count;
-		linked_attributes	= c->ctr6->linked_attributes;
-		source_dsa_invocation_id= &c->ctr6->source_dsa_invocation_id;
-		new_highwatermark	= &c->ctr6->new_highwatermark;
-		uptodateness_vector	= c->ctr6->uptodateness_vector;
+		mapping_ctr			= &c->ctr6->mapping_ctr;
+		total_object_count		= c->ctr6->total_object_count;
+		object_count			= c->ctr6->object_count;
+		first_object			= c->ctr6->first_object;
+		linked_attributes_count		= c->ctr6->linked_attributes_count;
+		linked_attributes		= c->ctr6->linked_attributes;
+		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr6->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr6->source_dsa_invocation_id;
+		uptodateness_vector		= c->ctr6->uptodateness_vector;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
+
+	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	tmp_dns_name	= talloc_asprintf_append(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	s_dsa->other_info->dns_name = tmp_dns_name;
 
 	if (total_object_count) {
 		DEBUG(0,("Partition[%s] objects[%u/%u]\n",
@@ -521,8 +557,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 							 first_object,
 							 linked_attributes_count,
 							 linked_attributes,
-							 source_dsa_invocation_id,
-							 new_highwatermark,
+							 s_dsa,
 							 uptodateness_vector,
 							 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
@@ -540,6 +575,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
+	talloc_free(s_dsa);
 	talloc_free(objs);
 
 	for (i=0; i < linked_attributes_count; i++) {
