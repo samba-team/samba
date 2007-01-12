@@ -684,7 +684,7 @@ hx509_validate_cert(hx509_context context,
 			   "Proxy and have IAN\n");
     }
 
-    if (hx509_name_is_null_p(subject) && status.haveSAN)
+    if (hx509_name_is_null_p(subject) && !status.haveSAN)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 		       "NULL subject DN and doesn't have a SAN\n");
 
