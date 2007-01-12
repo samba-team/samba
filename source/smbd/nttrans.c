@@ -466,7 +466,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = 0;
-	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	struct timespec c_timespec;
@@ -628,18 +627,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(conn, file_attributes);
 		
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-
-	if (bad_path) {
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
 	if (!check_name(fname,conn)) {
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
-		return UNIXERROR(ERRDOS, ERRbadpath);
+		return UNIXERROR(ERRDOS,ERRbadpath);
 	}
 
 #if 0
@@ -1090,7 +1088,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = 0;
-	BOOL bad_path = False;
 	files_struct *fsp = NULL;
 	char *p = NULL;
 	BOOL extended_oplock_granted = False;
@@ -1257,15 +1254,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
+	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
 	if (!check_name(fname,conn)) {
 		restore_case_semantics(conn, file_attributes);
-		return UNIXERROR(ERRDOS, ERRbadpath);
+		return UNIXERROR(ERRDOS,ERRbadpath);
 	}
     
 #if 0
@@ -1562,8 +1559,6 @@ int reply_ntcancel(connection_struct *conn,
 
 static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *newname, uint32 attrs)
 {
-	BOOL bad_path_oldname = False;
-	BOOL bad_path_newname = False;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	pstring last_component_oldname;
 	pstring last_component_newname;
@@ -1577,24 +1572,12 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	/* No wildcards. */
-	if (ms_has_wild(newname) || ms_has_wild(oldname)) {
-		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-	}
-
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	unix_convert(oldname,conn,last_component_oldname,&bad_path_oldname,&sbuf1);
-	if (bad_path_oldname) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-
-	/* Quick check for "." and ".." */
-	if (last_component_oldname[0] == '.') {
-		if (!last_component_oldname[1] || (last_component_oldname[1] == '.' && !last_component_oldname[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
+	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
         /* Source must already exist. */
@@ -1611,16 +1594,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
-	if (bad_path_newname) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-
-	/* Quick check for "." and ".." */
-	if (last_component_newname[0] == '.') {
-		if (!last_component_newname[1] || (last_component_newname[1] == '.' && !last_component_newname[2])) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
+	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Disallow if newname already exists. */

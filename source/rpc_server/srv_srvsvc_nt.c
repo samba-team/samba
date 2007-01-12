@@ -2036,7 +2036,6 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, const char *server_unc, const
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
@@ -2067,8 +2066,8 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, const char *server_unc, const
 	became_user = True;
 
 	pstrcpy(tmp_file, file);
-	unix_convert(tmp_file, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(conn, tmp_file, False, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
@@ -2141,7 +2140,6 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, const char *server_unc, const
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
@@ -2171,8 +2169,8 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, const char *server_unc, const
 	became_user = True;
 
 	pstrcpy(tmp_file, file);
-	unix_convert(tmp_file, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(conn, tmp_file, False, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;

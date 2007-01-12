@@ -64,18 +64,20 @@ changes etc.
 We assume that we have already done a chdir() to the right "root" directory
 for this service.
 
-The function will return False if some part of the name except for the last
-part cannot be resolved
+The function will return an NTSTATUS error if some part of the name except for the last
+part cannot be resolved, else NT_STATUS_OK.
+
+Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we didn't
+get any fatal errors that should immediately terminate the calling
+SMB processing whilst resolving.
 
 If the saved_last_component != 0, then the unmodified last component
 of the pathname is returned there. This is used in an exceptional
 case in reply_mv (so far). If saved_last_component == 0 then nothing
 is returned there.
 
-The bad_path arg is set to True if the filename walk failed. This is
-used to pick the correct error code to return between ENOENT and ENOTDIR
-as Windows applications depend on ERRbadpath being returned if a component
-of a pathname does not exist.
+If last_component_wcard is true then a MS wildcard was detected and
+should be allowed in the last component of the path only.
 
 On exit from unix_convert, if *pst was not null, then the file stat
 struct will be returned if the file exists and was found, if not this
@@ -83,8 +85,11 @@ stat struct will be filled with zeros (and this can be detected by checking
 for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
-BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_component, 
-                  BOOL *bad_path, SMB_STRUCT_STAT *pst)
+NTSTATUS unix_convert(connection_struct *conn,
+			pstring name,
+			BOOL allow_wcard_last_component,
+			char *saved_last_component, 
+			SMB_STRUCT_STAT *pst)
 {
 	SMB_STRUCT_STAT st;
 	char *start, *end;
@@ -96,14 +101,15 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	SET_STAT_INVALID(*pst);
 
 	*dirpath = 0;
-	*bad_path = False;
-	if(saved_last_component)
+
+	if(saved_last_component) {
 		*saved_last_component = 0;
+	}
 
 	if (conn->printer) {
 		/* we don't ever use the filenames on a printer share as a
 			filename - so don't convert them */
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
@@ -136,7 +142,12 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			*pst = st;
 		}
 		DEBUG(5,("conversion finished \"\" -> %s\n",name));
-		return(True);
+		return NT_STATUS_OK;
+	}
+
+	if (name[0] == '.' && (name[1] == '/' || name[1] == '\0')) {
+		/* Start of pathname can't be "." only. */
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	/*
@@ -145,10 +156,11 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 
 	if(saved_last_component) {
 		end = strrchr_m(name, '/');
-		if(end)
+		if (end) {
 			pstrcpy(saved_last_component, end + 1);
-		else
+		} else {
 			pstrcpy(saved_last_component, name);
+		}
 	}
 
 	/*
@@ -169,7 +181,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 
 	if(!conn->case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
 		*pst = st;
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	/* 
@@ -177,10 +189,22 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 */
 
 	if (SMB_VFS_STAT(conn,name,&st) == 0) {
+		/* Ensure we catch all names with in "/."
+		   this is disallowed under Windows. */
+		const char *p = strstr(name, "/."); /* mb safe. */
+		if (p) {
+			if (p[2] == '/') {
+				/* Error code within a pathname. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else if (p[2] == '\0') {
+				/* Error code at the end of a pathname. */
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+		}
 		stat_cache_add(orig_path, name, conn->case_sensitive);
 		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 		*pst = st;
-		return(True);
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n", name, dirpath, start));
@@ -190,19 +214,20 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * sensitive then searching won't help.
 	 */
 
-	if (conn->case_sensitive && !mangle_is_mangled(name, conn->params) &&
-	    !*lp_mangled_map(conn->params))
-		return(False);
-
-	name_has_wildcard = ms_has_wild(start);
+	if (conn->case_sensitive && 
+			!mangle_is_mangled(name, conn->params) &&
+			!*lp_mangled_map(conn->params)) {
+		return NT_STATUS_OK;
+	}
 
 	/* 
 	 * is_mangled() was changed to look at an entire pathname, not 
 	 * just a component. JRA.
 	 */
 
-	if (mangle_is_mangled(start, conn->params))
+	if (mangle_is_mangled(start, conn->params)) {
 		component_was_mangled = True;
+	}
 
 	/* 
 	 * Now we need to recursively match the name against the real 
@@ -218,16 +243,64 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		/* 
 		 * Pinpoint the end of this section of the filename.
 		 */
-		end = strchr_m(start, '/');
+		end = strchr(start, '/'); /* mb safe. '/' can't be in any encoded char. */
 
 		/* 
 		 * Chop the name at this point.
 		 */
-		if (end) 
+		if (end) {
 			*end = 0;
+		}
 
-		if(saved_last_component != 0)
+		if (saved_last_component != 0) {
 			pstrcpy(saved_last_component, end ? end + 1 : start);
+		}
+
+		/* The name cannot have a component of "." */
+
+		if (ISDOT(start)) {
+			if (end) {
+				if (allow_wcard_last_component) {
+					/* We're terminating here so we
+					 * can be a little slower and get
+					 * the error code right. Windows
+					 * treats the last part of the pathname
+					 * separately I think, so if the last
+					 * component is a wildcard then we treat
+					 * this ./ as "end of component" */
+
+					const char *p = strchr(end+1, '/');
+
+					if (!p && ms_has_wild(end+1)) {
+						/* Error code at the end of a pathname. */
+						return NT_STATUS_OBJECT_NAME_INVALID;
+					} else {
+						/* Error code within a pathname. */
+						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					}
+				}
+				/* Error code within a pathname. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				/* Error code at the end of a pathname. */
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+		}
+
+		/* The name cannot have a wildcard if it's not
+		   the last component. */
+
+		name_has_wildcard = ms_has_wild(start);
+
+		/* Wildcard not valid anywhere. */
+		if (name_has_wildcard && !allow_wcard_last_component) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+
+		/* Wildcards never valid within a pathname. */
+		if (name_has_wildcard && end) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
 
 		/* 
 		 * Check if the name exists up to this point.
@@ -251,9 +324,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 * Windows applications depend on the difference between
 				 * these two errors.
 				 */
-				errno = ENOTDIR;
-				*bad_path = True;
-				return(False);
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
 
 			if (!end) {
@@ -278,8 +349,9 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			 * later.
 			 */
 
-			if (end)
+			if (end) {
 				pstrcpy(rest,end+1);
+			}
 
 			/* Reset errno so we can detect directory open errors. */
 			errno = 0;
@@ -288,7 +360,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			 * Try to find this part of the path in the directory.
 			 */
 
-			if (ms_has_wild(start) || 
+			if (name_has_wildcard || 
 			    !scan_directory(conn, dirpath, start, sizeof(pstring) - 1 - (start - name))) {
 				if (end) {
 					/*
@@ -304,13 +376,15 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 					 * Windows applications depend on the difference between
 					 * these two errors.
 					 */
-					*bad_path = True;
-					return(False);
+					if (errno == ENOENT) {
+						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					}
+					return map_nt_error_from_unix(errno);
 				}
 	      
 				if (errno == ENOTDIR) {
-					*bad_path = True;
-					return(False);
+					/* Name exists but is not a directory. */
+					return map_nt_error_from_unix(ENOTDIR);
 				}
 
 				/*
@@ -335,7 +409,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				}
 
 				DEBUG(5,("New file %s\n",start));
-				return(True); 
+				return NT_STATUS_OK;
 			}
 
 			/* 
@@ -346,7 +420,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				end = start + strlen(start);
 				if (!safe_strcat(start, "/", sizeof(pstring) - 1 - (start - name)) ||
 				    !safe_strcat(start, rest, sizeof(pstring) - 1 - (start - name))) {
-					return False;
+					return map_nt_error_from_unix(ENAMETOOLONG);
 				}
 				*end = '\0';
 			} else {
@@ -367,8 +441,9 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		/* 
 		 * Add to the dirpath that we have resolved so far.
 		 */
-		if (*dirpath)
+		if (*dirpath) {
 			pstrcat(dirpath,"/");
+		}
 
 		pstrcat(dirpath,start);
 
@@ -377,14 +452,16 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		 * as this can change the size.
 		 */
 		
-		if(!component_was_mangled && !name_has_wildcard)
+		if(!component_was_mangled && !name_has_wildcard) {
 			stat_cache_add(orig_path, dirpath, conn->case_sensitive);
+		}
 	
 		/* 
 		 * Restore the / that we wiped out earlier.
 		 */
-		if (end)
+		if (end) {
 			*end = '/';
+		}
 	}
   
 	/*
@@ -392,15 +469,16 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * as this can change the size.
 	 */
 
-	if(!component_was_mangled && !name_has_wildcard)
+	if(!component_was_mangled && !name_has_wildcard) {
 		stat_cache_add(orig_path, name, conn->case_sensitive);
+	}
 
 	/* 
 	 * The name has been resolved.
 	 */
 
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
-	return(True);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

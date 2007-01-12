@@ -35,14 +35,6 @@ static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
  Work out whether this file is offline
 ****************************************************************************/
 
-#ifndef ISDOT
-#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
-#endif /* ISDOT */
-
-#ifndef ISDOTDOT
-#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
-#endif /* ISDOTDOT */
-
 static uint32 set_offline_flag(connection_struct *conn, const char *const path)
 {
 	if (ISDOT(path) || ISDOTDOT(path)) {
