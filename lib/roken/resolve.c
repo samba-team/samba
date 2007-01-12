@@ -492,6 +492,14 @@ parse_reply(const unsigned char *data, size_t len)
     return r;
 }
 
+#ifdef HAVE_RES_NSEARCH
+#ifdef HAVE_RES_NDESTROY
+#define rk_res_free(x) res_ndestroy(x)
+#else
+#define rk_res_free(x) res_nclose(x)
+#endif
+#endif
+
 static struct dns_reply *
 dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
@@ -530,7 +538,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	reply = malloc(size);
 	if (reply == NULL) {
 #ifdef HAVE_RES_NSEARCH
-	    res_nclose(&state);
+	    rk_res_free(&state);
 #endif
 	    return NULL;
 	}
@@ -548,18 +556,14 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
-#ifdef HAVE_RES_NDESTROY
-	    res_ndestroy(&state);
-#else
-	    res_nclose(&state);
-#endif
+	    rk_res_free(&state);
 #endif
 	    free(reply);
 	    return NULL;
 	}
     } while (size < len && len < rk_DNS_MAX_PACKET_SIZE);
 #ifdef HAVE_RES_NSEARCH
-    res_nclose(&state);
+    rk_res_free(&state);
 #endif
 
     len = min(len, size);
