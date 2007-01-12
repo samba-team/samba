@@ -431,7 +431,7 @@ interface drsuapi
 		uint32 u2;
 		[range(0,0x100000)] uint32 count;
 		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCursor2 coursors[];
+		[size_is(count)] drsuapi_DsReplicaCursor2 cursors[];
 	} drsuapi_DsReplicaCursor2CtrEx;
 
 	/* Generic DATA_BLOB values */
