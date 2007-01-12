@@ -432,7 +432,8 @@ fam_remove_notify(void * data)
      * request.
      */
 
-    if (info->generation == global_fc_generation) {
+    if ((FAMCONNECTION_GETFD(&global_fc) != -1)
+	&& (info->generation == global_fc_generation)) {
 	DEBUG(FAM_TRACE, ("removing FAM notification for request %d\n",
 		    info->req.reqnum));
 	FAMCancelMonitor(&global_fc, &(info->req));
