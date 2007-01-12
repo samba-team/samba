@@ -641,6 +641,12 @@ static int replmd_replicated_uptodate_modify_callback(struct ldb_context *ldb,
 #endif
 }
 
+static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
+						   const struct drsuapi_DsReplicaCursor2 *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}
+
 static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *ar)
 {
 	NTSTATUS nt_status;
@@ -821,6 +827,13 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 * finally correct the size of the cursors array
 	 */
 	nuv.ctr.ctr2.count = ni;
+
+	/*
+	 * sort the cursors
+	 */
+	qsort(nuv.ctr.ctr2.cursors, nuv.ctr.ctr2.count,
+	      sizeof(struct drsuapi_DsReplicaCursor2),
+	      (comparison_fn_t)replmd_drsuapi_DsReplicaCursor2_compare);
 
 	/*
 	 * create the change ldb_message
