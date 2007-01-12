@@ -10,7 +10,10 @@ int main()
    if (cd == 0 || cd == (iconv_t)-1) return -1;
    return 0;
 } 
-   ],[AC_MSG_RESULT(yes); $3],[AC_MSG_RESULT(no); $4])
+   ],
+   [AC_MSG_RESULT(yes); $3],
+   [AC_MSG_RESULT(no); $4],
+   [AC_MSG_RESULT(cross); $4])
 ])
 
 dnl SMB_CHECK_ICONV_DIR(dir,action-if-found,action-if-not-found)
