@@ -1085,16 +1085,16 @@ time_t cli_make_unix_date3(struct cli_state *cli, void *date_ptr)
 /* Large integer version. */
 struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 {
-	uint64 d;
+	int64 d;
 	struct timespec ret;
 
-	if (*nt == 0 || *nt == (uint64)-1) {
+	if (*nt == 0 || *nt == (int64)-1) {
 		ret.tv_sec = 0;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	d = *nt;
+	d = (int64)*nt;
 	/* d is now in 100ns units, since jan 1st 1601".
 	   Save off the ns fraction. */
 	
@@ -1106,20 +1106,20 @@ struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	/* Now adjust by 369 years to make the secs since 1970 */
 	d -= TIME_FIXUP_CONSTANT_INT;
 
-	if (((time_t)d) <= TIME_T_MIN) {
+	if (d <= (int64)TIME_T_MIN) {
 		ret.tv_sec = TIME_T_MIN;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	if (d >= (uint64)TIME_T_MAX) {
+	if (d >= (int64)TIME_T_MAX) {
 		ret.tv_sec = TIME_T_MAX;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
 	ret.tv_sec = (time_t)d;
-    return ret;
+	return ret;
 }
 /****************************************************************************
  Check if two NTTIMEs are the same.
@@ -1238,7 +1238,7 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 
  This is an absolute version of the one above.
  By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
- If the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
+ If the time_t was 5 seconds, the NTTIME is 5 seconds. JFM
 ****************************************************************************/
 
 void unix_to_nt_time_abs(NTTIME *nt, time_t t)
