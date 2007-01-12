@@ -23,6 +23,17 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_dsdb_cache
+[MODULE::ldb_dsdb_cache]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
+INIT_FUNCTION = dsdb_cache_module_init
+OBJ_FILES = \
+		dsdb_cache.o
+# End MODULE ldb_dsdb_cache
+################################################
+
+################################################
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = ldb
