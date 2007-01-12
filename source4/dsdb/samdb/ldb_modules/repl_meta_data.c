@@ -677,6 +677,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		return replmd_replicated_request_error(ar, ret);
 	}
 
+	/*
+	 * first create the new replUpToDateVector
+	 */
 	ouv_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replUpToDateVector");
 	if (ouv_value) {
 		nt_status = ndr_pull_struct_blob(ouv_value, ar->sub.mem_ctx, &ouv,
@@ -743,7 +746,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 */
 	found = false;
 	for (j=0; j < ni; j++) {
-		if (!GUID_equal(ar->objs->source_dsa_invocation_id,
+		if (!GUID_equal(&ar->objs->source_dsa->source_dsa_invocation_id,
 				&nuv.ctr.ctr2.cursors[j].source_dsa_invocation_id)) {
 			continue;
 		}
@@ -757,7 +760,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		 * and use the tmp_highest_usn because this is what we have just applied
 		 * to our ldb
 		 */
-		nuv.ctr.ctr2.cursors[j].highest_usn		= ar->objs->new_highwatermark->tmp_highest_usn;
+		nuv.ctr.ctr2.cursors[j].highest_usn		= ar->objs->source_dsa->highwatermark.tmp_highest_usn;
 		nuv.ctr.ctr2.cursors[j].last_sync_success	= now;
 		break;
 	}
@@ -769,8 +772,8 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		 * and use the tmp_highest_usn because this is what we have just applied
 		 * to our ldb
 		 */
-		nuv.ctr.ctr2.cursors[ni].source_dsa_invocation_id= *ar->objs->source_dsa_invocation_id;
-		nuv.ctr.ctr2.cursors[ni].highest_usn		= ar->objs->new_highwatermark->tmp_highest_usn;
+		nuv.ctr.ctr2.cursors[ni].source_dsa_invocation_id= ar->objs->source_dsa->source_dsa_invocation_id;
+		nuv.ctr.ctr2.cursors[ni].highest_usn		= ar->objs->source_dsa->highwatermark.tmp_highest_usn;
 		nuv.ctr.ctr2.cursors[ni].last_sync_success	= now;
 		ni++;
 	}
