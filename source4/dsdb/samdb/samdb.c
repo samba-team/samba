@@ -1165,6 +1165,7 @@ const struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	if (ret) {
 		goto failed;
 	}
+	talloc_steal(tmp_ctx, root_res);
 
 	if (root_res->count != 1) {
 		goto failed;
