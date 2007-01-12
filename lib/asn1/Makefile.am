@@ -270,9 +270,11 @@ gen_files_rfc2459 =					\
 	asn1_id_x509_ce_freshestCRL.x			\
 	asn1_id_x509_ce_cRLReason.x			\
 	asn1_CRLReason.x				\
+	asn1_PKIXXmppAddr.x				\
 	asn1_id_pkix.x					\
 	asn1_id_pkix_on.x				\
 	asn1_id_pkix_on_dnsSRV.x			\
+	asn1_id_pkix_on_xmppAddr.x			\
 	asn1_id_pkix_kp.x				\
 	asn1_id_pkix_kp_serverAuth.x			\
 	asn1_id_pkix_kp_clientAuth.x			\

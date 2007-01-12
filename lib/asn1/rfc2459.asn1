@@ -406,10 +406,13 @@ CRLReason ::= ENUMERATED {
 	aACompromise           (10)
 }
 
+PKIXXmppAddr ::= UTF8String
+
 id-pkix OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
             dod(6) internet(1) security(5) mechanisms(5) pkix(7) }
 
 id-pkix-on OBJECT IDENTIFIER ::= { id-pkix 8 }
+id-pkix-on-xmppAddr OBJECT IDENTIFIER ::= { id-pkix-on 5 }
 id-pkix-on-dnsSRV OBJECT IDENTIFIER ::= { id-pkix-on 7 }
 
 id-pkix-kp OBJECT IDENTIFIER ::= { id-pkix 3 }
