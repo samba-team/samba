@@ -1,5 +1,22 @@
-2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Allow setting parameters to private key generation.
+
+	* hx_locl.h: Allow setting parameters to private key generation.
+
+	* crypto.c: Allow setting parameters to private key generation.
+
+	* hxtool.c (eval_types): add jid if user gave one
+
+	* hxtool-commands.in (certificate-sign): add --jid
+
+	* ca.c (hx509_ca_tbs_add_san_jid): Allow adding
+	id-pkix-on-xmppAddr OtherName.
+
+	* print.c: Print id-pkix-on-xmppAddr OtherName.
+	
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* no random, no RSA/DH tests
 
 	* hxtool.c (info): print status of random generator
