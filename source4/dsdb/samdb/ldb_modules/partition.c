@@ -571,7 +571,14 @@ static int partition_extended_replicated_objects(struct ldb_module *module, stru
 
 	ext = talloc_get_type(req->op.extended.data, struct dsdb_extended_replicated_objects);
 	if (!ext) {
-		return LDB_ERR_OTHER;
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended_replicated_objects: invalid extended data\n");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	if (ext->version != DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended_replicated_objects: extended data invalid version [%u != %u]\n",
+			  ext->version, DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION);
+		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
 	return partition_replicate(module, req, ext->partition_dn);
