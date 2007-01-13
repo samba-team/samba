@@ -166,6 +166,13 @@ hx509_ca_tbs_add_eku(hx509_context contex,
 {
     void *ptr;
     int ret;
+    unsigned i;
+
+    /* search for duplicates */
+    for (i = 0; i < tbs->eku.len; i++) {
+	if (der_heim_oid_cmp(oid, &tbs->eku.val[i]) == 0)
+	    return 0;
+    }
 
     ptr = realloc(tbs->eku.val, sizeof(tbs->eku.val[0]) * (tbs->eku.len + 1));
     if (ptr == NULL)
