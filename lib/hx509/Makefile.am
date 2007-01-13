@@ -57,6 +57,7 @@ dist_libhx509_la_SOURCES = \
 	collector.c \
 	crypto.c \
 	error.c \
+	env.c \
 	file.c \
 	hx509-private.h \
 	hx509-protos.h \
