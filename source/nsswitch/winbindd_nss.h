@@ -479,7 +479,6 @@ struct WINBINDD_CCACHE_ENTRY {
 	uid_t uid;
 	time_t create_time;
 	time_t renew_until;
-	BOOL refresh_tgt;
 	time_t refresh_time;
 	struct timed_event *event;
 };
