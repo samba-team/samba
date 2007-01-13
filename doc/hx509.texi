@@ -237,8 +237,7 @@ Setting up a CA
 
 @c * Issuing certificates::
 * Creating a CA certificate::
-* Issuing a server certificate::
-* Issuing a user certificate::
+* Issuing certificates::
 @c * Issuing a proxy certificate::
 @c * Creating a user certificate::
 @c * Validating a certifiate::
@@ -334,28 +333,51 @@ evaluates the policy.
 @node Setting up a CA, Creating a CA certificate, What is X.509 ?, Top
 @chapter Setting up a CA
 
-@node Creating a CA certificate, Issuing a server certificate, Setting up a CA, Top
-@section Creating a CA certificate
+Do not let this chapter scare you off, its just to give you an idea how
+to complicated setting up a CA can be. If you are just playing around,
+skip all this and go to the next chapter, @pxref{Creating a CA
+certificate}.
 
 Creating a CA certificate should be more the just creating a
 certificate, there is the policy of the CA. If its just you and your
 friend that is playing around then it probably doesn't matter what the
 policy is. But then it comes to trust in an organisation, it will
-probably matter more whom your users and sysadmins will trust.
+probably matter more whom your users and sysadmins will find it
+acceptable to trust.
 
 At the same time, try to keep thing simple, its not very hard to run a
 Certificate authority and the process to get new certificates should
 simple.
 
-You probably want to create a certificate with a long lifetime, 10 years
-at the shortest. This because you dont want to push out the certificate
-(as a trust anchor) to all you users once more. A trust anchor can't
-expire, but not all software works that way.
+Fill all this in later.
 
-Keep in mind the security requirements that will case. For example,
-SHA1 is going to be withdrawn in 2010, so make sure you have enough
-buffering in your choice of digest/hash algorithms and signature
-algorithms.
+How do you trust your CA.
+
+What is the CA responsibility.
+
+Review of CA activity.
+
+How much process should it be to issue certificate.
+
+Who is allowed to issue certificates.
+
+Who is allowed to requests certificates.
+
+@node Creating a CA certificate, Issuing certificates, Setting up a CA, Top
+@section Creating a CA certificate
+
+You probably want to create a CA certificate with a long lifetime, 10
+years at the shortest. This because you dont want to push out the
+certificate (as a trust anchor) to all you users once again when the old
+one just expired. A trust anchor can't really expire, but not all
+software works that way.
+
+Keep in mind the security requirements might be diffrent 10-20 years
+into the future. For example, SHA1 is going to be withdrawn in 2010, so
+make sure you have enough buffering in your choice of digest/hash
+algorithms, signature algorithms and keylenghts.
+
+This command below will create a CA certificate in the file ca.pem.
 
 @example
 hxtool issue-certificate \
@@ -367,46 +389,37 @@ hxtool issue-certificate \
     --certificate="FILE:ca.pem"
 @end example
 
-@node Issuing a server certificate, Issuing a user certificate, Creating a CA certificate, Top
-@section Issuing a server certificate
+@node Issuing certificates, Application requirements, Creating a CA certificate, Top
+@section Issuing certificates
 
-The first component should be a CN, and should contain the name of the
-https server, this is because of compatiblity with older software. The
-more modern way to do this is to use SubjectAltName with dNSName set,
-these can be added with the --hostname switch. When using jabber
-certificate its quite common to have serveral name since the many
-clients disagree on what the name in the certificate should be and what
-the hostname should be.
+First you'll create a CA certificate, after that you have to deal with
+your users and servers and issue certificate for them.
 
-This example show creating a https server certificate for the host
-www.test.h5l.se that also serves www2.test.h5l.se for compatiblity
-reasons.
+CA can generate the key for the user.
 
-@example
-hxtool issue-certificate \
-    --ca-certificate=FILE:ca.pem \
-    --generate-key=rsa \
-    --type="https-server" \
-    --subject="CN=www.test.h5l.se,DC=test,DC=h5l,DC=se" \
-    --hostname="www.test.h5l.se" \
-    --hostname="www2.test.h5l.se" \
-    --certificate="FILE:cert-ee.pem"
-@end example
+Can receive PKCS10 certificate requests from the users. PKCS10 is a
+request for a certificate. The user can specified what DN the user wants
+and what public key. To prove the user have the key, the whole request
+is signed by the private key of the user.
 
-@node Issuing a user certificate, Application requirements, Issuing a server certificate, Top
-@section Issuing a user certificate
+Name space management.
 
-To issue a certificate to a user is usually quite simpler in terms of
-that Extended Key Usage and Subect Altertive Names that is used.
+What people might want to see.
 
-@node Application requirements, CMS signing and encryption, Issuing a user certificate, Top
+Re-issue certificates just because people moved within the organization.
+
+Expose privacy information.
+
+Using Subcomponent name (+ notation).
+
+@node Application requirements, CMS signing and encryption, Issuing certificates, Top
 @section Application requirements
 
 Application have different requirements on certificates. This section
 tries to expand what they are and how to use hxtool to generate
 certificates for those services.
 
-@subsection HTTPS
+@subsection HTTPS - server
 
 @example
 hxtool issue-certificate \
@@ -417,15 +430,63 @@ hxtool issue-certificate \
           ...
 @end example
 
+@subsection HTTPS - client
+
 @example
 hxtool issue-certificate \
 	  --subject="uid=testus,dc=test,dc=h5l,dc=se" \
-	  --type="https-client" 
+	  --type="https-client" \
+          ...
+@end example
+
+@subsection S/MIME - email
+
+There are two things that should be set in S/MIME certificates, one or
+more email addresses and an extended eku usage (EKU), emailProtection.
+
+The email address format used in S/MIME certificates is defined in
+RFC2822, section 3.4.1 and it should be an ``addr-spec''.
+
+There are two ways to specifify email address in certificates. The old
+ways is in the subject distinguished name, this should not be used. The
+new way is using a Subject Alternative Name (SAN).
+
+But even though email address is stored in certificates, they don't need
+to, email reader programs are required to accept certificates that
+doesn't have either of the two methods of storing email in certificates.
+In that case, they try to protect the user by printing the name of the
+certificate instead.
+
+S/MIME certificate can be used in another special way. They can be
+issued with a NULL subject distinguished name plus the email in SAN,
+this is a valid certificate. This is used when you wont want to share
+more information then you need to.
+
+hx509 issue-certificate supports adding the email SAN to certificate by
+using the --email option, --email also gives an implicit emailProtection
+eku. If you want to create an certificate without an email address, the
+option --type=email will add the emailProtection EKU.
+
+@example
+hxtool issue-certificate \
+	  --subject="uid=testus-email,dc=test,dc=h5l,dc=se" \
+	  --type=email \
+	  --email="testus@@test.h5l.se" \
+          ...
+@end example
+
+An example of an certificate without and subject distinguished name with
+an email address in a SAN.
+
+@example
+hxtool issue-certificate \
+	  --subject="" \
+	  --type=email \
+	  --email="testus@@test.h5l.se" \
           ...
 @end example
 
 
-@subsection Email
 
 @subsection PK-INIT
 
