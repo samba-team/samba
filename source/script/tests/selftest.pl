@@ -97,11 +97,13 @@ sub ShowHelp()
 	print "Samba test runner
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 
-Usage: $Script PREFIX TESTS [SOCKET_WRAPPER]
+Usage: $Script PREFIX
 
 Generic options:
- --help                 this help page
- --target=samba4|samba3 Samba version to target
+ --help                     this help page
+ --target=samba4|samba3|win Samba version to target
+ --socket-wrapper           enable socket wrapper
+ --quick                    run quick overall test
 
 ";
 	exit(0);
@@ -109,10 +111,14 @@ Generic options:
 
 my $opt_help = 0;
 my $opt_target = "samba4";
+my $opt_quick = 0;
+my $opt_socket_wrapper = 0;
 
 my $result = GetOptions (
 	    'help|h|?' => \$opt_help,
-		'target' => \$opt_target
+		'target' => \$opt_target,
+		'socket-wrapper' => \$opt_socket_wrapper,
+		'quick' => \$opt_quick
 	    );
 
 if (not $result) {
@@ -120,11 +126,9 @@ if (not $result) {
 }
 
 ShowHelp() if ($opt_help);
-ShowHelp() if ($#ARGV <= 0);
+ShowHelp() if ($#ARGV < 0);
 
 my $prefix = shift;
-my $tests = shift;
-my $socket_wrapper = shift;
 
 my $torture_maxtime = $ENV{TORTURE_MAXTIME};
 unless (defined($torture_maxtime)) {
@@ -154,10 +158,7 @@ my $bindir = "$srcdir/bin";
 my $setupdir = "$srcdir/setup";
 my $testsdir = "$srcdir/script/tests";
 
-my $tls_enabled = 0;
-if ($tests eq "all") {
-	$tls_enabled = 1;
-}
+my $tls_enabled = not $opt_quick;
 
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LD_LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
@@ -170,17 +171,36 @@ if (defined($ENV{LD_LIBRARY_PATH})) {
 $ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
 $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 
-print "PROVISIONING...";
-open(IN, "$RealBin/mktestsetup.sh $prefix|") or die("Unable to setup");
-while (<IN>) {
-	next unless (/^([A-Z_]+)=(.*)$/);
-	$ENV{$1} = $2;
+if ($opt_target eq "samba4") {
+	print "PROVISIONING...";
+	open(IN, "$RealBin/mktestsetup.sh $prefix|") or die("Unable to setup");
+	while (<IN>) {
+		next unless (/^([A-Z_]+)=(.*)$/);
+		$ENV{$1} = $2;
+	}
+	close(IN);
+} elsif ($opt_target eq "win") {
+	die ("Windows tests will not run without root privileges.") 
+		if (`whoami` ne "root");
+
+	die("Windows tests will not run with socket wrapper enabled.") 
+        if ($opt_socket_wrapper);
+
+	die("Windows tests will not run quickly.") if ($opt_quick);
+
+	die("Environment variable WINTESTCONF has not been defined.\n".
+		"Windows tests will not run unconfigured.") if (not defined($ENV{WINTESTCONF}));
+
+	die ("$ENV{WINTESTCONF} could not be read.") if (! -r $ENV{WINTESTCONF});
+
+	$ENV{WINTEST_DIR}="$ENV{SRCDIR}/script/tests/win";
+} else {
+	die("unknown target `$opt_target'");
 }
-close(IN);
 
 my $socket_wrapper_dir = undef;
 
-if ( defined($socket_wrapper) and $socket_wrapper eq "SOCKET_WRAPPER")
+if ( $opt_socket_wrapper) 
 {
 	$socket_wrapper_dir = "$prefix/w";
 	$ENV{SOCKET_WRAPPER_DIR} = $socket_wrapper_dir;
@@ -245,7 +265,13 @@ system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
 $ENV{failed} = 0;
 $ENV{totalfailed} = 0;
 
-system("$testsdir/tests_$tests.sh");
+if ($opt_target eq "win") {
+	system("$testsdir/test_win.sh");
+} elsif ($opt_quick) {
+	system("$testsdir/tests_quick.sh");
+} else {
+	system("$testsdir/tests_all.sh");
+}
 
 close(DATA);
 
