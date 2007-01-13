@@ -336,7 +336,7 @@ interface drsuapi
 		drsuapi_DsReplicaOID oid;
 	} drsuapi_DsReplicaOIDMapping;
 
-	typedef struct {
+	typedef [public] struct {
 		[range(0,0x100000)] uint32 num_mappings;
 		[size_is(num_mappings)] drsuapi_DsReplicaOIDMapping *mappings;
 	} drsuapi_DsReplicaOIDMapping_Ctr;
