@@ -640,20 +640,19 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return UNIXERROR(ERRDOS,ERRbadpath);
 	}
 
-#if 0
 	/* This is the correct thing to do (check every time) but can_delete is
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
-	   is really going to delete this file. */
-	if ((desired_access & DELETE_ACCESS)
-	    && !can_delete_file_in_directory(conn, fname)) {
-#else
+	   is really going to delete this file. If the client is forcing FILE_CREATE
+	   let the filesystem take care of the permissions. */
+
 	/* Setting FILE_SHARE_DELETE is the hint. */
+
 	if (lp_acl_check_permissions(SNUM(conn))
+	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)
 	    && !can_delete_file_in_directory(conn, fname)) {
-#endif
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
@@ -1265,20 +1264,19 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		return UNIXERROR(ERRDOS,ERRbadpath);
 	}
     
-#if 0
 	/* This is the correct thing to do (check every time) but can_delete is
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
-	   is really going to delete this file. */
-	if ((desired_access & DELETE_ACCESS)
-	    && !can_delete_file_in_directory(conn, fname)) {
-#else
+	   is really going to delete this file. If the client is forcing FILE_CREATE
+	   let the filesystem take care of the permissions. */
+
 	/* Setting FILE_SHARE_DELETE is the hint. */
+
 	if (lp_acl_check_permissions(SNUM(conn))
+	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)
 	    && !can_delete_file_in_directory(conn, fname)) {
-#endif
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
