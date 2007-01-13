@@ -513,6 +513,101 @@ hx509_name_to_Name(const hx509_name from, Name *to)
     return copy_Name(&from->der_name, to);
 }
 
+int
+hx509_name_normalize(hx509_context context, hx509_name name)
+{
+    return 0;
+}
+
+int
+hx509_name_expand(hx509_context context,
+		  hx509_name name,
+		  hx509_env env)
+{
+    Name *n = &name->der_name;
+    int i, j;
+
+    if (n->element != choice_Name_rdnSequence) {
+	hx509_set_error_string(context, 0, EINVAL, "RDN not of supported type");
+	return EINVAL;
+    }
+
+    for (i = 0 ; i < n->u.rdnSequence.len; i++) {
+	for (j = 0; j < n->u.rdnSequence.val[i].len; j++) {
+	    /*
+	      THIS SHOULD REALLY BE:
+	      COMP = n->u.rdnSequence.val[i].val[j];
+	      normalize COMP to utf8
+	      check if there are variables
+	        expand variables
+	        convert back to orignal format, store in COMP
+	      free normalized utf8 string
+	    */
+	    DirectoryString *ds = &n->u.rdnSequence.val[i].val[j].value;
+	    char *p, *p2;
+	    struct rk_strpool *strpool = NULL;
+
+	    if (ds->element != choice_DirectoryString_utf8String) {
+		hx509_set_error_string(context, 0, EINVAL, "unsupported type");
+		return EINVAL;
+	    }
+	    p = strstr(ds->u.utf8String, "${");
+	    if (p) {
+		strpool = rk_strpoolprintf(strpool, "%.*s", 
+					   (int)(p - ds->u.utf8String), 
+					   ds->u.utf8String);
+		if (strpool == NULL)
+		    abort();
+	    }
+	    while (p != NULL) {
+		/* expand variables */
+		const char *value;
+		p2 = strchr(p, '}');
+		if (p2 == NULL) {
+		    hx509_set_error_string(context, 0, EINVAL, "missing }");
+		    rk_strpoolfree(strpool);
+		    return EINVAL;
+		}
+		p += 2;
+		value = hx509_env_lfind(context, env, p, p2 - p);
+		if (value == NULL) {
+		    hx509_set_error_string(context, 0, EINVAL, 
+					   "variable %.*s missing",
+					   (int)(p2 - p), p);
+		    rk_strpoolfree(strpool);
+		    return EINVAL;
+		}
+		strpool = rk_strpoolprintf(strpool, "%s", value);
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+		p2++;
+
+		p = strstr(p2, "${");
+		if (p)
+		    strpool = rk_strpoolprintf(strpool, "%.*s", 
+					       (int)(p - p2), p2);
+		else
+		    strpool = rk_strpoolprintf(strpool, "%s", p2);
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+	    }
+	    if (strpool) {
+		free(ds->u.utf8String);
+		ds->u.utf8String = rk_strpoolcollect(strpool);
+		if (ds->u.utf8String == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+	    }
+	}
+    }
+    return 0;
+}
+
 
 void
 hx509_name_free(hx509_name *name)
