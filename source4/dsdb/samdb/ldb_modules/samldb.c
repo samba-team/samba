@@ -680,11 +680,6 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (get_control_from_list(req->controls, DSDB_CONTROL_REPLICATED_OBJECT_OID)) {
-		/* if it's a replicated object we have nothing to do */
-		return ldb_next_request(module, req);
-	}
-
 	/* is user or computer? */
 	if ((samdb_find_attribute(module->ldb, msg, "objectclass", "user") != NULL) ||
 	    (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL)) {
