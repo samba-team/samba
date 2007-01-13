@@ -94,8 +94,6 @@ test_expand(hx509_context context, const char *name, const char *expected)
     if (ret)
 	return 1;
     
-    printf("expanded %s before %s\n", s, name);
-
     ret = strcmp(s, expected) != 0;
     free(s);
     if (ret)
