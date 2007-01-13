@@ -310,8 +310,11 @@ qx.Proto.send = function()
 
 
   // --------------------------------------
-  //   Appliying request header
+  //   Applying request header
   // --------------------------------------
+
+  // Add a Referer header
+  vRequest.setRequestHeader('Referer', window.location.href);
 
   var vRequestHeaders = this.getRequestHeaders();
   for (var vId in vRequestHeaders) {
