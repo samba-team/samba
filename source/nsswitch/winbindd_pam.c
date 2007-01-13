@@ -608,7 +608,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    time(NULL),
 					    ticket_lifetime,
 					    renewal_until, 
-					    lp_winbind_refresh_tickets(),
 					    False);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -884,7 +883,6 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    time(NULL),
 							    time(NULL) + lp_winbind_cache_time(),
 							    time(NULL) + WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-							    lp_winbind_refresh_tickets(),
 							    True);
 
 				if (!NT_STATUS_IS_OK(result)) {
