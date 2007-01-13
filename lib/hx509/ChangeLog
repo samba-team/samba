@@ -1,5 +1,16 @@
 2007-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: update (c)
+
+	* ca.c: (hx509_ca_tbs_add_eku): filter out dups.
+	
+	* hxtool.c: Add type email and add email eku when using option
+	--email.
+
+	* Makefile.am: add env.c
+
+	* name.c: Remove abort, add error handling.
+
 	* test_name.c: test name expansion
 
 	* name.c: add hx509_name_expand
