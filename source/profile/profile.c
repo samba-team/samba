@@ -312,7 +312,7 @@ BOOL profile_setup(BOOL rdonly)
 	    "SMBunlock",	/* PR_VALUE_SMBUNLOCK */
 	    "SMBctemp",		/* PR_VALUE_SMBCTEMP */
 	    "SMBmknew",		/* PR_VALUE_SMBMKNEW */
-	    "SMBchkpth",	/* PR_VALUE_SMBCHKPTH */
+	    "SMBcheckpath",	/* PR_VALUE_SMBCHECKPATH */
 	    "SMBexit",		/* PR_VALUE_SMBEXIT */
 	    "SMBlseek",		/* PR_VALUE_SMBLSEEK */
 	    "SMBlockread",		/* PR_VALUE_SMBLOCKREAD */
