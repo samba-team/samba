@@ -456,12 +456,12 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 		s->schema = talloc_zero(s, struct dsdb_schema);
 		NT_STATUS_HAVE_NO_MEMORY(s->schema);
 
-		status = dsdb_load_oid_mappings(s->schema, mapping_ctr);
+		status = dsdb_load_oid_mappings_drsuapi(s->schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
 	} else {
-		status = dsdb_verify_oid_mappings(s->schema, mapping_ctr);
+		status = dsdb_verify_oid_mappings_drsuapi(s->schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
