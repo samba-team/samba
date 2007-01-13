@@ -1272,6 +1272,13 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 
 	objs = talloc_get_type(req->op.extended.data, struct dsdb_extended_replicated_objects);
 	if (!objs) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "replmd_extended_replicated_objects: invalid extended data\n");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	if (objs->version != DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "replmd_extended_replicated_objects: extended data invalid version [%u != %u]\n",
+			  objs->version, DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION);
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 

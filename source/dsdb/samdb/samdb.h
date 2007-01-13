@@ -44,6 +44,13 @@ struct dsdb_extended_replicated_object {
 };
 
 struct dsdb_extended_replicated_objects {
+	/* 
+	 * this is the version of the dsdb_extended_replicated_objects
+	 * version 0: initial implementation
+	 */
+#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 0
+	uint32_t version;
+
 	struct ldb_dn *partition_dn;
 
 	const struct repsFromTo1 *source_dsa;

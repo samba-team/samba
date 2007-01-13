@@ -192,8 +192,9 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	out = talloc_zero(mem_ctx, struct dsdb_extended_replicated_objects);
 	W_ERROR_HAVE_NO_MEMORY(out);
+	out->version		= DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION;
 
-	out->partition_dn = ldb_dn_new(out, ldb, partition_dn);
+	out->partition_dn	= ldb_dn_new(out, ldb, partition_dn);
 	W_ERROR_HAVE_NO_MEMORY(out->partition_dn);
 
 	out->source_dsa		= source_dsa;
