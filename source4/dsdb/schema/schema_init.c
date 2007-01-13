@@ -26,8 +26,9 @@
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 
-WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+WERROR dsdb_load_oid_mappings_drsuapi(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
 	uint32_t i,j;
 
@@ -74,7 +75,51 @@ WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_D
 	return WERR_OK;
 }
 
-WERROR dsdb_verify_oid_mappings(const struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
+				  const struct ldb_val *prefixMap,
+				  const struct ldb_val *schemaInfo)
+{
+	WERROR status;
+	NTSTATUS nt_status;
+	struct prefixMapBlob pfm;
+	char *schema_info;
+
+	nt_status = ndr_pull_struct_blob(prefixMap, schema, &pfm,
+					 (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ntstatus_to_werror(nt_status);
+	}
+
+	if (pfm.version != PREFIX_MAP_VERSION_DSDB) {
+		return WERR_FOOBAR;
+	}
+
+	if (schemaInfo->length != 21 && schemaInfo->data[0] == 0xFF) {
+		return WERR_FOOBAR;
+	}
+
+	/* append the schema info as last element */
+	pfm.ctr.dsdb.num_mappings++;
+	pfm.ctr.dsdb.mappings = talloc_realloc(schema, pfm.ctr.dsdb.mappings,
+					       struct drsuapi_DsReplicaOIDMapping,
+					       pfm.ctr.dsdb.num_mappings);
+	W_ERROR_HAVE_NO_MEMORY(pfm.ctr.dsdb.mappings);
+
+	schema_info = data_blob_hex_string(pfm.ctr.dsdb.mappings, schemaInfo);
+	W_ERROR_HAVE_NO_MEMORY(schema_info);
+
+	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].id_prefix	= 0;
+	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.oid	= schema_info;
+
+	/* call the drsuapi version */
+	status = dsdb_load_oid_mappings_drsuapi(schema, &pfm.ctr.dsdb);
+	talloc_free(pfm.ctr.dsdb.mappings);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	return WERR_OK;
+}
+
+WERROR dsdb_verify_oid_mappings_drsuapi(const struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
 	uint32_t i,j;
 
