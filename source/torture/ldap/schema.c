@@ -339,12 +339,23 @@ static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 		"2.5.5.17"
 	};
 
+	d_printf("Dumping attribute syntaxes\n");
+
 	for (i=0; i < ARRAY_SIZE(syntaxes); i++) {
 		for (a=schema->attributes; a; a = a->next) {
+			char *om_hex;
+
 			if (strcmp(syntaxes[i], a->attributeSyntax_oid) != 0) continue;
-			d_printf("attr[%4u]: %s %u '%s'\n", a_i++,
+
+			om_hex = data_blob_hex_string(ldb, &a->oMObjectClass);
+			if (!om_hex) {
+				return False;
+			}
+
+			d_printf("attr[%4u]: %s %u '%s' '%s'\n", a_i++,
 				 a->attributeSyntax_oid, a->oMSyntax,
-				 a->lDAPDisplayName);
+				 om_hex, a->lDAPDisplayName);
+			talloc_free(om_hex);
 		}
 	}
 
