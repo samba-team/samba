@@ -728,22 +728,6 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 	return ldb_msg_rename_attr(msg, attr, replace);
 }
 
-
-/*
-  remove the specified attribute in a search result
-*/
-void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
-{
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
-	if (el) {
-		int n = (el - msg->elements);
-		if (n != msg->num_elements-1) {
-			memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
-		}
-		msg->num_elements--;
-	}
-}
-
 /*
   remove the specified element in a search result
 */
@@ -754,6 +738,18 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 		memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
 	}
 	msg->num_elements--;
+}
+
+
+/*
+  remove the specified attribute in a search result
+*/
+void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	if (el) {
+		ldb_msg_remove_element(msg, el);
+	}
 }
 
 /*
