@@ -596,57 +596,58 @@ int reply_ioctl(connection_struct *conn,
 }
 
 /****************************************************************************
- Reply to a chkpth.
+ Strange checkpath NTSTATUS mapping.
 ****************************************************************************/
 
-int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+static NTSTATUS map_checkpath_error(const char *inbuf, NTSTATUS status)
+{
+	/* Strange DOS error code semantics only for checkpath... */
+	if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
+			/* We need to map to ERRbadpath */
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+	}
+	return status;
+}
+	
+/****************************************************************************
+ Reply to a checkpath.
+****************************************************************************/
+
+int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int outsize = 0;
 	pstring name;
-	BOOL ok = False;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
-	START_PROFILE(SMBchkpth);
+	START_PROFILE(SMBcheckpath);
 
 	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBchkpth);
-
-		/* Strange DOS error code semantics only for chkpth... */
-		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
-				/* We need to map to ERRbadpath */
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
+		END_PROFILE(SMBcheckpath);
+		status = map_checkpath_error(inbuf, status);
 		return ERROR_NT(status);
 	}
 
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
+	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
+
 	status = unix_convert(conn, name, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBchkpth);
-		/* Strange DOS error code semantics only for chkpth... */
-		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
-				/* We need to map to ERRbadpath */
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
+		END_PROFILE(SMBcheckpath);
+		status = map_checkpath_error(inbuf, status);
 		return ERROR_NT(status);
 	}
 
-	if (check_name(name,conn)) {
-		if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)
-			if (!(ok = S_ISDIR(sbuf.st_mode))) {
-				END_PROFILE(SMBchkpth);
-				return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
-			}
-	}
-
-	if (!ok) {
+	if (check_name(name,conn) && (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)) {
+		if (!S_ISDIR(sbuf.st_mode)) {
+			END_PROFILE(SMBcheckpath);
+			return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
+		}
+	} else {
 		/* We special case this - as when a Windows machine
 			is parsing a path is steps through the components
 			one at a time - if a component fails it expects
@@ -660,19 +661,18 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
 			 * if the path is invalid.
 			 */
-			END_PROFILE(SMBchkpth);
+			END_PROFILE(SMBcheckpath);
 			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
 		}
 
-		END_PROFILE(SMBchkpth);
+		END_PROFILE(SMBcheckpath);
 		return(UNIXERROR(ERRDOS,ERRbadpath));
 	}
 
 	outsize = set_message(outbuf,0,0,False);
-	DEBUG(3,("chkpth %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
 
-	END_PROFILE(SMBchkpth);
-	return(outsize);
+	END_PROFILE(SMBcheckpath);
+	return outsize;
 }
 
 /****************************************************************************

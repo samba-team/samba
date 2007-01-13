@@ -266,9 +266,9 @@ enum profile_stats_values
 #define SMBmknew_count __profile_stats_value(PR_VALUE_SMBMKNEW, count)
 #define SMBmknew_time __profile_stats_value(PR_VALUE_SMBMKNEW, time)
 
-	PR_VALUE_SMBCHKPTH,
-#define SMBchkpth_count __profile_stats_value(PR_VALUE_SMBCHKPTH, count)
-#define SMBchkpth_time __profile_stats_value(PR_VALUE_SMBCHKPTH, time)
+	PR_VALUE_SMBCHECKPATH,
+#define SMBcheckpath_count __profile_stats_value(PR_VALUE_SMBCHECKPATH, count)
+#define SMBcheckpath_time __profile_stats_value(PR_VALUE_SMBCHECKPATH, time)
 
 	PR_VALUE_SMBEXIT,
 #define SMBexit_count __profile_stats_value(PR_VALUE_SMBEXIT, count)

@@ -620,7 +620,7 @@ static const struct smb_message_struct {
 /* 0x0d */ { "SMBunlock",reply_unlock,AS_USER},
 /* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER },
 /* 0x0f */ { "SMBmknew",reply_mknew,AS_USER}, 
-/* 0x10 */ { "SMBchkpth",reply_chkpth,AS_USER},
+/* 0x10 */ { "SMBcheckpath",reply_checkpath,AS_USER},
 /* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
 /* 0x12 */ { "SMBlseek",reply_lseek,AS_USER},
 /* 0x13 */ { "SMBlockread",reply_lockread,AS_USER},
