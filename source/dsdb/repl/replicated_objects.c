@@ -187,7 +187,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	uint32_t i;
 	int ret;
 
-	status = dsdb_verify_oid_mappings(schema, mapping_ctr);
+	status = dsdb_verify_oid_mappings_drsuapi(schema, mapping_ctr);
 	W_ERROR_NOT_OK_RETURN(status);
 
 	out = talloc_zero(mem_ctx, struct dsdb_extended_replicated_objects);
