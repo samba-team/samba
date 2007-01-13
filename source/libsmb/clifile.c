@@ -1381,7 +1381,7 @@ BOOL cli_chkpath(struct cli_state *cli, const char *path)
 	
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBchkpth);
+	SCVAL(cli->outbuf,smb_com,SMBcheckpath);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	p = smb_buf(cli->outbuf);

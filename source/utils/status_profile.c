@@ -181,8 +181,8 @@ BOOL status_profile_dump(BOOL verbose)
 	d_printf("ctemp_time:                     %u\n", profile_p->SMBctemp_time);
 	d_printf("mknew_count:                    %u\n", profile_p->SMBmknew_count);
 	d_printf("mknew_time:                     %u\n", profile_p->SMBmknew_time);
-	d_printf("chkpth_count:                   %u\n", profile_p->SMBchkpth_count);
-	d_printf("chkpth_time:                    %u\n", profile_p->SMBchkpth_time);
+	d_printf("checkpath_count:                %u\n", profile_p->SMBcheckpath_count);
+	d_printf("checkpath_time:                 %u\n", profile_p->SMBcheckpath_time);
 	d_printf("exit_count:                     %u\n", profile_p->SMBexit_count);
 	d_printf("exit_time:                      %u\n", profile_p->SMBexit_time);
 	d_printf("lseek_count:                    %u\n", profile_p->SMBlseek_count);
