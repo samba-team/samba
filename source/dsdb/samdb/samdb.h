@@ -35,11 +35,6 @@ struct dsdb_extended_replicated_objects;
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
 
-#define DSDB_CONTROL_REPLICATED_OBJECT_OID "1.3.6.1.4.1.7165.4.3.1"
-struct dsdb_control_replicated_object {
-	uint8_t __dummy;
-};
-
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
