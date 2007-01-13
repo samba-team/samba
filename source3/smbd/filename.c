@@ -391,15 +391,24 @@ NTSTATUS unix_convert(connection_struct *conn,
 					 * Windows applications depend on the difference between
 					 * these two errors.
 					 */
-					if (errno == ENOENT) {
+
+					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
+					   in the filename walk. */
+
+					if (errno == ENOENT || errno == ENOTDIR) {
 						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					return map_nt_error_from_unix(errno);
 				}
 	      
-				if (errno == ENOTDIR) {
-					/* Name exists but is not a directory. */
-					return map_nt_error_from_unix(ENOTDIR);
+				/* ENOENT is the only valid error here. */
+				if (errno != ENOENT) {
+					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
+					   in the filename walk. */
+					if (errno == ENOTDIR) {
+						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					}
+					return map_nt_error_from_unix(errno);
 				}
 
 				/*
