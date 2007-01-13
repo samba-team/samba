@@ -163,6 +163,7 @@ _PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 	for (i = 0; i < blob->length; i++)
 		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
 
+	hex_string[(blob->length*2)] = '\0';
 	return hex_string;
 }
 
