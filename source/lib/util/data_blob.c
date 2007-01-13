@@ -150,7 +150,7 @@ _PUBLIC_ BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
 /**
 print the data_blob as hex string
 **/
-_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 {
 	int i;
 	char *hex_string;
