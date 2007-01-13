@@ -144,6 +144,37 @@ interface drsblobs {
 		[in] partialAttributeSetBlob blob
 		);
 
+	/*
+	 * prefixMap
+	 * w2k  unknown
+	 * w2k3 unknown
+	 * samba4 uses 0x44544442 'DSDB'
+	 *
+	 * as we windows don't return the prefixMap attribute when you ask for
+	 * we don't know the format, but the attribute is not replicated
+	 * so that we can choose our own format...
+	 */
+	typedef [v1_enum] enum {
+		PREFIX_MAP_VERSION_DSDB = 0x44544442
+	} prefixMapVersion;
+
+	typedef [nodiscriminant] union {
+		[case(PREFIX_MAP_VERSION_DSDB)] drsuapi_DsReplicaOIDMapping_Ctr dsdb;
+	} prefixMapCtr;
+
+	typedef [public] struct {
+		prefixMapVersion version;
+		uint32 reserved;
+		[switch_is(version)] prefixMapCtr ctr;
+	} prefixMapBlob;
+
+	void decode_prefixMap(
+		[in] prefixMapBlob blob
+		);
+
+	/*
+	 * the cookie for the LDAP dirsync control
+	 */
 	typedef [nodiscriminant,gensize] union {
 		[case(0)];
 		[default] replUpToDateVectorBlob uptodateness_vector;
