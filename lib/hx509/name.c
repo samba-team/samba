@@ -556,8 +556,10 @@ hx509_name_expand(hx509_context context,
 		strpool = rk_strpoolprintf(strpool, "%.*s", 
 					   (int)(p - ds->u.utf8String), 
 					   ds->u.utf8String);
-		if (strpool == NULL)
-		    abort();
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
 	    }
 	    while (p != NULL) {
 		/* expand variables */
