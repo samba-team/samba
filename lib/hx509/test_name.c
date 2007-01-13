@@ -69,6 +69,41 @@ test_name_fail(hx509_context context, const char *name)
     return 1;
 }
 
+static int
+test_expand(hx509_context context, const char *name, const char *expected)
+{
+    hx509_env env;
+    hx509_name n;
+    char *s;
+    int ret;
+
+    hx509_env_init(context, &env);
+    hx509_env_add(context, env, "uid", "lha");
+
+    ret = hx509_parse_name(context, name, &n);
+    if (ret)
+	return 1;
+
+    ret = hx509_name_expand(context, n, env);
+    hx509_env_free(&env);
+    if (ret)
+	return 1;
+
+    ret = hx509_name_to_string(n, &s);
+    hx509_name_free(&n);
+    if (ret)
+	return 1;
+    
+    printf("expanded %s before %s\n", s, name);
+
+    ret = strcmp(s, expected) != 0;
+    free(s);
+    if (ret)
+	return 1;
+
+    return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -85,6 +120,13 @@ main(int argc, char **argv)
     ret += test_name_fail(context, "=");
     ret += test_name_fail(context, "CN=foo,=foo");
     ret += test_name_fail(context, "CN=foo,really-unknown-type=foo");
+
+    ret += test_expand(context, "UID=${uid},C=SE", "UID=lha,C=SE");
+    ret += test_expand(context, "UID=foo${uid},C=SE", "UID=foolha,C=SE");
+    ret += test_expand(context, "UID=${uid}bar,C=SE", "UID=lhabar,C=SE");
+    ret += test_expand(context, "UID=f${uid}b,C=SE", "UID=flhab,C=SE");
+    ret += test_expand(context, "UID=${uid}${uid},C=SE", "UID=lhalha,C=SE");
+    ret += test_expand(context, "UID=${uid}{uid},C=SE", "UID=lha{uid},C=SE");
 
     hx509_context_free(&context);
 
