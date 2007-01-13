@@ -147,7 +147,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 	if (name[0] == '.' && (name[1] == '/' || name[1] == '\0')) {
 		/* Start of pathname can't be "." only. */
-		return NT_STATUS_OBJECT_NAME_INVALID;
+		if (name[1] == '\0' || name[2] == '\0') {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		} else {
+			/* Longer pathname starts with ./ */
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
 	}
 
 	/*

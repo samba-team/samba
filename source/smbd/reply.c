@@ -632,6 +632,13 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	status = unix_convert(conn, name, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBchkpth);
+		/* Strange DOS error code semantics only for chkpth... */
+		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
+				/* We need to map to ERRbadpath */
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		}
 		return ERROR_NT(status);
 	}
 
