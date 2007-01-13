@@ -684,7 +684,6 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	pstring fname;
 	int outsize = 0;
 	SMB_STRUCT_STAT sbuf;
-	BOOL ok = False;
 	int mode=0;
 	SMB_OFF_T size=0;
 	time_t mtime=0;
@@ -704,38 +703,34 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
-	if (! (*fname)) {
+	if (*fname == '\0') {
 		mode = aHIDDEN | aDIR;
-		if (!CAN_WRITE(conn))
+		if (!CAN_WRITE(conn)) {
 			mode |= aRONLY;
+		}
 		size = 0;
 		mtime = 0;
-		ok = True;
 	} else {
 		status = unix_convert(conn, fname, False, NULL,&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBgetatr);
 			return ERROR_NT(status);
 		}
-		if (check_name(fname,conn)) {
-			if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0) {
-				mode = dos_mode(conn,fname,&sbuf);
-				size = sbuf.st_size;
-				mtime = sbuf.st_mtime;
-				if (mode & aDIR)
-					size = 0;
-				ok = True;
-			} else {
-				DEBUG(3,("stat of %s failed (%s)\n",fname,strerror(errno)));
+		if (check_name(fname,conn) &&
+				(VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0)) {
+			mode = dos_mode(conn,fname,&sbuf);
+			size = sbuf.st_size;
+			mtime = sbuf.st_mtime;
+			if (mode & aDIR) {
+				size = 0;
 			}
+		} else {
+			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
+			END_PROFILE(SMBgetatr);
+			return UNIXERROR(ERRDOS,ERRbadfile);
 		}
 	}
   
-	if (!ok) {
-		END_PROFILE(SMBgetatr);
-		return UNIXERROR(ERRDOS,ERRbadfile);
-	}
- 
 	outsize = set_message(outbuf,10,0,True);
 
 	SSVAL(outbuf,smb_vwv0,mode);
@@ -750,7 +745,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 	}
   
-	DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
+	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n", fname, mode, (unsigned int)size ) );
   
 	END_PROFILE(SMBgetatr);
 	return(outsize);
