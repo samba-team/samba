@@ -50,6 +50,7 @@ typedef struct hx509_request_data *hx509_request;
 typedef struct hx509_error_data *hx509_error;
 typedef struct hx509_peer_info *hx509_peer_info;
 typedef struct hx509_ca_tbs *hx509_ca_tbs;
+typedef struct hx509_env *hx509_env;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
