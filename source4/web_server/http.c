@@ -456,7 +456,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	}
 	SETVAR(ESP_REQUEST_OBJ, "COOKIE_SUPPORT", web->input.cookie?"True":"False");
 
-	SETVAR(ESP_HEADERS_OBJ, "HTT_REFERER", web->input.referer);
+	SETVAR(ESP_HEADERS_OBJ, "HTTP_REFERER", web->input.referer);
 	SETVAR(ESP_HEADERS_OBJ, "HOST", web->input.host);
 	SETVAR(ESP_HEADERS_OBJ, "ACCEPT_ENCODING", web->input.accept_encoding);
 	SETVAR(ESP_HEADERS_OBJ, "ACCEPT_LANGUAGE", web->input.accept_language);
