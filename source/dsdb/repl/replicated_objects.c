@@ -44,13 +44,13 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
 	const char *whenChanged_s;
-	const char *rdn_name;
-	const struct ldb_val *rdn_value;
-	const struct dsdb_attribute *rdn_attr;
+	const char *rdn_name = NULL;
+	const struct ldb_val *rdn_value = NULL;
+	const struct dsdb_attribute *rdn_attr = NULL;
 	uint32_t rdn_attid;
-	struct drsuapi_DsReplicaAttribute *name_a;
-	struct drsuapi_DsReplicaMetaData *name_d;
-	struct replPropertyMetaData1 *rdn_m;
+	struct drsuapi_DsReplicaAttribute *name_a = NULL;
+	struct drsuapi_DsReplicaMetaData *name_d = NULL;
+	struct replPropertyMetaData1 *rdn_m = NULL;
 	int ret;
 
 	if (!in->object.identifier) {
@@ -134,44 +134,36 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		}
 	}
 
-	if (!name_d) {
-		return WERR_FOOBAR;
+	if (rdn_m) {
+		ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
+		if (ret != LDB_SUCCESS) {
+			return WERR_FOOBAR;
+		}
+
+		rdn_m->attid				= rdn_attid;
+		rdn_m->version				= name_d->version;
+		rdn_m->orginating_time			= name_d->orginating_time;
+		rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
+		rdn_m->orginating_usn			= name_d->orginating_usn;
+		rdn_m->local_usn			= 0;
+		md->ctr.ctr1.count++;
+
 	}
 
-	ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
+	whenChanged_t = nt_time_to_unix(whenChanged);
+	whenChanged_s = ldb_timestring(msg, whenChanged_t);
+	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
 
 	nt_status = ndr_push_struct_blob(&guid_value, msg, &in->object.identifier->guid,
 					 (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ntstatus_to_werror(nt_status);
 	}
-	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
 
-	whenChanged_t = nt_time_to_unix(whenChanged);
-	whenChanged_s = ldb_timestring(msg, whenChanged_t);
-	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
-	ret = ldb_msg_add_string(msg, "whenChanged", whenChanged_s);
-	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	}
-
-	rdn_m->attid				= rdn_attid;
-	rdn_m->version				= name_d->version;
-	rdn_m->orginating_time			= name_d->orginating_time;
-	rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
-	rdn_m->orginating_usn			= name_d->orginating_usn;
-	rdn_m->local_usn			= 0;
-	md->ctr.ctr1.count++;
-
-	out->msg	= msg;
-	out->guid_value	= guid_value;
-	out->meta_data	= md;
+	out->msg		= msg;
+	out->guid_value		= guid_value;
+	out->when_changed	= whenChanged_s;
+	out->meta_data		= md;
 	return WERR_OK;
 }
 
