@@ -7,6 +7,7 @@ use warnings;
 
 use FindBin qw($RealBin $Script);
 use File::Spec;
+use Getopt::Long;
 use POSIX;
 use Cwd;
 
@@ -91,7 +92,35 @@ EOF
 	exit $failed;
 }
 
-die("Usage: $Script PREFIX TESTS [SOCKET_WRAPPER]") if ( $#ARGV == -1);
+sub ShowHelp()
+{
+	print "Samba test runner
+Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
+
+Usage: $Script PREFIX TESTS [SOCKET_WRAPPER]
+
+Generic options:
+ --help                 this help page
+ --target=samba4|samba3 Samba version to target
+
+";
+	exit(0);
+}
+
+my $opt_help = 0;
+my $opt_target = "samba4";
+
+my $result = GetOptions (
+	    'help|h|?' => \$opt_help,
+		'target' => \$opt_target
+	    );
+
+if (not $result) {
+	exit(1);
+}
+
+ShowHelp() if ($opt_help);
+ShowHelp() if ($#ARGV <= 0);
 
 my $prefix = shift;
 my $tests = shift;
@@ -160,14 +189,14 @@ if ( defined($socket_wrapper) and $socket_wrapper eq "SOCKET_WRAPPER")
 	print "NOT USING SOCKET_WRAPPER\n";
 }
 
-#Start slapd before smbd
+# Start slapd before smbd
 if ($ldap) {
     slapd_start($ENV{SLAPD_CONF}, $ENV{LDAPI_ESCAPE}) or die("couldn't start slapd");
     print "LDAP PROVISIONING...";
     system("$bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} --ldap-backend=$ENV{LDAPI}") or
 		die("LDAP PROVISIONING failed: $bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} --ldap-backend=$ENV{LDAPI}");
 
-    #LDAP is slow
+    # LDAP is slow
 	$torture_maxtime *= 2;
 }
 
@@ -189,7 +218,7 @@ $ENV{TORTURE_INTERFACES} = '127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.
 my @torture_options = ("--option=interfaces=$ENV{TORTURE_INTERFACES} $ENV{CONFIGURATION}");
 # ensure any one smbtorture call doesn't run too long
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
-push (@torture_options, "--target=samba4");
+push (@torture_options, "--target=$opt_target");
 push (@torture_options, "--option=torture:progress=no") 
 	if (defined($ENV{RUN_FROM_BUILD_FARM}) and $ENV{RUN_FROM_BUILD_FARM} eq "yes");
 
