@@ -1,5 +1,13 @@
-2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_name.c: test name expansion
+
+	* name.c: add hx509_name_expand
+
+	* env.c: key-value pair help functions
+	
+2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ca.c: Don't issue certs with subject DN that is NULL and have no
 	SANs
 
