@@ -526,15 +526,257 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 #endif
 }
 
-static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
+static int replmd_replPropertyMetaData1_attid_compare(struct replPropertyMetaData1 *m1,
+						      struct replPropertyMetaData1 *m2)
+{
+	return m1->attid - m2->attid;
+}
+
+static int replmd_replPropertyMetaData1_conflict_compare(struct replPropertyMetaData1 *m1,
+							 struct replPropertyMetaData1 *m2)
+{
+	int ret;
+
+	if (m1->version != m2->version) {
+		return m1->version - m2->version;
+	}
+
+	if (m1->orginating_time != m2->orginating_time) {
+		return m1->orginating_time - m2->orginating_time;
+	}
+
+	ret = GUID_compare(&m1->orginating_invocation_id, &m2->orginating_invocation_id);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return m1->orginating_usn - m2->orginating_usn;
+}
+
+static int replmd_replicated_apply_merge_callback(struct ldb_context *ldb,
+						  void *private_data,
+						  struct ldb_reply *ares)
 {
 #ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
-#error sorry replmd_replicated_apply_merge not implemented
-#else
-	ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL,
-		  "replmd_replicated_apply_merge: ignore [%u]\n",
-		  ar->index_current);
+	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+					       struct replmd_replicated_request);
 
+	ret = ldb_next_request(ar->module, ar->sub.change_req);
+	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
+	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
+	if (ar->sub.change_ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ar->sub.change_ret);
+	}
+
+	talloc_free(ar->sub.mem_ctx);
+	ZERO_STRUCT(ar->sub);
+
+	ar->index_current++;
+
+	return LDB_SUCCESS;
+#else
+	return LDB_SUCCESS;
+#endif
+}
+
+static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
+{
+	NTSTATUS nt_status;
+	struct ldb_message *msg;
+	struct replPropertyMetaDataBlob *rmd;
+	struct replPropertyMetaDataBlob omd;
+	const struct ldb_val *omd_value;
+	struct replPropertyMetaDataBlob nmd;
+	struct ldb_val nmd_value;
+	uint32_t i,j,ni=0;
+	uint32_t removed_attrs = 0;
+	uint64_t seq_num;
+	int ret;
+
+	msg = ar->objs->objects[ar->index_current].msg;
+	rmd = ar->objs->objects[ar->index_current].meta_data;
+	ZERO_STRUCT(omd);
+	omd.version = 1;
+
+	/*
+	 * TODO: add rename conflict handling
+	 */
+	if (ldb_dn_compare(msg->dn, ar->sub.search_msg->dn) != 0) {
+		ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL, "replmd_replicated_apply_merge[%u]: rename not supported",
+			  ar->index_current);
+		ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL, "%s => %s\n",
+			  ldb_dn_get_linearized(ar->sub.search_msg->dn),
+			  ldb_dn_get_linearized(msg->dn));
+		return replmd_replicated_request_werror(ar, WERR_NOT_SUPPORTED);
+	}
+
+	ret = ldb_sequence_number(ar->module->ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	/* find existing meta data */
+	omd_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replPropertyMetaData");
+	if (omd_value) {
+		nt_status = ndr_pull_struct_blob(omd_value, ar->sub.mem_ctx, &omd,
+						 (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
+		}
+
+		if (omd.version != 1) {
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+		}
+	}
+
+	ZERO_STRUCT(nmd);
+	nmd.version = 1;
+	nmd.ctr.ctr1.count = omd.ctr.ctr1.count + rmd->ctr.ctr1.count;
+	nmd.ctr.ctr1.array = talloc_array(ar->sub.mem_ctx,
+					  struct replPropertyMetaData1,
+					  nmd.ctr.ctr1.count);
+	if (!nmd.ctr.ctr1.array) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+
+	/* first copy the old meta data */
+	for (i=0; i < omd.ctr.ctr1.count; i++) {
+		nmd.ctr.ctr1.array[ni]	= omd.ctr.ctr1.array[i];
+		ni++;
+	}
+
+	/* now merge in the new meta data */
+	for (i=0; i < rmd->ctr.ctr1.count; i++) {
+		bool found = false;
+
+		rmd->ctr.ctr1.array[i].local_usn = seq_num;
+
+		for (j=0; j < ni; j++) {
+			int cmp;
+
+			if (rmd->ctr.ctr1.array[i].attid != nmd.ctr.ctr1.array[j].attid) {
+				continue;
+			}
+
+			cmp = replmd_replPropertyMetaData1_conflict_compare(&rmd->ctr.ctr1.array[i],
+									    &nmd.ctr.ctr1.array[j]);
+			if (cmp > 0) {
+				/* replace the entry */
+				nmd.ctr.ctr1.array[j] = rmd->ctr.ctr1.array[i];
+				found = true;
+				break;
+			}
+
+			/* we don't want to apply this change so remove the attribute */
+			ldb_msg_remove_element(msg, &msg->elements[i-removed_attrs]);
+			removed_attrs++;
+
+			found = true;
+			break;
+		}
+
+		if (found) continue;
+
+		nmd.ctr.ctr1.array[ni] = rmd->ctr.ctr1.array[i];
+		ni++;
+	}
+
+	/*
+	 * finally correct the size of the meta_data array
+	 */
+	nmd.ctr.ctr1.count = ni;
+
+	/*
+	 * the rdn attribute (the alias for the name attribute),
+	 * 'cn' for most objects is the last entry in the meta data array
+	 * we have stored
+	 *
+	 * as it should stay the last one in the new list, we move it to the end
+	 */
+	{
+		struct replPropertyMetaData1 *rdn_p, rdn, *last_p;
+		uint32_t rdn_idx = omd.ctr.ctr1.count - 1;
+		uint32_t last_idx = ni - 1;
+
+		rdn_p = &nmd.ctr.ctr1.array[rdn_idx];
+		rdn = *rdn_p;
+		last_p = &nmd.ctr.ctr1.array[last_idx];
+
+		if (last_idx > rdn_idx) {
+			memmove(rdn_p, rdn_p+1, (last_idx - rdn_idx)*sizeof(rdn));
+			*last_p = rdn;
+		}
+	}
+
+	/*
+	 * sort the meta data entries by attid, but skip the last one containing
+	 * the rdn attribute
+	 */
+	qsort(nmd.ctr.ctr1.array, nmd.ctr.ctr1.count - 1,
+	      sizeof(struct replPropertyMetaData1),
+	      (comparison_fn_t)replmd_replPropertyMetaData1_attid_compare);
+
+	/* create the meta data value */
+	nt_status = ndr_push_struct_blob(&nmd_value, msg, &nmd,
+					 (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
+	}
+
+	/*
+	 * check if some replicated attributes left, otherwise skip the ldb_modify() call
+	 */
+	if (msg->num_elements == 0) {
+		ldb_debug(ar->module->ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: skip replace\n",
+			  ar->index_current);
+		goto next_object;
+	}
+
+	ldb_debug(ar->module->ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
+		  ar->index_current, msg->num_elements);
+
+	/*
+	 * when we now that we'll modify the record, add the whenChanged, uSNChanged
+	 * and replPopertyMetaData attributes
+	 */
+	ret = ldb_msg_add_string(msg, "whenChanged", ar->objs->objects[ar->index_current].when_changed);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+	ret = samdb_msg_add_uint64(ar->module->ldb, msg, msg, "uSNChanged", seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &nmd_value, NULL);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	/* we want to replace the old values */
+	for (i=0; i < msg->num_elements; i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = ldb_build_mod_req(&ar->sub.change_req,
+				ar->module->ldb,
+				ar->sub.mem_ctx,
+				msg,
+				NULL,
+				ar,
+				replmd_replicated_apply_merge_callback);
+	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
+#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+	return ldb_next_request(ar->module, ar->sub.change_req);
+#else
+	ret = ldb_next_request(ar->module, ar->sub.change_req);
+	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
+	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
+	if (ar->sub.change_ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ar->sub.change_ret);
+	}
+
+next_object:
 	talloc_free(ar->sub.mem_ctx);
 	ZERO_STRUCT(ar->sub);
 
