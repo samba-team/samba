@@ -1718,7 +1718,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	RESOLVE_DFSPATH_WCARD(directory, conn, inbuf, outbuf);
 
-	ntstatus = unix_convert(conn, directory, mask_contains_wcard, NULL, &sbuf);
+	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}

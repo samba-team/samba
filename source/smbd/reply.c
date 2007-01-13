@@ -952,7 +952,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 		pstrcpy(directory,path);
 		pstrcpy(dir2,path);
-		nt_status = unix_convert(conn, directory, mask_contains_wcard, NULL, &sbuf);
+		nt_status = unix_convert(conn, directory, True, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			END_PROFILE(SMBsearch);
 			return ERROR_NT(nt_status);
