@@ -45,18 +45,16 @@ extern BOOL global_encrypted_passwords_negotiated;
 ****************************************************************************/
 
 NTSTATUS check_path_syntax_internal(pstring destname,
-					const pstring srcname,
-					BOOL windows_path, BOOL
-					*p_last_component_contains_wcard)
+				    const pstring srcname,
+				    BOOL windows_path,
+				    BOOL *p_last_component_contains_wcard)
 {
 	char *d = destname;
 	const char *s = srcname;
 	NTSTATUS ret = NT_STATUS_OK;
 	BOOL start_of_name_component = True;
 
-	if (p_last_component_contains_wcard) {
-		*p_last_component_contains_wcard = False;
-	}
+	*p_last_component_contains_wcard = False;
 
 	while (*s) {
 		if (IS_DIRECTORY_SEP(*s)) {
@@ -74,9 +72,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 
 			start_of_name_component = True;
 			/* New component. */
-			if (p_last_component_contains_wcard) {
-				*p_last_component_contains_wcard = False;
-			}
+			*p_last_component_contains_wcard = False;
 			continue;
 		}
 
@@ -132,9 +128,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 					case '<':
 					case '>':
 					case '"':
-						if (p_last_component_contains_wcard) {
-							*p_last_component_contains_wcard = True;
-						}
+						*p_last_component_contains_wcard = True;
 						break;
 					default:
 						break;
@@ -181,7 +175,8 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 
 NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 {
-	return check_path_syntax_internal(destname, srcname, True, NULL);
+	BOOL ignore;
+	return check_path_syntax_internal(destname, srcname, True, &ignore);
 }
 
 /****************************************************************************
@@ -203,7 +198,8 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 
 static NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 {
-	return check_path_syntax_internal(destname, srcname, False, NULL);
+	BOOL ignore;
+	return check_path_syntax_internal(destname, srcname, False, &ignore);
 }
 
 /****************************************************************************
