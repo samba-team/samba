@@ -446,10 +446,29 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	uint64_t seq_num;
 	int ret;
 
+	/*
+	 * TODO: check if the parent object exist
+	 */
+
+	/*
+	 * TODO: handle the conflict case where an object with the
+	 *       same name exist
+	 */
+
 	msg = ar->objs->objects[ar->index_current].msg;
 	md = ar->objs->objects[ar->index_current].meta_data;
 
 	ret = ldb_sequence_number(ar->module->ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	ret = ldb_msg_add_value(msg, "objectGUID", &ar->objs->objects[ar->index_current].guid_value, NULL);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	ret = ldb_msg_add_string(msg, "whenChanged", ar->objs->objects[ar->index_current].when_changed);
 	if (ret != LDB_SUCCESS) {
 		return replmd_replicated_request_error(ar, ret);
 	}

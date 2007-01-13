@@ -44,6 +44,7 @@ struct dsdb_control_replicated_object {
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
 	struct ldb_val guid_value;
+	const char *when_changed;
 	struct replPropertyMetaDataBlob *meta_data;
 };
 
