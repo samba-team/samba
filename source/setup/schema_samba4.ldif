@@ -147,7 +147,7 @@ attributeID: 1.3.6.1.4.1.5322.10.1.10
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
-#Allocated: DSDB_CONTROL_REPLICATED_OBJECT_OID 1.3.6.1.4.1.7165.4.3.1
+#Allocated: (not used anymore) DSDB_CONTROL_REPLICATED_OBJECT_OID 1.3.6.1.4.1.7165.4.3.1
 
 #Allocated: DSDB_EXTENDED_REPLICATED_OBJECTS_OID 1.3.6.1.4.1.7165.4.4.1
 
