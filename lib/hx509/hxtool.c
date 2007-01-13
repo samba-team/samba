@@ -1261,7 +1261,11 @@ eval_types(hx509_context context,
 				       oid_id_pkekuoid());
 	    if (ret)
 		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
-
+	} else if (strcmp(type, "email") == 0) {
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkix_kp_emailProtection());
+	    if (ret)
+		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
 	} else
 	    errx(1, "unknown type %s", type);
     }
@@ -1293,6 +1297,11 @@ eval_types(hx509_context context,
 	ret = hx509_ca_tbs_add_san_rfc822name(context, tbs, email);
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
+	
+	ret = hx509_ca_tbs_add_eku(context, tbs, 
+				   oid_id_pkix_kp_emailProtection());
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
     }
 
     if (opt->jid_string) {
