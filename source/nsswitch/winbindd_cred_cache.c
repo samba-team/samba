@@ -280,7 +280,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			    time_t create_time, 
 			    time_t ticket_end, 
 			    time_t renew_until, 
-			    BOOL schedule_refresh_event,
 			    BOOL postponed_request)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = NULL;
@@ -348,7 +347,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	entry->uid = uid;
 	entry->ref_count = 1;
 
-	if (schedule_refresh_event && renew_until > 0) {
+	if (lp_winbind_refresh_tickets() && renew_until > 0) {
 		if (postponed_request) {
 			entry->event = add_timed_event(entry,
 						timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
