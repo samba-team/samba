@@ -934,7 +934,7 @@ struct bitmap {
 #define SMBunlock     0x0D   /* unlock byte range */
 #define SMBctemp      0x0E   /* create temporary file */
 #define SMBmknew      0x0F   /* make new file */
-#define SMBchkpth     0x10   /* check directory path */
+#define SMBcheckpath  0x10   /* check directory path */
 #define SMBexit       0x11   /* process exit */
 #define SMBlseek      0x12   /* seek */
 #define SMBtcon       0x70   /* tree connect */
