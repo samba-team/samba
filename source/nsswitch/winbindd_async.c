@@ -303,7 +303,7 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 		}
 		
 		for (i = 0; i < num; i++) {
-			if (ids[i]->mapped) {
+			if (ids[i]->status == ID_MAPPED) {
 				xids[i].type = ids[i]->xid.type;
 				xids[i].id = ids[i]->xid.id;
 			} else {

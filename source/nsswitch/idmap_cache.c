@@ -304,7 +304,7 @@ NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 			goto failed;
 		}
 		
-		id->mapped = True;
+		id->status = ID_MAPPED;
 
 		return NT_STATUS_OK;
 	}
@@ -331,13 +331,13 @@ NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 		goto failed;
 	}
 
-	id->mapped = True;
+	id->status = ID_MAPPED;
 
 	return NT_STATUS_OK;
 
 failed:
 	DEBUG(1, ("invalid value: %s\n", value));
-	id->mapped = False;
+	id->status = ID_UNKNOWN;
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
 
@@ -354,11 +354,11 @@ BOOL idmap_cache_is_negative(const char *val)
  * 3 cases are possible
  *
  * 1 map found
- * 	in this case id->mapped = True and NT_STATUS_OK is returned
+ * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
  * 2 map not found
- * 	in this case id->mapped = False and NT_STATUS_NONE_MAPPED is returned
+ * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
  * 3 negative cache found
- * 	in this case id->mapped = False and NT_STATUS_OK is returned
+ * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
  *
  * As a special case if the cache is expired NT_STATUS_SYNCHRONIZATION_REQUIRED
  * is returned instead of NT_STATUS_OK. In this case revalidation of the cache
@@ -374,7 +374,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 	char *endptr;
 
 	/* make sure it is marked as not mapped by default */
-	id->mapped = False;
+	id->status = ID_UNKNOWN;
 	
 	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
@@ -415,21 +415,21 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 			goto done;
 		}
 
-		/* here ret == NT_STATUS_OK and id->mapped = True */
+		/* here ret == NT_STATUS_OK and id->status = ID_MAPPED */
 
 		if (t <= time(NULL)) {
 			/* We're expired, set an error code for upper layer */
 			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
 	} else {
-		/* this is not mapped (id->mapped = False),
-		 * and that's right as it was a negative cache hit */
-		ret = NT_STATUS_OK;
-
 		if (t <= time(NULL)) {
 			/* We're expired, delete the entry and return not mapped */
 			tdb_delete(cache->tdb, keybuf);
 			ret = NT_STATUS_NONE_MAPPED;
+		} else {
+			/* this is not mapped as it was a negative cache hit */
+			id->status = ID_UNMAPPED;
+			ret = NT_STATUS_OK;
 		}
 	}
 	
@@ -444,11 +444,11 @@ done:
  * 3 cases are possible
  *
  * 1 map found
- * 	in this case id->mapped = True and NT_STATUS_OK is returned
+ * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
  * 2 map not found
- * 	in this case id->mapped = False and NT_STATUS_NONE_MAPPED is returned
+ * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
  * 3 negative cache found
- * 	in this case id->mapped = False and NT_STATUS_OK is returned
+ * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
  *
  * As a special case if the cache is expired NT_STATUS_SYNCHRONIZATION_REQUIRED
  * is returned instead of NT_STATUS_OK. In this case revalidation of the cache
@@ -464,7 +464,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 	char *endptr;
 
 	/* make sure it is marked as not mapped by default */
-	id->mapped = False;
+	id->status = ID_UNKNOWN;
 	
 	ret = idmap_cache_build_idkey(cache, &idkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
@@ -512,14 +512,14 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
 	} else {
-		/* this is not mapped (id->mapped = False),
-		 * and that's right as it was a negative cache hit */
-		ret = NT_STATUS_OK;
-
 		if (t <= time(NULL)) {
 			/* We're expired, delete the entry and return not mapped */
 			tdb_delete(cache->tdb, keybuf);
 			ret = NT_STATUS_NONE_MAPPED;
+		} else {
+			/* this is not mapped is it was a negative cache hit */
+			id->status = ID_UNMAPPED;
+			ret = NT_STATUS_OK;
 		}
 	}
 done:

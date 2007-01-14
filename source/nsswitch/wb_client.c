@@ -392,9 +392,9 @@ BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
 		
 		for (i = 0; i < num_ids; i++) {
 			if (wid[i].type == -1) {
-				ids[i].mapped = False;
+				ids[i].status = ID_UNMAPPED;
 			} else {
-				ids[i].mapped = True;
+				ids[i].status = ID_MAPPED;
 				ids[i].xid.type = wid[i].type;
 				ids[i].xid.id = wid[i].id;
 			}

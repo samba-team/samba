@@ -107,6 +107,7 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 		case SID_NAME_USER:
 			if (map->xid.type != ID_TYPE_UID) {
 				/* wrong type */
+				map->status = ID_UNMAPPED;
 				DEBUG(5, ("Resulting SID is of wrong ID type\n"));
 				return NT_STATUS_NONE_MAPPED;
 			}
@@ -116,21 +117,26 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 		case SID_NAME_WKN_GRP:
 			if (map->xid.type != ID_TYPE_GID) {
 				/* wrong type */
+				map->status = ID_UNMAPPED;
 				DEBUG(5, ("Resulting SID is of wrong ID type\n"));
 				return NT_STATUS_NONE_MAPPED;
 			}
 			break;
 		default:
-			/* invalid sid, let's just leave it unmapped */
+			/* invalid sid?? */
+			map->status = ID_UNKNOWN;
 			DEBUG(10, ("SID %s is UNKNOWN, skip mapping\n", sid_string_static(map->sid)));
 			return NT_STATUS_NONE_MAPPED;
 		}
 	} else {
+		/* TODO: how do we known if the lookup was negative
+		 * or something just failed? */
+		map->status = ID_UNMAPPED;
 		DEBUG(2, ("Failed: to resolve SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	map->mapped = True;
+	map->status = ID_MAPPED;
 
 	return NT_STATUS_OK;
 }
@@ -169,9 +175,13 @@ static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context
 		default:
 			/* invalid sid, let's just leave it unmapped */
 			DEBUG(10, ("SID %s is UNKNOWN, skip mapping\n", sid_string_static(map->sid)));
+			map->status = ID_UNKNOWN;
 			return NT_STATUS_NONE_MAPPED;
 		}
 	} else {
+		/* TODO: how do we known if the lookup was negative
+		 * or something just failed? */
+		map->status = ID_UNMAPPED;
 		DEBUG(2, ("Failed: to resolve SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -180,10 +190,11 @@ static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context
 	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
 				map->xid.id, ctx->low_id, ctx->high_id));
+		map->status = ID_UNMAPPED;
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	map->mapped = True;
+	map->status = ID_MAPPED;
 
 	return NT_STATUS_OK;
 }
@@ -208,8 +219,6 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	}
 
 	for (i = 0; ids[i]; i++) {
-		/* make sure it is marked as unmapped before resolveing */
-		ids[i]->mapped = False;
 
 		ret = idmap_rid_id_to_sid(ctx, ridctx, ids[i]);
 
@@ -244,8 +253,6 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	}
 
 	for (i = 0; ids[i]; i++) {
-		/* make sure it is marked as unmapped before resolveing */
-		ids[i]->mapped = False;
 
 		ret = idmap_rid_sid_to_id(ctx, ridctx, ids[i]);
 
