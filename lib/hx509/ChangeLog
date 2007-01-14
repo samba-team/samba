@@ -1,4 +1,19 @@
+2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c (hx509_cms_create_signed_1): use hx509_cert_binary
+
+	* ks_p12.c (store_func): use hx509_cert_binary
+
+	* ks_file.c (store_func): use hx509_cert_binary
+
+	* cert.c (hx509_cert_binary): return binary encoded
+	certificate (DER format)
+	
 2007-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* ca.c (hx509_ca_tbs_subject_expand): new function.
+
+	* name.c (hx509_name_expand): if env is NULL, return directly
 
 	* test_ca.in: test template handling
 
