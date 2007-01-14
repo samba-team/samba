@@ -73,6 +73,9 @@ set_salt_padata (METHOD_DATA *md, Salt *salt)
 PA_DATA*
 _kdc_find_padata(KDC_REQ *req, int *start, int type)
 {
+    if (req->padata == NULL)
+	return NULL;
+
     while(*start < req->padata->len){
 	(*start)++;
 	if(req->padata->val[*start - 1].padata_type == type)
