@@ -1853,8 +1853,14 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 
 	status = rename_internals(conn, fsp->fsp_name,
 				  new_name, 0, replace_if_exists, path_contains_wcard);
-	if (!NT_STATUS_IS_OK(status))
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return ERROR_NT(status);
+	}
 
 	/*
 	 * Rename was successful.
