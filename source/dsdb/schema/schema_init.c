@@ -119,6 +119,71 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
+				     bool include_schema_info,
+				     TALLOC_CTX *mem_ctx,
+				     struct drsuapi_DsReplicaOIDMapping_Ctr **_ctr)
+{
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+	uint32_t i,j;
+
+	ctr = talloc(mem_ctx, struct drsuapi_DsReplicaOIDMapping_Ctr);
+	W_ERROR_HAVE_NO_MEMORY(ctr);
+
+	ctr->num_mappings	= schema->num_prefixes;
+	if (include_schema_info) ctr->num_mappings++;
+	ctr->mappings = talloc_array(schema, struct drsuapi_DsReplicaOIDMapping, ctr->num_mappings);
+	W_ERROR_HAVE_NO_MEMORY(ctr->mappings);
+
+	for (i=0; i < schema->num_prefixes; i++) {
+		ctr->mappings[i].id_prefix	= schema->prefixes[i].id>>16;
+		ctr->mappings[i].oid.oid	= talloc_strndup(ctr->mappings,
+								 schema->prefixes[j].oid,
+								 schema->prefixes[i].oid_len - 1);
+		W_ERROR_HAVE_NO_MEMORY(ctr->mappings[i].oid.oid);
+	}
+
+	if (include_schema_info) {
+		ctr->mappings[i].id_prefix	= 0;
+		ctr->mappings[i].oid.oid	= talloc_strdup(ctr->mappings,
+								schema->schema_info);
+		W_ERROR_HAVE_NO_MEMORY(ctr->mappings[i].oid.oid);
+	}
+
+	*_ctr = ctr;
+	return WERR_OK;
+}
+
+WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
+				 TALLOC_CTX *mem_ctx,
+				 struct ldb_val *prefixMap,
+				 struct ldb_val *schemaInfo)
+{
+	WERROR status;
+	NTSTATUS nt_status;
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+	struct prefixMapBlob pfm;
+
+	status = dsdb_get_oid_mappings_drsuapi(schema, false, mem_ctx, &ctr);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	pfm.version	= PREFIX_MAP_VERSION_DSDB;
+	pfm.ctr.dsdb	= *ctr;
+
+	nt_status = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
+					 (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	talloc_free(ctr);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ntstatus_to_werror(nt_status);
+	}
+
+	*schemaInfo = strhex_to_data_blob(schema->schema_info);
+	W_ERROR_HAVE_NO_MEMORY(schemaInfo->data);
+	talloc_steal(mem_ctx, schemaInfo->data);
+
+	return WERR_OK;
+}
+
 WERROR dsdb_verify_oid_mappings_drsuapi(const struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
 	uint32_t i,j;
