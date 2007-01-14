@@ -536,6 +536,11 @@ command = {
 		help = "pkcs10 request"
 	}
 	option = {
+		long = "certificate-private-key"
+		type = "string"
+		help = "private-key"
+	}
+	option = {
 		long = "generate-key"
 		type = "string"
 		help = "keytype"
@@ -544,6 +549,16 @@ command = {
 	        long = "key-bits"
 		type = "integer"
 		help = "number of bits in the generated key";
+	}
+	option = {
+		long = "template-certificate"
+		type = "string"
+		help = "certificate"
+	}
+	option = {
+		long = "template-fields"
+		type = "string"
+		help = "flag"
 	}
 	name = "certificate-sign"
 	name = "cert-sign"
