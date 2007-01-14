@@ -1,3 +1,13 @@
+2007-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/hx509.texi: Examples for pk-init.
+
+	* doc/hx509.texi: About extending ca lifetime and sub cas.
+	
+2007-01-13  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* doc/hx509.texi: More about certificates.
+	
 2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/hx509.texi: add Application requirements and write about
