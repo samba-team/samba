@@ -528,9 +528,27 @@ hxtool issue-certificate \
           ...
 @end example
 
-
-
 @subsection PK-INIT
+
+How to create a certificate for a KDC.
+
+@example
+hxtool issue-certificate \
+    --type="pkinit-kdc" \
+    --pk-init-principal="krbtgt/TEST.H5L.SE@@TEST.H5L.SE" \
+    --hostname kerberos.test.h5l.se \
+    --hostname pal.test.h5l.se \
+    ...
+@end example
+
+How to create a certificate for a user.
+
+@example
+hxtool issue-certificate \
+    --type="pkinit-client" \
+    --pk-init-principal="user@@TEST.H5L.SE" \
+    ...
+@end example
 
 @subsection XMPP/Jabber
 
