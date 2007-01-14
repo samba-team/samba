@@ -169,7 +169,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 
 WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       const char *partition_dn,
-					       const struct dsdb_schema *schema,
 					       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 					       uint32_t object_count,
 					       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
@@ -181,11 +180,17 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       struct dsdb_extended_replicated_objects **_out)
 {
 	WERROR status;
+	const struct dsdb_schema *schema;
 	struct dsdb_extended_replicated_objects *out;
 	struct ldb_result *ext_res;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t i;
 	int ret;
+
+	schema = dsdb_get_schema(ldb);
+	if (!schema) {
+		return WERR_DS_SCHEMA_NOT_LOADED;
+	}
 
 	status = dsdb_verify_oid_mappings_drsuapi(schema, mapping_ctr);
 	W_ERROR_NOT_OK_RETURN(status);
@@ -222,8 +227,8 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, out, &ext_res);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to apply records: %d\n",
-			ret));
+		DEBUG(0,("Failed to apply records: %d: %s\n",
+			ret, ldb_strerror(ret)));
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
