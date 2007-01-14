@@ -303,6 +303,8 @@ static int rootdse_init(struct ldb_module *module)
 	data->partitions = NULL;
 	module->private_data = data;
 
+	ldb_set_default_dns(module->ldb);
+
 	return ldb_next_init(module);
 }
 
