@@ -264,6 +264,11 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct dsdb_extended_replicated_objects *objs;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
+	struct ldb_message *msg;
+	struct ldb_val prefixMap_val;
+	struct ldb_message_element *prefixMap_el;
+	struct ldb_val schemaInfo_val;
+	struct ldb_message_element *schemaInfo_el;
 	uint32_t i;
 	int ret;
 
@@ -413,6 +418,33 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 			ldb_ldif_write_file(s->ldb, stdout, &ldif);
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
+	}
+
+	msg = ldb_msg_new(objs);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+	msg->dn = objs->partition_dn;
+
+	status = dsdb_get_oid_mappings_ldb(s->schema, msg, &prefixMap_val, &schemaInfo_val);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed dsdb_get_oid_mappings_ldb(%s)\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
+	ret = ldb_msg_add_value(msg, "prefixMap", &prefixMap_val, &prefixMap_el);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
+	}
+	prefixMap_el->flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_msg_add_value(msg, "prefixMap", &schemaInfo_val, &schemaInfo_el);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
+	}
+	schemaInfo_el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(s->ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to add prefixMap and schemaInfo %s\n", ldb_strerror(ret)));
+		return NT_STATUS_FOOBAR;
 	}
 
 	talloc_free(s_dsa);
