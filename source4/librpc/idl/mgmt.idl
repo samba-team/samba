@@ -48,14 +48,14 @@ interface mgmt
 	WERROR mgmt_inq_stats (
 		[in]        uint32             max_count,
 		[in]        uint32             unknown,
-		[out]       mgmt_statistics        statistics
+		[out,ref]   mgmt_statistics    *statistics
 		);
 
 
 	/***********************/
 	/* Function 0x02       */
 	boolean32 mgmt_is_server_listening (
-		[out]       error_status_t          status
+		[out,ref]       error_status_t          *status
 		);
 
 
