@@ -17,19 +17,35 @@ function()
 });
 
 
-qx.Class._startTimer = function(fsm)
+/**
+ * Start the redisplay timer.
+ *
+ * @param fsm {qx.util.fsm.FiniteStateMachine}
+ *   The finite state machine in use by this module
+ *
+ * @param msInterval {Integer}
+ *   The number of milliseconds before the timer should expire
+ */
+qx.Class._startTimer = function(fsm, msInterval)
 {
+
   // First, for good house keeping, ensure no timer exists
   swat.module.statistics.Fsm._stopTimer(fsm);
 
   // Create a timer instance to expire in a few seconds
-  var timer = new qx.client.Timer(5000);
+  var timer = new qx.client.Timer(msInterval);
   timer.addEventListener("interval", fsm.eventListener, fsm);
   fsm.addObject("timer", timer);
   timer.start();
 };
 
 
+/**
+ * Stop the redisplay timer.
+ *
+ * @param fsm {qx.util.fsm.FiniteStateMachine}
+ *   The finite state machine in use by this module
+ */
 qx.Class._stopTimer = function(fsm)
 {
   // ... then stop the timer.  Get the timer object.
@@ -84,7 +100,8 @@ qx.Proto.buildFsm = function(module)
             // Restart the timer.
             if (_module.visible)
             {
-              swat.module.statistics.Fsm._startTimer(fsm);
+              // Give it a reasonable interval before we redisplay
+              swat.module.statistics.Fsm._startTimer(fsm, 5000);
             }
           }
         },
@@ -172,7 +189,9 @@ qx.Proto.buildFsm = function(module)
         function(fsm, event)
         {
           _module.visible = true;
-          swat.module.statistics.Fsm._startTimer(fsm);
+
+          // Redisplay immediately
+          swat.module.statistics.Fsm._startTimer(fsm, 0);
         }
     });
   state.addTransition(trans);
