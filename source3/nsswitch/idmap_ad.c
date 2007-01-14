@@ -336,7 +336,7 @@ again:
 
 			default:
 				DEBUG(3, ("Unknown ID type\n"));
-				ids[idx]->mapped = false;
+				ids[idx]->status = ID_UNKNOWN;
 				continue;
 			}
 		}
@@ -438,7 +438,7 @@ again:
 		sid_copy(map->sid, &sid);
 
 		/* mapped */
-		map->mapped = True;
+		map->status = ID_MAPPED;
 
 		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
 			   sid_string_static(map->sid),
@@ -455,6 +455,12 @@ again:
 	}
 
 	ret = NT_STATUS_OK;
+
+	/* mark all unknwon ones as unmapped */
+	for (i = 0; ids[i]; i++) {
+		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+	}
+
 done:
 	talloc_free(memctx);
 	return ret;
@@ -649,7 +655,7 @@ again:
 		/* mapped */
 		map->xid.type = type;
 		map->xid.id = id;
-		map->mapped = True;
+		map->status = ID_MAPPED;
 
 		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
 			   sid_string_static(map->sid),
@@ -666,6 +672,12 @@ again:
 	}
 
 	ret = NT_STATUS_OK;
+
+	/* mark all unknwon ones as unmapped */
+	for (i = 0; ids[i]; i++) {
+		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+	}
+
 done:
 	talloc_free(memctx);
 	return ret;

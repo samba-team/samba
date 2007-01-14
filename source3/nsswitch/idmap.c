@@ -719,7 +719,7 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 	/* by default calls to winbindd are disabled
 	   the following call will not recurse so this is safe */
 	winbind_on();
-	wbret =winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
+	wbret = winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
 	winbind_off();
 
 	/* check if this is a valid SID and then map it */
@@ -750,7 +750,7 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 		}
 
 		/* ok, got a new id, let's set a mapping */
-		map->mapped = True;
+		map->status = ID_MAPPED;
 
 		DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
 			   sid_string_static(map->sid),
@@ -822,9 +822,9 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 
 	_ids = ids;
 
-	/* make sure all maps are marked as false */
+	/* make sure all maps are marked as in UNKNOWN status */
 	for (i = 0; _ids[i]; i++) {
-		_ids[i]->mapped = False;
+		_ids[i]->status = ID_UNKNOWN;
 	}
 
 	unmapped = NULL;
@@ -840,7 +840,7 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 		unmapped = NULL;
 
 		for (i = 0, u = 0; _ids[i]; i++) {
-			if (_ids[i]->mapped == False) {
+			if (_ids[i]->status == ID_UNKNOWN || _ids[i]->status == ID_UNMAPPED) {
 				unmapped = talloc_realloc(ctx, unmapped, struct id_map *, u + 2);
 				IDMAP_CHECK_ALLOC(unmapped);
 				unmapped[u] = _ids[i];
@@ -864,14 +864,14 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 			switch (unmapped[i]->xid.type) {
 			case ID_TYPE_UID:
 				uid_to_unix_users_sid((uid_t)unmapped[i]->xid.id, unmapped[i]->sid);
-				unmapped[i]->mapped = True;
+				unmapped[i]->status = ID_MAPPED;
 				break;
 			case ID_TYPE_GID:
 				gid_to_unix_groups_sid((gid_t)unmapped[i]->xid.id, unmapped[i]->sid);
-				unmapped[i]->mapped = True;
+				unmapped[i]->status = ID_MAPPED;
 				break;
 			default: /* what?! */
-				unmapped[i]->mapped = False;
+				unmapped[i]->status = ID_UNKNOWN;
 				break;
 			}
 		}
@@ -913,8 +913,8 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	for (i = 0; ids[i]; i++) {
 		int dom_num;
 
-		/* make sure they are unmapped by default */
-		ids[i]->mapped = False;
+		/* make sure they are unknown to start off */
+		ids[i]->status = ID_UNKNOWN;
 
 		for (dom_num = 0, dom = NULL; dom_num < num_domains; dom_num++) {
 			if (idmap_domains[dom_num]->default_domain) {
@@ -975,17 +975,18 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	/* let's see if we have any unmapped SID left and act accordingly */
 
 	for (i = 0; ids[i]; i++) {
-		if ( ! ids[i]->mapped) { /* ok this is an unmapped one, see if we can map it */
+		if (ids[i]->status == ID_UNKNOWN || ids[i]->status == ID_UNMAPPED) {
+			/* ok this is an unmapped one, see if we can map it */
 			ret = idmap_new_mapping(ctx, ids[i]);
 			if (NT_STATUS_IS_OK(ret)) {
 				/* successfully mapped */
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 			} else if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 				/* could not map it */
-				ids[i]->mapped = False;
-			} else{
+				ids[i]->status = ID_UNMAPPED;
+			} else {
 				/* Something very bad happened down there */
-				goto done;
+				ids[i]->status = ID_UNKNOWN;
 			}
 		}
 	}
@@ -1038,8 +1039,6 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 		ret = idmap_cache_map_id(idmap_cache, ids[i]);
 
-		/* TODO: handle NT_STATUS_SYNCHRONIZATION_REQUIRED for disconnected mode */
-
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			if ( ! bids) {
@@ -1080,9 +1079,14 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 		/* update the cache */
 		for (i = 0; i < bi; i++) {
-			if (bids[i]->mapped) {
+			if (bids[i]->status == ID_MAPPED) {
 				ret = idmap_cache_set(idmap_cache, bids[i]);
-			} else {
+			} else if (bids[i]->status == ID_UNKNOWN) {
+				/* return an expired entry in the cache or an unknown */
+				/* this handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
+				 * for disconnected mode */
+				idmap_cache_map_id(idmap_cache, ids[i]);
+			} else { /* unmapped */
 				ret = idmap_cache_set_negative_id(idmap_cache, bids[i]);
 			}
 			IDMAP_CHECK_RET(ret);
@@ -1132,8 +1136,6 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 		ret = idmap_cache_map_sid(idmap_cache, ids[i]);
 
-		/* TODO: handle NT_STATUS_SYNCHRONIZATION_REQUIRED for disconnected mode */
-
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			if ( ! bids) {
@@ -1174,8 +1176,13 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 		/* update the cache */
 		for (i = 0; bids[i]; i++) {
-			if (bids[i]->mapped) {
+			if (bids[i]->status == ID_MAPPED) {
 				ret = idmap_cache_set(idmap_cache, bids[i]);
+			} else if (bids[i]->status == ID_UNKNOWN) {
+				/* return an expired entry in the cache or an unknown */
+				/* this handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
+				 * for disconnected mode */
+				idmap_cache_map_id(idmap_cache, ids[i]);
 			} else {
 				ret = idmap_cache_set_negative_sid(idmap_cache, bids[i]);
 			}
@@ -1199,7 +1206,7 @@ NTSTATUS idmap_set_mapping(const struct id_map *id)
 	}
 
 	/* sanity checks */
-	if ((id->sid == NULL) || (! id->mapped)) {
+	if ((id->sid == NULL) || (id->status != ID_MAPPED)) {
 		DEBUG(1, ("NULL SID or unmapped entry\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}

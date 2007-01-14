@@ -49,7 +49,7 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 		return ret;
 	}
 
-	if ( ! map.mapped) {
+	if (map.status != ID_MAPPED) {
 		DEBUG(10, ("uid [%lu] not mapped\n", (unsigned long)uid));
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -83,7 +83,7 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 		return ret;
 	}
 
-	if ( ! map.mapped) {
+	if (map.status != ID_MAPPED) {
 		DEBUG(10, ("gid [%lu] not mapped\n", (unsigned long)gid));
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -115,8 +115,8 @@ NTSTATUS idmap_sid_to_uid(DOM_SID *sid, uid_t *uid)
 		return ret;
 	}
 
-	if (( ! map.mapped) || (map.xid.type != ID_TYPE_UID)) {
-		DEBUG(10, ("sid [%s] not mapped to an uid [%u,%u,%u]\n", sid_string_static(sid), map.mapped, map.xid.type, map.xid.id));
+	if ((map.status != ID_MAPPED) || (map.xid.type != ID_TYPE_UID)) {
+		DEBUG(10, ("sid [%s] not mapped to an uid [%u,%u,%u]\n", sid_string_static(sid), map.status, map.xid.type, map.xid.id));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -149,8 +149,8 @@ NTSTATUS idmap_sid_to_gid(DOM_SID *sid, gid_t *gid)
 		return ret;
 	}
 
-	if (( ! map.mapped) || (map.xid.type != ID_TYPE_GID)) {
-		DEBUG(10, ("sid [%s] not mapped to an gid [%u,%u,%u]\n", sid_string_static(sid), map.mapped, map.xid.type, map.xid.id));
+	if ((map.status != ID_MAPPED) || (map.xid.type != ID_TYPE_GID)) {
+		DEBUG(10, ("sid [%s] not mapped to an gid [%u,%u,%u]\n", sid_string_static(sid), map.status, map.xid.type, map.xid.id));
 		return NT_STATUS_NONE_MAPPED;
 	}
 

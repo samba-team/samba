@@ -43,15 +43,23 @@ static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	int i;
 
 	for (i = 0; ids[i]; i++) {
+
+		/* unmapped by default */
+		ids[i]->status = ID_UNMAPPED;
+
 		switch (ids[i]->xid.type) {
 		case ID_TYPE_UID:
-			ids[i]->mapped = pdb_uid_to_sid((uid_t)ids[i]->xid.id, ids[i]->sid);
+			if (pdb_uid_to_sid((uid_t)ids[i]->xid.id, ids[i]->sid)) {
+				ids[i]->status = ID_MAPPED;
+			}
 			break;
 		case ID_TYPE_GID:
-			ids[i]->mapped = pdb_gid_to_sid((gid_t)ids[i]->xid.id, ids[i]->sid);
+			if (pdb_gid_to_sid((gid_t)ids[i]->xid.id, ids[i]->sid)) {
+				ids[i]->status = ID_MAPPED;
+			}
 			break;
 		default: /* ?? */
-			ids[i]->mapped = False;
+			ids[i]->status = ID_UNKNOWN;
 		}
 	}
 
@@ -75,7 +83,7 @@ static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			case SID_NAME_USER:
 				ids[i]->xid.id = id.uid;
 				ids[i]->xid.type = ID_TYPE_UID;
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 				break;
 
 			case SID_NAME_DOM_GRP:
@@ -83,17 +91,17 @@ static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			case SID_NAME_WKN_GRP:
 				ids[i]->xid.id = id.gid;
 				ids[i]->xid.type = ID_TYPE_GID;
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 				break;
 
 			default: /* ?? */
 				/* make sure it is marked as unmapped */
-				ids[i]->mapped = False;
+				ids[i]->status = ID_UNKNOWN;
 				break;
 			}
 		} else {
 			/* Query Failed */
-			ids[i]->mapped = False;
+			ids[i]->status = ID_UNMAPPED;
 		}
 	}
 

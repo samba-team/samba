@@ -62,7 +62,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 			pw = getpwuid((uid_t)ids[i]->xid.id);
 
 			if (!pw) {
-				ids[i]->mapped = False;
+				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			name = pw->pw_name;
@@ -71,13 +71,13 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 			gr = getgrgid((gid_t)ids[i]->xid.id);
 
 			if (!gr) {
-				ids[i]->mapped = False;
+				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			name = gr->gr_name;
 			break;
 		default: /* ?? */
-			ids[i]->mapped = False;
+			ids[i]->status = ID_UNKNOWN;
 			continue;
 		}
 
@@ -89,17 +89,16 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		winbind_off();
 
 		if (!ret) {
-			ids[i]->mapped = False;
+			/* TODO: how do we know if the name is really not mapped,
+			 * or something just failed ? */
+			ids[i]->status = ID_UNMAPPED;
 			continue;
 		}
-
-		/* make sure it is marked as unmapped if types do not match */
-		ids[i]->mapped = False;
 
 		switch (type) {
 		case SID_NAME_USER:
 			if (ids[i]->xid.type == ID_TYPE_UID) {
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 			}
 			break;
 
@@ -107,11 +106,12 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
 			if (ids[i]->xid.type == ID_TYPE_GID) {
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 			}
 			break;
 
 		default:
+			ids[i]->status = ID_UNKNOWN;
 			break;
 		}
 	}
@@ -151,12 +151,11 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		winbind_off();
 
 		if (!ret) {
-			ids[i]->mapped = False;
+			/* TODO: how do we know if the name is really not mapped,
+			 * or something just failed ? */
+			ids[i]->status = ID_UNMAPPED;
 			continue;
 		}
-
-		/* make sure it is marked as unmapped if types do not match */
-		ids[i]->mapped = False;
 
 		switch (type) {
 		case SID_NAME_USER:
@@ -167,7 +166,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			if (pw) {
 				ids[i]->xid.id = pw->pw_uid;
 				ids[i]->xid.type = ID_TYPE_UID;
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 			}
 			break;
 
@@ -179,12 +178,12 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			if (gr) {
 				ids[i]->xid.id = gr->gr_gid;
 				ids[i]->xid.type = ID_TYPE_GID;
-				ids[i]->mapped = True;
+				ids[i]->status = ID_MAPPED;
 			}
 			break;
 
 		default:
-			ids[i]->mapped = False;
+			ids[i]->status = ID_UNKNOWN;
 			break;
 		}
 	}

@@ -1048,7 +1048,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		gid_t agid;
 
 		if (wb) {
-			if ( ! ids[i].mapped) {
+			if (ids[i].status != ID_MAPPED) {
 				DEBUG(10, ("Could not convert SID %s to gid, "
 					   "ignoring it\n", sid_string_static(ids[i].sid)));
 				continue;
