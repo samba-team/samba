@@ -153,7 +153,7 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
   pet hates about ldapsearch, which is that you have to get a long,
   complex basedn right to make any use of it.
 */
-static void ldb_set_default_dns(struct ldb_context *ldb)
+void ldb_set_default_dns(struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx;
 	int ret;
