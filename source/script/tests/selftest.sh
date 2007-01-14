@@ -136,9 +136,9 @@ fi
 	else
 	        nf="`expr $failed + $totalfailed`";
 		if [ "$nf" = "0" ]; then 
-		    echo "Testing $name"
+		    echo "[$current/$total] Testing $name"
 		else 
-		    echo "Testing $name ($nf tests failed so far)"
+		    echo "[$current/$total, $nf failures] Testing $name"
 		fi
 	fi
 
@@ -224,12 +224,16 @@ export failed
 totalfailed=0
 export totalfailed
 
-. script/tests/tests_$TESTS.sh | (
+. script/tests/tests_$TESTS.sh > $PREFIX/recipe
+total=`grep "TEST --" $PREFIX/recipe | wc -l`
+current=0
+cat $PREFIX/recipe | (
  	while read LINE
 	do
 		if [ "$LINE" = "-- TEST --" ]; then
 			read NAME
 			read CMDLINE
+			current=`expr $current + 1`
 			runtest "$NAME" "$CMDLINE" || totalfailed=`expr $totalfailed + $?`
 		else
 			echo "$LINE"
