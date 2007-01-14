@@ -366,6 +366,11 @@ Who is allowed to requests certificates.
 @node Creating a CA certificate, Issuing certificates, Setting up a CA, Top
 @section Creating a CA certificate
 
+This section describes how to create a CA certificate and what to think
+about.
+
+@subsection Lifetime CA certificate
+
 You probably want to create a CA certificate with a long lifetime, 10
 years at the shortest. This because you dont want to push out the
 certificate (as a trust anchor) to all you users once again when the old
@@ -376,6 +381,8 @@ Keep in mind the security requirements might be diffrent 10-20 years
 into the future. For example, SHA1 is going to be withdrawn in 2010, so
 make sure you have enough buffering in your choice of digest/hash
 algorithms, signature algorithms and keylenghts.
+
+@subsection Create a CA certificate
 
 This command below will create a CA certificate in the file ca.pem.
 
@@ -389,11 +396,46 @@ hxtool issue-certificate \
     --certificate="FILE:ca.pem"
 @end example
 
+@subsection Extending lifetime of a CA certificate
+
+You just realised that your CA certificate is going to expire soon and
+that you need replace it with something else, the easiest way to do that
+is to extend the lifetime of your CA certificate.
+
+The example below will extend the CA certificate 10 years into the
+future. You should compare this new certificate if it contains all the
+special tweeks as the old certificate had.
+
+@example
+hxtool issue-certificate \
+    --self-signed \
+    --issue-ca \
+    --lifetime="10years" \
+    --template-certificate="FILE:ca.pem" \
+    --template-fields="serialNumber,notBefore,subject,SPKI" \
+    --ca-private-key=FILE:ca.pem \
+    --certificate="FILE:new-ca.pem"
+@end example
+
+@subsection Subordinate CA
+
+This example create a new subordinate certificate authority.
+
+@example
+hxtool issue-certificate \
+    --ca-certificate=FILE:ca.pem \
+    --issue-ca \
+    --generate-key=rsa \
+    --subject="CN=CertificateAuthority,DC=dev,DC=test,DC=h5l,DC=se" \
+    --certificate="FILE:dev-ca.pem"
+@end example
+
+
 @node Issuing certificates, Application requirements, Creating a CA certificate, Top
 @section Issuing certificates
 
 First you'll create a CA certificate, after that you have to deal with
-your users and servers and issue certificate for them.
+your users and servers and issue certificate to them.
 
 CA can generate the key for the user.
 
