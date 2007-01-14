@@ -268,7 +268,6 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct ldb_val prefixMap_val;
 	struct ldb_message_element *prefixMap_el;
 	struct ldb_val schemaInfo_val;
-	struct ldb_message_element *schemaInfo_el;
 	uint32_t i;
 	int ret;
 
