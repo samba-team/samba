@@ -77,7 +77,7 @@ certs_strings(hx509_context context, const char *type, hx509_certs certs,
     for (i = 0; i < s->num_strings; i++) {
 	ret = hx509_certs_append(context, certs, lock, s->strings[i]);
 	if (ret)
-	    hx509_err(context, ret, 1,
+	    hx509_err(context, 1, ret,
 		      "hx509_certs_append: %s %s", type, s->strings[i]);
     }
 }
@@ -841,12 +841,12 @@ read_private_key(const char *fn, hx509_private_key *key)
 
     ret = hx509_certs_init(context, fn, 0, NULL, &certs);
     if (ret)
-	hx509_err(context, ret, 1, "hx509_certs_init: %s", fn);
+	hx509_err(context, 1, ret, "hx509_certs_init: %s", fn);
 
     ret = _hx509_certs_keys_get(context, certs, &keys);
     hx509_certs_free(&certs);
     if (ret)
-	hx509_err(context, ret, 1, "hx509_certs_keys_get");
+	hx509_err(context, 1, ret, "hx509_certs_keys_get");
     if (keys[0] == NULL)
 	errx(1, "no keys in key store: %s", fn);
 
@@ -968,14 +968,14 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 						  &key);
     free_SubjectPublicKeyInfo(&key);
     if (ret)
-	hx509_err(context, ret, 1, "_hx509_request_set_SubjectPublicKeyInfo");
+	hx509_err(context, 1, ret, "_hx509_request_set_SubjectPublicKeyInfo");
 
     ret = _hx509_request_to_pkcs10(context,
 				   req,
 				   signer,
 				   &request);
     if (ret)
-	hx509_err(context, ret, 1, "_hx509_request_to_pkcs10");
+	hx509_err(context, 1, ret, "_hx509_request_to_pkcs10");
 
     _hx509_private_key_free(&signer);
     _hx509_request_free(&req);
@@ -1243,29 +1243,29 @@ eval_types(hx509_context context,
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkix_kp_serverAuth());
 	    if (ret)
-		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
 	} else if (strcmp(type, "https-client") == 0) {
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkix_kp_clientAuth());
 	    if (ret)
-		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
 	} else if (strcmp(type, "pkinit-kdc") == 0) {
 	    pkinit++;
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkkdcekuoid());
 	    if (ret)
-		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
 	} else if (strcmp(type, "pkinit-client") == 0) {
 	    pkinit++;
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkekuoid());
 	    if (ret)
-		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
 	} else if (strcmp(type, "email") == 0) {
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkix_kp_emailProtection());
 	    if (ret)
-		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
 	} else
 	    errx(1, "unknown type %s", type);
     }
@@ -1280,7 +1280,7 @@ eval_types(hx509_context context,
 	ret = hx509_ca_tbs_add_san_pkinit(context, tbs,
 					  opt->pk_init_principal_string);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_pkinit");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_pkinit");
     }
     
     for (i = 0; i < opt->hostname_strings.num_strings; i++) {
@@ -1288,7 +1288,7 @@ eval_types(hx509_context context,
 
 	ret = hx509_ca_tbs_add_san_hostname(context, tbs, hostname);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_hostname");
     }
 
     for (i = 0; i < opt->email_strings.num_strings; i++) {
@@ -1296,18 +1296,18 @@ eval_types(hx509_context context,
 
 	ret = hx509_ca_tbs_add_san_rfc822name(context, tbs, email);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_hostname");
 	
 	ret = hx509_ca_tbs_add_eku(context, tbs, 
 				   oid_id_pkix_kp_emailProtection());
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
     }
 
     if (opt->jid_string) {
 	ret = hx509_ca_tbs_add_san_jid(context, tbs, opt->jid_string);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_jid");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_jid");
     }
 
     return 0;
@@ -1318,7 +1318,6 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 {
     int ret;
     hx509_ca_tbs tbs;
-    hx509_certs cacerts = NULL;
     hx509_cert signer = NULL, cert = NULL;
     hx509_private_key private_key = NULL;
     hx509_private_key cert_key = NULL;
@@ -1334,14 +1333,10 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	errx(1, "--ca-private-key argument missing (using --self-signed)");
     if (opt->certificate_string == NULL)
 	errx(1, "--certificate argument missing");
-    if (opt->req_string == NULL && opt->generate_key_string == NULL) {
-	if (!opt->self_signed_flag)
-	    errx(1, "--req argument missing");
-    } else if (opt->req_string && opt->generate_key_string) {
-	    errx(1, "can't do both --req and --generate-key");
-    } else {
-	if (opt->ca_private_key_string)
-	    errx(1, "both --req and --ca-private-key used");
+
+    if (opt->template_certificate_string) {
+	if (opt->template_fields_string == NULL)
+	    errx(1, "--template-certificate not no --template-fields");
     }
 
     if (opt->lifetime_string) {
@@ -1351,12 +1346,13 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->ca_certificate_string) {
+	hx509_certs cacerts = NULL;
 	hx509_query *q;
 
 	ret = hx509_certs_init(context, opt->ca_certificate_string, 0,
 			       NULL, &cacerts);
 	if (ret)
-	    hx509_err(context, ret, 1,
+	    hx509_err(context, 1, ret,
 		      "hx509_certs_init: %s", opt->ca_certificate_string);
 
 	ret = hx509_query_alloc(context, &q);
@@ -1369,8 +1365,9 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
 	ret = hx509_certs_find(context, cacerts, q, &signer);
 	hx509_query_free(context, q);
+	hx509_certs_free(&cacerts);
 	if (ret)
-	    hx509_err(context, ret, 1, "no CA certificate found");
+	    hx509_err(context, 1, ret, "no CA certificate found");
     } else if (opt->self_signed_flag) {
 	if (opt->generate_key_string == NULL
 	    && opt->ca_private_key_string == NULL)
@@ -1390,7 +1387,6 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
 	if (opt->self_signed_flag)
 	    cert_key = private_key;
-
     }
 
     if (opt->req_string) {
@@ -1435,7 +1431,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 					  &cert_key);
 	_hx509_generate_private_key_free(&keyctx);
 	if (ret)
-	    hx509_err(context, ret, 1, "generate private key");
+	    hx509_err(context, 1, ret, "generate private key");
 	
 	if (opt->key_bits_integer)
 	    _hx509_generate_private_key_bits(context, keyctx,
@@ -1449,20 +1445,18 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    private_key = cert_key;
     }
 
+    if (opt->certificate_private_key_string) {
+	ret = read_private_key(opt->certificate_private_key_string, &cert_key);
+	if (ret)
+	    err(1, "read_private_key for certificate");
+    }
+
     if (opt->subject_string) {
 	if (subject)
 	    hx509_name_free(&subject);
 	ret = hx509_parse_name(context, opt->subject_string, &subject);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_parse_name: %d\n", ret);
-    }
-
-    if (opt->issue_proxy_flag) {
-	if (subject)
-	    hx509_name_free(&subject);
-    } else {
-	if (subject == NULL)
-	    errx(1, "no subject given");
+	    hx509_err(context, 1, ret, "hx509_parse_name");
     }
 
     /*
@@ -1471,25 +1465,56 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
     ret = hx509_ca_tbs_init(context, &tbs);
     if (ret)
-	hx509_err(context, ret, 1, "hx509_ca_tbs_init");
+	hx509_err(context, 1, ret, "hx509_ca_tbs_init");
 	
+    if (opt->template_certificate_string) {
+	hx509_cert template;
+	hx509_certs tcerts;
+	int flags;
+
+	ret = hx509_certs_init(context, opt->template_certificate_string, 0,
+			       NULL, &tcerts);
+	if (ret)
+	    hx509_err(context, 1, ret,
+		      "hx509_certs_init: %s", opt->template_certificate_string);
+
+	ret = hx509_get_one_cert(context, tcerts, &template);
+
+	hx509_certs_free(&tcerts);
+	if (ret)
+	    hx509_err(context, 1, ret, "no template certificate found");
+
+	flags = parse_units(opt->template_fields_string, 
+			    hx509_ca_tbs_template_units(), "");
+
+	ret = hx509_ca_tbs_set_template(context, tbs, flags, template);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_template");
+    }
+
     if (opt->serial_number_string) {
 	heim_integer serialNumber;
 
-	der_parse_hex_heim_integer(opt->serial_number_string,
-				   &serialNumber);
+	ret = der_parse_hex_heim_integer(opt->serial_number_string,
+					 &serialNumber);
+	if (ret)
+	    err(1, "der_parse_hex_heim_integer");
 	ret = hx509_ca_tbs_set_serialnumber(context, tbs, &serialNumber);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_init");
 	der_free_heim_integer(&serialNumber);
     }
 
-    ret = hx509_ca_tbs_set_spki(context, tbs, &spki);
-    if (ret)
-	hx509_err(context, ret, 1, "hx509_ca_tbs_set_spki");
+    if (spki.subjectPublicKey.length) {
+	ret = hx509_ca_tbs_set_spki(context, tbs, &spki);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_spki");
+    }
 
     if (subject) {
 	ret = hx509_ca_tbs_set_subject(context, tbs, subject);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_subject");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_subject");
     }
 
     eval_types(context, tbs, opt);
@@ -1497,34 +1522,34 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (opt->issue_ca_flag) {
 	ret = hx509_ca_tbs_set_ca(context, tbs, opt->path_length_integer);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_ca");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_ca");
     }
     if (opt->issue_proxy_flag) {
 	ret = hx509_ca_tbs_set_proxy(context, tbs, opt->path_length_integer);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_proxy");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_proxy");
     }
 
     if (delta) {
 	ret = hx509_ca_tbs_set_notAfter_lifetime(context, tbs, delta);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_notAfter_lifetime");
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_notAfter_lifetime");
     }	
 
     if (opt->self_signed_flag) {
 	ret = hx509_ca_sign_self(context, tbs, private_key, &cert);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_sign_self");
+	    hx509_err(context, 1, ret, "hx509_ca_sign_self");
     } else {
 	ret = hx509_ca_sign(context, tbs, signer, &cert);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_ca_sign");
+	    hx509_err(context, 1, ret, "hx509_ca_sign");
     }
 
     if (cert_key) {
 	ret = _hx509_cert_assign_key(cert, cert_key);
 	if (ret)
-	    hx509_err(context, ret, 1, "_hx509_cert_assign_key");
+	    hx509_err(context, 1, ret, "_hx509_cert_assign_key");
     }	    
 
     {
@@ -1533,11 +1558,11 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = hx509_certs_init(context, opt->certificate_string, 
 			       HX509_CERTS_CREATE, NULL, &certs);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_certs_init");
+	    hx509_err(context, 1, ret, "hx509_certs_init");
 
 	ret = hx509_certs_add(context, certs, cert);
 	if (ret)
-	    hx509_err(context, ret, 1, "hx509_certs_add");
+	    hx509_err(context, 1, ret, "hx509_certs_add");
 
 	ret = hx509_certs_store(context, certs, 0, NULL);
 	if (ret)
