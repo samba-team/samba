@@ -114,6 +114,89 @@ hx509_ca_tbs_set_notAfter_lifetime(hx509_context context,
     return hx509_ca_tbs_set_notAfter(context, tbs, time(NULL) + delta);
 }
 
+static const struct units templatebits[] = {
+    { "ExtendedKeyUsage", HX509_CA_TEMPLATE_EKU },
+    { "KeyUsage", HX509_CA_TEMPLATE_KU },
+    { "SPKI", HX509_CA_TEMPLATE_SPKI },
+    { "notAfter", HX509_CA_TEMPLATE_NOTAFTER },
+    { "notBefore", HX509_CA_TEMPLATE_NOTBEFORE },
+    { "serial", HX509_CA_TEMPLATE_SERIAL },
+    { "subject", HX509_CA_TEMPLATE_SUBJECT },
+    { NULL, 0 }
+};
+
+const struct units *
+hx509_ca_tbs_template_units(void)
+{
+    return templatebits;
+}
+
+int
+hx509_ca_tbs_set_template(hx509_context context,
+			  hx509_ca_tbs tbs,
+			  int flags,
+			  hx509_cert cert)
+{
+    int ret;
+
+    if (flags & HX509_CA_TEMPLATE_SUBJECT) {
+	if (tbs->subject)
+	    hx509_name_free(&tbs->subject);
+	ret = hx509_cert_get_subject(cert, &tbs->subject);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to get subject from template");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_SERIAL) {
+	der_free_heim_integer(&tbs->serial);
+	ret = hx509_cert_get_serialnumber(cert, &tbs->serial);
+	tbs->flags.serial = !ret;
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to copy serial number");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_NOTBEFORE)
+	tbs->notBefore = hx509_cert_get_notBefore(cert);
+    if (flags & HX509_CA_TEMPLATE_NOTAFTER)
+	tbs->notAfter = hx509_cert_get_notAfter(cert);
+    if (flags & HX509_CA_TEMPLATE_SPKI) {
+	free_SubjectPublicKeyInfo(&tbs->spki);
+	ret = hx509_cert_get_SPKI(cert, &tbs->spki);
+	tbs->flags.key = !ret;
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Failed to copy SPKI");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_KU) {
+	KeyUsage ku;
+	ret = _hx509_cert_get_keyusage(context, cert, &ku);
+	if (ret)
+	    return ret;
+	tbs->key_usage = KeyUsage2int(ku);
+    }
+    if (flags & HX509_CA_TEMPLATE_EKU) {
+	ExtKeyUsage eku;
+	int i;
+	ret = _hx509_cert_get_eku(context, cert, &eku);
+	if (ret)
+	    return ret;
+	for (i = 0; i < eku.len; i++) {
+	    ret = hx509_ca_tbs_add_eku(context, tbs, &eku.val[i]);
+	    if (ret) {
+		free_ExtKeyUsage(&eku);
+		return ret;
+	    }
+	}
+	free_ExtKeyUsage(&eku);
+    }
+    return 0;
+}
+
 int
 hx509_ca_tbs_set_ca(hx509_context context,
 		    hx509_ca_tbs tbs,
@@ -160,7 +243,7 @@ hx509_ca_tbs_set_serialnumber(hx509_context context,
 }
 
 int
-hx509_ca_tbs_add_eku(hx509_context contex,
+hx509_ca_tbs_add_eku(hx509_context context,
 		     hx509_ca_tbs tbs,
 		     const heim_oid *oid)
 {
@@ -175,12 +258,16 @@ hx509_ca_tbs_add_eku(hx509_context contex,
     }
 
     ptr = realloc(tbs->eku.val, sizeof(tbs->eku.val[0]) * (tbs->eku.len + 1));
-    if (ptr == NULL)
+    if (ptr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
     tbs->eku.val = ptr;
     ret = der_copy_oid(oid, &tbs->eku.val[tbs->eku.len]);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
+    }
     tbs->eku.len += 1;
     return 0;
 }
