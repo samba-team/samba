@@ -15,14 +15,27 @@ PREFIX=$5
 shift 5
 failed=0
 
+testit() {
+	name="$1"
+	shift
+	cmdline="$*"
+	echo "test: $name"
+	$cmdline
+	status=$?
+	if [ x$status = x0 ]; then
+		echo "success: $name"
+	else
+		echo "failure: $name"
+	fi
+	return $status
+}
+
 runcmd() {
 	name="$1"
 	shift
-	testit "$name" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD" $@
+	testit "$name" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+	return $?
 }
-
-incdir=`dirname $0`
-. $incdir/test_functions.sh
 
 # Generate random file
 cat >tmpfile<<EOF
@@ -31,7 +44,6 @@ bar
 bloe
 blah
 EOF
-
 
 # put that file
 echo mput tmpfile | runcmd "MPutting file" || failed=`expr $failed + 1`
@@ -87,4 +99,4 @@ echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $faile
 
 rm -f tmpfile tmpfile-old tmpfilex
 
-testok $0 $failed
+exit $failed
