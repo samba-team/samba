@@ -80,16 +80,16 @@ static BOOL test_inq_stats(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
-		printf("Unexpected array size %d\n", r.out.statistics.count);
+	if (r.out.statistics->count != MGMT_STATS_ARRAY_MAX_SIZE) {
+		printf("Unexpected array size %d\n", r.out.statistics->count);
 		return False;
 	}
 
 	printf("\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
-	       r.out.statistics.statistics[MGMT_STATS_CALLS_IN],
-	       r.out.statistics.statistics[MGMT_STATS_CALLS_OUT],
-	       r.out.statistics.statistics[MGMT_STATS_PKTS_IN],
-	       r.out.statistics.statistics[MGMT_STATS_PKTS_OUT]);
+	       r.out.statistics->statistics[MGMT_STATS_CALLS_IN],
+	       r.out.statistics->statistics[MGMT_STATS_CALLS_OUT],
+	       r.out.statistics->statistics[MGMT_STATS_PKTS_IN],
+	       r.out.statistics->statistics[MGMT_STATS_PKTS_OUT]);
 
 	return True;
 }
@@ -142,7 +142,7 @@ static BOOL test_is_server_listening(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.status != 0 || r.out.result == 0) {
+	if (*r.out.status != 0 || r.out.result == 0) {
 		printf("\tserver is NOT listening\n");
 	} else {
 		printf("\tserver is listening\n");
