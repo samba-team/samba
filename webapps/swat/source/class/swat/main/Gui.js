@@ -175,7 +175,6 @@ qx.Class.buildGui = function(moduleList)
                            // Set the browser title as well
                            document.title =
                              "Swat: " + this.moduleName;
-
                          }
                        });
 
