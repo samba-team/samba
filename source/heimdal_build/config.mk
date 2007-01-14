@@ -368,6 +368,10 @@ OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.o
 
+[SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM] 
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
+OBJ_FILES = ../heimdal/lib/roken/closefrom.o
+
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.ho
@@ -394,7 +398,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/hex.o \
 	../heimdal/lib/roken/bswap.o \
-	../heimdal/lib/roken/closefrom.o \
 	../heimdal/lib/roken/dumpdata.o \
 	../heimdal/lib/roken/emalloc.o \
 	../heimdal/lib/roken/get_window_size.o \
@@ -425,6 +428,7 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
 			HEIMDAL_ROKEN_GETPROGNAME \
+			HEIMDAL_ROKEN_CLOSEFROM \
 			GAI \
 			NSL \
 			RESOLV \
