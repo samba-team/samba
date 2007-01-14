@@ -1,3 +1,21 @@
+2007-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_ca.in: test template handling
+
+	* hx509.h: Add template flags.
+
+	* Makefile.am: clean out new files
+
+	* hxtool.c: Add certificate template processing, fix hx509_err
+	usage.
+
+	* hxtool-commands.in: Add certificate template processing.
+
+	* ca.c: Add certificate template processing. Fix return messages
+	from hx509_ca_tbs_add_eku.
+
+	* cert.c: Export more stuff from certificate.
+	
 2007-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ca.c: update (c)
