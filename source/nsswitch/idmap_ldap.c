@@ -974,7 +974,7 @@ again:
 		TALLOC_FREE(sidstr);
 
 		/* mapped */
-		map->mapped = True;
+		map->status = ID_MAPPED;
 
 		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_static(map->sid), (unsigned long)map->xid.id, map->xid.type));
 	}
@@ -990,6 +990,12 @@ again:
 	}
 
 	ret = NT_STATUS_OK;
+
+
+	/* mark all unknwon ones as unmapped */
+	for (i = 0; ids[i]; i++) {
+		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+	}
 
 done:
 	talloc_free(memctx);
@@ -1169,7 +1175,7 @@ again:
 		/* mapped */
 		map->xid.type = type;
 		map->xid.id = id;
-		map->mapped = True;
+		map->status = ID_MAPPED;
 		
 		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_static(map->sid), (unsigned long)map->xid.id, map->xid.type));
 	}
@@ -1185,6 +1191,11 @@ again:
 	}
 
 	ret = NT_STATUS_OK;
+
+	/* mark all unknwon ones as unmapped */
+	for (i = 0; ids[i]; i++) {
+		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+	}
 
 done:
 	talloc_free(memctx);

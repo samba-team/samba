@@ -809,7 +809,7 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 
 				/* make sure it is marked as unmapped */
-				ids[i]->mapped = False;
+				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			
@@ -818,7 +818,7 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		}
 
 		/* all ok, id is mapped */
-		ids[i]->mapped = True;
+		ids[i]->status = ID_MAPPED;
 	}
 
 	ret = NT_STATUS_OK;
@@ -847,7 +847,7 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 
 				/* make sure it is marked as unmapped */
-				ids[i]->mapped = False;
+				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			
@@ -856,7 +856,7 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		}
 
 		/* all ok, id is mapped */
-		ids[i]->mapped = True;
+		ids[i]->status = ID_MAPPED;
 	}
 
 	ret = NT_STATUS_OK;
@@ -1132,18 +1132,19 @@ static int idmap_tdb_dump_one_entry(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA val
 		/* Try a UID record. */
 		if (sscanf(value.dptr, "UID %u", &(maps[num_maps].xid.id)) == 1) {
 			maps[num_maps].xid.type = ID_TYPE_UID;
-			maps[num_maps].mapped = True;
+			maps[num_maps].status = ID_MAPPED;
 			*data->num_maps = num_maps + 1;
 
 		/* Try a GID record. */
 		} else
 		if (sscanf(value.dptr, "GID %u", &(maps[num_maps].xid.id)) == 1) {
 			maps[num_maps].xid.type = ID_TYPE_GID;
-			maps[num_maps].mapped = True;
+			maps[num_maps].status = ID_MAPPED;
 			*data->num_maps = num_maps + 1;
 
 		/* Unknown record type ! */
 		} else {
+			maps[num_maps].status = ID_UNKNOWN;
 			DEBUG(2, ("Found INVALID record %s -> %s\n", key.dptr, value.dptr));
 			/* do not increment num_maps */
 		}
