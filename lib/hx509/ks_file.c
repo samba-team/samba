@@ -678,16 +678,12 @@ static int
 store_func(hx509_context context, void *ctx, hx509_cert c)
 {
     FILE *f = (FILE *)ctx;
-    size_t size;
     heim_octet_string data;
     int ret;
 
-    ASN1_MALLOC_ENCODE(Certificate, data.data, data.length, 
-		       _hx509_get_cert(c), &size, ret);
+    ret = hx509_cert_binary(context, c, &data);
     if (ret)
 	return ret;
-    if (data.length != size)
-	_hx509_abort("internal ASN.1 encoder error");
     
     dump_pem_file(context, "CERTIFICATE", f, data.data, data.length);
     free(data.data);

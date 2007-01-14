@@ -488,11 +488,11 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     os.data = NULL;
     os.length = 0;
 
-    ASN1_MALLOC_ENCODE(Certificate, os.data, os.length, 
-		       _hx509_get_cert(c), &size, ret);
+    ret = hx509_cert_binary(context, c, &os);
     if (ret)
-	goto out;
-    ASN1_MALLOC_ENCODE(PKCS12_OctetString, 
+	return ret;
+
+    ASN1_MALLOC_ENCODE(PKCS12_OctetString,
 		       cb.certValue.data,cb.certValue.length,
 		       &os, &size, ret);
     free(os.data);
