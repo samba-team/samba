@@ -30,6 +30,7 @@ include torture/config.mk
 include librpc/config.mk
 include client/config.mk
 include libcli/config.mk
+include scripting/ejs/ejsnet/config.mk
 include scripting/ejs/config.mk
 include scripting/swig/config.mk
 include kdc/config.mk
