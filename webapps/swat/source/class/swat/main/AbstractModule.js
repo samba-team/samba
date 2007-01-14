@@ -84,16 +84,6 @@ qx.Proto.buildInitialFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          // Make the "Loading" message go away.  (We need to learn how to
-          // remove it entirely.  Just doing canvas.removeAll() leaves
-          // something in the widget queue and we get spurious error
-          // messages.)
-          var children = module.canvas.getVisibleChildren();
-          for (var child in children)
-          {
-            children[child].hide();
-          }
-
           // Call the module's initialAppear function to build FSM and GUI.
           // That function should *replace* this state, State_Idle, to which
           // we'll transition.
@@ -126,8 +116,7 @@ qx.Proto.buildInitialFsm = function(module)
 /**
  * Build the initial graphical user interface.
  *
- * In order to prevent long load times, as minimal as possible of an initial
- * GUI should be created.  Generally, this is just a "Loading..." message.
+ * Generally, this is a no-op.
  *
  * @param module {Object}
  *   An object containing at least the following properties:
@@ -138,20 +127,13 @@ qx.Proto.buildInitialFsm = function(module)
  *       The canvas on which to create the gui for this module
  *     name -
  *       The name of this module
- *     class -
+ *     clazz -
  *       The class for this module
  *
  */
 qx.Proto.buildInitialGui = function(module)
 {
-  // For now, just create the "Loading" text
-  var o = new qx.ui.basic.Label("Loading module '" + module.name + "'...");
-  o.set({
-            top: 12,
-            left: 20
-        });
-  o.setFont("bold");
-  module.canvas.add(o);
+  // nothing to do
 };
 
 qx.Proto.finalize = function(module)
