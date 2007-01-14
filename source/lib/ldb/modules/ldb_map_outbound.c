@@ -1173,6 +1173,9 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	const char *wildcard[] = { "*", NULL };
 	const char * const *attrs;
 
+	if (!module->private_data) /* if we're not yet initialized, go to the next module */
+		return ldb_next_request(module, req);
+
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.search.base))
 		return ldb_next_request(module, req);
