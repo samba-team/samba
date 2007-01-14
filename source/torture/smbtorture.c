@@ -423,33 +423,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	.test_result = quiet_test_result
 };
 
-void run_recipe(struct torture_context *tctx, const char *recipe)
-{
-	int numlines, i, ret;
-	char **lines;
-
-	lines = file_lines_load(recipe, &numlines, NULL);
-	if (lines == NULL) {
-		fprintf(stderr, "Unable to load file %s\n", recipe);
-		return;
-	}
-
-	for (i = 0; i < numlines; i++) {
-		int argc;
-		const char **argv;
-
-		ret = poptParseArgvString(lines[i], &argc, &argv);
-		if (ret != 0) {
-			fprintf(stderr, "Error parsing line\n");
-			continue;
-		}
-
-		run_test(tctx, argv[0]);
-	}
-
-	talloc_free(lines);
-}
-
 void run_shell(struct torture_context *tctx)
 {
 	char *cline;
@@ -686,9 +659,7 @@ int main(int argc,char *argv[])
 		double rate;
 		int unexpected_failures;
 		for (i=2;i<argc_new;i++) {
-			if (argv_new[i][0] == '@') {
-				run_recipe(torture, argv_new[i]+1);
-			} else if (!run_test(torture, argv_new[i])) {
+			if (!run_test(torture, argv_new[i])) {
 				correct = false;
 			}
 		}
