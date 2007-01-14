@@ -194,7 +194,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"subobj.MODULES_LIST = join(\",\", modules_list);\n"
 		"subobj.DOMAINDN_MOD = \"repl_meta_data\";\n"
 		"subobj.CONFIGDN_MOD = \"repl_meta_data\";\n"
-		"subobj.SCHEMADN_MOD = \"repl_meta_data\";\n"
+		"subobj.SCHEMADN_MOD = \"schema_fsmo,repl_meta_data\";\n"
 		"\n"
 		"var paths = provision_default_paths(subobj);\n"
 		"paths.samdb = \"%s\";\n"
@@ -225,6 +225,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	talloc_free(ejs);
 
 	talloc_free(s->ldb);
+
+	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", TORTURE_SAMDB_LDB));
 
 	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
 				  system_session(s),
@@ -270,6 +272,9 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct ldb_val schemaInfo_val;
 	uint32_t i;
 	int ret;
+	bool ok;
+
+	DEBUG(0,("Analyze and apply schema objects\n"));
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
 	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
@@ -444,6 +449,38 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 	talloc_free(s_dsa);
 	talloc_free(objs);
+
+	/* reopen the ldb */
+	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
+	s->schema = NULL;
+
+	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", TORTURE_SAMDB_LDB));
+	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+				  system_session(s),
+				  NULL, 0, NULL);
+	if (!s->ldb) {
+		DEBUG(0,("Failed to open '%s'\n",
+			TORTURE_SAMDB_LDB));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &c->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	s->schema = dsdb_get_schema(s->ldb);
+	if (!s->schema) {
+		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
 	return NT_STATUS_OK;
 }
 
