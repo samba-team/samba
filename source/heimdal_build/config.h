@@ -6,6 +6,9 @@
 #ifndef HAVE_HEIMDAL_CONFIG_H
 #define HAVE_HEIMDAL_CONFIG_H
 
+#include "include/config.h"
+#include "lib/replace/replace.h"
+
 #define RCSID(msg)
 #define KRB5
 
@@ -15,8 +18,5 @@
 #else
 #define SIGRETURN(x) return (RETSIGTYPE)(x)
 #endif
-
-#include "include/config.h"
-#include "lib/replace/replace.h"
 
 #endif
