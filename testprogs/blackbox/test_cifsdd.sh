@@ -21,9 +21,23 @@ DEBUGLEVEL=1
 
 failed=0
 
-failtest() {
-	failed=`expr $failed + 1`
+testit() {
+	name="$1"
+	shift
+	cmdline="$*"
+	echo "test: $name"
+	$cmdline
+	status=$?
+	if [ x$status = x0 ]; then
+		echo "success: $name"
+	else
+		echo "failure: $name"
+		failed=`expr $failed + 1`
+	fi
+	return $status
 }
+
+
 
 runcopy() {
 	message="$1"
@@ -34,11 +48,8 @@ runcopy() {
 }
 
 compare() {
-    cmp "$1" "$2"
+    tesit "$1" cmp "$2" "$3"
 }
-
-incdir=`dirname $0`
-. $incdir/test_functions.sh
 
 sourcepath=tempfile.src.$$
 destpath=tempfile.dst.$$
@@ -53,27 +64,27 @@ for bs in 512 4k 48k ; do
 echo "Testing $bs block size ..."
 
 # Check whether we can do local IO
-runcopy "Testing local -> local copy" if=$sourcepath of=$destpath bs=$bs || failtest
-compare $sourcepath $destpath || failtest
+runcopy "Testing local -> local copy" if=$sourcepath of=$destpath bs=$bs
+compare "Checking local differences" $sourcepath $destpath
 
 # Check whether we can do a round trip
 runcopy "Testing local -> remote copy" \
-	    if=$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs || failtest
+	    if=$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs 
 runcopy "Testing remote -> local copy" \
-	    if=//$SERVER/$SHARE/$sourcepath of=$destpath bs=$bs || failtest
-compare $sourcepath $destpath || failtest
+	    if=//$SERVER/$SHARE/$sourcepath of=$destpath bs=$bs 
+compare "Checking differences" $sourcepath $destpath 
 
 # Check that copying within the remote server works
 runcopy "Testing local -> remote copy" \
-	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs || failtest
+	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs
 runcopy "Testing remote -> remote copy" \
-	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$destpath bs=$bs || failtest
+	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$destpath bs=$bs 
 runcopy "Testing remote -> local copy" \
-	    if=//$SERVER/$SHARE/$destpath of=$destpath bs=$bs || failtest
-compare $sourcepath $destpath || failtest
+	    if=//$SERVER/$SHARE/$destpath of=$destpath bs=$bs
+compare "Checking differences" $sourcepath $destpath
 
 done
 
 rm -f $sourcepath $destpath
 
-testok $0 $failed
+exit $failed
