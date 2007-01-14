@@ -230,7 +230,7 @@ export totalfailed
 		if [ "$LINE" = "-- TEST --" ]; then
 			read NAME
 			read CMDLINE
-			runtest "$NAME" "$CMDLINE"
+			runtest "$NAME" "$CMDLINE" || totalfailed=`expr $totalfailed + $?`
 		else
 			echo "$LINE"
 		fi
