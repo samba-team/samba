@@ -122,7 +122,7 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
 
 	if (ares->type == LDB_REPLY_ENTRY
-		&& data->password_attrs) /* if we are not initialized just get through */
+	    && data && data->password_attrs) /* if we are not initialized just get through */
 	{
 		switch (ac->user_type) {
 		case SYSTEM:
