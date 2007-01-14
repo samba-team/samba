@@ -59,7 +59,8 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 	while (*s) {
 		if (IS_DIRECTORY_SEP(*s)) {
 			/*
-			 * Safe to assume is not the second part of a mb char as this is handled below.
+			 * Safe to assume is not the second part of a mb char
+			 * as this is handled below.
 			 */
 			/* Eat multiple '/' or '\\' */
 			while (IS_DIRECTORY_SEP(*s)) {
