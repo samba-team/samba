@@ -1152,17 +1152,12 @@ hx509_cms_create_signed_1(hx509_context context,
 	}
 
 	for (i = 0; i < path.len; i++) {
-	    ASN1_MALLOC_ENCODE(Certificate,
-			       sd.certificates->val[i].data,
-			       sd.certificates->val[i].length,
-			       _hx509_get_cert(path.val[i]),
-			       &size, ret);
+	    ret = hx509_cert_binary(context, path.val[i],
+				    &sd.certificates->val[i]);
 	    if (ret) {
 		hx509_clear_error_string(context);
 		goto out;
 	    }
-	    if (sd.certificates->val[i].length != size)
-		_hx509_abort("internal ASN.1 encoder error");
 	}
     }
 
