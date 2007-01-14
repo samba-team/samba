@@ -104,7 +104,7 @@ Generic options:
  --target=samba4|samba3|win Samba version to target
  --socket-wrapper           enable socket wrapper
  --quick                    run quick overall test
-
+ --one                      abort when the first test fails
 ";
 	exit(0);
 }
@@ -113,12 +113,14 @@ my $opt_help = 0;
 my $opt_target = "samba4";
 my $opt_quick = 0;
 my $opt_socket_wrapper = 0;
+my $opt_one = 0;
 
 my $result = GetOptions (
 	    'help|h|?' => \$opt_help,
 		'target' => \$opt_target,
 		'socket-wrapper' => \$opt_socket_wrapper,
-		'quick' => \$opt_quick
+		'quick' => \$opt_quick,
+		'one' => \$opt_one
 	    );
 
 if (not $result) {
@@ -263,15 +265,49 @@ system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
 
 # start off with 0 failures
 $ENV{failed} = 0;
-$ENV{totalfailed} = 0;
+my $totalfailed = 0;
+
+my @todo = ();
 
 if ($opt_target eq "win") {
 	system("$testsdir/test_win.sh");
-} elsif ($opt_quick) {
-	system("$testsdir/tests_quick.sh");
-} else {
-	system("$testsdir/tests_all.sh");
+} else { 
+	if ($opt_quick) {
+		open(IN, "$testsdir/tests_quick.sh|");
+	} else {
+		open(IN, "$testsdir/tests_all.sh|");
+	}
+	while (<IN>) {
+		if ($_ eq "-- TEST --\n") {
+			my $name = <IN>;
+			$name =~ s/\n//g;
+			my $cmdline = <IN>;
+			$cmdline =~ s/\n//g;
+			push (@todo, [$name, $cmdline]);
+		} else {
+			print;
+		}
+	}
+	close(IN);
 }
+
+my $total = $#todo + 1;
+my $i = 0;
+$| = 1;
+
+foreach (@todo) {
+	$i = $i + 1;
+	my $err = "";
+	if ($totalfailed > 0) { $err = ", $totalfailed errors"; }
+	printf "[$i/$total in " . (time() - $start)."s$err] $$_[0]\n";
+	my $ret = system("$$_[1] >/dev/null 2>/dev/null");
+	if ($ret != 0) {
+		$totalfailed++;
+		exit(1) if ($opt_one);
+	}
+}
+
+print "\n";
 
 close(DATA);
 
@@ -291,6 +327,7 @@ if ($ldap) {
 
 my $end=time();
 print "DURATION: " . ($end-$start). " seconds\n";
+print "$totalfailed failures\n";
 
 # if there were any valgrind failures, show them
 foreach (<$prefix/valgrind.log*>) {
