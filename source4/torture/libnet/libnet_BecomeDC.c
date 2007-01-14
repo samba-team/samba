@@ -430,16 +430,12 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		return werror_to_ntstatus(status);
 	}
 
+	/* we only add prefixMap here, because schemaInfo is a replicated attribute and already applied */
 	ret = ldb_msg_add_value(msg, "prefixMap", &prefixMap_val, &prefixMap_el);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_FOOBAR;
 	}
 	prefixMap_el->flags = LDB_FLAG_MOD_REPLACE;
-	ret = ldb_msg_add_value(msg, "prefixMap", &schemaInfo_val, &schemaInfo_el);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_FOOBAR;
-	}
-	schemaInfo_el->flags = LDB_FLAG_MOD_REPLACE;
 
 	ret = ldb_modify(s->ldb, msg);
 	if (ret != LDB_SUCCESS) {
