@@ -210,7 +210,7 @@ static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_mes
 		goto failed;
 	}
 
-	status = dsdb_attribute_from_ldb(msg, attr, attr);
+	status = dsdb_attribute_from_ldb(schema, msg, attr, attr);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}
@@ -233,7 +233,7 @@ static int test_add_class(void *ptr, struct ldb_context *ldb, struct ldb_message
 		goto failed;
 	}
 
-	status = dsdb_class_from_ldb(msg, obj, obj);
+	status = dsdb_class_from_ldb(schema, msg, obj, obj);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}
