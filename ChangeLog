@@ -1,4 +1,15 @@
+2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kx509.c: Issue certificates.
+
+	* kdc/config.c: Parse kx509/kca configuration.
+
+	* kdc/kdc.h: add kx509 config
+	
 2007-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/kerberos5.c (_kdc_find_padata): if there is not padata,
+	there is nothing find.
 
 	* doc/hx509.texi: Examples for pk-init.
 
