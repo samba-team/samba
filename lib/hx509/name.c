@@ -527,6 +527,9 @@ hx509_name_expand(hx509_context context,
     Name *n = &name->der_name;
     int i, j;
 
+    if (env == NULL)
+	return 0;
+
     if (n->element != choice_Name_rdnSequence) {
 	hx509_set_error_string(context, 0, EINVAL, "RDN not of supported type");
 	return EINVAL;
