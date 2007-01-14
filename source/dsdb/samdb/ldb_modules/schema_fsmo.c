@@ -200,6 +200,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	}
 	talloc_free(c_res);
 
+	/* dsdb_set_schema() steal schema into the ldb_context */
 	ret = dsdb_set_schema(module->ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
@@ -209,7 +210,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return ret;
 	}
 
-	talloc_steal(module, schema);
 	talloc_free(mem_ctx);
 	return ldb_next_init(module);
 }
