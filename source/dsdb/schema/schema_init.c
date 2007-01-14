@@ -361,13 +361,28 @@ WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CT
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct dsdb_attribute *attr)
+WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
+			       struct ldb_message *msg,
+			       TALLOC_CTX *mem_ctx,
+			       struct dsdb_attribute *attr)
 {
+	WERROR status;
+
 	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, True);
-	/* set an invalid value */
-	attr->attributeID_id = 0xFFFFFFFF;
+	if (schema->num_prefixes == 0) {
+		/* set an invalid value */
+		attr->attributeID_id = 0xFFFFFFFF;
+	} else {
+		status = dsdb_map_oid2int(schema, attr->attributeID_oid, &attr->attributeID_id);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
+				__location__, attr->lDAPDisplayName, attr->attributeID_oid,
+				win_errstr(status)));
+			return status;
+		}
+	}
 	GET_GUID_LDB(msg, "schemaIDGUID", attr, schemaIDGUID);
 	GET_UINT32_LDB(msg, "mAPIID", attr, mAPIID);
 
@@ -379,8 +394,18 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
 	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, True);
-	/* set an invalid value */
-	attr->attributeSyntax_id = 0xFFFFFFFF;
+	if (schema->num_prefixes == 0) {
+		/* set an invalid value */
+		attr->attributeSyntax_id = 0xFFFFFFFF;
+	} else {
+		status = dsdb_map_oid2int(schema, attr->attributeSyntax_oid, &attr->attributeSyntax_id);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("%s: '%s': unable to map attributeSyntax_ %s: %s\n",
+				__location__, attr->lDAPDisplayName, attr->attributeSyntax_oid,
+				win_errstr(status)));
+			return status;
+		}
+	}
 	GET_UINT32_LDB(msg, "oMSyntax", attr, oMSyntax);
 	GET_BLOB_LDB(msg, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
@@ -408,13 +433,28 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	return WERR_OK;
 }
 
-WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct dsdb_class *obj)
+WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
+			   struct ldb_message *msg,
+			   TALLOC_CTX *mem_ctx,
+			   struct dsdb_class *obj)
 {
+	WERROR status;
+
 	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, True);
-	/* set an invalid value */
-	obj->governsID_id = 0xFFFFFFFF;
+	if (schema->num_prefixes == 0) {
+		/* set an invalid value */
+		obj->governsID_id = 0xFFFFFFFF;
+	} else {
+		status = dsdb_map_oid2int(schema, obj->governsID_oid, &obj->governsID_id);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("%s: '%s': unable to map governsID %s: %s\n",
+				__location__, obj->lDAPDisplayName, obj->governsID_oid,
+				win_errstr(status)));
+			return status;
+		}
+	}
 	GET_GUID_LDB(msg, "schemaIDGUID", obj, schemaIDGUID);
 
 	GET_UINT32_LDB(msg, "objectClassCategory", obj, objectClassCategory);
