@@ -34,6 +34,17 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_schema_fsmo
+[MODULE::ldb_schema_fsmo]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
+INIT_FUNCTION = schema_fsmo_module_init
+OBJ_FILES = \
+		schema_fsmo.o
+# End MODULE ldb_schema_fsmo
+################################################
+
+################################################
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = ldb
