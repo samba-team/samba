@@ -253,6 +253,12 @@ fi
 
 SMB_EXT_LIB(NSL,[${NSL_LIBS}],[],[],[])
 
+# only add closefrom if needed
+SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, NO)
+if test t$ac_cv_func_closefrom != tyes; then
+	SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, YES)
+fi
+
 # only add getprogname if needed
 SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, NO)
 SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_H, NO)
