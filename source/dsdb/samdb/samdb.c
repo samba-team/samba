@@ -1141,7 +1141,7 @@ const char *samdb_result_fsmo_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 /*
   work out the ntds settings dn for the current open ldb
 */
-const struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
+struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx;
 	const char *root_attrs[] = { "dsServiceName", NULL };
