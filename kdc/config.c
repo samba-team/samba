@@ -432,6 +432,22 @@ configure(krb5_context context, int argc, char **argv)
 				     "kdc", 
 				     "enable-kx509", NULL);
 
+    if (config->enable_kx509) {
+	config->kx509_template = krb5_config_get_string(context, NULL, 
+							"kdc", 
+							"kx509_template", 
+							NULL);
+	config->kx509_ca = krb5_config_get_string(context, NULL, 
+						  "kdc", 
+						  "kx509_ca", 
+						  NULL);
+	if (config->kx509_ca == NULL || config->kx509_template == NULL) {
+	    kdc_log(context, config, 0,
+		    "missing kx509 configuration, turning off");
+	    config->enable_kx509 = FALSE;
+	}
+    }
+
     config->check_ticket_addresses = 
 	krb5_config_get_bool_default(context, NULL, 
 				     config->check_ticket_addresses, 
