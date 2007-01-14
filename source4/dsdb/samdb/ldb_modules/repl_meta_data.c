@@ -168,7 +168,9 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	return 0;
 }
 
-static int replmd_add_originating(struct ldb_module *module, struct ldb_request *req)
+static int replmd_add_originating(struct ldb_module *module,
+				  struct ldb_request *req,
+				  const struct dsdb_schema *schema)
 {
 	struct ldb_request *down_req;
 	struct ldb_message_element *attribute;
@@ -248,15 +250,25 @@ static int replmd_add_originating(struct ldb_module *module, struct ldb_request 
 
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct dsdb_schema *schema;
+
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
 	}
 
-	return replmd_add_originating(module, req);
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, "replmd_add: no dsdb_schema loaded");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	return replmd_add_originating(module, req, schema);
 }
 
-static int replmd_modify_originating(struct ldb_module *module, struct ldb_request *req)
+static int replmd_modify_originating(struct ldb_module *module,
+				     struct ldb_request *req,
+				     const struct dsdb_schema *schema)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -310,12 +322,20 @@ static int replmd_modify_originating(struct ldb_module *module, struct ldb_reque
 
 static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct dsdb_schema *schema;
+ 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
 
-	return replmd_modify_originating(module, req);
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, "replmd_modify: no dsdb_schema loaded");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	return replmd_modify_originating(module, req, schema);
 }
 
 static int replmd_replicated_request_reply_helper(struct replmd_replicated_request *ar, int ret)
@@ -553,8 +573,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 * TODO: add rename conflict handling
 	 */
 	if (ldb_dn_compare(msg->dn, ar->sub.search_msg->dn) != 0) {
-		ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL, "replmd_replicated_apply_merge[%u]: rename not supported",
-			  ar->index_current);
+		ldb_debug_set(ar->module->ldb, LDB_DEBUG_FATAL, "replmd_replicated_apply_merge[%u]: rename not supported",
+			      ar->index_current);
 		ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL, "%s => %s\n",
 			  ldb_dn_get_linearized(ar->sub.search_msg->dn),
 			  ldb_dn_get_linearized(msg->dn));
