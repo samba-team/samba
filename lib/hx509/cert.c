@@ -1065,6 +1065,25 @@ hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
     return der_copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
 }
 
+time_t
+hx509_cert_get_notBefore(hx509_cert p)
+{
+    return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notBefore);
+}
+
+time_t
+hx509_cert_get_notAfter(hx509_cert p)
+{
+    return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notAfter);
+}
+
+int
+hx509_cert_get_SPKI(hx509_cert p, SubjectPublicKeyInfo *spki)
+{
+    return copy_SubjectPublicKeyInfo(&p->data->tbsCertificate.subjectPublicKeyInfo,
+				     spki);
+}
+
 hx509_private_key
 _hx509_cert_private_key(hx509_cert p)
 {
@@ -2210,5 +2229,22 @@ _hx509_cert_get_keyusage(hx509_context context,
     ret = decode_KeyUsage(e->extnValue.data, e->extnValue.length, ku, &size);
     if (ret)
 	return ret;
+    return 0;
+}
+
+int
+_hx509_cert_get_eku(hx509_context context,
+		    hx509_cert cert,
+		    ExtKeyUsage *e)
+{
+    int ret;
+
+    memset(e, 0, sizeof(*e));
+
+    ret = find_extension_eku(_hx509_get_cert(cert), e);
+    if (ret && ret != HX509_EXTENSION_NOT_FOUND) {
+	hx509_clear_error_string(context);
+	return ret;
+    }
     return 0;
 }
