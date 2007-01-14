@@ -108,8 +108,9 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	schema_info = data_blob_hex_string(pfm.ctr.dsdb.mappings, schemaInfo);
 	W_ERROR_HAVE_NO_MEMORY(schema_info);
 
-	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].id_prefix	= 0;
-	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.oid	= schema_info;
+	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].id_prefix		= 0;	
+	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.__ndr_size	= schemaInfo->length;
+	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.oid		= schema_info;
 
 	/* call the drsuapi version */
 	status = dsdb_load_oid_mappings_drsuapi(schema, &pfm.ctr.dsdb);
@@ -125,7 +126,7 @@ WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
 				     struct drsuapi_DsReplicaOIDMapping_Ctr **_ctr)
 {
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	uint32_t i,j;
+	uint32_t i;
 
 	ctr = talloc(mem_ctx, struct drsuapi_DsReplicaOIDMapping_Ctr);
 	W_ERROR_HAVE_NO_MEMORY(ctr);
@@ -138,7 +139,7 @@ WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
 	for (i=0; i < schema->num_prefixes; i++) {
 		ctr->mappings[i].id_prefix	= schema->prefixes[i].id>>16;
 		ctr->mappings[i].oid.oid	= talloc_strndup(ctr->mappings,
-								 schema->prefixes[j].oid,
+								 schema->prefixes[i].oid,
 								 schema->prefixes[i].oid_len - 1);
 		W_ERROR_HAVE_NO_MEMORY(ctr->mappings[i].oid.oid);
 	}
