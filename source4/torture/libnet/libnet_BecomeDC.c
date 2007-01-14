@@ -101,7 +101,8 @@ struct test_become_dc_state {
 	struct libnet_context *ctx;
 	struct test_join *tj;
 	struct cli_credentials *machine_account;
-	struct dsdb_schema *schema;
+	struct dsdb_schema *self_made_schema;
+	const struct dsdb_schema *schema;
 
 	struct ldb_context *ldb;
 
@@ -321,7 +322,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 			const char *oid = NULL;
 
 			a = &cur->object.attribute_ctr.attributes[i];
-			status = dsdb_map_int2oid(s->schema, a->attid, s, &oid);
+			status = dsdb_map_int2oid(s->self_made_schema, a->attid, s, &oid);
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}
@@ -353,40 +354,43 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		if (is_attr) {
 			struct dsdb_attribute *sa;
 
-			sa = talloc_zero(s->schema, struct dsdb_attribute);
+			sa = talloc_zero(s->self_made_schema, struct dsdb_attribute);
 			NT_STATUS_HAVE_NO_MEMORY(sa);
 
-			status = dsdb_attribute_from_drsuapi(s->schema, &cur->object, s, sa);
+			status = dsdb_attribute_from_drsuapi(s->self_made_schema, &cur->object, s, sa);
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}
 
-			DLIST_ADD_END(s->schema->attributes, sa, struct dsdb_attribute *);
+			DLIST_ADD_END(s->self_made_schema->attributes, sa, struct dsdb_attribute *);
 		}
 
 		if (is_class) {
 			struct dsdb_class *sc;
 
-			sc = talloc_zero(s->schema, struct dsdb_class);
+			sc = talloc_zero(s->self_made_schema, struct dsdb_class);
 			NT_STATUS_HAVE_NO_MEMORY(sc);
 
-			status = dsdb_class_from_drsuapi(s->schema, &cur->object, s, sc);
+			status = dsdb_class_from_drsuapi(s->self_made_schema, &cur->object, s, sc);
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}
 
-			DLIST_ADD_END(s->schema->classes, sc, struct dsdb_class *);
+			DLIST_ADD_END(s->self_made_schema->classes, sc, struct dsdb_class *);
 		}
 	}
 
-	ret = dsdb_set_schema(s->ldb, s->schema);
+	/* attach the schema to the ldb */
+	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_FOOBAR;
 	}
+	/* we don't want to access the self made schema anymore */
+	s->self_made_schema = NULL;
+	s->schema = dsdb_get_schema(s->ldb);
 
 	status = dsdb_extended_replicated_objects_commit(s->ldb,
 							 c->partition->nc.dn,
-							 s->schema,
 							 mapping_ctr,
 							 object_count,
 							 first_object,
@@ -453,13 +457,15 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	}
 
 	if (!s->schema) {
-		s->schema = talloc_zero(s, struct dsdb_schema);
-		NT_STATUS_HAVE_NO_MEMORY(s->schema);
+		s->self_made_schema = talloc_zero(s, struct dsdb_schema);
+		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
 
-		status = dsdb_load_oid_mappings_drsuapi(s->schema, mapping_ctr);
+		status = dsdb_load_oid_mappings_drsuapi(s->self_made_schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
+
+		s->schema = s->self_made_schema;
 	} else {
 		status = dsdb_verify_oid_mappings_drsuapi(s->schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
@@ -557,7 +563,6 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 
 	status = dsdb_extended_replicated_objects_commit(s->ldb,
 							 c->partition->nc.dn,
-							 s->schema,
 							 mapping_ctr,
 							 object_count,
 							 first_object,
