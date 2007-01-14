@@ -109,4 +109,13 @@ typedef enum {
 #define HX509_SELECT_PUBLIC_SIG 2
 #define HX509_SELECT_PUBLIC_ENC 3
 
+/* flags to hx509_ca_tbs_set_template */
+#define HX509_CA_TEMPLATE_SUBJECT 1
+#define HX509_CA_TEMPLATE_SERIAL 2
+#define HX509_CA_TEMPLATE_NOTBEFORE 4
+#define HX509_CA_TEMPLATE_NOTAFTER 8
+#define HX509_CA_TEMPLATE_SPKI 16
+#define HX509_CA_TEMPLATE_KU 32
+#define HX509_CA_TEMPLATE_EKU 64
+
 #include <hx509-protos.h>
