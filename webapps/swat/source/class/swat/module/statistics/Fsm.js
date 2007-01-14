@@ -32,7 +32,7 @@ qx.Class._startTimer = function(fsm, msInterval)
   // First, for good house keeping, ensure no timer exists
   swat.module.statistics.Fsm._stopTimer(fsm);
 
-  // Create a timer instance to expire in a few seconds
+  // Create a timer instance to expire in the specified amount of time
   var timer = new qx.client.Timer(msInterval);
   timer.addEventListener("interval", fsm.eventListener, fsm);
   fsm.addObject("timer", timer);
