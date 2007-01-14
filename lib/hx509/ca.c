@@ -446,6 +446,14 @@ hx509_ca_tbs_set_subject(hx509_context context,
     return hx509_name_copy(context, subject, &tbs->subject);
 }
 
+int
+hx509_ca_tbs_subject_expand(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    hx509_env env)
+{
+    return hx509_name_expand(context, tbs->subject, env);
+}
+
 static int
 add_extension(hx509_context context,
 	      TBSCertificate *tbsc,
