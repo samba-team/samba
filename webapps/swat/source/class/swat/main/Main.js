@@ -60,7 +60,7 @@ qx.Proto.initialize = function()
   for (moduleName in moduleList)
   {
     // ... call the module's buildInitialFsm() function
-    var module = moduleList[moduleName]["class"].getInstance();
+    var module = moduleList[moduleName]["clazz"].getInstance();
     module.buildInitialFsm(moduleList[moduleName]);
   }
 };
@@ -77,7 +77,7 @@ qx.Proto.main = function()
   for (moduleName in moduleList)
   {
     // ... call the module's buildInitialGui() function
-    var module = moduleList[moduleName]["class"].getInstance();
+    var module = moduleList[moduleName]["clazz"].getInstance();
     module.buildInitialGui(moduleList[moduleName]);
   }
 };
@@ -89,7 +89,7 @@ qx.Proto.finalize = function()
   var moduleList = swat.main.Module.getList();
   for (moduleName in moduleList)
   {
-    var module = moduleList[moduleName]["class"].getInstance();
+    var module = moduleList[moduleName]["clazz"].getInstance();
     module.finalize(moduleList[moduleName]);
   }
 };

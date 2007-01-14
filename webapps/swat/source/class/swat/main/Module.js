@@ -30,7 +30,7 @@
  *   The name of the module being registered.  This is the name that will
  *   appear in the Modules menu.
  *
- * @param class {class}
+ * @param clazz {clazz}
  *   The class which contains the module implementation.  That class must
  *   extend swat.main.AbstractModule and implement a singleton interface
  *   that provides a public method called initialAppear() which takes this
@@ -39,7 +39,7 @@
  *   the module.
  */
 qx.OO.defineClass("swat.main.Module", qx.core.Object,
-function(moduleName, class)
+function(moduleName, clazz)
 {
   qx.core.Object.call(this);
 
@@ -52,7 +52,7 @@ function(moduleName, class)
   this.name = moduleName;
 
   // Save this class name
-  this.class = class;
+  this.clazz = clazz;
 
   // Add this new module to the module list.
   swat.main.Module._list[moduleName] = this;
