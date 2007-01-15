@@ -32,7 +32,7 @@ for f in "$@"; do
 		fi
 	fi
 	for link in `sed -n -e '/SYNOPSIS/q;/DESCRIPTION/q;s/^\.Nm \([^ ]*\).*/\1/p' $srcdir/$f`; do
-		if [ "$link" == "$base" ]; then
+		if [ "$link" = "$base" ]; then
 			continue
 		fi
 		if test "$cmd" = install ; then
