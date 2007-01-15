@@ -107,6 +107,7 @@ typedef struct
 	char *szConfigFile;
 	char *szShareBackend;
 	char *szSAM_URL;
+	char *szSECRETS_URL;
 	char *szSPOOLSS_URL;
 	char *szWINS_CONFIG_URL;
 	char *szWINS_URL;
@@ -403,6 +404,7 @@ static struct parm_struct parm_table[] = {
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"password server", P_LIST, P_GLOBAL, &Globals.szPasswordServers, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"secrets database", P_STRING, P_GLOBAL, &Globals.szSECRETS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"wins config database", P_STRING, P_GLOBAL, &Globals.szWINS_CONFIG_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -610,6 +612,7 @@ static void init_globals(void)
 	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
 	do_parameter("sam database", "sam.ldb", NULL);
+	do_parameter("secrets database", "secrets.ldb", NULL);
 	do_parameter("spoolss database", "spoolss.ldb", NULL);
 	do_parameter("wins config database", "wins_config.ldb", NULL);
 	do_parameter("wins database", "wins.ldb", NULL);
@@ -833,6 +836,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &Globals.szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, &Globals.szSECRETS_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)

@@ -96,6 +96,8 @@ failed:
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 #define TORTURE_SAMDB_LDB "test_samdb.ldb"
+#define TORTURE_SECRETS_LDB "test_secrets.ldb"
+#define TORTURE_SECRETS_KEYTAB "test_secrets.keytab"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -198,6 +200,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"\n"
 		"var paths = provision_default_paths(subobj);\n"
 		"paths.samdb = \"%s\";\n"
+		"paths.secrets = \"%s\";\n"
+		"paths.keytab = \"%s\";\n"
 		"\n"
 		"var system_session = system_session();\n"
 		"\n"
@@ -205,14 +209,16 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"assert(ok);\n"
 		"\n"
 		"return 0;\n",
-		p->forest->root_dn_str,
-		p->domain->dn_str,
-		p->forest->config_dn_str,
-		p->forest->schema_dn_str,
-		p->dest_dsa->netbios_name,
-		p->dest_dsa->dns_name,
-		p->dest_dsa->site_name,
-		TORTURE_SAMDB_LDB);
+		p->forest->root_dn_str,		/* subobj.ROOTDN */
+		p->domain->dn_str,		/* subobj.DOMAINDN */
+		p->forest->config_dn_str,	/* subobj.CONFIGDN */
+		p->forest->schema_dn_str,	/* subobj.SCHEMADN */
+		p->dest_dsa->netbios_name,	/* subobj.HOSTNAME */
+		p->dest_dsa->dns_name,		/* subobj.DNSNAME */
+		p->dest_dsa->site_name,		/* subobj.DEFAULTSITE */
+		TORTURE_SAMDB_LDB,		/* paths.samdb */
+		TORTURE_SECRETS_LDB,		/* paths.secrets */
+		TORTURE_SECRETS_KEYTAB);	/* paths.keytab */
 	NT_STATUS_HAVE_NO_MEMORY(ejs);
 
 	ret = test_run_ejs(ejs);
