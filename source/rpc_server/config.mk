@@ -40,7 +40,7 @@ PUBLIC_DEPENDENCIES = NDR_EPMAPPER
 INIT_FUNCTION = dcerpc_server_mgmt_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
-		echo/rpc_echo.o
+		mgmt/dcesrv_mgmt.o
 PUBLIC_DEPENDENCIES = NDR_MGMT
 # End MODULE dcerpc_mgmt
 ################################################

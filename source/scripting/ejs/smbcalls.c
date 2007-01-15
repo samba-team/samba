@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
+#include "scripting/ejs/ejsnet/proto.h"
 #include "scripting/ejs/smbcalls.h"
 #include "build.h"
 #include "version.h"
