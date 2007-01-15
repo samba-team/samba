@@ -983,7 +983,7 @@ if test x$enable_iprint != xno; then
 fi
 
 ############################################
-# check if the compiler can do immediate structures
+# check if the compiler will optimize out function calls
 AC_CACHE_CHECK([if the compiler will optimize out function calls],samba_cv_optimize_out_funcation_calls, [
     AC_TRY_LINK([
 #include <stdio.h>],
