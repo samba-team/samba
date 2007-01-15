@@ -33,10 +33,10 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "system/select.h" /* needed for WITH_EPOLL */
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
+#include <sys/epoll.h>
 #include <libaio.h>
 
 #define MAX_AIO_QUEUE_DEPTH	100
