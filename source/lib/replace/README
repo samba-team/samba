@@ -52,6 +52,7 @@ readline (the library)
 inet_ntoa
 strtoll
 strtoull
+socketpair
 
 Types:
 bool
