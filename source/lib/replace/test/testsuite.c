@@ -57,26 +57,29 @@ static int test_ftruncate(void)
 	struct stat st;
 	int fd;
 	const int size = 1234;
-	printf("testing ftruncate\n");
+	printf("test: ftruncate\n");
 	unlink(TESTFILE);
 	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
 	if (fd == -1) {
-		printf("creating '%s' failed - %s\n", TESTFILE, strerror(errno));
+		printf("failure: ftruncate [\n"
+			   "creating '%s' failed - %s\n]\n", TESTFILE, strerror(errno));
 		return false;
 	}
 	if (ftruncate(fd, size) != 0) {
-		printf("ftruncate failed - %s\n", strerror(errno));
+		printf("failure: ftruncate [\n%s\n]\n", strerror(errno));
 		return false;
 	}
 	if (fstat(fd, &st) != 0) {
-		printf("fstat failed - %s\n", strerror(errno));
+		printf("failure: ftruncate [\nfstat failed - %s\n]\n", strerror(errno));
 		return false;
 	}
 	if (st.st_size != size) {
-		printf("ftruncate gave wrong size %d - expected %d\n",
+		printf("failure: ftruncate [\ngave wrong size %d - expected %d\n]\n",
 		       (int)st.st_size, size);
 		return false;
 	}
+	unlink(TESTFILE);
+	printf("success: ftruncate\n");
 	return true;
 }
 
@@ -98,13 +101,14 @@ static int test_strlcpy(void)
 		{ NULL, 0 }
 	};
 	int i;
-	printf("testing strlcpy\n");
+	printf("test: strlcpy\n");
 	for (i=0;tests[i].src;i++) {
 		if (strlcpy(buf, tests[i].src, sizeof(buf)) != tests[i].result) {
-			printf("strlcpy test %d failed\n", i);
+			printf("failure: strlcpy [\ntest %d failed\n]\n", i);
 			return false;
 		}
 	}
+	printf("success: strlcpy\n");
 	return true;
 }
 
@@ -146,8 +150,9 @@ static int test_strdup(void)
 
 static int test_setlinebuf(void)
 {
-	printf("testing setlinebuf\n");
+	printf("test: setlinebuf\n");
 	setlinebuf(stdout);
+	printf("success: setlinebuf\n");
 	return true;
 }
 
@@ -233,10 +238,11 @@ extern int test_readdir_os2_delete(void);
 
 static int test_readdir(void)
 {
-	printf("testing readdir\n");
+	printf("test: readdir\n");
 	if (test_readdir_os2_delete() != 0) {
 		return false;
 	}
+	printf("success: readdir\n");
 	return true;
 }
 
@@ -371,9 +377,48 @@ static int test_MAX(void)
 	return true;
 }
 
-struct torture_context;
+static int test_socketpair(void)
+{
+	int sock[2];
+	char buf[20];
 
-static bool torture_local_replace(struct torture_context *torture)
+	printf("test: socketpair\n");
+
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1) {
+		printf("failure: socketpair [\n"
+			   "socketpair() failed\n"
+			   "]\n");
+		return false;
+	}
+
+	if (write(sock[1], "automatisch", 12) == -1) {
+		printf("failure: socketpair [\n"
+			   "write() failed: %s\n"
+			   "]\n", strerror(errno));
+		return false;
+	}
+
+	if (read(sock[0], buf, 12) == -1) {
+		printf("failure: socketpair [\n"
+			   "read() failed: %s\n"
+			   "]\n", strerror(errno));
+		return false;
+	}
+
+	if (strcmp(buf, "automatisch") != 0) {
+		printf("failure: socketpair [\n"
+			   "expected: automatisch, got: %s\n"
+			   "]\n", buf);
+		return false;
+	}
+
+	printf("success: socketpair\n");
+
+	return true;
+}
+
+struct torture_context;
+bool torture_local_replace(struct torture_context *ctx)
 {
 	bool ret = true;
 	ret &= test_ftruncate();
@@ -419,17 +464,17 @@ static bool torture_local_replace(struct torture_context *torture)
 	ret &= test_FUNCTION();
 	ret &= test_MIN();
 	ret &= test_MAX();
+	ret &= test_socketpair();
 
 	return ret;
 }
 
 #if _SAMBA_BUILD_<4
-int main(void)
+int main()
 {
-	if (!torture_local_replace(NULL)) {
-		printf("ERROR: TESTSUITE FAILED\n");
-		return -1;
-	}
-	return 0;
+	bool ret = torture_local_replace(NULL);
+	if (ret) 
+		return 0;
+	return -1;
 }
 #endif
