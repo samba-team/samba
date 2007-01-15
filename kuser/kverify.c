@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005, 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,6 +62,7 @@ main(int argc, char **argv)
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     krb5_get_init_creds_opt *get_options;
     krb5_verify_init_creds_opt verify_options;
+    krb5_principal principal = NULL;
     int optidx = 0;
 
     setprogname (argv[0]);
@@ -76,6 +77,9 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+    
+    argc -= optidx;
+    argv += optidx;
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -91,9 +95,15 @@ main(int argc, char **argv)
 
     krb5_verify_init_creds_opt_init (&verify_options);
     
+    if (argc) {
+	ret = krb5_parse_name(context, argv[0], &principal);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_parse_name: %s", argv[0]);
+    }
+
     ret = krb5_get_init_creds_password (context,
 					&cred,
-					NULL,
+					principal,
 					NULL,
 					krb5_prompter_posix,
 					NULL,
