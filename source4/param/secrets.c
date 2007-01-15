@@ -96,6 +96,7 @@ BOOL secrets_init(void)
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 {
 	char *path;
+	const char *url;
 	struct ldb_context *ldb;
 	BOOL existed;
 	const char *init_ldif = 
@@ -103,11 +104,16 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	path = private_path(mem_ctx, "secrets.ldb");
+	url = lp_secrets_url();
+	if (!url || !url[0]) {
+		return NULL;
+	}
+
+	path = private_path(mem_ctx, url);
 	if (!path) {
 		return NULL;
 	}
-	
+
 	existed = file_exist(path);
 
 	/* Secrets.ldb *must* always be local.  If we call for a
