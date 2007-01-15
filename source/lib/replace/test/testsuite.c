@@ -46,6 +46,7 @@
 #include "system/terminal.h"
 #include "system/time.h"
 #include "system/wait.h"
+#include "system/aio.h"
 
 #define TESTFILE "testfile.dat"
 
@@ -470,7 +471,7 @@ bool torture_local_replace(struct torture_context *ctx)
 }
 
 #if _SAMBA_BUILD_<4
-int main()
+int main(void)
 {
 	bool ret = torture_local_replace(NULL);
 	if (ret) 
