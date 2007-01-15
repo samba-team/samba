@@ -54,7 +54,7 @@ PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HDB_ASN1
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/krb5 -I heimdal/lib/gssapi/mech
+CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/krb5 -Iheimdal/lib/gssapi/mech
 OBJ_FILES = \
 	../heimdal/lib/gssapi/mech/gss_krb5.o \
 	../heimdal/lib/gssapi/mech/gss_mech_switch.o \
