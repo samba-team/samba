@@ -381,7 +381,7 @@ function provision_default_paths(subobj)
 	paths.hkpd = "hkpd.ldb";
 	paths.hkpt = "hkpt.ldb";
 	paths.samdb = lp.get("sam database");
-	paths.secrets = "secrets.ldb";
+	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
@@ -484,6 +484,20 @@ function provision_become_dc(subobj, message, paths, session_info)
 	ok = samdb.transaction_commit();
 	assert(ok);
 
+	message("Setting up " + paths.secrets + "\n");
+	setup_ldb("secrets.ldif", info, paths.secrets);
+
+	tmp = lp.get("secrets database");
+	ok = lp.set("secrets database", paths.secrets);
+	assert(ok);
+
+	message("Setting up keytabs\n");
+	var keytab_ok = credentials_update_all_keytabs();
+	assert(keytab_ok);
+
+	ok = lp.set("secrets database", tmp);
+	assert(ok);
+
 	return true;
 }
 
@@ -529,11 +543,14 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 		message("Setting up share.ldb\n");
 		setup_ldb("share.ldif", info, paths.shareconf);
 	}
+
 	message("Setting up secrets.ldb\n");
 	setup_ldb("secrets.ldif", info, paths.secrets);
+
 	message("Setting up keytabs\n");
 	var keytab_ok = credentials_update_all_keytabs();
 	assert(keytab_ok);
+
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", info, paths.hklm);
 
