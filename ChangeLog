@@ -1,4 +1,12 @@
+2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kverify.c: Use argument as principal if passed an
+	argument. Bug report from Douglas E. Engert
+	
 2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/rd_req.c (krb5_rd_req_ctx): The code failed to consider
+	the enc_tkt_in_skey case, from Douglas E. Engert.
 
 	* kdc/kx509.c: Issue certificates.
 
