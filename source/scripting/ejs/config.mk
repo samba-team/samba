@@ -58,6 +58,8 @@ OBJ_FILES = smbcalls_sys.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_system
 
+include ejsnet/config.mk
+
 #######################
 # Start LIBRARY smbcalls
 [LIBRARY::smbcalls]
