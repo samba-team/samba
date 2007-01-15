@@ -73,6 +73,8 @@ size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 			ret += 16; /* GUID ace->object.object.inherited_typeinherited_type */
 		}
 		break;
+	default:
+		break;
 	}
 
 	return ret;
