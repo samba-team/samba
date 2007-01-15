@@ -147,7 +147,7 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
-trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+trap "kill ${kdcpid}; echo signal killing kdc; cat ca.crt kdc.crt pkinit.crt ;exit 1;" EXIT
 
 ec=0
 
