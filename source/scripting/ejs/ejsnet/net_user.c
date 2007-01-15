@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "libnet/libnet.h"
-#include "proto.h"
+#include "scripting/ejs/ejsnet/proto.h"
 #include "scripting/ejs/smbcalls.h"
 #include "events/events.h"
 #include "auth/credentials/credentials.h"
