@@ -38,13 +38,13 @@
 #include "ldb/include/includes.h"
 #include "dsdb/samdb/samdb.h"
 
-struct partition {
+struct dsdb_control_current_partition {
 	struct ldb_module *module;
 	const char *backend;
 	struct ldb_dn *dn;
 };
 struct partition_private_data {
-	struct partition **partitions;
+	struct dsdb_control_current_partition **partitions;
 	struct ldb_dn **replicate;
 };
 
@@ -609,10 +609,12 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 static int sort_compare(void *void1,
 			void *void2, void *opaque)
 {
-	struct partition **pp1 = void1;
-	struct partition **pp2 = void2;
-	struct partition *partition1 = talloc_get_type(*pp1, struct partition);
-	struct partition *partition2 = talloc_get_type(*pp2, struct partition);
+	struct dsdb_control_current_partition **pp1 = void1;
+	struct dsdb_control_current_partition **pp2 = void2;
+	struct dsdb_control_current_partition *partition1 = talloc_get_type(*pp1,
+							    struct dsdb_control_current_partition);
+	struct dsdb_control_current_partition *partition2 = talloc_get_type(*pp2,
+							    struct dsdb_control_current_partition);
 
 	return ldb_dn_compare(partition1->dn, partition2->dn);
 }
@@ -666,7 +668,7 @@ static int partition_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	data->partitions = talloc_array(data, struct partition *, partition_attributes->num_values + 1);
+	data->partitions = talloc_array(data, struct dsdb_control_current_partition *, partition_attributes->num_values + 1);
 	if (!data->partitions) {
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -690,7 +692,7 @@ static int partition_init(struct ldb_module *module)
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		data->partitions[i] = talloc(data->partitions, struct partition);
+		data->partitions[i] = talloc(data->partitions, struct dsdb_control_current_partition);
 		if (!data->partitions[i]) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -771,7 +773,7 @@ static int partition_init(struct ldb_module *module)
 		for (i=0; i < modules_attributes->num_values; i++) {
 			struct ldb_dn *base_dn;
 			int partition_idx;
-			struct partition *partition = NULL;
+			struct dsdb_control_current_partition *partition = NULL;
 			const char **modules = NULL;
 
 			char *base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
