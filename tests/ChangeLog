@@ -1,3 +1,8 @@
+2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-pkinit.in: tell me about certifiate that we have
+	generated
+	
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* no random, no RSA/DH tests
