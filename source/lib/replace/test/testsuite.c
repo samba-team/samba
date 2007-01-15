@@ -78,6 +78,7 @@ static int test_ftruncate(void)
 		       (int)st.st_size, size);
 		return false;
 	}
+	unlink(TESTFILE);
 	printf("success: ftruncate\n");
 	return true;
 }
