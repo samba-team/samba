@@ -219,8 +219,6 @@ START=`date`
  bin/nmblookup $CONFIGURATION -U $SERVER $NETBIOSNAME
 
 # start off with 0 failures
-failed=0
-export failed
 totalfailed=0
 export totalfailed
 
@@ -238,12 +236,12 @@ cat $PREFIX/recipe | (
 		else
 			echo "$LINE"
 		fi
- done
-	 )
-
- exit $totalfailed
+ 	done
+	exit $totalfailed
+)
+exit $?
 ) 9>$SMBD_TEST_FIFO
-failed=$?
+totalfailed=$?
 
 kill `cat $PIDDIR/smbd.pid`
 
@@ -261,10 +259,10 @@ if [ "$count" != 0 ]; then
     for f in $PREFIX/valgrind.log*; do
 	if [ -s $f ] && grep -v DWARF2.CFI.reader $f > /dev/null; then
 	    echo "VALGRIND FAILURE";
-	    failed=`expr $failed + 1`
+	    totalfailed=`expr $totalfailed + 1`
 	    cat $f
 	fi
     done
 fi
 
-teststatus $ARG0 $failed
+teststatus $ARG0 $totalfailed
