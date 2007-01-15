@@ -23,10 +23,10 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "system/select.h" /* needed for WITH_EPOLL */
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
+#include <sys/epoll.h>
 
 struct epoll_event_context {
 	/* a pointer back to the generic event_context */
