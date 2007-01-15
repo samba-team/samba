@@ -1,13 +1,8 @@
-#######################
-# Start LIBRARY EJSNET
-[LIBRARY::EJSNET]
-SO_VERSION = 0
-VERSION = 0.0.1
+[MODULE::smbcalls_net]
 PRIVATE_PROTO_HEADER = proto.h
+INIT_FUNCTION = smb_setup_ejs_net
 OBJ_FILES = \
 		net_ctx.o \
 		net_user.o \
 		mpr_user.o
-PUBLIC_DEPENDENCIES = LIBSAMBA-NET LIBCLI_SMB CREDENTIALS
-# End SUBSYSTEM ejsnet
-#######################
+PRIVATE_DEPENDENCIES = LIBSAMBA-NET LIBCLI_SMB CREDENTIALS
