@@ -212,15 +212,15 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 			return TRUE;
 		}
 
-		if (r.out.statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
-			printf("Unexpected array size %d\n", r.out.statistics.count);
+		if (r.out.statistics->count != MGMT_STATS_ARRAY_MAX_SIZE) {
+			printf("Unexpected array size %d\n", r.out.statistics->count);
 			return False;
 		}
 
-		gtk_label_set_text(GTK_LABEL(lbl_calls_in), talloc_asprintf(mem_ctx, "%6d", r.out.statistics.statistics[MGMT_STATS_CALLS_IN]));
-		gtk_label_set_text(GTK_LABEL(lbl_calls_out), talloc_asprintf(mem_ctx, "%6d", r.out.statistics.statistics[MGMT_STATS_CALLS_OUT]));
-		gtk_label_set_text(GTK_LABEL(lbl_pkts_in), talloc_asprintf(mem_ctx, "%6d", r.out.statistics.statistics[MGMT_STATS_PKTS_IN]));
-		gtk_label_set_text(GTK_LABEL(lbl_pkts_out), talloc_asprintf(mem_ctx, "%6d", r.out.statistics.statistics[MGMT_STATS_PKTS_OUT]));
+		gtk_label_set_text(GTK_LABEL(lbl_calls_in), talloc_asprintf(mem_ctx, "%6d", r.out.statistics->statistics[MGMT_STATS_CALLS_IN]));
+		gtk_label_set_text(GTK_LABEL(lbl_calls_out), talloc_asprintf(mem_ctx, "%6d", r.out.statistics->statistics[MGMT_STATS_CALLS_OUT]));
+		gtk_label_set_text(GTK_LABEL(lbl_pkts_in), talloc_asprintf(mem_ctx, "%6d", r.out.statistics->statistics[MGMT_STATS_PKTS_IN]));
+		gtk_label_set_text(GTK_LABEL(lbl_pkts_out), talloc_asprintf(mem_ctx, "%6d", r.out.statistics->statistics[MGMT_STATS_PKTS_OUT]));
 	}
 
 	{
