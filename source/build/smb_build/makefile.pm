@@ -215,6 +215,7 @@ sub SharedLibrary($$)
 	my ($self,$ctx) = @_;
 
 	my $init_obj = "";
+	my $has_static_lib = 0;
 	
 	if ($ctx->{TYPE} eq "LIBRARY") {
 		push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
@@ -237,9 +238,13 @@ sub SharedLibrary($$)
 		}
 	}
 
-	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	$has_static_lib = 1 if grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}});
+
+	if (not $has_static_lib) {
+		$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+		$self->_prepare_list($ctx, "OBJ_LIST");
+		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	}
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
