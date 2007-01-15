@@ -9,7 +9,7 @@
 #include "include/config.h"
 #include "lib/replace/replace.h"
 
-#define RCSID(msg)
+#define RCSID(msg) struct __rcsid { int __rcsdi; }
 #define KRB5
 
 /* This needs to be defined for roken too */
