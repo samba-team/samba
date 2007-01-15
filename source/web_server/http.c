@@ -27,6 +27,7 @@
 #include "smbd/service.h"
 #include "lib/events/events.h"
 #include "system/time.h"
+#include "system/wait.h"
 #include "lib/appweb/esp/esp.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "lib/util/dlinklist.h"
@@ -484,7 +485,6 @@ static void http_setup_arrays(struct esp_state *esp)
    it hits a major error. We need to catch these and
    report a internal server error via http
 */
-#include <setjmp.h>
 static jmp_buf ejs_exception_buf;
 static const char *exception_reason;
 
