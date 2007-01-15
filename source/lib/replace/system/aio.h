@@ -22,7 +22,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#if HAVE_LIBAIO_H
+#ifdef HAVE_LIBAIO_H
 #include <libaio.h>
 #endif
 
