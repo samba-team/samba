@@ -382,6 +382,7 @@ function provision_default_paths(subobj)
 	paths.hkpt = "hkpt.ldb";
 	paths.samdb = lp.get("sam database");
 	paths.secrets = "secrets.ldb";
+	paths.keytab = "secrets.keytab";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
 	paths.ldap_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".ldif";
@@ -431,7 +432,7 @@ function setup_name_mappings(info, ldb)
 	return true;
 }
 
-function provision_fix_subobj(subobj, message)
+function provision_fix_subobj(subobj, message, paths)
 {
 	subobj.REALM       = strupper(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
@@ -442,6 +443,10 @@ function provision_fix_subobj(subobj, message)
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
+	subobj.SAM_LDB		= paths.samdb;
+	subobj.SECRETS_LDB	= paths.secrets;
+	subobj.SECRETS_KEYTAB	= paths.keytab;
+
 	return true;
 }
 
@@ -451,7 +456,7 @@ function provision_become_dc(subobj, message, paths, session_info)
 	var sys = sys_init();
 	var info = new Object();
 
-	var ok = provision_fix_subobj(subobj, message);
+	var ok = provision_fix_subobj(subobj, message, paths);
 	assert(ok);
 
 	info.subobj = subobj;
@@ -491,7 +496,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var sys = sys_init();
 	var info = new Object();
 
-	var ok = provision_fix_subobj(subobj, message);
+	var ok = provision_fix_subobj(subobj, message, paths);
 	assert(ok);
 
 	if (subobj.DOMAINGUID != undefined) {
