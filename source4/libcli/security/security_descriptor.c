@@ -150,7 +150,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 		if (sd->dacl == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		sd->dacl->revision = NT4_ACL_REVISION;
+		sd->dacl->revision = SECURITY_ACL_REVISION_NT4;
 		sd->dacl->size     = 0;
 		sd->dacl->num_aces = 0;
 		sd->dacl->aces     = NULL;
@@ -171,7 +171,18 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 	if (sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
+	switch (sd->dacl->aces[sd->dacl->num_aces].type) {
+	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+	case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+		sd->dacl->revision = SECURITY_ACL_REVISION_ADS;
+		break;
+	default:
+		break;
+	}
+
 	sd->dacl->num_aces++;
 
 	sd->type |= SEC_DESC_DACL_PRESENT;
@@ -187,11 +198,13 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 				      struct dom_sid *trustee)
 {
 	int i;
+	bool found = false;
 
 	if (sd->dacl == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	
+
+	/* there can be multiple ace's for one trustee */
 	for (i=0;i<sd->dacl->num_aces;i++) {
 		if (dom_sid_equal(trustee, &sd->dacl->aces[i].trustee)) {
 			memmove(&sd->dacl->aces[i], &sd->dacl->aces[i+1],
@@ -200,10 +213,30 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 			if (sd->dacl->num_aces == 0) {
 				sd->dacl->aces = NULL;
 			}
-			return NT_STATUS_OK;
+			found = true;
 		}
 	}
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	if (!found) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	sd->dacl->revision = SECURITY_ACL_REVISION_NT4;
+
+	for (i=0;i<sd->dacl->num_aces;i++) {
+		switch (sd->dacl->aces[i].type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+			sd->dacl->revision = SECURITY_ACL_REVISION_ADS;
+			return NT_STATUS_OK;
+		default:
+			break; /* only for the switch statement */
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 
