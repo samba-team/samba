@@ -319,6 +319,8 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
 			acl->revision = SECURITY_ACL_REVISION_ADS;
 			break;
+		default:
+			break;
 		}
 		talloc_free(astr);
 		sddl += len+2;
