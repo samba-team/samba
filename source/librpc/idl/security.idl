@@ -240,7 +240,7 @@ interface security
 		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8
 	} security_ace_type;
 
-	typedef bitmap {
+	typedef [bitmap32bit] bitmap {
 		SEC_ACE_OBJECT_TYPE_PRESENT		= 0x00000001,
 		SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT	= 0x00000002
 	} security_ace_object_flags;
