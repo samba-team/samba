@@ -13,5 +13,5 @@ if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x
 		SMB_ENABLE(EVENTS_AIO,YES)
 		AC_DEFINE(HAVE_LINUX_AIO, 1, [Whether Linux AIO is available])
 	fi
-	SMB_EXT_LIB(LIBAIO_LINUX, $AIO_LIBS)
 fi
+SMB_EXT_LIB(LIBAIO_LINUX, $AIO_LIBS)
