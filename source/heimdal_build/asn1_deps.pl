@@ -25,7 +25,7 @@ my $header = "$dirname/$prefix.h";
 
 print "$header: $file bin/asn1_compile\n";
 print "\t\@echo \"Compiling ASN1 file $file\"\n";
-print "\t\@startdir=`pwd` && cd $dirname && " . ' $$startdir/bin/asn1_compile ' . " $options " . '$$startdir/' . "$file $prefix\n\n";
+print "\t\@\$(builddir)/heimdal_build/asn1_compile_wrapper.sh \$(srcdir) \$(builddir) $dirname bin/asn1_compile $file $prefix $options\n\n";
 
 open(IN,$file) or die("Can't open $file: $!");
 foreach(<IN>) {
@@ -49,19 +49,19 @@ print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
 print "CFLAGS = -Iheimdal_build -I$dirname\n";
 print "OBJ_FILES = ";
 foreach $o_file (@o_files) {
-    print "\\\n\t$o_file ";
+    print "\\\n\t$o_file";
 }
 print "\nPRIVATE_DEPENDENCIES = HEIMDAL_ASN1\n\n";
 
 print "clean:: \n";
-print "\t\@echo \"Deleting ASN1 output files generated from $file\"";
-print "\n\t\@rm -f $header";
+print "\t\@echo \"Deleting ASN1 output files generated from $file\"\n";
+print "\t\@rm -f $header\n";
 foreach $c_file (@c_files) {
-    print "\n\t\@rm -f $c_file";
+    print "\t\@rm -f $c_file\n";
 }
 foreach $x_file (@x_files) {
-    print "\n\t\@rm -f $x_file";
+    print "\t\@rm -f $x_file\n";
 }
-print "\n\t\@rm -f $dirname/$prefix\_files";
-print "\n\t\@rm -f $dirname/$prefix\.h";
-print "\n\n";
+print "\t\@rm -f $dirname/$prefix\_files\n";
+print "\t\@rm -f $dirname/$prefix\.h\n";
+print "\n";
