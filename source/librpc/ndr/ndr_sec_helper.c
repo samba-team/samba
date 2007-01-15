@@ -54,10 +54,29 @@ size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags)
 */
 size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 {
-	if (!ace) return 0;
-	return 8 + ndr_size_dom_sid(&ace->trustee, flags);
-}
+	size_t ret;
 
+	if (!ace) return 0;
+
+	ret = 8 + ndr_size_dom_sid(&ace->trustee, flags);
+
+	switch (ace->type) {
+	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+	case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+		ret += 4; /* uint32 bitmap ace->object.object.flags */
+		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
+			ret += 16; /* GUID ace->object.object.type.type */
+		}
+		if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
+			ret += 16; /* GUID ace->object.object.inherited_typeinherited_type */
+		}
+		break;
+	}
+
+	return ret;
+}
 
 /*
   return the wire size of a security_acl
