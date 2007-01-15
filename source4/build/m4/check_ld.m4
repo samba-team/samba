@@ -154,33 +154,54 @@ AC_MSG_RESULT([$STLD_FLAGS])
 # test whether building a shared library actually works
 if test $BLDSHARED = true; then
 
-AC_MSG_CHECKING([SHLD])
-AC_MSG_RESULT([$SHLD])
-AC_MSG_CHECKING([SHLD_FLAGS])
-AC_MSG_RESULT([$SHLD_FLAGS])
+	AC_MSG_CHECKING([SHLD])
+	AC_MSG_RESULT([$SHLD])
+	AC_MSG_CHECKING([SHLD_FLAGS])
+	AC_MSG_RESULT([$SHLD_FLAGS])
+
+	AC_MSG_CHECKING([SHLIBEXT])
+	AC_MSG_RESULT([$SHLIBEXT])
+	AC_MSG_CHECKING([SONAMEFLAG])
+	AC_MSG_RESULT([$SONAMEFLAG])
+
+	AC_MSG_CHECKING([PICFLAG])
+	AC_MSG_RESULT([$PICFLAG])
+
+	AC_CACHE_CHECK([whether building shared libraries actually works], 
+	               [ac_cv_shlib_works],[
+			ac_cv_shlib_works=no
+			# try building a trivial shared library
+			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
+				${SHLD} `eval echo ${SHLD_FLAGS} ` -o shlib.${SHLIBEXT} shlib.o && 
+				ac_cv_shlib_works=yes
+			rm -f shlib.${SHLIBEXT} shlib.o
+	])
+	if test $ac_cv_shlib_works = no; then
+		BLDSHARED=false
+	fi
+fi
+
+if test $BLDSHARED != true; then
+	SHLD="shared-libraries-disabled"
+	SHLD_FLAGS="shared-libraries-disabled"
+	SHLIBEXT="shared_libraries_disabled"
+	SONAMEFLAG="shared-libraries-disabled"
+	PICFLAG=""
+	AC_MSG_CHECKING([SHLD])
+	AC_MSG_RESULT([$SHLD])
+	AC_MSG_CHECKING([SHLD_FLAGS])
+	AC_MSG_RESULT([$SHLD_FLAGS])
+
+	AC_MSG_CHECKING([SHLIBEXT])
+	AC_MSG_RESULT([$SHLIBEXT])
+	AC_MSG_CHECKING([SONAMEFLAG])
+	AC_MSG_RESULT([$SONAMEFLAG])
+
+	AC_MSG_CHECKING([PICFLAG])
+	AC_MSG_RESULT([$PICFLAG])
+fi
 
 AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
-AC_MSG_CHECKING([SHLIBEXT])
-AC_MSG_RESULT([$SHLIBEXT])
-AC_MSG_CHECKING([SONAMEFLAG])
-AC_MSG_RESULT([$SONAMEFLAG])
-
-AC_MSG_CHECKING([PICFLAG])
-AC_MSG_RESULT([$PICFLAG])
-
-AC_CACHE_CHECK([whether building shared libraries actually works], 
-               [ac_cv_shlib_works],[
-   ac_cv_shlib_works=no
-   # try building a trivial shared library
-   ${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
-       ${SHLD} `eval echo ${SHLD_FLAGS} ` -o shlib.${SHLIBEXT} shlib.o &&
-       ac_cv_shlib_works=yes
-   rm -f shlib.${SHLIBEXT} shlib.o
-])
-if test $ac_cv_shlib_works = no; then
-   BLDSHARED=false
-fi
-fi
 
 AC_MSG_CHECKING([if we can link using the selected flags])
 AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
