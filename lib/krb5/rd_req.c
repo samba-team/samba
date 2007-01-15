@@ -846,6 +846,16 @@ krb5_rd_req_ctx(krb5_context context,
 						      KRB5_AUTHDATA_WIN2K_PAC,
 						      &data);
 	if (ret == 0) {
+	    krb5_keyblock *keyblock = o->keyblock;
+
+	    /*
+	     * Ticket protecting the PAC is the same that was used to
+	     * encrypt the ticket. So in case of enc_tkt_in_skey, the
+	     * sessionkey from the server's tkt should be used.
+	     */
+	    if (o->ap_req_options & KDC_OPT_ENC_TKT_IN_SKEY)
+		keyblock = &o->ticket->ticket.key;
+
 	    ret = krb5_pac_parse(context, data.data, data.length, &pac);
 	    krb5_data_free(&data);
 	    if (ret)
@@ -855,7 +865,7 @@ krb5_rd_req_ctx(krb5_context context,
 				  pac, 
 				  o->ticket->ticket.authtime,
 				  o->ticket->client, 
-				  o->keyblock, 
+				  keyblock,
 				  NULL);
 	    krb5_pac_free(context, pac);
 	    if (ret)
