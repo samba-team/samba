@@ -100,9 +100,17 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 
 	/* see if its in the numeric format */
 	if (strncmp(sddl, "S-", 2) == 0) {
+		struct dom_sid *sid;
+		char *sid_str;
 		size_t len = strspn(sddl+2, "-0123456789");
+		sid_str = talloc_strndup(mem_ctx, sddl, len+2);
+		if (!sid_str) {
+			return NULL;
+		}
 		(*sddlp) += len+2;
-		return dom_sid_parse_talloc(mem_ctx, sddl);
+		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+		talloc_free(sid_str);
+		return sid;
 	}
 
 	/* now check for one of the special codes */
