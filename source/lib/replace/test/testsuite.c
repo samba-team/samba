@@ -469,7 +469,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	return ret;
 }
 
-#ifndef _SAMBA_BUILD_
+#if _SAMBA_BUILD_<4
 int main()
 {
 	bool ret = torture_local_replace(NULL);
