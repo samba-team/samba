@@ -3770,7 +3770,6 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
 	pstring directory;
 	int outsize = 0;
-	BOOL ok = False;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	START_PROFILE(SMBrmdir);
@@ -3789,12 +3788,13 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
   
-	if (check_name(directory,conn)) {
-		dptr_closepath(directory,SVAL(inbuf,smb_pid));
-		ok = rmdir_internals(conn, directory);
+	if (!check_name(directory,conn)) {
+		END_PROFILE(SMBrmdir);
+		return UNIXERROR(ERRDOS, ERRbadpath);
 	}
-  
-	if (!ok) {
+
+	dptr_closepath(directory,SVAL(inbuf,smb_pid));
+	if (!rmdir_internals(conn, directory)) {
 		END_PROFILE(SMBrmdir);
 		return UNIXERROR(ERRDOS, ERRbadpath);
 	}
