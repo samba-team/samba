@@ -1,5 +1,9 @@
-2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss.c: Detect NTLM.
+	
+2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_accept_sec_context.c: spelling
 	
 2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
