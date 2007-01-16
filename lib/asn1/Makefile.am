@@ -191,6 +191,7 @@ gen_files_rfc2459 =					\
 	asn1_id_at_serialNumber.x			\
 	asn1_id_at_countryName.x			\
 	asn1_id_at_localityName.x			\
+	asn1_id_at_streetAddress.x			\
 	asn1_id_at_stateOrProvinceName.x		\
 	asn1_id_at_organizationName.x			\
 	asn1_id_at_organizationalUnitName.x		\

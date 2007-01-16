@@ -87,6 +87,7 @@ id-at-serialNumber		OBJECT IDENTIFIER ::= { id-x520-at 5 }
 id-at-countryName		OBJECT IDENTIFIER ::= { id-x520-at 6 }
 id-at-localityName		OBJECT IDENTIFIER ::= { id-x520-at 7 }
 id-at-stateOrProvinceName	OBJECT IDENTIFIER ::= { id-x520-at 8 }
+id-at-streetAddress		OBJECT IDENTIFIER ::= { id-x520-at 9 }
 id-at-organizationName		OBJECT IDENTIFIER ::= { id-x520-at 10 }
 id-at-organizationalUnitName	OBJECT IDENTIFIER ::= { id-x520-at 11 }
 id-at-name			OBJECT IDENTIFIER ::= { id-x520-at 41 }
