@@ -19,6 +19,9 @@ use strict;
 my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
+my $subsys_output_type;
+$subsys_output_type = ["STATIC_LIBRARY"];
+
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
 	$library_output_type = ["SHARED_LIBRARY", "STATIC_LIBRARY"];
@@ -35,10 +38,12 @@ if ($config::config{USESHARED} eq "true") {
 	$module_output_type = ["INTEGRATED"];
 }
 
-my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
-	["STATIC_LIBRARY"], $library_output_type, $module_output_type);
+my $DEPEND = smb_build::input::check($INPUT, \%config::enabled,
+				     $subsys_output_type,
+				     $library_output_type,
+				     $module_output_type);
 my $OUTPUT = output::create_output($DEPEND, \%config::config);
-$config::config{SUBSYSTEM_OUTPUT_TYPE} = ["STATIC_LIBRARY"];
+$config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsys_output_type;
 $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
