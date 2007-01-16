@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,6 +51,7 @@ static const struct {
     { "O", oid_id_at_organizationName },
     { "OU", oid_id_at_organizationalUnitName },
     { "S", oid_id_at_stateOrProvinceName },
+    { "STREET", oid_id_at_streetAddress },
     { "UID", oid_id_Userid },
     { "emailAddress", oid_id_pkcs9_emailAddress },
     { "serialNumber", oid_id_at_serialNumber }
