@@ -3676,11 +3676,15 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 
 BOOL rmdir_internals(connection_struct *conn, const char *directory)
 {
-	BOOL ok;
+	int ret;
 	SMB_STRUCT_STAT st;
 
-	ok = (SMB_VFS_RMDIR(conn,directory) == 0);
-	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
+	ret = SMB_VFS_RMDIR(conn,directory);
+	if (ret == 0) {
+		return True;
+	}
+
+	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
 		/* 
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and
@@ -3743,12 +3747,12 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 		}
 		CloseDir(dir_hnd);
 		/* Retry the rmdir */
-		ok = (SMB_VFS_RMDIR(conn,directory) == 0);
+		ret = SMB_VFS_RMDIR(conn,directory);
 	}
 
   err:
 
-	if (!ok) {
+	if (ret != 0) {
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
 			 "%s\n", directory,strerror(errno)));
 		return False;
