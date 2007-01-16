@@ -274,7 +274,7 @@ enum ndr_compression_alg {
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-       (s) = talloc_size(ndr, size); \
+       (s) = talloc_array(ndr, uint8, size); \
        if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
 } while (0)
 
