@@ -894,14 +894,12 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	unsigned int maxentries = 0;
 	BOOL finished = False;
 	char *p;
-	BOOL ok = False;
 	int status_len;
 	pstring path;
 	char status[21];
 	int dptr_num= -1;
 	BOOL check_descend = False;
 	BOOL expect_close = False;
-	BOOL can_open = True;
 	NTSTATUS nt_status;
 	BOOL mask_contains_wcard = False;
 	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
@@ -916,8 +914,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	*mask = *directory = *fname = 0;
 
 	/* If we were called as SMBffirst then we must expect close. */
-	if(CVAL(inbuf,smb_com) == SMBffirst)
+	if(CVAL(inbuf,smb_com) == SMBffirst) {
 		expect_close = True;
+	}
   
 	outsize = set_message(outbuf,1,3,True);
 	maxentries = SVAL(inbuf,smb_vwv0); 
@@ -950,8 +949,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 		unix_format(dir2);
 
-		if (!check_name(directory,conn))
-			can_open = False;
+		if (!check_name(directory,conn)) {
+			END_PROFILE(SMBsearch);
+			return UNIXERROR(ERRDOS, ERRnoaccess);
+		}
 
 		p = strrchr_m(dir2,'/');
 		if (p == NULL) {
@@ -963,13 +964,15 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 
 		p = strrchr_m(directory,'/');
-		if (!p) 
+		if (!p) {
 			*directory = 0;
-		else
+		} else {
 			*p = 0;
+		}
 
-		if (strlen(directory) == 0)
+		if (strlen(directory) == 0) {
 			pstrcpy(directory,".");
+		}
 		memset((char *)status,'\0',21);
 		SCVAL(status,0,(dirtype & 0x1F));
 	} else {
@@ -977,73 +980,71 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 		memcpy(status,p,21);
 		status_dirtype = CVAL(status,0) & 0x1F;
-		if (status_dirtype != (dirtype & 0x1F))
+		if (status_dirtype != (dirtype & 0x1F)) {
 			dirtype = status_dirtype;
+		}
 
 		conn->dirptr = dptr_fetch(status+12,&dptr_num);      
-		if (!conn->dirptr)
+		if (!conn->dirptr) {
 			goto SearchEmpty;
+		}
 		string_set(&conn->dirpath,dptr_path(dptr_num));
 		pstrcpy(mask, dptr_wcard(dptr_num));
 	}
 
-	if (can_open) {
-		p = smb_buf(outbuf) + 3;
-		ok = True;
+	p = smb_buf(outbuf) + 3;
      
-		if (status_len == 0) {
-			dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
-			if (dptr_num < 0) {
-				if(dptr_num == -2) {
-					END_PROFILE(SMBsearch);
-					return UNIXERROR(ERRDOS, ERRnofids);
-				}
+	if (status_len == 0) {
+		dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
+		if (dptr_num < 0) {
+			if(dptr_num == -2) {
 				END_PROFILE(SMBsearch);
-				return ERROR_DOS(ERRDOS,ERRnofids);
+				return UNIXERROR(ERRDOS, ERRnofids);
 			}
-		} else {
-			dirtype = dptr_attr(dptr_num);
+			END_PROFILE(SMBsearch);
+			return ERROR_DOS(ERRDOS,ERRnofids);
 		}
-
-		DEBUG(4,("dptr_num is %d\n",dptr_num));
-
-		if (ok) {
-			if ((dirtype&0x1F) == aVOLID) {	  
-				memcpy(p,status,21);
-				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),
-						0,aVOLID,0,!allow_long_path_components);
-				dptr_fill(p+12,dptr_num);
-				if (dptr_zero(p+12) && (status_len==0))
-					numentries = 1;
-				else
-					numentries = 0;
-				p += DIR_STRUCT_SIZE;
-			} else {
-				unsigned int i;
-				maxentries = MIN(maxentries, ((BUFFER_SIZE - (p - outbuf))/DIR_STRUCT_SIZE));
-
-				DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-				conn->dirpath,lp_dontdescend(SNUM(conn))));
-				if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True))
-					check_descend = True;
-
-				for (i=numentries;(i<maxentries) && !finished;i++) {
-					finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
-					if (!finished) {
-						memcpy(p,status,21);
-						make_dir_struct(p,mask,fname,size, mode,date,
-								!allow_long_path_components);
-						if (!dptr_fill(p+12,dptr_num)) {
-							break;
-						}
-						numentries++;
-						p += DIR_STRUCT_SIZE;
-					}
-				}
-			}
-		} /* if (ok ) */
+	} else {
+		dirtype = dptr_attr(dptr_num);
 	}
 
+	DEBUG(4,("dptr_num is %d\n",dptr_num));
+
+	if ((dirtype&0x1F) == aVOLID) {	  
+		memcpy(p,status,21);
+		make_dir_struct(p,"???????????",volume_label(SNUM(conn)),
+				0,aVOLID,0,!allow_long_path_components);
+		dptr_fill(p+12,dptr_num);
+		if (dptr_zero(p+12) && (status_len==0)) {
+			numentries = 1;
+		} else {
+			numentries = 0;
+		}
+		p += DIR_STRUCT_SIZE;
+	} else {
+		unsigned int i;
+		maxentries = MIN(maxentries, ((BUFFER_SIZE - (p - outbuf))/DIR_STRUCT_SIZE));
+
+		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
+			conn->dirpath,lp_dontdescend(SNUM(conn))));
+		if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True)) {
+			check_descend = True;
+		}
+
+		for (i=numentries;(i<maxentries) && !finished;i++) {
+			finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
+			if (!finished) {
+				memcpy(p,status,21);
+				make_dir_struct(p,mask,fname,size, mode,date,
+						!allow_long_path_components);
+				if (!dptr_fill(p+12,dptr_num)) {
+					break;
+				}
+				numentries++;
+				p += DIR_STRUCT_SIZE;
+			}
+		}
+	}
 
   SearchEmpty:
 
@@ -1051,9 +1052,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		and no entries were found then return error and close dirptr 
 		(X/Open spec) */
 
-	if (numentries == 0 || !ok) {
+	if (numentries == 0) {
 		dptr_close(&dptr_num);
-	} else if(ok && expect_close && status_len == 0) {
+	} else if(expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
 		dptr_close(&dptr_num);
 	}
