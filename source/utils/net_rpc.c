@@ -5604,9 +5604,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Store the password in secrets db
 	 */
 
-	if (!secrets_store_trusted_domain_password(domain_name,
-						   opt_password,
-						   domain_sid)) {
+	if (!pdb_set_trusteddom_pw(domain_name, opt_password, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		return -1;
@@ -5644,6 +5642,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 static int rpc_trustdom_revoke(int argc, const char **argv)
 {
 	char* domain_name;
+	int rc = -1;
 
 	if (argc < 1) return -1;
 	
@@ -5652,13 +5651,16 @@ static int rpc_trustdom_revoke(int argc, const char **argv)
 	strupper_m(domain_name);
 
 	/* delete password of the trust */
-	if (!trusted_domain_password_delete(domain_name)) {
+	if (!pdb_del_trusteddom_pw(domain_name)) {
 		DEBUG(0, ("Failed to revoke relationship to the trusted domain %s\n",
 			  domain_name));
-		return -1;
+		goto done;
 	};
 	
-	return 0;
+	rc = 0;
+done:
+	SAFE_FREE(domain_name);
+	return rc;
 }
 
 /**
@@ -5744,9 +5746,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 	
-	if (!secrets_store_trusted_domain_password(trusted_dom_name,
-						   cleartextpwd,
-						   &dom_sid)) {
+	if (!pdb_set_trusteddom_pw(trusted_dom_name, cleartextpwd, &dom_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto done;

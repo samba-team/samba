@@ -2142,8 +2142,7 @@ BOOL is_trusted_domain(const char* dom_name)
 		become_root();
 		DEBUG (5,("is_trusted_domain: Checking for domain trust with "
 			  "[%s]\n", dom_name ));
-		ret = secrets_fetch_trusted_domain_password(dom_name, NULL,
-							    NULL, NULL);
+		ret = pdb_get_trusteddom_pw(dom_name, NULL, NULL, NULL);
 		unbecome_root();
 		if (ret)
 			return True;

@@ -403,6 +403,19 @@ struct pdb_methods
 	BOOL (*rid_algorithm)(struct pdb_methods *methods);
 	BOOL (*new_rid)(struct pdb_methods *methods, uint32 *rid);
 
+
+	BOOL (*get_trusteddom_pw)(struct pdb_methods *methods,
+				  const char *domain, char** pwd, 
+				  DOM_SID *sid, time_t *pass_last_set_time);
+	BOOL (*set_trusteddom_pw)(struct pdb_methods *methods, 
+				  const char* domain, const char* pwd,
+	        	  	  const DOM_SID *sid);
+	BOOL (*del_trusteddom_pw)(struct pdb_methods *methods, 
+				  const char *domain);
+	NTSTATUS (*enum_trusteddoms)(struct pdb_methods *methods,
+				     TALLOC_CTX *mem_ctx, uint32 *num_domains,
+				     struct trustdom_info ***domains);
+
 	void *private_data;  /* Private data of some kind */
 	
 	void (*free_private_data)(void **);

@@ -1997,6 +1997,77 @@ void pdb_search_destroy(struct pdb_search *search)
 }
 
 /*******************************************************************
+ trustodm methods
+ *******************************************************************/
+
+BOOL pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
+			   time_t *pass_last_set_time)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->get_trusteddom_pw(pdb, domain, pwd, sid, 
+			pass_last_set_time);
+}
+
+BOOL pdb_set_trusteddom_pw(const char* domain, const char* pwd,
+			   const DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->set_trusteddom_pw(pdb, domain, pwd, sid);
+}
+
+BOOL pdb_del_trusteddom_pw(const char *domain)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->del_trusteddom_pw(pdb, domain);
+}
+
+NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32 *num_domains,
+			      struct trustdom_info ***domains)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->enum_trusteddoms(pdb, mem_ctx, num_domains, domains);
+}
+
+/*******************************************************************
+ the defaults for trustdom methods: 
+ these simply call the original passdb/secrets.c actions,
+ to be replaced by pdb_ldap.
+ *******************************************************************/
+
+static BOOL pdb_default_get_trusteddom_pw(struct pdb_methods *methods,
+					  const char *domain, 
+					  char** pwd, 
+					  DOM_SID *sid, 
+	        	 		  time_t *pass_last_set_time)
+{
+	return secrets_fetch_trusted_domain_password(domain, pwd,
+				sid, pass_last_set_time);
+
+}
+
+static BOOL pdb_default_set_trusteddom_pw(struct pdb_methods *methods, 
+					  const char* domain, 
+					  const char* pwd,
+	        	  		  const DOM_SID *sid)
+{
+	return secrets_store_trusted_domain_password(domain, pwd, sid);
+}
+
+static BOOL pdb_default_del_trusteddom_pw(struct pdb_methods *methods, 
+					  const char *domain)
+{
+	return trusted_domain_password_delete(domain);
+}
+
+static NTSTATUS pdb_default_enum_trusteddoms(struct pdb_methods *methods,
+					     TALLOC_CTX *mem_ctx, 
+					     uint32 *num_domains,
+					     struct trustdom_info ***domains)
+{
+	return secrets_trusted_domains(mem_ctx, num_domains, domains);
+}
+
+/*******************************************************************
  Create a pdb_methods structure and initialize it with the default
  operations.  In this way a passdb module can simply implement
  the functionality it cares about.  However, normally this is done 
@@ -2059,6 +2130,11 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;
 	(*methods)->search_aliases = pdb_default_search_aliases;
+
+	(*methods)->get_trusteddom_pw = pdb_default_get_trusteddom_pw;
+	(*methods)->set_trusteddom_pw = pdb_default_set_trusteddom_pw;
+	(*methods)->del_trusteddom_pw = pdb_default_del_trusteddom_pw;
+	(*methods)->enum_trusteddoms  = pdb_default_enum_trusteddoms;
 
 	return NT_STATUS_OK;
 }
