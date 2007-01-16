@@ -70,6 +70,7 @@ krb5src = \
 
 mechsrc = \
 	mech/context.h \
+	mech/context.c \
 	mech/cred.h \
 	mech/gss_accept_sec_context.c \
 	mech/gss_acquire_cred.c \
