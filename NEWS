@@ -1,16 +1,16 @@
 Changes in release 0.8
 
- * PK-INIT support
+ * PK-INIT support.
 
- * HDB extensions support, used by PK-INIT
+ * HDB extensions support, used by PK-INIT.
 
- * New ASN.1 compiler
+ * New ASN.1 compiler.
 
- * GSS-API mechglue from FreeBSD
+ * GSS-API mechglue from FreeBSD.
 
- * Updated SPNEGO to support RFC4178
+ * Updated SPNEGO to support RFC4178.
 
- * Support for Cryptosystem Negotiation Extension (RFC 4537)
+ * Support for Cryptosystem Negotiation Extension (RFC 4537).
 
  * A new X.509 library (hx509) and related crypto functions.
 
@@ -18,12 +18,14 @@ Changes in release 0.8
    for large (default 1400 bytes) UDP replies.  This is common for
    PK-INIT request.
 
- * Libkafs defaults to use 2b tokens
+ * Libkafs defaults to use 2b tokens.
 
- * Default to use the API cache on Mac OS X
+ * Default to use the API cache on Mac OS X.
 
  * krb5_kuserok() also checks ~/.k5login.d directory for acl files,
    see manpage for krb5_kuserok for description.
+
+ * Many, many, other update to code and info manual and manual pages.
 
  * Bug fixes
 
