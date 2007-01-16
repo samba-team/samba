@@ -38,11 +38,6 @@
 #include "ldb/include/includes.h"
 #include "dsdb/samdb/samdb.h"
 
-struct dsdb_control_current_partition {
-	struct ldb_module *module;
-	const char *backend;
-	struct ldb_dn *dn;
-};
 struct partition_private_data {
 	struct dsdb_control_current_partition **partitions;
 	struct ldb_dn **replicate;
@@ -697,6 +692,7 @@ static int partition_init(struct ldb_module *module)
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		data->partitions[i]->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 
 		data->partitions[i]->dn = ldb_dn_new(data->partitions[i], module->ldb, base);
 		if (!data->partitions[i]->dn) {
