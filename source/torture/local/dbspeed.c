@@ -63,7 +63,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 	tdbw = tdb_wrap_open(tmp_ctx, "test.tdb", 
 			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	if (!tdbw) {
-		torture_fail(torture, "Failed to open test.tdb\n");
+		torture_fail(torture, "Failed to open test.tdb");
 		goto failed;
 	}
 
@@ -171,7 +171,7 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 	ldb = ldb_wrap_connect(tmp_ctx, "tdb://test.ldb", 
 				NULL, NULL, LDB_FLG_NOSYNC, NULL);
 	if (!ldb) {
-		torture_fail(torture, "Failed to open test.ldb\n");
+		torture_fail(torture, "Failed to open test.ldb");
 		goto failed;
 	}
 
@@ -207,20 +207,20 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 		i = random() % torture_entries;
 		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", i);
 		if (ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res) != LDB_SUCCESS || res->count != 1) {
-			torture_fail(torture, talloc_asprintf(torture, "Failed to find SID %d\n", i));
+			torture_fail(torture, talloc_asprintf(torture, "Failed to find SID %d", i));
 		}
 		talloc_free(res);
 		talloc_free(dn);
 		expr = talloc_asprintf(tmp_ctx, "(UID=%u)", i);
 		if (ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res) != LDB_SUCCESS || res->count != 1) {
-			torture_fail(torture, talloc_asprintf(torture, "Failed to find UID %d\n", i));
+			torture_fail(torture, talloc_asprintf(torture, "Failed to find UID %d", i));
 		}
 		talloc_free(res);
 		talloc_free(expr);
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
-		torture_fail(torture, "memory leak in ldb search\n");
+		torture_fail(torture, "memory leak in ldb search");
 		goto failed;
 	}
 

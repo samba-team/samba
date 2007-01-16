@@ -93,7 +93,7 @@ static BOOL tcon_devtest(struct torture_context *tctx,
 		if (status) {
 			torture_fail(tctx, talloc_asprintf(tctx, 
 				   "tconx to share %s with type %s "
-			       "should have failed but succeeded\n",
+			       "should have failed but succeeded",
 			       myshare, devtype));
 		} else {
 			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),
@@ -725,7 +725,7 @@ static BOOL run_vuidtest(struct torture_context *tctx,
 			     NT_STATUS_INVALID_HANDLE)) {
 		torture_fail(tctx, talloc_asprintf(tctx, 
 				"qfileinfo should have returned DOS error "
-		       "ERRSRV:ERRbaduid\n  but returned %s\n",
+		       "ERRSRV:ERRbaduid\n  but returned %s",
 		       smbcli_errstr(cli->tree)));
 	}
 
