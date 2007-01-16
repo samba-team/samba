@@ -37,7 +37,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.exist_flag = talloc_zero_size(mem_ctx, sizeof(*r.out.exist_flag));
+	r.out.exist_flag = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.exist_flag == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -300,7 +300,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_GetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union dfs_Info);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
