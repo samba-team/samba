@@ -541,8 +541,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = secrets_trusted_domains(tmp_ctx, num_domains,
-					    &domains);
+	nt_status = pdb_enum_trusteddoms(tmp_ctx, num_domains, &domains);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
