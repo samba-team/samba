@@ -35,6 +35,8 @@
 #include "libcli/security/security.h"
 #include "build.h"
 
+extern const struct dcesrv_interface dcesrv_mgmt_interface;
+
 /*
   see if two endpoints match
 */
@@ -178,6 +180,17 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		ZERO_STRUCTP(ep);
 		ep->ep_description = talloc_reference(ep, binding);
 		add_ep = True;
+
+		/* add mgmt interface */
+		ifl = talloc(dce_ctx, struct dcesrv_if_list);
+		if (!ifl) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(&(ifl->iface), &dcesrv_mgmt_interface, 
+			   sizeof(struct dcesrv_interface));
+
+		DLIST_ADD(ep->interface_list, ifl);
 	}
 
 	/* see if the interface is already registered on te endpoint */

@@ -31,7 +31,19 @@
 static WERROR mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_if_ids *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	const struct dcesrv_endpoint *ep = dce_call->conn->endpoint;
+	struct dcesrv_if_list *l;
+	struct rpc_if_id_vector_t *vector;
+
+	vector = *r->out.if_id_vector = talloc(mem_ctx, struct rpc_if_id_vector_t);
+	vector->count = 0;
+	vector->if_id = NULL;
+	for (l = ep->interface_list; l; l = l->next) {
+		vector->count++;
+		vector->if_id = talloc_realloc(mem_ctx, vector->if_id, struct dcerpc_syntax_id_p, vector->count);
+		vector->if_id[vector->count-1].id = &l->iface.syntax_id;
+	}
+	return WERR_OK;
 }
 
 
@@ -41,7 +53,18 @@ static WERROR mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static WERROR mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_stats *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	if (r->in.max_count != MGMT_STATS_ARRAY_MAX_SIZE)
+		return WERR_NOT_SUPPORTED;
+
+	r->out.statistics->count = r->in.max_count;
+	r->out.statistics->statistics = talloc_array(mem_ctx, uint32_t, r->in.max_count);
+	/* FIXME */
+	r->out.statistics->statistics[MGMT_STATS_CALLS_IN] = 0;
+	r->out.statistics->statistics[MGMT_STATS_CALLS_OUT] = 0;
+	r->out.statistics->statistics[MGMT_STATS_PKTS_IN] = 0;
+	r->out.statistics->statistics[MGMT_STATS_PKTS_OUT] = 0;
+
+	return WERR_OK;
 }
 
 
@@ -51,8 +74,8 @@ static WERROR mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static uint32_t mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_is_server_listening *r)
 {
-	*r->out.status = 1;
-	return 0;
+	*r->out.status = 0;
+	return 1;
 }
 
 
@@ -62,7 +85,7 @@ static uint32_t mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TAL
 static WERROR mgmt_stop_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_stop_server_listening *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_ACCESS_DENIED;
 }
 
 

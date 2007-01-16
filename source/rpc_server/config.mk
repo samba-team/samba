@@ -35,17 +35,6 @@ PUBLIC_DEPENDENCIES = NDR_EPMAPPER
 ################################################
 
 ################################################
-# Start MODULE dcerpc_mgmt
-[MODULE::dcerpc_mgmt]
-INIT_FUNCTION = dcerpc_server_mgmt_init
-SUBSYSTEM = dcerpc_server
-OBJ_FILES = \
-		mgmt/dcesrv_mgmt.o
-PUBLIC_DEPENDENCIES = NDR_MGMT
-# End MODULE dcerpc_mgmt
-################################################
-
-################################################
 # Start MODULE dcerpc_remote
 [MODULE::dcerpc_remote]
 INIT_FUNCTION = dcerpc_server_remote_init
@@ -197,6 +186,7 @@ OBJ_FILES = \
 		dcerpc_server.o \
 		dcerpc_sock.o \
 		dcesrv_auth.o \
+		dcesrv_mgmt.o \
 		handles.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH \

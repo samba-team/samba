@@ -6,7 +6,6 @@
   uuid("afa8bd80-7d8a-11c9-bef4-08002b102989"), 
   version(1.0),
   pointer_default(unique),
-  endpoint("ncalrpc:[EPMAPPER]", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
   helpstring("DCE/RPC Remote Management")
 ] 
 interface mgmt
@@ -24,7 +23,7 @@ interface mgmt
 	/***********************/
 	/* Function 0x00       */
 	WERROR mgmt_inq_if_ids (
-		[out,unique]       rpc_if_id_vector_t      *if_id_vector
+		[out]       rpc_if_id_vector_t      **if_id_vector
 		);
 
 
