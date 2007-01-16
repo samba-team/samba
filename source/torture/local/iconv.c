@@ -133,7 +133,7 @@ static bool test_buffer(struct torture_context *test,
 		if (cd == (iconv_t)-1) {
 			torture_fail(test, 
 				     talloc_asprintf(test, 
-						     "failed to open %s to UTF-16LE\n",
+						     "failed to open %s to UTF-16LE",
 						     charset));
 			cd = NULL;
 			return false;
