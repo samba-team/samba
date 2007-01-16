@@ -30,12 +30,15 @@
 /*
   ask the server what interface IDs are available on this endpoint
 */
-static BOOL test_inq_if_ids(struct dcerpc_pipe *p, 
-			    TALLOC_CTX *mem_ctx)
+static BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct mgmt_inq_if_ids r;
+	struct rpc_if_id_vector_t *vector;
 	int i;
+
+	vector = talloc(mem_ctx, struct rpc_if_id_vector_t);
+	r.out.if_id_vector = &vector;
 	
 	status = dcerpc_mgmt_inq_if_ids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -48,13 +51,13 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (!r.out.if_id_vector) {
+	if (!vector) {
 		printf("inq_if_ids gave NULL if_id_vector\n");
 		return False;
 	}
 
-	for (i=0;i<r.out.if_id_vector->count;i++) {
-		struct dcerpc_syntax_id *id = r.out.if_id_vector->if_id[i].id;
+	for (i=0;i<vector->count;i++) {
+		struct dcerpc_syntax_id *id = vector->if_id[i].id;
 		if (!id) continue;
 
 		printf("\tuuid %s  version 0x%08x  '%s'\n",
@@ -70,9 +73,11 @@ static BOOL test_inq_stats(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct mgmt_inq_stats r;
+	struct mgmt_statistics statistics;
 
 	r.in.max_count = MGMT_STATS_ARRAY_MAX_SIZE;
 	r.in.unknown = 0;
+	r.out.statistics = &statistics;
 
 	status = dcerpc_mgmt_inq_stats(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -80,16 +85,16 @@ static BOOL test_inq_stats(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.statistics->count != MGMT_STATS_ARRAY_MAX_SIZE) {
-		printf("Unexpected array size %d\n", r.out.statistics->count);
+	if (statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
+		printf("Unexpected array size %d\n", statistics.count);
 		return False;
 	}
 
 	printf("\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
-	       r.out.statistics->statistics[MGMT_STATS_CALLS_IN],
-	       r.out.statistics->statistics[MGMT_STATS_CALLS_OUT],
-	       r.out.statistics->statistics[MGMT_STATS_PKTS_IN],
-	       r.out.statistics->statistics[MGMT_STATS_PKTS_OUT]);
+	       statistics.statistics[MGMT_STATS_CALLS_IN],
+	       statistics.statistics[MGMT_STATS_CALLS_OUT],
+	       statistics.statistics[MGMT_STATS_PKTS_IN],
+	       statistics.statistics[MGMT_STATS_PKTS_OUT]);
 
 	return True;
 }
@@ -135,6 +140,7 @@ static BOOL test_is_server_listening(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct mgmt_is_server_listening r;
+	r.out.status = talloc(mem_ctx, uint32_t);
 
 	status = dcerpc_mgmt_is_server_listening(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -210,27 +216,29 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
-		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(loop_ctx, b, l->table, NULL);
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("Failed to map port for uuid %s\n", 
-					   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
-				talloc_free(loop_ctx);
-				continue;
-			}
-		} else {
-			b->endpoint = talloc_strdup(b, l->table->name);
+		status = dcerpc_epm_map_binding(loop_ctx, b, l->table, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to map port for uuid %s\n", 
+				   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
+			talloc_free(loop_ctx);
+			continue;
 		}
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(loop_ctx, b));
 
 		status = torture_rpc_connection(loop_ctx, &p, &dcerpc_table_mgmt);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("Interface not available - skipping\n");
+			talloc_free(loop_ctx);
+			continue;
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
 			ret = False;
 			continue;
 		}
-	
+
 		if (!test_is_server_listening(p, loop_ctx)) {
 			ret = False;
 		}
