@@ -139,10 +139,8 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 	for (i=0; i<num_subkeys; i++) {
 		char c, n;
 		struct winreg_StringBuf class_buf;
-		struct winreg_StringBuf *pclass_buf = &class_buf;
 		struct winreg_StringBuf name_buf;
 		NTTIME modtime;
-		NTTIME *pmodtime = &modtime;
 
 		c = '\0';
 		class_buf.name = &c;
@@ -155,8 +153,8 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 		ZERO_STRUCT(modtime);
 
 		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, key_hnd,
-					       i, &name_buf, &pclass_buf,
-					       &pmodtime);
+					       i, &name_buf, &class_buf,
+					       &modtime);
 		
 		if (W_ERROR_EQUAL(ntstatus_to_werror(status),
 				  WERR_NO_MORE_ITEMS) ) {
@@ -169,9 +167,8 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 
 		classes[i] = NULL;
 
-		if (pclass_buf && pclass_buf->name &&
-		    (!(classes[i] = talloc_strdup(classes,
-						  pclass_buf->name)))) {
+		if (class_buf.name &&
+		    (!(classes[i] = talloc_strdup(classes, class_buf.name)))) {
 			status = NT_STATUS_NO_MEMORY;
 			goto error;
 		}
@@ -181,9 +178,8 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		if ((pmodtime) &&
-		    (!(modtimes[i] = (NTTIME *)talloc_memdup(
-			       modtimes, pmodtime, sizeof(*pmodtime))))) {
+		if ((!(modtimes[i] = (NTTIME *)talloc_memdup(
+			       modtimes, &modtime, sizeof(modtime))))) {
 			status = NT_STATUS_NO_MEMORY;
 			goto error;
 		}
@@ -254,15 +250,9 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 
 	for (i=0; i<num_values; i++) {
 		enum winreg_Type type = REG_NONE;
-		enum winreg_Type *ptype = &type;
-		uint8 d = 0;
-		uint8 *data = &d;
-
+		uint8 *data = NULL;
 		uint32 data_size;
-		uint32 *pdata_size = &data_size;
-
 		uint32 value_length;
-		uint32 *pvalue_length = &value_length;
 
 		char n;
 		struct winreg_ValNameBuf name_buf;
@@ -276,9 +266,9 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		value_length = 0;
 
 		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
-						 i, &name_buf, &ptype,
-						 &data, &pdata_size,
-						 &pvalue_length );
+						 i, &name_buf, &type,
+						 &data, &data_size,
+						 &value_length );
 
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status),
 				   WERR_NO_MORE_ITEMS) ) {
@@ -290,9 +280,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		if ((name_buf.name == NULL) || (ptype == NULL) ||
-		    (data == NULL) || (pdata_size == 0) ||
-		    (pvalue_length == NULL)) {
+		if (name_buf.name == NULL) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto error;
 		}
@@ -302,8 +290,8 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		err = registry_pull_value(values, &values[i], *ptype, data,
-					  *pdata_size, *pvalue_length);
+		err = registry_pull_value(values, &values[i], type, data,
+					  data_size, value_length);
 		if (!W_ERROR_IS_OK(err)) {
 			status = werror_to_ntstatus(err);
 			goto error;
@@ -477,7 +465,6 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String key, keyclass;
 	enum winreg_CreateAction action;
-	enum winreg_CreateAction *paction = &action;
 	NTSTATUS status;
 
 	if (!reg_hive_key(argv[0], &hive, &key.name)) {
@@ -496,7 +483,7 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 
 	status = rpccli_winreg_CreateKey(pipe_hnd, mem_ctx, &hive_hnd, key,
 					 keyclass, 0, REG_KEY_READ, NULL,
-					 &key_hnd, &paction);
+					 &key_hnd, &action);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "createkey returned %s\n",
 			  nt_errstr(status));
@@ -504,8 +491,7 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 		return status;
 	}
 
-	if (paction) {
-		switch (*paction) {
+	switch (action) {
 		case REG_ACTION_NONE:
 			d_printf("createkey did nothing -- huh?\n");
 			break;
@@ -515,7 +501,6 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 		case REG_OPENED_EXISTING_KEY:
 			d_printf("createkey opened existing %s\n", argv[0]);
 			break;
-		}
 	}
 
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);

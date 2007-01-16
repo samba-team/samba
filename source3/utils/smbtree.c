@@ -135,7 +135,6 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
 	uint32 enum_hnd;
-	uint32 *penum_hnd = &enum_hnd;
 	struct srvsvc_NetShareCtr1 ctr1;
 	union srvsvc_NetShareCtr ctr;
 	uint32 numentries;
@@ -165,7 +164,7 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
 					    &info_level, &ctr,
 					    0xffffffff, &numentries,
-					    &penum_hnd);
+					    &enum_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mem_ctx);

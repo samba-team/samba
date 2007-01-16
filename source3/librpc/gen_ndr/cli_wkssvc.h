@@ -3,10 +3,10 @@
 #define __CLI_WKSSVC__
 NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union wkssvc_NetWkstaInfo *info);
 NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union wkssvc_NetWkstaInfo *info, uint32_t *parm_error);
-NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union WKS_USER_ENUM_UNION *users, uint32_t prefmaxlen, uint32_t **entriesread, uint32_t **totalentries, uint32_t *resumehandle);
+NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union WKS_USER_ENUM_UNION *users, uint32_t prefmaxlen, uint32_t *entriesread, uint32_t *totalentries, uint32_t *resumehandle);
 NTSTATUS rpccli_WKSSVC_NETRWKSTAUSERGETINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_WKSSVC_NETRWKSTAUSERSETINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
-NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t *level, union wkssvc_NetWkstaTransportCtr *ctr, uint32_t max_buffer, uint32_t **totalentries, uint32_t *resume_handle);
+NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t *level, union wkssvc_NetWkstaTransportCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle);
 NTSTATUS rpccli_WKSSVC_NETRWKSTATRANSPORTADD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_WKSSVC_NETRWKSTATRANSPORTDEL(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_WKSSVC_NETRUSEADD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);

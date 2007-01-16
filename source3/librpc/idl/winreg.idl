@@ -167,7 +167,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_ValNameBuf *name,
 		[in,out,unique] winreg_Type *type,
-		[in,out,unique,size_is(*data_size),length_is(*value_length)] uint8 *data,
+		[in,out,ref,size_is(*data_size),length_is(*value_length)] uint8 **data,
 		[in,out,unique] uint32 *data_size,
 		[in,out,unique] uint32 *value_length
 	);

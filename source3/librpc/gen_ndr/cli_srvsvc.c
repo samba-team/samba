@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_srvsvc.h"
 
-NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetCharDevCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetCharDevCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetCharDevEnum r;
 	NTSTATUS status;
@@ -16,7 +16,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevEnum, &r);
@@ -38,7 +38,9 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -109,7 +111,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *user, uint32_t *level, union srvsvc_NetCharDevQCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *user, uint32_t *level, union srvsvc_NetCharDevQCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetCharDevQEnum r;
 	NTSTATUS status;
@@ -120,7 +122,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQEnum, &r);
@@ -142,7 +144,9 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -182,7 +186,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, uint32_t level, union srvsvc_NetCharDevQInfo info, uint32_t **parm_error)
+NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, uint32_t level, union srvsvc_NetCharDevQInfo info, uint32_t *parm_error)
 {
 	struct srvsvc_NetCharDevQSetInfo r;
 	NTSTATUS status;
@@ -192,7 +196,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	r.in.queue_name = queue_name;
 	r.in.level = level;
 	r.in.info = info;
-	r.in.parm_error = *parm_error;
+	r.in.parm_error = parm_error;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQSetInfo, &r);
@@ -211,7 +215,9 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	*parm_error = r.out.parm_error;
+	if ( parm_error ) {
+		*parm_error = *r.out.parm_error;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -280,7 +286,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli, TALLOC_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint32_t *level, union srvsvc_NetConnCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint32_t *level, union srvsvc_NetConnCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetConnEnum r;
 	NTSTATUS status;
@@ -291,7 +297,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetConnEnum, &r);
@@ -313,13 +319,15 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, const char *user, uint32_t *level, union srvsvc_NetFileCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, const char *user, uint32_t *level, union srvsvc_NetFileCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetFileEnum r;
 	NTSTATUS status;
@@ -331,7 +339,7 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileEnum, &r);
@@ -353,7 +361,9 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -423,7 +433,7 @@ NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client, const char *user, uint32_t *level, union srvsvc_NetSessCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client, const char *user, uint32_t *level, union srvsvc_NetSessCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetSessEnum r;
 	NTSTATUS status;
@@ -435,7 +445,7 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSessEnum, &r);
@@ -457,7 +467,9 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -495,7 +507,7 @@ NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetShareInfo info, uint32_t **parm_error)
+NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error)
 {
 	struct srvsvc_NetShareAdd r;
 	NTSTATUS status;
@@ -504,7 +516,7 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.server_unc = server_unc;
 	r.in.level = level;
 	r.in.info = info;
-	r.in.parm_error = *parm_error;
+	r.in.parm_error = parm_error;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareAdd, &r);
@@ -523,13 +535,15 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	*parm_error = r.out.parm_error;
+	if ( parm_error ) {
+		*parm_error = *r.out.parm_error;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetShareEnumAll r;
 	NTSTATUS status;
@@ -539,7 +553,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnumAll, &r);
@@ -561,7 +575,9 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -600,7 +616,7 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t level, union srvsvc_NetShareInfo info, uint32_t **parm_error)
+NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error)
 {
 	struct srvsvc_NetShareSetInfo r;
 	NTSTATUS status;
@@ -610,7 +626,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.share_name = share_name;
 	r.in.level = level;
 	r.in.info = info;
-	r.in.parm_error = *parm_error;
+	r.in.parm_error = parm_error;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareSetInfo, &r);
@@ -629,7 +645,9 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	}
 	
 	/* Return variables */
-	*parm_error = r.out.parm_error;
+	if ( parm_error ) {
+		*parm_error = *r.out.parm_error;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -763,7 +781,7 @@ NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t **parm_error)
+NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t *parm_error)
 {
 	struct srvsvc_NetSrvSetInfo r;
 	NTSTATUS status;
@@ -772,7 +790,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	r.in.server_unc = server_unc;
 	r.in.level = level;
 	r.in.info = info;
-	r.in.parm_error = *parm_error;
+	r.in.parm_error = parm_error;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvSetInfo, &r);
@@ -791,13 +809,15 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	*parm_error = r.out.parm_error;
+	if ( parm_error ) {
+		*parm_error = *r.out.parm_error;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, struct srvsvc_NetDiskInfo *info, uint32_t maxlen, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, struct srvsvc_NetDiskInfo *info, uint32_t maxlen, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetDiskEnum r;
 	NTSTATUS status;
@@ -807,7 +827,7 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.level = level;
 	r.in.info = info;
 	r.in.maxlen = maxlen;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetDiskEnum, &r);
@@ -828,7 +848,9 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	*info = *r.out.info;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -900,7 +922,7 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetTransportCtr *transports, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetTransportCtr *transports, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetTransportEnum r;
 	NTSTATUS status;
@@ -910,7 +932,7 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX 
 	r.in.level = level;
 	r.in.transports = transports;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportEnum, &r);
@@ -932,7 +954,9 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX 
 	*level = *r.out.level;
 	*transports = *r.out.transports;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -970,7 +994,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, struct srvsvc_NetRemoteTODInfo **info)
+NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, struct srvsvc_NetRemoteTODInfo *info)
 {
 	struct srvsvc_NetRemoteTOD r;
 	NTSTATUS status;
@@ -995,7 +1019,9 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*info = r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -1067,7 +1093,7 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint8_t **can_path, uint32_t maxbuf, const char *prefix, uint32_t *pathtype, uint32_t pathflags)
+NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint8_t *can_path, uint32_t maxbuf, const char *prefix, uint32_t *pathtype, uint32_t pathflags)
 {
 	struct srvsvc_NetPathCanonicalize r;
 	NTSTATUS status;
@@ -1097,7 +1123,7 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	*can_path = r.out.can_path;
+	*can_path = *r.out.can_path;
 	*pathtype = *r.out.pathtype;
 	
 	/* Return result */
@@ -1234,7 +1260,7 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t **resume_handle)
+NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct srvsvc_NetShareEnum r;
 	NTSTATUS status;
@@ -1244,7 +1270,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	r.in.level = level;
 	r.in.ctr = ctr;
 	r.in.max_buffer = max_buffer;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnum, &r);
@@ -1266,13 +1292,15 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	*resume_handle = r.out.resume_handle;
+	if ( resume_handle ) {
+		*resume_handle = *r.out.resume_handle;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, uint32_t reserved, struct policy_handle **hnd)
+NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, uint32_t reserved, struct policy_handle *hnd)
 {
 	struct srvsvc_NetShareDelStart r;
 	NTSTATUS status;
@@ -1299,19 +1327,21 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX 
 	}
 	
 	/* Return variables */
-	*hnd = r.out.hnd;
+	if ( hnd ) {
+		*hnd = *r.out.hnd;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle **hnd)
+NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *hnd)
 {
 	struct srvsvc_NetShareDelCommit r;
 	NTSTATUS status;
 	
 	/* In parameters */
-	r.in.hnd = *hnd;
+	r.in.hnd = hnd;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelCommit, &r);
@@ -1330,13 +1360,15 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX
 	}
 	
 	/* Return variables */
-	*hnd = r.out.hnd;
+	if ( hnd ) {
+		*hnd = *r.out.hnd;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, const char *file, uint32_t securityinformation, struct sec_desc_buf **sd_buf)
+NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, const char *file, uint32_t securityinformation, struct sec_desc_buf *sd_buf)
 {
 	struct srvsvc_NetGetFileSecurity r;
 	NTSTATUS status;
@@ -1364,7 +1396,9 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	*sd_buf = r.out.sd_buf;
+	if ( sd_buf ) {
+		*sd_buf = *r.out.sd_buf;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
