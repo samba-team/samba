@@ -37,7 +37,7 @@ static BOOL api_winreg_OpenHKCR(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCR, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -108,7 +108,7 @@ static BOOL api_winreg_OpenHKCU(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCU, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -179,7 +179,7 @@ static BOOL api_winreg_OpenHKLM(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKLM, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -250,7 +250,7 @@ static BOOL api_winreg_OpenHKPD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPD, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -321,7 +321,7 @@ static BOOL api_winreg_OpenHKU(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKU, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -458,7 +458,7 @@ static BOOL api_winreg_CreateKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.new_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.new_handle));
+	r.out.new_handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.new_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1054,7 +1054,7 @@ static BOOL api_winreg_OpenKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenKey, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1126,49 +1126,49 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.classname = r.in.classname;
-	r.out.num_subkeys = talloc_zero_size(mem_ctx, sizeof(*r.out.num_subkeys));
+	r.out.num_subkeys = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.num_subkeys == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.max_subkeylen = talloc_zero_size(mem_ctx, sizeof(*r.out.max_subkeylen));
+	r.out.max_subkeylen = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.max_subkeylen == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.max_classlen = talloc_zero_size(mem_ctx, sizeof(*r.out.max_classlen));
+	r.out.max_classlen = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.max_classlen == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.num_values = talloc_zero_size(mem_ctx, sizeof(*r.out.num_values));
+	r.out.num_values = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.num_values == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.max_valnamelen = talloc_zero_size(mem_ctx, sizeof(*r.out.max_valnamelen));
+	r.out.max_valnamelen = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.max_valnamelen == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.max_valbufsize = talloc_zero_size(mem_ctx, sizeof(*r.out.max_valbufsize));
+	r.out.max_valbufsize = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.max_valbufsize == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.secdescsize = talloc_zero_size(mem_ctx, sizeof(*r.out.secdescsize));
+	r.out.secdescsize = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.secdescsize == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.last_changed_time = talloc_zero_size(mem_ctx, sizeof(*r.out.last_changed_time));
+	r.out.last_changed_time = talloc_zero(mem_ctx, NTTIME);
 	if (r.out.last_changed_time == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1820,7 +1820,7 @@ static BOOL api_winreg_GetVersion(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_GetVersion, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.version = talloc_zero_size(mem_ctx, sizeof(*r.out.version));
+	r.out.version = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.version == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1891,7 +1891,7 @@ static BOOL api_winreg_OpenHKCC(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCC, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1962,7 +1962,7 @@ static BOOL api_winreg_OpenHKDD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKDD, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2229,7 +2229,7 @@ static BOOL api_winreg_OpenHKPT(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPT, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2300,7 +2300,7 @@ static BOOL api_winreg_OpenHKPN(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPN, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;

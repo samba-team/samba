@@ -295,7 +295,7 @@ static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.number = talloc_zero_size(mem_ctx, sizeof(*r.out.number));
+	r.out.number = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.number == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -494,7 +494,7 @@ static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -693,19 +693,19 @@ static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.data = talloc_zero_size(mem_ctx, sizeof(*r.out.data) * r.in.number_of_bytes);
+	r.out.data = talloc_zero_array(mem_ctx, uint8_t, r.in.number_of_bytes);
 	if (r.out.data == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.sent_size = talloc_zero_size(mem_ctx, sizeof(*r.out.sent_size));
+	r.out.sent_size = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.sent_size == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.real_size = talloc_zero_size(mem_ctx, sizeof(*r.out.real_size));
+	r.out.real_size = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.real_size == NULL) {
 		talloc_free(mem_ctx);
 		return False;
