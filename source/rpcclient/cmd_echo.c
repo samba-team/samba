@@ -101,7 +101,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 
 	size = atoi(argv[1]);
 
-	out_data = SMB_MALLOC(size);
+	out_data = SMB_MALLOC_ARRAY(uint8, size);
 	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
 
 	if (!NT_STATUS_IS_OK(result))
