@@ -430,7 +430,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
 
 WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
 			 uint32_t enum_index, struct winreg_ValNameBuf *name,
-			 enum winreg_Type *type, uint8_t *data,
+			 enum winreg_Type *type, uint8_t **data,
 			 uint32_t *data_size, uint32_t *value_length)
 {
 	WERROR err;

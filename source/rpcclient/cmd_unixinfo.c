@@ -156,8 +156,14 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 		uids[i] = atoi(argv[i+1]);
 	}
 
+	info = TALLOC_ARRAY(mem_ctx, struct unixinfo_GetPWUidInfo, num_uids);
+	if (info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
 	result = rpccli_unixinfo_GetPWUid(cli, mem_ctx, &num_uids, uids,
-					  &info);
+					  info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;

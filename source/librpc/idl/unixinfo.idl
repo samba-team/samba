@@ -30,7 +30,7 @@ import "security.idl";
 	/* Function: 0x02 */
 	NTSTATUS unixinfo_SidToGid (
 	    [in]	dom_sid sid,
-	    [out,ref]	hyper *gid
+	    [out]	hyper *gid
 	    );
 
 	/******************/
