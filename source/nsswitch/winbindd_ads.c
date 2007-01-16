@@ -81,7 +81,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		DOM_SID sid;
 		time_t last_set_time;
 
-		if ( !secrets_fetch_trusted_domain_password( domain->name, &ads->auth.password, &sid, &last_set_time ) ) {
+		if ( !pdb_get_trusteddom_pw( domain->name, &ads->auth.password, &sid, &last_set_time ) ) {
 			ads_destroy( &ads );
 			return NULL;
 		}

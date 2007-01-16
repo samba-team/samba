@@ -178,8 +178,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 5. Trusted domains as such, to me it looks as if members don't do
               this, tested an XP workstation in a NT domain -- vl */
 
-	if (IS_DC && (secrets_fetch_trusted_domain_password(name, NULL,
-							    &sid, NULL))) {
+	if (IS_DC && (pdb_get_trusteddom_pw(name, NULL, &sid, NULL))) {
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
 		type = SID_NAME_DOMAIN;
@@ -581,9 +580,9 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 		 * and for SIDs that have 4 sub-authorities and thus look like
 		 * domains */
 
-		if (!NT_STATUS_IS_OK(secrets_trusted_domains(mem_ctx,
-							     &num_domains,
-							     &domains))) {
+		if (!NT_STATUS_IS_OK(pdb_enum_trusteddoms(mem_ctx,
+						          &num_domains,
+						          &domains))) {
 			return False;
 		}
 
