@@ -100,7 +100,10 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct mgmt_inq_if_ids r;
+	struct rpc_if_id_vector_t *vector;
 	int i;
+
+	r.out.if_id_vector = &vector;
 	
 	status = dcerpc_mgmt_inq_if_ids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -118,9 +121,9 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	for (i=0;i<r.out.if_id_vector->count;i++) {
+	for (i=0;i<vector->count;i++) {
 		const char *uuid;
-		struct dcerpc_syntax_id *id = r.out.if_id_vector->if_id[i].id;
+		struct dcerpc_syntax_id *id = vector->if_id[i].id;
 		if (!id) continue;
 
 		uuid = GUID_string(mem_ctx, &id->uuid),
