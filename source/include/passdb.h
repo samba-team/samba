@@ -242,9 +242,10 @@ struct pdb_search {
  * the pdb module. Remove the latter, this might happen more often. VL.
  * changed to version 14 to move lookup_rids and lookup_names to return
  * enum lsa_SidType rather than uint32.
+ * Version 15 for the trusted domain password hooks
  */
 
-#define PASSDB_INTERFACE_VERSION 14
+#define PASSDB_INTERFACE_VERSION 15
 
 struct pdb_methods 
 {
