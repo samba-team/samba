@@ -37,7 +37,7 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_AddOne, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.out_data = talloc_zero_size(mem_ctx, sizeof(*r.out.out_data));
+	r.out.out_data = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.out_data == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -108,7 +108,7 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_EchoData, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.out_data = talloc_zero_size(mem_ctx, sizeof(*r.out.out_data) * r.in.len);
+	r.out.out_data = talloc_zero_array(mem_ctx, uint8_t, r.in.len);
 	if (r.out.out_data == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -243,7 +243,7 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_SourceData, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.data = talloc_zero_size(mem_ctx, sizeof(*r.out.data) * r.in.len);
+	r.out.data = talloc_zero_array(mem_ctx, uint8_t, r.in.len);
 	if (r.out.data == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -314,7 +314,7 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_TestCall, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.s2 = talloc_zero_size(mem_ctx, sizeof(*r.out.s2));
+	r.out.s2 = talloc_zero(mem_ctx, const char *);
 	if (r.out.s2 == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -385,7 +385,7 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_TestCall2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union echo_Info);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;

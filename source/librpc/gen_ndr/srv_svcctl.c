@@ -103,7 +103,7 @@ static BOOL api_svcctl_ControlService(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_ControlService, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -238,7 +238,7 @@ static BOOL api_svcctl_LockServiceDatabase(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_LockServiceDatabase, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.lock = talloc_zero_size(mem_ctx, sizeof(*r.out.lock));
+	r.out.lock = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.lock == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -437,7 +437,7 @@ static BOOL api_svcctl_QueryServiceStatus(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatus, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -766,7 +766,7 @@ static BOOL api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.tag_id = talloc_zero_size(mem_ctx, sizeof(*r.out.tag_id));
+	r.out.tag_id = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.tag_id == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -838,7 +838,7 @@ static BOOL api_svcctl_CreateServiceW(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.TagId = r.in.TagId;
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -909,19 +909,19 @@ static BOOL api_svcctl_EnumDependentServicesW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.services_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.services_returned));
+	r.out.services_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.services_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -992,19 +992,19 @@ static BOOL api_svcctl_EnumServicesStatusW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.service = talloc_zero_size(mem_ctx, sizeof(*r.out.service) * r.in.buf_size);
+	r.out.service = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.service == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.services_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.services_returned));
+	r.out.services_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.services_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1076,7 +1076,7 @@ static BOOL api_svcctl_OpenSCManagerW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1147,7 +1147,7 @@ static BOOL api_svcctl_OpenServiceW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1218,13 +1218,13 @@ static BOOL api_svcctl_QueryServiceConfigW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.query = talloc_zero_size(mem_ctx, sizeof(*r.out.query) * r.in.buf_size);
+	r.out.query = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.query == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1295,13 +1295,13 @@ static BOOL api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.required_buf_size = talloc_zero_size(mem_ctx, sizeof(*r.out.required_buf_size));
+	r.out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.required_buf_size == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1436,7 +1436,7 @@ static BOOL api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.display_name = talloc_zero_size(mem_ctx, sizeof(*r.out.display_name));
+	r.out.display_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.display_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1508,7 +1508,7 @@ static BOOL api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.key_name = talloc_zero_size(mem_ctx, sizeof(*r.out.key_name));
+	r.out.key_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.key_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1644,7 +1644,7 @@ static BOOL api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.tag_id = talloc_zero_size(mem_ctx, sizeof(*r.out.tag_id));
+	r.out.tag_id = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.tag_id == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1715,7 +1715,7 @@ static BOOL api_svcctl_CreateServiceA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.TagId = talloc_zero_size(mem_ctx, sizeof(*r.out.TagId));
+	r.out.TagId = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.TagId == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1786,19 +1786,19 @@ static BOOL api_svcctl_EnumDependentServicesA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.services_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.services_returned));
+	r.out.services_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.services_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1869,19 +1869,19 @@ static BOOL api_svcctl_EnumServicesStatusA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.service = talloc_zero_size(mem_ctx, sizeof(*r.out.service) * r.in.buf_size);
+	r.out.service = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.service == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.services_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.services_returned));
+	r.out.services_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.services_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1953,7 +1953,7 @@ static BOOL api_svcctl_OpenSCManagerA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2088,13 +2088,13 @@ static BOOL api_svcctl_QueryServiceConfigA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.query = talloc_zero_size(mem_ctx, sizeof(*r.out.query) * r.in.buf_size);
+	r.out.query = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.query == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2165,13 +2165,13 @@ static BOOL api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero_size(mem_ctx, sizeof(*r.out.status));
+	r.out.status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
 	if (r.out.status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.required_buf_size = talloc_zero_size(mem_ctx, sizeof(*r.out.required_buf_size));
+	r.out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.required_buf_size == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2306,7 +2306,7 @@ static BOOL api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.display_name = talloc_zero_size(mem_ctx, sizeof(*r.out.display_name));
+	r.out.display_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.display_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2378,7 +2378,7 @@ static BOOL api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.key_name = talloc_zero_size(mem_ctx, sizeof(*r.out.key_name));
+	r.out.key_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.key_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2706,13 +2706,13 @@ static BOOL api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2A, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.buffer = talloc_zero_size(mem_ctx, sizeof(*r.out.buffer) * r.in.buf_size);
+	r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.buffer == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2783,13 +2783,13 @@ static BOOL api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2W, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.buffer = talloc_zero_size(mem_ctx, sizeof(*r.out.buffer) * r.in.buf_size);
+	r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.buffer == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2860,13 +2860,13 @@ static BOOL api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatusEx, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.buffer = talloc_zero_size(mem_ctx, sizeof(*r.out.buffer) * r.in.buf_size);
+	r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.buffer == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2937,26 +2937,26 @@ static BOOL api_EnumServicesStatusExA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.services = talloc_zero_size(mem_ctx, sizeof(*r.out.services) * r.in.buf_size);
+	r.out.services = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.services == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.service_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.service_returned));
+	r.out.service_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.service_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.group_name = talloc_zero_size(mem_ctx, sizeof(*r.out.group_name));
+	r.out.group_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.group_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3027,26 +3027,26 @@ static BOOL api_EnumServicesStatusExW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.services = talloc_zero_size(mem_ctx, sizeof(*r.out.services) * r.in.buf_size);
+	r.out.services = talloc_zero_array(mem_ctx, uint8_t, r.in.buf_size);
 	if (r.out.services == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.bytes_needed = talloc_zero_size(mem_ctx, sizeof(*r.out.bytes_needed));
+	r.out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.bytes_needed == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.service_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.service_returned));
+	r.out.service_returned = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.service_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.group_name = talloc_zero_size(mem_ctx, sizeof(*r.out.group_name));
+	r.out.group_name = talloc_zero(mem_ctx, const char *);
 	if (r.out.group_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;

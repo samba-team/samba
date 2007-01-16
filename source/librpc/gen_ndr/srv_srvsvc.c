@@ -39,7 +39,7 @@ static BOOL api_srvsvc_NetCharDevEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -111,7 +111,7 @@ static BOOL api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevGetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -248,7 +248,7 @@ static BOOL api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -320,7 +320,7 @@ static BOOL api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQGetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevQInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -587,7 +587,7 @@ static BOOL api_srvsvc_NetConnEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -661,7 +661,7 @@ static BOOL api_srvsvc_NetFileEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -733,7 +733,7 @@ static BOOL api_srvsvc_NetFileGetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileGetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union srvsvc_NetFileInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -870,7 +870,7 @@ static BOOL api_srvsvc_NetSessEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1074,7 +1074,7 @@ static BOOL api_srvsvc_NetShareEnumAll(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1146,7 +1146,7 @@ static BOOL api_srvsvc_NetShareGetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareGetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union srvsvc_NetShareInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1411,7 +1411,7 @@ static BOOL api_srvsvc_NetShareCheck(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareCheck, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.type = talloc_zero_size(mem_ctx, sizeof(*r.out.type));
+	r.out.type = talloc_zero(mem_ctx, enum srvsvc_ShareType);
 	if (r.out.type == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1482,7 +1482,7 @@ static BOOL api_srvsvc_NetSrvGetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvGetInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, union srvsvc_NetSrvInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1620,7 +1620,7 @@ static BOOL api_srvsvc_NetDiskEnum(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1692,7 +1692,7 @@ static BOOL api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerStatisticsGet, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.stats = talloc_zero_size(mem_ctx, sizeof(*r.out.stats));
+	r.out.stats = talloc_zero(mem_ctx, struct srvsvc_Statistics);
 	if (r.out.stats == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1829,7 +1829,7 @@ static BOOL api_srvsvc_NetTransportEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.transports = r.in.transports;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1965,7 +1965,7 @@ static BOOL api_srvsvc_NetRemoteTOD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetRemoteTOD, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero(mem_ctx, struct srvsvc_NetRemoteTODInfo);
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2100,7 +2100,7 @@ static BOOL api_srvsvc_NetPathType(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathType, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.pathtype = talloc_zero_size(mem_ctx, sizeof(*r.out.pathtype));
+	r.out.pathtype = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.pathtype == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2171,7 +2171,7 @@ static BOOL api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathCanonicalize, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.can_path = talloc_zero_size(mem_ctx, sizeof(*r.out.can_path) * r.in.maxbuf);
+	r.out.can_path = talloc_zero_array(mem_ctx, uint8_t, r.in.maxbuf);
 	if (r.out.can_path == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2501,7 +2501,7 @@ static BOOL api_srvsvc_NetShareEnum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
-	r.out.totalentries = talloc_zero_size(mem_ctx, sizeof(*r.out.totalentries));
+	r.out.totalentries = talloc_zero(mem_ctx, uint32_t);
 	if (r.out.totalentries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2573,7 +2573,7 @@ static BOOL api_srvsvc_NetShareDelStart(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelStart, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.hnd = talloc_zero_size(mem_ctx, sizeof(*r.out.hnd));
+	r.out.hnd = talloc_zero(mem_ctx, struct policy_handle);
 	if (r.out.hnd == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2710,7 +2710,7 @@ static BOOL api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetGetFileSecurity, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sd_buf = talloc_zero_size(mem_ctx, sizeof(*r.out.sd_buf));
+	r.out.sd_buf = talloc_zero(mem_ctx, struct sec_desc_buf);
 	if (r.out.sd_buf == NULL) {
 		talloc_free(mem_ctx);
 		return False;

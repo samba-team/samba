@@ -37,7 +37,7 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(unixinfo_SidToUid, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.uid = talloc_zero_size(mem_ctx, sizeof(*r.out.uid));
+	r.out.uid = talloc_zero(mem_ctx, uint64_t);
 	if (r.out.uid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -108,7 +108,7 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(unixinfo_UidToSid, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sid = talloc_zero_size(mem_ctx, sizeof(*r.out.sid));
+	r.out.sid = talloc_zero(mem_ctx, struct dom_sid);
 	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -179,7 +179,7 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(unixinfo_SidToGid, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.gid = talloc_zero_size(mem_ctx, sizeof(*r.out.gid));
+	r.out.gid = talloc_zero(mem_ctx, uint64_t);
 	if (r.out.gid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -250,7 +250,7 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(unixinfo_GidToSid, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sid = talloc_zero_size(mem_ctx, sizeof(*r.out.sid));
+	r.out.sid = talloc_zero(mem_ctx, struct dom_sid);
 	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -322,7 +322,7 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.count = r.in.count;
-	r.out.infos = talloc_zero_size(mem_ctx, sizeof(*r.out.infos) * *r.in.count);
+	r.out.infos = talloc_zero_array(mem_ctx, struct unixinfo_GetPWUidInfo, *r.in.count);
 	if (r.out.infos == NULL) {
 		talloc_free(mem_ctx);
 		return False;
