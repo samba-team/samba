@@ -334,7 +334,7 @@ static void pathtree_print_children( TREE_NODE *node, int debug, const char *pat
 
  void* pathtree_find( SORTED_TREE *tree, char *key )
 {
-	char *keystr, *base, *str, *p;
+	char *keystr, *base = NULL, *str = NULL, *p;
 	TREE_NODE *current;
 	void *result = NULL;
 	
@@ -383,7 +383,8 @@ static void pathtree_print_children( TREE_NODE *node, int debug, const char *pat
 		trim_tree_keypath( p, &base, &str );
 			
 		DEBUG(11,("pathtree_find: [loop] base => [%s], new_path => [%s]\n", 
-			base, str));
+			base ? base : "",
+			str ? str : ""));
 
 		/* iterate to the next child */
 		
