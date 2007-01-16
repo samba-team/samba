@@ -59,7 +59,7 @@ gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
     }
     
     oid_str->value = p;
-    oid_str->length = strlen(p) + 1;
+    oid_str->length = strlen(p);
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
