@@ -227,7 +227,10 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	    &delegated_mc);
 	if (major_status != GSS_S_COMPLETE &&
 	    major_status != GSS_S_CONTINUE_NEEDED)
+	{
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	if (!src_name) {
 		m->gm_release_name(minor_status, &src_mn);

@@ -58,10 +58,12 @@ gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
 	if (m == NULL)
 		return GSS_S_BAD_MECH;
 
-	if (m->gm_inquire_sec_context_by_oid != NULL)
+	if (m->gm_inquire_sec_context_by_oid != NULL) {
 		major_status = m->gm_inquire_sec_context_by_oid(minor_status,
 		    ctx->gc_ctx, desired_object, data_set);
-	else
+		if (major_status != GSS_S_COMPLETE)
+			_gss_mg_error(m, major_status, *minor_status);
+	} else
 		major_status = GSS_S_BAD_MECH;
 
 	return major_status;

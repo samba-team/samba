@@ -119,6 +119,10 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	 */
 	major_status = m->gm_import_name(minor_status,
 	    input_name_buffer, GSS_C_NT_EXPORT_NAME, &new_canonical_name);
+	if (major_status != GSS_S_COMPLETE) {
+		_gss_mg_error(m, major_status, *minor_status);
+		return major_status;
+	}
 
 	/*
 	 * Now we make a new name and mark it as an MN.

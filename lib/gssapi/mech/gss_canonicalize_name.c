@@ -52,8 +52,10 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 	m = mn->gmn_mech;
 	major_status = m->gm_canonicalize_name(minor_status,
 	    mn->gmn_name, mech_type, &new_canonical_name);
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	/*
 	 * Now we make a new name and mark it as an MN.

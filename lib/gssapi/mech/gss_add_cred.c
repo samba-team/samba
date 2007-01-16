@@ -43,8 +43,10 @@ _gss_copy_cred(struct _gss_mechanism_cred *mc)
 	major_status = m->gm_inquire_cred_by_mech(&minor_status,
 	    mc->gmc_cred, mc->gmc_mech_oid,
 	    &name, &initiator_lifetime, &acceptor_lifetime, &cred_usage);
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, minor_status);
 		return (0);
+	}
 
 	major_status = m->gm_add_cred(&minor_status,
 	    GSS_C_NO_CREDENTIAL, name, mc->gmc_mech_oid,
@@ -52,8 +54,10 @@ _gss_copy_cred(struct _gss_mechanism_cred *mc)
 	    &cred, 0, 0, 0);
 	m->gm_release_name(&minor_status, &name);
 
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, minor_status);
 		return (0);
+	}
 
 	new_mc = malloc(sizeof(struct _gss_mechanism_cred));
 	if (!new_mc) {
@@ -162,6 +166,7 @@ gss_add_cred(OM_uint32 *minor_status,
 	    acceptor_time_rec);
 
 	if (major_status) {
+		_gss_mg_error(m, major_status, *minor_status);
 		release_cred = (gss_cred_id_t)new_cred;
 		gss_release_cred(&junk, &release_cred);
 		free(mc);

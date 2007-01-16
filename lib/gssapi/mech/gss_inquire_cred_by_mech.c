@@ -65,8 +65,10 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 
 	major_status = m->gm_inquire_cred_by_mech(minor_status, mc, mech_type,
 	    &mn, initiator_lifetime, acceptor_lifetime, cred_usage);
-	if (major_status != GSS_S_COMPLETE)
+	if (major_status != GSS_S_COMPLETE) {
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	name = _gss_make_name(m, mn);
 	if (!name) {

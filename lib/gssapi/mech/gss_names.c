@@ -62,7 +62,8 @@ _gss_find_mn(struct _gss_name *name, gss_OID mech)
 		    (name->gn_type.elements
 			? &name->gn_type : GSS_C_NO_OID),
 		    &mn->gmn_name);
-		if (major_status) {
+		if (major_status != GSS_S_COMPLETE) {
+			_gss_mg_error(m, major_status, minor_status);
 			free(mn);
 			return (0);
 		}

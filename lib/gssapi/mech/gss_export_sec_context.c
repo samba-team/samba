@@ -67,6 +67,8 @@ gss_export_sec_context(OM_uint32 *minor_status,
 		memcpy(p + 2, m->gm_mech_oid.elements, m->gm_mech_oid.length);
 		memcpy(p + 2 + m->gm_mech_oid.length, buf.value, buf.length);
 		gss_release_buffer(minor_status, &buf);
+	} else {
+		_gss_mg_error(m, major_status, *minor_status);
 	}
 
 	return (major_status);
