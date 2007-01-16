@@ -24,6 +24,7 @@
 #define __SAMDB_H__
 
 struct auth_session_info;
+struct dsdb_control_current_partition;
 struct dsdb_extended_replicated_object;
 struct dsdb_extended_replicated_objects;
 
@@ -34,6 +35,22 @@ struct dsdb_extended_replicated_objects;
 #include "librpc/gen_ndr/drsblobs.h"
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
+
+#define DSDB_CONTROL_CURRENT_PARTITION_OID "1.3.6.1.4.1.7165.4.3.2"
+struct dsdb_control_current_partition {
+	/* 
+	 * this is the version of the dsdb_control_current_partition
+	 * version 0: initial implementation
+	 */
+#define DSDB_CONTROL_CURRENT_PARTITION_VERSION 0
+	uint32_t version;
+
+	struct ldb_dn *dn;
+
+	const char *backend;
+
+	struct ldb_module *module;
+};
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
