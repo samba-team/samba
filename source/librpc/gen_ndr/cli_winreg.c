@@ -197,7 +197,7 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String name, struct winreg_String keyclass, uint32_t options, uint32_t access_mask, struct winreg_SecBuf *secdesc, struct policy_handle *new_handle, enum winreg_CreateAction **action_taken)
+NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String name, struct winreg_String keyclass, uint32_t options, uint32_t access_mask, struct winreg_SecBuf *secdesc, struct policy_handle *new_handle, enum winreg_CreateAction *action_taken)
 {
 	struct winreg_CreateKey r;
 	NTSTATUS status;
@@ -209,7 +209,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	r.in.options = options;
 	r.in.access_mask = access_mask;
 	r.in.secdesc = secdesc;
-	r.in.action_taken = *action_taken;
+	r.in.action_taken = action_taken;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &r);
@@ -229,7 +229,9 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	/* Return variables */
 	*new_handle = *r.out.new_handle;
-	*action_taken = r.out.action_taken;
+	if ( action_taken ) {
+		*action_taken = *r.out.action_taken;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -297,7 +299,7 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf **keyclass, NTTIME **last_changed_time)
+NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time)
 {
 	struct winreg_EnumKey r;
 	NTSTATUS status;
@@ -306,8 +308,8 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.enum_index = enum_index;
 	r.in.name = name;
-	r.in.keyclass = *keyclass;
-	r.in.last_changed_time = *last_changed_time;
+	r.in.keyclass = keyclass;
+	r.in.last_changed_time = last_changed_time;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_EnumKey, &r);
@@ -327,14 +329,18 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	/* Return variables */
 	*name = *r.out.name;
-	*keyclass = r.out.keyclass;
-	*last_changed_time = r.out.last_changed_time;
+	if ( keyclass ) {
+		*keyclass = *r.out.keyclass;
+	}
+	if ( last_changed_time ) {
+		*last_changed_time = *r.out.last_changed_time;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type **type, uint8_t **data, uint32_t **data_size, uint32_t **value_length)
+NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type *type, uint8_t **data, uint32_t *data_size, uint32_t *value_length)
 {
 	struct winreg_EnumValue r;
 	NTSTATUS status;
@@ -343,10 +349,10 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	r.in.handle = handle;
 	r.in.enum_index = enum_index;
 	r.in.name = name;
-	r.in.type = *type;
-	r.in.data = *data;
-	r.in.data_size = *data_size;
-	r.in.value_length = *value_length;
+	r.in.type = type;
+	r.in.data = data;
+	r.in.data_size = data_size;
+	r.in.value_length = value_length;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_EnumValue, &r);
@@ -366,10 +372,16 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	/* Return variables */
 	*name = *r.out.name;
-	*type = r.out.type;
-	*data = r.out.data;
-	*data_size = r.out.data_size;
-	*value_length = r.out.value_length;
+	if ( type ) {
+		*type = *r.out.type;
+	}
+	*data = *r.out.data;
+	if ( data_size ) {
+		*data_size = *r.out.data_size;
+	}
+	if ( value_length ) {
+		*value_length = *r.out.value_length;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -580,7 +592,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type **type, uint8_t **data, uint32_t **data_size, uint32_t **value_length)
+NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
@@ -588,10 +600,10 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.value_name = value_name;
-	r.in.type = *type;
-	r.in.data = *data;
-	r.in.data_size = *data_size;
-	r.in.value_length = *value_length;
+	r.in.type = type;
+	r.in.data = data;
+	r.in.data_size = data_size;
+	r.in.value_length = value_length;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &r);
@@ -610,10 +622,18 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	*type = r.out.type;
-	*data = r.out.data;
-	*data_size = r.out.data_size;
-	*value_length = r.out.value_length;
+	if ( type ) {
+		*type = *r.out.type;
+	}
+	if ( data ) {
+		*data = *r.out.data;
+	}
+	if ( data_size ) {
+		*data_size = *r.out.data_size;
+	}
+	if ( value_length ) {
+		*value_length = *r.out.value_length;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -966,7 +986,7 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *key_handle, struct QueryMultipleValue *values, uint32_t num_values, uint8_t **buffer, uint32_t *buffer_size)
+NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *key_handle, struct QueryMultipleValue *values, uint32_t num_values, uint8_t *buffer, uint32_t *buffer_size)
 {
 	struct winreg_QueryMultipleValues r;
 	NTSTATUS status;
@@ -975,7 +995,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli, TALLOC_C
 	r.in.key_handle = key_handle;
 	r.in.values = values;
 	r.in.num_values = num_values;
-	r.in.buffer = *buffer;
+	r.in.buffer = buffer;
 	r.in.buffer_size = buffer_size;
 	
 	if (DEBUGLEVEL >= 10)
@@ -996,7 +1016,9 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli, TALLOC_C
 	
 	/* Return variables */
 	*values = *r.out.values;
-	*buffer = r.out.buffer;
+	if ( buffer ) {
+		*buffer = *r.out.buffer;
+	}
 	*buffer_size = *r.out.buffer_size;
 	
 	/* Return result */

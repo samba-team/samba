@@ -37,7 +37,7 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, ui
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *in_data, uint8_t **out_data)
+NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *in_data, uint8_t *out_data)
 {
 	struct echo_EchoData r;
 	NTSTATUS status;
@@ -63,7 +63,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	}
 	
 	/* Return variables */
-	*out_data = r.out.out_data;
+	*out_data = *r.out.out_data;
 	
 	/* Return result */
 	return NT_STATUS_OK;
@@ -100,7 +100,7 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t **data)
+NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *data)
 {
 	struct echo_SourceData r;
 	NTSTATUS status;
@@ -125,7 +125,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	*data = r.out.data;
+	*data = *r.out.data;
 	
 	/* Return result */
 	return NT_STATUS_OK;

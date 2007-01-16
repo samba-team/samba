@@ -249,7 +249,6 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 	union srvsvc_NetShareCtr ctr;
 	NTSTATUS result;
 	uint32 hnd;
-	uint32 *phnd = &hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	uint32 numentries;
 
@@ -289,7 +288,7 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 
 	result = rpccli_srvsvc_NetShareEnum(
 		cli, mem_ctx, cli->cli->desthost, &info_level, &ctr, preferred_len, &numentries, 
-		&phnd);
+		&hnd);
 
 	if (!NT_STATUS_IS_OK(result) || !numentries)
 		goto done;
@@ -367,7 +366,7 @@ static NTSTATUS cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	uint32 info_level = 502;
 	union srvsvc_NetShareInfo info_get;
 	NTSTATUS result;
-	uint32 *parm_error = NULL;
+	uint32 parm_error = 0;
 
 	if (argc > 3) {
 		printf("Usage: %s [sharename] [comment]\n", argv[0]);
@@ -402,7 +401,7 @@ static NTSTATUS cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
 {
 	fstring srv_name_slash;
 	NTSTATUS result;
-	struct srvsvc_NetRemoteTODInfo *tod;
+	struct srvsvc_NetRemoteTODInfo tod;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -428,7 +427,6 @@ static NTSTATUS cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	union srvsvc_NetFileCtr ctr;
 	NTSTATUS result;
 	uint32 hnd;
-	uint32 *phnd = &hnd;
 	uint32 preferred_len = 0xffff;
 	uint32 numentries;
 
@@ -445,7 +443,7 @@ static NTSTATUS cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(ctr);
 
 	result = rpccli_srvsvc_NetFileEnum(
-		cli, mem_ctx, NULL, NULL, NULL, &info_level, &ctr, preferred_len, &numentries, &phnd);
+		cli, mem_ctx, NULL, NULL, NULL, &info_level, &ctr, preferred_len, &numentries, &hnd);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

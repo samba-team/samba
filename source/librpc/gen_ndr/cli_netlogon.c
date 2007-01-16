@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_netlogon.h"
 
-NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasInfo **info)
+NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasInfo *info)
 {
 	struct netr_LogonUasLogon r;
 	NTSTATUS status;
@@ -33,7 +33,9 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	*info = r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -72,7 +74,7 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator **return_authenticator, uint16_t logon_level, union netr_LogonLevel logon, uint16_t validation_level, union netr_Validation *validation, uint8_t *authoritative)
+NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator *return_authenticator, uint16_t logon_level, union netr_LogonLevel logon, uint16_t validation_level, union netr_Validation *validation, uint8_t *authoritative)
 {
 	struct netr_LogonSamLogon r;
 	NTSTATUS status;
@@ -81,7 +83,7 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.server_name = server_name;
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
-	r.in.return_authenticator = *return_authenticator;
+	r.in.return_authenticator = return_authenticator;
 	r.in.logon_level = logon_level;
 	r.in.logon = logon;
 	r.in.validation_level = validation_level;
@@ -103,7 +105,9 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	*return_authenticator = r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	*validation = *r.out.validation;
 	*authoritative = *r.out.authoritative;
 	
@@ -111,7 +115,7 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator **return_authenticator, uint16_t logon_level, union netr_LogonLevel logon)
+NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator *return_authenticator, uint16_t logon_level, union netr_LogonLevel logon)
 {
 	struct netr_LogonSamLogoff r;
 	NTSTATUS status;
@@ -120,7 +124,7 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	r.in.server_name = server_name;
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
-	r.in.return_authenticator = *return_authenticator;
+	r.in.return_authenticator = return_authenticator;
 	r.in.logon_level = logon_level;
 	r.in.logon = logon;
 	
@@ -141,7 +145,9 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*return_authenticator = r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -251,7 +257,7 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint64_t *sequence_num, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY **delta_enum_array)
+NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint64_t *sequence_num, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
 {
 	struct netr_DatabaseDeltas r;
 	NTSTATUS status;
@@ -284,13 +290,15 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sequence_num = *r.out.sequence_num;
-	*delta_enum_array = r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint32_t *sync_context, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY **delta_enum_array)
+NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint32_t *sync_context, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
 {
 	struct netr_DatabaseSync r;
 	NTSTATUS status;
@@ -323,7 +331,9 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	*delta_enum_array = r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -582,7 +592,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli, TALLOC_CTX
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint16_t restart_state, uint32_t *sync_context, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY **delta_enum_array)
+NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, enum netr_SamDatabaseID database_id, uint16_t restart_state, uint32_t *sync_context, uint32_t preferredmaximumlength, struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
 {
 	struct netr_DatabaseSync2 r;
 	NTSTATUS status;
@@ -616,13 +626,15 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	*delta_enum_array = r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, uint8_t *change_log_entry, uint32_t change_log_entry_size, struct netr_DELTA_ENUM_ARRAY **delta_enum_array)
+NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *computername, struct netr_Authenticator credential, struct netr_Authenticator *return_authenticator, uint8_t *change_log_entry, uint32_t change_log_entry_size, struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
 {
 	struct netr_DatabaseRedo r;
 	NTSTATUS status;
@@ -653,7 +665,9 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
-	*delta_enum_array = r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -722,7 +736,7 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli, TA
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, struct GUID *site_guid, uint32_t flags, struct netr_DsRGetDCNameInfo **info)
+NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, struct GUID *site_guid, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
 {
 	struct netr_DsRGetDCName r;
 	NTSTATUS status;
@@ -751,7 +765,9 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	*info = r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -940,7 +956,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli, TALLOC_CTX
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo **info)
+NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
 {
 	struct netr_DsRGetDCNameEx r;
 	NTSTATUS status;
@@ -969,7 +985,9 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*info = r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -1166,7 +1184,7 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli, TALLOC_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client_account, uint32_t mask, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo **info)
+NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client_account, uint32_t mask, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
 {
 	struct netr_DsRGetDCNameEx2 r;
 	NTSTATUS status;
@@ -1197,7 +1215,9 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	*info = r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -1506,7 +1526,7 @@ NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator **return_authenticator, uint16_t logon_level, union netr_LogonLevel logon, uint16_t validation_level, union netr_Validation *validation, uint8_t *authoritative, uint32_t *flags)
+NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *computer_name, struct netr_Authenticator *credential, struct netr_Authenticator *return_authenticator, uint16_t logon_level, union netr_LogonLevel logon, uint16_t validation_level, union netr_Validation *validation, uint8_t *authoritative, uint32_t *flags)
 {
 	struct netr_LogonSamLogonWithFlags r;
 	NTSTATUS status;
@@ -1515,7 +1535,7 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	r.in.server_name = server_name;
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
-	r.in.return_authenticator = *return_authenticator;
+	r.in.return_authenticator = return_authenticator;
 	r.in.logon_level = logon_level;
 	r.in.logon = logon;
 	r.in.validation_level = validation_level;
@@ -1538,7 +1558,9 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	*return_authenticator = r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	*validation = *r.out.validation;
 	*authoritative = *r.out.authoritative;
 	*flags = *r.out.flags;

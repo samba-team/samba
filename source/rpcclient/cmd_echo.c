@@ -61,11 +61,12 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	size = atoi(argv[1]);
 	in_data = (uint8 *)SMB_MALLOC(size);
+	out_data = (uint8 *)SMB_MALLOC(size);
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
 
-	result = rpccli_echo_EchoData(cli, mem_ctx, size, in_data, &out_data);
+	result = rpccli_echo_EchoData(cli, mem_ctx, size, in_data, out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -100,7 +101,8 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 
 	size = atoi(argv[1]);
 
-	result = rpccli_echo_SourceData(cli, mem_ctx, size, &out_data);
+	out_data = SMB_MALLOC(size);
+	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

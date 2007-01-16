@@ -130,7 +130,7 @@ NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return r.out.result;
 }
 
-NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t *count, uint64_t *uids, struct unixinfo_GetPWUidInfo **infos)
+NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t *count, uint64_t *uids, struct unixinfo_GetPWUidInfo *infos)
 {
 	struct unixinfo_GetPWUid r;
 	NTSTATUS status;
@@ -157,7 +157,7 @@ NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*count = *r.out.count;
-	*infos = r.out.infos;
+	*infos = *r.out.infos;
 	
 	/* Return result */
 	return r.out.result;
