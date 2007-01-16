@@ -1427,16 +1427,16 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (opt->issue_ca_flag)
 	    _hx509_generate_private_key_is_ca(context, keyctx);
 
+	if (opt->key_bits_integer)
+	    _hx509_generate_private_key_bits(context, keyctx,
+					     opt->key_bits_integer);
+
 	ret = _hx509_generate_private_key(context, keyctx,
 					  &cert_key);
 	_hx509_generate_private_key_free(&keyctx);
 	if (ret)
 	    hx509_err(context, 1, ret, "generate private key");
 	
-	if (opt->key_bits_integer)
-	    _hx509_generate_private_key_bits(context, keyctx,
-					     opt->key_bits_integer);
-
 	ret = _hx509_private_key2SPKI(context, cert_key, &spki);
 	if (ret)
 	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);
