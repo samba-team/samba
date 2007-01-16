@@ -148,6 +148,14 @@ gss_display_status(OM_uint32 *minor_status,
 {
 	OM_uint32 major_status;
 
+	major_status = _gss_mg_get_error(mech_type, status_type,
+					 status_value, status_string);
+	if (major_status == GSS_S_COMPLETE) {
+	    *message_content = 0;
+	    *minor_status = 0;
+	    return GSS_S_COMPLETE;
+	}
+
 	*minor_status = 0;
 	switch (status_type) {
 	case GSS_C_GSS_CODE: {
@@ -161,21 +169,38 @@ gss_display_status(OM_uint32 *minor_status,
 		        calling_error(GSS_CALLING_ERROR(status_value)),
 			routine_error(GSS_ROUTINE_ERROR(status_value)));
 
+		if (buf == NULL)
+		    break;
+
 		status_string->length = strlen(buf);
 		status_string->value  = buf;
 
 		return GSS_S_COMPLETE;
 	}
 	case GSS_C_MECH_CODE: {
-	       gssapi_mech_interface m;
-	       m = __gss_get_mechanism(mech_type);
-	       if (m) {
-			major_status = m->gm_display_status(minor_status,
-			    status_value, status_type, mech_type,
-			    message_content, status_string);
-			if (major_status == GSS_S_COMPLETE)
-				return (GSS_S_COMPLETE);
+		OM_uint32 maj_junk, min_junk;
+		gss_buffer_desc oid;
+		char *buf;
+
+		maj_junk = gss_oid_to_str(&min_junk, mech_type, &oid);
+		if (maj_junk != GSS_S_COMPLETE) {
+		    oid.value = rk_UNCONST("unknown");
+		    oid.length = 7;
 		}
+
+		asprintf (&buf, "unknown mech-code %d for mech %.*s",
+			  (unsigned long)status_value,
+			  (int)oid.length, (char *)oid.value);
+		if (maj_junk == GSS_S_COMPLETE)
+		    gss_release_buffer(&min_junk, &oid);
+
+		if (buf == NULL)
+		    break;
+
+		status_string->length = strlen(buf);
+		status_string->value  = buf;
+
+		return GSS_S_COMPLETE;
 	}
 	}
 	status_string->value = NULL;
