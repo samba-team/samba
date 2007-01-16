@@ -102,6 +102,8 @@ supported_mechanisms(void *argptr, int argc, char **argv)
 	    rtbl_add_column_entry(ct, COL_NAME, "Kerberos 5");
 	else if (gss_oid_equal(&mechs->elements[i], GSS_SPNEGO_MECHANISM))
 	    rtbl_add_column_entry(ct, COL_NAME, "SPNEGO");
+	else if (gss_oid_equal(&mechs->elements[i], GSS_NTLM_MECHANISM))
+	    rtbl_add_column_entry(ct, COL_NAME, "NTLM");
     }
     gss_release_oid_set(&min_stat, &mechs);
 
