@@ -4755,7 +4755,6 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
 	int snum;
 	int outsize = 0;
-	BOOL ok = False;
 	pstring newdir;
 	NTSTATUS status;
 
@@ -4775,17 +4774,12 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
 	RESOLVE_DFSPATH(newdir, conn, inbuf, outbuf);
 
-	if (strlen(newdir) == 0) {
-		ok = True;
-	} else {
-		ok = vfs_directory_exist(conn,newdir,NULL);
-		if (ok)
-			set_conn_connectpath(conn,newdir);
-	}
-  
-	if (!ok) {
-		END_PROFILE(pathworks_setdir);
-		return ERROR_DOS(ERRDOS,ERRbadpath);
+	if (strlen(newdir) != 0) {
+		if (!vfs_directory_exist(conn,newdir,NULL)) {
+			END_PROFILE(pathworks_setdir);
+			return ERROR_DOS(ERRDOS,ERRbadpath);
+		}
+		set_conn_connectpath(conn,newdir);
 	}
   
 	outsize = set_message(outbuf,0,0,False);
