@@ -186,7 +186,7 @@ afs)
 	res=$?
 	;;
 cvs)
-	cvs ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
+	cvs -Qq ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
 	res=$?
 	unpack=no
 	autotools=yes
