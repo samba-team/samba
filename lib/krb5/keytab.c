@@ -377,7 +377,7 @@ krb5_kt_get_entry(krb5_context context,
 	    kvno_str[0] = '\0';
 
 	krb5_set_error_string (context,
- 			       "failed to find %s%s in keytab %s (%s)",
+ 			       "Failed to find %s%s in keytab %s (%s)",
 			       princ,
 			       kvno_str,
 			       kt_name,
