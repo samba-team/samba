@@ -15,12 +15,12 @@
 	</para>
 
 	<para>
-	o make Samba scale well in large environments, the <smbconfoption name="ldapsam:trusted">yes</smbconfoption>
+	To make Samba scale well in large environments, the <smbconfoption name="ldapsam:trusted">yes</smbconfoption>
 	option assumes that the complete user and group database that is relevant to Samba is stored in LDAP with the
 	standard posixAccount/posixGroup attributes. It further assumes that the Samba auxiliary object classes are 
 	stored together with the POSIX data in the same LDAP object. If these assumptions are met, 
-	<smbconfoption name="ldapsam:trusted">yes</smbconfoption> can be activated and Samba can completely bypass the 
-	NSS system to query user information. Optimized LDAP queries can greatly speed up domain logon and 
+	<smbconfoption name="ldapsam:trusted">yes</smbconfoption> can be activated and Samba can bypass the 
+	NSS system to query user group memberships. Optimized LDAP queries can greatly speed up domain logon and 
 	administration tasks. Depending on the size of the LDAP database a factor of 100 or more for common queries 
 	is easily achieved.
 	</para>
