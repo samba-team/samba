@@ -882,9 +882,7 @@ sub CalcNdrFlags($$$)
 
 sub ParseMemCtxPullStart($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ptr_name = shift;
+	my ($e, $l, $ptr_name) = @_;
 
 	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
 	my $mem_c_ctx = $ptr_name;
@@ -998,7 +996,7 @@ sub ParseElementPullLevel
 			}
 		}
 
-		ParseMemCtxPullStart($e,$l, $var_name);
+		ParseMemCtxPullStart($e, $l, $var_name);
 
 		$var_name = get_value_of($var_name);
 		ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
@@ -1020,7 +1018,7 @@ sub ParseElementPullLevel
 
 		$var_name = $var_name . "[$counter]";
 
-		ParseMemCtxPullStart($e,$l, $array_name);
+		ParseMemCtxPullStart($e, $l, $array_name);
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			my $nl = GetNextLevel($e,$l);
@@ -1044,10 +1042,10 @@ sub ParseElementPullLevel
 			pidl "}";
 		}
 
-		ParseMemCtxPullEnd($e,$l);
+		ParseMemCtxPullEnd($e, $l);
 
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -2052,7 +2050,7 @@ sub AllocateArrayLevel($$$$$)
 		pidl "}";
 		if (grep(/in/,@{$e->{DIRECTION}}) and
 		    grep(/out/,@{$e->{DIRECTION}})) {
-			pidl "memcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));";
+			pidl "memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, $size * sizeof(*r->in.$e->{NAME}));";
 		}
 		return;
 	}

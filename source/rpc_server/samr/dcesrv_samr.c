@@ -104,7 +104,7 @@
 
   create a connection to the SAM database
 */
-static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			     struct samr_Connect *r)
 {
 	struct samr_connect_state *c_state;
@@ -143,7 +143,7 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   samr_Close 
 */
-static NTSTATUS samr_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			   struct samr_Close *r)
 {
 	struct dcesrv_handle *h;
@@ -163,7 +163,7 @@ static NTSTATUS samr_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /* 
   samr_SetSecurity 
 */
-static NTSTATUS samr_SetSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_SetSecurity *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -173,7 +173,7 @@ static NTSTATUS samr_SetSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_QuerySecurity 
 */
-static NTSTATUS samr_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct samr_QuerySecurity *r)
 {
 	struct dcesrv_handle *h;
@@ -202,7 +202,7 @@ static NTSTATUS samr_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CT
   we refuse this operation completely. If a admin wants to shutdown samr
   in Samba then they should use the samba admin tools to disable the samr pipe
 */
-static NTSTATUS samr_Shutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Shutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct samr_Shutdown *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
@@ -214,7 +214,7 @@ static NTSTATUS samr_Shutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
   this maps from a domain name to a SID
 */
-static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_LookupDomain *r)
 {
 	struct samr_connect_state *c_state;
@@ -280,7 +280,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
   list the domains in the SAM
 */
-static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_EnumDomains *r)
 {
 	struct samr_connect_state *c_state;
@@ -359,7 +359,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_OpenDomain 
 */
-static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct samr_OpenDomain *r)
 {
 	struct dcesrv_handle *h_conn, *h_domain;
@@ -449,7 +449,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /*
   return DomInfo1
 */
-static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo1(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo1 *info)
@@ -471,7 +471,7 @@ static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
 /*
   return DomInfo2
 */
-static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo2 *info)
 {
@@ -525,7 +525,7 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 /*
   return DomInfo3
 */
-static NTSTATUS samr_info_DomInfo3(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo3(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo3 *info)
@@ -539,7 +539,7 @@ static NTSTATUS samr_info_DomInfo3(struct samr_domain_state *state,
 /*
   return DomInfo4
 */
-static NTSTATUS samr_info_DomInfo4(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo4(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo4 *info)
@@ -552,7 +552,7 @@ static NTSTATUS samr_info_DomInfo4(struct samr_domain_state *state,
 /*
   return DomInfo5
 */
-static NTSTATUS samr_info_DomInfo5(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo5(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo5 *info)
@@ -565,7 +565,7 @@ static NTSTATUS samr_info_DomInfo5(struct samr_domain_state *state,
 /*
   return DomInfo6
 */
-static NTSTATUS samr_info_DomInfo6(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				   struct ldb_message **dom_msgs,
 				   struct samr_DomInfo6 *info)
@@ -582,7 +582,7 @@ static NTSTATUS samr_info_DomInfo6(struct samr_domain_state *state,
 /*
   return DomInfo7
 */
-static NTSTATUS samr_info_DomInfo7(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo7 *info)
@@ -615,7 +615,7 @@ static NTSTATUS samr_info_DomInfo7(struct samr_domain_state *state,
 /*
   return DomInfo8
 */
-static NTSTATUS samr_info_DomInfo8(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo8(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo8 *info)
@@ -632,7 +632,7 @@ static NTSTATUS samr_info_DomInfo8(struct samr_domain_state *state,
 /*
   return DomInfo9
 */
-static NTSTATUS samr_info_DomInfo9(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo9 *info)
@@ -645,13 +645,13 @@ static NTSTATUS samr_info_DomInfo9(struct samr_domain_state *state,
 /*
   return DomInfo11
 */
-static NTSTATUS samr_info_DomInfo11(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo11(struct samr_domain_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				    struct samr_DomInfo11 *info)
 {
 	NTSTATUS status;
-	status = samr_info_DomInfo2(state, mem_ctx, dom_msgs, &info->info2);
+	status = dcesrv_samr_info_DomInfo2(state, mem_ctx, dom_msgs, &info->info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -668,7 +668,7 @@ static NTSTATUS samr_info_DomInfo11(struct samr_domain_state *state,
 /*
   return DomInfo12
 */
-static NTSTATUS samr_info_DomInfo12(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo12(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo12 *info)
@@ -685,7 +685,7 @@ static NTSTATUS samr_info_DomInfo12(struct samr_domain_state *state,
 /*
   return DomInfo13
 */
-static NTSTATUS samr_info_DomInfo13(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomInfo13(struct samr_domain_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
 				    struct samr_DomInfo13 *info)
@@ -705,7 +705,7 @@ static NTSTATUS samr_info_DomInfo13(struct samr_domain_state *state,
 /* 
   samr_QueryDomainInfo 
 */
-static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct samr_QueryDomainInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -830,40 +830,40 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 
 	switch (r->in.level) {
 	case 1:
-		return samr_info_DomInfo1(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo1(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info1);
 	case 2:
-		return samr_info_DomInfo2(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo2(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info2);
 	case 3:
-		return samr_info_DomInfo3(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo3(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info3);
 	case 4:
-		return samr_info_DomInfo4(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo4(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info4);
 	case 5:
-		return samr_info_DomInfo5(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo5(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info5);
 	case 6:
-		return samr_info_DomInfo6(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo6(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info6);
 	case 7:
-		return samr_info_DomInfo7(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo7(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info7);
 	case 8:
-		return samr_info_DomInfo8(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo8(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info8);
 	case 9:
-		return samr_info_DomInfo9(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo9(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info9);
 	case 11:
-		return samr_info_DomInfo11(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo11(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info11);
 	case 12:
-		return samr_info_DomInfo12(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo12(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info12);
 	case 13:
-		return samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
+		return dcesrv_samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
 					  &r->out.info->info13);
 	}
 
@@ -874,7 +874,7 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   samr_SetDomainInfo 
 */
-static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetDomainInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -948,7 +948,7 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   samr_CreateDomainGroup 
 */
-static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct samr_CreateDomainGroup *r)
 {
 	struct samr_domain_state *d_state;
@@ -1066,7 +1066,7 @@ static int compare_SamEntry(struct samr_SamEntry *e1, struct samr_SamEntry *e2)
 /* 
   samr_EnumDomainGroups 
 */
-static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_EnumDomainGroups *r)
 {
 	struct dcesrv_handle *h;
@@ -1164,7 +1164,7 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
   user while we are processing this, and to ensure the user either
   completly exists, or does not.
 */
-static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_CreateUser2 *r)
 {
 	struct samr_domain_state *d_state;
@@ -1401,7 +1401,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_CreateUser 
 */
-static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct samr_CreateUser *r)
 {
 	struct samr_CreateUser2 r2;
@@ -1417,13 +1417,13 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.out.access_granted = &access_granted;
 	r2.out.rid = r->out.rid;
 
-	return samr_CreateUser2(dce_call, mem_ctx, &r2);
+	return dcesrv_samr_CreateUser2(dce_call, mem_ctx, &r2);
 }
 
 /* 
   samr_EnumDomainUsers 
 */
-static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct samr_EnumDomainUsers *r)
 {
 	struct dcesrv_handle *h;
@@ -1501,7 +1501,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   samr_CreateDomAlias 
 */
-static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_CreateDomAlias *r)
 {
 	struct samr_domain_state *d_state;
@@ -1605,7 +1605,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_EnumDomainAliases 
 */
-static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_EnumDomainAliases *r)
 {
 	struct dcesrv_handle *h;
@@ -1701,7 +1701,7 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_GetAliasMembership 
 */
-static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetAliasMembership *r)
 {
 	struct dcesrv_handle *h;
@@ -1778,7 +1778,7 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 /* 
   samr_LookupNames 
 */
-static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_LookupNames *r)
 {
 	struct dcesrv_handle *h;
@@ -1854,7 +1854,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_LookupRids 
 */
-static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_LookupRids *r)
 {
 	struct dcesrv_handle *h;
@@ -1939,7 +1939,7 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   samr_OpenGroup 
 */
-static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_OpenGroup *r)
 {
 	struct samr_domain_state *d_state;
@@ -2017,7 +2017,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   samr_QueryGroupInfo 
 */
-static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryGroupInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -2083,7 +2083,7 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_SetGroupInfo 
 */
-static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_SetGroupInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -2137,7 +2137,7 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   samr_AddGroupMember 
 */
-static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_AddGroupMember *r)
 {
 	struct dcesrv_handle *h;
@@ -2212,7 +2212,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_DeleteDomainGroup 
 */
-static NTSTATUS samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteDomainGroup *r)
 {
 	struct dcesrv_handle *h;
@@ -2239,7 +2239,7 @@ static NTSTATUS samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_DeleteGroupMember 
 */
-static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteGroupMember *r)
 {
 	struct dcesrv_handle *h;
@@ -2315,7 +2315,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_QueryGroupMember 
 */
-static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_QueryGroupMember *r)
 {
 	struct dcesrv_handle *h;
@@ -2391,7 +2391,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   samr_SetMemberAttributesOfGroup 
 */
-static NTSTATUS samr_SetMemberAttributesOfGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetMemberAttributesOfGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetMemberAttributesOfGroup *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2401,7 +2401,7 @@ static NTSTATUS samr_SetMemberAttributesOfGroup(struct dcesrv_call_state *dce_ca
 /* 
   samr_OpenAlias 
 */
-static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_OpenAlias *r)
 {
 	struct samr_domain_state *d_state;
@@ -2480,7 +2480,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   samr_QueryAliasInfo 
 */
-static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryAliasInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -2535,7 +2535,7 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_SetAliasInfo 
 */
-static NTSTATUS samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetAliasInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -2586,7 +2586,7 @@ static NTSTATUS samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   samr_DeleteDomAlias 
 */
-static NTSTATUS samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteDomAlias *r)
 {
 	struct dcesrv_handle *h;
@@ -2613,7 +2613,7 @@ static NTSTATUS samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_AddAliasMember 
 */
-static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_AddAliasMember *r)
 {
 	struct dcesrv_handle *h;
@@ -2677,7 +2677,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_DeleteAliasMember 
 */
-static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteAliasMember *r)
 {
 	struct dcesrv_handle *h;
@@ -2719,7 +2719,7 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_GetMembersInAlias 
 */
-static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetMembersInAlias *r)
 {
 	struct dcesrv_handle *h;
@@ -2781,7 +2781,7 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_OpenUser 
 */
-static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct samr_OpenUser *r)
 {
 	struct samr_domain_state *d_state;
@@ -2859,7 +2859,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   samr_DeleteUser 
 */
-static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct samr_DeleteUser *r)
 {
 	struct dcesrv_handle *h;
@@ -2886,7 +2886,7 @@ static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   samr_QueryUserInfo 
 */
-static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct samr_QueryUserInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -3240,7 +3240,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   samr_SetUserInfo 
 */
-static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_SetUserInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -3497,7 +3497,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_GetGroupsForUser 
 */
-static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetGroupsForUser *r)
 {
 	struct dcesrv_handle *h;
@@ -3562,7 +3562,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   samr_QueryDisplayInfo 
 */
-static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryDisplayInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -3776,7 +3776,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   samr_GetDisplayEnumerationIndex 
 */
-static NTSTATUS samr_GetDisplayEnumerationIndex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetDisplayEnumerationIndex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetDisplayEnumerationIndex *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -3786,7 +3786,7 @@ static NTSTATUS samr_GetDisplayEnumerationIndex(struct dcesrv_call_state *dce_ca
 /* 
   samr_TestPrivateFunctionsDomain 
 */
-static NTSTATUS samr_TestPrivateFunctionsDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_TestPrivateFunctionsDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_TestPrivateFunctionsDomain *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -3796,7 +3796,7 @@ static NTSTATUS samr_TestPrivateFunctionsDomain(struct dcesrv_call_state *dce_ca
 /* 
   samr_TestPrivateFunctionsUser 
 */
-static NTSTATUS samr_TestPrivateFunctionsUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_TestPrivateFunctionsUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_TestPrivateFunctionsUser *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -3806,7 +3806,7 @@ static NTSTATUS samr_TestPrivateFunctionsUser(struct dcesrv_call_state *dce_call
 /* 
   samr_GetUserPwInfo 
 */
-static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct samr_GetUserPwInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -3831,7 +3831,7 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   samr_RemoveMemberFromForeignDomain 
 */
-static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_RemoveMemberFromForeignDomain *r)
 {
 	struct dcesrv_handle *h;
@@ -3901,7 +3901,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 
   just an alias for samr_QueryDomainInfo
 */
-static NTSTATUS samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryDomainInfo2 *r)
 {
 	struct samr_QueryDomainInfo r1;
@@ -3911,7 +3911,7 @@ static NTSTATUS samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call, TALLOC
 	r1.in.domain_handle = r->in.domain_handle;
 	r1.in.level  = r->in.level;
 	
-	status = samr_QueryDomainInfo(dce_call, mem_ctx, &r1);
+	status = dcesrv_samr_QueryDomainInfo(dce_call, mem_ctx, &r1);
 	
 	r->out.info = r1.out.info;
 
@@ -3924,7 +3924,7 @@ static NTSTATUS samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call, TALLOC
 
   just an alias for samr_QueryUserInfo
 */
-static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct samr_QueryUserInfo2 *r)
 {
 	struct samr_QueryUserInfo r1;
@@ -3934,7 +3934,7 @@ static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_C
 	r1.in.user_handle = r->in.user_handle;
 	r1.in.level  = r->in.level;
 	
-	status = samr_QueryUserInfo(dce_call, mem_ctx, &r1);
+	status = dcesrv_samr_QueryUserInfo(dce_call, mem_ctx, &r1);
 	
 	r->out.info = r1.out.info;
 
@@ -3945,7 +3945,7 @@ static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   samr_QueryDisplayInfo2 
 */
-static NTSTATUS samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct samr_QueryDisplayInfo2 *r)
 {
 	struct samr_QueryDisplayInfo q;
@@ -3958,7 +3958,7 @@ static NTSTATUS samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLO
 	q.in.buf_size = r->in.buf_size;
 	ZERO_STRUCT(q.out);
 
-	result = samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
+	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
 	r->out.total_size = q.out.total_size;
 	r->out.returned_size = q.out.returned_size;
@@ -3971,7 +3971,7 @@ static NTSTATUS samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_GetDisplayEnumerationIndex2 
 */
-static NTSTATUS samr_GetDisplayEnumerationIndex2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetDisplayEnumerationIndex2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetDisplayEnumerationIndex2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -3981,7 +3981,7 @@ static NTSTATUS samr_GetDisplayEnumerationIndex2(struct dcesrv_call_state *dce_c
 /* 
   samr_QueryDisplayInfo3 
 */
-static NTSTATUS samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryDisplayInfo3 *r)
 {
 	struct samr_QueryDisplayInfo q;
@@ -3994,7 +3994,7 @@ static NTSTATUS samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call, TALLO
 	q.in.buf_size = r->in.buf_size;
 	ZERO_STRUCT(q.out);
 
-	result = samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
+	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
 	r->out.total_size = q.out.total_size;
 	r->out.returned_size = q.out.returned_size;
@@ -4007,7 +4007,7 @@ static NTSTATUS samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call, TALLO
 /* 
   samr_AddMultipleMembersToAlias 
 */
-static NTSTATUS samr_AddMultipleMembersToAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_AddMultipleMembersToAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_AddMultipleMembersToAlias *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -4017,7 +4017,7 @@ static NTSTATUS samr_AddMultipleMembersToAlias(struct dcesrv_call_state *dce_cal
 /* 
   samr_RemoveMultipleMembersFromAlias 
 */
-static NTSTATUS samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_RemoveMultipleMembersFromAlias *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -4032,7 +4032,7 @@ static NTSTATUS samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_state *dc
   note that w2k3 completely ignores the domain name in this call, and 
   always returns the information for the servers primary domain
 */
-static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_GetDomPwInfo *r)
 {
 	struct ldb_message **msgs;
@@ -4071,7 +4071,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   samr_Connect2 
 */
-static NTSTATUS samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct samr_Connect2 *r)
 {
 	struct samr_Connect c;
@@ -4080,7 +4080,7 @@ static NTSTATUS samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	c.in.access_mask = r->in.access_mask;
 	c.out.connect_handle = r->out.connect_handle;
 
-	return samr_Connect(dce_call, mem_ctx, &c);
+	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
 
 
@@ -4089,7 +4089,7 @@ static NTSTATUS samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
   just an alias for samr_SetUserInfo
 */
-static NTSTATUS samr_SetUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_SetUserInfo2 *r)
 {
 	struct samr_SetUserInfo r2;
@@ -4098,14 +4098,14 @@ static NTSTATUS samr_SetUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	r2.in.level = r->in.level;
 	r2.in.info = r->in.info;
 
-	return samr_SetUserInfo(dce_call, mem_ctx, &r2);
+	return dcesrv_samr_SetUserInfo(dce_call, mem_ctx, &r2);
 }
 
 
 /* 
   samr_SetBootKeyInformation 
 */
-static NTSTATUS samr_SetBootKeyInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetBootKeyInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetBootKeyInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -4115,7 +4115,7 @@ static NTSTATUS samr_SetBootKeyInformation(struct dcesrv_call_state *dce_call, T
 /* 
   samr_GetBootKeyInformation 
 */
-static NTSTATUS samr_GetBootKeyInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_GetBootKeyInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetBootKeyInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -4125,7 +4125,7 @@ static NTSTATUS samr_GetBootKeyInformation(struct dcesrv_call_state *dce_call, T
 /* 
   samr_Connect3 
 */
-static NTSTATUS samr_Connect3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Connect3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_Connect3 *r)
 {
 	struct samr_Connect c;
@@ -4134,14 +4134,14 @@ static NTSTATUS samr_Connect3(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	c.in.access_mask = r->in.access_mask;
 	c.out.connect_handle = r->out.connect_handle;
 
-	return samr_Connect(dce_call, mem_ctx, &c);
+	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
 
 
 /* 
   samr_Connect4 
 */
-static NTSTATUS samr_Connect4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Connect4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_Connect4 *r)
 {
 	struct samr_Connect c;
@@ -4150,14 +4150,14 @@ static NTSTATUS samr_Connect4(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	c.in.access_mask = r->in.access_mask;
 	c.out.connect_handle = r->out.connect_handle;
 
-	return samr_Connect(dce_call, mem_ctx, &c);
+	return dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 }
 
 
 /* 
   samr_Connect5 
 */
-static NTSTATUS samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct samr_Connect5 *r)
 {
 	struct samr_Connect c;
@@ -4167,7 +4167,7 @@ static NTSTATUS samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	c.in.access_mask = r->in.access_mask;
 	c.out.connect_handle = r->out.connect_handle;
 
-	status = samr_Connect(dce_call, mem_ctx, &c);
+	status = dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 
 	r->out.info->info1.unknown1 = 3;
 	r->out.info->info1.unknown2 = 0;
@@ -4180,7 +4180,7 @@ static NTSTATUS samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   samr_RidToSid 
 */
-static NTSTATUS samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct samr_RidToSid *r)
 {
 	struct samr_domain_state *d_state;
@@ -4203,7 +4203,7 @@ static NTSTATUS samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   samr_SetDsrmPassword 
 */
-static NTSTATUS samr_SetDsrmPassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_SetDsrmPassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetDsrmPassword *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -4213,7 +4213,7 @@ static NTSTATUS samr_SetDsrmPassword(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   samr_ValidatePassword 
 */
-static NTSTATUS samr_ValidatePassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_ValidatePassword *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

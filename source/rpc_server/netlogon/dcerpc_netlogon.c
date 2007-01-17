@@ -40,7 +40,7 @@ struct server_pipe_state {
 };
 
 
-static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
@@ -69,7 +69,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate3 *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
@@ -178,7 +178,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	return nt_status;
 }
 						 
-static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerAuthenticate *r)
 {
 	struct netr_ServerAuthenticate3 r3;
@@ -201,10 +201,10 @@ static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALL
 	r3.out.negotiate_flags = &negotiate_flags;
 	r3.out.rid = &rid;
 	
-	return netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
+	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
-static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate2 *r)
 {
 	struct netr_ServerAuthenticate3 r3;
@@ -220,7 +220,7 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 	r3.out.negotiate_flags = r->out.negotiate_flags;
 	r3.out.rid = &rid;
 	
-	return netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
+	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
 /*
@@ -233,7 +233,7 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
   the caller needs some of that information.
 
 */
-static NTSTATUS netr_creds_server_step_check(const char *computer_name,
+static NTSTATUS dcesrv_netr_creds_server_step_check(const char *computer_name,
 					     TALLOC_CTX *mem_ctx, 
 					     struct netr_Authenticator *received_authenticator,
 					     struct netr_Authenticator *return_authenticator,
@@ -288,14 +288,14 @@ static NTSTATUS netr_creds_server_step_check(const char *computer_name,
   client.  Supplies only the NT#.
 */
 
-static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet *r)
 {
 	struct creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 
-	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -322,7 +322,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
   Change the machine account password for the currently connected
   client.  Supplies new plaintext.
 */
-static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet2 *r)
 {
 	struct creds_CredentialState *creds;
@@ -334,7 +334,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 
 	struct samr_CryptPassword password_buf;
 
-	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -370,7 +370,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 /* 
   netr_LogonUasLogon 
 */
-static WERROR netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct netr_LogonUasLogon *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -380,7 +380,7 @@ static WERROR netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   netr_LogonUasLogoff 
 */
-static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonUasLogoff *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -394,7 +394,7 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
   We can't do the traditional 'wrapping' format completly, as this function must only run under schannel
 */
-static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonSamLogonEx *r, struct creds_CredentialState *creds)
 {
 	struct auth_context *auth_context;
@@ -549,7 +549,7 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct netr_LogonSamLogonEx *r) 
 {
 	NTSTATUS nt_status;
@@ -563,14 +563,14 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	    dce_call->conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	return netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
+	return dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
 }
 
 /* 
   netr_LogonSamLogonWithFlags
 
 */
-static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct netr_LogonSamLogonWithFlags *r)
 {
 	NTSTATUS nt_status;
@@ -582,7 +582,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
 	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
-	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 r->in.credential, return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -596,7 +596,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	r2.in.validation_level	= r->in.validation_level;
 	r2.in.flags		= r->in.flags;
 
-	nt_status = netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
+	nt_status = dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
 
 	r->out.return_authenticator	= return_authenticator;
 	r->out.validation		= r2.out.validation;
@@ -609,7 +609,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 /* 
   netr_LogonSamLogon
 */
-static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct netr_LogonSamLogon *r)
 {
 	struct netr_LogonSamLogonWithFlags r2;
@@ -626,7 +626,7 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 	r2.in.validation_level = r->in.validation_level;
 	r2.in.flags = 0;
 
-	status = netr_LogonSamLogonWithFlags(dce_call, mem_ctx, &r2);
+	status = dcesrv_netr_LogonSamLogonWithFlags(dce_call, mem_ctx, &r2);
 
 	r->out.return_authenticator = r2.out.return_authenticator;
 	r->out.validation = r2.out.validation;
@@ -639,7 +639,7 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   netr_LogonSamLogoff 
 */
-static NTSTATUS netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonSamLogoff *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -650,7 +650,7 @@ static NTSTATUS netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   netr_DatabaseDeltas 
 */
-static NTSTATUS netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseDeltas *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -660,7 +660,7 @@ static NTSTATUS netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   netr_DatabaseSync 
 */
-static NTSTATUS netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -670,7 +670,7 @@ static NTSTATUS netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   netr_AccountDeltas 
 */
-static NTSTATUS netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountDeltas *r)
 {
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
@@ -681,7 +681,7 @@ static NTSTATUS netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   netr_AccountSync 
 */
-static NTSTATUS netr_AccountSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountSync *r)
 {
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
@@ -692,7 +692,7 @@ static NTSTATUS netr_AccountSync(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   netr_GetDcName 
 */
-static NTSTATUS netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetDcName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -702,7 +702,7 @@ static NTSTATUS netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   netr_LogonControl 
 */
-static WERROR netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -712,7 +712,7 @@ static WERROR netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   netr_GetAnyDCName 
 */
-static WERROR netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -722,7 +722,7 @@ static WERROR netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   netr_LogonControl2 
 */
-static WERROR netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -732,7 +732,7 @@ static WERROR netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   netr_DatabaseSync2 
 */
-static NTSTATUS netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -742,7 +742,7 @@ static NTSTATUS netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   netr_DatabaseRedo 
 */
-static NTSTATUS netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseRedo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -752,7 +752,7 @@ static NTSTATUS netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   netr_LogonControl2Ex 
 */
-static WERROR netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl2Ex *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -762,7 +762,7 @@ static WERROR netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   netr_NETRENUMERATETRUSTEDDOMAINS 
 */
-static WERROR netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -772,7 +772,7 @@ static WERROR netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_cal
 /* 
   netr_NETRLOGONDUMMYROUTINE1 
 */
-static WERROR netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONDUMMYROUTINE1 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -782,7 +782,7 @@ static WERROR netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TA
 /* 
   netr_NETRLOGONSETSERVICEBITS 
 */
-static WERROR netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONSETSERVICEBITS *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -792,7 +792,7 @@ static WERROR netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_call, T
 /* 
   netr_NETRLOGONGETTRUSTRID 
 */
-static WERROR netr_NETRLOGONGETTRUSTRID(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONGETTRUSTRID(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONGETTRUSTRID *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -802,7 +802,7 @@ static WERROR netr_NETRLOGONGETTRUSTRID(struct dcesrv_call_state *dce_call, TALL
 /* 
   netr_NETRLOGONCOMPUTESERVERDIGEST 
 */
-static WERROR netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -812,7 +812,7 @@ static WERROR netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state *dce_ca
 /* 
   netr_NETRLOGONCOMPUTECLIENTDIGEST 
 */
-static WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -823,7 +823,7 @@ static WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_ca
 /* 
   netr_DsRGetSiteName
 */
-static WERROR netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct netr_DsRGetSiteName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -862,7 +862,7 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
   netr_LogonGetDomainInfo
   this is called as part of the ADS domain logon procedure.
 */
-static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonGetDomainInfo *r)
 {
 	const char * const attrs[] = { "objectSid", 
@@ -878,7 +878,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 
 	const char *local_domain;
 
-	status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 					      r->in.credential, 
 					      r->out.return_authenticator,
 					      NULL);
@@ -948,7 +948,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 /* 
   netr_NETRSERVERPASSWORDGET 
 */
-static WERROR netr_NETRSERVERPASSWORDGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRSERVERPASSWORDGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRSERVERPASSWORDGET *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -958,7 +958,7 @@ static WERROR netr_NETRSERVERPASSWORDGET(struct dcesrv_call_state *dce_call, TAL
 /* 
   netr_NETRLOGONSENDTOSAM 
 */
-static WERROR netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONSENDTOSAM *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -968,7 +968,7 @@ static WERROR netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   netr_DSRADDRESSTOSITENAMESW 
 */
-static WERROR netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRADDRESSTOSITENAMESW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -978,7 +978,7 @@ static WERROR netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TA
 /* 
   netr_DsRGetDCNameEx2
 */
-static WERROR netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct netr_DsRGetDCNameEx2 *r)
 {
 	const char * const attrs[] = { "dnsDomain", "objectGUID", NULL };
@@ -1026,7 +1026,7 @@ static WERROR netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   netr_DsRGetDCNameEx
 */
-static WERROR netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct netr_DsRGetDCNameEx *r)
 {
 	struct netr_DsRGetDCNameEx2 r2;
@@ -1043,7 +1043,7 @@ static WERROR netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	r2.in.flags = r->in.flags;
 	r2.out.info = NULL;
 
-	werr = netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
 	
 	r->out.info = r2.out.info;
 	
@@ -1053,7 +1053,7 @@ static WERROR netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   netr_DsRGetDCName
 */
-static WERROR netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct netr_DsRGetDCName *r)
 {
 	struct netr_DsRGetDCNameEx2 r2;
@@ -1071,7 +1071,7 @@ static WERROR netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.flags = r->in.flags;
 	r2.out.info = NULL;
 
-	werr = netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
 	
 	r->out.info = r2.out.info;
 	
@@ -1081,7 +1081,7 @@ static WERROR netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN 
 */
-static WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1091,7 +1091,7 @@ static WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call_state 
 /* 
   netr_NETRENUMERATETRUSTEDDOMAINSEX 
 */
-static WERROR netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1101,7 +1101,7 @@ static WERROR netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state *dce_c
 /* 
   netr_DSRADDRESSTOSITENAMESEXW 
 */
-static WERROR netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRADDRESSTOSITENAMESEXW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1111,7 +1111,7 @@ static WERROR netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, 
 /* 
   netr_DSRGETDCSITECOVERAGEW 
 */
-static WERROR netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRGETDCSITECOVERAGEW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1121,7 +1121,7 @@ static WERROR netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TAL
 /* 
   netr_DsrEnumerateDomainTrusts 
 */
-static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					      struct netr_DsrEnumerateDomainTrusts *r)
 {
 	struct netr_DomainTrust *trusts;
@@ -1186,7 +1186,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 /* 
   netr_DSRDEREGISTERDNSHOSTRECORDS 
 */
-static WERROR netr_DSRDEREGISTERDNSHOSTRECORDS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DSRDEREGISTERDNSHOSTRECORDS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1196,7 +1196,7 @@ static WERROR netr_DSRDEREGISTERDNSHOSTRECORDS(struct dcesrv_call_state *dce_cal
 /* 
   netr_NETRSERVERTRUSTPASSWORDSGET 
 */
-static WERROR netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1206,7 +1206,7 @@ static WERROR netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *dce_cal
 /* 
   netr_DSRGETFORESTTRUSTINFORMATION 
 */
-static WERROR netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRGETFORESTTRUSTINFORMATION *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1216,7 +1216,7 @@ static WERROR netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_ca
 /* 
   netr_NETRGETFORESTTRUSTINFORMATION 
 */
-static WERROR netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRGETFORESTTRUSTINFORMATION *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1226,7 +1226,7 @@ static WERROR netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_c
 /* 
   netr_NETRSERVERGETTRUSTINFO 
 */
-static WERROR netr_NETRSERVERGETTRUSTINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_NETRSERVERGETTRUSTINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRSERVERGETTRUSTINFO *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

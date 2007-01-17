@@ -44,7 +44,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call, const str
 
 #define DCESRV_INTERFACE_WINREG_BIND dcerpc_winreg_bind
 
-static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, uint32_t hkey, struct policy_handle **outh)
+static WERROR dcesrv_winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, uint32_t hkey, struct policy_handle **outh)
 {
 	struct registry_context *ctx = dce_call->context->private;
 	struct dcesrv_handle *h; 
@@ -62,9 +62,9 @@ static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return error; 
 }
 
-#define func_winreg_OpenHive(k,n) static WERROR winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
+#define func_winreg_OpenHive(k,n) static WERROR dcesrv_winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
 { \
-	return winreg_openhive (dce_call, mem_ctx, n, &r->out.handle);\
+	return dcesrv_winreg_openhive (dce_call, mem_ctx, n, &r->out.handle);\
 }
 
 func_winreg_OpenHive(HKCR,HKEY_CLASSES_ROOT)
@@ -80,7 +80,7 @@ func_winreg_OpenHive(HKPN,HKEY_PERFORMANCE_NLSTEXT)
 /* 
   winreg_CloseKey 
 */
-static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			      struct winreg_CloseKey *r)
 {
 	struct dcesrv_handle *h; 
@@ -98,7 +98,7 @@ static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   winreg_CreateKey 
 */
-static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct winreg_CreateKey *r)
 {
 	struct dcesrv_handle *h, *newh;
@@ -142,7 +142,7 @@ static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   winreg_DeleteKey 
 */
-static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteKey *r)
 {
 	struct dcesrv_handle *h;
@@ -156,7 +156,7 @@ static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   winreg_DeleteValue 
 */
-static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteValue *r)
 {
 	struct dcesrv_handle *h;
@@ -173,7 +173,7 @@ static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   winreg_EnumKey 
 */
-static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumKey *r)
 {
 	struct dcesrv_handle *h;
@@ -202,7 +202,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   winreg_EnumValue 
 */
-static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct winreg_EnumValue *r)
 {
 	struct dcesrv_handle *h;
@@ -259,7 +259,7 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   winreg_FlushKey 
 */
-static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_FlushKey *r)
 {
 	struct dcesrv_handle *h;
@@ -273,7 +273,7 @@ static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   winreg_GetKeySecurity 
 */
-static WERROR winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_GetKeySecurity *r)
 {
 	struct dcesrv_handle *h;
@@ -287,7 +287,7 @@ static WERROR winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   winreg_LoadKey 
 */
-static WERROR winreg_LoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_LoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_LoadKey *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -297,7 +297,7 @@ static WERROR winreg_LoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   winreg_NotifyChangeKeyValue 
 */
-static WERROR winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_NotifyChangeKeyValue *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -307,7 +307,7 @@ static WERROR winreg_NotifyChangeKeyValue(struct dcesrv_call_state *dce_call, TA
 /* 
   winreg_OpenKey 
 */
-static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenKey *r)
 {
 	struct dcesrv_handle *h, *newh;
@@ -337,7 +337,7 @@ static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   winreg_QueryInfoKey 
 */
-static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryInfoKey *r)
 {
 	struct dcesrv_handle *h;
@@ -382,7 +382,7 @@ static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   winreg_QueryValue 
 */
-static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryValue *r)
 {
 	struct dcesrv_handle *h;
@@ -422,7 +422,7 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   winreg_ReplaceKey 
 */
-static WERROR winreg_ReplaceKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_ReplaceKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_ReplaceKey *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -432,7 +432,7 @@ static WERROR winreg_ReplaceKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   winreg_RestoreKey 
 */
-static WERROR winreg_RestoreKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_RestoreKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_RestoreKey *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -442,7 +442,7 @@ static WERROR winreg_RestoreKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   winreg_SaveKey 
 */
-static WERROR winreg_SaveKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_SaveKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SaveKey *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -452,7 +452,7 @@ static WERROR winreg_SaveKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   winreg_SetKeySecurity 
 */
-static WERROR winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SetKeySecurity *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -462,7 +462,7 @@ static WERROR winreg_SetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   winreg_SetValue 
 */
-static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SetValue *r)
 {
 	struct dcesrv_handle *h;
@@ -489,7 +489,7 @@ static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   winreg_UnLoadKey 
 */
-static WERROR winreg_UnLoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_UnLoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_UnLoadKey *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -499,7 +499,7 @@ static WERROR winreg_UnLoadKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   winreg_InitiateSystemShutdown 
 */
-static WERROR winreg_InitiateSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_InitiateSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_InitiateSystemShutdown *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -509,7 +509,7 @@ static WERROR winreg_InitiateSystemShutdown(struct dcesrv_call_state *dce_call, 
 /* 
   winreg_AbortSystemShutdown 
 */
-static WERROR winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_AbortSystemShutdown *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -519,7 +519,7 @@ static WERROR winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TAL
 /* 
   winreg_GetVersion 
 */
-static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct winreg_GetVersion *r)
 {
 	struct dcesrv_handle *h;
@@ -538,7 +538,7 @@ static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   winreg_QueryMultipleValues 
 */
-static WERROR winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryMultipleValues *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -548,7 +548,7 @@ static WERROR winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TAL
 /* 
   winreg_InitiateSystemShutdownEx 
 */
-static WERROR winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_InitiateSystemShutdownEx *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -558,7 +558,7 @@ static WERROR winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_call
 /* 
   winreg_SaveKeyEx 
 */
-static WERROR winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SaveKeyEx *r)
 {
 	return WERR_NOT_SUPPORTED;
@@ -568,7 +568,7 @@ static WERROR winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   winreg_QueryMultipleValues2 
 */
-static WERROR winreg_QueryMultipleValues2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_winreg_QueryMultipleValues2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryMultipleValues2 *r)
 {
 	return WERR_NOT_SUPPORTED;
