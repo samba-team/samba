@@ -82,7 +82,7 @@ libhx509_la_LIBADD = \
 	$(LIB_com_err) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/roken/libroken.la
+	$(top_builddir)/lib/roken/libroken.la \
 	$(LIB_dlopen)
 
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
