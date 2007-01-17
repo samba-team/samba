@@ -45,8 +45,7 @@ gss_encapsulate_token(gss_buffer_t input_token,
 
     ret = der_get_oid (oid->elements, oid->length, &ct.thisMech, &size);
     if (ret) {
-	output_token->value = NULL;
-	output_token->length = 0;
+	_mg_buffer_zero(output_token);
 	return GSS_S_FAILURE;
     }
 
@@ -58,8 +57,7 @@ gss_encapsulate_token(gss_buffer_t input_token,
 		       &ct, &size, ret);
     der_free_oid(&ct.thisMech);
     if (ret) {
-	output_token->length = 0;
-	output_token->value = NULL;
+	_mg_buffer_zero(output_token);
 	return GSS_S_FAILURE;
     }	
     if (output_token->length != size)

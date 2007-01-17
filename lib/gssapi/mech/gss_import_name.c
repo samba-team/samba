@@ -149,9 +149,10 @@ gss_import_name(OM_uint32 *minor_status,
 	OM_uint32		major_status;
 	struct _gss_name	*name;
 
+	*output_name = GSS_C_NO_NAME;
+
 	if (input_name_buffer->length == 0) {
 		*minor_status = 0;
-		*output_name = 0;
 		return (GSS_S_BAD_NAME);
 	}
 
@@ -184,7 +185,6 @@ gss_import_name(OM_uint32 *minor_status,
 	    && !gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS)
 	    && !gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) {
 		*minor_status = 0;
-		*output_name = 0;
 		return (GSS_S_BAD_NAMETYPE);
 	}
 

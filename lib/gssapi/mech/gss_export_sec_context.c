@@ -39,6 +39,8 @@ gss_export_sec_context(OM_uint32 *minor_status,
 	gssapi_mech_interface m = ctx->gc_mech;
 	gss_buffer_desc buf;
 
+	_mg_buffer_zero(interprocess_token);
+
 	major_status = m->gm_export_sec_context(minor_status,
 	    &ctx->gc_ctx, &buf);
 	
@@ -58,6 +60,7 @@ gss_export_sec_context(OM_uint32 *minor_status,
 			 * GSS_C_NO_CONTEXT, which we did above.
 			 * Return GSS_S_FAILURE.
 			 */
+			_mg_buffer_zero(interprocess_token);
 			*minor_status = ENOMEM;
 			return (GSS_S_FAILURE);
 		}

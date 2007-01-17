@@ -56,6 +56,7 @@ OM_uint32 gss_duplicate_oid (
     (*dest_oid)->elements = malloc(src_oid->length);
     if ((*dest_oid)->elements == NULL) {
 	free(*dest_oid);
+	*dest_oid = GSS_C_NO_OID;
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
