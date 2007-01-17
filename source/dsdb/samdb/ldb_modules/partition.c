@@ -84,9 +84,9 @@ static struct partition_context *partition_init_handle(struct ldb_request *req, 
 	return ac;
 }
 
-struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
-						struct ldb_context *ldb,
-						struct ldb_module *module)
+static struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
+						       struct ldb_context *ldb,
+						       struct ldb_module *module)
 {
 	struct ldb_module *current;
 	static const struct ldb_module_ops ops; /* zero */
@@ -102,21 +102,40 @@ struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx,
 	return current;
 }
 
-struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
+static struct dsdb_control_current_partition *find_partition(struct partition_private_data *data,
+							     struct ldb_dn *dn)
 {
 	int i;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
-							      struct partition_private_data);
+
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialistion) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if (ldb_dn_compare_base(data->partitions[i]->dn, dn) == 0) {
-			return make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
+			return data->partitions[i];
 		}
 	}
 
-	return module;
+	return NULL;
+};
+
+static struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
+{
+	struct dsdb_control_current_partition *partition;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
+
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	if (!data) {
+		return module;
+	}
+
+	partition = find_partition(data, dn);
+	if (!partition) {
+		return module;
+	}
+
+	return make_module_for_next_request(req, module->ldb, partition->module);
 };
 
 
