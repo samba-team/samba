@@ -405,6 +405,7 @@ dnl Checks for library functions.
 AC_CHECK_FUNCS([				\
 	_getpty					\
 	_scrsize				\
+	arc4random				\
 	fcntl					\
 	getpeereid				\
 	getpeerucred				\
