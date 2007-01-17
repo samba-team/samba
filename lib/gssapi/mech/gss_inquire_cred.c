@@ -49,22 +49,23 @@ gss_inquire_cred(OM_uint32 *minor_status,
 
 	*minor_status = 0;
 	if (name_ret)
-		*name_ret = 0;
+		*name_ret = GSS_C_NO_NAME;
 	if (lifetime)
 		*lifetime = 0;
 	if (cred_usage)
 		*cred_usage = 0;
+	if (mechanisms)
+		*mechanisms = GSS_C_NO_OID_SET;
 
 	if (name_ret) {
-		name = malloc(sizeof(struct _gss_name));
-		if (!name) {
+		name = calloc(1, sizeof(*name));
+		if (name == NULL) {
 			*minor_status = ENOMEM;
 			return (GSS_S_FAILURE);
 		}
-		memset(name, 0, sizeof(struct _gss_name));
 		SLIST_INIT(&name->gn_mn);
 	} else {
-		name = 0;
+		name = NULL;
 	}
 
 	if (mechanisms) {
@@ -152,6 +153,9 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	}
 
 	if (found == 0) {
+		gss_name_t n = (gss_name_t)name;
+		if (n)
+			gss_release_name(minor_status, &n);
 		gss_release_oid_set(minor_status, mechanisms);
 		*minor_status = 0;
 		return (GSS_S_NO_CRED);
