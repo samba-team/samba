@@ -1,5 +1,7 @@
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_init_context.3: fix mdoc errors
+
 	* 0.8 branch cut today
 
 	* doc/hx509.texi: Spelling and more about proxy certificates.
