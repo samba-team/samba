@@ -1,5 +1,41 @@
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_wrap_size_limit.c: Reset out variables.
+
+	* mech/gss_wrap.c: Reset out variables.
+
+	* mech/gss_verify_mic.c: Reset out variables.
+
+	* mech/gss_utils.c: Reset out variables.
+
+	* mech/gss_release_oid_set.c: Reset out variables.
+
+	* mech/gss_release_cred.c: Reset out variables.
+
+	* mech/gss_release_buffer.c: Reset variables.
+
+	* mech/gss_oid_to_str.c: Reset out variables.
+
+	* mech/gss_inquire_sec_context_by_oid.c: Fix reset out variables.
+
+	* mech/gss_mech_switch.c: Reset out variables.
+
+	* mech/gss_inquire_sec_context_by_oid.c: Reset out variables.
+
+	* mech/gss_inquire_names_for_mech.c: Reset out variables.
+
+	* mech/gss_inquire_cred_by_oid.c: Reset out variables.
+
+	* mech/gss_inquire_cred_by_oid.c: Reset out variables.
+
+	* mech/gss_inquire_cred_by_mech.c: Reset out variables.
+
+	* mech/gss_inquire_cred.c: Reset out variables, fix memory leak.
+
+	* mech/gss_inquire_context.c: Reset out variables.
+
+	* mech/gss_init_sec_context.c: Zero out outbuffer on failure.
+
 	* mech/gss_import_name.c: Reset out variables.
 
 	* mech/gss_import_name.c: Reset out variables.
