@@ -38,7 +38,7 @@
 /* 
   samr_ChangePasswordUser 
 */
-NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_ChangePasswordUser *r)
 {
 	struct dcesrv_handle *h;
@@ -179,7 +179,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   samr_OemChangePasswordUser2 
 */
-NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct samr_OemChangePasswordUser2 *r)
 {
 	NTSTATUS status;
@@ -312,7 +312,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   samr_ChangePasswordUser3 
 */
-NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, 
+NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, 
 				  TALLOC_CTX *mem_ctx,
 				  struct samr_ChangePasswordUser3 *r)
 {	
@@ -485,7 +485,7 @@ failed:
 
   easy - just a subset of samr_ChangePasswordUser3
 */
-NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_ChangePasswordUser2 *r)
 {
 	struct samr_ChangePasswordUser3 r2;
@@ -499,7 +499,7 @@ NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	r2.in.lm_verifier = r->in.lm_verifier;
 	r2.in.password3 = NULL;
 
-	return samr_ChangePasswordUser3(dce_call, mem_ctx, &r2);
+	return dcesrv_samr_ChangePasswordUser3(dce_call, mem_ctx, &r2);
 }
 
 

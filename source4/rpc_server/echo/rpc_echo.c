@@ -28,13 +28,13 @@
 #include "lib/events/events.h"
 
 
-static NTSTATUS echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
+static NTSTATUS dcesrv_echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
 {
 	*r->out.out_data = r->in.in_data + 1;
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_EchoData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
+static NTSTATUS dcesrv_echo_EchoData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_EchoData *r)
 {
 	if (!r->in.len) {
 		return NT_STATUS_OK;
@@ -48,12 +48,12 @@ static NTSTATUS echo_EchoData(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_SinkData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SinkData *r)
+static NTSTATUS dcesrv_echo_SinkData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SinkData *r)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
+static NTSTATUS dcesrv_echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
 {
 	int i;
 
@@ -66,14 +66,14 @@ static NTSTATUS echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
+static NTSTATUS dcesrv_echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
 {
 	*r->out.s2 = talloc_strdup(mem_ctx, r->in.s1);
 	
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
+static NTSTATUS dcesrv_echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
 {
 	r->out.info = talloc(mem_ctx, union echo_Info);
 	if (!r->out.info) {
@@ -112,13 +112,13 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestEnum *r)
+static NTSTATUS dcesrv_echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestEnum *r)
 {
 	r->out.foo2->e1 = ECHO_ENUM2;
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSurrounding *r)
+static NTSTATUS dcesrv_echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSurrounding *r)
 {
 	if (!r->in.data) {
 		r->out.data = NULL;
@@ -132,7 +132,7 @@ static NTSTATUS echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
-static uint16_t echo_TestDoublePointer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestDoublePointer *r) 
+static uint16_t dcesrv_echo_TestDoublePointer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestDoublePointer *r) 
 {
 	if (!*r->in.data) 
 		return 0;
@@ -163,7 +163,7 @@ static void echo_TestSleep_handler(struct event_context *ev, struct timed_event 
 	}
 }
 
-static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
+static long dcesrv_echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
 	struct echo_TestSleep_private *p;
 

@@ -35,9 +35,9 @@ sub gen_dispatch_switch($)
 		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_IN, r2);\n";
 		pidl "\t\t}\n";
 		if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-			pidl "\t\tr2->out.result = $fn->{NAME}(dce_call, mem_ctx, r2);\n";
+			pidl "\t\tr2->out.result = dcesrv_$fn->{NAME}(dce_call, mem_ctx, r2);\n";
 		} else {
-			pidl "\t\t$fn->{NAME}(dce_call, mem_ctx, r2);\n";
+			pidl "\t\tdcesrv_$fn->{NAME}(dce_call, mem_ctx, r2);\n";
 		}
 		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
 		pidl "\t\t\tDEBUG(5,(\"function $fn->{NAME} will reply async\\n\"));\n";

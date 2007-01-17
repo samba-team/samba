@@ -41,7 +41,7 @@
 /* 
   srvsvc_NetCharDevEnum 
 */
-static WERROR srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct srvsvc_NetCharDevEnum *r)
 {
 	r->out.level = r->in.level;
@@ -78,7 +78,7 @@ static WERROR srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   srvsvc_NetCharDevGetInfo 
 */
-static WERROR srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevGetInfo *r)
 {
 	ZERO_STRUCT(r->out);
@@ -103,7 +103,7 @@ static WERROR srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NetCharDevControl 
 */
-static WERROR srvsvc_NetCharDevControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevControl *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -113,7 +113,7 @@ static WERROR srvsvc_NetCharDevControl(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NetCharDevQEnum 
 */
-static WERROR srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct srvsvc_NetCharDevQEnum *r)
 {
 	r->out.level = r->in.level;
@@ -152,7 +152,7 @@ static WERROR srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetCharDevQGetInfo 
 */
-static WERROR srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct srvsvc_NetCharDevQGetInfo *r)
 {
 	ZERO_STRUCT(r->out);
@@ -177,7 +177,7 @@ static WERROR srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_call, TALL
 /* 
   srvsvc_NetCharDevQSetInfo 
 */
-static WERROR srvsvc_NetCharDevQSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevQSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevQSetInfo *r)
 {
 	switch (r->in.level) {
@@ -206,7 +206,7 @@ static WERROR srvsvc_NetCharDevQSetInfo(struct dcesrv_call_state *dce_call, TALL
 /* 
   srvsvc_NetCharDevQPurge 
 */
-static WERROR srvsvc_NetCharDevQPurge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevQPurge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevQPurge *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -216,7 +216,7 @@ static WERROR srvsvc_NetCharDevQPurge(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   srvsvc_NetCharDevQPurgeSelf 
 */
-static WERROR srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct srvsvc_NetCharDevQPurgeSelf *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);	
@@ -226,7 +226,7 @@ static WERROR srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_call, TA
 /* 
   srvsvc_NetConnEnum 
 */
-static WERROR srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetConnEnum *r)
 {
 	r->out.level = r->in.level;
@@ -265,7 +265,7 @@ static WERROR srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetFileEnum 
 */
-static WERROR srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct srvsvc_NetFileEnum *r)
 {
 	r->out.level = r->in.level;
@@ -304,7 +304,7 @@ static WERROR srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetFileGetInfo 
 */
-static WERROR srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct srvsvc_NetFileGetInfo *r)
 {
 	ZERO_STRUCT(r->out);
@@ -329,7 +329,7 @@ static WERROR srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   srvsvc_NetFileClose 
 */
-static WERROR srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetFileClose *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -339,7 +339,7 @@ static WERROR srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   srvsvc_NetSessEnum 
 */
-static WERROR srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSessEnum *r)
 {
 	r->out.level = r->in.level;
@@ -408,7 +408,7 @@ static WERROR srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetSessDel 
 */
-static WERROR srvsvc_NetSessDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSessDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSessDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -418,7 +418,7 @@ static WERROR srvsvc_NetSessDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   srvsvc_NetShareAdd 
 */
-static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareAdd *r)
 {
 	switch (r->in.level) {
@@ -632,7 +632,7 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	return WERR_UNKNOWN_LEVEL;
 }
 
-static WERROR srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct share_config *scfg, uint32_t level,
 				    union srvsvc_NetShareInfo *info)
 {
@@ -717,7 +717,7 @@ static WERROR srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   srvsvc_NetShareEnumAll
 */
-static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct srvsvc_NetShareEnumAll *r)
 {
 	NTSTATUS nterr;
@@ -774,7 +774,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info0 = &ctr0->array[i];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -815,7 +815,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info1 = &ctr1->array[i];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -858,7 +858,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info2 = &ctr2->array[i];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -901,7 +901,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info501 = &ctr501->array[i];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -944,7 +944,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info502 = &ctr502->array[i];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -967,7 +967,7 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetShareGetInfo 
 */
-static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct srvsvc_NetShareGetInfo *r)
 {
 	NTSTATUS nterr;
@@ -1002,7 +1002,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info0 = talloc(mem_ctx, struct srvsvc_NetShareInfo0);
 		W_ERROR_HAVE_NO_MEMORY(info.info0);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1018,7 +1018,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info1 = talloc(mem_ctx, struct srvsvc_NetShareInfo1);
 		W_ERROR_HAVE_NO_MEMORY(info.info1);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1036,7 +1036,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info2 = talloc(mem_ctx, struct srvsvc_NetShareInfo2);
 		W_ERROR_HAVE_NO_MEMORY(info.info2);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1052,7 +1052,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info501 = talloc(mem_ctx, struct srvsvc_NetShareInfo501);
 		W_ERROR_HAVE_NO_MEMORY(info.info501);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1070,7 +1070,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info502 = talloc(mem_ctx, struct srvsvc_NetShareInfo502);
 		W_ERROR_HAVE_NO_MEMORY(info.info502);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1086,7 +1086,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		info.info1005 = talloc(mem_ctx, struct srvsvc_NetShareInfo1005);
 		W_ERROR_HAVE_NO_MEMORY(info.info1005);
 
-		status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+		status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
 		}
@@ -1101,7 +1101,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	return WERR_UNKNOWN_LEVEL;
 }
 
-static WERROR srvsvc_fill_share_info(struct share_info *info, int *count,
+static WERROR dcesrv_srvsvc_fill_share_info(struct share_info *info, int *count,
 					const char *share_name, int level,
 					const char *name,
 					const char *path,
@@ -1215,7 +1215,7 @@ static WERROR srvsvc_fill_share_info(struct share_info *info, int *count,
 /* 
   srvsvc_NetShareSetInfo 
 */
-static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareSetInfo *r)
 {
 	NTSTATUS nterr;
@@ -1245,7 +1245,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	switch (r->in.level) {
 	case 0:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					r->in.info.info0->name,
 					NULL,
@@ -1262,7 +1262,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 1:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					r->in.info.info1->name,
 					NULL,
@@ -1279,7 +1279,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 2:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					r->in.info.info2->name,
 					r->in.info.info2->path,
@@ -1296,7 +1296,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 501:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					r->in.info.info501->name,
 					NULL,
@@ -1313,7 +1313,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 502:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					r->in.info.info502->name,
 					r->in.info.info502->path,
@@ -1330,7 +1330,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 1004:
 	{
-		status = srvsvc_fill_share_info(info, &count,
+		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
 					NULL,
 					NULL,
@@ -1375,7 +1375,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetShareDelSticky 
 */
-static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDelSticky *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1385,7 +1385,7 @@ static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NetShareCheck 
 */
-static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareCheck *r)
 {
 	NTSTATUS nterr;
@@ -1463,7 +1463,7 @@ static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   srvsvc_NetSrvGetInfo 
 */
-static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSrvGetInfo *r)
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
@@ -1545,7 +1545,7 @@ static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   srvsvc_NetSrvSetInfo 
 */
-static WERROR srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSrvSetInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1555,7 +1555,7 @@ static WERROR srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   srvsvc_NetDiskEnum 
 */
-static WERROR srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetDiskEnum *r)
 {
 	r->out.info.disks = NULL;
@@ -1594,7 +1594,7 @@ static WERROR srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetServerStatisticsGet 
 */
-static WERROR srvsvc_NetServerStatisticsGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetServerStatisticsGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetServerStatisticsGet *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1604,7 +1604,7 @@ static WERROR srvsvc_NetServerStatisticsGet(struct dcesrv_call_state *dce_call, 
 /* 
   srvsvc_NetTransportAdd 
 */
-static WERROR srvsvc_NetTransportAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetTransportAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportAdd *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1614,7 +1614,7 @@ static WERROR srvsvc_NetTransportAdd(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetTransportEnum 
 */
-static WERROR srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportEnum *r)
 {
 	r->out.level = r->in.level;
@@ -1672,7 +1672,7 @@ static WERROR srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   srvsvc_NetTransportDel 
 */
-static WERROR srvsvc_NetTransportDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetTransportDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1682,7 +1682,7 @@ static WERROR srvsvc_NetTransportDel(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetRemoteTOD 
 */
-static WERROR srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetRemoteTOD *r)
 {
 	struct timeval tval;
@@ -1720,7 +1720,7 @@ static WERROR srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   srvsvc_NetPathType 
 */
-static WERROR srvsvc_NetPathType(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetPathType(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetPathType *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1730,7 +1730,7 @@ static WERROR srvsvc_NetPathType(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetPathCanonicalize 
 */
-static WERROR srvsvc_NetPathCanonicalize(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetPathCanonicalize(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetPathCanonicalize *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1740,7 +1740,7 @@ static WERROR srvsvc_NetPathCanonicalize(struct dcesrv_call_state *dce_call, TAL
 /* 
   srvsvc_NetPathCompare 
 */
-static WERROR srvsvc_NetPathCompare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetPathCompare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetPathCompare *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1750,7 +1750,7 @@ static WERROR srvsvc_NetPathCompare(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   srvsvc_NetNameValidate 
 */
-static WERROR srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetNameValidate *r)
 {
 	int len;
@@ -1800,7 +1800,7 @@ static WERROR srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   srvsvc_NetPRNameCompare 
 */
-static WERROR srvsvc_NetPRNameCompare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetPRNameCompare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetPRNameCompare *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -1810,7 +1810,7 @@ static WERROR srvsvc_NetPRNameCompare(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   srvsvc_NetShareEnum 
 */
-static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareEnum *r)
 {
 	NTSTATUS nterr;
@@ -1879,7 +1879,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 			}
 
 			info.info0 = &ctr0->array[y];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
@@ -1930,7 +1930,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 			}
 
 			info.info1 = &ctr1->array[y];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
@@ -1983,7 +1983,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 			}
 
 			info.info2 = &ctr2->array[y];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
@@ -2036,7 +2036,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 			}
 
 			info.info502 = &ctr502->array[y];
-			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
@@ -2058,7 +2058,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   srvsvc_NetShareDelStart 
 */
-static WERROR srvsvc_NetShareDelStart(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareDelStart(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDelStart *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2068,7 +2068,7 @@ static WERROR srvsvc_NetShareDelStart(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   srvsvc_NetShareDelCommit 
 */
-static WERROR srvsvc_NetShareDelCommit(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareDelCommit(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDelCommit *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2078,7 +2078,7 @@ static WERROR srvsvc_NetShareDelCommit(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NetGetFileSecurity 
 */
-static WERROR srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetGetFileSecurity *r)
 {
 	struct sec_desc_buf *sd_buf;
@@ -2120,7 +2120,7 @@ static WERROR srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALL
 /* 
   srvsvc_NetSetFileSecurity 
 */
-static WERROR srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSetFileSecurity *r)
 {
 	struct ntvfs_context *ntvfs_ctx;
@@ -2156,7 +2156,7 @@ static WERROR srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_call, TALL
 /* 
   srvsvc_NetServerTransportAddEx 
 */
-static WERROR srvsvc_NetServerTransportAddEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetServerTransportAddEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetServerTransportAddEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2166,7 +2166,7 @@ static WERROR srvsvc_NetServerTransportAddEx(struct dcesrv_call_state *dce_call,
 /* 
   srvsvc_NetServerSetServiceBitsEx 
 */
-static WERROR srvsvc_NetServerSetServiceBitsEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetServerSetServiceBitsEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetServerSetServiceBitsEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2176,7 +2176,7 @@ static WERROR srvsvc_NetServerSetServiceBitsEx(struct dcesrv_call_state *dce_cal
 /* 
   srvsvc_NETRDFSGETVERSION 
 */
-static WERROR srvsvc_NETRDFSGETVERSION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSGETVERSION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSGETVERSION *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2186,7 +2186,7 @@ static WERROR srvsvc_NETRDFSGETVERSION(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NETRDFSCREATELOCALPARTITION 
 */
-static WERROR srvsvc_NETRDFSCREATELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSCREATELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSCREATELOCALPARTITION *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2196,7 +2196,7 @@ static WERROR srvsvc_NETRDFSCREATELOCALPARTITION(struct dcesrv_call_state *dce_c
 /* 
   srvsvc_NETRDFSDELETELOCALPARTITION 
 */
-static WERROR srvsvc_NETRDFSDELETELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSDELETELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSDELETELOCALPARTITION *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2206,7 +2206,7 @@ static WERROR srvsvc_NETRDFSDELETELOCALPARTITION(struct dcesrv_call_state *dce_c
 /* 
   srvsvc_NETRDFSSETLOCALVOLUMESTATE 
 */
-static WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2216,7 +2216,7 @@ static WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct dcesrv_call_state *dce_ca
 /* 
   srvsvc_NETRDFSSETSERVERINFO 
 */
-static WERROR srvsvc_NETRDFSSETSERVERINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSSETSERVERINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSSETSERVERINFO *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2226,7 +2226,7 @@ static WERROR srvsvc_NETRDFSSETSERVERINFO(struct dcesrv_call_state *dce_call, TA
 /* 
   srvsvc_NETRDFSCREATEEXITPOINT 
 */
-static WERROR srvsvc_NETRDFSCREATEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSCREATEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSCREATEEXITPOINT *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2236,7 +2236,7 @@ static WERROR srvsvc_NETRDFSCREATEEXITPOINT(struct dcesrv_call_state *dce_call, 
 /* 
   srvsvc_NETRDFSDELETEEXITPOINT 
 */
-static WERROR srvsvc_NETRDFSDELETEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSDELETEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSDELETEEXITPOINT *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2246,7 +2246,7 @@ static WERROR srvsvc_NETRDFSDELETEEXITPOINT(struct dcesrv_call_state *dce_call, 
 /* 
   srvsvc_NETRDFSMODIFYPREFIX 
 */
-static WERROR srvsvc_NETRDFSMODIFYPREFIX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSMODIFYPREFIX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSMODIFYPREFIX *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2256,7 +2256,7 @@ static WERROR srvsvc_NETRDFSMODIFYPREFIX(struct dcesrv_call_state *dce_call, TAL
 /* 
   srvsvc_NETRDFSFIXLOCALVOLUME 
 */
-static WERROR srvsvc_NETRDFSFIXLOCALVOLUME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSFIXLOCALVOLUME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSFIXLOCALVOLUME *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2266,7 +2266,7 @@ static WERROR srvsvc_NETRDFSFIXLOCALVOLUME(struct dcesrv_call_state *dce_call, T
 /* 
   srvsvc_NETRDFSMANAGERREPORTSITEINFO 
 */
-static WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2276,7 +2276,7 @@ static WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct dcesrv_call_state *dce_
 /* 
   srvsvc_NETRSERVERTRANSPORTDELEX 
 */
-static WERROR srvsvc_NETRSERVERTRANSPORTDELEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRSERVERTRANSPORTDELEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERTRANSPORTDELEX *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2285,7 +2285,7 @@ static WERROR srvsvc_NETRSERVERTRANSPORTDELEX(struct dcesrv_call_state *dce_call
 /* 
   srvsvc_NetShareDel 
 */
-static WERROR srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDel *r)
 {
 	NTSTATUS nterr;
@@ -2307,7 +2307,7 @@ static WERROR srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   srvsvc_NetSetServiceBits 
 */
-static WERROR srvsvc_NetSetServiceBits(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NetSetServiceBits(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSetServiceBits *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -2316,7 +2316,7 @@ static WERROR srvsvc_NetSetServiceBits(struct dcesrv_call_state *dce_call, TALLO
 /* 
   srvsvc_NETRPRNAMECANONICALIZE 
 */
-static WERROR srvsvc_NETRPRNAMECANONICALIZE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_srvsvc_NETRPRNAMECANONICALIZE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRNAMECANONICALIZE *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

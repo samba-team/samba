@@ -80,13 +80,13 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 }
 
 
-static error_status_t epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				 struct epm_Insert *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static error_status_t epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				 struct epm_Delete *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -97,7 +97,7 @@ static error_status_t epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX 
   implement epm_Lookup. This call is used to enumerate the interfaces
   available on a rpc server
 */
-static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				 struct epm_Lookup *r)
 {
 	struct dcesrv_handle *h;
@@ -167,7 +167,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
   implement epm_Map. This is used to find the specific endpoint to talk to given
   a generic protocol tower
 */
-static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			      struct epm_Map *r)
 {
 	uint32_t count;
@@ -238,25 +238,25 @@ failed:
 	return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 }
 
-static error_status_t epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 					   struct epm_LookupHandleFree *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static error_status_t epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				    struct epm_InqObject *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static error_status_t epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
+static error_status_t dcesrv_epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			       struct epm_MgmtDelete *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static error_status_t epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static error_status_t dcesrv_epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			    struct epm_MapAuth *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
