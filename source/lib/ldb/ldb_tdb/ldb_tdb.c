@@ -299,11 +299,8 @@ static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
-		if (check_critical_controls(req->controls)) {
-			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-		}
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 	
 	req->handle = init_ltdb_handle(ltdb, module, req);
@@ -410,11 +407,8 @@ static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
-		if (check_critical_controls(req->controls)) {
-			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-		}
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 	
 	req->handle = NULL;
@@ -769,11 +763,8 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
-		if (check_critical_controls(req->controls)) {
-			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-		}
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 	
 	req->handle = NULL;
@@ -819,11 +810,8 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	int tret, ret = LDB_SUCCESS;
 
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
-		if (check_critical_controls(req->controls)) {
-			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-		}
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 	
 	req->handle = NULL;
@@ -924,11 +912,8 @@ static int ltdb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 {
 	/* check for oustanding critical controls and return an error if found */
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
-		if (check_critical_controls(req->controls)) {
-			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-		}
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 	
 	/* search, add, modify, delete, rename are handled by their own, no other op supported */
