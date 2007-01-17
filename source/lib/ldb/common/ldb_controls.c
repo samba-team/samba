@@ -104,3 +104,31 @@ int check_critical_controls(struct ldb_control **controls)
 
 	return 0;
 }
+
+int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data)
+{
+	unsigned n;
+	struct ldb_control **ctrls;
+	struct ldb_control *ctrl;
+
+	for (n=0; req->controls && req->controls[n];) { n++; }
+
+	ctrls = talloc_realloc(req, req->controls,
+			       struct ldb_control *,
+			       n + 2);
+	if (!ctrls) return LDB_ERR_OPERATIONS_ERROR;
+	req->controls = ctrls;
+	ctrls[n] = NULL;
+	ctrls[n+1] = NULL;
+
+	ctrl = talloc(ctrls, struct ldb_control);
+	if (!ctrl) return LDB_ERR_OPERATIONS_ERROR;
+
+	ctrl->oid	= talloc_strdup(ctrl, oid);
+	if (!ctrl->oid) return LDB_ERR_OPERATIONS_ERROR;
+	ctrl->critical	= critical;
+	ctrl->data	= data;
+
+	ctrls[n] = ctrl;
+	return LDB_SUCCESS;
+}
