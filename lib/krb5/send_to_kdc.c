@@ -331,6 +331,8 @@ krb5_sendto (krb5_context context,
      int fd;
      int i;
 
+     krb5_data_zero(receive);
+
      for (i = 0; i < context->max_retries; ++i) {
 	 krb5_krbhst_info *hi;
 
