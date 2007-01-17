@@ -126,19 +126,19 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "int *version"
 .Fc
 .Ft void
-.Fn krb5_set_dns_canonize_hostname
+.Fo krb5_set_dns_canonize_hostname
 .Fa "krb5_context context"
 .Fa "krb5_boolean flag"
 .Fc
 .Ft krb5_boolean
-.Fn krb5_get_dns_canonize_hostname
+.Fo krb5_get_dns_canonize_hostname
 .Fa "krb5_context context"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_get_kdc_sec_offset
 .Fa "krb5_context context"
-.Fc "int32_t *sec"
-.Fc "int32_t *usec"
+.Fa "int32_t *sec"
+.Fa "int32_t *usec"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_set_config_files
