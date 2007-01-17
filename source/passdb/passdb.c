@@ -1366,6 +1366,7 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 	time_t LastBadPassword;
 	uint16 BadPasswordCount;
 	uint32 resettime; 
+	BOOL res;
 
 	BadPasswordCount = pdb_get_bad_password_count(sampass);
 	if (!BadPasswordCount) {
@@ -1373,7 +1374,11 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime)) {
+	become_root();
+	res = pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime);
+	unbecome_root();
+
+	if (!res) {
 		DEBUG(0, ("pdb_update_bad_password_count: pdb_get_account_policy failed.\n"));
 		return False;
 	}
@@ -1406,6 +1411,7 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 {
 	uint32 duration;
 	time_t LastBadPassword;
+	BOOL res;
 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
 		DEBUG(9, ("pdb_update_autolock_flag: Account %s not autolocked, no check needed\n",
@@ -1413,7 +1419,11 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration)) {
+	become_root();
+	res = pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration);
+	unbecome_root();
+
+	if (!res) {
 		DEBUG(0, ("pdb_update_autolock_flag: pdb_get_account_policy failed.\n"));
 		return False;
 	}
