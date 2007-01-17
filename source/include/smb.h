@@ -442,6 +442,8 @@ struct notify_change {
 	char *name;
 };
 
+struct notify_mid_map;
+
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
@@ -449,17 +451,6 @@ struct notify_change_request {
 	uint32 filter;
 	uint32 max_param_count;
 	struct notify_mid_map *mid_map;
-};
-
-/*
- * For NTCancel, we need to find the notify_change_request indexed by
- * mid. Separate list here.
- */
-
-struct notify_mid_map {
-	struct notify_mid_map *prev, *next;
-	struct notify_change_request *req;
-	uint16 mid;
 };
 
 struct notify_change_buf {
