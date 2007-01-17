@@ -71,6 +71,14 @@ gss_init_sec_context(OM_uint32 * minor_status,
 
 	*minor_status = 0;
 
+	_mg_buffer_zero(output_token);
+	if (actual_mech_type)
+	    *actual_mech_type = GSS_C_NO_OID;
+	if (ret_flags)
+	    *ret_flags = 0;
+	if (time_rec)
+	    *time_rec = 0;
+
 	/*
 	 * If we haven't allocated a context yet, do so now and lookup
 	 * the mechanism switch table. If we have one already, make

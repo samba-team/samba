@@ -49,6 +49,14 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	OM_uint32 min_time, cred_time;
 	int i;
 
+	*minor_status = 0;
+	if (actual_mechs)
+	    *output_cred_handle = GSS_C_NO_CREDENTIAL;
+	if (actual_mechs)
+	    *actual_mechs = GSS_C_NO_OID_SET;
+	if (time_rec)
+	    *time_rec = 0;
+
 	_gss_load_mech();
 
 	/*
@@ -64,7 +72,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 				break;
 		}
 		if (i == mechs->count) {
-			*output_cred_handle = 0;
 			*minor_status = 0;
 			return (GSS_S_BAD_MECH);
 		}
@@ -151,7 +158,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		free(cred);
 		if (actual_mechs)
 			gss_release_oid_set(minor_status, actual_mechs);
-		*output_cred_handle = 0;
 		*minor_status = 0;
 		return (GSS_S_NO_CRED);
 	}

@@ -93,8 +93,14 @@ gss_add_cred(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 	OM_uint32 junk;
 
-	*output_cred_handle = 0;
 	*minor_status = 0;
+	*output_cred_handle = GSS_C_NO_CREDENTIAL;
+	if (initiator_time_rec)
+	    *initiator_time_rec = 0;
+	if (acceptor_time_rec)
+	    *acceptor_time_rec = 0;
+	if (actual_mechs)
+	    *actual_mechs = GSS_C_NO_OID_SET;
 
 	new_cred = malloc(sizeof(struct _gss_cred));
 	if (!new_cred) {
