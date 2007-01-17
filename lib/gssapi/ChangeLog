@@ -1,4 +1,60 @@
+2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_import_name.c: Reset out variables.
+
+	* mech/gss_import_name.c: Reset out variables.
+
+	* mech/gss_get_mic.c: Reset out variables.
+
+	* mech/gss_export_name.c: Reset out variables.
+
+	* mech/gss_encapsulate_token.c: Reset out variables.
+
+	* mech/gss_duplicate_oid.c: Reset out variables.
+
+	* mech/gss_duplicate_oid.c: Reset out variables.
+
+	* mech/gss_duplicate_name.c: Reset out variables.
+
+	* mech/gss_display_status.c: Reset out variables.
+
+	* mech/gss_display_name.c: Reset out variables.
+
+	* mech/gss_delete_sec_context.c: Reset out variables using propper
+	macros.
+
+	* mech/gss_decapsulate_token.c: Reset out variables using propper
+	macros.
+
+	* mech/gss_add_cred.c: Reset out variables.
+
+	* mech/gss_acquire_cred.c: Reset out variables.
+
+	* mech/gss_accept_sec_context.c: Reset out variables using propper
+	macros.
+
+	* mech/gss_init_sec_context.c: Reset out variables.
+
+	* mech/mech_locl.h (_mg_buffer_zero): new macro that zaps a
+	gss_buffer_t
+
 2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* mech: sprinkel _gss_mg_error
+
+	* mech/gss_display_status.c (gss_display_status): use
+	_gss_mg_get_error to fetch the error from underlaying mech, if it
+	failes, let do the regular dance for GSS-CODE version and a
+	generic print-the-error code for MECH-CODE.
+
+	* mech/gss_oid_to_str.c: Don't include the NUL in the length of
+	the string.
+
+	* mech/context.h: Protoypes for _gss_mg_.
+
+	* mech/context.c: Glue to catch the error from the lower gss-api
+	layer and save that for later so gss_display_status() can show the
+	error.
 
 	* gss.c: Detect NTLM.
 	
