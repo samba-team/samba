@@ -45,8 +45,7 @@ gss_decapsulate_token(gss_buffer_t input_token,
     int ret;
     size_t size;
 
-    output_token->length = 0;
-    output_token->value = NULL;
+    _mg_buffer_zero(output_token);
 
     ret = der_get_oid (oid->elements, oid->length, &o, &size);
     if (ret)
