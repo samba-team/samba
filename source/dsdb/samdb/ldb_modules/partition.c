@@ -138,7 +138,6 @@ static struct ldb_module *find_backend(struct ldb_module *module, struct ldb_req
 	return make_module_for_next_request(req, module->ldb, partition->module);
 };
 
-
 /*
   fire the caller's callback for every entry, but only send 'done' once.
 */
@@ -274,6 +273,7 @@ static int partition_send_all(struct ldb_module *module,
 static int partition_replicate(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn) 
 {
 	int i;
+	struct dsdb_control_current_partition *partition;
 	struct ldb_module *backend;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
@@ -293,11 +293,26 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 		}
 	}
 
-	/* Otherwise, we need to find the backend to fire it to */
+	/* Otherwise, we need to find the partition to fire it to */
 
-	/* Find backend */
-	backend = find_backend(module, req, dn);
-	
+	/* Find partition */
+	partition = find_partition(data, dn);
+	if (!partition) {
+		/*
+		 * if we haven't found a matching partition
+		 * pass the request to the main ldb
+		 *
+		 * TODO: we should maybe return an error here
+		 *       if it's not a special dn
+		 */
+		return ldb_next_request(module, req);
+	}
+
+	backend = make_module_for_next_request(req, module->ldb, partition->module);
+	if (!backend) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* issue request */
 	return ldb_next_request(backend, req);
 	
