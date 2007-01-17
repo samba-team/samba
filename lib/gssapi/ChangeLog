@@ -1,5 +1,8 @@
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: Don't assume bufer from gss_display_status is
+	ok.
+
 	* mech/gss_wrap_size_limit.c: Reset out variables.
 
 	* mech/gss_wrap.c: Reset out variables.
