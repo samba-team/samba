@@ -1379,18 +1379,14 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 
 BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
-	char *sitename = sitename_fetch();
 	struct ip_service *ip_list = NULL;
 	int count = 0;
 
 	/* Look up #1B name */
 
-	if (!internal_resolve_name(domain, 0x1b, sitename, &ip_list, &count, lp_name_resolve_order())) {
-		SAFE_FREE(sitename);
+	if (!internal_resolve_name(domain, 0x1b, NULL, &ip_list, &count, lp_name_resolve_order())) {
 		return False;
 	}
-
-	SAFE_FREE(sitename);
 
 	/* if we get more than 1 IP back we have to assume it is a
 	   multi-homed PDC and not a mess up */
