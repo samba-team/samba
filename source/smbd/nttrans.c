@@ -1800,14 +1800,15 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
-	uint32 flags;
+	uint32 filter;
+	NTSTATUS status;
 
 	if(setup_count < 6) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
 	fsp = file_fsp((char *)setup,4);
-	flags = IVAL(setup, 0);
+	filter = IVAL(setup, 0);
 
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
@@ -1815,16 +1816,56 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
+	DEBUG(3,("call_nt_transact_notify_change: notify change called on "
+		 "directory name = %s\n", fsp->fsp_name ));
+
 	if((!fsp->is_directory) || (conn != fsp->conn)) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
-	if (!change_notify_set(inbuf, fsp, conn, flags)) {
-		return(UNIXERROR(ERRDOS,ERRbadfid));
+	if (fsp->notify == NULL) {
+		if (!(fsp->notify = TALLOC_ZERO_P(
+			      NULL, struct notify_change_buf))) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
 	}
 
-	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
-name = %s\n", fsp->fsp_name ));
+	if (fsp->notify->num_changes > 0) {
+
+		/*
+		 * We've got changes pending, respond immediately
+		 */
+
+		/*
+		 * TODO: write a torture test to check the filtering behaviour
+		 * here.
+		 */
+
+		SMB_ASSERT(fsp->notify->requests == NULL);
+
+		change_notify_reply(inbuf, max_param_count,
+				    fsp->notify->num_changes,
+				    fsp->notify->changes);
+
+		TALLOC_FREE(fsp->notify->changes);
+		fsp->notify->num_changes = 0;
+
+		/*
+		 * change_notify_reply() above has independently sent its
+		 * results
+		 */
+		return -1;
+	}
+
+	/*
+	 * No changes pending, queue the request
+	 */
+
+	status = change_notify_add_request(inbuf, max_param_count, filter,
+					   fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
 
 	return -1;
 }
