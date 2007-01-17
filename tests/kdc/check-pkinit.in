@@ -82,7 +82,6 @@ if test "$pkinit" != yes -o "$rsa" != yes ; then
 fi
 
 
-rm -f ${keytabfile}
 rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
