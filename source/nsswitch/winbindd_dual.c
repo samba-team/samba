@@ -598,7 +598,8 @@ void winbind_msg_onlinestatus(int msg_type, struct process_id src, void *buf, si
 }
 
 
-static void account_lockout_policy_handler(struct timed_event *te,
+static void account_lockout_policy_handler(struct event_context *ctx,
+					   struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
 {
@@ -631,7 +632,7 @@ static void account_lockout_policy_handler(struct timed_event *te,
 			 nt_errstr(result)));
 	}
 
-	child->lockout_policy_event = add_timed_event(NULL,
+	child->lockout_policy_event = event_add_timed(winbind_event_context(), NULL,
 						      timeval_current_ofs(3600, 0),
 						      "account_lockout_policy_handler",
 						      account_lockout_policy_handler,
@@ -843,8 +844,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	if (child->domain != NULL && lp_winbind_offline_logon()) {
 		/* We might be in the idmap child...*/
-		child->lockout_policy_event = add_timed_event(
-			NULL, timeval_zero(),
+		child->lockout_policy_event = event_add_timed(
+			winbind_event_context(), NULL, timeval_zero(),
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
@@ -874,7 +875,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* Ensure we're not handling an event inherited from
 	   our parent. */
 
-	cancel_named_event("krb5_ticket_refresh_handler");
+	cancel_named_event(winbind_event_context(),
+			   "krb5_ticket_refresh_handler");
 
 	while (1) {
 
@@ -888,7 +890,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_TALLOC_FREE();
 		main_loop_TALLOC_FREE();
 
-		run_events();
+		run_events(winbind_event_context(), 0, NULL, NULL);
 
 		GetTimeOfDay(&now);
 
@@ -900,7 +902,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		tp = get_timed_events_timeout(&t);
+		tp = get_timed_events_timeout(winbind_event_context(), &t);
 		if (tp) {
 			DEBUG(11,("select will use timeout of %u.%u seconds\n",
 				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));

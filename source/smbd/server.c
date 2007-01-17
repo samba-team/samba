@@ -61,6 +61,16 @@ static void smbd_set_server_fd(int fd)
 	client_setfd(fd);
 }
 
+struct event_context *smbd_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init smbd event context\n");
+	}
+	return ctx;
+}
+
 /*******************************************************************
  What to do when smb.conf is updated.
  ********************************************************************/

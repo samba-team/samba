@@ -342,7 +342,8 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 	return fsp;
 }
 
-static void oplock_timeout_handler(struct timed_event *te,
+static void oplock_timeout_handler(struct event_context *ctx,
+				   struct timed_event *te,
 				   const struct timeval *now,
 				   void *private_data)
 {
@@ -372,7 +373,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		add_timed_event(NULL,
+		event_add_timed(smbd_event_context(), NULL,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				"oplock_timeout_handler",
 				oplock_timeout_handler, fsp);

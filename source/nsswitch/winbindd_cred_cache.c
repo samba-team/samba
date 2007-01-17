@@ -66,7 +66,8 @@ static int ccache_entry_count(void)
  Do the work of refreshing the ticket.
 ****************************************************************/
 
-static void krb5_ticket_refresh_handler(struct timed_event *te,
+static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
+					struct timed_event *te,
 					const struct timeval *now,
 					void *private_data)
 {
@@ -145,7 +146,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 
 done:
 
-	entry->event = add_timed_event(entry, 
+	entry->event = event_add_timed(winbind_event_context(), entry, 
 				       timeval_set(new_start, 0),
 				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
@@ -158,7 +159,8 @@ done:
  Do the work of regaining a ticket when coming from offline auth.
 ****************************************************************/
 
-static void krb5_ticket_gain_handler(struct timed_event *te,
+static void krb5_ticket_gain_handler(struct event_context *event_ctx,
+				     struct timed_event *te,
 					const struct timeval *now,
 					void *private_data)
 {
@@ -220,7 +222,7 @@ static void krb5_ticket_gain_handler(struct timed_event *te,
 
   retry_later:
 
-	entry->event = add_timed_event(entry,
+	entry->event = event_add_timed(winbind_event_context(), entry,
 					timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
 					"krb5_ticket_gain_handler",
 					krb5_ticket_gain_handler,
@@ -236,7 +238,7 @@ static void krb5_ticket_gain_handler(struct timed_event *te,
 	t = timeval_set(new_start, 0);
 #endif /* TESTING */
 
-	entry->event = add_timed_event(entry,
+	entry->event = event_add_timed(winbind_event_context(), entry,
 					t,
 					"krb5_ticket_refresh_handler",
 					krb5_ticket_refresh_handler,
@@ -349,13 +351,13 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	if (lp_winbind_refresh_tickets() && renew_until > 0) {
 		if (postponed_request) {
-			entry->event = add_timed_event(entry,
+			entry->event = event_add_timed(winbind_event_context(), entry,
 						timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
 						"krb5_ticket_gain_handler",
 						krb5_ticket_gain_handler,
 						entry);
 		} else {
-			entry->event = add_timed_event(entry,
+			entry->event = event_add_timed(winbind_event_context(), entry,
 						timeval_set((ticket_end - 1), 0),
 						"krb5_ticket_refresh_handler",
 						krb5_ticket_refresh_handler,

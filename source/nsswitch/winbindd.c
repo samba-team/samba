@@ -34,6 +34,16 @@ static BOOL interactive = False;
 
 extern BOOL override_logfile;
 
+struct event_context *winbind_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init smbd event context\n");
+	}
+	return ctx;
+}
+
 /* Reload configuration */
 
 static BOOL reload_services_file(void)
@@ -716,7 +726,7 @@ static void process_loop(void)
 
 	message_dispatch();
 
-	run_events();
+	run_events(winbind_event_context(), 0, NULL, NULL);
 
 	/* refresh the trusted domain cache */
 
@@ -748,7 +758,7 @@ static void process_loop(void)
 	timeout.tv_usec = 0;
 
 	/* Check for any event timeouts. */
-	if (get_timed_events_timeout(&ev_timeout)) {
+	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
 		timeout = timeval_min(&timeout, &ev_timeout);
 	}
 
