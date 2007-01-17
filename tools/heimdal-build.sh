@@ -45,6 +45,7 @@ dir=
 hversion=
 cvsroot=
 cvsflags=
+cvsbranch=
 autotools=no
 distcheck=no
 
@@ -80,6 +81,15 @@ do
 		;;
 	--cvs-flags)
 		cvsflags="$2"
+		shift 2
+		;;
+	--cvs-branch)
+		if [ "X$cvsroot" == "X" ] ; then
+		    echo "option --cvs must be given before --cvs-branch"
+		    exit 1
+		fi
+		cvsbranch="-r $2"
+		hversion="$2"
 		shift 2
 		;;
 	--release)
@@ -186,7 +196,8 @@ afs)
 	res=$?
 	;;
 cvs)
-	cvs -Qq ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
+	cvs -Qq ${cvsflags} -d "${cvsroot}" \
+	    co -P ${cvsbranch} -d ${hversion} heimdal
 	res=$?
 	unpack=no
 	autotools=yes
