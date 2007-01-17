@@ -148,9 +148,13 @@ gss_display_status(OM_uint32 *minor_status,
 {
 	OM_uint32 major_status;
 
+	_mg_buffer_zero(status_string);
+	*message_content = 0;
+
 	major_status = _gss_mg_get_error(mech_type, status_type,
 					 status_value, status_string);
 	if (major_status == GSS_S_COMPLETE) {
+
 	    *message_content = 0;
 	    *minor_status = 0;
 	    return GSS_S_COMPLETE;
@@ -203,7 +207,6 @@ gss_display_status(OM_uint32 *minor_status,
 		return GSS_S_COMPLETE;
 	}
 	}
-	status_string->value = NULL;
-	status_string->length = 0;
+	_mg_buffer_zero(status_string);
 	return (GSS_S_BAD_STATUS);
 }

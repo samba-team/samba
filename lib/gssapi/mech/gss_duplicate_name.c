@@ -39,6 +39,7 @@ OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 
 	*minor_status = 0;
+	*dest_name = GSS_C_NO_NAME;
 
 	/*
 	 * If this name has a value (i.e. it didn't come from
