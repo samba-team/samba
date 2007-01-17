@@ -109,7 +109,8 @@ static BOOL notify_marshall_changes(unsigned num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-void change_notify_reply_packet(const char *request_buf, NTSTATUS error_code)
+static void change_notify_reply_packet(const char *request_buf,
+				       NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
@@ -126,7 +127,8 @@ void change_notify_reply_packet(const char *request_buf, NTSTATUS error_code)
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server_cleanly("change_notify_reply_packet: send_smb failed.");
+		exit_server_cleanly("change_notify_reply_packet: send_smb "
+				    "failed.");
 }
 
 void change_notify_reply(const char *request_buf, uint32 max_param_count,
