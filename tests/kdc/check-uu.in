@@ -111,10 +111,10 @@ ${kinit2} --password-file=${objdir}/foopassword user2@$R || \
 echo "starting uu server (using user1)"
 KRB5CCNAME=$cache1 ${uu_server} 2> uuserver.log &
 uuspid=$!
-sleep 2
+sleep 5
 
 echo "trying to contact server with client (using user2)"
-KRB5CCNAME=$cache2 ${uu_client} localhost > /dev/null 2>/dev/null || \
+KRB5CCNAME=$cache2 ${uu_client} localhost > messages.log 2>&1 || \
     { ec=1; eval "${testfailed}"; }
 
 echo "checking if server got the right message"
