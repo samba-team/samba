@@ -39,6 +39,10 @@ gss_display_name(OM_uint32 *minor_status,
 	struct _gss_name *name = (struct _gss_name *) input_name;
 	struct _gss_mechanism_name *mn;
 
+	_mg_buffer_zero(output_name_buffer);
+	if (output_name_type)
+	    *output_name_type = GSS_C_NO_OID;
+
 	/*
 	 * If we know it, copy the buffer used to import the name in
 	 * the first place. Otherwise, ask all the MNs in turn if
