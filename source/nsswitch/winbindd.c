@@ -39,7 +39,7 @@ struct event_context *winbind_event_context(void)
 	static struct event_context *ctx;
 
 	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init smbd event context\n");
+		smb_panic("Could not init winbind event context\n");
 	}
 	return ctx;
 }
