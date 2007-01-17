@@ -1,3 +1,7 @@
+2007-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-uu.in: save log, wait longer
+	
 2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-pkinit.in: tell me about certifiate that we have
