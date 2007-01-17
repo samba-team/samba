@@ -216,7 +216,7 @@ dnl AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roke
 
 rk_ROKEN(lib/roken)
 LIBADD_roken="$LIB_roken"
-AC_SUBST(DIR_roken)dnl
+AC_SUBST(LIBADD_roken)dnl
 LIB_roken="\$(top_builddir)/lib/vers/libvers.la $LIB_roken"
 
 rk_OTP
