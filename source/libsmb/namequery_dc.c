@@ -104,6 +104,7 @@ static BOOL ads_dc_name(const char *domain,
 
 			create_local_private_krb5_conf_for_domain(realm,
 								domain,
+								sitename,
 								ads->ldap_ip);
 		}
 #endif
@@ -146,7 +147,7 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 
 	/* get a list of all domain controllers */
 	
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count,
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, NULL, &ip_list, &count,
 						False))) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;

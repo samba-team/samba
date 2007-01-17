@@ -384,7 +384,7 @@ static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
  compare 2 ldap IPs by nearness to our interfaces - used in qsort
 *******************************************************************/
 
-static int ip_service_compare(struct ip_service *ip1, struct ip_service *ip2)
+int ip_service_compare(struct ip_service *ip1, struct ip_service *ip2)
 {
 	int result;
 	
@@ -1049,6 +1049,7 @@ static BOOL resolve_hosts(const char *name, int name_type,
 *********************************************************/
 
 static BOOL resolve_ads(const char *name, int name_type,
+			const char *sitename,
                          struct ip_service **return_iplist, int *return_count)
 {
 	int 			i, j;
@@ -1070,9 +1071,9 @@ static BOOL resolve_ads(const char *name, int name_type,
 	}
 
 	if (name_type == KDC_NAME_TYPE) {
-		status = ads_dns_query_kdcs(ctx, name, &dcs, &numdcs);
+		status = ads_dns_query_kdcs(ctx, name, sitename, &dcs, &numdcs);
 	} else {
-		status = ads_dns_query_dcs(ctx, name, &dcs, &numdcs);
+		status = ads_dns_query_dcs(ctx, name, sitename, &dcs, &numdcs);
 	}
 	if ( !NT_STATUS_IS_OK( status ) ) {
 		talloc_destroy(ctx);
@@ -1145,6 +1146,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 **********************************************************************/
 
 BOOL internal_resolve_name(const char *name, int name_type,
+			   const char *sitename,
 			   struct ip_service **return_iplist, 
 			   int *return_count, const char *resolve_order)
 {
@@ -1160,7 +1162,8 @@ BOOL internal_resolve_name(const char *name, int name_type,
 	*return_iplist = NULL;
 	*return_count = 0;
 
-	DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
+	DEBUG(10, ("internal_resolve_name: looking up %s#%x (sitename %s)\n",
+			name, name_type, sitename ? sitename : NULL));
 
 	if (allzeros || allones || is_address) {
   
@@ -1223,7 +1226,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.  This will result in a
 				SRV record lookup */
-			if (resolve_ads(name, KDC_NAME_TYPE, return_iplist, return_count)) {
+			if (resolve_ads(name, KDC_NAME_TYPE, sitename, return_iplist, return_count)) {
 				result = True;
 				/* Ensure we don't namecache this with the KDC port. */
 				name_type = KDC_NAME_TYPE;
@@ -1232,7 +1235,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c names here.  This will result in a
 				SRV record lookup */
-			if (resolve_ads(name, name_type, return_iplist, return_count)) {
+			if (resolve_ads(name, name_type, sitename, return_iplist, return_count)) {
 				result = True;
 				goto done;
 			}
@@ -1308,14 +1311,16 @@ BOOL internal_resolve_name(const char *name, int name_type,
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 {
 	struct ip_service *ip_list = NULL;
+	char *sitename = sitename_fetch();
 	int count = 0;
 
 	if (is_ipaddress(name)) {
 		*return_ip = *interpret_addr2(name);
+		SAFE_FREE(sitename);
 		return True;
 	}
 
-	if (internal_resolve_name(name, name_type, &ip_list, &count, lp_name_resolve_order())) {
+	if (internal_resolve_name(name, name_type, sitename, &ip_list, &count, lp_name_resolve_order())) {
 		int i;
 		
 		/* only return valid addresses for TCP connections */
@@ -1327,12 +1332,14 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 			{
 				*return_ip = ip_list[i].ip;
 				SAFE_FREE(ip_list);
+				SAFE_FREE(sitename);
 				return True;
 			}
 		}
 	}
 	
 	SAFE_FREE(ip_list);
+	SAFE_FREE(sitename);
 	return False;
 }
 
@@ -1350,12 +1357,12 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 		return False;
 	}
 
-	if (internal_resolve_name(group, 0x1D, &ip_list, &count, lp_name_resolve_order())) {
+	if (internal_resolve_name(group, 0x1D, NULL, &ip_list, &count, lp_name_resolve_order())) {
 		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
 	}
-	if(internal_resolve_name(group, 0x1B, &ip_list, &count, lp_name_resolve_order())) {
+	if(internal_resolve_name(group, 0x1B, NULL, &ip_list, &count, lp_name_resolve_order())) {
 		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
@@ -1372,14 +1379,18 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 
 BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
-	struct ip_service *ip_list;
-	int count;
+	char *sitename = sitename_fetch();
+	struct ip_service *ip_list = NULL;
+	int count = 0;
 
 	/* Look up #1B name */
 
-	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count, lp_name_resolve_order())) {
+	if (!internal_resolve_name(domain, 0x1b, sitename, &ip_list, &count, lp_name_resolve_order())) {
+		SAFE_FREE(sitename);
 		return False;
 	}
+
+	SAFE_FREE(sitename);
 
 	/* if we get more than 1 IP back we have to assume it is a
 	   multi-homed PDC and not a mess up */
@@ -1405,7 +1416,7 @@ enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
  a domain.
 *********************************************************/
 
-static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list, 
+static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_service **ip_list, 
                             int *count, enum dc_lookup_type lookup_type, int *ordered)
 {
 	fstring resolve_order;
@@ -1452,7 +1463,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 	/* fetch the server we have affinity for.  Add the 
 	   'password server' list to a search for our domain controllers */
 	
-	saf_servername = saf_fetch( domain );
+	saf_servername = saf_fetch( domain);
 	
 	if ( strequal(domain, lp_workgroup()) || strequal(domain, lp_realm()) ) {
 		pstr_sprintf( pserver, "%s, %s", 
@@ -1471,7 +1482,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
 		/* TODO: change return type of internal_resolve_name to
 		 * NTSTATUS */
-		if (internal_resolve_name(domain, 0x1C, ip_list, count,
+		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
 					  resolve_order)) {
 			return NT_STATUS_OK;
 		} else {
@@ -1491,7 +1502,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 	p = pserver;
 	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 		if (strequal(name, "*")) {
-			if (internal_resolve_name(domain, 0x1C, &auto_ip_list,
+			if (internal_resolve_name(domain, 0x1C, sitename, &auto_ip_list,
 						  &auto_count, resolve_order))
 				num_addresses += auto_count;
 			done_auto_lookup = True;
@@ -1510,7 +1521,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 			SAFE_FREE(auto_ip_list);
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
-		if (internal_resolve_name(domain, 0x1C, ip_list, count,
+		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
 					  resolve_order)) {
 			return NT_STATUS_OK;
 		} else {
@@ -1606,20 +1617,23 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
  Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
 
-NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
+NTSTATUS get_sorted_dc_list( const char *domain, const char *sitename, struct ip_service **ip_list, int *count, BOOL ads_only )
 {
 	BOOL ordered;
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
 
-	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
+	DEBUG(8,("get_sorted_dc_list: attempting lookup for name %s (sitename %s) "
+		"using [%s]\n",
+		domain,
+		sitename ? sitename : "NULL",
 		(ads_only ? "ads" : lp_name_resolve_order())));
 	
 	if (ads_only) {
 		lookup_type = DC_ADS_ONLY;
 	}
 
-	status = get_dc_list(domain, ip_list, count, lookup_type, &ordered);
+	status = get_dc_list(domain, sitename, ip_list, count, lookup_type, &ordered);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status; 
 	}
@@ -1636,7 +1650,7 @@ NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, in
  Get the KDC list - re-use all the logic in get_dc_list.
 *********************************************************************/
 
-NTSTATUS get_kdc_list( const char *realm, struct ip_service **ip_list, int *count)
+NTSTATUS get_kdc_list( const char *realm, const char *sitename, struct ip_service **ip_list, int *count)
 {
 	BOOL ordered;
 	NTSTATUS status;
@@ -1644,7 +1658,7 @@ NTSTATUS get_kdc_list( const char *realm, struct ip_service **ip_list, int *coun
 	*count = 0;
 	*ip_list = NULL;
 
-	status = get_dc_list(realm, ip_list, count, DC_KDC_ONLY, &ordered);
+	status = get_dc_list(realm, sitename, ip_list, count, DC_KDC_ONLY, &ordered);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status; 

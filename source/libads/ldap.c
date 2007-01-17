@@ -249,6 +249,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	pstring realm;
 	BOOL got_realm = False;
 	BOOL use_own_domain = False;
+	char *sitename = sitename_fetch();
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	/* if the realm and workgroup are both empty, assume they are ours */
@@ -279,6 +280,7 @@ again:
 		}
 		
 		if ( !c_realm || !*c_realm ) {
+			SAFE_FREE(sitename);
 			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
 			return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 		}
@@ -289,7 +291,7 @@ again:
 	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
 		(got_realm ? "realm" : "domain"), realm));
 
-	status = get_sorted_dc_list(realm, &ip_list, &count, got_realm);
+	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* fall back to netbios if we can */
 		if ( got_realm && !lp_disable_netbios() ) {
@@ -331,6 +333,7 @@ again:
 			
 		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
+			SAFE_FREE(sitename);
 			return NT_STATUS_OK;
 		}
 		
@@ -339,7 +342,19 @@ again:
 	}
 
 	SAFE_FREE(ip_list);
-	
+
+	/* In case we failed to contact one of our closest DC on our site we
+	 * need to try to find another DC, retry with a site-less SRV DNS query
+	 * - Guenther */
+
+	if (sitename) {
+		DEBUG(1,("ads_find_dc: failed to find a valid DC on our site (%s), "
+				"trying to find another DC\n", sitename));
+		SAFE_FREE(sitename);
+		namecache_delete(realm, 0x1C);
+		goto again;
+	}
+
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
 

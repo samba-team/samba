@@ -1027,14 +1027,18 @@ static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
 			if (domain->primary && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
+				char *sitename = sitename_fetch();
+
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs
 				   to use this KDC. */
 
 				create_local_private_krb5_conf_for_domain(domain->alt_name,
 								domain->name,
+								sitename,
 								ip);
 
+				SAFE_FREE(sitename);
 				/* Ensure we contact this DC also. */
 				saf_store( domain->name, name);
 				saf_store( domain->alt_name, name);
@@ -1099,6 +1103,8 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	}
 
 	if (sec == SEC_ADS) {
+		char *sitename = NULL;
+
 		/* We need to make sure we know the local site before
 		   doing any DNS queries, as this will restrict the
 		   get_sorted_dc_list() call below to only fetching
@@ -1107,16 +1113,37 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		/* Find any DC to get the site record.
 		   We deliberately don't care about the
 		   return here. */
+
 		get_dc_name(domain->name, lp_realm(), dcname, &ip);
 
-		/* Now do the site-specific AD dns lookup. */
-		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
+		sitename = sitename_fetch();
+
+		/* Do the site-specific AD dns lookup first. */
+		get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
+
+		for ( i=0; i<iplist_size; i++ ) {
+			add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
+						ip_list[i].ip, dcs, num_dcs);
+		}
+
+		SAFE_FREE(ip_list);
+		SAFE_FREE(sitename);
+		iplist_size = 0;
+
+		/* Now we add DCs from the main AD dns lookup. */
+		get_sorted_dc_list(domain->alt_name, NULL, &ip_list, &iplist_size, True);
+
+		for ( i=0; i<iplist_size; i++ ) {
+			add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
+						ip_list[i].ip, dcs, num_dcs);
+		}
         }
 
 	/* try standard netbios queries if no ADS */
 
-	if (iplist_size==0) 
-		get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
+	if (iplist_size==0) {
+		get_sorted_dc_list(domain->name, NULL, &ip_list, &iplist_size, False);
+	}
 
 	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */
 
