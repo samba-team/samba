@@ -1121,18 +1121,20 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		get_dc_name(domain->name, lp_realm(), dcname, &ip);
 
 		sitename = sitename_fetch();
+		if (sitename) {
 
-		/* Do the site-specific AD dns lookup first. */
-		get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
+			/* Do the site-specific AD dns lookup first. */
+			get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
 
-		for ( i=0; i<iplist_size; i++ ) {
-			add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
-						ip_list[i].ip, dcs, num_dcs);
+			for ( i=0; i<iplist_size; i++ ) {
+				add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
+							ip_list[i].ip, dcs, num_dcs);
+			}
+
+			SAFE_FREE(ip_list);
+			SAFE_FREE(sitename);
+			iplist_size = 0;
 		}
-
-		SAFE_FREE(ip_list);
-		SAFE_FREE(sitename);
-		iplist_size = 0;
 
 		/* Now we add DCs from the main AD dns lookup. */
 		get_sorted_dc_list(domain->alt_name, NULL, &ip_list, &iplist_size, True);

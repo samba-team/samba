@@ -484,18 +484,21 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
 
 	/* Get the KDC's only in this site. */
 
-	get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
+	if (sitename) {
 
-	for (i = 0; i < count_site; i++) {
-		if (ip_equal(ip_srv_site[i].ip, primary_ip)) {
-			continue;
-		}
-		/* Append to the string - inefficient but not done often. */
-		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-			kdc_str, inet_ntoa(ip_srv_site[i].ip));
-		if (!kdc_str) {
-			SAFE_FREE(ip_srv_site);
-			return NULL;
+		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
+
+		for (i = 0; i < count_site; i++) {
+			if (ip_equal(ip_srv_site[i].ip, primary_ip)) {
+				continue;
+			}
+			/* Append to the string - inefficient but not done often. */
+			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+				kdc_str, inet_ntoa(ip_srv_site[i].ip));
+			if (!kdc_str) {
+				SAFE_FREE(ip_srv_site);
+				return NULL;
+			}
 		}
 	}
 
