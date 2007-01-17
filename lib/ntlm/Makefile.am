@@ -12,7 +12,7 @@ libheimntlm_la_LDFLAGS = -version-info 0:0:0
 
 libheimntlm_la_LIBADD = \
 	../krb5/libkrb5.la \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIBADD_roken)
 
 $(srcdir)/heimntlm-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o heimntlm-protos.h $(libheimntlm_la_SOURCES) || rm -f heimntlm-protos.h

@@ -13,9 +13,9 @@ noinst_PROGRAMS = test_pw_quality
 
 libkadm5srv_la_LIBADD = \
 	$(LIB_com_err) ../krb5/libkrb5.la \
-	../hdb/libhdb.la ../roken/libroken.la
+	../hdb/libhdb.la $(LIBADD_roken)
 libkadm5clnt_la_LIBADD = \
-	$(LIB_com_err) ../krb5/libkrb5.la ../roken/libroken.la
+	$(LIB_com_err) ../krb5/libkrb5.la $(LIBADD_roken)
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
 

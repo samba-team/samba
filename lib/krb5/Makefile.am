@@ -51,7 +51,7 @@ libkrb5_la_LIBADD = \
 	$(LIB_com_err) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/roken/libroken.la \
+	$(LIBADD_roken) \
 	$(LIB_door_create) \
 	$(LIB_dlopen)
 

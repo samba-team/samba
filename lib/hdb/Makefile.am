@@ -77,7 +77,7 @@ libhdb_la_LIBADD = \
 	$(LIB_com_err) \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
-	../roken/libroken.la \
+	$(LIBADD_roken) \
 	$(LIB_openldap) \
 	$(LIB_dlopen) \
 	$(DBLIB) \

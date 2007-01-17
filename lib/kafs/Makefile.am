@@ -51,7 +51,7 @@ AFSL_EXP =
 AIX_SRC =
 endif # AIX
 
-libkafs_la_LIBADD = $(DEPLIB_krb5) ../roken/libroken.la $(DEPLIB_krb4)
+libkafs_la_LIBADD = $(DEPLIB_krb5) $(LIBADD_roken) $(DEPLIB_krb4)
 
 lib_LTLIBRARIES = libkafs.la
 libkafs_la_LDFLAGS = -version-info 5:0:5

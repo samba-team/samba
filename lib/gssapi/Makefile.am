@@ -195,7 +195,7 @@ libgssapi_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_com_err) \
 	$(LIB_des) \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIBADD_roken)
 
 man_MANS = gssapi.3 gss_acquire_cred.3
 

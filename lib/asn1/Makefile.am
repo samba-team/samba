@@ -9,7 +9,7 @@ libasn1_la_LDFLAGS = -version-info 7:0:0
 
 libasn1_la_LIBADD = \
 	@LIB_com_err@ \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIBADD_roken)
 
 BUILT_SOURCES =				\
 	$(gen_files_rfc2459:.x=.c)	\
