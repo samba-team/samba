@@ -28,7 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "system/passwd.h"
 
-static NTSTATUS unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToUid *r)
 {
@@ -49,7 +49,7 @@ static NTSTATUS unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_UidToSid *r)
 {
@@ -72,7 +72,7 @@ static NTSTATUS unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 	return sidmap_uid_to_sid(sidmap, mem_ctx, uid, &r->out.sid);
 }
 
-static NTSTATUS unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToGid *r)
 {
@@ -93,7 +93,7 @@ static NTSTATUS unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_GidToSid *r)
 {
@@ -116,7 +116,7 @@ static NTSTATUS unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 	return sidmap_gid_to_sid(sidmap, mem_ctx, gid, &r->out.sid);
 }
 
-static NTSTATUS unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,
+static NTSTATUS dcesrv_unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_GetPWUid *r)
 {

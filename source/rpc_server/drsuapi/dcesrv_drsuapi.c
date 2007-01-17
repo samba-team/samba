@@ -31,7 +31,7 @@
 /* 
   drsuapi_DsBind 
 */
-static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsBind *r)
 {
 	struct drsuapi_bind_state *b_state;
@@ -80,7 +80,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   drsuapi_DsUnbind 
 */
-static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct drsuapi_DsUnbind *r)
 {
 	struct dcesrv_handle *h;
@@ -100,7 +100,7 @@ static WERROR drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 /* 
   drsuapi_DsReplicaSync 
 */
-static WERROR drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaSync *r)
 {
 	/* TODO: implement this call correct!
@@ -114,7 +114,7 @@ static WERROR drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   drsuapi_DsGetNCChanges
 */
-static WERROR drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetNCChanges *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -124,7 +124,7 @@ static WERROR drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   drsuapi_DsReplicaUpdateRefs
 */
-static WERROR drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaUpdateRefs *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -134,7 +134,7 @@ static WERROR drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 /* 
   DRSUAPI_REPLICA_ADD 
 */
-static WERROR DRSUAPI_REPLICA_ADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_REPLICA_ADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REPLICA_ADD *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -144,7 +144,7 @@ static WERROR DRSUAPI_REPLICA_ADD(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   DRSUAPI_REPLICA_DEL 
 */
-static WERROR DRSUAPI_REPLICA_DEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_REPLICA_DEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REPLICA_DEL *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -154,7 +154,7 @@ static WERROR DRSUAPI_REPLICA_DEL(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   DRSUAPI_REPLICA_MODIFY 
 */
-static WERROR DRSUAPI_REPLICA_MODIFY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_REPLICA_MODIFY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REPLICA_MODIFY *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -164,7 +164,7 @@ static WERROR DRSUAPI_REPLICA_MODIFY(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   DRSUAPI_VERIFY_NAMES 
 */
-static WERROR DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_VERIFY_NAMES *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -174,7 +174,7 @@ static WERROR DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   drsuapi_DsGetMemberships 
 */
-static WERROR drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetMemberships *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -184,7 +184,7 @@ static WERROR drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call, TALLO
 /* 
   DRSUAPI_INTER_DOMAIN_MOVE 
 */
-static WERROR DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_INTER_DOMAIN_MOVE *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -194,7 +194,7 @@ static WERROR DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_call, TALL
 /* 
   drsuapi_DsGetNT4ChangeLog 
 */
-static WERROR drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetNT4ChangeLog *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -204,7 +204,7 @@ static WERROR drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_call, TALL
 /* 
   drsuapi_DsCrackNames 
 */
-WERROR drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			    struct drsuapi_DsCrackNames *r)
 {
 	WERROR status;
@@ -257,7 +257,7 @@ WERROR drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 /* 
   drsuapi_DsWriteAccountSpn 
 */
-static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsWriteAccountSpn *r)
 {
 	struct drsuapi_bind_state *b_state;
@@ -330,7 +330,7 @@ static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 /* 
   drsuapi_DsRemoveDSServer
 */
-static WERROR drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct drsuapi_DsRemoveDSServer *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -340,7 +340,7 @@ static WERROR drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call, TALLO
 /* 
   DRSUAPI_REMOVE_DS_DOMAIN 
 */
-static WERROR DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REMOVE_DS_DOMAIN *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -368,7 +368,7 @@ const char *result_site_name(struct ldb_dn *site_dn)
 /* 
   drsuapi_DsGetDomainControllerInfo 
 */
-static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_state, 
+static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_state, 
 						TALLOC_CTX *mem_ctx,
 						struct drsuapi_DsGetDomainControllerInfo *r)
 {
@@ -586,7 +586,7 @@ static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_s
 /* 
   drsuapi_DsGetDomainControllerInfo 
 */
-static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 						struct drsuapi_DsGetDomainControllerInfo *r)
 {
 	struct dcesrv_handle *h;
@@ -596,7 +596,7 @@ static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_ca
 
 	switch (r->in.level) {
 	case 1:
-		return drsuapi_DsGetDomainControllerInfo_1(b_state, mem_ctx, r);
+		return dcesrv_drsuapi_DsGetDomainControllerInfo_1(b_state, mem_ctx, r);
 	}
 
 	return WERR_UNKNOWN_LEVEL;
@@ -606,7 +606,7 @@ static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_ca
 /* 
   drsuapi_DsAddEntry
 */
-static WERROR drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsAddEntry *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -616,7 +616,7 @@ static WERROR drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /* 
   DRSUAPI_EXECUTE_KCC 
 */
-static WERROR DRSUAPI_EXECUTE_KCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_EXECUTE_KCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_EXECUTE_KCC *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -626,7 +626,7 @@ static WERROR DRSUAPI_EXECUTE_KCC(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   drsuapi_DsReplicaGetInfo 
 */
-static WERROR drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaGetInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -636,7 +636,7 @@ static WERROR drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLO
 /* 
   DRSUAPI_ADD_SID_HISTORY 
 */
-static WERROR DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_ADD_SID_HISTORY *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -645,7 +645,7 @@ static WERROR DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   drsuapi_DsGetMemberships2 
 */
-static WERROR drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetMemberships2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -654,7 +654,7 @@ static WERROR drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_call, TALL
 /* 
   DRSUAPI_REPLICA_VERIFY_OBJECTS 
 */
-static WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REPLICA_VERIFY_OBJECTS *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -664,7 +664,7 @@ static WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS(struct dcesrv_call_state *dce_call,
 /* 
   DRSUAPI_GET_OBJECT_EXISTENCE 
 */
-static WERROR DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_GET_OBJECT_EXISTENCE *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -674,7 +674,7 @@ static WERROR DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_call, T
 /* 
   DRSUAPI_QUERY_SITES_BY_COST 
 */
-static WERROR DRSUAPI_QUERY_SITES_BY_COST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_DRSUAPI_QUERY_SITES_BY_COST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_QUERY_SITES_BY_COST *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

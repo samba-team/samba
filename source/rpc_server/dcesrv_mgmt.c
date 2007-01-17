@@ -28,7 +28,7 @@
 /* 
   mgmt_inq_if_ids 
 */
-static WERROR mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_if_ids *r)
 {
 	const struct dcesrv_endpoint *ep = dce_call->conn->endpoint;
@@ -50,7 +50,7 @@ static WERROR mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   mgmt_inq_stats 
 */
-static WERROR mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_stats *r)
 {
 	if (r->in.max_count != MGMT_STATS_ARRAY_MAX_SIZE)
@@ -71,7 +71,7 @@ static WERROR mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /* 
   mgmt_is_server_listening 
 */
-static uint32_t mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static uint32_t dcesrv_mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_is_server_listening *r)
 {
 	*r->out.status = 0;
@@ -82,7 +82,7 @@ static uint32_t mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TAL
 /* 
   mgmt_stop_server_listening 
 */
-static WERROR mgmt_stop_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_mgmt_stop_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_stop_server_listening *r)
 {
 	return WERR_ACCESS_DENIED;
@@ -92,7 +92,7 @@ static WERROR mgmt_stop_server_listening(struct dcesrv_call_state *dce_call, TAL
 /* 
   mgmt_inq_princ_name 
 */
-static WERROR mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_princ_name *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
