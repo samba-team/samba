@@ -42,8 +42,7 @@ gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
     heim_oid o;
     char *p;
 
-    oid_str->value = NULL;
-    oid_str->length = 0;
+    _mg_buffer_zero(oid_str);
 
     ret = der_get_oid (oid->elements, oid->length, &o, &size);
     if (ret) {

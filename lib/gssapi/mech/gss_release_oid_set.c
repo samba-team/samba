@@ -39,7 +39,7 @@ gss_release_oid_set(OM_uint32 *minor_status,
 		if ((*set)->elements)
 			free((*set)->elements);
 		free(*set);
-		*set = 0;
+		*set = GSS_C_NO_OID_SET;
 	}
 	return (GSS_S_COMPLETE);
 }

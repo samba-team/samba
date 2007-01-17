@@ -50,6 +50,9 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 	const char		*p, *q;
 	char			*res;
 
+	oid->length = 0;
+	oid->elements = NULL;
+
 	/*
 	 * First figure out how many numbers in the oid, then
 	 * calculate the compiled oid size.
