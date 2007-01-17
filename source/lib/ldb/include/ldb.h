@@ -990,6 +990,18 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 			ldb_request_callback_t callback);
 
 /**
+  Add a ldb_control to a ldb_request
+
+  \param req the request struct where to add the control
+  \param oid the object identifier of the control as string
+  \param ciritical whether the control should be critical or not
+  \param data a talloc pointer to the control specific data
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data);
+
+/**
   Search the database
 
   This function searches the database, and returns 
