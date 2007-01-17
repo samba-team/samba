@@ -291,6 +291,12 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
 			DEBUG(3,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
 			TALLOC_FREE( buffer );
+			if (errno == ETIMEDOUT) {
+				return NT_STATUS_IO_TIMEOUT;
+			}
+			if (errno == ECONNREFUSED) {
+				return NT_STATUS_CONNECTION_REFUSED;
+			}
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} while ( buf_len < resp_len && resp_len < MAX_DNS_PACKET_SIZE );
@@ -686,6 +692,12 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 
 	status = ads_dns_query_internal(ctx, "_ldap", realm, sitename,
 					dclist, numdcs);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
+		return status;
+	}
+
 	if (sitename && !NT_STATUS_IS_OK(status)) {
 		/* Sitename DNS query may have failed. Try without. */
 		status = ads_dns_query_internal(ctx, "_ldap", realm, NULL,
@@ -710,6 +722,12 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 
 	status = ads_dns_query_internal(ctx, "_kerberos", realm, sitename,
 					dclist, numdcs);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
+		return status;
+	}
+
 	if (sitename && !NT_STATUS_IS_OK(status)) {
 		/* Sitename DNS query may have failed. Try without. */
 		status = ads_dns_query_internal(ctx, "_kerberos", realm, NULL,
