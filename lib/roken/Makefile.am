@@ -7,7 +7,7 @@ ACLOCAL_AMFLAGS = -I ../../cf
 CLEANFILES = roken.h make-roken.c $(XHEADERS)
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 17:0:1
+libroken_la_LDFLAGS = -version-info 18:0:0
 libroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
 
 # XXX this is needed for the LIBOBJS objects

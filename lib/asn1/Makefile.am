@@ -5,9 +5,11 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d -t
 
 lib_LTLIBRARIES = libasn1.la
-libasn1_la_LDFLAGS = -version-info 6:1:1
+libasn1_la_LDFLAGS = -version-info 7:0:0
 
-libasn1_la_LIBADD = @LIB_com_err@ $(LIB_roken)
+libasn1_la_LIBADD = \
+	@LIB_com_err@ \
+	$(top_builddir)/lib/roken/libroken.la
 
 BUILT_SOURCES =				\
 	$(gen_files_rfc2459:.x=.c)	\

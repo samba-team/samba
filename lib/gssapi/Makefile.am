@@ -187,13 +187,15 @@ nodist_libgssapi_la_SOURCES  = \
 	gkrb5_err.h \
 	$(BUILT_SOURCES)
 
+libgssapi_la_LDFLAGS = -version-info 1:0:0
+
 libgssapi_la_LIBADD = \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_com_err) \
 	$(LIB_des) \
-	$(LIB_roken)
+	$(top_builddir)/lib/roken/libroken.la
 
 man_MANS = gssapi.3 gss_acquire_cred.3
 

@@ -11,7 +11,7 @@ AM_CPPFLAGS += $(ROKEN_RENAME)
 YFLAGS = -d
 
 lib_LTLIBRARIES = libcom_err.la
-libcom_err_la_LDFLAGS = -version-info 2:1:1
+libcom_err_la_LDFLAGS = -version-info 2:2:1
 
 bin_PROGRAMS = compile_et
 

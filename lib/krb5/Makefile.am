@@ -51,7 +51,7 @@ libkrb5_la_LIBADD = \
 	$(LIB_com_err) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_roken) \
+	$(top_builddir)/lib/roken/libroken.la \
 	$(LIB_door_create) \
 	$(LIB_dlopen)
 
@@ -172,7 +172,7 @@ dist_libkrb5_la_SOURCES =			\
 nodist_libkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
-libkrb5_la_LDFLAGS = -version-info 21:0:4
+libkrb5_la_LDFLAGS = -version-info 22:0:0
 
 $(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 

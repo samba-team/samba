@@ -5,8 +5,8 @@ include $(top_srcdir)/Makefile.am.common
 SLC = $(top_builddir)/lib/sl/slc
 
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
-libkadm5srv_la_LDFLAGS = -version-info 7:7:0
-libkadm5clnt_la_LDFLAGS = -version-info 6:5:2
+libkadm5srv_la_LDFLAGS = -version-info 8:0:0
+libkadm5clnt_la_LDFLAGS = -version-info 7:0:0
 sbin_PROGRAMS = iprop-log
 check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
