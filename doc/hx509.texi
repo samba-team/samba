@@ -240,8 +240,8 @@ Setting up a CA
 * Issuing certificates::
 @c * Issuing a proxy certificate::
 @c * Creating a user certificate::
-@c * Validating a certifiate::
-@c * Validating a certifiate path::
+@c * Validating a certificate::
+@c * Validating a certificate path::
 * Application requirements::
 
 CMS signing and encryption
@@ -266,7 +266,7 @@ hx509 can use PKCS11 tokens, PKCS12 files, PEM files, DER encoded files.
 @node What is X.509 ?, Setting up a CA, Introduction, Top
 @chapter What is X.509, PKIX, PKCS7 and CMS ? 
 
-X.509 is from the begining created by CCITT (later ITU) for the X.500
+X.509 is from the beginning created by CCITT (later ITU) for the X.500
 directory service. But today when people are talking about X.509 they
 are commonly referring to IETF's PKIX Certificate and CRL Profile of the
 X.509 v3 certificate standard, as specified in RFC 3280.
@@ -275,7 +275,7 @@ ITU continues to develop the X.509 standard together in a complicated
 dance with IETF.
 
 X.509 is public key based security system that have associated data
-stored within a so called certificate. From the begning X.509 was a
+stored within a so called certificate. From the beginning X.509 was a
 strict hierarchical system with one root. This didn't not work so over
 time X.509 got support for multiple policy roots, bridges, and mesh
 solutions. You can even use it as a peer to peer system, but this is not
@@ -290,7 +290,7 @@ There are several flavors of certificate in X.509.
 @item Trust anchors
 
 Trust anchors are strictly not certificate, but commonly stored in
-certificate since they ar easier to handle then. Trust anchor are the
+certificate since they are easier to handle then. Trust anchor are the
 keys that you trust to validate other certificate. This is done by
 building a path from the certificate you wan to validate to to any of
 the trust anchors you have.
@@ -307,7 +307,7 @@ Certificate authority are certificates that have the right to issue
 other certificate, they may be End entity certificates or Certificate
 Authority certificates. There is no limit to how many certificates a CA
 may issue, but there might other restrictions, like the maximum path
-deepth.
+depth.
 
 @item Proxy certificates
 
@@ -318,16 +318,32 @@ certificates. The service that receives the proxy certificates must have
 explicitly turned on support for proxy certificates, so their use is
 somewhat limited.
 
+Proxy certificates can be limited by policy stored in the certificate to
+what they can be used for. This allows users to delegate the proxy
+certificate to services (by sending over the certificate and private
+key) so the service can access services on behalf of the user.
+
+One example of this would be a print service. The user wants to print a
+large job in the middle of the night when the printer isn't used that
+much, so the user creates a proxy certificate with the policy that it
+can only be used to access files related to this print job, creates the
+print job description and send both the description and proxy
+certificate with key over to print service. Later at night will the
+print service, without the help of the user, access the files for the
+the print job using the proxy certificate and print the job. Because of
+the policy (limitation) in the proxy certificate, it can't be used for
+any other purposes.
+
 @end itemize
 
 @section Building a path
 
 Before validating a path the path must be constructed. Given a
 certificate (EE, CA, Proxy, or any other type), the path construction
-algorith will try to find a path to one of the trust anchors.
+algorithm will try to find a path to one of the trust anchors.
 
 It start with looking at whom issued the certificate, by name or Key
-Identifier, and tries to find that certifiate while at the same time
+Identifier, and tries to find that certificate while at the same time
 evaluates the policy.
 
 @node Setting up a CA, Creating a CA certificate, What is X.509 ?, Top
@@ -372,15 +388,15 @@ about.
 @subsection Lifetime CA certificate
 
 You probably want to create a CA certificate with a long lifetime, 10
-years at the shortest. This because you dont want to push out the
+years at the shortest. This because you don't want to push out the
 certificate (as a trust anchor) to all you users once again when the old
 one just expired. A trust anchor can't really expire, but not all
 software works that way.
 
-Keep in mind the security requirements might be diffrent 10-20 years
+Keep in mind the security requirements might be different 10-20 years
 into the future. For example, SHA1 is going to be withdrawn in 2010, so
 make sure you have enough buffering in your choice of digest/hash
-algorithms, signature algorithms and keylenghts.
+algorithms, signature algorithms and key lengths.
 
 @subsection Create a CA certificate
 
@@ -404,7 +420,7 @@ is to extend the lifetime of your CA certificate.
 
 The example below will extend the CA certificate 10 years into the
 future. You should compare this new certificate if it contains all the
-special tweeks as the old certificate had.
+special tweaks as the old certificate had.
 
 @example
 hxtool issue-certificate \
@@ -452,7 +468,7 @@ Re-issue certificates just because people moved within the organization.
 
 Expose privacy information.
 
-Using Subcomponent name (+ notation).
+Using Sub-component name (+ notation).
 
 @node Application requirements, CMS signing and encryption, Issuing certificates, Top
 @section Application requirements
@@ -465,7 +481,7 @@ certificates for those services.
 
 @example
 hxtool issue-certificate \
-	  --subject="cn=www.test.h5l.se,dc=test,dc=h5l,dc=se" \
+	  --subject="CN=www.test.h5l.se,DC=test,DC=h5l,DC=se" \
 	  --type="https-server" \
           --hostname="www.test.h5l.se" \
           --hostname="www2.test.h5l.se" \
@@ -476,7 +492,7 @@ hxtool issue-certificate \
 
 @example
 hxtool issue-certificate \
-	  --subject="uid=testus,dc=test,dc=h5l,dc=se" \
+	  --subject="UID=testus,DC=test,DC=h5l,DC=se" \
 	  --type="https-client" \
           ...
 @end example
@@ -511,7 +527,7 @@ option --type=email will add the emailProtection EKU.
 
 @example
 hxtool issue-certificate \
-	  --subject="uid=testus-email,dc=test,dc=h5l,dc=se" \
+	  --subject="UID=testus-email,DC=test,DC=h5l,DC=se" \
 	  --type=email \
 	  --email="testus@@test.h5l.se" \
           ...
@@ -553,12 +569,12 @@ hxtool issue-certificate \
 @subsection XMPP/Jabber
 
 The jabber server certificate should have a dNSname that is the same as
-the user entered into the application, not the same as the hostname of
+the user entered into the application, not the same as the host name of
 the machine.
 
 @example
 hxtool issue-certificate \
-	  --subject="cn=xmpp1.test.h5l.se,dc=test,dc=h5l,dc=se" \
+	  --subject="CN=xmpp1.test.h5l.se,DC=test,DC=h5l,DC=se" \
           --hostname="xmpp1.test.h5l.se" \
           --hostname="test.h5l.se" \
           ...
@@ -579,7 +595,7 @@ using the option --jid.
 
 @example
 hxtool issue-certificate \
-	  --subject="cn=Love,dc=test,dc=h5l,dc=se" \
+	  --subject="CN=Love,DC=test,DC=h5l,DC=se" \
           --jid="lha@@test.h5l.se" \
           ...
 @end example
