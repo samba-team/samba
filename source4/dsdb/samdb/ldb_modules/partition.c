@@ -272,7 +272,8 @@ static int partition_send_all(struct ldb_module *module,
  * requests must be replicated to all backends */
 static int partition_replicate(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn) 
 {
-	int i;
+	unsigned i;
+	int ret;
 	struct dsdb_control_current_partition *partition;
 	struct ldb_module *backend;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
@@ -313,9 +314,13 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, partition);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	/* issue request */
 	return ldb_next_request(backend, req);
-	
 }
 
 /* search */
