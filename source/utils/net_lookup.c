@@ -84,6 +84,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	struct hostent *hostent;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
+	char *sitename = sitename_fetch();
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
 
@@ -94,22 +95,24 @@ static int net_lookup_ldap(int argc, const char **argv)
 
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
 		d_fprintf(stderr, "net_lookup_ldap: talloc_inti() failed!\n");
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	status = ads_dns_query_dcs( ctx, domain, sitename, &dcs, &numdcs );
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-
+		SAFE_FREE(sitename);
 		return 0;
 	}
 
      	DEBUG(9, ("Looking up DC for domain %s\n", domain));
 	if (!get_pdc_ip(domain, &addr)) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -117,6 +120,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 				AF_INET);
 	if (!hostent) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -124,22 +128,23 @@ static int net_lookup_ldap(int argc, const char **argv)
 	domain = strchr(hostent->h_name, '.');
 	if (!domain) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 	domain++;
 
 	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	status = ads_dns_query_dcs( ctx, domain, sitename, &dcs, &numdcs );
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-
+		SAFE_FREE(sitename);
 		return 0;
 	}
 
 	TALLOC_FREE( ctx );
-
+	SAFE_FREE(sitename);
 
 	return -1;
 #endif
@@ -153,6 +158,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	struct in_addr addr;
 	char *pdc_str = NULL;
 	const char *domain=opt_target_workgroup;
+	char *sitename = NULL;
 	int count, i;
 
 	if (argc > 0)
@@ -165,10 +171,13 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count, False))) {
+	sitename = sitename_fetch();
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, False))) {
 		SAFE_FREE(pdc_str);
+		SAFE_FREE(sitename);
 		return 0;
 	}
+	SAFE_FREE(sitename);
 	for (i=0;i<count;i++) {
 		char *dc_str = inet_ntoa(ip_list[i].ip);
 		if (!strequal(pdc_str, dc_str))

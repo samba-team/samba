@@ -673,16 +673,16 @@ NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 }
 
 /********************************************************************
- Query for AD DC's. Transparently use sitename.
+ Query for AD DC's.
 ********************************************************************/
 
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			const char *realm,
+			const char *sitename,
 			struct dns_rr_srv **dclist,
 			int *numdcs )
 {
 	NTSTATUS status;
-	char *sitename = sitename_fetch();
 
 	status = ads_dns_query_internal(ctx, "_ldap", realm, sitename,
 					dclist, numdcs);
@@ -691,23 +691,22 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 		status = ads_dns_query_internal(ctx, "_ldap", realm, NULL,
 						dclist, numdcs);
 	}
-	SAFE_FREE(sitename);
 	return status;
 }
 
 /********************************************************************
- Query for AD KDC's. Transparently use sitename.
+ Query for AD KDC's.
  Even if our underlying kerberos libraries are UDP only, this
  is pretty safe as it's unlikely that a KDC supports TCP and not UDP.
 ********************************************************************/
 
 NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 			const char *realm,
+			const char *sitename,
 			struct dns_rr_srv **dclist,
 			int *numdcs )
 {
 	NTSTATUS status;
-	char *sitename = sitename_fetch();
 
 	status = ads_dns_query_internal(ctx, "_kerberos", realm, sitename,
 					dclist, numdcs);
@@ -716,6 +715,5 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 		status = ads_dns_query_internal(ctx, "_kerberos", realm, NULL,
 						dclist, numdcs);
 	}
-	SAFE_FREE(sitename);
 	return status;
 }
