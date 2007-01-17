@@ -161,13 +161,18 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	int allocated_ctx;
 
 	*minor_status = 0;
-	if (src_name) *src_name = 0;
-	if (mech_type) *mech_type = 0;
-	if (ret_flags) *ret_flags = 0;
-	if (time_rec) *time_rec = 0;
-	if (delegated_cred_handle) *delegated_cred_handle = 0;
-	output_token->length = 0;
-	output_token->value = 0;
+	if (src_name)
+	    *src_name = GSS_C_NO_NAME;
+	if (mech_type)
+	    *mech_type = GSS_C_NO_OID;
+	if (ret_flags)
+	    *ret_flags = 0;
+	if (time_rec)
+	    *time_rec = 0;
+	if (delegated_cred_handle)
+	    *delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	_mg_buffer_zero(output_token);
+
 
 	/*
 	 * If this is the first call (*context_handle is NULL), we must
