@@ -44,7 +44,7 @@ gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
 	gssapi_mech_interface	m;
 
 	*minor_status = 0;
-
+	*data_set = GSS_C_NO_OID_SET;
 	if (ctx == NULL)
 		return GSS_S_NO_CONTEXT;
 

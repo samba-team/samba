@@ -46,6 +46,14 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 	struct _gss_name *name;
 
 	*minor_status = 0;
+	if (cred_name)
+	    *cred_name = GSS_C_NO_NAME;
+	if (initiator_lifetime)
+	    *initiator_lifetime = 0;
+	if (acceptor_lifetime)
+	    *acceptor_lifetime = 0;
+	if (cred_usage)
+	    *cred_usage = 0;
 
 	m = __gss_get_mechanism(mech_type);
 	if (!m)
