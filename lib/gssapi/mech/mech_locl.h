@@ -61,3 +61,6 @@
 #include "mech_switch.h"
 #include "name.h"
 #include "utils.h"
+
+#define _mg_buffer_zero(buffer) \
+	do { (buffer)->value = NULL; (buffer)->length = 0; } while(0)
