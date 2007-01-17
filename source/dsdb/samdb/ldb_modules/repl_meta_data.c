@@ -168,6 +168,64 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	return 0;
 }
 
+static int replmd_prepare_originating(struct ldb_module *module, struct ldb_request *req,
+				      struct ldb_dn *dn, const char *fn_name,
+				      int (*fn)(struct ldb_module *,
+			 			struct ldb_request *,
+						const struct dsdb_schema *,
+						const struct dsdb_control_current_partition *))
+{
+	const struct dsdb_schema *schema;
+	const struct ldb_control *partition_ctrl;
+	const struct dsdb_control_current_partition *partition;
+ 
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "replmd_modify: no dsdb_schema loaded");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "%s: no dsdb_schema loaded",
+			      fn_name);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	partition_ctrl = get_control_from_list(req->controls, DSDB_CONTROL_CURRENT_PARTITION_OID);
+	if (!partition_ctrl) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "%s: no current partition control found",
+			      fn_name);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	partition = talloc_get_type(partition_ctrl->data,
+				    struct dsdb_control_current_partition);
+	if (!partition) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "%s: current partition control contains invalid data",
+			      fn_name);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (partition->version != DSDB_CONTROL_CURRENT_PARTITION_VERSION) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "%s: current partition control contains invalid version [%u != %u]\n",
+			      fn_name, partition->version, DSDB_CONTROL_CURRENT_PARTITION_VERSION);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	return fn(module, req, schema, partition);
+}
+
 static int replmd_add_originating(struct ldb_module *module,
 				  struct ldb_request *req,
 				  const struct dsdb_schema *schema,
@@ -251,45 +309,8 @@ static int replmd_add_originating(struct ldb_module *module,
 
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct dsdb_schema *schema;
-	const struct ldb_control *partition_ctrl;
-	const struct dsdb_control_current_partition *partition;
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_add: no dsdb_schema loaded");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	partition_ctrl = get_control_from_list(req->controls, DSDB_CONTROL_CURRENT_PARTITION_OID);
-	if (!partition_ctrl) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_add: no current partition control found");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	partition = talloc_get_type(partition_ctrl->data,
-				    struct dsdb_control_current_partition);
-	if (!partition) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_add: current partition control contains invalid data");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	if (partition->version != DSDB_CONTROL_CURRENT_PARTITION_VERSION) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_add: current partition control contains invalid version [%u != %u]\n",
-			      partition->version, DSDB_CONTROL_CURRENT_PARTITION_VERSION);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	return replmd_add_originating(module, req, schema, partition);
+	return replmd_prepare_originating(module, req, req->op.add.message->dn,
+					  "replmd_add", replmd_add_originating);
 }
 
 static int replmd_modify_originating(struct ldb_module *module,
@@ -349,52 +370,8 @@ static int replmd_modify_originating(struct ldb_module *module,
 
 static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct dsdb_schema *schema;
-	const struct ldb_control *partition_ctrl;
-	const struct dsdb_control_current_partition *partition;
- 
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: no dsdb_schema loaded");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: no dsdb_schema loaded");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	partition_ctrl = get_control_from_list(req->controls, DSDB_CONTROL_CURRENT_PARTITION_OID);
-	if (!partition_ctrl) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: no current partition control found");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	partition = talloc_get_type(partition_ctrl->data,
-				    struct dsdb_control_current_partition);
-	if (!partition) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: current partition control contains invalid data");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	if (partition->version != DSDB_CONTROL_CURRENT_PARTITION_VERSION) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: current partition control contains invalid version [%u != %u]\n",
-			      partition->version, DSDB_CONTROL_CURRENT_PARTITION_VERSION);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	return replmd_modify_originating(module, req, schema, partition);
+	return replmd_prepare_originating(module, req, req->op.mod.message->dn,
+					  "replmd_modify", replmd_modify_originating);
 }
 
 static int replmd_replicated_request_reply_helper(struct replmd_replicated_request *ar, int ret)
