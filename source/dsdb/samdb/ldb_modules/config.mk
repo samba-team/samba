@@ -45,6 +45,28 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_naming_fsmo
+[MODULE::ldb_naming_fsmo]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
+INIT_FUNCTION = naming_fsmo_module_init
+OBJ_FILES = \
+		naming_fsmo.o
+# End MODULE ldb_naming_fsmo
+################################################
+
+################################################
+# Start MODULE ldb_pdc_fsmo
+[MODULE::ldb_pdc_fsmo]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
+INIT_FUNCTION = pdc_fsmo_module_init
+OBJ_FILES = \
+		pdc_fsmo.o
+# End MODULE ldb_pdc_fsmo
+################################################
+
+################################################
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = ldb
