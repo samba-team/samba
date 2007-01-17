@@ -1,4 +1,12 @@
+2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* fortuna: Add fortuna based on Marko Kreen's pgcrypt, no enabled yet
+
 2007-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_rsa.c: if RAND is unhappy, don't run the tests.
+
+	* test_engine_dso.c: if RAND is unhappy, don't run the tests.
 
 	* imath/imath.c: Update to imath-1.8 from Michael Fromberger
 	

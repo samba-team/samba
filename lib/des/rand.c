@@ -43,6 +43,7 @@ RCSID("$Id$");
 
 #include <roken.h>
 
+extern RAND_METHOD hc_rand_fortuna_method;
 extern RAND_METHOD hc_rand_unix_method;
 static const RAND_METHOD *selected_meth = &hc_rand_unix_method;
 

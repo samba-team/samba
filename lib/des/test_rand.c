@@ -1,6 +1,5 @@
-
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,69 +31,97 @@
  * SUCH DAMAGE. 
  */
 
-/*
- * $Id$
- */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#ifndef _HEIM_RAND_H
-#define _HEIM_RAND_H 1
+#ifdef RCSID
+RCSID("$Id$");
+#endif
 
-typedef struct RAND_METHOD RAND_METHOD;
+#include <stdio.h>
 
-#include <hcrypto/bn.h>
-#include <hcrypto/engine.h>
+#include <roken.h>
+#include <getarg.h>
 
-/* symbol renaming */
-#define RAND_bytes hc_RAND_bytes
-#define RAND_pseudo_bytes hc_RAND_pseudo_bytes
-#define RAND_seed hc_RAND_seed
-#define RAND_cleanup hc_RAND_cleanup
-#define RAND_add hc_RAND_add
-#define RAND_set_rand_method hc_RAND_set_rand_method
-#define RAND_get_rand_method hc_RAND_get_rand_method
-#define RAND_set_rand_engine hc_RAND_set_rand_engine
-#define RAND_load_file hc_RAND_load_file
-#define RAND_write_file hc_RAND_write_file
-#define RAND_status hc_RAND_status
-#define RAND_egd hc_RAND_egd
-#define RAND_fortuna_method hc_RAND_fortuna_method
+#include "rand.h"
+
 
 /*
  *
  */
 
-struct RAND_METHOD
-{
-    void (*seed)(const void *, int);
-    int (*bytes)(unsigned char *, int);
-    void (*cleanup)(void);
-    void (*add)(const void *, int, double);
-    int (*pseudorand)(unsigned char *, int);
-    int (*status)(void);
+static int version_flag;
+static int help_flag;
+static int len = 1024 * 1024;
+
+static struct getargs args[] = {
+    { "length",	0,	arg_integer,	&len,
+      "length", NULL },
+    { "version",	0,	arg_flag,	&version_flag,
+      "print version", NULL },
+    { "help",		0,	arg_flag,	&help_flag,
+      NULL, 	NULL }
 };
 
 /*
  *
  */
 
-int	RAND_bytes(void *, size_t num);
-int	RAND_pseudo_bytes(void *, size_t);
-void	RAND_seed(const void *, size_t);
-void	RAND_cleanup(void);
-void	RAND_add(const void *, size_t, double);
+/*
+ *
+ */
 
-int	RAND_set_rand_method(const RAND_METHOD *);
-const RAND_METHOD *
-	RAND_get_rand_method(void);
-int	RAND_set_rand_engine(ENGINE *);
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "out-random-file");
+    exit (ret);
+}
 
-int	RAND_load_file(const char *, size_t);
-int	RAND_write_file(const char *);
-int	RAND_status(void);
-int	RAND_egd(const char *);
+int
+main(int argc, char **argv)
+{
+    int idx = 0;
+    char *buffer;
 
+    setprogname(argv[0]);
 
-const RAND_METHOD *	RAND_fortuna_method(void);
-const RAND_METHOD *	RAND_unix_method(void);
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &idx))
+	usage(1);
+    
+    if (help_flag)
+	usage(0);
 
-#endif /* _HEIM_RAND_H */
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= idx;
+    argv += idx;
+
+    if (argc < 1)
+	usage(1);
+
+    buffer = emalloc(len);
+
+    RAND_set_rand_method(RAND_fortuna_method());
+
+    RAND_seed(buffer, len);
+
+    if (RAND_status() != 1)
+	errx(1, "random not ready yet");
+
+    if (RAND_bytes(buffer, len) != 1)
+	errx(1, "RAND_bytes");
+
+    rk_dumpdata(argv[0], buffer, len);
+
+    free(buffer);
+
+    return 0;
+}

@@ -43,6 +43,8 @@ RCSID("$Id$");
 
 #include <roken.h>
 
+#include "randi.h"
+
 /*
  * Unix /dev/random
  */
@@ -84,8 +86,8 @@ unix_seed(const void *indata, int size)
 
 }
 
-static int 
-unix_bytes(unsigned char *outdata, int size)
+int 
+_hc_rand_unix_bytes(unsigned char *outdata, int size)
 {
     ssize_t count;
     int fd;
@@ -127,7 +129,7 @@ unix_add(const void *indata, int size, double entropi)
 static int
 unix_pseudorand(unsigned char *outdata, int size)
 {
-    return unix_bytes(outdata, size);
+    return _hc_rand_unix_bytes(outdata, size);
 }
 
 static int
@@ -145,9 +147,15 @@ unix_status(void)
 
 const RAND_METHOD hc_rand_unix_method = {
     unix_seed,
-    unix_bytes,
+    _hc_rand_unix_bytes,
     unix_cleanup,
     unix_add,
     unix_pseudorand,
     unix_status
 };
+
+const RAND_METHOD *
+RAND_unix_method(void)
+{
+    return &hc_rand_unix_method;
+}
