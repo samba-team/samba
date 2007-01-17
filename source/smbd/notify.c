@@ -40,6 +40,17 @@ struct change_notify {
 	void *change_data;
 };
 
+/*
+ * For NTCancel, we need to find the notify_change_request indexed by
+ * mid. Separate list here.
+ */
+
+struct notify_mid_map {
+	struct notify_mid_map *prev, *next;
+	struct notify_change_request *req;
+	uint16 mid;
+};
+
 static struct change_notify *change_notify_list;
 
 static BOOL notify_marshall_changes(unsigned num_changes,
