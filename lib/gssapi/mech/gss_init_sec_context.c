@@ -139,6 +139,7 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	    && major_status != GSS_S_CONTINUE_NEEDED) {
 		if (allocated_ctx)
 			free(ctx);
+		_mg_buffer_zero(output_token);
 		_gss_mg_error(m, major_status, *minor_status);
 	} else {
 		*context_handle = (gss_ctx_id_t) ctx;
