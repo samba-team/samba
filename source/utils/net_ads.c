@@ -218,8 +218,6 @@ static ADS_STATUS ads_startup_int(BOOL only_own_domain, uint32 auth_flags, ADS_S
 	char *cp;
 	const char *realm = NULL;
 	BOOL tried_closest_dc = False;
-	BOOL closest_dc = False;
-	BOOL site_matches = False;
 
 	/* lp_realm() should be handled by a command line param, 
 	   However, the join requires that realm be set in smb.conf
@@ -290,7 +288,7 @@ retry:
 			return status;
 		}
 	
-		if (!need_password && !second_time) {
+		if (!need_password && !second_time && !(auth_flags & ADS_AUTH_NO_BIND)) {
 			need_password = True;
 			second_time = True;
 			goto retry;
@@ -304,17 +302,11 @@ retry:
 	 * This is done by reconnecting to ADS because only the first call to
 	 * ads_connect will give us our own sitename */
 
-	closest_dc = (ads->config.flags & ADS_CLOSEST);
-	site_matches = ads_sitename_match(ads);
-
-	DEBUG(10,("ads_startup_int: DC %s closest DC\n", closest_dc ? "is":"is *NOT*"));
-	DEBUG(10,("ads_startup_int: sitenames %s match\n", site_matches ? "do":"do *NOT*"));
-
 	if ((only_own_domain || !opt_host) && !tried_closest_dc) {
 
 		tried_closest_dc = True; /* avoid loop */
 
-		if (!ads_closest_dc(ads)) {
+		if (!ads->config.tried_closest_dc) {
 
 			namecache_delete(ads->server.realm, 0x1C);
 			namecache_delete(ads->server.workgroup, 0x1C);

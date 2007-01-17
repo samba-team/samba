@@ -55,6 +55,7 @@ typedef struct {
 		char *server_site_name;
 		char *client_site_name;
 		time_t current_time;
+		int tried_closest_dc;
 	} config;
 
 	/* info derived from the servers schema */
