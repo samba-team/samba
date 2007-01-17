@@ -37,8 +37,7 @@ gss_release_buffer(OM_uint32 *minor_status,
 	*minor_status = 0;
 	if (buffer->value)
 		free(buffer->value);
-	buffer->length = 0;
-	buffer->value = 0;
+	_mg_buffer_zero(buffer);
 
 	return (GSS_S_COMPLETE);
 }
