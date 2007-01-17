@@ -1,5 +1,7 @@
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/hx509.texi: Spelling and more about proxy certificates.
+
 	* configure.in: check for arc4random
 	
 2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
