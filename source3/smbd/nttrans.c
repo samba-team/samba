@@ -634,10 +634,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
-	if (!check_name(fname,conn)) {
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
 		END_PROFILE(SMBntcreateX);
-		return UNIXERROR(ERRDOS,ERRbadpath);
+		return ERROR_NT(status);
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete is
@@ -1259,9 +1260,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
-	if (!check_name(fname,conn)) {
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		restore_case_semantics(conn, file_attributes);
-		return UNIXERROR(ERRDOS,ERRbadpath);
+		return ERROR_NT(status);
 	}
     
 	/* This is the correct thing to do (check every time) but can_delete is
@@ -1570,8 +1572,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	if (!CAN_WRITE(conn))
+	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
 
 	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1582,8 +1585,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	if (!VALID_STAT(sbuf1)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	if (!check_name(oldname,conn)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Ensure attributes match. */
@@ -1602,8 +1606,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	if (!check_name(newname,conn)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_name(conn, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* No links from a directory. */
@@ -1612,8 +1617,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	}
 
 	/* Ensure this is within the share. */
-	if (!reduce_name(conn, oldname) != 0) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = reduce_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));

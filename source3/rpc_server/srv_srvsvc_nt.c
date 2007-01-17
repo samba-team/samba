@@ -2073,7 +2073,8 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, const char *server_unc, const
 		goto error_exit;
 	}
 
-	if (!check_name(file,conn)) {
+	nt_status = check_name(conn, file);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
@@ -2176,7 +2177,8 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, const char *server_unc, const
 		goto error_exit;
 	}
 
-	if (!check_name(file,conn)) {
+	nt_status = check_name(conn, file);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
