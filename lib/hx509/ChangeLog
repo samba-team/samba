@@ -1,3 +1,7 @@
+2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Fix makefile problem.
+	
 2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool.c: Set num of bits before we generate the key.
