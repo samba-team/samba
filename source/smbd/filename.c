@@ -512,28 +512,25 @@ NTSTATUS unix_convert(connection_struct *conn,
  a valid one for the user to access.
 ****************************************************************************/
 
-BOOL check_name(const pstring name,connection_struct *conn)
+NTSTATUS check_name(connection_struct *conn, const pstring name)
 {
-	BOOL ret = True;
-
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
 		if (!((name[0] == '.') && (!name[1] || (name[1] == '.' && !name[2])))) {
-			DEBUG(5,("file path name %s vetoed\n",name));
-			errno = ENOENT;
-			return False;
+			DEBUG(5,("check_name: file path name %s vetoed\n",name));
+			return map_nt_error_from_unix(ENOENT);
 		}
 	}
 
 	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
-		ret = reduce_name(conn,name);
+		NTSTATUS status = reduce_name(conn,name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5,("check_name: name %s failed with %s\n",name, nt_errstr(status)));
+			return status;
+		}
 	}
 
-	if (!ret) {
-		DEBUG(5,("check_name on %s failed\n",name));
-	}
-
-	return(ret);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

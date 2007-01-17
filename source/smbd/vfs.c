@@ -821,7 +821,7 @@ BOOL canonicalize_path(connection_struct *conn, pstring path)
  it is below dir in the heirachy. This uses realpath.
 ********************************************************************/
 
-BOOL reduce_name(connection_struct *conn, const pstring fname)
+NTSTATUS reduce_name(connection_struct *conn, const pstring fname)
 {
 #ifdef REALPATH_TAKES_NULL
 	BOOL free_resolved_name = True;
@@ -836,7 +836,6 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 	char *resolved_name = NULL;
 	size_t con_path_len = strlen(conn->connectpath);
 	char *p = NULL;
-	int saved_errno = errno;
 
 	DEBUG(3,("reduce_name [%s] [%s]\n", fname, conn->connectpath));
 
@@ -850,8 +849,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 		switch (errno) {
 			case ENOTDIR:
 				DEBUG(3,("reduce_name: Component not a directory in getting realpath for %s\n", fname));
-				errno = saved_errno;
-				return False;
+				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
 				pstring tmp_fname;
@@ -875,8 +873,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
-					errno = saved_errno;
-					return False;
+					return map_nt_error_from_unix(errno);
 				}
 				pstrcpy(tmp_fname, resolved_name);
 				pstrcat(tmp_fname, "/");
@@ -886,8 +883,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 				resolved_name = SMB_STRDUP(tmp_fname);
 				if (!resolved_name) {
 					DEBUG(0,("reduce_name: malloc fail for %s\n", tmp_fname));
-					errno = saved_errno;
-					return False;
+					return NT_STATUS_NO_MEMORY;
 				}
 #else
 #ifdef PATH_MAX
@@ -901,9 +897,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 			}
 			default:
 				DEBUG(1,("reduce_name: couldn't get realpath for %s\n", fname));
-				/* Don't restore the saved errno. We need to return the error that
-				   realpath caused here as it was not one of the cases we handle. JRA. */
-				return False;
+				return map_nt_error_from_unix(errno);
 		}
 	}
 
@@ -911,19 +905,19 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 
 	if (*resolved_name != '/') {
 		DEBUG(0,("reduce_name: realpath doesn't return absolute paths !\n"));
-		if (free_resolved_name)
+		if (free_resolved_name) {
 			SAFE_FREE(resolved_name);
-		errno = saved_errno;
-		return False;
+		}
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	/* Check for widelinks allowed. */
 	if (!lp_widelinks(SNUM(conn)) && (strncmp(conn->connectpath, resolved_name, con_path_len) != 0)) {
 		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
-		if (free_resolved_name)
+		if (free_resolved_name) {
 			SAFE_FREE(resolved_name);
-		errno = EACCES;
-		return False;
+		}
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
         /* Check if we are allowing users to follow symlinks */
@@ -935,18 +929,18 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
                 SMB_STRUCT_STAT statbuf;
                 if ( (SMB_VFS_LSTAT(conn,fname,&statbuf) != -1) &&
                                 (S_ISLNK(statbuf.st_mode)) ) {
-			if (free_resolved_name)
+			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);
+			}
                         DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",resolved_name));
-                        errno = EACCES;
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
                 }
         }
 #endif
 
 	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, resolved_name));
-	if (free_resolved_name)
+	if (free_resolved_name) {
 		SAFE_FREE(resolved_name);
-	errno = saved_errno;
-	return(True);
+	}
+	return NT_STATUS_OK;
 }

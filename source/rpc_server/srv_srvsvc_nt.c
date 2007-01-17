@@ -1832,7 +1832,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	if (!check_name(filename,conn)) {
+	nt_status = check_name(conn, filename);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
@@ -1946,7 +1947,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 		goto error_exit;
 	}
 
-	if (!check_name(filename,conn)) {
+	nt_status = check_name(conn, filename);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;

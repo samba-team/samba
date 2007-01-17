@@ -637,42 +637,53 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 
 	status = unix_convert(conn, name, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBcheckpath);
-		status = map_checkpath_error(inbuf, status);
-		return ERROR_NT(status);
+		goto path_err;
 	}
 
-	if (check_name(name,conn) && (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)) {
-		if (!S_ISDIR(sbuf.st_mode)) {
-			END_PROFILE(SMBcheckpath);
-			return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
-		}
-	} else {
-		/* We special case this - as when a Windows machine
-			is parsing a path is steps through the components
-			one at a time - if a component fails it expects
-			ERRbadpath, not ERRbadfile.
-		*/
-		if(errno == ENOENT) {
-			/*
-			 * Windows returns different error codes if
-			 * the parent directory is valid but not the
-			 * last component - it returns NT_STATUS_OBJECT_NAME_NOT_FOUND
-			 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
-			 * if the path is invalid.
-			 */
-			END_PROFILE(SMBcheckpath);
-			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
-		}
+	status = check_name(conn, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3,("reply_checkpath: check_name of %s failed (%s)\n",name,nt_errstr(status)));
+		goto path_err;
+	}
 
+	if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,name,&sbuf) != 0)) {
+		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",name,strerror(errno)));
+		status = map_nt_error_from_unix(errno);
+		goto path_err;
+	}
+
+	if (!S_ISDIR(sbuf.st_mode)) {
 		END_PROFILE(SMBcheckpath);
-		return(UNIXERROR(ERRDOS,ERRbadpath));
+		return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
 	}
 
 	outsize = set_message(outbuf,0,0,False);
 
 	END_PROFILE(SMBcheckpath);
 	return outsize;
+
+  path_err:
+
+	END_PROFILE(SMBcheckpath);
+
+	/* We special case this - as when a Windows machine
+		is parsing a path is steps through the components
+		one at a time - if a component fails it expects
+		ERRbadpath, not ERRbadfile.
+	*/
+	status = map_checkpath_error(inbuf, status);
+	if(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * Windows returns different error codes if
+		 * the parent directory is valid but not the
+		 * last component - it returns NT_STATUS_OBJECT_NAME_NOT_FOUND
+		 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
+		 * if the path is invalid.
+		 */
+		return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
+	}
+
+	return ERROR_NT(status);
 }
 
 /****************************************************************************
@@ -716,18 +727,22 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			END_PROFILE(SMBgetatr);
 			return ERROR_NT(status);
 		}
-		if (check_name(fname,conn) &&
-				(VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0)) {
-			mode = dos_mode(conn,fname,&sbuf);
-			size = sbuf.st_size;
-			mtime = sbuf.st_mtime;
-			if (mode & aDIR) {
-				size = 0;
-			}
-		} else {
-			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
+		status = check_name(conn, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("reply_getatr: check_name of %s failed (%s)\n",fname,nt_errstr(status)));
 			END_PROFILE(SMBgetatr);
+			return ERROR_NT(status);
+		}
+		if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,fname,&sbuf) != 0)) {
+			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
 			return UNIXERROR(ERRDOS,ERRbadfile);
+		}
+
+		mode = dos_mode(conn,fname,&sbuf);
+		size = sbuf.st_size;
+		mtime = sbuf.st_mtime;
+		if (mode & aDIR) {
+			size = 0;
 		}
 	}
   
@@ -791,9 +806,10 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
-	if (!check_name(fname,conn)) {
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsetatr);
-		return UNIXERROR(ERRDOS, ERRnoaccess);
+		return ERROR_NT(status);
 	}
 
 	mode = SVAL(inbuf,smb_vwv0);
@@ -949,9 +965,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 		unix_format(dir2);
 
-		if (!check_name(directory,conn)) {
+		nt_status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			END_PROFILE(SMBsearch);
-			return UNIXERROR(ERRDOS, ERRnoaccess);
+			return ERROR_NT(nt_status);
 		}
 
 		p = strrchr_m(dir2,'/');
@@ -995,14 +1012,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	p = smb_buf(outbuf) + 3;
      
 	if (status_len == 0) {
-		dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
-		if (dptr_num < 0) {
-			if(dptr_num == -2) {
-				END_PROFILE(SMBsearch);
-				return UNIXERROR(ERRDOS, ERRnofids);
-			}
-			END_PROFILE(SMBsearch);
-			return ERROR_DOS(ERRDOS,ERRnofids);
+		nt_status = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype,&dptr_num);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ERROR_NT(nt_status);
 		}
 	} else {
 		dirtype = dptr_attr(dptr_num);
@@ -1838,66 +1850,73 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			dirtype = FILE_ATTRIBUTE_NORMAL;
 		}
 		status = can_delete(conn,directory,dirtype,can_defer);
-		if (!NT_STATUS_IS_OK(status))
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
+		long offset = 0;
 		const char *dname;
 		
 		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
-		if (strequal(mask,"????????.???"))
+		if (strequal(mask,"????????.???")) {
 			pstrcpy(mask,"*");
+		}
 
-		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, mask, dirtype);
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		dir_hnd = OpenDir(conn, directory, mask, dirtype);
+		if (dir_hnd == NULL) {
+			return map_nt_error_from_unix(errno);
+		}
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
 		   We don't implement this yet XXXX
 		*/
 		
-		if (dir_hnd) {
-			long offset = 0;
-			status = NT_STATUS_NO_SUCH_FILE;
+		status = NT_STATUS_NO_SUCH_FILE;
 
-			while ((dname = ReadDirName(dir_hnd, &offset))) {
-				SMB_STRUCT_STAT st;
-				pstring fname;
-				pstrcpy(fname,dname);
+		while ((dname = ReadDirName(dir_hnd, &offset))) {
+			SMB_STRUCT_STAT st;
+			pstring fname;
+			pstrcpy(fname,dname);
 
-				if (!is_visible_file(conn, directory, dname, &st, True)) {
-					continue;
-				}
-
-				/* Quick check for "." and ".." */
-				if (fname[0] == '.') {
-					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						continue;
-					}
-				}
-
-				if(!mask_match(fname, mask, conn->case_sensitive))
-					continue;
-				
-				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				status = can_delete(conn, fname, dirtype,
-						    can_defer);
-				if (!NT_STATUS_IS_OK(status)) {
-					continue;
-				}
-				if (SMB_VFS_UNLINK(conn,fname) == 0)
-					count++;
-				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
+			if (!is_visible_file(conn, directory, dname, &st, True)) {
+				continue;
 			}
-			CloseDir(dir_hnd);
+
+			/* Quick check for "." and ".." */
+			if (fname[0] == '.') {
+				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+					continue;
+				}
+			}
+
+			if(!mask_match(fname, mask, conn->case_sensitive)) {
+				continue;
+			}
+				
+			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+			status = can_delete(conn, fname, dirtype, can_defer);
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
+			}
+			if (SMB_VFS_UNLINK(conn,fname) == 0)
+				count++;
+			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 		}
+		CloseDir(dir_hnd);
 	}
 	
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
@@ -3788,9 +3807,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
   
-	if (!check_name(directory,conn)) {
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBrmdir);
-		return UNIXERROR(ERRDOS, ERRbadpath);
+		return ERROR_NT(status);
 	}
 
 	dptr_closepath(directory,SVAL(inbuf,smb_pid));
@@ -4266,10 +4286,11 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		}
 
 		TALLOC_FREE(lck);
-		if (errno == ENOTDIR || errno == EISDIR)
+		if (errno == ENOTDIR || errno == EISDIR) {
 			status = NT_STATUS_OBJECT_NAME_COLLISION;
-		else
+		} else {
 			status = map_nt_error_from_unix(errno);
+		}
 		
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
 			nt_errstr(status), directory,newname));
@@ -4281,98 +4302,105 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		 */
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
+		long offset = 0;
 		pstring destname;
 		
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
 			
-		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, mask, attrs);
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	
+		dir_hnd = OpenDir(conn, directory, mask, attrs);
+		if (dir_hnd == NULL) {
+			return map_nt_error_from_unix(errno);
+		}
 		
-		if (dir_hnd) {
-			long offset = 0;
-			status = NT_STATUS_NO_SUCH_FILE;
-/*			Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
+		status = NT_STATUS_NO_SUCH_FILE;
+/*		Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
 			
-			while ((dname = ReadDirName(dir_hnd, &offset))) {
-				pstring fname;
-				BOOL sysdir_entry = False;
+		while ((dname = ReadDirName(dir_hnd, &offset))) {
+			pstring fname;
+			BOOL sysdir_entry = False;
 
-				pstrcpy(fname,dname);
+			pstrcpy(fname,dname);
 				
-				/* Quick check for "." and ".." */
-				if (fname[0] == '.') {
-					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						if (attrs & aDIR) {
-							sysdir_entry = True;
-						} else {
-							continue;
-						}
+			/* Quick check for "." and ".." */
+			if (fname[0] == '.') {
+				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+					if (attrs & aDIR) {
+						sysdir_entry = True;
+					} else {
+						continue;
 					}
 				}
-
-				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
-					continue;
-
-				if(!mask_match(fname, mask, conn->case_sensitive))
-					continue;
-				
-				if (sysdir_entry) {
-					status = NT_STATUS_OBJECT_NAME_INVALID;
-					break;
-				}
-
-				status = NT_STATUS_ACCESS_DENIED;
-				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
-				if (!vfs_object_exist(conn, fname, &sbuf1)) {
-					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(status)));
-					continue;
-				}
-				status = can_rename(conn,fname,attrs,&sbuf1);
-				if (!NT_STATUS_IS_OK(status)) {
-					DEBUG(6,("rename %s refused\n", fname));
-					continue;
-				}
-				pstrcpy(destname,newname);
-				
-				if (!resolve_wildcards(fname,destname)) {
-					DEBUG(6,("resolve_wildcards %s %s failed\n", 
-                                                 fname, destname));
-					continue;
-				}
-				
-				if (strcsequal(fname,destname)) {
-					rename_open_files(conn, NULL, sbuf1.st_dev, sbuf1.st_ino, newname);
-					DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
-					count++;
-					status = NT_STATUS_OK;
-					continue;
-				}
-
-				if (!replace_if_exists && 
-                                    vfs_file_exist(conn,destname, NULL)) {
-					DEBUG(6,("file_exist %s\n", destname));
-					status = NT_STATUS_OBJECT_NAME_COLLISION;
-					continue;
-				}
-				
-				if (rename_path_prefix_equal(fname, destname)) {
-					return NT_STATUS_SHARING_VIOLATION;
-				}
-
-				lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino, NULL, NULL);
-
-				if (!SMB_VFS_RENAME(conn,fname,destname)) {
-					rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
-					count++;
-					status = NT_STATUS_OK;
-				}
-				TALLOC_FREE(lck);
-				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
-			CloseDir(dir_hnd);
+
+			if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+				continue;
+			}
+
+			if(!mask_match(fname, mask, conn->case_sensitive)) {
+				continue;
+			}
+				
+			if (sysdir_entry) {
+				status = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
+			}
+
+			status = NT_STATUS_ACCESS_DENIED;
+			slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
+			if (!vfs_object_exist(conn, fname, &sbuf1)) {
+				status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(status)));
+				continue;
+			}
+			status = can_rename(conn,fname,attrs,&sbuf1);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(6,("rename %s refused\n", fname));
+				continue;
+			}
+			pstrcpy(destname,newname);
+			
+			if (!resolve_wildcards(fname,destname)) {
+				DEBUG(6,("resolve_wildcards %s %s failed\n", 
+                                                fname, destname));
+				continue;
+			}
+				
+			if (strcsequal(fname,destname)) {
+				rename_open_files(conn, NULL, sbuf1.st_dev, sbuf1.st_ino, newname);
+				DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
+				count++;
+				status = NT_STATUS_OK;
+				continue;
+			}
+
+			if (!replace_if_exists && vfs_file_exist(conn,destname, NULL)) {
+				DEBUG(6,("file_exist %s\n", destname));
+				status = NT_STATUS_OBJECT_NAME_COLLISION;
+				continue;
+			}
+				
+			if (rename_path_prefix_equal(fname, destname)) {
+				return NT_STATUS_SHARING_VIOLATION;
+			}
+
+			lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino, NULL, NULL);
+
+			if (!SMB_VFS_RENAME(conn,fname,destname)) {
+				rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
+				count++;
+				status = NT_STATUS_OK;
+			}
+			TALLOC_FREE(lck);
+			DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 		}
+		CloseDir(dir_hnd);
+	}
 
 #if 0
 	/* Don't think needed any more - JRA. */
@@ -4385,8 +4413,6 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		}
 #endif
 
-	}
-	
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
 	}
@@ -4692,40 +4718,49 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
+		long offset = 0;
 		pstring destname;
 
 		if (strequal(mask,"????????.???"))
 			pstrcpy(mask,"*");
 
-		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, mask, 0);
-
-		if (dir_hnd) {
-			long offset = 0;
-			error = ERRbadfile;
-
-			while ((dname = ReadDirName(dir_hnd, &offset))) {
-				pstring fname;
-				pstrcpy(fname,dname);
-    
-				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
-					continue;
-
-				if(!mask_match(fname, mask, conn->case_sensitive))
-					continue;
-
-				error = ERRnoaccess;
-				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				pstrcpy(destname,newname);
-				if (resolve_wildcards(fname,destname)
-				    && NT_STATUS_IS_OK(status = copy_file(
-							       fname,destname,conn,ofun,
-							       count,target_is_directory)))
-					count++;
-				DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
-			}
-			CloseDir(dir_hnd);
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
+		
+		dir_hnd = OpenDir(conn, directory, mask, 0);
+		if (dir_hnd == NULL) {
+			status = map_nt_error_from_unix(errno);
+			return ERROR_NT(status);
+		}
+
+		error = ERRbadfile;
+
+		while ((dname = ReadDirName(dir_hnd, &offset))) {
+			pstring fname;
+			pstrcpy(fname,dname);
+    
+			if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+				continue;
+			}
+
+			if(!mask_match(fname, mask, conn->case_sensitive)) {
+				continue;
+			}
+
+			error = ERRnoaccess;
+			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+			pstrcpy(destname,newname);
+			if (resolve_wildcards(fname,destname) &&
+					NT_STATUS_IS_OK(status = copy_file(
+						fname,destname,conn,ofun,
+						count,target_is_directory))) {
+				count++;
+			}
+			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
+		}
+		CloseDir(dir_hnd);
 	}
   
 	if (count == 0) {

@@ -805,8 +805,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(status);
 	}
     
-	if (!check_name(fname,conn)) {
-		return UNIXERROR(ERRDOS,ERRnoaccess);
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
 
 	if (open_ofun == 0) {
@@ -1722,8 +1723,9 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
-	if(!check_name(directory,conn)) {
-		return UNIXERROR(ERRDOS,ERRbadpath);
+	ntstatus = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ERROR_NT(ntstatus);
 	}
 
 	p = strrchr_m(directory,'/');
@@ -1764,7 +1766,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
-                                                                                                                                                        
+
 		/* Pull out the list of names. */
 		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
@@ -1792,10 +1794,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
-	if (dptr_num < 0) {
+	ntstatus = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype, &dptr_num);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_destroy(ea_ctx);
-		return(UNIXERROR(ERRDOS,ERRbadfile));
+		return ERROR_NT(ntstatus);
 	}
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
@@ -2934,9 +2936,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
-		if (!check_name(fname,conn)) {
-			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-			return UNIXERROR(ERRDOS,ERRbadpath);
+		status = check_name(conn, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,nt_errstr(status)));
+			return ERROR_NT(status);
 		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
@@ -3686,7 +3689,8 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (!check_name(oldname,conn)) {
+	status = check_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3700,7 +3704,8 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	if (!check_name(newname,conn)) {
+	status = check_name(conn, newname);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3710,8 +3715,10 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 	}
 
 	/* Ensure this is within the share. */
-	if (!reduce_name(conn, oldname) != 0)
-		return NT_STATUS_ACCESS_DENIED;
+	status = reduce_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", newname, oldname ));
 
@@ -3826,8 +3833,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return UNIXERROR(ERRDOS,ERRbadpath);
 		}    
 
-		if(!check_name(fname, conn)) {
-			return UNIXERROR(ERRDOS,ERRbadpath);
+		status = check_name(conn, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
 
 	}
@@ -4366,8 +4374,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				}
 				pstrcat(rel_name, link_target);
 
-				if (!check_name(rel_name, conn)) {
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				status = check_name(conn, rel_name);
+				if (!NT_STATUS_IS_OK(status)) {
+					return ERROR_NT(status);
 				}
 			}
 
@@ -4823,9 +4832,10 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (!check_name(directory,conn)) {
-		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		return UNIXERROR(ERRDOS, ERRnoaccess);
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
+		return ERROR_NT(status);
 	}
 
 	status = create_directory(conn, directory);

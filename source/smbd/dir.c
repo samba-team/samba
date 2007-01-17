@@ -382,21 +382,26 @@ static void dptr_close_oldest(BOOL old)
  wcard must not be zero.
 ****************************************************************************/
 
-int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		const char *wcard, BOOL wcard_has_wild, uint32 attr)
+NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
+		const char *wcard, BOOL wcard_has_wild, uint32 attr, int *dptr_hnd_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
         const char *dir2;
+	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
 
+	*dptr_hnd_ret = -1;
+
 	if (!wcard) {
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!check_name(path,conn))
-		return(-2); /* Code to say use a unix error return code. */
+	status = check_name(conn,path);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* use a const pointer from here on */
 	dir2 = path;
@@ -405,19 +410,20 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 	dir_hnd = OpenDir(conn, dir2, wcard, attr);
 	if (!dir_hnd) {
-		return (-2);
+		return map_nt_error_from_unix(errno);
 	}
 
 	string_set(&conn->dirpath,dir2);
 
-	if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
+	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest();
+	}
 
 	dptr = SMB_MALLOC_P(struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("malloc fail in dptr_create.\n"));
 		CloseDir(dir_hnd);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(dptr);
@@ -447,7 +453,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
 				CloseDir(dir_hnd);
-				return -1;
+				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
 	} else {
@@ -477,7 +483,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
 				CloseDir(dir_hnd);
-				return -1;
+				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
 	}
@@ -496,7 +502,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 		bitmap_clear(dptr_bmap, dptr->dnum - 1);
 		SAFE_FREE(dptr);
 		CloseDir(dir_hnd);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
@@ -513,7 +519,8 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 	conn->dirptr = dptr;
 
-	return(dptr->dnum);
+	*dptr_hnd_ret = dptr->dnum;
+	return NT_STATUS_OK;
 }
 
 

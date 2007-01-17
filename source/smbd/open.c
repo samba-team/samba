@@ -1186,8 +1186,9 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		remove_deferred_open_smb_message(mid);
 	}
 
-	if (!check_name(fname,conn)) {
-		return map_nt_error_from_unix(errno);
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	} 
 
 	new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
@@ -1881,6 +1882,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 	mode_t mode;
 	char *parent_dir;
 	const char *dirname;
+	NTSTATUS status;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -1888,8 +1890,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!check_name(name, conn)) {
-		return map_nt_error_from_unix(errno);
+	status = check_name(conn, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!parent_dirname_talloc(tmp_talloc_ctx(), name, &parent_dir,
