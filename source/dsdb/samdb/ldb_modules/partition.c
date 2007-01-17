@@ -204,12 +204,18 @@ error:
 }
 
 
-static int partition_send_request(struct partition_context *ac, struct ldb_module *partition, 
-				  struct ldb_dn *partition_base_dn)
+static int partition_send_request(struct partition_context *ac, struct dsdb_control_current_partition *partition)
 {
 	int ret;
-	struct ldb_module *next = make_module_for_next_request(ac->module, ac->module->ldb, partition);
+	struct ldb_module *backend;
 	struct ldb_request *req;
+
+	if (partition) {
+		backend = make_module_for_next_request(ac, ac->module->ldb, partition->module);
+	} else {
+		backend = ac->module;
+	}
+
 	ac->down_req = talloc_realloc(ac, ac->down_req, 
 					struct ldb_request *, ac->num_requests + 1);
 	if (!ac->down_req) {
@@ -228,8 +234,12 @@ static int partition_send_request(struct partition_context *ac, struct ldb_modul
 		/* If the search is for 'more' than this partition,
 		 * then change the basedn, so a remote LDAP server
 		 * doesn't object */
-		if (ldb_dn_compare_base(partition_base_dn, req->op.search.base) != 0) {
-			req->op.search.base = partition_base_dn;
+		if (partition) {
+			if (ldb_dn_compare_base(partition->dn, req->op.search.base) != 0) {
+				req->op.search.base = partition->dn;
+			}
+		} else {
+			req->op.search.base = NULL;
 		}
 		req->callback = partition_search_callback;
 		req->context = ac;
@@ -238,12 +248,19 @@ static int partition_send_request(struct partition_context *ac, struct ldb_modul
 		req->context = ac;
 	}
 
+	if (partition) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, partition);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	/* Spray off search requests to all backends */
-	ret = ldb_next_request(next, req); 
+	ret = ldb_next_request(backend, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	
+
 	ac->num_requests++;
 	return LDB_SUCCESS;
 }
@@ -255,12 +272,12 @@ static int partition_send_all(struct ldb_module *module,
 	int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	int ret = partition_send_request(ac, module->next, NULL);
+	int ret = partition_send_request(ac, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
+		ret = partition_send_request(ac, data->partitions[i]);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -349,7 +366,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
 			if (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0) {
-				ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
+				ret = partition_send_request(ac, data->partitions[i]);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
