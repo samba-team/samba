@@ -501,6 +501,15 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.14 NAME 'sambaTrustPassword' SUP top STRUCTUR
 	MAY ( sambaSID $ sambaPwdLastSet ))
 
 ##
+## Trust password for trusted domains
+## (to be stored beneath the trusting sambaDomain object in the DIT)
+##
+objectclass ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaTrustedDomainPassword' SUP top STRUCTURAL
+	DESC 'Samba Trusted Domain Password'
+	MUST ( sambaDomainName $ sambaSID $
+	       sambaNTPassword $ sambaPwdLastSet ))
+
+##
 ## Whole-of-domain info
 ##
 objectclass ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL
