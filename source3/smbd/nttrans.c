@@ -1283,7 +1283,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
 				!can_delete_file_in_directory(conn, fname)) {
 			restore_case_semantics(conn, file_attributes);
-			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
 	}
