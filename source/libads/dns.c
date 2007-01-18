@@ -577,7 +577,19 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
  Store and fetch the AD client sitename.
 ****************************************************************************/
 
-#define SITENAME_KEY	"AD_SITENAME"
+#define SITENAME_KEY	"AD_SITENAME/DOMAIN/%s"
+
+static char *sitename_key(const char *realm)
+{
+	char *keystr;
+	
+	if (asprintf(&keystr, SITENAME_KEY, strupper_static(realm)) == -1) {
+		return NULL;
+	}
+
+	return keystr;
+}
+
 
 /****************************************************************************
  Store the AD client sitename.
@@ -586,26 +598,37 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
  as this isn't a valid DNS name.
 ****************************************************************************/
 
-BOOL sitename_store(const char *sitename)
+BOOL sitename_store(const char *realm, const char *sitename)
 {
 	time_t expire;
 	BOOL ret = False;
+	char *key;
 
 	if (!gencache_init()) {
 		return False;
 	}
+
+	if (!realm || (strlen(realm) == 0)) {
+		DEBUG(0,("no realm\n"));
+		return False;
+	}
 	
+	key = sitename_key(realm);
+
 	if (!sitename || (sitename && !*sitename)) {
 		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
-		return gencache_del(SITENAME_KEY);
+		ret = gencache_del(sitename_key(realm));
+		SAFE_FREE(key);
+		return ret;
 	}
 
 	expire = get_time_t_max(); /* Store indefinately. */
 	
-	DEBUG(10,("sitename_store: sitename = [%s], expire = [%u]\n",
-		sitename, (unsigned int)expire ));
+	DEBUG(10,("sitename_store: realm = [%s], sitename = [%s], expire = [%u]\n",
+		realm, sitename, (unsigned int)expire ));
 
-	ret = gencache_set( SITENAME_KEY, sitename, expire );
+	ret = gencache_set( key, sitename, expire );
+	SAFE_FREE(key);
 	return ret;
 }
 
@@ -614,22 +637,34 @@ BOOL sitename_store(const char *sitename)
  Caller must free.
 ****************************************************************************/
 
-char *sitename_fetch(void)
+char *sitename_fetch(const char *realm)
 {
 	char *sitename = NULL;
 	time_t timeout;
 	BOOL ret = False;
+	const char *query_realm;
+	char *key;
 	
 	if (!gencache_init()) {
 		return False;
 	}
-	
-	ret = gencache_get( SITENAME_KEY, &sitename, &timeout );
-	if ( !ret ) {
-		DEBUG(5,("sitename_fetch: No stored sitename\n"));
+
+	if (!realm || (strlen(realm) == 0)) {
+		query_realm = lp_realm(); 
 	} else {
-		DEBUG(5,("sitename_fetch: Returning sitename \"%s\"\n",
-			sitename ));
+		query_realm = realm;
+	}
+
+	key = sitename_key(query_realm);
+
+	ret = gencache_get( key, &sitename, &timeout );
+	SAFE_FREE(key);
+	if ( !ret ) {
+		DEBUG(5,("sitename_fetch: No stored sitename for %s\n",
+			query_realm));
+	} else {
+		DEBUG(5,("sitename_fetch: Returning sitename for %s: \"%s\"\n",
+			query_realm, sitename ));
 	}
 	return sitename;
 }
@@ -638,10 +673,18 @@ char *sitename_fetch(void)
  Did the sitename change ?
 ****************************************************************************/
 
-BOOL stored_sitename_changed(const char *sitename)
+BOOL stored_sitename_changed(const char *realm, const char *sitename)
 {
 	BOOL ret = False;
-	char *new_sitename = sitename_fetch();
+
+	char *new_sitename;
+
+	if (!realm || (strlen(realm) == 0)) {
+		DEBUG(0,("no realm\n"));
+		return False;
+	}
+
+	new_sitename = sitename_fetch(realm);
 
 	if (sitename && new_sitename && !strequal(sitename, new_sitename)) {
 		ret = True;
