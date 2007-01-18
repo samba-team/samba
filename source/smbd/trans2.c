@@ -1794,13 +1794,23 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	ntstatus = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype, &dptr_num);
+	ntstatus = dptr_create(conn,
+				directory,
+				False,
+				True,
+				SVAL(inbuf,smb_pid),
+				mask,
+				mask_contains_wcard,
+				dirtype,
+				&conn->dirptr);
+
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(ntstatus);
 	}
 
-	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
+	dptr_num = dptr_dnum(conn->dirptr);
+	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n", dptr_num, mask, dirtype));
 
 	/* We don't need to check for VOL here as this is returned by 
 		a different TRANS2 call. */
