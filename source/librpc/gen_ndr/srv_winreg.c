@@ -43,7 +43,7 @@ static BOOL api_winreg_OpenHKCR(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKCR(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKCR(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -114,7 +114,7 @@ static BOOL api_winreg_OpenHKCU(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKCU(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKCU(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -185,7 +185,7 @@ static BOOL api_winreg_OpenHKLM(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKLM(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKLM(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -256,7 +256,7 @@ static BOOL api_winreg_OpenHKPD(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKPD(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKPD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -327,7 +327,7 @@ static BOOL api_winreg_OpenHKU(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKU(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKU(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -393,7 +393,7 @@ static BOOL api_winreg_CloseKey(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
-	r.out.result = _winreg_CloseKey(p, r.in.handle);
+	r.out.result = _winreg_CloseKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -465,7 +465,7 @@ static BOOL api_winreg_CreateKey(pipes_struct *p)
 	}
 	
 	r.out.action_taken = r.in.action_taken;
-	r.out.result = _winreg_CreateKey(p, r.in.handle, r.in.name, r.in.keyclass, r.in.options, r.in.access_mask, r.in.secdesc, r.out.new_handle, r.in.action_taken);
+	r.out.result = _winreg_CreateKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -529,7 +529,7 @@ static BOOL api_winreg_DeleteKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_DeleteKey, &r);
 	
-	r.out.result = _winreg_DeleteKey(p, r.in.handle, r.in.key);
+	r.out.result = _winreg_DeleteKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -593,7 +593,7 @@ static BOOL api_winreg_DeleteValue(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_DeleteValue, &r);
 	
-	r.out.result = _winreg_DeleteValue(p, r.in.handle, r.in.value);
+	r.out.result = _winreg_DeleteValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -661,7 +661,7 @@ static BOOL api_winreg_EnumKey(pipes_struct *p)
 	r.out.name = r.in.name;
 	r.out.keyclass = r.in.keyclass;
 	r.out.last_changed_time = r.in.last_changed_time;
-	r.out.result = _winreg_EnumKey(p, r.in.handle, r.in.enum_index, r.in.name, r.in.keyclass, r.in.last_changed_time);
+	r.out.result = _winreg_EnumKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -731,7 +731,7 @@ static BOOL api_winreg_EnumValue(pipes_struct *p)
 	r.out.data = r.in.data;
 	r.out.data_size = r.in.data_size;
 	r.out.value_length = r.in.value_length;
-	r.out.result = _winreg_EnumValue(p, r.in.handle, r.in.enum_index, r.in.name, r.in.type, r.in.data, r.in.data_size, r.in.value_length);
+	r.out.result = _winreg_EnumValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -795,7 +795,7 @@ static BOOL api_winreg_FlushKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_FlushKey, &r);
 	
-	r.out.result = _winreg_FlushKey(p, r.in.handle);
+	r.out.result = _winreg_FlushKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -861,7 +861,7 @@ static BOOL api_winreg_GetKeySecurity(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.sd = r.in.sd;
-	r.out.result = _winreg_GetKeySecurity(p, r.in.handle, r.in.sec_info, r.in.sd);
+	r.out.result = _winreg_GetKeySecurity(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -925,7 +925,7 @@ static BOOL api_winreg_LoadKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_LoadKey, &r);
 	
-	r.out.result = _winreg_LoadKey(p, r.in.handle, r.in.keyname, r.in.filename);
+	r.out.result = _winreg_LoadKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -989,7 +989,7 @@ static BOOL api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_NotifyChangeKeyValue, &r);
 	
-	r.out.result = _winreg_NotifyChangeKeyValue(p, r.in.handle, r.in.watch_subtree, r.in.notify_filter, r.in.unknown, r.in.string1, r.in.string2, r.in.unknown2);
+	r.out.result = _winreg_NotifyChangeKeyValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1060,7 +1060,7 @@ static BOOL api_winreg_OpenKey(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenKey(p, r.in.parent_handle, r.in.keyname, r.in.unknown, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1174,7 +1174,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_QueryInfoKey(p, r.in.handle, r.in.classname, r.out.num_subkeys, r.out.max_subkeylen, r.out.max_classlen, r.out.num_values, r.out.max_valnamelen, r.out.max_valbufsize, r.out.secdescsize, r.out.last_changed_time);
+	r.out.result = _winreg_QueryInfoKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1243,7 +1243,7 @@ static BOOL api_winreg_QueryValue(pipes_struct *p)
 	r.out.data = r.in.data;
 	r.out.data_size = r.in.data_size;
 	r.out.value_length = r.in.value_length;
-	r.out.result = _winreg_QueryValue(p, r.in.handle, r.in.value_name, r.in.type, r.in.data, r.in.data_size, r.in.value_length);
+	r.out.result = _winreg_QueryValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1307,7 +1307,7 @@ static BOOL api_winreg_ReplaceKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_ReplaceKey, &r);
 	
-	r.out.result = _winreg_ReplaceKey(p);
+	r.out.result = _winreg_ReplaceKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1371,7 +1371,7 @@ static BOOL api_winreg_RestoreKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &r);
 	
-	r.out.result = _winreg_RestoreKey(p, r.in.handle, r.in.filename, r.in.flags);
+	r.out.result = _winreg_RestoreKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1435,7 +1435,7 @@ static BOOL api_winreg_SaveKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &r);
 	
-	r.out.result = _winreg_SaveKey(p, r.in.handle, r.in.filename, r.in.sec_attrib);
+	r.out.result = _winreg_SaveKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1499,7 +1499,7 @@ static BOOL api_winreg_SetKeySecurity(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SetKeySecurity, &r);
 	
-	r.out.result = _winreg_SetKeySecurity(p, r.in.handle, r.in.access_mask, r.in.sd);
+	r.out.result = _winreg_SetKeySecurity(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1563,7 +1563,7 @@ static BOOL api_winreg_SetValue(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SetValue, &r);
 	
-	r.out.result = _winreg_SetValue(p, r.in.handle, r.in.name, r.in.type, r.in.data, r.in.size);
+	r.out.result = _winreg_SetValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1627,7 +1627,7 @@ static BOOL api_winreg_UnLoadKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_UnLoadKey, &r);
 	
-	r.out.result = _winreg_UnLoadKey(p);
+	r.out.result = _winreg_UnLoadKey(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1691,7 +1691,7 @@ static BOOL api_winreg_InitiateSystemShutdown(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdown, &r);
 	
-	r.out.result = _winreg_InitiateSystemShutdown(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot);
+	r.out.result = _winreg_InitiateSystemShutdown(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1755,7 +1755,7 @@ static BOOL api_winreg_AbortSystemShutdown(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_AbortSystemShutdown, &r);
 	
-	r.out.result = _winreg_AbortSystemShutdown(p, r.in.server);
+	r.out.result = _winreg_AbortSystemShutdown(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1826,7 +1826,7 @@ static BOOL api_winreg_GetVersion(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_GetVersion(p, r.in.handle, r.out.version);
+	r.out.result = _winreg_GetVersion(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1897,7 +1897,7 @@ static BOOL api_winreg_OpenHKCC(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKCC(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKCC(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1968,7 +1968,7 @@ static BOOL api_winreg_OpenHKDD(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKDD(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKDD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2036,7 +2036,7 @@ static BOOL api_winreg_QueryMultipleValues(pipes_struct *p)
 	r.out.values = r.in.values;
 	r.out.buffer = r.in.buffer;
 	r.out.buffer_size = r.in.buffer_size;
-	r.out.result = _winreg_QueryMultipleValues(p, r.in.key_handle, r.in.values, r.in.num_values, r.in.buffer, r.in.buffer_size);
+	r.out.result = _winreg_QueryMultipleValues(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2100,7 +2100,7 @@ static BOOL api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdownEx, &r);
 	
-	r.out.result = _winreg_InitiateSystemShutdownEx(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot, r.in.reason);
+	r.out.result = _winreg_InitiateSystemShutdownEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2164,7 +2164,7 @@ static BOOL api_winreg_SaveKeyEx(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SaveKeyEx, &r);
 	
-	r.out.result = _winreg_SaveKeyEx(p);
+	r.out.result = _winreg_SaveKeyEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2235,7 +2235,7 @@ static BOOL api_winreg_OpenHKPT(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKPT(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKPT(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2306,7 +2306,7 @@ static BOOL api_winreg_OpenHKPN(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_OpenHKPN(p, r.in.system_name, r.in.access_mask, r.out.handle);
+	r.out.result = _winreg_OpenHKPN(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2370,7 +2370,7 @@ static BOOL api_winreg_QueryMultipleValues2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues2, &r);
 	
-	r.out.result = _winreg_QueryMultipleValues2(p);
+	r.out.result = _winreg_QueryMultipleValues2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

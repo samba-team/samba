@@ -38,7 +38,7 @@ static BOOL api_svcctl_CloseServiceHandle(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
-	r.out.result = _svcctl_CloseServiceHandle(p, r.in.handle);
+	r.out.result = _svcctl_CloseServiceHandle(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -109,7 +109,7 @@ static BOOL api_svcctl_ControlService(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_ControlService(p, r.in.handle, r.in.control, r.out.status);
+	r.out.result = _svcctl_ControlService(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -173,7 +173,7 @@ static BOOL api_svcctl_DeleteService(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_DeleteService, &r);
 	
-	r.out.result = _svcctl_DeleteService(p, r.in.handle);
+	r.out.result = _svcctl_DeleteService(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -244,7 +244,7 @@ static BOOL api_svcctl_LockServiceDatabase(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_LockServiceDatabase(p, r.in.handle, r.out.lock);
+	r.out.result = _svcctl_LockServiceDatabase(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -308,7 +308,7 @@ static BOOL api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, &r);
 	
-	r.out.result = _svcctl_QueryServiceObjectSecurity(p);
+	r.out.result = _svcctl_QueryServiceObjectSecurity(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -372,7 +372,7 @@ static BOOL api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, &r);
 	
-	r.out.result = _svcctl_SetServiceObjectSecurity(p);
+	r.out.result = _svcctl_SetServiceObjectSecurity(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -443,7 +443,7 @@ static BOOL api_svcctl_QueryServiceStatus(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceStatus(p, r.in.handle, r.out.status);
+	r.out.result = _svcctl_QueryServiceStatus(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -507,7 +507,7 @@ static BOOL api_svcctl_SetServiceStatus(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceStatus, &r);
 	
-	r.out.result = _svcctl_SetServiceStatus(p);
+	r.out.result = _svcctl_SetServiceStatus(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -573,7 +573,7 @@ static BOOL api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.lock = r.in.lock;
-	r.out.result = _svcctl_UnlockServiceDatabase(p, r.in.lock);
+	r.out.result = _svcctl_UnlockServiceDatabase(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -637,7 +637,7 @@ static BOOL api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_NotifyBootConfigStatus, &r);
 	
-	r.out.result = _svcctl_NotifyBootConfigStatus(p);
+	r.out.result = _svcctl_NotifyBootConfigStatus(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -701,7 +701,7 @@ static BOOL api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsW, &r);
 	
-	r.out.result = _svcctl_SCSetServiceBitsW(p, r.in.handle, r.in.bits, r.in.bitson, r.in.immediate);
+	r.out.result = _svcctl_SCSetServiceBitsW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -772,7 +772,7 @@ static BOOL api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_ChangeServiceConfigW(p, r.in.handle, r.in.type, r.in.start, r.in.error, r.in.binary_path, r.in.load_order_group, r.out.tag_id, r.in.dependencies, r.in.service_start_name, r.in.password, r.in.display_name);
+	r.out.result = _svcctl_ChangeServiceConfigW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -844,7 +844,7 @@ static BOOL api_svcctl_CreateServiceW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_CreateServiceW(p, r.in.scmanager_handle, r.in.ServiceName, r.in.DisplayName, r.in.desired_access, r.in.type, r.in.start_type, r.in.error_control, r.in.binary_path, r.in.LoadOrderGroupKey, r.in.TagId, r.in.dependencies, r.in.dependencies_size, r.in.service_start_name, r.in.password, r.in.password_size, r.out.handle);
+	r.out.result = _svcctl_CreateServiceW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -927,7 +927,7 @@ static BOOL api_svcctl_EnumDependentServicesW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_EnumDependentServicesW(p, r.in.service, r.in.state, r.out.status, r.in.buf_size, r.out.bytes_needed, r.out.services_returned);
+	r.out.result = _svcctl_EnumDependentServicesW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1011,7 +1011,7 @@ static BOOL api_svcctl_EnumServicesStatusW(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.result = _svcctl_EnumServicesStatusW(p, r.in.handle, r.in.type, r.in.state, r.in.buf_size, r.out.service, r.out.bytes_needed, r.out.services_returned, r.in.resume_handle);
+	r.out.result = _svcctl_EnumServicesStatusW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1082,7 +1082,7 @@ static BOOL api_svcctl_OpenSCManagerW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_OpenSCManagerW(p, r.in.MachineName, r.in.DatabaseName, r.in.access_mask, r.out.handle);
+	r.out.result = _svcctl_OpenSCManagerW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1153,7 +1153,7 @@ static BOOL api_svcctl_OpenServiceW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_OpenServiceW(p, r.in.scmanager_handle, r.in.ServiceName, r.in.access_mask, r.out.handle);
+	r.out.result = _svcctl_OpenServiceW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1230,7 +1230,7 @@ static BOOL api_svcctl_QueryServiceConfigW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceConfigW(p, r.in.handle, r.out.query, r.in.buf_size, r.out.bytes_needed);
+	r.out.result = _svcctl_QueryServiceConfigW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1307,7 +1307,7 @@ static BOOL api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceLockStatusW(p, r.in.handle, r.in.buf_size, r.out.status, r.out.required_buf_size);
+	r.out.result = _svcctl_QueryServiceLockStatusW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1371,7 +1371,7 @@ static BOOL api_svcctl_StartServiceW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceW, &r);
 	
-	r.out.result = _svcctl_StartServiceW(p, r.in.handle, r.in.NumArgs, r.in.Arguments);
+	r.out.result = _svcctl_StartServiceW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1443,7 +1443,7 @@ static BOOL api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 	}
 	
 	r.out.display_name_length = r.in.display_name_length;
-	r.out.result = _svcctl_GetServiceDisplayNameW(p, r.in.handle, r.in.service_name, r.out.display_name, r.in.display_name_length);
+	r.out.result = _svcctl_GetServiceDisplayNameW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1515,7 +1515,7 @@ static BOOL api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 	}
 	
 	r.out.display_name_length = r.in.display_name_length;
-	r.out.result = _svcctl_GetServiceKeyNameW(p, r.in.handle, r.in.service_name, r.out.key_name, r.in.display_name_length);
+	r.out.result = _svcctl_GetServiceKeyNameW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1579,7 +1579,7 @@ static BOOL api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsA, &r);
 	
-	r.out.result = _svcctl_SCSetServiceBitsA(p, r.in.handle, r.in.bits, r.in.bitson, r.in.immediate);
+	r.out.result = _svcctl_SCSetServiceBitsA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1650,7 +1650,7 @@ static BOOL api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_ChangeServiceConfigA(p, r.in.handle, r.in.type, r.in.start, r.in.error, r.in.binary_path, r.in.load_order_group, r.out.tag_id, r.in.dependencies, r.in.service_start_name, r.in.password, r.in.display_name);
+	r.out.result = _svcctl_ChangeServiceConfigA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1721,7 +1721,7 @@ static BOOL api_svcctl_CreateServiceA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_CreateServiceA(p, r.in.handle, r.in.ServiceName, r.in.DisplayName, r.in.desired_access, r.in.type, r.in.start_type, r.in.error_control, r.in.binary_path, r.in.LoadOrderGroupKey, r.out.TagId, r.in.dependencies, r.in.service_start_name, r.in.password);
+	r.out.result = _svcctl_CreateServiceA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1804,7 +1804,7 @@ static BOOL api_svcctl_EnumDependentServicesA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_EnumDependentServicesA(p, r.in.service, r.in.state, r.out.status, r.in.buf_size, r.out.bytes_needed, r.out.services_returned);
+	r.out.result = _svcctl_EnumDependentServicesA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1888,7 +1888,7 @@ static BOOL api_svcctl_EnumServicesStatusA(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.result = _svcctl_EnumServicesStatusA(p, r.in.handle, r.in.type, r.in.state, r.in.buf_size, r.out.service, r.out.bytes_needed, r.out.services_returned, r.in.resume_handle);
+	r.out.result = _svcctl_EnumServicesStatusA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1959,7 +1959,7 @@ static BOOL api_svcctl_OpenSCManagerA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_OpenSCManagerA(p, r.in.MachineName, r.in.DatabaseName, r.in.access_mask, r.out.handle);
+	r.out.result = _svcctl_OpenSCManagerA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2023,7 +2023,7 @@ static BOOL api_svcctl_OpenServiceA(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceA, &r);
 	
-	r.out.result = _svcctl_OpenServiceA(p, r.in.scmanager_handle, r.in.ServiceName, r.in.access_mask);
+	r.out.result = _svcctl_OpenServiceA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2100,7 +2100,7 @@ static BOOL api_svcctl_QueryServiceConfigA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceConfigA(p, r.in.handle, r.out.query, r.in.buf_size, r.out.bytes_needed);
+	r.out.result = _svcctl_QueryServiceConfigA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2177,7 +2177,7 @@ static BOOL api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceLockStatusA(p, r.in.handle, r.in.buf_size, r.out.status, r.out.required_buf_size);
+	r.out.result = _svcctl_QueryServiceLockStatusA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2241,7 +2241,7 @@ static BOOL api_svcctl_StartServiceA(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceA, &r);
 	
-	r.out.result = _svcctl_StartServiceA(p, r.in.handle, r.in.NumArgs, r.in.Arguments);
+	r.out.result = _svcctl_StartServiceA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2313,7 +2313,7 @@ static BOOL api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 	}
 	
 	r.out.display_name_length = r.in.display_name_length;
-	r.out.result = _svcctl_GetServiceDisplayNameA(p, r.in.handle, r.in.service_name, r.out.display_name, r.in.display_name_length);
+	r.out.result = _svcctl_GetServiceDisplayNameA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2385,7 +2385,7 @@ static BOOL api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 	}
 	
 	r.out.display_name_length = r.in.display_name_length;
-	r.out.result = _svcctl_GetServiceKeyNameA(p, r.in.handle, r.in.service_name, r.out.key_name, r.in.display_name_length);
+	r.out.result = _svcctl_GetServiceKeyNameA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2449,7 +2449,7 @@ static BOOL api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetCurrentGroupeStateW, &r);
 	
-	r.out.result = _svcctl_GetCurrentGroupeStateW(p);
+	r.out.result = _svcctl_GetCurrentGroupeStateW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2513,7 +2513,7 @@ static BOOL api_svcctl_EnumServiceGroupW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServiceGroupW, &r);
 	
-	r.out.result = _svcctl_EnumServiceGroupW(p);
+	r.out.result = _svcctl_EnumServiceGroupW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2577,7 +2577,7 @@ static BOOL api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2A, &r);
 	
-	r.out.result = _svcctl_ChangeServiceConfig2A(p, r.in.handle, r.in.info_level, r.in.info);
+	r.out.result = _svcctl_ChangeServiceConfig2A(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2641,7 +2641,7 @@ static BOOL api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2W, &r);
 	
-	r.out.result = _svcctl_ChangeServiceConfig2W(p, r.in.handle, r.in.info_level, r.in.info);
+	r.out.result = _svcctl_ChangeServiceConfig2W(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2718,7 +2718,7 @@ static BOOL api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceConfig2A(p, r.in.handle, r.in.info_level, r.out.buffer, r.in.buf_size, r.out.bytes_needed);
+	r.out.result = _svcctl_QueryServiceConfig2A(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2795,7 +2795,7 @@ static BOOL api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceConfig2W(p, r.in.handle, r.in.info_level, r.out.buffer, r.in.buf_size, r.out.bytes_needed);
+	r.out.result = _svcctl_QueryServiceConfig2W(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2872,7 +2872,7 @@ static BOOL api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _svcctl_QueryServiceStatusEx(p, r.in.handle, r.in.info_level, r.out.buffer, r.in.buf_size, r.out.bytes_needed);
+	r.out.result = _svcctl_QueryServiceStatusEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2962,7 +2962,7 @@ static BOOL api_EnumServicesStatusExA(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _EnumServicesStatusExA(p, r.in.scmanager, r.in.info_level, r.in.type, r.in.state, r.out.services, r.in.buf_size, r.out.bytes_needed, r.out.service_returned, r.in.resume_handle, r.out.group_name);
+	r.out.result = _EnumServicesStatusExA(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3052,7 +3052,7 @@ static BOOL api_EnumServicesStatusExW(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _EnumServicesStatusExW(p, r.in.scmanager, r.in.info_level, r.in.type, r.in.state, r.out.services, r.in.buf_size, r.out.bytes_needed, r.out.service_returned, r.in.resume_handle, r.out.group_name);
+	r.out.result = _EnumServicesStatusExW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3116,7 +3116,7 @@ static BOOL api_svcctl_SCSendTSMessage(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSendTSMessage, &r);
 	
-	r.out.result = _svcctl_SCSendTSMessage(p);
+	r.out.result = _svcctl_SCSendTSMessage(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

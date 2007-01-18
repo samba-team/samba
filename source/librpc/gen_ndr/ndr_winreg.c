@@ -1568,7 +1568,7 @@ NTSTATUS ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winre
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->in.data, ndr_get_array_size(ndr, &r->in.data));
 		}
-		memcpy(r->out.data,r->in.data,ndr_get_array_size(ndr, &r->in.data) * sizeof(*r->in.data));
+		memcpy(r->out.data, r->in.data, ndr_get_array_size(ndr, &r->in.data) * sizeof(*r->in.data));
 		_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.data, 0);
 		for (cntr_data_1 = 0; cntr_data_1 < *r->in.value_length; cntr_data_1++) {
@@ -1644,7 +1644,7 @@ NTSTATUS ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winre
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
 		}
-		memcpy(r->out.data,r->in.data,ndr_get_array_size(ndr, &r->out.data) * sizeof(*r->in.data));
+		memcpy(r->out.data, r->in.data, ndr_get_array_size(ndr, &r->out.data) * sizeof(*r->in.data));
 		_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.data, 0);
 		for (cntr_data_1 = 0; cntr_data_1 < *r->out.value_length; cntr_data_1++) {
@@ -3578,7 +3578,7 @@ NTSTATUS ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, st
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->in.values, ndr_get_array_size(ndr, &r->in.values));
 		}
-		memcpy(r->out.values,r->in.values,ndr_get_array_size(ndr, &r->in.values) * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, ndr_get_array_size(ndr, &r->in.values) * sizeof(*r->in.values));
 		_mem_save_values_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.values, 0);
 		for (cntr_values_1 = 0; cntr_values_1 < r->in.num_values; cntr_values_1++) {
@@ -3640,7 +3640,7 @@ NTSTATUS ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, st
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->out.values, ndr_get_array_size(ndr, &r->out.values));
 		}
-		memcpy(r->out.values,r->in.values,ndr_get_array_size(ndr, &r->out.values) * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, ndr_get_array_size(ndr, &r->out.values) * sizeof(*r->in.values));
 		_mem_save_values_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.values, 0);
 		for (cntr_values_1 = 0; cntr_values_1 < r->in.num_values; cntr_values_1++) {

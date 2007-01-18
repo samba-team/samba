@@ -119,14 +119,14 @@ static BOOL close_registry_key(pipes_struct *p, POLICY_HND *hnd)
  reg_close
  ********************************************************************/
 
-WERROR _winreg_CloseKey(pipes_struct *p, struct policy_handle *handle)
+WERROR _winreg_CloseKey(pipes_struct *p, struct winreg_CloseKey *r)
 {
 	/* close the policy handle */
 
-	if (!close_registry_key(p, handle))
+	if (!close_registry_key(p, r->in.handle))
 		return WERR_BADFID; 
 
-	ZERO_STRUCTP(handle);
+	ZERO_STRUCTP(r->out.handle);
 
 	return WERR_OK;
 }
@@ -134,110 +134,97 @@ WERROR _winreg_CloseKey(pipes_struct *p, struct policy_handle *handle)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKLM(pipes_struct *p, uint16_t *system_name, uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKLM, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKLM, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKPD(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKPD(pipes_struct *p, struct winreg_OpenHKPD *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKPD, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKPD, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKPT(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKPT, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKPT, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKCR(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKCR, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKCR, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKU(pipes_struct *p, uint16_t *system_name,
-		       uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKU(pipes_struct *p, struct winreg_OpenHKU *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKU, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKU, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKCU(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKCU, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKCU, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKCC(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKCC(pipes_struct *p, struct winreg_OpenHKCC *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKCC, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKCC, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKDD(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKDD(pipes_struct *p, struct winreg_OpenHKDD *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKDD, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKDD, r->in.access_mask);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_OpenHKPN(pipes_struct *p, uint16_t *system_name,
-			uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r)
 {
-	return open_registry_key(p, handle, NULL, KEY_HKPN, access_mask);
+	return open_registry_key(p, r->out.handle, NULL, KEY_HKPN, r->in.access_mask);
 }
 
 /*******************************************************************
  reg_reply_open_entry
  ********************************************************************/
 
-WERROR _winreg_OpenKey(pipes_struct *p, struct policy_handle *parent_handle,
-		       struct winreg_String keyname, uint32_t unknown,
-		       uint32_t access_mask, struct policy_handle *handle)
+WERROR _winreg_OpenKey(pipes_struct *p, struct winreg_OpenKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, parent_handle );
+	struct registry_key *parent = find_regkey_by_hnd(p, r->in.parent_handle );
 
 	if ( !parent )
 		return WERR_BADFID;
 
-	return open_registry_key(p, handle, parent, keyname.name, access_mask);
+	return open_registry_key(p, r->out.handle, parent, r->in.keyname.name, r->in.access_mask);
 }
 
 /*******************************************************************
  reg_reply_info
  ********************************************************************/
 
-WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
-			  struct winreg_String value_name,
-			  enum winreg_Type *type, uint8_t *data,
-			  uint32_t *data_size, uint32_t *value_length)
+WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 {
 	WERROR        status = WERR_BADFILE;
-	struct registry_key *regkey = find_regkey_by_hnd( p, handle );
+	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	prs_struct    prs_hkpd;
 
 	uint8_t *outbuf;
@@ -250,7 +237,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 	if ( !regkey )
 		return WERR_BADFID;
 
-	*value_length = *type = 0;
+	*r->out.value_length = *r->out.type = 0;
 	
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->key->name));
 	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->key->type));
@@ -258,54 +245,54 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
 	if(regkey->key->type == REG_KEY_HKPD) 
 	{
-		if(strequal(value_name.name, "Global"))	{
-			prs_init(&prs_hkpd, *data_size, p->mem_ctx, MARSHALL);
+		if(strequal(r->in.value_name.name, "Global"))	{
+			prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL);
 			status = reg_perfcount_get_hkpd(
-				&prs_hkpd, *data_size, &outbuf_size, NULL);
+				&prs_hkpd, *r->in.data_size, &outbuf_size, NULL);
 			outbuf = (uint8_t *)prs_hkpd.data_p;
 			free_prs = True;
 		}
-		else if(strequal(value_name.name, "Counter 009")) {
+		else if(strequal(r->in.value_name.name, "Counter 009")) {
 			outbuf_size = reg_perfcount_get_counter_names(
 				reg_perfcount_get_base_index(),
 				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
-		else if(strequal(value_name.name, "Explain 009")) {
+		else if(strequal(r->in.value_name.name, "Explain 009")) {
 			outbuf_size = reg_perfcount_get_counter_help(
 				reg_perfcount_get_base_index(),
 				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
-		else if(isdigit(value_name.name[0])) {
+		else if(isdigit(r->in.value_name.name[0])) {
 			/* we probably have a request for a specific object
 			 * here */
-			prs_init(&prs_hkpd, *data_size, p->mem_ctx, MARSHALL);
+			prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL);
 			status = reg_perfcount_get_hkpd(
-				&prs_hkpd, *data_size, &outbuf_size,
-				value_name.name);
+				&prs_hkpd, *r->in.data_size, &outbuf_size,
+				r->in.value_name.name);
 			outbuf = (uint8_t *)prs_hkpd.data_p;
 			free_prs = True;
 		}
 		else {
 			DEBUG(3,("Unsupported key name [%s] for HKPD.\n",
-				 value_name.name));
+				 r->in.value_name.name));
 			return WERR_BADFILE;
 		}
 
-		*type = REG_BINARY;
+		*r->out.type = REG_BINARY;
 	}
 	else {
 		struct registry_value *val;
 
-		status = reg_queryvalue(p->mem_ctx, regkey, value_name.name,
+		status = reg_queryvalue(p->mem_ctx, regkey, r->in.value_name.name,
 					&val);
 		if (!W_ERROR_IS_OK(status)) {
-			if (data_size) {
-				*data_size = 0;
+			if (r->out.data_size) {
+				*r->out.data_size = 0;
 			}
-			if (value_length) {
-				*value_length = 0;
+			if (r->out.value_length) {
+				*r->out.value_length = 0;
 			}
 			return status;
 		}
@@ -317,21 +304,21 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 
 		outbuf = val_blob.data;
 		outbuf_size = val_blob.length;
-		*type = val->type;
+		*r->out.type = val->type;
 	}
 
-	*value_length = outbuf_size;
+	*r->out.value_length = outbuf_size;
 
-	if ( *data_size == 0 || !data ) {
+	if ( *r->in.data_size == 0 || !r->out.data ) {
 		status = WERR_OK;
-	} else if ( *value_length > *data_size ) {
+	} else if ( *r->out.value_length > *r->in.data_size ) {
 		status = WERR_MORE_DATA;
 	} else {
-		memcpy( data, outbuf, *value_length );
+		memcpy( r->out.data, outbuf, *r->out.value_length );
 		status = WERR_OK;
 	}
 
-	*data_size = *value_length;
+	*r->out.data_size = *r->out.value_length;
 
 	if (free_prs) prs_mem_free(&prs_hkpd);
 	if (free_buf) SAFE_FREE(outbuf);
@@ -343,26 +330,20 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
  Implementation of REG_QUERY_KEY
  ****************************************************************************/
 
-WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle, 
-			    struct winreg_String *classname, 
-			    uint32_t *num_subkeys, uint32_t *max_subkeylen, 
-			    uint32_t *max_subkeysize, 
-			    uint32_t *num_values, uint32_t *max_valnamelen, 
-			    uint32_t *max_valbufsize, 
-			    uint32_t *secdescsize, NTTIME *last_changed_time)
+WERROR _winreg_QueryInfoKey(pipes_struct *p, struct winreg_QueryInfoKey *r)
 {
 	WERROR 	status = WERR_OK;
-	struct registry_key *regkey = find_regkey_by_hnd( p, handle );
+	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	
 	if ( !regkey )
 		return WERR_BADFID;
 
-	classname->name = NULL;
+	r->out.classname->name = NULL;
 
-	status = reg_queryinfokey(regkey, num_subkeys, max_subkeylen,
-				  max_subkeysize, num_values, max_valnamelen,
-				  max_valbufsize, secdescsize,
-				  last_changed_time);
+	status = reg_queryinfokey(regkey, r->out.num_subkeys, r->out.max_subkeylen,
+				  r->out.max_classlen, r->out.num_values, r->out.max_valnamelen,
+				  r->out.max_valbufsize, r->out.secdescsize,
+				  r->out.last_changed_time);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
@@ -372,10 +353,10 @@ WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle,
 	 * UTF-16. They are inexact at best, but so far they worked.
 	 */
 
-	*max_subkeylen *= 2;
+	*r->out.max_subkeylen *= 2;
 
-	*max_valnamelen += 1;
-	*max_valnamelen *= 2;
+	*r->out.max_valnamelen += 1;
+	*r->out.max_valnamelen *= 2;
 	
 	return WERR_OK;
 }
@@ -385,14 +366,14 @@ WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle,
  Implementation of REG_GETVERSION
  ****************************************************************************/
  
-WERROR _winreg_GetVersion(pipes_struct *p, struct policy_handle *handle, uint32_t *version)
+WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, handle );
+	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	
 	if ( !regkey )
 		return WERR_BADFID;
 	
-	*version = 0x00000005;	/* Windows 2000 registry API version */
+	*r->out.version = 0x00000005;	/* Windows 2000 registry API version */
 	
 	return WERR_OK;
 }
@@ -402,25 +383,25 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct policy_handle *handle, uint32_
  Implementation of REG_ENUM_KEY
  ****************************************************************************/
  
-WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time)
+WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r)
 {
 	WERROR err;
-	struct registry_key *key = find_regkey_by_hnd( p, handle );
+	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
 	
 	if ( !key )
 		return WERR_BADFID; 
 
-	if ( !name || !keyclass )
+	if ( !r->in.name || !r->in.keyclass )
 		return WERR_INVALID_PARAM;
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", key->key->name));
 
-	err = reg_enumkey(p->mem_ctx, key, enum_index, (char **)&name->name,
-			  last_changed_time);
+	err = reg_enumkey(p->mem_ctx, key, r->in.enum_index, (char **)&r->out.name->name,
+			  r->out.last_changed_time);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
-	keyclass->name = "";
+	r->out.keyclass->name = "";
 	return WERR_OK;
 }
 
@@ -428,13 +409,10 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
  Implementation of REG_ENUM_VALUE
  ****************************************************************************/
 
-WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
-			 uint32_t enum_index, struct winreg_ValNameBuf *name,
-			 enum winreg_Type *type, uint8_t **data,
-			 uint32_t *data_size, uint32_t *value_length)
+WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
 {
 	WERROR err;
-	struct registry_key *key = find_regkey_by_hnd( p, handle );
+	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
 	char *valname;
 	struct registry_value *val;
 	DATA_BLOB value_blob;
@@ -442,13 +420,13 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
 	if ( !key )
 		return WERR_BADFID;
 
-	if ( !name )
+	if ( !r->in.name )
 		return WERR_INVALID_PARAM;
 
 	DEBUG(8,("_winreg_EnumValue: enumerating values for key [%s]\n",
 		 key->key->name));
 
-	err = reg_enumvalue(p->mem_ctx, key, enum_index, &valname, &val);
+	err = reg_enumvalue(p->mem_ctx, key, r->in.enum_index, &valname, &val);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
@@ -458,31 +436,31 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
 		return err;
 	}
 
-	if (name != NULL) {
-		name->name = valname;
+	if (r->out.name != NULL) {
+		r->out.name->name = valname;
 	}
 
-	if (type != NULL) {
-		*type = val->type;
+	if (r->out.type != NULL) {
+		*r->out.type = val->type;
 	}
 
-	if (data != NULL) {
-		if ((data_size == NULL) || (value_length == NULL)) {
+	if (r->out.data != NULL) {
+		if ((r->out.data_size == NULL) || (r->out.value_length == NULL)) {
 			return WERR_INVALID_PARAM;
 		}
 
-		if (value_blob.length > *data_size) {
+		if (value_blob.length > *r->out.data_size) {
 			return WERR_MORE_DATA;
 		}
 
-		memcpy( data, value_blob.data, value_blob.length );
+		memcpy( r->out.data, value_blob.data, value_blob.length );
 	}
 
-	if (value_length != NULL) {
-		*value_length = value_blob.length;
+	if (r->out.value_length != NULL) {
+		*r->out.value_length = value_blob.length;
 	}
-	if (data_size != NULL) {
-		*data_size = value_blob.length;
+	if (r->out.data_size != NULL) {
+		*r->out.data_size = value_blob.length;
 	}
 
 	return WERR_OK;
@@ -492,15 +470,21 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
  reg_shutdwon
  ********************************************************************/
 
-WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot)
+WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSystemShutdown *r)
 {
-	uint32_t reason = 0;
+	struct winreg_InitiateSystemShutdownEx s;
+
+	s.in.hostname = r->in.hostname;
+	s.in.message = r->in.message;
+	s.in.timeout = r->in.timeout;
+	s.in.force_apps = r->in.force_apps;
+	s.in.reboot = r->in.reboot;
+	s.in.reason = 0;
 
 	/* thunk down to _winreg_InitiateSystemShutdownEx() 
 	   (just returns a status) */
 	
-	return _winreg_InitiateSystemShutdownEx( p, hostname, message, timeout, 
-		force_apps, reboot, reason );
+	return _winreg_InitiateSystemShutdownEx( p, &s );
 }
 
 /*******************************************************************
@@ -511,14 +495,14 @@ WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, uint16_t *hostname, struc
 #define SHUTDOWN_F_STRING "-f"
 
 
-WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, uint32_t reason)
+WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateSystemShutdownEx *r)
 {
 	pstring shutdown_script;
 	char *msg = NULL;
 	pstring chkmsg;
 	fstring str_timeout;
 	fstring str_reason;
-	fstring r;
+	fstring reboot;
 	fstring f;
 	int ret;
 	BOOL can_shutdown;
@@ -533,21 +517,21 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, uint16_t *hostname, str
 
 	chkmsg[0] = '\0';
 
-	if ( message && message->name && message->name->name ) {
-		if ( (msg = talloc_strdup(p->mem_ctx, message->name->name )) == NULL ) {
+	if ( r->in.message && r->in.message->name && r->in.message->name->name ) {
+		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->name->name )) == NULL ) {
 			return WERR_NOMEM;
 		}
 		alpha_strcpy (chkmsg, msg, NULL, sizeof(chkmsg));
 	} 
 		
-	fstr_sprintf(str_timeout, "%d", timeout);
-	fstr_sprintf(r, reboot ? SHUTDOWN_R_STRING : "");
-	fstr_sprintf(f, force_apps ? SHUTDOWN_F_STRING : "");
-	fstr_sprintf(str_reason, "%d", reason );
+	fstr_sprintf(str_timeout, "%d", r->in.timeout);
+	fstr_sprintf(reboot, r->in.reboot ? SHUTDOWN_R_STRING : "");
+	fstr_sprintf(f, r->in.force_apps ? SHUTDOWN_F_STRING : "");
+	fstr_sprintf(str_reason, "%d", r->in.reason );
 
 	all_string_sub( shutdown_script, "%z", chkmsg, sizeof(shutdown_script) );
 	all_string_sub( shutdown_script, "%t", str_timeout, sizeof(shutdown_script) );
-	all_string_sub( shutdown_script, "%r", r, sizeof(shutdown_script) );
+	all_string_sub( shutdown_script, "%r", reboot, sizeof(shutdown_script) );
 	all_string_sub( shutdown_script, "%f", f, sizeof(shutdown_script) );
 	all_string_sub( shutdown_script, "%x", str_reason, sizeof(shutdown_script) );
 
@@ -582,7 +566,7 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, uint16_t *hostname, str
  reg_abort_shutdwon
  ********************************************************************/
 
-WERROR _winreg_AbortSystemShutdown(pipes_struct *p, uint16_t *server)
+WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShutdown *r)
 {
 	pstring abort_shutdown_script;
 	int ret;
@@ -767,19 +751,19 @@ static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_RestoreKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, uint32_t flags)
+WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, handle );
+	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	pstring         fname;
 	int             snum;
 	
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	if ( !filename || !filename->name )
+	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
 
-	pstrcpy( fname, filename->name );
+	pstrcpy( fname, r->in.filename->name );
 
 	DEBUG(8,("_winreg_RestoreKey: verifying restore of key [%s] from "
 		 "\"%s\"\n", regkey->key->name, fname));
@@ -954,19 +938,19 @@ static WERROR backup_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_SaveKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, struct KeySecurityAttribute *sec_attrib)
+WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, handle );
+	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	pstring         fname;
 	int             snum;
 	
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	if ( !filename || !filename->name )
+	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
 
-	pstrcpy( fname, filename->name );
+	pstrcpy( fname, r->in.filename->name );
 
 	DEBUG(8,("_winreg_SaveKey: verifying backup of key [%s] to \"%s\"\n",
 		 regkey->key->name, fname));
@@ -983,7 +967,7 @@ WERROR _winreg_SaveKey(pipes_struct *p, struct policy_handle *handle, struct win
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_SaveKeyEx(pipes_struct *p)
+WERROR _winreg_SaveKeyEx(pipes_struct *p, struct winreg_SaveKeyEx *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -995,28 +979,22 @@ WERROR _winreg_SaveKeyEx(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
-			  struct winreg_String keyname, 
-			  struct winreg_String keyclass,
-			  uint32_t options, uint32_t access_mask, 
-			  struct winreg_SecBuf *secdesc,
-			  struct policy_handle *new_handle, 
-			  enum winreg_CreateAction *action_taken )
+WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, handle);
+	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
 	struct registry_key *new_key;
 	WERROR result;
 
 	if ( !parent )
 		return WERR_BADFID;
 
-	result = reg_createkey(NULL, parent, keyname.name, access_mask,
-			       &new_key, action_taken);
+	result = reg_createkey(NULL, parent, r->in.name.name, r->in.access_mask,
+			       &new_key, r->out.action_taken);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
 
-	if (!create_policy_hnd(p, new_handle, free_regkey, new_key)) {
+	if (!create_policy_hnd(p, r->out.new_handle, free_regkey, new_key)) {
 		TALLOC_FREE(new_key);
 		return WERR_BADFILE;
 	}
@@ -1027,64 +1005,60 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle,
-			struct winreg_String name, enum winreg_Type type,
-			uint8_t *data, uint32_t size)
+WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, handle);
+	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	struct registry_value *val;
 	WERROR status;
 
 	if ( !key )
 		return WERR_BADFID;
 
-	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->key->name,
-		 name.name));
+	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", 
+			 key->key->name, r->in.name.name));
 
-	status = registry_pull_value(p->mem_ctx, &val, type, data, size, size);
+	status = registry_pull_value(p->mem_ctx, &val, r->in.type, r->in.data, 
+								 r->in.size, r->in.size);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
 
-	return reg_setvalue(key, name.name, val);
+	return reg_setvalue(key, r->in.name.name, val);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_DeleteKey(pipes_struct *p, struct policy_handle *handle,
-			 struct winreg_String key)
+WERROR _winreg_DeleteKey(pipes_struct *p, struct winreg_DeleteKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, handle);
+	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
 
 	if ( !parent )
 		return WERR_BADFID;
 
-	return reg_deletekey(parent, key.name);
+	return reg_deletekey(parent, r->in.key.name);
 }
 
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_DeleteValue(pipes_struct *p, struct policy_handle *handle,
-			   struct winreg_String value)
+WERROR _winreg_DeleteValue(pipes_struct *p, struct winreg_DeleteValue *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, handle);
+	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	
 	if ( !key )
 		return WERR_BADFID;
 
-	return reg_deletevalue(key, value.name);
+	return reg_deletevalue(key, r->in.value.name);
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle,
-			      uint32_t sec_info, struct KeySecurityData *sd)
+WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, handle);
+	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	WERROR err;
 	struct security_descriptor *secdesc;
 	uint8 *data;
@@ -1109,14 +1083,14 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle,
 		return err;
 	}
 
-	if (len > sd->size) {
-		sd->size = len;
+	if (len > r->out.sd->size) {
+		r->out.sd->size = len;
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	sd->size = len;
-	sd->len = len;
-	sd->data = data;
+	r->out.sd->size = len;
+	r->out.sd->len = len;
+	r->out.sd->data = data;
 		
 	return WERR_OK;
 }
@@ -1124,9 +1098,9 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle,
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uint32_t access_mask, struct KeySecurityData *sd)
+WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, handle);
+	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	struct security_descriptor *secdesc;
 	WERROR err;
 
@@ -1138,8 +1112,8 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uin
 	if ( !(key->key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
 		return WERR_ACCESS_DENIED;
 
-	err = ntstatus_to_werror(unmarshall_sec_desc(p->mem_ctx, sd->data,
-						     sd->len, &secdesc));
+	err = ntstatus_to_werror(unmarshall_sec_desc(p->mem_ctx, r->in.sd->data,
+						     r->in.sd->len, &secdesc));
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
@@ -1150,7 +1124,7 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uin
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_FlushKey(pipes_struct *p, struct policy_handle *handle)
+WERROR _winreg_FlushKey(pipes_struct *p, struct winreg_FlushKey *r)
 {
 	/* I'm just replying OK because there's not a lot 
 	   here I see to do i  --jerry */
@@ -1161,7 +1135,7 @@ WERROR _winreg_FlushKey(pipes_struct *p, struct policy_handle *handle)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_UnLoadKey(pipes_struct *p)
+WERROR _winreg_UnLoadKey(pipes_struct *p, struct winreg_UnLoadKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -1173,7 +1147,7 @@ WERROR _winreg_UnLoadKey(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_ReplaceKey(pipes_struct *p)
+WERROR _winreg_ReplaceKey(pipes_struct *p, struct winreg_ReplaceKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -1185,7 +1159,7 @@ WERROR _winreg_ReplaceKey(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_LoadKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *keyname, struct winreg_String *filename)
+WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -1197,7 +1171,7 @@ WERROR _winreg_LoadKey(pipes_struct *p, struct policy_handle *handle, struct win
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct policy_handle *handle, uint8_t watch_subtree, uint32_t notify_filter, uint32_t unknown, struct winreg_String string1, struct winreg_String string2, uint32_t unknown2)
+WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeKeyValue *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -1209,7 +1183,7 @@ WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct policy_handle *handl
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct policy_handle *key_handle, struct QueryMultipleValue *values, uint32_t num_values, uint8_t *buffer, uint32_t *buffer_size)
+WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct winreg_QueryMultipleValues *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -1221,7 +1195,7 @@ WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct policy_handle *key_ha
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues2(pipes_struct *p)
+WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultipleValues2 *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */

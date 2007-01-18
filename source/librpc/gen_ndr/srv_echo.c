@@ -43,7 +43,7 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 		return False;
 	}
 	
-	_echo_AddOne(p, r.in.in_data, r.out.out_data);
+	_echo_AddOne(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -114,7 +114,7 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 		return False;
 	}
 	
-	_echo_EchoData(p, r.in.len, r.in.in_data, r.out.out_data);
+	_echo_EchoData(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -178,7 +178,7 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_SinkData, &r);
 	
-	_echo_SinkData(p, r.in.len, r.in.data);
+	_echo_SinkData(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -249,7 +249,7 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 		return False;
 	}
 	
-	_echo_SourceData(p, r.in.len, r.out.data);
+	_echo_SourceData(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -320,7 +320,7 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 		return False;
 	}
 	
-	_echo_TestCall(p, r.in.s1, r.out.s2);
+	_echo_TestCall(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -391,7 +391,7 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _echo_TestCall2(p, r.in.level, r.out.info);
+	r.out.result = _echo_TestCall2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -455,7 +455,7 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestSleep, &r);
 	
-	r.out.result = _echo_TestSleep(p, r.in.seconds);
+	r.out.result = _echo_TestSleep(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -523,7 +523,7 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 	r.out.foo1 = r.in.foo1;
 	r.out.foo2 = r.in.foo2;
 	r.out.foo3 = r.in.foo3;
-	_echo_TestEnum(p, r.in.foo1, r.in.foo2, r.in.foo3);
+	_echo_TestEnum(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -589,7 +589,7 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.data = r.in.data;
-	_echo_TestSurrounding(p, r.in.data);
+	_echo_TestSurrounding(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -653,7 +653,7 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestDoublePointer, &r);
 	
-	r.out.result = _echo_TestDoublePointer(p, r.in.data);
+	r.out.result = _echo_TestDoublePointer(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

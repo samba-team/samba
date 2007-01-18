@@ -36,7 +36,7 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
 	
-	r.out.result = _initshutdown_Init(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot);
+	r.out.result = _initshutdown_Init(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -100,7 +100,7 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
 	
-	r.out.result = _initshutdown_Abort(p, r.in.server);
+	r.out.result = _initshutdown_Abort(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -164,7 +164,7 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
 	
-	r.out.result = _initshutdown_InitEx(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot, r.in.reason);
+	r.out.result = _initshutdown_InitEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

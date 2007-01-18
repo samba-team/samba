@@ -43,7 +43,7 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonUasLogon(p, r.in.server_name, r.in.account_name, r.in.workstation, r.out.info);
+	r.out.result = _netr_LogonUasLogon(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -114,7 +114,7 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonUasLogoff(p, r.in.server_name, r.in.account_name, r.in.workstation, r.out.info);
+	r.out.result = _netr_LogonUasLogoff(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -192,7 +192,7 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonSamLogon(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative);
+	r.out.result = _netr_LogonSamLogon(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -258,7 +258,7 @@ static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.result = _netr_LogonSamLogoff(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon);
+	r.out.result = _netr_LogonSamLogoff(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -324,7 +324,7 @@ static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
-	r.out.result = _netr_ServerReqChallenge(p, r.in.server_name, r.in.computer_name, r.in.credentials);
+	r.out.result = _netr_ServerReqChallenge(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -390,7 +390,7 @@ static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
-	r.out.result = _netr_ServerAuthenticate(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials);
+	r.out.result = _netr_ServerAuthenticate(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -461,7 +461,7 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_ServerPasswordSet(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credential, r.in.new_password, r.out.return_authenticator);
+	r.out.result = _netr_ServerPasswordSet(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -534,7 +534,7 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DatabaseDeltas(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.sequence_num, r.in.preferredmaximumlength, r.out.delta_enum_array);
+	r.out.result = _netr_DatabaseDeltas(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -607,7 +607,7 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DatabaseSync(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.sync_context, r.in.preferredmaximumlength, r.out.delta_enum_array);
+	r.out.result = _netr_DatabaseSync(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -697,7 +697,7 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_AccountDeltas(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.uas, r.in.count, r.in.level, r.in.buffersize, r.out.buffer, r.out.count_returned, r.out.total_entries, r.out.recordid);
+	r.out.result = _netr_AccountDeltas(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -788,7 +788,7 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	}
 	
 	r.out.recordid = r.in.recordid;
-	r.out.result = _netr_AccountSync(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.reference, r.in.level, r.in.buffersize, r.out.buffer, r.out.count_returned, r.out.total_entries, r.out.next_reference, r.in.recordid);
+	r.out.result = _netr_AccountSync(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -859,7 +859,7 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_GetDcName(p, r.in.logon_server, r.in.domainname, r.out.dcname);
+	r.out.result = _netr_GetDcName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -930,7 +930,7 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonControl(p, r.in.logon_server, r.in.function_code, r.in.level, r.out.info);
+	r.out.result = _netr_LogonControl(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1001,7 +1001,7 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_GetAnyDCName(p, r.in.logon_server, r.in.domainname, r.out.dcname);
+	r.out.result = _netr_GetAnyDCName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1072,7 +1072,7 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonControl2(p, r.in.logon_server, r.in.function_code, r.in.level, r.in.data, r.out.query);
+	r.out.result = _netr_LogonControl2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1139,7 +1139,7 @@ static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
 	r.out.negotiate_flags = r.in.negotiate_flags;
-	r.out.result = _netr_ServerAuthenticate2(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials, r.in.negotiate_flags);
+	r.out.result = _netr_ServerAuthenticate2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1212,7 +1212,7 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DatabaseSync2(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.restart_state, r.in.sync_context, r.in.preferredmaximumlength, r.out.delta_enum_array);
+	r.out.result = _netr_DatabaseSync2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1284,7 +1284,7 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DatabaseRedo(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.change_log_entry, r.in.change_log_entry_size, r.out.delta_enum_array);
+	r.out.result = _netr_DatabaseRedo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1355,7 +1355,7 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonControl2Ex(p, r.in.logon_server, r.in.function_code, r.in.level, r.in.data, r.out.query);
+	r.out.result = _netr_LogonControl2Ex(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1419,7 +1419,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
 	
-	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINS(p);
+	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1490,7 +1490,7 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DsRGetDCName(p, r.in.server_unc, r.in.domain_name, r.in.domain_guid, r.in.site_guid, r.in.flags, r.out.info);
+	r.out.result = _netr_DsRGetDCName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1554,7 +1554,7 @@ static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
 	
-	r.out.result = _netr_NETRLOGONDUMMYROUTINE1(p);
+	r.out.result = _netr_NETRLOGONDUMMYROUTINE1(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1618,7 +1618,7 @@ static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
 	
-	r.out.result = _netr_NETRLOGONSETSERVICEBITS(p);
+	r.out.result = _netr_NETRLOGONSETSERVICEBITS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1682,7 +1682,7 @@ static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
 	
-	r.out.result = _netr_NETRLOGONGETTRUSTRID(p);
+	r.out.result = _netr_NETRLOGONGETTRUSTRID(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1746,7 +1746,7 @@ static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
 	
-	r.out.result = _netr_NETRLOGONCOMPUTESERVERDIGEST(p);
+	r.out.result = _netr_NETRLOGONCOMPUTESERVERDIGEST(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1810,7 +1810,7 @@ static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
 	
-	r.out.result = _netr_NETRLOGONCOMPUTECLIENTDIGEST(p);
+	r.out.result = _netr_NETRLOGONCOMPUTECLIENTDIGEST(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1883,7 +1883,7 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_ServerAuthenticate3(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials, r.in.negotiate_flags, r.out.rid);
+	r.out.result = _netr_ServerAuthenticate3(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1954,7 +1954,7 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DsRGetDCNameEx(p, r.in.server_unc, r.in.domain_name, r.in.domain_guid, r.in.site_name, r.in.flags, r.out.info);
+	r.out.result = _netr_DsRGetDCNameEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2025,7 +2025,7 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DsRGetSiteName(p, r.in.computer_name, r.out.site);
+	r.out.result = _netr_DsRGetSiteName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2097,7 +2097,7 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_LogonGetDomainInfo(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.level, r.in.query, r.out.info);
+	r.out.result = _netr_LogonGetDomainInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2168,7 +2168,7 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_ServerPasswordSet2(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credential, r.in.new_password, r.out.return_authenticator);
+	r.out.result = _netr_ServerPasswordSet2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2232,7 +2232,7 @@ static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
 	
-	r.out.result = _netr_NETRSERVERPASSWORDGET(p);
+	r.out.result = _netr_NETRSERVERPASSWORDGET(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2296,7 +2296,7 @@ static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
 	
-	r.out.result = _netr_NETRLOGONSENDTOSAM(p);
+	r.out.result = _netr_NETRLOGONSENDTOSAM(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2360,7 +2360,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
 	
-	r.out.result = _netr_DSRADDRESSTOSITENAMESW(p);
+	r.out.result = _netr_DSRADDRESSTOSITENAMESW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2431,7 +2431,7 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DsRGetDCNameEx2(p, r.in.server_unc, r.in.client_account, r.in.mask, r.in.domain_name, r.in.domain_guid, r.in.site_name, r.in.flags, r.out.info);
+	r.out.result = _netr_DsRGetDCNameEx2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2495,7 +2495,7 @@ static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
 	
-	r.out.result = _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(p);
+	r.out.result = _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2559,7 +2559,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
 	
-	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINSEX(p);
+	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINSEX(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2623,7 +2623,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
 	
-	r.out.result = _netr_DSRADDRESSTOSITENAMESEXW(p);
+	r.out.result = _netr_DSRADDRESSTOSITENAMESEXW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2687,7 +2687,7 @@ static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
 	
-	r.out.result = _netr_DSRGETDCSITECOVERAGEW(p);
+	r.out.result = _netr_DSRGETDCSITECOVERAGEW(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2765,7 +2765,7 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 	}
 	
 	r.out.flags = r.in.flags;
-	r.out.result = _netr_LogonSamLogonEx(p, r.in.server_name, r.in.computer_name, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative, r.in.flags);
+	r.out.result = _netr_LogonSamLogonEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2842,7 +2842,7 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _netr_DsrEnumerateDomainTrusts(p, r.in.server_name, r.in.trust_flags, r.out.count, r.out.trusts);
+	r.out.result = _netr_DsrEnumerateDomainTrusts(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2906,7 +2906,7 @@ static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
 	
-	r.out.result = _netr_DSRDEREGISTERDNSHOSTRECORDS(p);
+	r.out.result = _netr_DSRDEREGISTERDNSHOSTRECORDS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2970,7 +2970,7 @@ static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
 	
-	r.out.result = _netr_NETRSERVERTRUSTPASSWORDSGET(p);
+	r.out.result = _netr_NETRSERVERTRUSTPASSWORDSGET(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3034,7 +3034,7 @@ static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
 	
-	r.out.result = _netr_DSRGETFORESTTRUSTINFORMATION(p);
+	r.out.result = _netr_DSRGETFORESTTRUSTINFORMATION(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3098,7 +3098,7 @@ static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
 	
-	r.out.result = _netr_NETRGETFORESTTRUSTINFORMATION(p);
+	r.out.result = _netr_NETRGETFORESTTRUSTINFORMATION(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3177,7 +3177,7 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	}
 	
 	r.out.flags = r.in.flags;
-	r.out.result = _netr_LogonSamLogonWithFlags(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative, r.in.flags);
+	r.out.result = _netr_LogonSamLogonWithFlags(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3241,7 +3241,7 @@ static BOOL api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
 	
-	r.out.result = _netr_NETRSERVERGETTRUSTINFO(p);
+	r.out.result = _netr_NETRSERVERGETTRUSTINFO(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
