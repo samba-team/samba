@@ -652,11 +652,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (lp_acl_check_permissions(SNUM(conn))
 	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)
-	    && !can_delete_file_in_directory(conn, fname)) {
-		restore_case_semantics(conn, file_attributes);
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	    && (access_mask & DELETE_ACCESS)) {
+		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
+				!can_delete_file_in_directory(conn, fname)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 	}
 
 	/* 
@@ -1277,10 +1279,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	if (lp_acl_check_permissions(SNUM(conn))
 	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)
-	    && !can_delete_file_in_directory(conn, fname)) {
-		restore_case_semantics(conn, file_attributes);
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	    && (access_mask & DELETE_ACCESS)) {
+		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
+				!can_delete_file_in_directory(conn, fname)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 	}
 
 	if (ea_len) {

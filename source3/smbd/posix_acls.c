@@ -4221,6 +4221,11 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (sbuf.st_mode & S_ISVTX) {
 		SMB_STRUCT_STAT sbuf_file;  
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
+			if (errno == ENOENT) {
+				/* If the file doesn't already exist then
+				 * yes we'll be able to delete it. */
+				return True;
+			}
 			return False;
 		}
 		/*
