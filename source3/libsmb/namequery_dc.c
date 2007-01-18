@@ -53,12 +53,14 @@ static BOOL ads_dc_name(const char *domain,
 			fstring srv_name)
 {
 	ADS_STRUCT *ads;
-	char *sitename = sitename_fetch();
+	char *sitename;
 	int i;
 
 	if (!realm && strequal(domain, lp_workgroup())) {
 		realm = lp_realm();
 	}
+
+	sitename = sitename_fetch(realm);
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
@@ -86,9 +88,9 @@ static BOOL ads_dc_name(const char *domain,
 		   has changed. If so, we need to re-do the DNS query
 		   to ensure we only find servers in our site. */
 
-		if (stored_sitename_changed(sitename)) {
+		if (stored_sitename_changed(realm, sitename)) {
 			SAFE_FREE(sitename);
-			sitename = sitename_fetch();
+			sitename = sitename_fetch(realm);
 			ads_destroy(&ads);
 			/* Ensure we don't cache the DC we just connected to. */
 			namecache_delete(realm, 0x1C);

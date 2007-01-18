@@ -84,7 +84,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	struct hostent *hostent;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
-	char *sitename = sitename_fetch();
+	char *sitename;
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
 
@@ -92,6 +92,8 @@ static int net_lookup_ldap(int argc, const char **argv)
 		domain = argv[0];
 	else
 		domain = opt_target_workgroup;
+
+	sitename = sitename_fetch(domain);
 
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
 		d_fprintf(stderr, "net_lookup_ldap: talloc_inti() failed!\n");
@@ -171,7 +173,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	sitename = sitename_fetch();
+	sitename = sitename_fetch(domain);
 	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, False))) {
 		SAFE_FREE(pdc_str);
 		SAFE_FREE(sitename);
