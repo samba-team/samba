@@ -51,6 +51,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 	ev = event_context_find(event_mem_ctx);
+
 	ctx = libnet_context_init(ev);
 	/* IF we generated a new event context, it will be under here,
 	 * and we need it to last as long as the libnet context, so
