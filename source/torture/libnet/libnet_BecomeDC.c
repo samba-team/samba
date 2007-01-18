@@ -699,6 +699,9 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	struct libnet_BecomeDC b;
 	struct libnet_UnbecomeDC u;
 	struct test_become_dc_state *s;
+	struct ldb_message *msg;
+	int ldb_ret;
+	uint32_t i;
 
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return False;
@@ -736,8 +739,64 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
 		ret = False;
+		goto cleanup;
 	}
 
+	msg = ldb_msg_new(s);
+	if (!msg) {
+		printf("ldb_msg_new() failed\n");
+		ret = False;
+		goto cleanup;
+	}
+	msg->dn = ldb_dn_new(msg, s->ldb, "cn=ROOTDSE");
+	if (!msg->dn) {
+		printf("ldb_msg_new(cn=ROOTDSE) failed\n");
+		ret = False;
+		goto cleanup;
+	}
+
+	ldb_ret = ldb_msg_add_string(msg, "isSynchronized", "TRUE");
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("ldb_msg_add_string(msg, isSynchronized, TRUE) failed: %d\n", ldb_ret);
+		ret = False;
+		goto cleanup;
+	}
+
+	for (i=0; i < msg->num_elements; i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	printf("mark ROOTDSE with isSynchronized=TRUE\n");
+	ldb_ret = ldb_modify(s->ldb, msg);
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("ldb_modify() failed: %d\n", ldb_ret);
+		ret = False;
+		goto cleanup;
+	}
+	
+	/* reopen the ldb */
+	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
+	s->schema = NULL;
+
+	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", TORTURE_SAMDB_LDB));
+	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+				  system_session(s),
+				  NULL, 0, NULL);
+	if (!s->ldb) {
+		DEBUG(0,("Failed to open '%s'\n",
+			TORTURE_SAMDB_LDB));
+		ret = False;
+		goto cleanup;
+	}
+
+	s->schema = dsdb_get_schema(s->ldb);
+	if (!s->schema) {
+		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
+		ret = False;
+		goto cleanup;
+	}
+
+cleanup:
 	ZERO_STRUCT(u);
 	u.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	u.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
