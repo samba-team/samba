@@ -383,7 +383,7 @@ static void dptr_close_oldest(BOOL old)
 ****************************************************************************/
 
 NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		const char *wcard, BOOL wcard_has_wild, uint32 attr, int *dptr_hnd_ret)
+		const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
@@ -391,8 +391,6 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
-
-	*dptr_hnd_ret = -1;
 
 	if (!wcard) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -517,9 +515,8 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
 
-	conn->dirptr = dptr;
+	*dptr_ret = dptr;
 
-	*dptr_hnd_ret = dptr->dnum;
 	return NT_STATUS_OK;
 }
 
@@ -530,6 +527,7 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 
 int dptr_CloseDir(struct dptr_struct *dptr)
 {
+	DLIST_REMOVE(dirptrs, dptr);
 	return CloseDir(dptr->dir_hnd);
 }
 
@@ -546,6 +544,11 @@ long dptr_TellDir(struct dptr_struct *dptr)
 BOOL dptr_has_wild(struct dptr_struct *dptr)
 {
 	return dptr->has_wild;
+}
+
+int dptr_dnum(struct dptr_struct *dptr)
+{
+	return dptr->dnum;
 }
 
 /****************************************************************************

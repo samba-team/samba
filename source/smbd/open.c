@@ -2110,15 +2110,17 @@ NTSTATUS open_directory(connection_struct *conn,
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, True, 0);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
 			TALLOC_FREE(lck);
 			file_free(fsp);
 			return status;
 		}
 
-		set_delete_on_close_token(lck, &current_user.ut);
-		lck->initial_delete_on_close = True;
-		lck->modified = True;
+		if (NT_STATUS_IS_OK(status)) {
+			set_delete_on_close_token(lck, &current_user.ut);
+			lck->initial_delete_on_close = True;
+			lck->modified = True;
+		}
 	}
 
 	TALLOC_FREE(lck);
