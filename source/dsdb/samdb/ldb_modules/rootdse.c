@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "system/time.h"
+#include "dsdb/samdb/samdb.h"
 
 struct private_data {
 	int num_controls;
@@ -44,6 +45,11 @@ static int do_attribute(const char * const *attrs, const char *name)
 		ldb_attr_in_list(attrs, "*");
 }
 
+static int do_attribute_explicit(const char * const *attrs, const char *name)
+{
+	return attrs != NULL && ldb_attr_in_list(attrs, name);
+}
+
 
 /*
   add dynamically generated attributes to rootDSE result
@@ -52,6 +58,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 {
 	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
 	char **server_sasl;
+	const struct dsdb_schema *schema;
+
+	schema = dsdb_get_schema(module->ldb);
 
 	msg->dn = ldb_dn_new(msg, module->ldb, NULL);
 
@@ -116,6 +125,41 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 					    "%llu", (unsigned long long)seq_num) != 0) {
 				goto failed;
 			}
+		}
+	}
+
+	if (schema && do_attribute_explicit(attrs, "dsSchemaAttrCount")) {
+		struct dsdb_attribute *cur;
+		uint32_t n = 0;
+
+		for (cur = schema->attributes; cur; cur = cur->next) {
+			n++;
+		}
+
+		if (ldb_msg_add_fmt(msg, "dsSchemaAttrCount", 
+				    "%u", n) != 0) {
+			goto failed;
+		}
+	}
+
+	if (schema && do_attribute_explicit(attrs, "dsSchemaClassCount")) {
+		struct dsdb_class *cur;
+		uint32_t n = 0;
+
+		for (cur = schema->classes; cur; cur = cur->next) {
+			n++;
+		}
+
+		if (ldb_msg_add_fmt(msg, "dsSchemaClassCount", 
+				    "%u", n) != 0) {
+			goto failed;
+		}
+	}
+
+	if (schema && do_attribute_explicit(attrs, "dsSchemaPrefixCount")) {
+		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount", 
+				    "%u", schema->num_prefixes) != 0) {
+			goto failed;
 		}
 	}
 
