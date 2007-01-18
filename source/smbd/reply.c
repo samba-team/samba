@@ -1012,10 +1012,19 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	p = smb_buf(outbuf) + 3;
      
 	if (status_len == 0) {
-		nt_status = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype,&dptr_num);
+		nt_status = dptr_create(conn,
+					directory,
+					True,
+					expect_close,
+					SVAL(inbuf,smb_pid),
+					mask,
+					mask_contains_wcard,
+					dirtype,
+					&conn->dirptr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ERROR_NT(nt_status);
 		}
+		dptr_num = dptr_dnum(conn->dirptr);
 	} else {
 		dirtype = dptr_attr(dptr_num);
 	}
