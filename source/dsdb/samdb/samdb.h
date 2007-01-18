@@ -77,4 +77,19 @@ struct dsdb_extended_replicated_objects {
 	struct dsdb_extended_replicated_object *objects;
 };
 
+struct dsdb_schema_fsmo {
+	bool we_are_master;
+	struct ldb_dn *master_dn;
+};
+
+struct dsdb_naming_fsmo {
+	bool we_are_master;
+	struct ldb_dn *master_dn;
+};
+
+struct dsdb_pdc_fsmo {
+	bool we_are_master;
+	struct ldb_dn *master_dn;
+};
+
 #endif /* __SAMDB_H__ */

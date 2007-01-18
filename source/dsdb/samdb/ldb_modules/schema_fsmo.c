@@ -32,10 +32,6 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/util/dlinklist.h"
 
-struct dsdb_schema_fsmo {
-	bool we_are_master;
-};
-
 static int schema_fsmo_init(struct ldb_module *module)
 {
 	WERROR status;
@@ -44,7 +40,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 	struct dsdb_schema *schema;
 	struct dsdb_schema_fsmo *schema_fsmo;
 	struct ldb_result *schema_res;
-	struct ldb_dn *schema_master_dn;
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_result *a_res;
@@ -224,12 +219,19 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return ret;
 	}
 
-	schema_master_dn = ldb_msg_find_attr_as_dn(module->ldb, mem_ctx, schema_res->msgs[0], "fSMORoleOwner");
-	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), schema_master_dn) == 0) {
+	schema_fsmo->master_dn = ldb_msg_find_attr_as_dn(module->ldb, schema_fsmo, schema_res->msgs[0], "fSMORoleOwner");
+	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), schema_fsmo->master_dn) == 0) {
 		schema_fsmo->we_are_master = true;
 	} else {
 		schema_fsmo->we_are_master = false;
 	}
+
+	if (ldb_set_opaque(module->ldb, "dsdb_schema_fsmo", schema_fsmo) != LDB_SUCCESS) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_steal(module, schema_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
 			  "schema_fsmo_init: we are master: %s\n",
