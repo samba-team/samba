@@ -1761,10 +1761,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				return status;
 			}
 			/* Note that here we set the *inital* delete on close flag,
-			   not the regular one. */
-			set_delete_on_close_token(lck, &current_user.ut);
-			lck->initial_delete_on_close = True;
-			lck->modified = True;
+			   not the regular one. The magic gets handled in close. */
+			fsp->initial_delete_on_close = True;
 		}
 	
 		/* Files should be initially set as archive */
@@ -2117,9 +2115,9 @@ NTSTATUS open_directory(connection_struct *conn,
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
-			set_delete_on_close_token(lck, &current_user.ut);
-			lck->initial_delete_on_close = True;
-			lck->modified = True;
+			/* Note that here we set the *inital* delete on close flag,
+			   not the regular one. The magic gets handled in close. */
+			fsp->initial_delete_on_close = True;
 		}
 	}
 
