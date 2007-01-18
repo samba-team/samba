@@ -215,7 +215,7 @@ static uint32 get_share_type(const struct share_params *params)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(params->service), "IPC"))
 		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
+	if (net_name[len_net_name-1] == '$')
 		type |= STYPE_HIDDEN;
 
 	return type;
