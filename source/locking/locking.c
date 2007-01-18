@@ -473,14 +473,11 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	data = (struct locking_data *)dbuf.dptr;
 
 	lck->delete_on_close = data->u.s.delete_on_close;
-	lck->initial_delete_on_close = data->u.s.initial_delete_on_close;
 	lck->num_share_modes = data->u.s.num_share_mode_entries;
 
 	DEBUG(10, ("parse_share_modes: delete_on_close: %d, "
-		   "initial_delete_on_close: %d, "
 		   "num_share_modes: %d\n",
 		lck->delete_on_close,
-		lck->initial_delete_on_close,
 		lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
@@ -635,11 +632,9 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
-	data->u.s.initial_delete_on_close = lck->initial_delete_on_close;
 	data->u.s.delete_token_size = delete_token_size;
-	DEBUG(10, ("unparse_share_modes: del: %d, initial del %d, tok = %u, num: %d\n",
+	DEBUG(10, ("unparse_share_modes: del: %d, tok = %u, num: %d\n",
 		data->u.s.delete_on_close,
-		data->u.s.initial_delete_on_close,
 		(unsigned int)data->u.s.delete_token_size,
 		data->u.s.num_share_mode_entries));
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
@@ -734,7 +729,6 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->share_modes = NULL;
 	lck->delete_token = NULL;
 	lck->delete_on_close = False;
-	lck->initial_delete_on_close = False;
 	lck->fresh = False;
 	lck->modified = False;
 
@@ -1251,10 +1245,21 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
  changed the delete on close flag. This will be noticed
  in the close code, the last closer will delete the file
  if flag is set.
- Note that setting this to any value clears the initial_delete_on_close flag.
- If delete_on_close is True this makes a copy of any UNIX_USER_TOKEN into the
- lck entry.
+ This makes a copy of any UNIX_USER_TOKEN into the
+ lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
+
+void set_delete_on_close_lck(struct share_mode_lock *lck, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
+{
+	if (lck->delete_on_close != delete_on_close) {
+		set_delete_on_close_token(lck, tok);
+		lck->delete_on_close = delete_on_close;
+		if (delete_on_close) {
+			SMB_ASSERT(lck->delete_token != NULL);
+		}
+		lck->modified = True;
+	}
+}
 
 BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
 {
@@ -1274,19 +1279,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKE
 		return False;
 	}
 
-	if (lck->delete_on_close != delete_on_close) {
-		set_delete_on_close_token(lck, tok);
-		lck->delete_on_close = delete_on_close;
-		if (delete_on_close) {
-			SMB_ASSERT(lck->delete_token != NULL);
-		}
-		lck->modified = True;
-	}
-
-	if (lck->initial_delete_on_close) {
-		lck->initial_delete_on_close = False;
-		lck->modified = True;
-	}
+	set_delete_on_close_lck(lck, delete_on_close, tok);
 
 	TALLOC_FREE(lck);
 	return True;

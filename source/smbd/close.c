@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 /****************************************************************************
  Run a file if it is a magic script.
 ****************************************************************************/
@@ -172,7 +174,23 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			  "entry for file %s\n", fsp->fsp_name));
 	}
 
-	delete_file = (lck->delete_on_close | lck->initial_delete_on_close);
+	if (fsp->initial_delete_on_close && (lck->delete_token == NULL)) {
+		BOOL became_user = False;
+
+		/* Initial delete on close was set and no one else
+		 * wrote a real delete on close. */
+
+		if (current_user.vuid != fsp->vuid) {
+			become_user(conn, fsp->vuid);
+			became_user = True;
+		}
+		set_delete_on_close_lck(lck, True, &current_user.ut);
+		if (became_user) {
+			unbecome_user();
+		}
+	}
+
+	delete_file = lck->delete_on_close;
 
 	if (delete_file) {
 		int i;
@@ -402,7 +420,24 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 		DEBUG(0, ("close_directory: Could not delete share entry for %s\n", fsp->fsp_name));
 	}
 
-	delete_dir = (lck->delete_on_close | lck->initial_delete_on_close);
+	if (fsp->initial_delete_on_close) {
+		BOOL became_user = False;
+
+		/* Initial delete on close was set - for
+		 * directories we don't care if anyone else
+		 * wrote a real delete on close. */
+
+		if (current_user.vuid != fsp->vuid) {
+			become_user(fsp->conn, fsp->vuid);
+			became_user = True;
+		}
+		set_delete_on_close_lck(lck, True, &current_user.ut);
+		if (became_user) {
+			unbecome_user();
+		}
+	}
+
+	delete_dir = lck->delete_on_close;
 
 	if (delete_dir) {
 		int i;

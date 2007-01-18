@@ -455,6 +455,7 @@ typedef struct files_struct {
 	BOOL is_stat;
 	BOOL aio_write_behind;
 	BOOL lockdb_clean;
+	BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	char *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;
@@ -722,7 +723,6 @@ struct share_mode_lock {
 	struct share_mode_entry *share_modes;
 	UNIX_USER_TOKEN *delete_token;
 	BOOL delete_on_close;
-	BOOL initial_delete_on_close;
 	BOOL fresh;
 	BOOL modified;
 };
@@ -737,7 +737,6 @@ struct locking_data {
 		struct {
 			int num_share_mode_entries;
 			BOOL delete_on_close;
-			BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 			uint32 delete_token_size; /* Only valid if either of
 						     the two previous fields
 						     are True. */
