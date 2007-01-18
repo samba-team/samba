@@ -617,7 +617,7 @@ BOOL sitename_store(const char *realm, const char *sitename)
 
 	if (!sitename || (sitename && !*sitename)) {
 		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
-		ret = gencache_del(sitename_key(realm));
+		ret = gencache_del(key);
 		SAFE_FREE(key);
 		return ret;
 	}
