@@ -100,11 +100,13 @@ done:
   UserListCtx.Users[]
   UserListCtx.ResumeIndex
   UserListCtx.Count
+  UserListCtx.EndOfList
  */
-struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list)
+struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list, NTSTATUS result)
 {
 	const char *name = "UserListCtx";
 	NTSTATUS status;
+	bool endOfList;
 	struct MprVar mprListCtx, mprUserList;
 	struct MprVar mprUser, mprSid, mprUsername;
 	int i;
@@ -113,6 +115,9 @@ struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list)
 		mprListCtx = mprCreateNullVar();
 		goto done;
 	}
+
+	endOfList = (NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) ||
+		     NT_STATUS_IS_OK(result));
 
 	mprUserList = mprArray("Users");
 	for (i = 0; i < list->out.count; i++) {
@@ -128,7 +133,7 @@ struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list)
 		mprSetVar(&mprUser, "SID", mprSid);
 		
 		/* add the object to the array being constructed */
-		mprAddArray(&mprUserList, 0, mprUser);
+		mprAddArray(&mprUserList, i, mprUser);
 	}
 
 	mprListCtx = mprObject(name);
@@ -138,6 +143,7 @@ struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list)
 	if (!NT_STATUS_IS_OK(status)) goto done;
 	status = mprSetVar(&mprListCtx, "ResumeIndex", mprCreateIntegerVar((int)list->out.resume_index));
 	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprListCtx, "EndOfList", mprCreateBoolVar(endOfList));
 
 done:
 	return mprListCtx;
