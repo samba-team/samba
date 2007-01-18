@@ -299,7 +299,7 @@ static int ejs_net_userlist(MprVarHandle eid, int argc, struct MprVar **argv)
 	NTSTATUS status;
 	struct libnet_context *ctx;
 	const char *userlist_domain;
-	int page_size = 10;         /* TODO: this should be specified in a nicer way */
+	int page_size = 512;         /* TODO: this should be specified in a nicer way */
 	struct libnet_UserList req;
 	struct MprVar mprListCtx, *mprInListCtx;
 	
@@ -359,7 +359,7 @@ static int ejs_net_userlist(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto done;
 	}
 
-	mprListCtx = mprUserListCtx(mem_ctx, &req);
+	mprListCtx = mprUserListCtx(mem_ctx, &req, status);
 
 done:
 	talloc_free(mem_ctx);
