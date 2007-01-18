@@ -44,7 +44,7 @@ static uint32 get_share_type(int snum)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(snum), "IPC"))
 		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
+	if (net_name[len_net_name-1] == '$')
 		type |= STYPE_HIDDEN;
 
 	return type;
