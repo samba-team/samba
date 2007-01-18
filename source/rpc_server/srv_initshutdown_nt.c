@@ -30,24 +30,37 @@
 
 /*******************************************************************
  ********************************************************************/
-WERROR _initshutdown_Init(pipes_struct *p, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot)
+WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r)
 {
-	uint32_t reason = 0;
+	struct winreg_InitiateSystemShutdownEx s;
+
+	s.in.hostname = r->in.hostname;
+	s.in.message = r->in.message;
+	s.in.timeout = r->in.timeout;
+	s.in.force_apps = r->in.force_apps;
+	s.in.reboot = r->in.reboot;
+	s.in.reason = 0;
 
 	/* thunk down to _winreg_InitiateSystemShutdownEx() 
 	   (just returns a status) */
 	
-	return _winreg_InitiateSystemShutdownEx( p, hostname, message, timeout, 
-		force_apps, reboot, reason );
+	return _winreg_InitiateSystemShutdownEx( p, &s );
 }
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _initshutdown_InitEx(pipes_struct *p, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, uint32_t reason)
+WERROR _initshutdown_InitEx(pipes_struct *p, struct initshutdown_InitEx *r)
 {
-	return _winreg_InitiateSystemShutdownEx( p, hostname, message, timeout, 
-		force_apps, reboot, reason );
+	struct winreg_InitiateSystemShutdownEx s;
+	s.in.hostname = r->in.hostname;
+	s.in.message = r->in.message;
+	s.in.timeout = r->in.timeout;
+	s.in.force_apps = r->in.force_apps;
+	s.in.reboot = r->in.reboot;
+	s.in.reason = r->in.reason;
+
+	return _winreg_InitiateSystemShutdownEx( p, &s);
 }
 
 
@@ -57,7 +70,9 @@ WERROR _initshutdown_InitEx(pipes_struct *p, uint16_t *hostname, struct initshut
  reg_abort_shutdwon
  ********************************************************************/
 
-WERROR _initshutdown_Abort(pipes_struct *p, uint16_t *server)
+WERROR _initshutdown_Abort(pipes_struct *p, struct initshutdown_Abort *r)
 {
-	return _winreg_AbortSystemShutdown( p, server );
+	struct winreg_AbortSystemShutdown s;
+	s.in.server = r->in.server;
+	return _winreg_AbortSystemShutdown( p, &s );
 }

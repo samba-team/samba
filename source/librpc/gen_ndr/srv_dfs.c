@@ -43,7 +43,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		return False;
 	}
 	
-	_dfs_GetManagerVersion(p, r.out.exist_flag);
+	_dfs_GetManagerVersion(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -107,7 +107,7 @@ static BOOL api_dfs_Add(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Add, &r);
 	
-	r.out.result = _dfs_Add(p, r.in.path, r.in.server, r.in.share, r.in.comment, r.in.flags);
+	r.out.result = _dfs_Add(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -171,7 +171,7 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
 	
-	r.out.result = _dfs_Remove(p, r.in.path, r.in.server, r.in.share);
+	r.out.result = _dfs_Remove(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -235,7 +235,7 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
 	
-	r.out.result = _dfs_SetInfo(p);
+	r.out.result = _dfs_SetInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -306,7 +306,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _dfs_GetInfo(p, r.in.path, r.in.server, r.in.share, r.in.level, r.out.info);
+	r.out.result = _dfs_GetInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -373,7 +373,7 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
-	r.out.result = _dfs_Enum(p, r.in.level, r.in.bufsize, r.in.info, r.in.unknown, r.in.total);
+	r.out.result = _dfs_Enum(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -437,7 +437,7 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Rename, &r);
 	
-	r.out.result = _dfs_Rename(p);
+	r.out.result = _dfs_Rename(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -501,7 +501,7 @@ static BOOL api_dfs_Move(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Move, &r);
 	
-	r.out.result = _dfs_Move(p);
+	r.out.result = _dfs_Move(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -565,7 +565,7 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &r);
 	
-	r.out.result = _dfs_ManagerGetConfigInfo(p);
+	r.out.result = _dfs_ManagerGetConfigInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -629,7 +629,7 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &r);
 	
-	r.out.result = _dfs_ManagerSendSiteInfo(p);
+	r.out.result = _dfs_ManagerSendSiteInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -693,7 +693,7 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
 	
-	r.out.result = _dfs_AddFtRoot(p);
+	r.out.result = _dfs_AddFtRoot(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -757,7 +757,7 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
 	
-	r.out.result = _dfs_RemoveFtRoot(p);
+	r.out.result = _dfs_RemoveFtRoot(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -821,7 +821,7 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
 	
-	r.out.result = _dfs_AddStdRoot(p);
+	r.out.result = _dfs_AddStdRoot(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -885,7 +885,7 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
 	
-	r.out.result = _dfs_RemoveStdRoot(p);
+	r.out.result = _dfs_RemoveStdRoot(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -949,7 +949,7 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
 	
-	r.out.result = _dfs_ManagerInitialize(p);
+	r.out.result = _dfs_ManagerInitialize(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1013,7 +1013,7 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
 	
-	r.out.result = _dfs_AddStdRootForced(p);
+	r.out.result = _dfs_AddStdRootForced(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1077,7 +1077,7 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
 	
-	r.out.result = _dfs_GetDcAddress(p);
+	r.out.result = _dfs_GetDcAddress(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1141,7 +1141,7 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);
 	
-	r.out.result = _dfs_SetDcAddress(p);
+	r.out.result = _dfs_SetDcAddress(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1205,7 +1205,7 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
 	
-	r.out.result = _dfs_FlushFtTable(p);
+	r.out.result = _dfs_FlushFtTable(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1269,7 +1269,7 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Add2, &r);
 	
-	r.out.result = _dfs_Add2(p);
+	r.out.result = _dfs_Add2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1333,7 +1333,7 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Remove2, &r);
 	
-	r.out.result = _dfs_Remove2(p);
+	r.out.result = _dfs_Remove2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1400,7 +1400,7 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
-	r.out.result = _dfs_EnumEx(p, r.in.name, r.in.level, r.in.bufsize, r.in.info, r.in.total);
+	r.out.result = _dfs_EnumEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1464,7 +1464,7 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &r);
 	
-	r.out.result = _dfs_SetInfo2(p);
+	r.out.result = _dfs_SetInfo2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

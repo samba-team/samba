@@ -31,25 +31,25 @@
 
 /* Add one to the input and return it */
 
-void _echo_AddOne(pipes_struct *p, uint32_t in_data, uint32_t *out_data)
+void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r)
 {
 	DEBUG(10, ("_echo_add_one\n"));
 
-	*out_data = in_data + 1;
+	*r->out.out_data = r->in.in_data + 1;
 }
 
 /* Echo back an array of data */
 
-void _echo_EchoData(pipes_struct *p, uint32_t len, uint8_t *in_data, uint8_t *out_data)
+void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
 {
 	DEBUG(10, ("_echo_data\n"));
 
-	memcpy(out_data, in_data, len);
+	memcpy(r->out.out_data, r->in.in_data, r->in.len);
 }
 
 /* Sink an array of data */
 
-void _echo_SinkData(pipes_struct *p, uint32_t len, uint8_t *data)
+void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
 {
 	DEBUG(10, ("_sink_data\n"));
 
@@ -58,47 +58,47 @@ void _echo_SinkData(pipes_struct *p, uint32_t len, uint8_t *data)
 
 /* Source an array of data */
 
-void _echo_SourceData(pipes_struct *p, uint32_t len, uint8_t *data)
+void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
 {
 	uint32 i;
 
 	DEBUG(10, ("_source_data\n"));
 
-	for (i = 0; i < len; i++)
-		data[i] = i & 0xff;
+	for (i = 0; i < r->in.len; i++)
+		r->out.data[i] = i & 0xff;
 }
 
-void _echo_TestCall(pipes_struct *p, const char *s1, const char **s2)
+void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
 {
-	*s2 = talloc_strdup(p->mem_ctx, s1);
+	*r->out.s2 = talloc_strdup(p->mem_ctx, r->in.s1);
 }
 
-NTSTATUS _echo_TestCall2(pipes_struct *p, uint16_t level, union echo_Info *info)
+NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r)
 {
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		info->info1.v = 10;
+		r->out.info->info1.v = 10;
 		break;
 	case 2:
-		info->info2.v = 20;
+		r->out.info->info2.v = 20;
 		break;
 	case 3:
-		info->info3.v = 30;
+		r->out.info->info3.v = 30;
 		break;
 	case 4:
-		info->info4.v = 40;
+		r->out.info->info4.v = 40;
 		break;
 	case 5:
-		info->info5.v1 = 50;
-		info->info5.v2 = 60;
+		r->out.info->info5.v1 = 50;
+		r->out.info->info5.v2 = 60;
 		break;
 	case 6:
-		info->info6.v1 = 70;
-		info->info6.info1.v= 80;
+		r->out.info->info6.v1 = 70;
+		r->out.info->info6.info1.v= 80;
 		break;
 	case 7:
-		info->info7.v1 = 80;
-		info->info7.info4.v = 90;
+		r->out.info->info7.v1 = 80;
+		r->out.info->info7.info4.v = 90;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -107,29 +107,29 @@ NTSTATUS _echo_TestCall2(pipes_struct *p, uint16_t level, union echo_Info *info)
 	return NT_STATUS_OK;
 }
 
-uint32 _echo_TestSleep(pipes_struct *p, uint32_t seconds)
+uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r)
 {
-	sleep(seconds);
-	return seconds;
+	sleep(r->in.seconds);
+	return r->in.seconds;
 }
 
-void _echo_TestEnum(pipes_struct *p, enum echo_Enum1 *foo1, struct echo_Enum2 *foo2, union echo_Enum3 *foo3)
+void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
 {
 }
 
-void _echo_TestSurrounding(pipes_struct *p, struct echo_Surrounding *data)
+void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
 {
-	data->x *= 2;
-	data->surrounding = talloc_zero_array(p->mem_ctx, uint16_t, data->x);
+	r->out.data->x *= 2;
+	r->out.data->surrounding = talloc_zero_array(p->mem_ctx, uint16_t, r->in.data->x);
 }
 
-uint16 _echo_TestDoublePointer(pipes_struct *p, uint16_t ***data)
+uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)
 {
-	if (!*data) 
+	if (!*r->in.data) 
 		return 0;
-	if (!**data)
+	if (!**r->in.data)
 		return 0;
-	return ***data;
+	return ***r->in.data;
 }
 
 #endif /* DEVELOPER */
