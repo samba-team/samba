@@ -1311,7 +1311,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 {
 	struct ip_service *ip_list = NULL;
-	char *sitename = sitename_fetch();
+	char *sitename = sitename_fetch(lp_realm()); /* wild guess */
 	int count = 0;
 
 	if (is_ipaddress(name)) {

@@ -1031,7 +1031,7 @@ static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
 			if (domain->primary && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
-				char *sitename = sitename_fetch();
+				char *sitename = sitename_fetch(ads->config.realm);
 
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs
@@ -1120,7 +1120,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 
 		get_dc_name(domain->name, lp_realm(), dcname, &ip);
 
-		sitename = sitename_fetch();
+		sitename = sitename_fetch(lp_realm());
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
