@@ -163,6 +163,46 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
+	if (do_attribute_explicit(attrs, "validFSMOs")) {
+		const struct dsdb_schema_fsmo *schema_fsmo;
+		const struct dsdb_naming_fsmo *naming_fsmo;
+		const struct dsdb_pdc_fsmo *pdc_fsmo;
+		const char *dn_str;
+
+		schema_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_schema_fsmo"),
+					      struct dsdb_schema_fsmo);
+		if (schema_fsmo && schema_fsmo->we_are_master) {
+			dn_str = ldb_dn_get_linearized(samdb_schema_dn(module->ldb));
+			if (dn_str && dn_str[0]) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+					goto failed;
+				}
+			}
+		}
+
+		naming_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_naming_fsmo"),
+					      struct dsdb_naming_fsmo);
+		if (naming_fsmo && naming_fsmo->we_are_master) {
+			dn_str = ldb_dn_get_linearized(samdb_partitions_dn(module->ldb, msg));
+			if (dn_str && dn_str[0]) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+					goto failed;
+				}
+			}
+		}
+
+		pdc_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_pdc_fsmo"),
+					   struct dsdb_pdc_fsmo);
+		if (pdc_fsmo && pdc_fsmo->we_are_master) {
+			dn_str = ldb_dn_get_linearized(samdb_base_dn(module->ldb));
+			if (dn_str && dn_str[0]) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+					goto failed;
+				}
+			}
+		}
+	}
+
 	/* TODO: lots more dynamic attributes should be added here */
 
 	return LDB_SUCCESS;

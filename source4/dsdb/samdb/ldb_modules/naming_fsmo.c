@@ -32,17 +32,12 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/util/dlinklist.h"
 
-struct dsdb_naming_fsmo {
-	bool we_are_master;
-};
-
 static int naming_fsmo_init(struct ldb_module *module)
 {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *naming_dn;
 	struct dsdb_naming_fsmo *naming_fsmo;
 	struct ldb_result *naming_res;
-	struct ldb_dn *naming_master_dn;
 	int ret;
 	static const char *naming_attrs[] = {
 		"fSMORoleOwner",
@@ -95,12 +90,19 @@ static int naming_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	naming_master_dn = ldb_msg_find_attr_as_dn(module->ldb, mem_ctx, naming_res->msgs[0], "fSMORoleOwner");
-	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), naming_master_dn) == 0) {
+	naming_fsmo->master_dn = ldb_msg_find_attr_as_dn(module->ldb, naming_fsmo, naming_res->msgs[0], "fSMORoleOwner");
+	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), naming_fsmo->master_dn) == 0) {
 		naming_fsmo->we_are_master = true;
 	} else {
 		naming_fsmo->we_are_master = false;
 	}
+
+	if (ldb_set_opaque(module->ldb, "dsdb_naming_fsmo", naming_fsmo) != LDB_SUCCESS) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_steal(module, naming_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
 			  "naming_fsmo_init: we are master: %s\n",
