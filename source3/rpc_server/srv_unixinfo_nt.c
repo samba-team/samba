@@ -30,26 +30,26 @@
 
 /* Map a sid to a uid */
 
-NTSTATUS _unixinfo_SidToUid(pipes_struct *p, struct dom_sid sid, uint64_t *uid)
+NTSTATUS _unixinfo_SidToUid(pipes_struct *p, struct unixinfo_SidToUid *r)
 {
 	uid_t real_uid;
 	NTSTATUS status;
-	*uid = 0;
+	*r->out.uid = 0;
 
-	status = sid_to_uid(&sid, &real_uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
+	status = sid_to_uid(&r->in.sid, &real_uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(status))
-		*uid = real_uid;
+		*r->out.uid = real_uid;
 
 	return status;
 }
 
 /* Map a uid to a sid */
 
-NTSTATUS _unixinfo_UidToSid(pipes_struct *p, uint64_t uid, struct dom_sid *sid)
+NTSTATUS _unixinfo_UidToSid(pipes_struct *p, struct unixinfo_UidToSid *r)
 {
 	NTSTATUS status = NT_STATUS_NO_SUCH_USER;
 
-	uid_to_sid(sid, (uid_t)uid);
+	uid_to_sid(r->out.sid, (uid_t)r->in.uid);
 	status = NT_STATUS_OK;
 
 	return status;
@@ -57,27 +57,27 @@ NTSTATUS _unixinfo_UidToSid(pipes_struct *p, uint64_t uid, struct dom_sid *sid)
 
 /* Map a sid to a gid */
 
-NTSTATUS _unixinfo_SidToGid(pipes_struct *p, struct dom_sid sid, uint64_t *gid)
+NTSTATUS _unixinfo_SidToGid(pipes_struct *p, struct unixinfo_SidToGid *r)
 {
 	gid_t real_gid;
 	NTSTATUS status;
 
-	*gid = 0;
+	*r->out.gid = 0;
 
-	status = sid_to_gid(&sid, &real_gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
+	status = sid_to_gid(&r->in.sid, &real_gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(status))
-		*gid = real_gid;
+		*r->out.gid = real_gid;
 
 	return status;
 }
 
 /* Map a gid to a sid */
 
-NTSTATUS _unixinfo_GidToSid(pipes_struct *p, uint64_t gid, struct dom_sid *sid)
+NTSTATUS _unixinfo_GidToSid(pipes_struct *p, struct unixinfo_GidToSid *r)
 {
 	NTSTATUS status = NT_STATUS_NO_SUCH_GROUP;
 
-	gid_to_sid(sid, (gid_t)gid);
+	gid_to_sid(r->out.sid, (gid_t)r->in.gid);
 	status = NT_STATUS_OK;
 
 	return status;
@@ -85,31 +85,30 @@ NTSTATUS _unixinfo_GidToSid(pipes_struct *p, uint64_t gid, struct dom_sid *sid)
 
 /* Get unix struct passwd information */
 
-NTSTATUS _unixinfo_GetPWUid(pipes_struct *p, uint32_t *count, uint64_t *uids, 
-							struct unixinfo_GetPWUidInfo *infos)
+NTSTATUS _unixinfo_GetPWUid(pipes_struct *p, struct unixinfo_GetPWUid *r)
 {
 	int i;
 	NTSTATUS status;
 
-	if (*count > 1023)
+	if (*r->in.count > 1023)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	status = NT_STATUS_OK;
 
-	for (i=0; i<*count; i++) {
+	for (i=0; i<*r->in.count; i++) {
 		struct passwd *pw;
 		char *homedir, *shell;
 		ssize_t len1, len2;
 
-		infos[i].status = NT_STATUS_NO_SUCH_USER;
-		infos[i].homedir = "";
-		infos[i].shell = "";
+		r->out.infos[i].status = NT_STATUS_NO_SUCH_USER;
+		r->out.infos[i].homedir = "";
+		r->out.infos[i].shell = "";
 
-		pw = getpwuid(uids[i]);
+		pw = getpwuid(r->in.uids[i]);
 
 		if (pw == NULL) {
 			DEBUG(10, ("Did not find uid %lld\n",
-				   (long long int)uids[i]));
+				   (long long int)r->in.uids[i]));
 			continue;
 		}
 
@@ -119,13 +118,13 @@ NTSTATUS _unixinfo_GetPWUid(pipes_struct *p, uint32_t *count, uint64_t *uids,
 		if ((len1 < 0) || (len2 < 0) || (homedir == NULL) ||
 		    (shell == NULL)) {
 			DEBUG(3, ("push_utf8_talloc failed\n"));
-			infos[i].status = NT_STATUS_NO_MEMORY;
+			r->out.infos[i].status = NT_STATUS_NO_MEMORY;
 			continue;
 		}
 
-		infos[i].status = NT_STATUS_OK;
-		infos[i].homedir = homedir;
-		infos[i].shell = shell;
+		r->out.infos[i].status = NT_STATUS_OK;
+		r->out.infos[i].homedir = homedir;
+		r->out.infos[i].shell = shell;
 	}
 
 	return status;

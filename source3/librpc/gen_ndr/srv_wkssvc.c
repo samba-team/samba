@@ -43,7 +43,7 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _wkssvc_NetWkstaGetInfo(p, r.in.server_name, r.in.level, r.out.info);
+	r.out.result = _wkssvc_NetWkstaGetInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -109,7 +109,7 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.parm_error = r.in.parm_error;
-	r.out.result = _wkssvc_NetWkstaSetInfo(p, r.in.server_name, r.in.level, r.in.info, r.in.parm_error);
+	r.out.result = _wkssvc_NetWkstaSetInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -188,7 +188,7 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	}
 	
 	r.out.resumehandle = r.in.resumehandle;
-	r.out.result = _wkssvc_NetWkstaEnumUsers(p, r.in.server_name, r.in.level, r.in.users, r.in.prefmaxlen, r.out.entriesread, r.out.totalentries, r.in.resumehandle);
+	r.out.result = _wkssvc_NetWkstaEnumUsers(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -252,7 +252,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, &r);
 	
-	r.out.result = _WKSSVC_NETRWKSTAUSERGETINFO(p);
+	r.out.result = _WKSSVC_NETRWKSTAUSERGETINFO(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -316,7 +316,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, &r);
 	
-	r.out.result = _WKSSVC_NETRWKSTAUSERSETINFO(p);
+	r.out.result = _WKSSVC_NETRWKSTAUSERSETINFO(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -390,7 +390,7 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.result = _wkssvc_NetWkstaTransportEnum(p, r.in.server_name, r.in.level, r.in.ctr, r.in.max_buffer, r.out.totalentries, r.in.resume_handle);
+	r.out.result = _wkssvc_NetWkstaTransportEnum(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -454,7 +454,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, &r);
 	
-	r.out.result = _WKSSVC_NETRWKSTATRANSPORTADD(p);
+	r.out.result = _WKSSVC_NETRWKSTATRANSPORTADD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -518,7 +518,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, &r);
 	
-	r.out.result = _WKSSVC_NETRWKSTATRANSPORTDEL(p);
+	r.out.result = _WKSSVC_NETRWKSTATRANSPORTDEL(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -582,7 +582,7 @@ static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEADD, &r);
 	
-	r.out.result = _WKSSVC_NETRUSEADD(p);
+	r.out.result = _WKSSVC_NETRUSEADD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -646,7 +646,7 @@ static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEGETINFO, &r);
 	
-	r.out.result = _WKSSVC_NETRUSEGETINFO(p);
+	r.out.result = _WKSSVC_NETRUSEGETINFO(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -710,7 +710,7 @@ static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEDEL, &r);
 	
-	r.out.result = _WKSSVC_NETRUSEDEL(p);
+	r.out.result = _WKSSVC_NETRUSEDEL(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -774,7 +774,7 @@ static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEENUM, &r);
 	
-	r.out.result = _WKSSVC_NETRUSEENUM(p);
+	r.out.result = _WKSSVC_NETRUSEENUM(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -838,7 +838,7 @@ static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, &r);
 	
-	r.out.result = _WKSSVC_NETRMESSAGEBUFFERSEND(p);
+	r.out.result = _WKSSVC_NETRMESSAGEBUFFERSEND(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -902,7 +902,7 @@ static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r);
 	
-	r.out.result = _WKSSVC_NETRWORKSTATIONSTATISTICSGET(p);
+	r.out.result = _WKSSVC_NETRWORKSTATIONSTATISTICSGET(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -966,7 +966,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, &r);
 	
-	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEADD(p);
+	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEADD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1030,7 +1030,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, &r);
 	
-	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEDEL(p);
+	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEDEL(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1094,7 +1094,7 @@ static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN, &r);
 	
-	r.out.result = _WKSSVC_NETRJOINDOMAIN(p);
+	r.out.result = _WKSSVC_NETRJOINDOMAIN(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1158,7 +1158,7 @@ static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN, &r);
 	
-	r.out.result = _WKSSVC_NETRUNJOINDOMAIN(p);
+	r.out.result = _WKSSVC_NETRUNJOINDOMAIN(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1222,7 +1222,7 @@ static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r);
 	
-	r.out.result = _WKSSVC_NETRRENAMEMACHINEINDOMAIN(p);
+	r.out.result = _WKSSVC_NETRRENAMEMACHINEINDOMAIN(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1286,7 +1286,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME, &r);
 	
-	r.out.result = _WKSSVC_NETRVALIDATENAME(p);
+	r.out.result = _WKSSVC_NETRVALIDATENAME(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1350,7 +1350,7 @@ static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOININFORMATION, &r);
 	
-	r.out.result = _WKSSVC_NETRGETJOININFORMATION(p);
+	r.out.result = _WKSSVC_NETRGETJOININFORMATION(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1414,7 +1414,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS, &r);
 	
-	r.out.result = _WKSSVC_NETRGETJOINABLEOUS(p);
+	r.out.result = _WKSSVC_NETRGETJOINABLEOUS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1478,7 +1478,7 @@ static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &r);
 	
-	r.out.result = _wkssvc_NetrJoinDomain2(p, r.in.server_name, r.in.domain_name, r.in.account_name, r.in.admin_account, r.in.encrypted_password, r.in.join_flags);
+	r.out.result = _wkssvc_NetrJoinDomain2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1542,7 +1542,7 @@ static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
 	
-	r.out.result = _wkssvc_NetrUnjoinDomain2(p, r.in.server_name, r.in.account, r.in.encrypted_password, r.in.unjoin_flags);
+	r.out.result = _wkssvc_NetrUnjoinDomain2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1606,7 +1606,7 @@ static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
 	
-	r.out.result = _wkssvc_NetrRenameMachineInDomain2(p, r.in.server_name, r.in.NewMachineName, r.in.Account, r.in.EncryptedPassword, r.in.RenameOptions);
+	r.out.result = _wkssvc_NetrRenameMachineInDomain2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1670,7 +1670,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME2, &r);
 	
-	r.out.result = _WKSSVC_NETRVALIDATENAME2(p);
+	r.out.result = _WKSSVC_NETRVALIDATENAME2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1734,7 +1734,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, &r);
 	
-	r.out.result = _WKSSVC_NETRGETJOINABLEOUS2(p);
+	r.out.result = _WKSSVC_NETRGETJOINABLEOUS2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1798,7 +1798,7 @@ static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
 	
-	r.out.result = _wkssvc_NetrAddAlternateComputerName(p, r.in.server_name, r.in.NewAlternateMachineName, r.in.Account, r.in.EncryptedPassword, r.in.Reserved);
+	r.out.result = _wkssvc_NetrAddAlternateComputerName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1862,7 +1862,7 @@ static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
 	
-	r.out.result = _wkssvc_NetrRemoveAlternateComputerName(p, r.in.server_name, r.in.AlternateMachineNameToRemove, r.in.Account, r.in.EncryptedPassword, r.in.Reserved);
+	r.out.result = _wkssvc_NetrRemoveAlternateComputerName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1926,7 +1926,7 @@ static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r);
 	
-	r.out.result = _WKSSVC_NETRSETPRIMARYCOMPUTERNAME(p);
+	r.out.result = _WKSSVC_NETRSETPRIMARYCOMPUTERNAME(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1990,7 +1990,7 @@ static BOOL api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, &r);
 	
-	r.out.result = _WKSSVC_NETRENUMERATECOMPUTERNAMES(p);
+	r.out.result = _WKSSVC_NETRENUMERATECOMPUTERNAMES(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);

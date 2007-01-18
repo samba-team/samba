@@ -38,7 +38,7 @@ static BOOL api_lsa_Close(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
-	r.out.result = _lsa_Close(p, r.in.handle);
+	r.out.result = _lsa_Close(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -102,7 +102,7 @@ static BOOL api_lsa_Delete(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_Delete, &r);
 	
-	r.out.result = _lsa_Delete(p, r.in.handle);
+	r.out.result = _lsa_Delete(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -174,7 +174,7 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumPrivs(p, r.in.handle, r.in.resume_handle, r.in.max_count, r.out.privs);
+	r.out.result = _lsa_EnumPrivs(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -245,7 +245,7 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QuerySecurity(p, r.in.handle, r.in.sec_info, r.out.sdbuf);
+	r.out.result = _lsa_QuerySecurity(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -309,7 +309,7 @@ static BOOL api_lsa_SetSecObj(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
 	
-	r.out.result = _lsa_SetSecObj(p);
+	r.out.result = _lsa_SetSecObj(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -373,7 +373,7 @@ static BOOL api_lsa_ChangePassword(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &r);
 	
-	r.out.result = _lsa_ChangePassword(p);
+	r.out.result = _lsa_ChangePassword(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -444,7 +444,7 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenPolicy(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
+	r.out.result = _lsa_OpenPolicy(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -515,7 +515,7 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryInfoPolicy(p, r.in.handle, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryInfoPolicy(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -579,7 +579,7 @@ static BOOL api_lsa_SetInfoPolicy(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
 	
-	r.out.result = _lsa_SetInfoPolicy(p);
+	r.out.result = _lsa_SetInfoPolicy(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -643,7 +643,7 @@ static BOOL api_lsa_ClearAuditLog(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &r);
 	
-	r.out.result = _lsa_ClearAuditLog(p);
+	r.out.result = _lsa_ClearAuditLog(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -714,7 +714,7 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_CreateAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
+	r.out.result = _lsa_CreateAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -786,7 +786,7 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumAccounts(p, r.in.handle, r.in.resume_handle, r.in.num_entries, r.out.sids);
+	r.out.result = _lsa_EnumAccounts(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -857,7 +857,7 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_CreateTrustedDomain(p, r.in.handle, r.in.info, r.in.access_mask, r.out.trustdom_handle);
+	r.out.result = _lsa_CreateTrustedDomain(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -929,7 +929,7 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumTrustDom(p, r.in.handle, r.in.resume_handle, r.in.max_size, r.out.domains);
+	r.out.result = _lsa_EnumTrustDom(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1002,7 +1002,7 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupNames(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count);
+	r.out.result = _lsa_LookupNames(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1075,7 +1075,7 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupSids(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count);
+	r.out.result = _lsa_LookupSids(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1146,7 +1146,7 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_CreateSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
+	r.out.result = _lsa_CreateSecret(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1217,7 +1217,7 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
+	r.out.result = _lsa_OpenAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1288,7 +1288,7 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumPrivsAccount(p, r.in.handle, r.out.privs);
+	r.out.result = _lsa_EnumPrivsAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1352,7 +1352,7 @@ static BOOL api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &r);
 	
-	r.out.result = _lsa_AddPrivilegesToAccount(p, r.in.handle, r.in.privs);
+	r.out.result = _lsa_AddPrivilegesToAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1416,7 +1416,7 @@ static BOOL api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
 	
-	r.out.result = _lsa_RemovePrivilegesFromAccount(p, r.in.handle, r.in.remove_all, r.in.privs);
+	r.out.result = _lsa_RemovePrivilegesFromAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1480,7 +1480,7 @@ static BOOL api_lsa_GetQuotasForAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &r);
 	
-	r.out.result = _lsa_GetQuotasForAccount(p);
+	r.out.result = _lsa_GetQuotasForAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1544,7 +1544,7 @@ static BOOL api_lsa_SetQuotasForAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &r);
 	
-	r.out.result = _lsa_SetQuotasForAccount(p);
+	r.out.result = _lsa_SetQuotasForAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1608,7 +1608,7 @@ static BOOL api_lsa_GetSystemAccessAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
 	
-	r.out.result = _lsa_GetSystemAccessAccount(p);
+	r.out.result = _lsa_GetSystemAccessAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1672,7 +1672,7 @@ static BOOL api_lsa_SetSystemAccessAccount(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
 	
-	r.out.result = _lsa_SetSystemAccessAccount(p);
+	r.out.result = _lsa_SetSystemAccessAccount(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1743,7 +1743,7 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenTrustedDomain(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.trustdom_handle);
+	r.out.result = _lsa_OpenTrustedDomain(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1814,7 +1814,7 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryTrustedDomainInfo(p, r.in.trustdom_handle, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryTrustedDomainInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1878,7 +1878,7 @@ static BOOL api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
 	
-	r.out.result = _lsa_SetInformationTrustedDomain(p);
+	r.out.result = _lsa_SetInformationTrustedDomain(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -1949,7 +1949,7 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
+	r.out.result = _lsa_OpenSecret(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2013,7 +2013,7 @@ static BOOL api_lsa_SetSecret(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &r);
 	
-	r.out.result = _lsa_SetSecret(p, r.in.sec_handle, r.in.new_val, r.in.old_val);
+	r.out.result = _lsa_SetSecret(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2082,7 +2082,7 @@ static BOOL api_lsa_QuerySecret(pipes_struct *p)
 	r.out.new_mtime = r.in.new_mtime;
 	r.out.old_val = r.in.old_val;
 	r.out.old_mtime = r.in.old_mtime;
-	r.out.result = _lsa_QuerySecret(p, r.in.sec_handle, r.in.new_val, r.in.new_mtime, r.in.old_val, r.in.old_mtime);
+	r.out.result = _lsa_QuerySecret(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2153,7 +2153,7 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_LookupPrivValue(p, r.in.handle, r.in.name, r.out.luid);
+	r.out.result = _lsa_LookupPrivValue(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2224,7 +2224,7 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_LookupPrivName(p, r.in.handle, r.in.luid, r.out.name);
+	r.out.result = _lsa_LookupPrivName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2296,7 +2296,7 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	}
 	
 	r.out.language_id = r.in.language_id;
-	r.out.result = _lsa_LookupPrivDisplayName(p, r.in.handle, r.in.name, r.out.disp_name, r.in.language_id, r.in.unknown);
+	r.out.result = _lsa_LookupPrivDisplayName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2360,7 +2360,7 @@ static BOOL api_lsa_DeleteObject(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
 	
-	r.out.result = _lsa_DeleteObject(p);
+	r.out.result = _lsa_DeleteObject(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2431,7 +2431,7 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumAccountsWithUserRight(p, r.in.handle, r.in.name, r.out.sids);
+	r.out.result = _lsa_EnumAccountsWithUserRight(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2502,7 +2502,7 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumAccountRights(p, r.in.handle, r.in.sid, r.out.rights);
+	r.out.result = _lsa_EnumAccountRights(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2566,7 +2566,7 @@ static BOOL api_lsa_AddAccountRights(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &r);
 	
-	r.out.result = _lsa_AddAccountRights(p, r.in.handle, r.in.sid, r.in.rights);
+	r.out.result = _lsa_AddAccountRights(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2630,7 +2630,7 @@ static BOOL api_lsa_RemoveAccountRights(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &r);
 	
-	r.out.result = _lsa_RemoveAccountRights(p, r.in.handle, r.in.sid, r.in.unknown, r.in.rights);
+	r.out.result = _lsa_RemoveAccountRights(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2701,7 +2701,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryTrustedDomainInfoBySid(p, r.in.handle, r.in.dom_sid, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryTrustedDomainInfoBySid(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2765,7 +2765,7 @@ static BOOL api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
 	
-	r.out.result = _lsa_SetTrustedDomainInfo(p);
+	r.out.result = _lsa_SetTrustedDomainInfo(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2829,7 +2829,7 @@ static BOOL api_lsa_DeleteTrustedDomain(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &r);
 	
-	r.out.result = _lsa_DeleteTrustedDomain(p, r.in.handle, r.in.dom_sid);
+	r.out.result = _lsa_DeleteTrustedDomain(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2893,7 +2893,7 @@ static BOOL api_lsa_StorePrivateData(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
 	
-	r.out.result = _lsa_StorePrivateData(p);
+	r.out.result = _lsa_StorePrivateData(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -2957,7 +2957,7 @@ static BOOL api_lsa_RetrievePrivateData(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
 	
-	r.out.result = _lsa_RetrievePrivateData(p);
+	r.out.result = _lsa_RetrievePrivateData(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3028,7 +3028,7 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenPolicy2(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
+	r.out.result = _lsa_OpenPolicy2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3095,7 +3095,7 @@ static BOOL api_lsa_GetUserName(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.account_name = r.in.account_name;
 	r.out.authority_name = r.in.authority_name;
-	r.out.result = _lsa_GetUserName(p, r.in.system_name, r.in.account_name, r.in.authority_name);
+	r.out.result = _lsa_GetUserName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3166,7 +3166,7 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryInfoPolicy2(p, r.in.handle, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryInfoPolicy2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3230,7 +3230,7 @@ static BOOL api_lsa_SetInfoPolicy2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);
 	
-	r.out.result = _lsa_SetInfoPolicy2(p);
+	r.out.result = _lsa_SetInfoPolicy2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3301,7 +3301,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryTrustedDomainInfoByName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3365,7 +3365,7 @@ static BOOL api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
 	
-	r.out.result = _lsa_SetTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.in.info);
+	r.out.result = _lsa_SetTrustedDomainInfoByName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3437,7 +3437,7 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_EnumTrustedDomainsEx(p, r.in.handle, r.in.resume_handle, r.out.domains, r.in.max_size);
+	r.out.result = _lsa_EnumTrustedDomainsEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3501,7 +3501,7 @@ static BOOL api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
 	
-	r.out.result = _lsa_CreateTrustedDomainEx(p);
+	r.out.result = _lsa_CreateTrustedDomainEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3567,7 +3567,7 @@ static BOOL api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
-	r.out.result = _lsa_CloseTrustedDomainEx(p, r.in.handle);
+	r.out.result = _lsa_CloseTrustedDomainEx(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3638,7 +3638,7 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_QueryDomainInformationPolicy(p, r.in.handle, r.in.level, r.out.info);
+	r.out.result = _lsa_QueryDomainInformationPolicy(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3702,7 +3702,7 @@ static BOOL api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &r);
 	
-	r.out.result = _lsa_SetDomainInformationPolicy(p, r.in.handle, r.in.level, r.in.info);
+	r.out.result = _lsa_SetDomainInformationPolicy(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3773,7 +3773,7 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _lsa_OpenTrustedDomainByName(p, r.in.handle, r.in.name, r.in.access_mask, r.out.trustdom_handle);
+	r.out.result = _lsa_OpenTrustedDomainByName(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3837,7 +3837,7 @@ static BOOL api_lsa_TestCall(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_TestCall, &r);
 	
-	r.out.result = _lsa_TestCall(p);
+	r.out.result = _lsa_TestCall(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3910,7 +3910,7 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupSids2(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	r.out.result = _lsa_LookupSids2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -3983,7 +3983,7 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupNames2(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	r.out.result = _lsa_LookupNames2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4047,7 +4047,7 @@ static BOOL api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
 	
-	r.out.result = _lsa_CreateTrustedDomainEx2(p);
+	r.out.result = _lsa_CreateTrustedDomainEx2(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4111,7 +4111,7 @@ static BOOL api_lsa_CREDRWRITE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &r);
 	
-	r.out.result = _lsa_CREDRWRITE(p);
+	r.out.result = _lsa_CREDRWRITE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4175,7 +4175,7 @@ static BOOL api_lsa_CREDRREAD(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &r);
 	
-	r.out.result = _lsa_CREDRREAD(p);
+	r.out.result = _lsa_CREDRREAD(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4239,7 +4239,7 @@ static BOOL api_lsa_CREDRENUMERATE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &r);
 	
-	r.out.result = _lsa_CREDRENUMERATE(p);
+	r.out.result = _lsa_CREDRENUMERATE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4303,7 +4303,7 @@ static BOOL api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
 	
-	r.out.result = _lsa_CREDRWRITEDOMAINCREDENTIALS(p);
+	r.out.result = _lsa_CREDRWRITEDOMAINCREDENTIALS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4367,7 +4367,7 @@ static BOOL api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
 	
-	r.out.result = _lsa_CREDRREADDOMAINCREDENTIALS(p);
+	r.out.result = _lsa_CREDRREADDOMAINCREDENTIALS(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4431,7 +4431,7 @@ static BOOL api_lsa_CREDRDELETE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &r);
 	
-	r.out.result = _lsa_CREDRDELETE(p);
+	r.out.result = _lsa_CREDRDELETE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4495,7 +4495,7 @@ static BOOL api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &r);
 	
-	r.out.result = _lsa_CREDRGETTARGETINFO(p);
+	r.out.result = _lsa_CREDRGETTARGETINFO(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4559,7 +4559,7 @@ static BOOL api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &r);
 	
-	r.out.result = _lsa_CREDRPROFILELOADED(p);
+	r.out.result = _lsa_CREDRPROFILELOADED(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4632,7 +4632,7 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 	
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupNames3(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	r.out.result = _lsa_LookupNames3(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4696,7 +4696,7 @@ static BOOL api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
 	
-	r.out.result = _lsa_CREDRGETSESSIONTYPES(p);
+	r.out.result = _lsa_CREDRGETSESSIONTYPES(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4760,7 +4760,7 @@ static BOOL api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
 	
-	r.out.result = _lsa_LSARREGISTERAUDITEVENT(p);
+	r.out.result = _lsa_LSARREGISTERAUDITEVENT(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4824,7 +4824,7 @@ static BOOL api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &r);
 	
-	r.out.result = _lsa_LSARGENAUDITEVENT(p);
+	r.out.result = _lsa_LSARGENAUDITEVENT(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4888,7 +4888,7 @@ static BOOL api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
 	
-	r.out.result = _lsa_LSARUNREGISTERAUDITEVENT(p);
+	r.out.result = _lsa_LSARUNREGISTERAUDITEVENT(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -4952,7 +4952,7 @@ static BOOL api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
 	
-	r.out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p);
+	r.out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5016,7 +5016,7 @@ static BOOL api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
 	
-	r.out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(p);
+	r.out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5080,7 +5080,7 @@ static BOOL api_lsa_CREDRRENAME(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &r);
 	
-	r.out.result = _lsa_CREDRRENAME(p);
+	r.out.result = _lsa_CREDRRENAME(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5153,7 +5153,7 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupSids3(p, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	r.out.result = _lsa_LookupSids3(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5226,7 +5226,7 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
-	r.out.result = _lsa_LookupNames4(p, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	r.out.result = _lsa_LookupNames4(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5290,7 +5290,7 @@ static BOOL api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
 	
-	r.out.result = _lsa_LSAROPENPOLICYSCE(p);
+	r.out.result = _lsa_LSAROPENPOLICYSCE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5354,7 +5354,7 @@ static BOOL api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
 	
-	r.out.result = _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(p);
+	r.out.result = _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5418,7 +5418,7 @@ static BOOL api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
 	
-	r.out.result = _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(p);
+	r.out.result = _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
@@ -5482,7 +5482,7 @@ static BOOL api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
 	
-	r.out.result = _lsa_LSARADTREPORTSECURITYEVENT(p);
+	r.out.result = _lsa_LSARADTREPORTSECURITYEVENT(p, &r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(mem_ctx);
