@@ -73,6 +73,18 @@ static void smb_conf_updated(int msg_type, struct process_id src,
 }
 
 
+/*******************************************************************
+ Delete a statcache entry.
+ ********************************************************************/
+
+static void smb_stat_cache_delete(int msg_type, struct process_id src,
+			     void *buf, size_t len)
+{
+	const char *name = (const char *)buf;
+	DEBUG(10,("smb_stat_cache_delete: delete name %s\n", name));
+	stat_cache_delete(name);
+}
+
 /****************************************************************************
  Terminate signal.
 ****************************************************************************/
@@ -412,6 +424,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
         message_register(MSG_SHUTDOWN, msg_exit_server);
         message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
 	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
+	message_register(MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
 
 #ifdef DEVELOPER
 	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault); 
