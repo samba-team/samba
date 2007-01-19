@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                  1997-2000,
  *  Copyright (C) Elrond                            2000,
  *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -7779,6 +7779,14 @@ BOOL samr_io_r_chgpasswd_user3(const char *desc, SAMR_R_CHGPASSWD_USER3 *r_u,
 
 	if (!prs_uint32("ptr_info", ps, depth, &r_u->ptr_info))
 		return False;
+
+	/* special case: Windows 2000 can return stub data here saying
+	   NT_STATUS_NOT_SUPPORTED */
+
+	if ( NT_STATUS_EQUAL( NT_STATUS_NOT_SUPPORTED, NT_STATUS(r_u->ptr_info)) ) {
+		r_u->status = NT_STATUS_NOT_SUPPORTED;
+		return True;
+	}	
 
 	if (r_u->ptr_info && r_u->info != NULL) {
 		/* SAM_UNK_INFO_1 */
