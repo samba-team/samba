@@ -85,7 +85,7 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 
 /*
   called when we receive a pending lock notification. It means that
-  either our lock timed out or somoene else has unlocked a overlapping
+  either our lock timed out or someone else has unlocked a overlapping
   range, so we should try the lock again. Note that on timeout we
   do retry the lock, giving it a last chance.
 */
