@@ -1192,6 +1192,10 @@ static int ph_wait(struct ldb_handle *handle) {
 			return LDB_SUCCESS;
 		}
 
+		if (ac->search_res == NULL) {
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+
 		/* self search done, go on */
 		return password_hash_mod_search_dom(handle);
 		
