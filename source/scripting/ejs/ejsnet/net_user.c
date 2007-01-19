@@ -77,7 +77,7 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	obj = mprInitObject(eid, "NetUsrCtx", argc, argv);
 
 	/* we need to make a copy of the string for this object */
-	userman_domain = talloc_strdup(obj, userman_domain);
+	userman_domain = talloc_strdup(ctx, userman_domain);
 
 	/* add properties */
 	mprSetPtrChild(obj, "ctx", ctx);
