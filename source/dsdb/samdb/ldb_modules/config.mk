@@ -177,6 +177,18 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_show_deleted
+[MODULE::ldb_show_deleted]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
+INIT_FUNCTION = ldb_show_deleted_init
+OBJ_FILES = \
+		show_deleted.o
+#
+# End MODULE ldb_show_deleted
+################################################
+
+################################################
 # Start MODULE ldb_partition
 [MODULE::ldb_partition]
 SUBSYSTEM = ldb
