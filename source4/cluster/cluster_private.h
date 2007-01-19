@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   core clustering code
+   private structures for clustering
 
    Copyright (C) Andrew Tridgell 2006
    
@@ -20,49 +20,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "cluster/cluster.h"
-#include "cluster/cluster_private.h"
+#ifndef _CLUSTER_PRIVATE_H_
+#define _CLUSTER_PRIVATE_H_
 
-static struct cluster_ops *ops;
+struct cluster_ops {
+	struct server_id (*cluster_id)(struct cluster_ops *ops, uint32_t id);
+	const char *(*cluster_id_string)(struct cluster_ops *ops, 
+					 TALLOC_CTX *, struct server_id );
+	void *private; /* backend state */
+};
 
-/* set cluster operations */
-void cluster_set_ops(struct cluster_ops *new_ops)
-{
-	ops = new_ops;
-}
+void cluster_set_ops(struct cluster_ops *new_ops);
+void cluster_local_init(void);
 
-/*
-  not a nice abstraction :(
-*/
-void *cluster_private(void)
-{
-	return ops->private;
-}
-
-/* by default use the local ops */
-static void cluster_init(void)
-{
-	if (ops == NULL) cluster_local_init();
-}
-
-
-
-/*
-  server a server_id for the local node
-*/
-struct server_id cluster_id(uint32_t id)
-{
-	cluster_init();
-	return ops->cluster_id(ops, id);
-}
-
-
-/*
-  return a server_id as a string
-*/
-const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
-{
-	cluster_init();
-	return ops->cluster_id_string(ops, mem_ctx, id);
-}
+#endif
