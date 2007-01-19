@@ -135,9 +135,9 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	va_end(ap);
 
 	len = strlen(msg)+1;
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + len);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + len;
+	r->hdr.length = sizeof(*r) - 1 + len;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -192,7 +192,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	struct ctdb_req_dmaster *r;
 	int len;
 	
-	len = sizeof(*r) + key->dsize + data->dsize;
+	len = sizeof(*r) - 1 + key->dsize + data->dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
@@ -281,9 +281,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + data.dsize);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + data.dsize);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + data.dsize;
+	r->hdr.length = sizeof(*r) - 1 + data.dsize;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = c->dmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -358,9 +358,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			call_data.dsize?&call_data:NULL,
 			&reply_data, c->hdr.srcnode);
 
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + reply_data.dsize);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + reply_data.dsize);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + reply_data.dsize;
+	r->hdr.length = sizeof(*r) - 1 + reply_data.dsize;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
@@ -580,7 +580,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	state = talloc_zero(ctdb, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
-	len = sizeof(*state->c) + key.dsize + (call_data?call_data->dsize:0);
+	len = sizeof(*state->c) - 1 + key.dsize + (call_data?call_data->dsize:0);
 	state->c = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 
