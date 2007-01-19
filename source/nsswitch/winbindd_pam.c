@@ -1865,9 +1865,9 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 	result = rpccli_samr_chgpasswd3(cli, state->mem_ctx, user, newpass, oldpass, &info, &reject);
 
-	/* FIXME: need to check for other error codes ? */
-	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
+ 	/* Windows 2003 returns NT_STATUS_PASSWORD_RESTRICTION */
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION) ) {
 		state->response.data.auth.policy.min_length_password = 
 			info.min_length_password;
 		state->response.data.auth.policy.password_history = 
@@ -1883,9 +1883,10 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 			reject.reject_reason;
 
 		got_info = True;
+	}
 
 	/* only fallback when the chgpasswd3 call is not supported */
-	} else if ((NT_STATUS_EQUAL(result, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR))) ||
+	if ((NT_STATUS_EQUAL(result, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR))) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
@@ -1893,6 +1894,13 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 			nt_errstr(result)));
 		
 		result = rpccli_samr_chgpasswd_user(cli, state->mem_ctx, user, newpass, oldpass);
+
+		/* Windows 2000 returns NT_STATUS_ACCOUNT_RESTRICTION.
+		   Map to the same status code as Windows 2003. */
+
+		if ( NT_STATUS_EQUAL(NT_STATUS_ACCOUNT_RESTRICTION, result ) ) {
+			result = NT_STATUS_PASSWORD_RESTRICTION;			
+		}
 	}
 
 done: 
