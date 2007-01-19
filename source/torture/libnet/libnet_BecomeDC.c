@@ -113,6 +113,8 @@ struct test_become_dc_state {
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
 	} schema_part;
+
+	const char *computer_dn;
 };
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
@@ -691,6 +693,92 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS test_become_dc_domain_chunk(void *private_data,
+					   const struct libnet_BecomeDC_StoreChunk *c)
+{
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+
+	s->computer_dn = talloc_strdup(s, c->dest_dsa->computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(s->computer_dn);
+
+	return test_become_dc_store_chunk(private_data, c);
+}
+
+static BOOL test_become_dc_set_test_passwords(struct test_become_dc_state *s)
+{
+	struct ldb_message *msg;
+	int ret;
+
+	printf("Set up \"test\" as password for the krbtgt, machine and administrator accounts\n");
+
+	/*
+	 * first krbtgt password
+	 */
+	msg = ldb_msg_new(s);
+	if (!msg) return False;
+
+	msg->dn = ldb_dn_new_fmt(msg, s->ldb, "CN=krbtgt,CN=Users,%s",
+				 ldb_dn_get_linearized(samdb_base_dn(s->ldb)));
+	if (!msg) return False;
+
+	ret = ldb_msg_add_string(msg, "sambaPassword", "test");
+	if (ret != LDB_SUCCESS) return False;
+
+	ret = samdb_replace(s->ldb, s, msg);
+	if (ret != LDB_SUCCESS) {
+		printf("failed to replace sambaPassword for '%s': %s\n",
+		       ldb_dn_get_linearized(msg->dn),
+		       ldb_strerror(ret));
+		return False;
+	}
+	talloc_free(msg);
+
+	/*
+	 * our machine account password
+	 */
+	msg = ldb_msg_new(s);
+	if (!msg) return False;
+
+	msg->dn = ldb_dn_new(msg, s->ldb, s->computer_dn);
+	if (!msg) return False;
+
+	ret = ldb_msg_add_string(msg, "sambaPassword", "test");
+	if (ret != LDB_SUCCESS) return False;
+
+	ret = samdb_replace(s->ldb, s, msg);
+	if (ret != LDB_SUCCESS) {
+		printf("failed to replace sambaPassword for '%s': %s\n",
+		       ldb_dn_get_linearized(msg->dn),
+		       ldb_strerror(ret));
+		return False;
+	}
+	talloc_free(msg);
+
+	/*
+	 * the Administrator account password
+	 */
+	msg = ldb_msg_new(s);
+	if (!msg) return False;
+
+	msg->dn = ldb_dn_new_fmt(msg, s->ldb, "CN=Administrator,CN=Users,%s",
+				 ldb_dn_get_linearized(samdb_base_dn(s->ldb)));
+	if (!msg) return False;
+
+	ret = ldb_msg_add_string(msg, "sambaPassword", "test");
+	if (ret != LDB_SUCCESS) return False;
+
+	ret = samdb_replace(s->ldb, s, msg);
+	if (ret != LDB_SUCCESS) {
+		printf("failed to replace sambaPassword for '%s': %s\n",
+		       ldb_dn_get_linearized(msg->dn),
+		       ldb_strerror(ret));
+		return False;
+	}
+	talloc_free(msg);
+
+	return True;
+}
+
 BOOL torture_net_become_dc(struct torture_context *torture)
 {
 	BOOL ret = True;
@@ -732,7 +820,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.callbacks.prepare_db	= test_become_dc_prepare_db;
 	b.in.callbacks.schema_chunk	= test_become_dc_schema_chunk;
 	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
-	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
+	b.in.callbacks.domain_chunk	= test_become_dc_domain_chunk;
 
 	status = libnet_BecomeDC(s->ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -794,6 +882,8 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		ret = False;
 		goto cleanup;
 	}
+
+	ret &= test_become_dc_set_test_passwords(s);
 
 cleanup:
 	ZERO_STRUCT(u);
