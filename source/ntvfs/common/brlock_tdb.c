@@ -1,9 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   generic byte range locking code
+   generic byte range locking code - tdb backend
 
-   Copyright (C) Andrew Tridgell 1992-2004
+   Copyright (C) Andrew Tridgell 1992-2006
    Copyright (C) Jeremy Allison 1992-2000
    
    This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
+#include "ntvfs/common/brlock.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
@@ -42,7 +43,13 @@
   as it is applied consistently.
 */
 
-struct brl_context;
+/* this struct is typicaly attached to tcon */
+struct brl_context {
+	struct tdb_wrap *w;
+	struct server_id server;
+	struct messaging_context *messaging_ctx;
+};
+
 /*
   the lock context contains the elements that define whether one
   lock is the same as another lock
@@ -72,20 +79,13 @@ struct brl_handle {
 	struct lock_struct last_lock;
 };
 
-/* this struct is typicaly attached to tcon */
-struct brl_context {
-	struct tdb_wrap *w;
-	struct server_id server;
-	struct messaging_context *messaging_ctx;
-};
-
 /*
   Open up the brlock.tdb database. Close it down using
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-struct brl_context *brl_init(TALLOC_CTX *mem_ctx, struct server_id server, 
-			     struct messaging_context *messaging_ctx)
+static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
+				    struct messaging_context *messaging_ctx)
 {
 	char *path;
 	struct brl_context *brl;
@@ -110,7 +110,8 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	return brl;
 }
 
-struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *ntvfs, DATA_BLOB *file_key)
+static struct brl_handle *brl_tdb_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *ntvfs, 
+						    DATA_BLOB *file_key)
 {
 	struct brl_handle *brlh;
 
@@ -129,7 +130,7 @@ struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *n
 /*
   see if two locking contexts are equal
 */
-static BOOL brl_same_context(struct lock_context *ctx1, struct lock_context *ctx2)
+static BOOL brl_tdb_same_context(struct lock_context *ctx1, struct lock_context *ctx2)
 {
 	return (cluster_id_equal(&ctx1->server, &ctx2->server) &&
 		ctx1->smbpid == ctx2->smbpid &&
@@ -139,7 +140,7 @@ static BOOL brl_same_context(struct lock_context *ctx1, struct lock_context *ctx
 /*
   see if lck1 and lck2 overlap
 */
-static BOOL brl_overlap(struct lock_struct *lck1, 
+static BOOL brl_tdb_overlap(struct lock_struct *lck1, 
 			struct lock_struct *lck2)
 {
 	/* this extra check is not redundent - it copes with locks
@@ -160,7 +161,7 @@ static BOOL brl_overlap(struct lock_struct *lck1,
 /*
  See if lock2 can be added when lock1 is in place.
 */
-static BOOL brl_conflict(struct lock_struct *lck1, 
+static BOOL brl_tdb_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
 	/* pending locks don't conflict with anything */
@@ -173,12 +174,12 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 		return False;
 	}
 
-	if (brl_same_context(&lck1->context, &lck2->context) &&
+	if (brl_tdb_same_context(&lck1->context, &lck2->context) &&
 	    lck2->lock_type == READ_LOCK && lck1->ntvfs == lck2->ntvfs) {
 		return False;
 	}
 
-	return brl_overlap(lck1, lck2);
+	return brl_tdb_overlap(lck1, lck2);
 } 
 
 
@@ -186,7 +187,7 @@ static BOOL brl_conflict(struct lock_struct *lck1,
  Check to see if this lock conflicts, but ignore our own locks on the
  same fnum only.
 */
-static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
+static BOOL brl_tdb_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
 {
 	/* pending locks don't conflict with anything */
 	if (lck1->lock_type >= PENDING_READ_LOCK ||
@@ -202,13 +203,13 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 	 * locks even if the context is the same. JRA. See LOCKTEST7
 	 * in smbtorture.
 	 */
-	if (brl_same_context(&lck1->context, &lck2->context) &&
+	if (brl_tdb_same_context(&lck1->context, &lck2->context) &&
 	    lck1->ntvfs == lck2->ntvfs &&
 	    (lck2->lock_type == READ_LOCK || lck1->lock_type == WRITE_LOCK)) {
 		return False;
 	}
 
-	return brl_overlap(lck1, lck2);
+	return brl_tdb_overlap(lck1, lck2);
 } 
 
 
@@ -217,7 +218,7 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
   is the same as this one and changes its error code. I wonder if any
   app depends on this?
 */
-static NTSTATUS brl_lock_failed(struct brl_handle *brlh, struct lock_struct *lock)
+static NTSTATUS brl_tdb_lock_failed(struct brl_handle *brlh, struct lock_struct *lock)
 {
 	/*
 	 * this function is only called for non pending lock!
@@ -268,12 +269,12 @@ static NTSTATUS brl_lock_failed(struct brl_handle *brlh, struct lock_struct *loc
   someone else closing an overlapping lock range) a messaging
   notification is sent, identified by the notify_ptr
 */
-NTSTATUS brl_lock(struct brl_context *brl,
-		  struct brl_handle *brlh,
-		  uint16_t smbpid,
-		  uint64_t start, uint64_t size, 
-		  enum brl_type lock_type,
-		  void *notify_ptr)
+static NTSTATUS brl_tdb_lock(struct brl_context *brl,
+			 struct brl_handle *brlh,
+			 uint16_t smbpid,
+			 uint64_t start, uint64_t size, 
+			 enum brl_type lock_type,
+			 void *notify_ptr)
 {
 	TDB_DATA kbuf, dbuf;
 	int count=0, i;
@@ -297,7 +298,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 
 		/* here we need to force that the last_lock isn't overwritten */
 		lock = brlh->last_lock;
-		status = brl_lock(brl, brlh, smbpid, start, size, rw, NULL);
+		status = brl_tdb_lock(brl, brlh, smbpid, start, size, rw, NULL);
 		brlh->last_lock = lock;
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -323,8 +324,8 @@ NTSTATUS brl_lock(struct brl_context *brl,
 		locks = (struct lock_struct *)dbuf.dptr;
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
-			if (brl_conflict(&locks[i], &lock)) {
-				status = brl_lock_failed(brlh, &lock);
+			if (brl_tdb_conflict(&locks[i], &lock)) {
+				status = brl_tdb_lock_failed(brlh, &lock);
 				goto fail;
 			}
 		}
@@ -371,7 +372,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
   locks that cover this range and if we find any then notify the server that it should
   retry the lock
 */
-static void brl_notify_unlock(struct brl_context *brl,
+static void brl_tdb_notify_unlock(struct brl_context *brl,
 			      struct lock_struct *locks, int count, 
 			      struct lock_struct *removed_lock)
 {
@@ -385,8 +386,8 @@ static void brl_notify_unlock(struct brl_context *brl,
 
 	for (i=0;i<count;i++) {
 		if (locks[i].lock_type >= PENDING_READ_LOCK &&
-		    brl_overlap(&locks[i], removed_lock)) {
-			if (last_notice != -1 && brl_overlap(&locks[i], &locks[last_notice])) {
+		    brl_tdb_overlap(&locks[i], removed_lock)) {
+			if (last_notice != -1 && brl_tdb_overlap(&locks[i], &locks[last_notice])) {
 				continue;
 			}
 			if (locks[i].lock_type == PENDING_WRITE_LOCK) {
@@ -403,13 +404,13 @@ static void brl_notify_unlock(struct brl_context *brl,
   send notifications for all pending locks - the file is being closed by this
   user
 */
-static void brl_notify_all(struct brl_context *brl,
+static void brl_tdb_notify_all(struct brl_context *brl,
 			   struct lock_struct *locks, int count)
 {
 	int i;
 	for (i=0;i<count;i++) {
 		if (locks->lock_type >= PENDING_READ_LOCK) {
-			brl_notify_unlock(brl, locks, count, &locks[i]);
+			brl_tdb_notify_unlock(brl, locks, count, &locks[i]);
 		}
 	}
 }
@@ -419,10 +420,10 @@ static void brl_notify_all(struct brl_context *brl,
 /*
  Unlock a range of bytes.
 */
-NTSTATUS brl_unlock(struct brl_context *brl,
-		    struct brl_handle *brlh, 
-		    uint16_t smbpid,
-		    uint64_t start, uint64_t size)
+static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
+			   struct brl_handle *brlh, 
+			   uint16_t smbpid,
+			   uint64_t start, uint64_t size)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -454,7 +455,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 		
-		if (brl_same_context(&lock->context, &context) &&
+		if (brl_tdb_same_context(&lock->context, &context) &&
 		    lock->ntvfs == brlh->ntvfs &&
 		    lock->start == start &&
 		    lock->size == size &&
@@ -474,7 +475,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 				count--;
 
 				/* send notifications for any relevant pending locks */
-				brl_notify_unlock(brl, locks, count, &removed_lock);
+				brl_tdb_notify_unlock(brl, locks, count, &removed_lock);
 
 				dbuf.dsize = count * sizeof(*locks);
 
@@ -505,9 +506,9 @@ NTSTATUS brl_unlock(struct brl_context *brl,
   given up trying to establish a lock or when they have succeeded in
   getting it. In either case they no longer need to be notified.
 */
-NTSTATUS brl_remove_pending(struct brl_context *brl,
-			    struct brl_handle *brlh, 
-			    void *notify_ptr)
+static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
+				   struct brl_handle *brlh, 
+				   void *notify_ptr)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -575,11 +576,11 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 /*
   Test if we are allowed to perform IO on a region of an open file
 */
-NTSTATUS brl_locktest(struct brl_context *brl,
-		      struct brl_handle *brlh,
-		      uint16_t smbpid, 
-		      uint64_t start, uint64_t size, 
-		      enum brl_type lock_type)
+static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
+			     struct brl_handle *brlh,
+			     uint16_t smbpid, 
+			     uint64_t start, uint64_t size, 
+			     enum brl_type lock_type)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -606,7 +607,7 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 	count = dbuf.dsize / sizeof(*locks);
 
 	for (i=0; i<count; i++) {
-		if (brl_conflict_other(&locks[i], &lock)) {
+		if (brl_tdb_conflict_other(&locks[i], &lock)) {
 			free(dbuf.dptr);
 			return NT_STATUS_FILE_LOCK_CONFLICT;
 		}
@@ -620,8 +621,8 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 /*
  Remove any locks associated with a open file.
 */
-NTSTATUS brl_close(struct brl_context *brl,
-		   struct brl_handle *brlh)
+static NTSTATUS brl_tdb_close(struct brl_context *brl,
+			  struct brl_handle *brlh)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i, dcount=0;
@@ -672,7 +673,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 		/* tell all pending lock holders for this file that
 		   they have a chance now. This is a bit indiscriminant,
 		   but works OK */
-		brl_notify_all(brl, locks, count);
+		brl_tdb_notify_all(brl, locks, count);
 
 		dbuf.dsize = count * sizeof(*locks);
 
@@ -687,3 +688,19 @@ NTSTATUS brl_close(struct brl_context *brl,
 	return status;
 }
 
+
+static const struct brlock_ops brlock_tdb_ops = {
+	.brl_init           = brl_tdb_init,
+	.brl_create_handle  = brl_tdb_create_handle,
+	.brl_lock           = brl_tdb_lock,
+	.brl_unlock         = brl_tdb_unlock,
+	.brl_remove_pending = brl_tdb_remove_pending,
+	.brl_locktest       = brl_tdb_locktest,
+	.brl_close          = brl_tdb_close
+};
+
+
+void brl_tdb_init_ops(void)
+{
+	brl_set_ops(&brlock_tdb_ops);
+}
