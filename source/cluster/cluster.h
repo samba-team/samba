@@ -31,5 +31,6 @@
 /* prototypes */
 struct server_id cluster_id(uint32_t id);
 const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
+void *cluster_private(void);
 
 #endif
