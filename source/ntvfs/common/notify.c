@@ -33,6 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 #include "lib/util/dlinklist.h"
+#include "ntvfs/common/ntvfs_common.h"
 #include "ntvfs/sysdep/sys_notify.h"
 #include "cluster/cluster.h"
 
