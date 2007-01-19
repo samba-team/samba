@@ -117,6 +117,9 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key,
 */
 static void ctdb_send_error(struct ctdb_context *ctdb, 
 			    struct ctdb_req_header *hdr, uint32_t status,
+			    const char *fmt, ...) PRINTF_ATTRIBUTE(4,5);
+static void ctdb_send_error(struct ctdb_context *ctdb, 
+			    struct ctdb_req_header *hdr, uint32_t status,
 			    const char *fmt, ...)
 {
 	va_list ap;

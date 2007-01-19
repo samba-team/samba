@@ -193,7 +193,7 @@ struct ctdb_reply_dmaster {
 };
 
 /* internal prototypes */
-void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
+void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
 int ctdb_parse_address(struct ctdb_context *ctdb,
