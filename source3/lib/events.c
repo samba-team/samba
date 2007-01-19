@@ -74,11 +74,12 @@ static int timed_event_destructor(struct timed_event *te)
 
 static void add_event_by_time(struct timed_event *te)
 {
+	struct event_context *ctx = te->event_ctx;
 	struct timed_event *last_te, *cur_te;
 
 	/* Keep the list ordered by time. We must preserve this. */
 	last_te = NULL;
-	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
+	for (cur_te = ctx->timed_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
 		if (!timeval_is_zero(&cur_te->when) &&
 				timeval_compare(&te->when, &cur_te->when) < 0) {
@@ -87,7 +88,7 @@ static void add_event_by_time(struct timed_event *te)
 		last_te = cur_te;
 	}
 
-	DLIST_ADD_AFTER(timed_events, te, last_te);
+	DLIST_ADD_AFTER(ctx->timed_events, te, last_te);
 }
 
 /****************************************************************************
@@ -308,7 +309,7 @@ int set_event_dispatch_time(struct event_context *event_ctx,
 
 	for (te = event_ctx->timed_events; te; te = te->next) {
 		if (strcmp(event_name, te->event_name) == 0) {
-			DLIST_REMOVE(timed_events, te);
+			DLIST_REMOVE(event_ctx->timed_events, te);
 			te->when = when;
 			add_event_by_time(te);
 			return 1;
