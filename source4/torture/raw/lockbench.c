@@ -83,6 +83,7 @@ static void lock_completion(struct smbcli_request *req)
 {
 	struct benchlock_state *state = (struct benchlock_state *)req->async.private;
 	NTSTATUS status = smbcli_request_simple_recv(req);
+	state->req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		lock_failed++;
 		DEBUG(0,("Lock failed - %s\n", nt_errstr(status)));
