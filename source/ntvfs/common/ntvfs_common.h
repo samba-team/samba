@@ -21,6 +21,11 @@
 #ifndef _NTVFS_COMMON_H_
 #define _NTVFS_COMMON_H_
 
+#include "ntvfs/ntvfs.h"
+
+struct notify_event;
+struct notify_entry;
+
 #include "ntvfs/common/brlock.h"
 #include "ntvfs/common/proto.h"
 
