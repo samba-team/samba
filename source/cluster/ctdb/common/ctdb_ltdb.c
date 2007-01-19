@@ -94,14 +94,6 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb,
 	free(rec.dptr);
 	CTDB_NO_MEMORY(ctdb, data->dptr);
 
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<data->dsize;i++) {
-			write(fd, &data->dptr[i], 1);
-		}
-		close(fd);
-	}
-
 	return 0;
 }
 
@@ -124,14 +116,6 @@ int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key,
 	memcpy(rec.dptr, header, sizeof(*header));
 	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
 
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<rec.dsize;i++) {
-			write(fd, &rec.dptr[i], 1);
-		}
-		close(fd);
-	}
-	
 	ret = tdb_store(ctdb->ltdb, key, rec, TDB_REPLACE);
 	talloc_free(rec.dptr);
 
