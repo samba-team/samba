@@ -206,7 +206,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	memcpy(&r->data[0], key->dptr, key->dsize);
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
-	if (r->hdr.destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (r->hdr.destnode == ctdb->vnn) {
 		/* we are the lmaster - don't send to ourselves */
 		DEBUG(0,("XXXX local ctdb_req_dmaster\n"));
 		ctdb_request_dmaster(ctdb, &r->hdr);
@@ -243,19 +243,14 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	DEBUG(0,("request dmaster reqid=%d\n", hdr->reqid));
 
+	DEBUG(0,("change dmaster: stage 2 - new dmaster will be %d\n",
+		 c->dmaster));
+
 	/* fetch the current record */
 	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
-	}
-
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<data.dsize;i++) {
-			write(fd, &data.dptr[i], 1);
-		}
-		close(fd);
 	}
 
 	/* its a protocol error if the sending node is not the current dmaster */
@@ -272,14 +267,6 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<data.dsize;i++) {
-			write(fd, &data.dptr[i], 1);
-		}
-		close(fd);
-	}
-
 	/* send the CTDB_REPLY_DMASTER */
 	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + data.dsize);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
@@ -291,24 +278,16 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<data.dsize;i++) {
-			write(fd, &data.dptr[i], 1);
-		}
-		close(fd);
-	}
-
 	DEBUG(0,("request dmaster reqid=%d %s\n", hdr->reqid, __location__));
 
-	if (0 && r->hdr.destnode == r->hdr.srcnode) {
+	if (r->hdr.destnode == r->hdr.srcnode) {
 		ctdb_reply_dmaster(ctdb, &r->hdr);
 	} else {
 		ctdb_queue_packet(ctdb, &r->hdr);
 		DEBUG(0,("request dmaster reqid=%d %s\n", hdr->reqid, __location__));
-
-		talloc_free(r);
 	}
+
+	talloc_free(r);
 }
 
 
@@ -349,6 +328,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record */
 	if (header.laccessor == c->hdr.srcnode &&
 	    header.lacount >= ctdb->max_lacount) {
+		DEBUG(0,("change dmaster: stage 1 - new dmaster will be %d\n",
+			 header.laccessor));
 		ctdb_call_send_dmaster(ctdb, c, &header, &key, &data);
 		talloc_free(data.dptr);
 		return;
@@ -435,6 +416,9 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dsize = c->datalen;
 
 	talloc_steal(state, c);
+
+	DEBUG(0,("change dmaster: stage 3 - new dmaster is %d\n",
+		 ctdb->vnn));
 
 	/* we're now the dmaster - update our local ltdb with new header
 	   and data */
