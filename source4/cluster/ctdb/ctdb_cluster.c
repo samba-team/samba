@@ -95,8 +95,11 @@ void cluster_ctdb_init(struct event_context *ev)
 			 ctdb_errstr(state->ctdb)));
 		goto failed;
 	}
-	
-//	ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
+
+	if (lp_parm_bool(-1, "ctdb", "selfconnect", False)) {
+		DEBUG(0,("Enabling ctdb selfconnect\n"));
+		ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
+	}
 
 	/* tell ctdb what address to listen on */
         ret = ctdb_set_address(state->ctdb, address);
