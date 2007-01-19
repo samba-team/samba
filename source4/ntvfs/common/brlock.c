@@ -33,7 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
-#include "ntvfs/common/brlock.h"
+#include "ntvfs/common/ntvfs_common.h"
 
 static const struct brlock_ops *ops;
 

@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "system/filesys.h"
 #include "ntvfs/ntvfs.h"
-#include "ntvfs/common/proto.h"
+#include "ntvfs/common/ntvfs_common.h"
 #include "dsdb/samdb/samdb.h"
 
 /* this is the private structure for the posix vfs backend. It is used
