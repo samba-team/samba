@@ -157,20 +157,20 @@ struct ctdb_req_call {
 	uint32_t callid;
 	uint32_t keylen;
 	uint32_t calldatalen;
-	uint8_t data[0]; /* key[] followed by calldata[] */
+	uint8_t data[1]; /* key[] followed by calldata[] */
 };
 
 struct ctdb_reply_call {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 struct ctdb_reply_error {
 	struct ctdb_req_header hdr;
 	uint32_t status;
 	uint32_t msglen;
-	uint8_t  msg[0];
+	uint8_t  msg[1];
 };
 
 struct ctdb_reply_redirect {
@@ -183,13 +183,13 @@ struct ctdb_req_dmaster {
 	uint32_t dmaster;
 	uint32_t keylen;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 struct ctdb_reply_dmaster {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 /* internal prototypes */
