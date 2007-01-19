@@ -39,6 +39,7 @@
 #include "smbd/service.h"
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
+#include "cluster/ctdb/ctdb_cluster.h"
 
 /*
   recursively delete a directory tree
@@ -283,6 +284,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
 	event_ctx = event_context_init(NULL);
+
+	/* initialise clustering if needed */
+	cluster_ctdb_init(event_ctx);
 
 	if (interactive) {
 		/* catch EOF on stdin */
