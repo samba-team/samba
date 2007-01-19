@@ -462,6 +462,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 			}
 		} /* end else */
 
+#ifdef DEVELOPER
+		if (VALID_STAT(st) && get_delete_on_close_flag(st.st_dev, st.st_ino)) {
+			return NT_STATUS_DELETE_PENDING;
+		}
+#endif
+
 		/* 
 		 * Add to the dirpath that we have resolved so far.
 		 */

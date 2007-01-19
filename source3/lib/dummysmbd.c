@@ -53,3 +53,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 {
 	return NULL;
 }
+
+void send_stat_cache_delete_message(const char *name)
+{
+}

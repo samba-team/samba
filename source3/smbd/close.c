@@ -431,6 +431,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 			become_user(fsp->conn, fsp->vuid);
 			became_user = True;
 		}
+		send_stat_cache_delete_message(fsp->fsp_name);
 		set_delete_on_close_lck(lck, True, &current_user.ut);
 		if (became_user) {
 			unbecome_user();
