@@ -41,10 +41,16 @@ static int ejs_net_userlist(MprVarHandle eid, int argc, struct MprVar **argv);
 */
 int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	const char *userman_domain = NULL;
 	struct MprVar *obj = NULL;
+
+	/* libnet context */
+	ctx = mprGetThisPtr(eid, "ctx");
+	if (ctx == NULL) {
+		ejsSetErrorMsg(eid, "ctx property returns null pointer");
+		return 0;
+	}
 
 	/* fetch the arguments: domain name */
 	if (argc == 0) {
@@ -54,30 +60,24 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	} else if (argc == 1 && mprVarIsString(argv[0]->type)) {
 		/* domain name can also be specified explicitly 
 		   (e.g. to connect remote domain) */
-		userman_domain = talloc_strdup(ctx, mprToString(argv[0]));
+		userman_domain = mprToString(argv[0]);
 
 	} else {
 		ejsSetErrorMsg(eid, "too many arguments");
-		goto done;
+		return 0;
 	}
-
-	/* libnet context */
-	ctx = mprGetThisPtr(eid, "ctx");
-	if (ctx == NULL) {
-		ejsSetErrorMsg(eid, "ctx property returns null pointer");
-		goto done;
-	}
-	
-	mem_ctx = talloc_new(mprMemCtx());
 
 	/* any domain name must be specified anyway */
 	if (userman_domain == NULL) {
 		ejsSetErrorMsg(eid, "a domain must be specified for user management");
-		goto done;
+		return 0;
 	}
-	
+
 	/* create 'net user' subcontext */
 	obj = mprInitObject(eid, "NetUsrCtx", argc, argv);
+
+	/* we need to make a copy of the string for this object */
+	userman_domain = talloc_strdup(obj, userman_domain);
 
 	/* add properties */
 	mprSetPtrChild(obj, "ctx", ctx);
@@ -89,8 +89,6 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "Info", ejs_net_userinfo);
 	mprSetCFunction(obj, "List", ejs_net_userlist);
 
-done:
-	talloc_free(mem_ctx);
 	return 0;
 }
 
