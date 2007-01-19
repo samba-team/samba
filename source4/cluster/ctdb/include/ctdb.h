@@ -59,6 +59,11 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count);
+
+/*
   tell ctdb what address to listen on, in transport specific format
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address);

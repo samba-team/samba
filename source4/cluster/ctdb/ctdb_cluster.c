@@ -68,7 +68,7 @@ void cluster_ctdb_init(struct event_context *ev)
 	const char *address;
 	const char *transport;
 	struct cluster_state *state;
-	int ret;
+	int ret, lacount;
 
 	nlist = lp_parm_string(-1, "ctdb", "nlist");
 	if (nlist == NULL) return;
@@ -99,6 +99,11 @@ void cluster_ctdb_init(struct event_context *ev)
 	if (lp_parm_bool(-1, "ctdb", "selfconnect", False)) {
 		DEBUG(0,("Enabling ctdb selfconnect\n"));
 		ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
+	}
+
+	lacount = lp_parm_int(-1, "ctdb", "maxlacount", -1);
+	if (lacount != -1) {
+		ctdb_set_max_lacount(state->ctdb, lacount);
 	}
 
 	/* tell ctdb what address to listen on */
