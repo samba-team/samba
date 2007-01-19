@@ -936,8 +936,8 @@ static NTSTATUS check_ads_config( void )
 	}
 
 	if ( lp_security() == SEC_ADS && !*lp_realm()) {
-		d_fprintf(stderr, "realm must be set in in smb.conf for ADS "
-			"join to succeed.\n");
+		d_fprintf(stderr, "realm must be set in in %s for ADS "
+			"join to succeed.\n", dyn_CONFIGFILE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1405,9 +1405,9 @@ int net_ads_join(int argc, const char **argv)
 	}
 
 	if (strcmp(ads->config.realm, lp_realm()) != 0) {
-		d_fprintf(stderr, "realm of remote server (%s) and realm in smb.conf "
+		d_fprintf(stderr, "realm of remote server (%s) and realm in %s "
 			"(%s) DO NOT match.  Aborting join\n", ads->config.realm, 
-			lp_realm());
+			dyn_CONFIGFILE, lp_realm());
 		nt_status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -1470,10 +1470,11 @@ int net_ads_join(int argc, const char **argv)
 	/* Check the short name of the domain */
 	
 	if ( !strequal(lp_workgroup(), short_domain_name) ) {
-		d_printf("The workgroup in smb.conf does not match the short\n");
+		d_printf("The workgroup in %s does not match the short\n", dyn_CONFIGFILE);
 		d_printf("domain name obtained from the server.\n");
 		d_printf("Using the name [%s] from the server.\n", short_domain_name);
-		d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
+		d_printf("You should set \"workgroup = %s\" in %s.\n", 
+			 short_domain_name, dyn_CONFIGFILE);
 	}
 	
 	d_printf("Using short domain name -- %s\n", short_domain_name);
