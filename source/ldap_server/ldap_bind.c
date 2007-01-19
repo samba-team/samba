@@ -45,7 +45,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
-	status = crack_dn_to_nt4_name(call, req->dn, &nt4_domain, &nt4_account);
+	status = crack_auto_name_to_nt4_name(call, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
 		status = authenticate_username_pw(call,
 						  call->conn->connection->event.ctx,
