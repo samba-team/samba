@@ -69,13 +69,35 @@ static int timed_event_destructor(struct timed_event *te)
 }
 
 /****************************************************************************
+ Add te by time.
+****************************************************************************/
+
+static void add_event_by_time(struct timed_event *te)
+{
+	struct timed_event *last_te, *cur_te;
+
+	/* Keep the list ordered by time. We must preserve this. */
+	last_te = NULL;
+	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
+		/* if the new event comes before the current one break */
+		if (!timeval_is_zero(&cur_te->when) &&
+				timeval_compare(&te->when, &cur_te->when) < 0) {
+			break;
+		}
+		last_te = cur_te;
+	}
+
+	DLIST_ADD_AFTER(timed_events, te, last_te);
+}
+
+/****************************************************************************
  Schedule a function for future calling, cancel with TALLOC_FREE().
  It's the responsibility of the handler to call TALLOC_FREE() on the event
  handed to it.
 ****************************************************************************/
 
 struct timed_event *event_add_timed(struct event_context *event_ctx,
-				    TALLOC_CTX *mem_ctx,
+				TALLOC_CTX *mem_ctx,
 				struct timeval when,
 				const char *event_name,
 				void (*handler)(struct event_context *event_ctx,
@@ -84,7 +106,7 @@ struct timed_event *event_add_timed(struct event_context *event_ctx,
 						void *private_data),
 				void *private_data)
 {
-	struct timed_event *te, *last_te, *cur_te;
+	struct timed_event *te;
 
 	te = TALLOC_P(mem_ctx, struct timed_event);
 	if (te == NULL) {
@@ -98,19 +120,8 @@ struct timed_event *event_add_timed(struct event_context *event_ctx,
 	te->handler = handler;
 	te->private_data = private_data;
 
-	/* keep the list ordered - this is NOT guarenteed as event times
-	   may be changed after insertion */
-	last_te = NULL;
-	for (cur_te = event_ctx->timed_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->when)
-		    && timeval_compare(&te->when, &cur_te->when) < 0) {
-			break;
-		}
-		last_te = cur_te;
-	}
+	add_event_by_time(te);
 
-	DLIST_ADD_AFTER(event_ctx->timed_events, te, last_te);
 	talloc_set_destructor(te, timed_event_destructor);
 
 	DEBUG(10, ("Added timed event \"%s\": %lx\n", event_name,
@@ -293,16 +304,17 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 int set_event_dispatch_time(struct event_context *event_ctx,
 			    const char *event_name, struct timeval when)
 {
-	int num_events = 0;
 	struct timed_event *te;
 
 	for (te = event_ctx->timed_events; te; te = te->next) {
 		if (strcmp(event_name, te->event_name) == 0) {
+			DLIST_REMOVE(timed_events, te);
 			te->when = when;
-			num_events++;
+			add_event_by_time(te);
+			return 1;
 		}
 	}
-	return num_events;
+	return 0;
 }
 
 /* Returns 1 if event was found and cancelled, 0 otherwise. */
