@@ -5545,6 +5545,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
 			domain_name, nt_errstr(nt_status)));
+		return -1;
 	}
 
 	/*
@@ -5554,6 +5555,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (!cli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
 		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
 			 for domain %s\n", domain_name));
+		cli_shutdown(cli);
+		return -1;
 	}
 	 
 	if (!(mem_ctx = talloc_init("establishing trust relationship to "
