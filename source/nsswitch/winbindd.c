@@ -960,8 +960,9 @@ int main(int argc, char **argv)
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
-	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2004\n" ) );
+	DEBUG(1, ("winbindd version %s started.\n%s\n", 
+		  SAMBA_VERSION_STRING, 
+		  COPYRIGHT_STARTUP_MESSAGE) );
 
 	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
