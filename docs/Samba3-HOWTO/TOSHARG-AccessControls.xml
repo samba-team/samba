@@ -1556,6 +1556,7 @@ are examples recently taken from the mailing list.
 	<title>Users Cannot Write to a Public Share</title>
 
 	<para>
+	The following complaint has frequently been voiced on the Samba mailing list: 
 	<quote>
 	We are facing some troubles with file/directory permissions. I can log on the domain as admin user (root),
 	and there's a public share on which everyone needs to have permission to create/modify files, but only
@@ -1566,7 +1567,7 @@ are examples recently taken from the mailing list.
 	</para>
 
 	<para>
-	There are many ways to solve this problem, and here are a few hints:
+	Here is one way the problem can be solved:
 	</para>
 
 	<procedure>
@@ -1581,16 +1582,17 @@ are examples recently taken from the mailing list.
 			Set the ownership to whatever public user and group you want
 <screen>
 &prompt;find `directory_name' -type d -exec chown user:group {}\;
-&prompt;find `directory_name' -type d -exec chmod 1775 {}\;
+&prompt;find `directory_name' -type d -exec chmod 2775 {}\;
 &prompt;find `directory_name' -type f -exec chmod 0775 {}\;
 &prompt;find `directory_name' -type f -exec chown user:group {}\;
 </screen>
 			</para>
 
 			<note><para>
-			The above will set the <constant>sticky bit</constant> on all directories. Read your
-			UNIX/Linux man page on what that does. It causes the OS to assign to all files 
-			created in the directories the ownership of the directory.
+			The above will set the <constant>SGID bit</constant> on all directories. Read your
+			UNIX/Linux man page on what that does. This ensures that all files and directories
+			that are created in the directory tree will be owned by the current user and will
+			be owned by the group that owns the directory in which it is created.
 			</para></note>
 		</step>
 		<step>
@@ -1613,15 +1615,14 @@ are examples recently taken from the mailing list.
 			<para>Now type: 
 
 <screen>
-&prompt;<userinput>chmod 6775 /foodbar</userinput>
+&prompt;<userinput>chmod 2775 /foodbar</userinput>
 &prompt;<userinput>ls -al /foodbar/..</userinput>
 </screen>
-
 			</para>
 		
 			<para>You should see:
 <screen>
-drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
+drwxrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 </screen>
 			</para>
 		</step>
@@ -1640,30 +1641,16 @@ drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
 		You should see that the file <filename>Afile</filename> created by Jill will have ownership
 		and permissions of Jack, as follows:
 <screen>
--rw-r--r--  1 jack  engr     0 2003-02-04 09:57 Afile
+-rw-r--r--  1 jill  engr     0 2007-01-18 19:41 Afile
 </screen>
 		</para>
 		</step>
 
 		<step>
 		<para>
-		Now in your &smb.conf; for the share add:
+		If the user that must have write permission in the directory is not a member of the group
+		<emphasis>engr</emphasis> set in the &smb.conf; entry for the share:
 		<smbconfblock>
-<smbconfoption name="force create mode">0775</smbconfoption>
-<smbconfoption name="force directory mode">6775</smbconfoption>
-		</smbconfblock>
-		</para>
-
-		<note><para>
-		These procedures are needed only if your users are not members of the group
-		you have used &smbmdash; that is, if within the OS they do not have write permission on the directory.
-		</para>
-		</note>
-		
-		<para>
-		An alternative is to set in the &smb.conf; entry for the share:
-		<smbconfblock>
-<smbconfoption name="force user">jack</smbconfoption>
 <smbconfoption name="force group">engr</smbconfoption>
 		</smbconfblock>
 		</para>
