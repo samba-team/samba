@@ -996,9 +996,10 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 	
 }
 
-NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx, 
-			      const char *dn, 
-			      const char **nt4_domain, const char **nt4_account)
+NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx, 
+				uint32_t format_offered,
+				const char *name, 
+				const char **nt4_domain, const char **nt4_account)
 {
 	WERROR werr;
 	struct drsuapi_DsNameInfo1 info1;
@@ -1006,7 +1007,7 @@ NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx,
 	char *p;
 
 	/* Handle anonymous bind */
-	if (!dn || !*dn) {
+	if (!name || !*name) {
 		*nt4_domain = "";
 		*nt4_account = "";
 		return NT_STATUS_OK;
@@ -1018,9 +1019,9 @@ NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx,
 	}
 
 	werr = DsCrackNameOneName(ldb, mem_ctx, 0,
-				  DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
+				  format_offered, 
 				  DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
-				  dn,
+				  name,
 				  &info1);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werror_to_ntstatus(werr);
@@ -1054,5 +1055,31 @@ NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_OK;
-	
+}
+
+NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
+				     const char *name,
+				     const char **nt4_domain,
+				     const char **nt4_account)
+{
+	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UKNOWN;
+
+	/* Handle anonymous bind */
+	if (!name || !*name) {
+		*nt4_domain = "";
+		*nt4_account = "";
+		return NT_STATUS_OK;
+	}
+
+	if (strchr_m(name, '=')) {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	} else if (strchr_m(name, '@')) {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL;
+	} else if (strchr_m(name, '\\')) {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	} else if (strchr_m(name, '/')) {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	}
+
+	return crack_name_to_nt4_name(mem_ctx, format_offered, name, nt4_domain, nt4_account);
 }
