@@ -434,9 +434,17 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
 			domain->name ));
 
-	}
+		domain->check_online_event = event_add_timed(
+			winbind_event_context(), NULL, tev,
+			"check_domain_online_handler",
+			check_domain_online_handler,
+			domain);
 
-	TALLOC_FREE(domain->check_online_event);
+		/* The above *has* to succeed for winbindd to work. */
+		if (!domain->check_online_event) {
+			smb_panic("set_domain_online_request: failed to add online handler.\n");
+		}
+	}
 
 	GetTimeOfDay(&tev);
 
@@ -446,16 +454,7 @@ void set_domain_online_request(struct winbindd_domain *domain)
 
 	tev.tv_sec += 5;
 
-	domain->check_online_event = event_add_timed(
-		winbind_event_context(), NULL, tev,
-		"check_domain_online_handler",
-		check_domain_online_handler,
-		domain);
-
-	/* The above *has* to succeed for winbindd to work. */
-	if (!domain->check_online_event) {
-		smb_panic("set_domain_online_request: failed to add online handler.\n");
-	}
+	set_event_dispatch_time(winbind_event_context(), "check_domain_online_handler", tev);
 }
 
 /****************************************************************
