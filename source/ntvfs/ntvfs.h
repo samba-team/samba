@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _NTVFS_H_
+#define _NTVFS_H_
+
 #include "libcli/raw/interfaces.h"
 #include "param/share.h"
 
@@ -311,3 +314,5 @@ struct messaging_context;
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/notify.h"
 #include "ntvfs/ntvfs_proto.h"
+
+#endif /* _NTVFS_H_ */
