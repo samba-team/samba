@@ -285,6 +285,40 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	}
 }
 
+/***************************************************************************
+ Tell all smbd's to delete an entry.
+**************************************************************************/
+
+void send_stat_cache_delete_message(const char *name)
+{
+#ifdef DEVELOPER
+	message_send_all(conn_tdb_ctx(),
+			MSG_SMB_STAT_CACHE_DELETE,
+			name,
+			strlen(name)+1,
+			True,
+			NULL);
+#endif
+}
+
+/***************************************************************************
+ Delete an entry.
+**************************************************************************/
+
+void stat_cache_delete(const char *name)
+{
+	char *lname = strdup_upper(name);
+
+	if (!lname) {
+		return;
+	}
+	DEBUG(10,("stat_cache_delete: deleting name [%s] -> %s\n",
+			lname, name ));
+
+	tdb_delete_bystring(tdb_stat_cache, lname);
+	SAFE_FREE(lname);
+}
+
 /***************************************************************
  Compute a hash value based on a string key value.
  The function returns the bucket index number for the hashed key.

@@ -1281,6 +1281,10 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKE
 
 	set_delete_on_close_lck(lck, delete_on_close, tok);
 
+	if (fsp->is_directory) {
+		send_stat_cache_delete_message(fsp->fsp_name);
+	}
+
 	TALLOC_FREE(lck);
 	return True;
 }
