@@ -31,6 +31,8 @@
 #include "ntvfs/common/brlock.h"
 #include "cluster/ctdb/include/ctdb.h"
 
+#define ENABLE_NOTIFIES 0
+
 enum my_functions {FUNC_BRL_LOCK=1, FUNC_BRL_UNLOCK=2, 
 		   FUNC_BRL_REMOVE_PENDING=3, FUNC_BRL_LOCKTEST=4,
 		   FUNC_BRL_CLOSE=5};
@@ -295,7 +297,7 @@ static int brl_ctdb_lock_func(struct ctdb_call *call)
 	struct lock_struct lock, *locks=NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
-#if 0
+#if ENABLE_NOTIFIES
 	/* if this is a pending lock, then with the chainlock held we
 	   try to get the real lock. If we succeed then we don't need
 	   to make it pending. This prevents a possible race condition
@@ -436,7 +438,7 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 	return status;
 }
 
-#if 0
+#if ENABLE_NOTIFIES
 /*
   we are removing a lock that might be holding up a pending lock. Scan for pending
   locks that cover this range and if we find any then notify the server that it should
@@ -480,7 +482,9 @@ static void brl_ctdb_notify_all(struct brl_context *brl,
 	int i;
 	for (i=0;i<count;i++) {
 		if (locks->lock_type >= PENDING_READ_LOCK) {
-//			brl_ctdb_notify_unlock(brl, locks, count, &locks[i]);
+#if ENABLE_NOTIFIES
+			brl_ctdb_notify_unlock(brl, locks, count, &locks[i]);
+#endif
 		}
 	}
 }
@@ -526,7 +530,9 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 		    lock->start == req->start &&
 		    lock->size == req->size &&
 		    lock->lock_type < PENDING_READ_LOCK) {
-//			struct lock_struct removed_lock = *lock;
+#if ENABLE_NOTIFIES
+			struct lock_struct removed_lock = *lock;
+#endif
 
 			call->new_data = talloc(call, TDB_DATA);
 			if (call->new_data == NULL) {
@@ -544,8 +550,9 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 			       (count-(i+1))*sizeof(lock));
 			
 			if (count > 1) {
-				/* send notifications for any relevant pending locks */
-//				brl_ctdb_notify_unlock(req->brl, locks, count, &removed_lock);
+#if ENABLE_NOTIFIES
+				brl_ctdb_notify_unlock(req->brl, locks, count, &removed_lock);
+#endif
 			}
 			break;
 		}
