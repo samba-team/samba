@@ -93,6 +93,7 @@ struct ctdb_context {
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
+	unsigned max_lacount;
 };
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
@@ -115,7 +116,7 @@ struct ctdb_context {
 
 /* number of consecutive calls from the same node before we give them
    the record */
-#define CTDB_MAX_LACOUNT 7000
+#define CTDB_DEFAULT_MAX_LACOUNT 7
 
 /*
   the extended header for records in the ltdb

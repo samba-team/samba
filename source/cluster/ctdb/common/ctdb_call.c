@@ -345,7 +345,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* if this nodes has done enough consecutive calls on the same record
 	   then give them the record */
 	if (header.laccessor == c->hdr.srcnode &&
-	    header.lacount >= CTDB_MAX_LACOUNT) {
+	    header.lacount >= ctdb->max_lacount) {
 		ctdb_call_send_dmaster(ctdb, c, &header, &key, &data);
 		talloc_free(data.dptr);
 		return;
