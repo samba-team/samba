@@ -7710,6 +7710,14 @@ BOOL samr_io_r_chgpasswd_user3(const char *desc, SAMR_R_CHGPASSWD_USER3 *r_u,
 	if (!prs_uint32("ptr_info", ps, depth, &r_u->ptr_info))
 		return False;
 
+	/* special case: Windows 2000 can return stub data here saying
+	   NT_STATUS_NOT_SUPPORTED */
+
+	if ( NT_STATUS_EQUAL( NT_STATUS_NOT_SUPPORTED, NT_STATUS(r_u->ptr_info)) ) {
+		r_u->status = NT_STATUS_NOT_SUPPORTED;
+		return True;
+	}
+
 	if (r_u->ptr_info && r_u->info != NULL) {
 		/* SAM_UNK_INFO_1 */
 		if (!sam_io_unk_info1("info", r_u->info, ps, depth))
