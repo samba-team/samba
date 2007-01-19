@@ -328,7 +328,8 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	calc_new_online_timeout_check(domain);
 
-	domain->check_online_event = event_add_timed(winbind_event_context(), NULL,
+	domain->check_online_event = event_add_timed(winbind_event_context(),
+						NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
 						"check_domain_online_handler",
 						check_domain_online_handler,
@@ -434,11 +435,12 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
 			domain->name ));
 
-		domain->check_online_event = event_add_timed(
-			winbind_event_context(), NULL, tev,
-			"check_domain_online_handler",
-			check_domain_online_handler,
-			domain);
+		domain->check_online_event = event_add_timed(winbind_event_context(),
+								NULL,
+								timeval_current_ofs(5, 0),
+								"check_domain_online_handler",
+								check_domain_online_handler,
+								domain);
 
 		/* The above *has* to succeed for winbindd to work. */
 		if (!domain->check_online_event) {
