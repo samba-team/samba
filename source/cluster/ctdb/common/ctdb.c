@@ -48,6 +48,13 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 	ctdb->flags |= flags;
 }
 
+/*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
+{
+	ctdb->max_lacount = count;
+}
 
 /*
   add a node to the list of active nodes
@@ -281,6 +288,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev = ev;
 	ctdb->upcalls = &ctdb_upcalls;
 	ctdb->idr = idr_init(ctdb);
+	ctdb->max_lacount = CTDB_DEFAULT_MAX_LACOUNT;
 
 	return ctdb;
 }
