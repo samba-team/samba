@@ -193,6 +193,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"                                \"operational\",\n"
 		"                                \"objectclass\",\n"
 		"                                \"rdn_name\",\n"
+		"                                \"show_deleted\",\n"
 		"                                \"partition\");\n"
 		"subobj.MODULES_LIST = join(\",\", modules_list);\n"
 		"subobj.DOMAINDN_MOD = \"pdc_fsmo,password_hash,repl_meta_data\";\n"
