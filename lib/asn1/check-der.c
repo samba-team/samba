@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -532,16 +532,13 @@ check_fail_boolean(void)
 static int
 check_fail_general_string(void)
 {
-#if 0
     struct test_case tests[] = {
+	{ NULL, 3, "A\x00B", "NUL char in string"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
     return generic_decode_fail(tests, ntests, sizeof(heim_general_string),
 			       (generic_decode)der_get_general_string);
-#else
-    return 0;
-#endif
 }
 
 static int
