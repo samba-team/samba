@@ -1,5 +1,9 @@
-2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: Really test sub-ca code, add basic constraints tests
+	
+2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: Fix makefile problem.
 	
 2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
