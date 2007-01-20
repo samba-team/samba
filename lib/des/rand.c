@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,43 +44,64 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-extern RAND_METHOD hc_rand_fortuna_method;
-extern RAND_METHOD hc_rand_unix_method;
-static const RAND_METHOD *selected_meth = &hc_rand_fortuna_method;
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+
+const static RAND_METHOD *selected_meth = NULL;
+
+static void
+init_method(void)
+{
+    if (selected_meth != NULL)
+	return;
+
+    if (_hc_rand_unix_status() == 1)
+	selected_meth = &hc_rand_unix_method;
+    else
+	selected_meth = &hc_rand_fortuna_method;
+}
 
 void
 RAND_seed(const void *indata, size_t size)
 {
+    init_method();
     (*selected_meth->seed)(indata, size);
 }
 
 int
 RAND_bytes(void *outdata, size_t size)
 {
+    init_method();
     return (*selected_meth->bytes)(outdata, size);
 }
 
 void
 RAND_cleanup(void)
 {
+    init_method();
     (*selected_meth->cleanup)();
 }
 
 void
 RAND_add(const void *indata, size_t size, double entropi)
 {
+    init_method();
     (*selected_meth->add)(indata, size, entropi);
 }
 
 int
 RAND_pseudo_bytes(void *outdata, size_t size)
 {
+    init_method();
     return (*selected_meth->pseudorand)(outdata, size);
 }
 
 int
 RAND_status(void)
 {
+    init_method();
     return (*selected_meth->status)();
 }
 
@@ -103,16 +124,59 @@ RAND_set_rand_engine(ENGINE *engine)
     return 1;
 }
 
+#define RAND_FILE_SIZE 1024
+
 int
 RAND_load_file(const char *filename, size_t size)
 {
-    return 1;
+    unsigned char buf[128];
+    size_t len;
+    ssize_t slen;
+    int fd;
+
+    fd = open(filename, O_RDONLY | O_BINARY, 0600);
+    if (fd < 0)
+	return 0;
+
+    len = 0;
+    while(len < size) {
+	slen = read(fd, buf, sizeof(buf));
+	if (slen <= 0)
+	    break;
+	RAND_seed(buf, slen);
+	len += slen;
+    }
+    close(fd);
+
+    return len ? 1 : 0;
 }
 
 int
 RAND_write_file(const char *filename)
 {
-    return 1;
+    unsigned char buf[128];
+    size_t len;
+    int res, fd;
+
+    fd = open(filename, O_WRONLY | O_CREAT | O_BINARY | O_TRUNC, 0600);
+    if (fd < 0)
+	return 0;
+
+    len = 0;
+    while(len < RAND_FILE_SIZE) {
+	res = RAND_bytes(buf, sizeof(buf));
+	if (res != 1)
+	    break;
+	if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
+	    res = 0;
+	    break;
+	}
+	len += sizeof(buf);
+    }
+
+    close(fd);
+
+    return res;
 }
 
 int
