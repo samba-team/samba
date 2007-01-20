@@ -132,8 +132,8 @@ unix_pseudorand(unsigned char *outdata, int size)
     return _hc_rand_unix_bytes(outdata, size);
 }
 
-static int
-unix_status(void)
+int
+_hc_rand_unix_status(void)
 {
     int fd;
 
@@ -151,7 +151,7 @@ const RAND_METHOD hc_rand_unix_method = {
     unix_cleanup,
     unix_add,
     unix_pseudorand,
-    unix_status
+    _hc_rand_unix_status
 };
 
 const RAND_METHOD *
