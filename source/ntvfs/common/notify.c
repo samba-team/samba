@@ -85,7 +85,6 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 				   struct event_context *ev,
 				   struct share_config *scfg)
 {
-	char *path;
 	struct notify_context *notify;
 
 	if (share_bool_option(scfg, NOTIFY_ENABLE, NOTIFY_ENABLE_DEFAULT) != True) {
@@ -97,11 +96,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	path = smbd_tmp_path(notify, "notify.tdb");
-	notify->w = tdb_wrap_open(notify, path, 0,  
-				  TDB_SEQNUM,
-				  O_RDWR|O_CREAT, 0600);
-	talloc_free(path);
+	notify->w = cluster_tdb_tmp_open(notify, "notify.tdb", TDB_SEQNUM);
 	if (notify->w == NULL) {
 		talloc_free(notify);
 		return NULL;
