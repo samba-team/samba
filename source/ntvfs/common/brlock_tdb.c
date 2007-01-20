@@ -87,7 +87,6 @@ struct brl_handle {
 static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				    struct messaging_context *messaging_ctx)
 {
-	char *path;
 	struct brl_context *brl;
 
 	brl = talloc(mem_ctx, struct brl_context);
@@ -95,10 +94,7 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 		return NULL;
 	}
 
-	path = smbd_tmp_path(brl, "brlock.tdb");
-	brl->w = tdb_wrap_open(brl, path, 0,
-			       TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	talloc_free(path);
+	brl->w = cluster_tdb_tmp_open(brl, "brlock.tdb", TDB_DEFAULT);
 	if (brl->w == NULL) {
 		talloc_free(brl);
 		return NULL;
