@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -175,6 +175,7 @@ ${hxtool} issue-certificate \
 	  --issue-ca \
  	  --serial-number="deadbeaf" \
 	  --generate-key=rsa \
+          --path-length=-1 \
 	  --subject="cn=ca2-cert" \
 	  --certificate="FILE:cert-ca.pem" || exit 1
 
@@ -196,7 +197,7 @@ ${hxtool} issue-certificate \
 
 echo "issue sub-ca ee cert (generate rsa key)"
 ${hxtool} issue-certificate \
-	  --ca-certificate=FILE:cert-ca.pem \
+	  --ca-certificate=FILE:cert-sub-ca.pem \
 	  --generate-key=rsa \
 	  --subject="cn=cert-sub-ee2" \
 	  --certificate="FILE:cert-sub-ee.pem" || exit 1
@@ -210,7 +211,7 @@ echo "verify certificate (sub-ee)"
 ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-sub-ee.pem \
 	chain:FILE:cert-sub-ca.pem \
-	anchor:FILE:cert-ca.pem > /dev/null || exit 1
+	anchor:FILE:cert-ca.pem || exit 1
 
 echo "sign CMS signature (generate key)"
 ${hxtool} cms-create-sd \
@@ -247,6 +248,7 @@ ${hxtool} issue-certificate \
           --lifetime="3years" \
 	  --template-certificate="FILE:cert-ca.pem" \
 	  --template-fields="serialNumber,notBefore,subject" \
+          --path-length=-1 \
 	  --ca-private-key=FILE:cert-ca.pem \
 	  --certificate="FILE:cert-ca.pem" || exit 1
 
@@ -269,5 +271,55 @@ ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-sub-ee.pem \
 	chain:FILE:cert-sub-ca.pem \
 	anchor:FILE:cert-ca.pem > /dev/null || exit 1
+
+echo "+++++++++++ test basic constraints"
+
+echo "extend ca cert (too low path-length constraint)"
+${hxtool} issue-certificate \
+	  --self-signed \
+	  --issue-ca \
+          --lifetime="3years" \
+	  --template-certificate="FILE:cert-ca.pem" \
+	  --template-fields="serialNumber,notBefore,subject" \
+          --path-length=0 \
+	  --ca-private-key=FILE:cert-ca.pem \
+	  --certificate="FILE:cert-ca.pem" || exit 1
+
+echo "verify failure of certificate (sub-ee) with path-length constraint"
+${hxtool} verify --missing-revoke \
+	cert:FILE:cert-sub-ee.pem \
+	chain:FILE:cert-sub-ca.pem \
+	anchor:FILE:cert-ca.pem > /dev/null && exit 1
+
+echo "extend ca cert (exact path-length constraint)"
+${hxtool} issue-certificate \
+	  --self-signed \
+	  --issue-ca \
+          --lifetime="3years" \
+	  --template-certificate="FILE:cert-ca.pem" \
+	  --template-fields="serialNumber,notBefore,subject" \
+          --path-length=1 \
+	  --ca-private-key=FILE:cert-ca.pem \
+	  --certificate="FILE:cert-ca.pem" || exit 1
+
+echo "verify certificate (sub-ee) with exact path-length constraint"
+${hxtool} verify --missing-revoke \
+	cert:FILE:cert-sub-ee.pem \
+	chain:FILE:cert-sub-ca.pem \
+	anchor:FILE:cert-ca.pem > /dev/null || exit 1
+
+echo "Check missing basicConstrants.isCa"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:cert-ca.pem \
+          --lifetime="2years" \
+	  --template-certificate="FILE:cert-sub-ca.pem" \
+	  --template-fields="serialNumber,notBefore,subject,SPKI" \
+	  --certificate="FILE:cert-sub-ca2.pem" || exit 1
+
+echo "verify failure certificate (sub-ee) with missing isCA"
+${hxtool} verify --missing-revoke \
+	cert:FILE:cert-sub-ee.pem \
+	chain:FILE:cert-sub-ca2.pem \
+	anchor:FILE:cert-ca.pem > /dev/null && exit 1
 
 exit 0
