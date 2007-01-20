@@ -101,6 +101,7 @@ libhcrypto_la_SOURCES =	\
 	rand.c		\
 	rand.h		\
 	rand-fortuna.c	\
+	rand-egd.c	\
 	rand-unix.c	\
 	rc2.c		\
 	rc2.h		\

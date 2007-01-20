@@ -40,12 +40,13 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <rand.h>
+#include <randi.h>
 
 #include <roken.h>
 
 extern RAND_METHOD hc_rand_fortuna_method;
 extern RAND_METHOD hc_rand_unix_method;
-static const RAND_METHOD *selected_meth = &hc_rand_unix_method;
+static const RAND_METHOD *selected_meth = &hc_rand_fortuna_method;
 
 void
 RAND_seed(const void *indata, size_t size)
@@ -117,5 +118,32 @@ RAND_write_file(const char *filename)
 int
 RAND_egd(const char *filename)
 {
+    return RAND_egd_bytes(filename, 128);
+}
+
+int
+RAND_egd_bytes(const char *filename, int size)
+{
+    void *data;
+    int ret;
+
+    if (size <= 0)
+	return 0;
+
+    data = malloc(size);
+    if (data == NULL)
+	return 0;
+
+    ret = _hc_rand_egd_bytes(filename, data, size);
+    if (ret != 1) {
+	free(data);
+	return ret;
+    }
+
+    RAND_seed(data, size);
+
+    memset(data, 0, sizeof(data));
+    free(data);
+
     return 1;
 }

@@ -436,6 +436,8 @@ static int	have_entropy;
 static int
 fortuna_reseed(void)
 {
+    int entropy_p = 0;
+
     if (!init_done)
 	abort();
 
@@ -443,6 +445,7 @@ fortuna_reseed(void)
 	unsigned char buf[INIT_BYTES];
 	if (_hc_rand_unix_bytes(buf, sizeof(buf)) == 1) {
 	    add_entropy(&main_state, buf, sizeof(buf));
+	    entropy_p = 1;
 	    memset(buf, 0, sizeof(buf));
 	}
     }
@@ -454,9 +457,21 @@ fortuna_reseed(void)
 	for (i = 0; i < sizeof(buf)/sizeof(buf[0]); i++)
 	    buf[i] = arc4random();
 	add_entropy(&main_state, (void *)buf, sizeof(buf));
+	entropy_p = 1;
     }
 #endif
-    /* Add EGD thingy here */
+    /* 
+     * Only to get egd entropy if /dev/random or arc4rand failed since
+     * it can be horribly slow to generate new bits.
+     */
+    if (!entropy_p) {
+	unsigned char buf[INIT_BYTES];
+	if (_hc_rand_egd_bytes(NULL, buf, sizeof(buf)) == 1) {
+	    add_entropy(&main_state, buf, sizeof(buf));
+	    entropy_p = 1;
+	    memset(buf, 0, sizeof(buf));
+	}
+    }
     {
 	pid_t pid = getpid();
 	add_entropy(&main_state, (void *)&pid, sizeof(pid));
@@ -470,7 +485,7 @@ fortuna_reseed(void)
 	uid_t u = getuid();
 	add_entropy(&main_state, (void *)&u, sizeof(u));
     }
-    return 1;
+    return entropy_p;
 }
 
 static int
@@ -493,6 +508,8 @@ fortuna_seed(const void *indata, int size)
 {
     fortuna_init();
     add_entropy(&main_state, indata, size);
+    if (size >= INIT_BYTES)
+	have_entropy = 1;
 }
 
 static int 

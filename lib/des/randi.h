@@ -39,5 +39,6 @@
 #define _HEIM_RANDI_H 1
 
 int	_hc_rand_unix_bytes(unsigned char *, int);
+int 	_hc_rand_egd_bytes(const char *, unsigned char *, int);
 
 #endif /* _HEIM_RANDI_H */
