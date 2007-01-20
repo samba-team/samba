@@ -1,5 +1,11 @@
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* randi.h: expose _hc_rand_unix_status and the internal
+	RAND_METHODs
+
+	* rand.c: Implement RAND_load_file and RAND_write_file.  Select
+	UNIX random device if available, otherwise use Fortuna.
+
 	* Add EGD/PRNGD support
 
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
