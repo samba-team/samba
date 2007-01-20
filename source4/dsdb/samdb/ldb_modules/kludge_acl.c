@@ -126,7 +126,6 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	{
 		switch (ac->user_type) {
 		case SYSTEM:
-		case ADMINISTRATOR:
 			break;
 		default:
 			/* remove password attributes */
@@ -183,7 +182,6 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	   just as we would not allow that attribute to be returned */
 	switch (ac->user_type) {
 	case SYSTEM:
-	case ADMINISTRATOR:
 		break;
 	default:
 		/* remove password attributes */
