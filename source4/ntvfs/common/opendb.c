@@ -72,7 +72,6 @@ struct odb_lock {
 _PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, 
 				      struct ntvfs_context *ntvfs_ctx)
 {
-	char *path;
 	struct odb_context *odb;
 
 	odb = talloc(mem_ctx, struct odb_context);
@@ -80,11 +79,7 @@ _PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	path = smbd_tmp_path(odb, "openfiles.tdb");
-	odb->w = tdb_wrap_open(odb, path, 0,  
-			       TDB_DEFAULT,
-			       O_RDWR|O_CREAT, 0600);
-	talloc_free(path);
+	odb->w = cluster_tdb_tmp_open(odb, "openfiles.tdb", TDB_DEFAULT);
 	if (odb->w == NULL) {
 		talloc_free(odb);
 		return NULL;
