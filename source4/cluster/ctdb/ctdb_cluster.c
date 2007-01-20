@@ -27,6 +27,7 @@
 #include "cluster/cluster_private.h"
 #include "lib/tdb/include/tdb.h"
 #include "cluster/ctdb/include/ctdb.h"
+#include "db_wrap.h"
 
 struct cluster_state {
 	struct ctdb_context *ctdb;
@@ -55,9 +56,35 @@ static const char *ctdb_id_string(struct cluster_ops *ops,
 	return talloc_asprintf(mem_ctx, "%u.%u", id.node, id.id);
 }
 
+/*
+  this is an interim method for subsystems that have not yet been
+  converted to use the ctdb api. It opens a shared database in the
+  cluster temporary area, using TDB_CLEAR_IF_FIRST which relies on
+  correct operation of fcntl locks on the shared fileystem.
+*/
+static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
+					  TALLOC_CTX *mem_ctx, const char *dbname, 
+					  int flags)
+{
+	const char *dir = lp_parm_string(-1, "ctdb", "shared data");
+	char *path;
+	struct tdb_wrap *w;
+	if (dir == NULL) {
+		DEBUG(0,("ERROR: You must set 'ctdb:shared data' to a cluster shared path\n"));
+		return NULL;
+	}
+	path = talloc_asprintf(mem_ctx, "%s/%s", dir, dbname);
+	w = tdb_wrap_open(mem_ctx, path, 0,  
+			  flags | TDB_CLEAR_IF_FIRST,
+			  O_RDWR|O_CREAT, 0600);
+	talloc_free(path);
+	return w;
+}
+
 static struct cluster_ops cluster_ctdb_ops = {
-	.cluster_id        = ctdb_id,
-	.cluster_id_string = ctdb_id_string,
+	.cluster_id           = ctdb_id,
+	.cluster_id_string    = ctdb_id_string,
+	.cluster_tdb_tmp_open = ctdb_tdb_tmp_open,
 	.private           = NULL
 };
 

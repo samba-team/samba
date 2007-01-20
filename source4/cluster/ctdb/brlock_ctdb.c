@@ -116,6 +116,9 @@ static struct brl_handle *brl_ctdb_create_handle(TALLOC_CTX *mem_ctx, struct ntv
 		return NULL;
 	}
 
+	DEBUG(0,("file_key\n"));
+	dump_data(0,file_key->data, file_key->length);
+
 	brlh->key = *file_key;
 	brlh->ntvfs = ntvfs;
 	ZERO_STRUCT(brlh->last_lock);
