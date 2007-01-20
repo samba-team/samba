@@ -19,7 +19,7 @@ confflags=
 PATH="${PATH}:/usr/sbin:/usr/bin:/usr/libexec:/usr/lib"
 PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
 
-# no more use configurabled part below (hopefully)
+# no more user configurabled part below (hopefully)
 
 usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs|fetch|afs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime] [--distcheck] [--test-environment env] [--configure-flags flags]"
 
