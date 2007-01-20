@@ -1,5 +1,14 @@
-2007-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Test for NUL char in string in GENERAL STRING.
+
+	* der_get.c: Check for NUL characters in string and return
+	ASN1_BAD_CHARACTER error-code if we find them.
+
+	* asn1_err.et: Add BAD_CHARACTER error.
+	
+2007-01-16  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* Makefile.am: Add id-at-streetAddress.
 
 	* rfc2459.asn1: Add id-at-streetAddress.
