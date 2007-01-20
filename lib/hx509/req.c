@@ -191,7 +191,7 @@ _hx509_request_to_pkcs10(hx509_context context,
 
     ret = _hx509_create_signature(context,
 				  signer,
-				  hx509_signature_rsa_with_sha1(),
+				  hx509_signature_rsa_with_sha256(),
 				  &data,
 				  &r.signatureAlgorithm,
 				  &os);

@@ -1355,17 +1355,17 @@ static const heim_octet_string null_entry_oid = { 2, rk_UNCONST("\x05\x00") };
 
 static const unsigned sha512_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 3 };
 const AlgorithmIdentifier _hx509_signature_sha512_data = { 
-    { 8, rk_UNCONST(sha512_oid_tree) }, rk_UNCONST(&null_entry_oid)
+    { 9, rk_UNCONST(sha512_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha384_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2 };
 const AlgorithmIdentifier _hx509_signature_sha384_data = { 
-    { 8, rk_UNCONST(sha384_oid_tree) }, rk_UNCONST(&null_entry_oid)
+    { 9, rk_UNCONST(sha384_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha256_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2, 1 };
 const AlgorithmIdentifier _hx509_signature_sha256_data = { 
-    { 8, rk_UNCONST(sha256_oid_tree) }, rk_UNCONST(&null_entry_oid)
+    { 9, rk_UNCONST(sha256_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
@@ -2406,11 +2406,11 @@ hx509_crypto_select(const hx509_context context,
 
     if (type == HX509_SELECT_DIGEST) {
 	bits = SIG_DIGEST;
-	def = hx509_signature_sha1();
+	def = hx509_signature_sha256();
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
-	def = hx509_signature_rsa_with_sha1();
+	def = hx509_signature_rsa_with_sha256();
     } else {
 	hx509_set_error_string(context, 0, EINVAL, 
 			       "Unknown type %d of selection", type);

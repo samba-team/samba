@@ -1094,7 +1094,7 @@ hx509_cms_create_signed_1(hx509_context context,
 			
 	ret = _hx509_create_signature(context,
 				      _hx509_cert_private_key(cert),
-				      hx509_signature_rsa_with_sha1(),
+				      hx509_signature_rsa_with_sha256(),
 				      &os,
 				      &signer_info->signatureAlgorithm,
 				      &signer_info->signature);

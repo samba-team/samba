@@ -800,7 +800,7 @@ hx509_ocsp_request(hx509_context context,
     memset(&req, 0, sizeof(req));
 
     if (digest == NULL)
-	digest = hx509_signature_sha1();
+	digest = hx509_signature_sha256();
 
     ctx.req = &req.tbsRequest;
     ctx.certs = pool;
