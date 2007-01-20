@@ -38,7 +38,12 @@
 #ifndef _HEIM_RANDI_H
 #define _HEIM_RANDI_H 1
 
+int	_hc_rand_unix_status(void);
 int	_hc_rand_unix_bytes(unsigned char *, int);
 int 	_hc_rand_egd_bytes(const char *, unsigned char *, int);
+
+extern const RAND_METHOD hc_rand_fortuna_method;
+extern const RAND_METHOD hc_rand_unix_method;
+extern const RAND_METHOD hc_rand_egd_method;
 
 #endif /* _HEIM_RANDI_H */
