@@ -203,8 +203,9 @@ build_certificate(krb5_context context,
 
     {
 	SubjectPublicKeyInfo spki;
-	memset(&spki, 0, sizeof(spki));
 	heim_any any;
+
+	memset(&spki, 0, sizeof(spki));
 
 	spki.subjectPublicKey.data = key->data;
 	spki.subjectPublicKey.length = key->length * 8;
