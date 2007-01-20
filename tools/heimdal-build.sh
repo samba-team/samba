@@ -46,6 +46,7 @@ hversion=
 cvsroot=
 cvsflags=
 cvsbranch=
+branch=
 autotools=no
 distcheck=no
 
@@ -89,7 +90,8 @@ do
 		    exit 1
 		fi
 		cvsbranch="-r $2"
-		hversion="$2"
+		branch="-$2"
+		hversion="$2-${date}"
 		shift 2
 		;;
 	--release)
@@ -226,7 +228,7 @@ fi
 
 if [ X"$autotools" = Xyes ]; then
 	echo "Autotooling (via fix-export)"
-	env DATEDVERSION="cvs-${date}" ${hversion}/fix-export ${hversion}
+	env DATEDVERSION="cvs${branch}-${date}" ${hversion}/fix-export ${hversion}
 fi
 
 if [ X"$ccachedir" != X ]; then
