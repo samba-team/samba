@@ -54,10 +54,13 @@ RCSID("$Id$");
 static int version_flag;
 static int help_flag;
 static int len = 1024 * 1024;
+static char *rand_method;
 
 static struct getargs args[] = {
     { "length",	0,	arg_integer,	&len,
       "length", NULL },
+    { "method",	0,	arg_string,	&rand_method,
+      "method", NULL },
     { "version",	0,	arg_flag,	&version_flag,
       "print version", NULL },
     { "help",		0,	arg_flag,	&help_flag,
@@ -109,10 +112,17 @@ main(int argc, char **argv)
 
     buffer = emalloc(len);
 
-    RAND_set_rand_method(RAND_fortuna_method());
-
-    RAND_seed(buffer, len);
-
+    if (rand_method) {
+	if (strcasecmp(rand_method, "fortuna") == 0)
+	    RAND_set_rand_method(RAND_fortuna_method());
+	else if (strcasecmp(rand_method, "unix") == 0)
+	    RAND_set_rand_method(RAND_unix_method());
+	else if (strcasecmp(rand_method, "egd") == 0)
+	    RAND_set_rand_method(RAND_egd_method());
+	else
+	    errx(1, "unknown method %s", rand_method);
+    }
+	    
     if (RAND_status() != 1)
 	errx(1, "random not ready yet");
 
@@ -122,6 +132,11 @@ main(int argc, char **argv)
     rk_dumpdata(argv[0], buffer, len);
 
     free(buffer);
+
+    if (RAND_write_file("test.file") != 1)
+	errx(1, "RAND_write_file");
+    if (RAND_load_file("test.file", 1024) != 1)
+	errx(1, "RAND_load_file");
 
     return 0;
 }
