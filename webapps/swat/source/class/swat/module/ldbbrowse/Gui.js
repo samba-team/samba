@@ -73,31 +73,31 @@ qx.Proto.buildGui = function(module)
                });
 
   // Create each of the tabs
-  var tabView_Search =
-  new qx.ui.pageview.tabview.Button("Search");
   var tabView_Browse =
   new qx.ui.pageview.tabview.Button("Browse");
+  var tabView_Search =
+  new qx.ui.pageview.tabview.Button("Search");
 
   // Specify the initially-selected tab
-  tabView_Search.setChecked(true);
+  tabView_Browse.setChecked(true);
 
   // Add each of the tabs to the tabview
-  tabView_.getBar().add(tabView_Search, tabView_Browse);
+  tabView_.getBar().add(tabView_Browse, tabView_Search);
 
   // Create the pages to display when each tab is selected
-  var tabViewPage_Search =
-  new qx.ui.pageview.tabview.Page(tabView_Search);
   var tabViewPage_Browse =
   new qx.ui.pageview.tabview.Page(tabView_Browse);
-
-  // Build the search page
-  this._buildPageSearch(module, tabViewPage_Search);
+  var tabViewPage_Search =
+  new qx.ui.pageview.tabview.Page(tabView_Search);
 
   // Build the browse page
   this._buildPageBrowse(module, tabViewPage_Browse);
 
+  // Build the search page
+  this._buildPageSearch(module, tabViewPage_Search);
+
   // Add the pages to the tabview
-  tabView_.getPane().add(tabViewPage_Search, tabViewPage_Browse);
+  tabView_.getPane().add(tabViewPage_Browse, tabViewPage_Search);
 
   // Add the tabview to our canvas
   module.canvas.add(tabView_);
@@ -132,8 +132,8 @@ qx.Proto.displayData = function(module, rpcRequest)
   // Dispatch to the appropriate handler, depending on the request type
   switch(requestType)
   {
-  case "find":
-    this._displayFindResults(module, rpcRequest);
+  case "search":
+    this._displaySearchResults(module, rpcRequest);
     break;
     
   case "tree_open":
@@ -199,147 +199,105 @@ qx.Proto._buildPageSearch = function(module, page)
 
   // We need a vertical box layout for the various input fields
   var vlayout = new qx.ui.layout.VerticalBoxLayout();
-  vlayout.setWidth("100%");
-
-  // We need a horizontal box layout for the search combo box and its label
-  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
-  hlayout.setWidth("100%");
-  hlayout.setHeight(25);
+  vlayout.set({
+               overflow: "hidden",
+               height: 120,
+               top: 10,
+               left: 0,
+               right: 0,
+               bottom: 10
+           });
 
   // Create a label for the list of required attributes
-  var label = new qx.ui.basic.Atom("Search Expression:");
-  label.setWidth(100);
-  label.setHorizontalChildrenAlign("right");
+  var label = new qx.ui.basic.Atom("Search Expression");
+  label.setHorizontalChildrenAlign("left");
 
   // Add the label to the horizontal layout
-  hlayout.add(label);
+  vlayout.add(label);
 
   // Create a combo box for entry of the search expression
-  var search = new qx.ui.form.ComboBox();
-  search.getField().setWidth("100%");
-  search.setEditable(true);
-  fsm.addObject("searchExpr", search);
+  var filter = new qx.ui.form.TextField();
+  filter.set({ width:300 });
+  fsm.addObject("searchExpr", filter);
     
   // Add the combo box to the horizontal layout
-  hlayout.add(search);
-
-  // Add the horizontal layout to the vertical layout
-  vlayout.add(hlayout);
-
-  // We need a horizontal box layout for the base combo box and its label
-  hlayout = new qx.ui.layout.HorizontalBoxLayout();
-  hlayout.setWidth("100%");
-  hlayout.setHeight(25);
+  vlayout.add(filter);
 
   // Create a label for the list of required attributes
-  var label = new qx.ui.basic.Atom("Base:");
-  label.setWidth(100);
-  label.setHorizontalChildrenAlign("right");
+  var label = new qx.ui.basic.Atom("Base");
+  label.setHorizontalChildrenAlign("left");
 
   // Add the label to the horizontal layout
-  hlayout.add(label);
+  vlayout.add(label);
 
   // Create a combo box for entry of the search expression
-  var base = new qx.ui.form.ComboBox();
-  base.getField().setWidth("100%");
-  base.setEditable(true);
+  var base = new qx.ui.form.TextField();
+  base.set({ width:300 });
   fsm.addObject("baseDN", base);
     
   // Add the combo box to the horizontal layout
-  hlayout.add(base);
-
-  // Add the horizontal layout to the vertical layout
-  vlayout.add(hlayout);
-
-  // We need a horizontal box layout for scope radio buttons
-  hlayout = new qx.ui.layout.HorizontalBoxLayout();
-  hlayout.setWidth("100%");
-  hlayout.setHeight(25);
+  vlayout.add(base);
 
   // Create a label for the list of required attributes
-  var label = new qx.ui.basic.Atom("Scope:");
+  var label = new qx.ui.basic.Atom("Scope");
   label.setWidth(100);
-  label.setHorizontalChildrenAlign("right");
+  label.setHorizontalChildrenAlign("left");
 
-  // Add the label to the horizontal layout
-  hlayout.add(label);
+  // Add the label to the scope vertical layout
+  vlayout.add(label);
 
-  // Create a radio button for each scope
-  var rbDefault = new qx.ui.form.RadioButton("Default",   "default");
-  var rbBase    = new qx.ui.form.RadioButton("Base",      "base");
-  var rbOne     = new qx.ui.form.RadioButton("One Level", "one");
-  var rbSubtree = new qx.ui.form.RadioButton("Subtree",   "subtree");
+  // Use a horizontal box layout to keep the search button aligned
+  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+  hlayout.setWidth(300);
+  hlayout.setHeight(30);
 
-  // Use a default of "Default"
-  rbBase.setChecked(true);
+  var cbScope = new qx.ui.form.ComboBoxEx();
+  cbScope.setSelection([ ["subtree", "Subtree"], ["one", "One Level"], ["base", "Base"]]);
+  cbScope.setSelectedIndex(0);
 
-  // Add the radio buttons to the horizontal layout
-  hlayout.add(rbDefault, rbBase, rbOne, rbSubtree);
+  fsm.addObject("scope", cbScope);
 
-  // Group the radio buttons so only one in the group may be selected
-  var scope = new qx.manager.selection.RadioManager("scope",
-                                                    [
-                                                        rbDefault,
-                                                        rbBase,
-                                                        rbOne,
-                                                        rbSubtree
-                                                    ]);
-  fsm.addObject("scope", scope);
-    
-  // Right-justify the 'Find' button
-  var spacer = new qx.ui.basic.HorizontalSpacer;
-  hlayout.add(spacer);
+  hlayout.add(cbScope);
 
-  // Create the 'Find' button
-  var find = new qx.ui.form.Button('Find');
-  find.setWidth(100);
-  find.addEventListener("execute", fsm.eventListener, fsm);
+  // Add a sapcer
+  hlayout.add(new qx.ui.basic.HorizontalSpacer());
 
-  // We'll be receiving events on the find object, so save its friendly name
-  fsm.addObject("find", find, "swat.main.fsmUtils.disable_during_rpc");
+  // Create the 'Search' button
+  var search = new qx.ui.form.Button('Search');
+  search.setWidth(100);
+  search.addEventListener("execute", fsm.eventListener, fsm);
 
-  hlayout.add(find);
+  // We'll be receiving events on the search object, so save its friendly name
+  fsm.addObject("search", search, "swat.main.fsmUtils.disable_during_rpc");
 
-  // Add the Find button line to the vertical layout
+  // Add the search button to the vertical layout
+  hlayout.add(search);
+
   vlayout.add(hlayout);
 
-  // Add the horizontal box layout to the page
+  // Add the vlayout to the page
   page.add(vlayout);
 
-  // Create a simple table model
-  var tableModel = new qx.ui.table.SimpleTableModel();
-  tableModel.setColumns([ "Distinguished Name", "Attribute", "Value" ]);
+  var ldifView = new swat.module.ldbbrowse.ldifViewer();
+  ldifView.set({
+               top: 130,
+               left: 10,
+               right: 10,
+               bottom: 10
+           });
 
-  tableModel.setColumnEditable(0, false);
-  tableModel.setColumnEditable(1, false);
-  tableModel.setColumnEditable(2, false);
-  fsm.addObject("tableModel:search", tableModel);
+  fsm.addObject("ldifView", ldifView);
 
-  // Create a table
-  var table = new qx.ui.table.Table(tableModel);
-  table.set({
-                top: 80,
-                left: 0,
-                right: 0,
-                bottom: 10,
-                statusBarVisible: false,
-                columnVisibilityButtonVisible: false
-            });
-  table.setColumnWidth(0, 300);
-  table.setColumnWidth(1, 180);
-  table.setColumnWidth(2, 240);
-  table.setMetaColumnCounts([ 1, -1 ]);// h-scroll attribute and value together
-  fsm.addObject("table:search", table);
-
-  page.add(table);
+  // Add the output area to the page
+  page.add(ldifView);
 };
 
 qx.Proto._buildPageBrowse = function(module, page)
 {
   var fsm = module.fsm;
 
-  // Create a vertical splitpane for tree (top) and table (bottom)
-  var splitpane = new qx.ui.splitpane.VerticalSplitPane("1*", "2*");
+  // Create a horizontal splitpane for tree (left) and table (right)
+  var splitpane = new qx.ui.splitpane.HorizontalSplitPane("1*", "2*");
   splitpane.setEdge(0);
 
   // Create a tree row structure for the tree root
@@ -376,7 +334,7 @@ qx.Proto._buildPageBrowse = function(module, page)
   fsm.addObject("tree:manager", tree.getManager());
 
   // Add the tree to the page.
-  splitpane.addTop(tree);
+  splitpane.addLeft(tree);
 
   // Create a simple table model
   var tableModel = new qx.ui.table.SimpleTableModel();
@@ -396,26 +354,27 @@ qx.Proto._buildPageBrowse = function(module, page)
                 statusBarVisible: false,
                 columnVisibilityButtonVisible: false
             });
-  table.setColumnWidth(0, 200);
-  table.setColumnWidth(1, 440);
+  table.setColumnWidth(0, 180);
+  table.setColumnWidth(1, 320);
   table.setMetaColumnCounts([1, -1]);
   fsm.addObject("table:browse", table);
 
   // Add the table to the bottom portion of the splitpane
-  splitpane.addBottom(table);
+  splitpane.addRight(table);
 
   // Add the first splitpane to the page
   page.add(splitpane);
 };
 
 
-qx.Proto._displayFindResults = function(module, rpcRequest)
+qx.Proto._displaySearchResults = function(module, rpcRequest)
 {
-  var rowData = [];
   var fsm = module.fsm;
 
-  // Track the maximum length of the attribute values
-  var maxLen = 0;
+  // Obtain the table and tableModel objects
+  var ldifView = fsm.getObject("ldifView");
+
+  ldifView.reset();
 
   // Obtain the result object
   result = rpcRequest.getUserData("result").data;
@@ -425,74 +384,22 @@ qx.Proto._displayFindResults = function(module, rpcRequest)
     len = result["length"];
     for (var i = 0; i < result["length"]; i++)
     {
-      var o = result[i];
-      if (typeof(o) != "object")
+      var obj = result[i];
+      if (typeof(obj) != "object")
       {
         alert("Found unexpected result, type " +
-              typeof(o) +
+              typeof(obj) +
               ", " +
-              o +
+              obj +
               "\n");
         continue;
       }
-      for (var field in o)
-      {
-        // skip dn and distinguishedName fields;
-        // they're shown in each row anyway.
-        if (field == "dn" || field == "distinguishedName")
-        {
-          continue;
-        }
-
-        // If it's multi-valued (type is an array)...
-        if (typeof(o[field]) == "object")
-        {
-          // ... then add each value with same name
-          var a = o[field];
-          for (var i = 0; i < a.length; i++)
-          {
-            if (a[i].length > maxLen)
-            {
-              maxLen = a[i].length;
-            }
-            rowData.push( [
-                            o["dn"],
-                            field,
-                            a[i]
-                            ] );
-          }
-        }
-        else    // single-valued
-        {
-          // ... add its name and value to the table
-          // dataset
-          if (o[field].length > maxLen)
-          {
-            maxLen = o[field].length;
-          }
-          rowData.push( [
-                          o["dn"],
-                          field,
-                          o[field]
-                          ] );
-        }
-      }
-
-      // Obtain the table and tableModel objects
-      var table = fsm.getObject("table:search");
-      var tableModel = fsm.getObject("tableModel:search");
-
-      // Adjust the width of the value column based on
-      // maxLen
-      table.setColumnWidth(2, maxLen * 7);
-
-      // Tell the table to use the new data
-      tableModel.setData(rowData);
+      ldifView.appendObject(obj);
     }
   }
   else
   {
-    alert("No rows returned.");
+    alert("No results.");
   }
 };
 
@@ -532,6 +439,7 @@ qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
     }
     else
     {
+      //FIXME: must check for escapes, as ',' is also a valid value, not only a separator
       name = child["dn"].split(",")[0];
     }
 
