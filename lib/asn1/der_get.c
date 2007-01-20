@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -139,6 +139,9 @@ der_get_general_string (const unsigned char *p, size_t len,
 
     if (len > len + 1)
 	return ASN1_BAD_LENGTH;
+
+    if (memchr(p, 0, len) != NULL)
+	return ASN1_BAD_CHARACTER;
 
     s = malloc (len + 1);
     if (s == NULL)
