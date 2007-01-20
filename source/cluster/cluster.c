@@ -66,3 +66,13 @@ const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
 	cluster_init();
 	return ops->cluster_id_string(ops, mem_ctx, id);
 }
+
+
+/*
+  open a temporary tdb in a cluster friendly manner
+*/
+struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, int flags)
+{
+	cluster_init();
+	return ops->cluster_tdb_tmp_open(ops, mem_ctx, dbname, flags);
+}

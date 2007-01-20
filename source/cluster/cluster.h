@@ -31,6 +31,7 @@
 /* prototypes */
 struct server_id cluster_id(uint32_t id);
 const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
+struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, int flags);
 void *cluster_private(void);
 
 #endif
