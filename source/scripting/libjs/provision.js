@@ -798,6 +798,7 @@ function provision_guess()
 					"operational",
 					"objectclass",
 					"rdn_name",
+					"show_deleted",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
 	subobj.DOMAINDN_MOD = "objectguid";
