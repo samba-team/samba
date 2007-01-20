@@ -18,4 +18,5 @@ error_code BAD_LENGTH,		"ASN.1 length doesn't match expected value"
 error_code BAD_FORMAT,		"ASN.1 badly-formatted encoding"
 error_code PARSE_ERROR,		"ASN.1 parse error"
 error_code EXTRA_DATA,		"ASN.1 extra data past end of end structure"
+error_code BAD_CHARACTER,	"ASN.1 invalid character in string"
 end
