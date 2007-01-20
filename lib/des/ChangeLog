@@ -1,5 +1,9 @@
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_rand.c: Allow select rand method.
+
+	* rand-unix.c: expose _hc_rand_unix_status
+	
 	* randi.h: expose _hc_rand_unix_status and the internal
 	RAND_METHODs
 
