@@ -1,4 +1,16 @@
+2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kx509.c: Don't use C99 syntax.
+	
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* configure.in: its LIBADD_roken (and shouldn't really exist, our
+	libtool usage it broken)
+
+	* configure.in: Add an extra variable for roken, LIBADD, that
+	should be used for library depencies.
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto): zero out receive buffer.
 
 	* lib/krb5/krb5_init_context.3: fix mdoc errors
 
