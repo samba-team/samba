@@ -29,7 +29,7 @@ qx.Proto.buildFsm = function(module)
    *   - if returning from RPC, display the result
    *
    * Transition on:
-   *   "execute" on find button
+   *   "execute" on search button
    *   "treeopenwhileempty" on tree
    *   "changeselection" on tree
    */
@@ -78,11 +78,11 @@ qx.Proto.buildFsm = function(module)
 
       "events" :
         {
-          // If the find button is activated, issue a find request
+          // If the search button is activated, issue a seacrh request
           "execute" :
           {
-            "find" :
-              "Transition_Idle_to_AwaitRpcResult_via_find"
+            "search" :
+              "Transition_Idle_to_AwaitRpcResult_via_search"
           },
 
           // If a previously unexpanded tree node is expanded, issue a request
@@ -112,13 +112,13 @@ qx.Proto.buildFsm = function(module)
   /*
    * Transition: Idle to AwaitRpcResult
    *
-   * Cause: "execute" on find button
+   * Cause: "execute" on search button
    *
    * Action:
    *  Issue a search request
    */
   var trans = new qx.util.fsm.Transition(
-    "Transition_Idle_to_AwaitRpcResult_via_find",
+    "Transition_Idle_to_AwaitRpcResult_via_search",
     {
       "nextState" :
         "State_AwaitRpcResult",
@@ -139,7 +139,7 @@ qx.Proto.buildFsm = function(module)
           var baseDN = fsm.getObject("baseDN").getValue();
 
           // Retrieve the selected scope
-          var scope = fsm.getObject("scope").getSelected().getValue();
+          var scope = fsm.getObject("scope").getValue();
 
           // We want all attributes
           var attributes = [ "*" ];
@@ -158,7 +158,7 @@ qx.Proto.buildFsm = function(module)
 
           // When we get the result, we'll need to know what type of request
           // we made.
-          request.setUserData("requestType", "find");
+          request.setUserData("requestType", "search");
         }
     });
   state.addTransition(trans);
