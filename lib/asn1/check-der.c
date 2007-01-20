@@ -545,7 +545,8 @@ static int
 check_fail_bmp_string(void)
 {
     struct test_case tests[] = {
-	{NULL, 1, "\x00", "odd length bmpstring"}
+	{NULL, 1, "\x00", "odd (1) length bmpstring"},
+	{NULL, 3, "\x00\x00\x00", "odd (3) length bmpstring"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
