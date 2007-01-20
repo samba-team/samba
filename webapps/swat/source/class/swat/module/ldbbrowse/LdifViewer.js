@@ -7,9 +7,8 @@
  */
 
 /**
- * Swat LDB Browser class graphical user interface
+ * Ldif Viewer Class
  */
-
 qx.OO.defineClass("swat.module.ldbbrowse.LdifViewer", qx.ui.embed.HtmlEmbed,
 function()
 {
@@ -26,25 +25,35 @@ function()
 
 qx.OO.addProperty({ name : "innerText", type : "string" });
 
-qx.Class.empty = {
-  html : "",
-  innerText : ""
+qx.Proto._update = function() {
+  this.setHtml("<pre>" + this.innerText + "</pre>");
 }
 
+/**
+ * Reset the ldif contents and return to an empty page
+ */
 qx.Proto.reset = function() {
   this.innerText = "";
   this.setHtml("");
 }
 
-qx.Proto._update = function() {
-  this.setHtml("<pre>" + this.innerText + "</pre>");
-}
-
+/**
+ * Add a comment to the ldif output
+ *
+ * @param aText {String}
+ *   A string to show up as an ldif Comment
+ */
 qx.Proto.appendComment = function(aText) {
   this.innerText = this.innerText + "# " + a Text + "\n\n";
   this._update();
 }
 
+/**
+ * Append an object to be shown
+ *
+ * @param o {Object}
+ *   An Object returned by an ldb search
+ */
 qx.Proto.appendObject = function(o) {
 
   // First print the Object name as comment
