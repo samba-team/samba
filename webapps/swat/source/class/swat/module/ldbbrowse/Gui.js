@@ -278,18 +278,18 @@ qx.Proto._buildPageSearch = function(module, page)
   // Add the vlayout to the page
   page.add(vlayout);
 
-  var ldifView = new swat.module.ldbbrowse.ldifViewer();
-  ldifView.set({
+  var ldifview = new swat.module.ldbbrowse.LdifViewer();
+  ldifview.set({
                top: 130,
                left: 10,
                right: 10,
                bottom: 10
            });
 
-  fsm.addObject("ldifView", ldifView);
+  fsm.addObject("LdifView", ldifview);
 
   // Add the output area to the page
-  page.add(ldifView);
+  page.add(ldifview);
 };
 
 qx.Proto._buildPageBrowse = function(module, page)
@@ -372,9 +372,9 @@ qx.Proto._displaySearchResults = function(module, rpcRequest)
   var fsm = module.fsm;
 
   // Obtain the table and tableModel objects
-  var ldifView = fsm.getObject("ldifView");
+  var ldifview = fsm.getObject("LdifView");
 
-  ldifView.reset();
+  ldifview.reset();
 
   // Obtain the result object
   result = rpcRequest.getUserData("result").data;
@@ -394,7 +394,7 @@ qx.Proto._displaySearchResults = function(module, rpcRequest)
               "\n");
         continue;
       }
-      ldifView.appendObject(obj);
+      ldifview.appendObject(obj);
     }
   }
   else

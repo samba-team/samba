@@ -10,7 +10,7 @@
  * Swat LDB Browser class graphical user interface
  */
 
-qx.OO.defineClass("swat.module.ldbbrowse.ldifViewer", qx.ui.embed.HtmlEmbed,
+qx.OO.defineClass("swat.module.ldbbrowse.LdifViewer", qx.ui.embed.HtmlEmbed,
 function()
 {
   qx.ui.embed.HtmlEmbed.call(this, "");
@@ -24,11 +24,9 @@ function()
   this.innerText = "";
 });
 
-//qx.OO.changeProperty({ name : "appearance", type : "string", defaultValue : "???" });
-
 qx.OO.addProperty({ name : "innerText", type : "string" });
 
-swat.module.ldbbrowse.ldifViewer.empty = {
+qx.Class.empty = {
   html : "",
   innerText : ""
 }

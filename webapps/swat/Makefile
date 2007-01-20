@@ -70,6 +70,12 @@ build:	info-build \
 	copy-build-files \
 	fix-build-rights
 
+swat-only: \
+	info-build \
+	generate-script-build \
+	copy-build-files \
+	fix-build-rights
+
 api: generate-api-build generate-api-data
 	@echo
 	@echo "  CREATE COPY OF HTML FILE"
