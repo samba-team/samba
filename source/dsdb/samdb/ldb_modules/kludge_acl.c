@@ -297,6 +297,7 @@ static const struct ldb_module_ops kludge_acl_ops = {
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
 	.rename            = kludge_acl_change,
+	.extended          = kludge_acl_change,
 	.init_context	   = kludge_acl_init
 };
 
