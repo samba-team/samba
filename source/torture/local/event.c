@@ -25,63 +25,50 @@
 #include "system/filesys.h"
 #include "torture/torture.h"
 
-static int write_fd, read_fd;
-static struct fd_event *fde;
-static int te_count;
 static int fde_count;
-static struct torture_context *test;
 
 static void fde_handler(struct event_context *ev_ctx, struct fd_event *f, 
 			uint16_t flags, void *private)
 {
 	int *fd = private;
-
-	torture_comment(test, "event[%d] fd[%d] events[0x%08X]%s%s\n", 
-						fde_count, *fd, flags, 
-					(flags & EVENT_FD_READ)?" EVENT_FD_READ":"", 
-					(flags & EVENT_FD_WRITE)?" EVENT_FD_WRITE":"");
-
-	if (fde_count > 5) {
-		torture_result(test, TORTURE_FAIL, 
-					   __location__": got more than fde 5 events - bug!");
-		talloc_free(fde);
-		fde = NULL;
-		return;
-	}
-
-	event_set_fd_flags(fde, 0);
+	char c;
+#ifdef SA_SIGINFO
+	kill(getpid(), SIGUSR1);
+#endif
+	kill(getpid(), SIGALRM);
+	read(fd[0], &c, 1);
+	write(fd[1], &c, 1);
 	fde_count++;
 }
 
-static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
-			  struct timeval tval, void *private)
+static void finished_handler(struct event_context *ev_ctx, struct timed_event *te,
+			     struct timeval tval, void *private)
 {
-	torture_comment(test, "timed_handler called[%d]\n", te_count);
-	if (te_count > 2) {
-		close(write_fd);
-		write_fd = -1;
-	}
-	if (te_count > 5) {
-		torture_comment(test, "remove fd event!\n");
-		talloc_free(fde);
-		fde = NULL;
-		return;
-	}
-	te_count++;
-	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), timed_handler, private);
+	int *finished = private;
+	(*finished) = 1;
 }
 
-static bool test_event_context(struct torture_context *torture_ctx,
-							   const void *test_data)
+static void count_handler(struct event_context *ev_ctx, struct signal_event *te,
+			  int signum, int count, void *info, void *private)
+{
+	int *countp = private;
+	(*countp) += count;
+}
+
+static bool test_event_context(struct torture_context *test,
+			       const void *test_data)
 {
 	struct event_context *ev_ctx;
 	int fd[2] = { -1, -1 };
 	const char *backend = (const char *)test_data;
-	TALLOC_CTX *mem_ctx = torture_ctx;
+	int alarm_count=0, info_count=0;
+	struct fd_event *fde;
+	struct signal_event *se1, *se2, *se3;
+	int finished=0;
+	struct timeval t;
+	char c = 0;
 
-	test = torture_ctx;
-
-	ev_ctx = event_context_init_byname(mem_ctx, backend);
+	ev_ctx = event_context_init_byname(test, backend);
 	if (ev_ctx == NULL) {
 		torture_comment(test, "event backend '%s' not supported\n", backend);
 		return true;
@@ -90,29 +77,51 @@ static bool test_event_context(struct torture_context *torture_ctx,
 	torture_comment(test, "Testing event backend '%s'\n", backend);
 
 	/* reset globals */
-	write_fd = -1;
-	read_fd = -1;
-	fde = NULL;
-	te_count = 0;
 	fde_count = 0;
 
 	/* create a pipe */
 	pipe(fd);
-	read_fd = fd[0];
-	write_fd = fd[1];
 
-	fde = event_add_fd(ev_ctx, ev_ctx, read_fd, EVENT_FD_READ, 
-			   fde_handler, &read_fd);
+	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ, 
+			   fde_handler, fd);
 
-	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), 
-			timed_handler, fde);
+	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(2,0), 
+			finished_handler, &finished);
 
-	event_loop_wait(ev_ctx);
+	se1 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
+	se2 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
+#ifdef SA_SIGINFO
+	se3 = event_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
+#endif
 
-	close(read_fd);
-	close(write_fd);
-	
+	write(fd[1], &c, 1);
+
+	t = timeval_current();
+	while (!finished) {
+		event_loop_once(ev_ctx);
+	}
+
+	talloc_free(fde);
+	close(fd[0]);
+	close(fd[1]);
+
+	while (alarm_count < fde_count+1) {
+		event_loop_once(ev_ctx);
+	}
+
+	torture_comment(test, "Got %.2f pipe events/sec\n", fde_count/timeval_elapsed(&t));
+
+	talloc_free(se1);
+
+	torture_assert_int_equal(test, alarm_count, 1+fde_count, "alarm count mismatch");
+
+#ifdef SA_SIGINFO
+	talloc_free(se3);
+	torture_assert_int_equal(test, info_count, fde_count, "info count mismatch");
+#endif
+
 	talloc_free(ev_ctx);
+
 	return true;
 }
 

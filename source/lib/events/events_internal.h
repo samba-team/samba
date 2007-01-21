@@ -50,7 +50,7 @@ struct event_ops {
 	/* signal functions */
 	struct signal_event *(*add_signal)(struct event_context *ev, 
 					   TALLOC_CTX *mem_ctx,
-					   int signum,
+					   int signum, int sa_flags,
 					   event_signal_handler_t handler, 
 					   void *private_data);
 
@@ -89,6 +89,7 @@ struct signal_event {
 	event_signal_handler_t handler;
 	void *private_data;
 	int signum;
+	int sa_flags;
 };
 
 /* aio event is private to the aio backend */
@@ -122,6 +123,7 @@ struct timeval common_event_loop_delay(struct event_context *);
 struct signal_event *common_event_add_signal(struct event_context *ev, 
 					     TALLOC_CTX *mem_ctx,
 					     int signum,
+					     int sa_flags,
 					     event_signal_handler_t handler, 
 					     void *private_data);
 int common_event_check_signal(struct event_context *ev);
