@@ -229,7 +229,18 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
+	if (epoll_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(epoll_ev->ev)) {
+		return 0;
+	}
+
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
+
+	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
+		if (common_event_check_signal(epoll_ev->ev)) {
+			return 0;
+		}
+	}
 
 	if (ret == -1 && errno != EINTR) {
 		epoll_fallback_to_select(std_ev, "epoll_wait() failed");
@@ -434,7 +445,18 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		}
 	}
 
+	if (std_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(std_ev->ev)) {
+		return 0;
+	}
+
 	selrtn = select(std_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+
+	if (selrtn == -1 && errno == EINTR && 
+	    std_ev->ev->num_signal_handlers) {
+		common_event_check_signal(std_ev->ev);
+		return 0;
+	}
 
 	if (selrtn == -1 && errno == EBADF) {
 		/* the socket is dead! this should never
@@ -520,6 +542,7 @@ static const struct event_ops std_event_ops = {
 	.get_fd_flags	= std_event_get_fd_flags,
 	.set_fd_flags	= std_event_set_fd_flags,
 	.add_timed	= common_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= std_event_loop_once,
 	.loop_wait	= std_event_loop_wait,
 };

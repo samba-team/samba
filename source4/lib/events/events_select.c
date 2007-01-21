@@ -197,7 +197,18 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		}
 	}
 
+	if (select_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(select_ev->ev)) {
+		return 0;
+	}
+
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+
+	if (selrtn == -1 && errno == EINTR && 
+	    select_ev->ev->num_signal_handlers) {
+		common_event_check_signal(select_ev->ev);
+		return 0;
+	}
 
 	if (selrtn == -1 && errno == EBADF) {
 		/* the socket is dead! this should never
@@ -279,6 +290,7 @@ static const struct event_ops select_event_ops = {
 	.get_fd_flags	= select_event_get_fd_flags,
 	.set_fd_flags	= select_event_set_fd_flags,
 	.add_timed	= common_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= select_event_loop_once,
 	.loop_wait	= select_event_loop_wait,
 };
