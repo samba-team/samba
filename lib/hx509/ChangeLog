@@ -1,6 +1,6 @@
 2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* switch to sha256 as default digest for signinging
+	* switch to sha256 as default digest for signing
 
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
