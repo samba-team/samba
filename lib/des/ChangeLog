@@ -1,5 +1,7 @@
 2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: add basic random tests
+
 	* rand-egd.c: SGI cc doesn' like return void_returning_function();
 	in a void returning function.
 	
