@@ -249,6 +249,9 @@ int common_event_check_signal(struct event_context *ev)
 					sigaddset(&set, i);
 					sigprocmask(SIG_UNBLOCK, &set, NULL);
 				}
+				if (se->sa_flags & SA_RESETHAND) {
+					talloc_free(se);
+				}
 				continue;
 			}
 #endif
