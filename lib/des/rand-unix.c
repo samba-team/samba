@@ -86,8 +86,8 @@ unix_seed(const void *indata, int size)
 
 }
 
-int 
-_hc_rand_unix_bytes(unsigned char *outdata, int size)
+static int 
+unix_bytes(unsigned char *outdata, int size)
 {
     ssize_t count;
     int fd;
@@ -129,11 +129,11 @@ unix_add(const void *indata, int size, double entropi)
 static int
 unix_pseudorand(unsigned char *outdata, int size)
 {
-    return _hc_rand_unix_bytes(outdata, size);
+    return unix_bytes(outdata, size);
 }
 
-int
-_hc_rand_unix_status(void)
+static int
+unix_status(void)
 {
     int fd;
 
@@ -147,11 +147,11 @@ _hc_rand_unix_status(void)
 
 const RAND_METHOD hc_rand_unix_method = {
     unix_seed,
-    _hc_rand_unix_bytes,
+    unix_bytes,
     unix_cleanup,
     unix_add,
     unix_pseudorand,
-    _hc_rand_unix_status
+    unix_status
 };
 
 const RAND_METHOD *
