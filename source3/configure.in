@@ -2518,6 +2518,19 @@ if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY,1,[Whether kernel notifies changes])
 fi
 
+AC_CACHE_CHECK([for inotify support],samba_cv_HAVE_INOTIFY,[
+AC_CHECK_HEADERS(linux/inotify.h asm/unistd.h)
+AC_CHECK_FUNC(inotify_init)
+AC_HAVE_DECL(__NR_inotify_init, [#include <asm/unistd.h>])
+],
+samba_cv_HAVE_INOTIFY=yes,
+samba_cv_HAVE_INOTIFY=no,
+samba_cv_HAVE_INOTIFY=cross)
+
+if test x"$ac_cv_func_inotify_init" = x"yes" -a x"$ac_cv_header_linux_inotify_h" = x"yes"; then
+    AC_DEFINE(HAVE_INOTIFY,1,[Whether kernel has inotify support])
+fi
+
 #################################################
 # Check if FAM notifications are available. For FAM info, see
 #	http://oss.sgi.com/projects/fam/
