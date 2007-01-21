@@ -28,14 +28,17 @@ struct event_ops;
 struct fd_event;
 struct timed_event;
 struct aio_event;
+struct signal_event;
 
 /* event handler types */
 typedef void (*event_fd_handler_t)(struct event_context *, struct fd_event *, 
 				   uint16_t , void *);
 typedef void (*event_timed_handler_t)(struct event_context *, struct timed_event *, 
 				      struct timeval , void *);
+typedef void (*event_signal_handler_t)(struct event_context *, struct signal_event *, 
+				       int , int, void *);
 typedef void (*event_aio_handler_t)(struct event_context *, struct aio_event *, 
-				    int , void *);
+				    int, void *);
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
@@ -49,6 +52,11 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 				    struct timeval next_event, 
 				    event_timed_handler_t handler, 
 				    void *private);
+
+struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
+				      int signum,
+				      event_signal_handler_t handler, 
+				      void *private);
 
 struct iocb;
 struct aio_event *event_add_aio(struct event_context *ev,

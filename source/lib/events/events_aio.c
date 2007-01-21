@@ -225,6 +225,11 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 
 	if (aio_ev->epoll_fd == -1) return -1;
 
+	if (aio_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(aio_ev->ev)) {
+		return 0;
+	}
+
 	if (tvalp) {
 		timeout.tv_sec = tvalp->tv_sec;
 		timeout.tv_nsec = tvalp->tv_usec;
@@ -236,7 +241,11 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 
 	ret = io_getevents(aio_ev->ioctx, 1, 8,
 			   events, tvalp?&timeout:NULL);
+
 	if (ret == -EINTR) {
+		if (aio_ev->ev->num_signal_handlers) {
+			common_event_check_signal(aio_ev->ev);
+		}
 		return 0;
 	}
 
@@ -488,6 +497,7 @@ static const struct event_ops aio_event_ops = {
 	.get_fd_flags	= aio_event_get_fd_flags,
 	.set_fd_flags	= aio_event_set_fd_flags,
 	.add_timed	= common_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= aio_event_loop_once,
 	.loop_wait	= aio_event_loop_wait,
 };

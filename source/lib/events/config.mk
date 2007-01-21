@@ -31,7 +31,7 @@ INIT_FUNCTION = events_standard_init
 ##############################
 # Start SUBSYSTEM LIBEVENTS
 [SUBSYSTEM::LIBEVENTS]
-OBJ_FILES = events.o events_timed.o
+OBJ_FILES = events.o events_timed.o events_signal.o
 PUBLIC_DEPENDENCIES = LIBTALLOC
 # End SUBSYSTEM LIBEVENTS
 ##############################
