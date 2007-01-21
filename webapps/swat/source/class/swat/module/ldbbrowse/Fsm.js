@@ -377,8 +377,32 @@ qx.Proto.buildFsm = function(module)
     });
   state.addTransition(trans);
 
+  // Create the list of events that should be blocked while we're awaiting the
+  // results of another RPC request
+  blockedEvents =
+  {
+    // If a previously unexpanded tree node is expanded, issue a request
+    // to retrieve its contents.
+    "treeOpenWhileEmpty":
+    {
+      "tree" :
+        qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
+    },
+
+    // If the selection changes, issue a request to retrieve contents to
+    // populate the attribute/value table.
+    "changeSelection":
+    {
+      "tree:manager" : 
+        qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED,
+
+      "dbName":
+        qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
+    }
+  }
+
   // Add the AwaitRpcResult state and all of its transitions
-  this.addAwaitRpcResultState(module);
+  this.addAwaitRpcResultState(module, blockedEvents);
 };
 
 
