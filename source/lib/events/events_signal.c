@@ -47,13 +47,13 @@ struct sigcounter {
 */
 static struct {
 	struct signal_event *sig_handlers[NUM_SIGNALS];
-	struct sigaction oldact[NUM_SIGNALS];
+	struct sigaction *oldact[NUM_SIGNALS];
 	struct sigcounter signal_count[NUM_SIGNALS];
 	struct sigcounter got_signal;
 	int pipe_hack[2];
 #ifdef SA_SIGINFO
 	/* with SA_SIGINFO we get quite a lot of info per signal */
-	siginfo_t sig_info[NUM_SIGNALS][SA_INFO_QUEUE_COUNT];
+	siginfo_t *sig_info[NUM_SIGNALS];
 #endif
 } sig_state;
 
@@ -112,7 +112,14 @@ static int signal_event_destructor(struct signal_event *se)
 	DLIST_REMOVE(sig_state.sig_handlers[se->signum], se);
 	if (sig_state.sig_handlers[se->signum] == NULL) {
 		/* restore old handler, if any */
-		sigaction(se->signum, &sig_state.oldact[se->signum], NULL);
+		sigaction(se->signum, sig_state.oldact[se->signum], NULL);
+		sig_state.oldact[se->signum] = NULL;
+#ifdef SA_SIGINFO
+		if (se->sa_flags & SA_SIGINFO) {
+			talloc_free(sig_state.sig_info[se->signum]);
+			sig_state.sig_info[se->signum] = NULL;
+		}
+#endif
 	}
 	return 0;
 }
@@ -164,9 +171,21 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 		if (sa_flags & SA_SIGINFO) {
 			act.sa_handler   = NULL;
 			act.sa_sigaction = signal_handler_info;
+			if (sig_state.sig_info[signum] == NULL) {
+				sig_state.sig_info[signum] = talloc_array(ev, siginfo_t, SA_INFO_QUEUE_COUNT);
+				if (sig_state.sig_info[signum] == NULL) {
+					talloc_free(se);
+					return NULL;
+				}
+			}
 		}
 #endif
-		if (sigaction(signum, &act, &sig_state.oldact[signum]) == -1) {
+		sig_state.oldact[signum] = talloc(ev, struct sigaction);
+		if (sig_state.oldact[signum] == NULL) {
+			talloc_free(se);
+			return NULL;			
+		}
+		if (sigaction(signum, &act, sig_state.oldact[signum]) == -1) {
 			talloc_free(se);
 			return NULL;
 		}
