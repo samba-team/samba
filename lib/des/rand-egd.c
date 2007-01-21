@@ -151,7 +151,7 @@ egd_seed(const void *indata, int size)
 }
 
 int 
-_hc_rand_egd_bytes(const char *path, unsigned char *outdata, int size)
+get_bytes(const char *path, unsigned char *outdata, int size)
 {
     size_t len;
     int fd, ret = 1;
@@ -181,7 +181,7 @@ _hc_rand_egd_bytes(const char *path, unsigned char *outdata, int size)
 static int 
 egd_bytes(unsigned char *outdata, int size)
 {
-    return _hc_rand_egd_bytes(NULL, outdata, size);
+    return get_bytes(NULL, outdata, size);
 }
 
 static void
@@ -198,7 +198,7 @@ egd_add(const void *indata, int size, double entropi)
 static int
 egd_pseudorand(unsigned char *outdata, int size)
 {
-    return _hc_rand_egd_bytes(NULL, outdata, size);
+    return get_bytes(NULL, outdata, size);
 }
 
 static int
@@ -225,4 +225,38 @@ const RAND_METHOD *
 RAND_egd_method(void)
 {
     return &hc_rand_egd_method;
+}
+
+
+int
+RAND_egd(const char *filename)
+{
+    return RAND_egd_bytes(filename, 128);
+}
+
+int
+RAND_egd_bytes(const char *filename, int size)
+{
+    void *data;
+    int ret;
+
+    if (size <= 0)
+	return 0;
+
+    data = malloc(size);
+    if (data == NULL)
+	return 0;
+
+    ret = get_bytes(filename, data, size);
+    if (ret != 1) {
+	free(data);
+	return ret;
+    }
+
+    RAND_seed(data, size);
+
+    memset(data, 0, sizeof(data));
+    free(data);
+
+    return 1;
 }
