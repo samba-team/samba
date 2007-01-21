@@ -54,6 +54,7 @@ static struct {
 #ifdef SA_SIGINFO
 	/* with SA_SIGINFO we get quite a lot of info per signal */
 	siginfo_t *sig_info[NUM_SIGNALS];
+	struct sigcounter sig_blocked[NUM_SIGNALS];
 #endif
 } sig_state;
 
@@ -99,6 +100,7 @@ static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 		sigemptyset(&set);
 		sigaddset(&set, signum);
 		sigprocmask(SIG_BLOCK, &set, NULL);
+		SIG_INCREMENT(sig_state.sig_blocked[signum]);
 	}
 }
 #endif
@@ -226,7 +228,8 @@ int common_event_check_signal(struct event_context *ev)
 	
 	for (i=0;i<NUM_SIGNALS+1;i++) {
 		struct signal_event *se, *next;
-		uint32_t count = sig_count(sig_state.signal_count[i]);
+		struct sigcounter counter = sig_state.signal_count[i];
+		uint32_t count = sig_count(counter);
 
 		if (count == 0) {
 			continue;
@@ -237,16 +240,21 @@ int common_event_check_signal(struct event_context *ev)
 			if (se->sa_flags & SA_SIGINFO) {
 				int j;
 				for (j=0;j<count;j++) {
+					/* note the use of the sig_info array as a
+					   ring buffer */
+					int ofs = (counter.count + j) % SA_INFO_QUEUE_COUNT;
 					se->handler(ev, se, i, 1, 
-						    (void*)&sig_state.sig_info[i][j], 
+						    (void*)&sig_state.sig_info[i][ofs], 
 						    se->private_data);
 				}
-				if (count == SA_INFO_QUEUE_COUNT) {
+				if (SIG_PENDING(sig_state.sig_blocked[i])) {
 					/* we'd filled the queue, unblock the
 					   signal now */
 					sigset_t set;
 					sigemptyset(&set);
 					sigaddset(&set, i);
+					SIG_SEEN(sig_state.sig_blocked[i], 
+						 sig_count(sig_state.sig_blocked[i]));
 					sigprocmask(SIG_UNBLOCK, &set, NULL);
 				}
 				if (se->sa_flags & SA_RESETHAND) {
