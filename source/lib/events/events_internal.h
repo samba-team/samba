@@ -47,6 +47,12 @@ struct event_ops {
 				     struct iocb *iocb, 
 				     event_aio_handler_t handler, 
 				     void *private_data);
+	/* signal functions */
+	struct signal_event *(*add_signal)(struct event_context *ev, 
+					   TALLOC_CTX *mem_ctx,
+					   int signum,
+					   event_signal_handler_t handler, 
+					   void *private_data);
 
 	/* loop functions */
 	int (*loop_once)(struct event_context *ev);
@@ -77,6 +83,14 @@ struct timed_event {
 	void *additional_data;
 };
 
+struct signal_event {
+	struct signal_event *prev, *next;
+	struct event_context *event_ctx;
+	event_signal_handler_t handler;
+	void *private_data;
+	int signum;
+};
+
 /* aio event is private to the aio backend */
 struct aio_event;
 
@@ -89,6 +103,12 @@ struct event_context {
 
 	/* this is private for the events_ops implementation */
 	void *additional_data;
+
+	/* number of signal event handlers */
+	int num_signal_handlers;
+
+	/* pipe hack used with signal handlers */
+	struct fd_event *pipe_fde;
 };
 
 
@@ -98,3 +118,11 @@ struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
 					   struct timeval, event_timed_handler_t, void *);
 void common_event_loop_timer(struct event_context *);
 struct timeval common_event_loop_delay(struct event_context *);
+
+struct signal_event *common_event_add_signal(struct event_context *ev, 
+					     TALLOC_CTX *mem_ctx,
+					     int signum,
+					     event_signal_handler_t handler, 
+					     void *private_data);
+int common_event_check_signal(struct event_context *ev);
+

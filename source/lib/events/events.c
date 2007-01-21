@@ -240,6 +240,18 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 }
 
 /*
+  add a signal event
+  return NULL on failure
+*/
+struct timed_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
+				     int signum,
+				     event_signal_handler_t handler, 
+				     void *private_data)
+{
+	return ev->ops->add_signal(ev, mem_ctx, signum, handler, private_data);
+}
+
+/*
   do a single event loop using the events defined in ev 
 */
 _PUBLIC_ int event_loop_once(struct event_context *ev)

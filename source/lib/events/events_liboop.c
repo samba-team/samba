@@ -274,6 +274,7 @@ static const struct event_ops event_oop_ops = {
 	.get_fd_flags	= oop_event_get_fd_flags,
 	.set_fd_flags	= oop_event_set_fd_flags,
 	.add_timed	= oop_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= oop_event_loop_once,
 	.loop_wait	= oop_event_loop_wait,
 };

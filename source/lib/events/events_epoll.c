@@ -214,7 +214,18 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
+	if (epoll_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(epoll_ev->ev)) {
+		return 0;
+	}
+
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
+
+	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
+		if (common_event_check_signal(epoll_ev->ev)) {
+			return 0;
+		}
+	}
 
 	if (ret == -1 && errno != EINTR) {
 		epoll_fallback_to_select(epoll_ev, "epoll_wait() failed");
@@ -397,6 +408,7 @@ static const struct event_ops epoll_event_ops = {
 	.get_fd_flags	= epoll_event_get_fd_flags,
 	.set_fd_flags	= epoll_event_set_fd_flags,
 	.add_timed	= common_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= epoll_event_loop_once,
 	.loop_wait	= epoll_event_loop_wait,
 };
