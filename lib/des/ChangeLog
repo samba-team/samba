@@ -1,3 +1,8 @@
+2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand-egd.c: SGI cc doesn' like return void_returning_function();
+	in a void returning function.
+	
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_rand.c: Allow select rand method.
