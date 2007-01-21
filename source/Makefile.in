@@ -405,7 +405,8 @@ PROFILES_OBJ = utils/profiles.o \
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
-NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o smbd/notify_fam.o
+NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o \
+	smbd/notify_fam.o smbd/notify_inotify.o
 
 VFS_DEFAULT_OBJ = modules/vfs_default.o
 VFS_AUDIT_OBJ = modules/vfs_audit.o
