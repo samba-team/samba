@@ -21,10 +21,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_INOTIFY
+
 #include <linux/inotify.h>
 #include <asm/unistd.h>
-
-#ifdef HAVE_INOTIFY
 
 #ifndef HAVE_INOTIFY_INIT
 /*
