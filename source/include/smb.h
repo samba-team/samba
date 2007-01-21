@@ -421,6 +421,8 @@ struct fd_handle {
 	unsigned long file_id;
 };
 
+struct event_context;
+struct fd_event;
 struct timed_event;
 struct idle_event;
 struct share_mode_entry;
@@ -451,6 +453,7 @@ struct notify_change_request {
 	uint32 filter;
 	uint32 max_param_count;
 	struct notify_mid_map *mid_map;
+	void *backend_data;
 };
 
 struct notify_change_buf {
@@ -458,7 +461,12 @@ struct notify_change_buf {
 	 * If no requests are pending, changes are queued here. Simple array,
 	 * we only append.
 	 */
-	unsigned num_changes;
+
+	/*
+	 * num_changes == -1 means that we have got a catch-all change, when
+	 * asked we just return NT_STATUS_OK without specific changes.
+	 */
+	int num_changes;
 	struct notify_change *changes;
 
 	/*
@@ -1672,11 +1680,9 @@ struct kernel_oplocks {
 /* this structure defines the functions for doing change notify in
    various implementations */
 struct cnotify_fns {
-	void * (*register_notify)(connection_struct *conn, char *path, uint32 flags);
-	BOOL (*check_notify)(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *data, time_t t);
-	void (*remove_notify)(void *data);
-	int select_time;
-	int notification_fd;
+	void *(*notify_add)(TALLOC_CTX *mem_ctx,
+			    struct event_context *event_ctx,
+			    files_struct *fsp, uint32 *filter);
 };
 
 #include "smb_macros.h"

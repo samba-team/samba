@@ -304,9 +304,6 @@ static void async_processing(fd_set *pfds)
 		exit_server_cleanly("termination signal");
 	}
 
-	/* check for async change notify events */
-	process_pending_change_notify_queue(0);
-
 	/* check for sighup processing */
 	if (reload_after_sighup) {
 		change_to_root_user();
@@ -468,7 +465,6 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		START_PROFILE(smbd_idle);
 
 		maxfd = select_on_fd(smbd_server_fd(), maxfd, &r_fds);
-		maxfd = select_on_fd(change_notify_fd(), maxfd, &r_fds);
 		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &r_fds);
 
 		selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&to);
@@ -525,20 +521,6 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		goto again;
 	}
 
-	if ((change_notify_fd() >= 0) && FD_ISSET(change_notify_fd(),
-						  &r_fds)) {
-
-		process_pending_change_notify_queue((time_t)0);
-
-		/*
-		 * Same comment as for oplock processing applies here. We
-		 * might have done I/O on the client socket.
-		 */
-
-		goto again;
-	}
-
-	
 	return receive_smb(smbd_server_fd(), buffer, 0);
 }
 
@@ -1251,15 +1233,8 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 static int setup_select_timeout(void)
 {
 	int select_timeout;
-	int t;
 
 	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
-
-	t = change_notify_timeout();
-	DEBUG(10, ("change_notify_timeout: %d\n", t));
-	if (t != -1) {
-		select_timeout = MIN(select_timeout, t*1000);
-	}
 
 	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
@@ -1458,12 +1433,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
   
 	update_monitored_printq_cache();
   
-	/*
-	 * Check to see if we have any change notifies 
-	 * outstanding on the queue.
-	 */
-	process_pending_change_notify_queue(t);
-
 	/*
 	 * Now we are root, check if the log files need pruning.
 	 * Force a log file check.

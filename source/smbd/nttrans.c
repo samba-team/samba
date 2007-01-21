@@ -1776,11 +1776,6 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */	
-	process_pending_change_notify_queue((time_t)0);
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBntrename);
@@ -1834,7 +1829,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		}
 	}
 
-	if (fsp->notify->num_changes > 0) {
+	if (fsp->notify->num_changes != 0) {
 
 		/*
 		 * We've got changes pending, respond immediately
@@ -1921,13 +1916,6 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
 	
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */
-	
-	process_pending_change_notify_queue((time_t)0);
-
 	return -1;
 }
 
