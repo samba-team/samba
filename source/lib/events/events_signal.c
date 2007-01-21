@@ -32,14 +32,24 @@
 /* maximum number of SA_SIGINFO signals to hold in the queue */
 #define SA_INFO_QUEUE_COUNT 10
 
+struct sigcounter {
+	uint32_t count;
+	uint32_t seen;
+};
+
+#define SIG_INCREMENT(s) (s).count++
+#define SIG_SEEN(s, n) (s).seen += (n)
+#define SIG_PENDING(s) ((s).seen != (s).count)
+
+
 /*
   the poor design of signals means that this table must be static global
 */
 static struct {
 	struct signal_event *sig_handlers[NUM_SIGNALS];
 	struct sigaction oldact[NUM_SIGNALS];
-	uint32_t signal_count[NUM_SIGNALS];
-	uint32_t got_signal;
+	struct sigcounter signal_count[NUM_SIGNALS];
+	struct sigcounter got_signal;
 	int pipe_hack[2];
 #ifdef SA_SIGINFO
 	/* with SA_SIGINFO we get quite a lot of info per signal */
@@ -47,6 +57,16 @@ static struct {
 #endif
 } sig_state;
 
+/*
+  return number of sigcounter events not processed yet
+*/
+static uint32_t sig_count(struct sigcounter s)
+{
+	if (s.count >= s.seen) {
+		return s.count - s.seen;
+	}
+	return 1 + (0xFFFFFFFF & ~(s.seen - s.count));
+}
 
 /*
   signal handler - redirects to registered signals
@@ -54,8 +74,8 @@ static struct {
 static void signal_handler(int signum)
 {
 	char c = 0;
-	sig_state.signal_count[signum]++;
-	sig_state.got_signal++;
+	SIG_INCREMENT(sig_state.signal_count[signum]);
+	SIG_INCREMENT(sig_state.got_signal);
 	/* doesn't matter if this pipe overflows */
 	write(sig_state.pipe_hack[1], &c, 1);
 }
@@ -66,12 +86,13 @@ static void signal_handler(int signum)
 */
 static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 {
-	sig_state.sig_info[signum][sig_state.signal_count[signum]] = *info;
+	uint32_t count = sig_count(sig_state.signal_count[signum]);
+	sig_state.sig_info[signum][count] = *info;
 
 	signal_handler(signum);
 
 	/* handle SA_SIGINFO */
-	if (sig_state.signal_count[signum] == SA_INFO_QUEUE_COUNT) {
+	if (count+1 == SA_INFO_QUEUE_COUNT) {
 		/* we've filled the info array - block this signal until
 		   these ones are delivered */
 		sigset_t set;
@@ -180,13 +201,13 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 int common_event_check_signal(struct event_context *ev)
 {
 	int i;
-	if (sig_state.got_signal == 0) {
+	if (!SIG_PENDING(sig_state.got_signal)) {
 		return 0;
 	}
 	
 	for (i=0;i<NUM_SIGNALS+1;i++) {
 		struct signal_event *se, *next;
-		uint32_t count = sig_state.signal_count[i];
+		uint32_t count = sig_count(sig_state.signal_count[i]);
 
 		if (count == 0) {
 			continue;
@@ -217,8 +238,8 @@ int common_event_check_signal(struct event_context *ev)
 				talloc_free(se);
 			}
 		}
-		sig_state.signal_count[i] -= count;
-		sig_state.got_signal -= count;
+		SIG_SEEN(sig_state.signal_count[i], count);
+		SIG_SEEN(sig_state.got_signal, count);
 	}
 
 	return 1;
