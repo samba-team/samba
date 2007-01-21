@@ -443,7 +443,7 @@ fortuna_reseed(void)
 
     {
 	unsigned char buf[INIT_BYTES];
-	if (_hc_rand_unix_bytes(buf, sizeof(buf)) == 1) {
+	if ((*hc_rand_unix_method.bytes)(buf, sizeof(buf)) == 1) {
 	    add_entropy(&main_state, buf, sizeof(buf));
 	    entropy_p = 1;
 	    memset(buf, 0, sizeof(buf));
@@ -466,7 +466,7 @@ fortuna_reseed(void)
      */
     if (!entropy_p) {
 	unsigned char buf[INIT_BYTES];
-	if (_hc_rand_egd_bytes(NULL, buf, sizeof(buf)) == 1) {
+	if ((*hc_rand_egd_method.bytes)(buf, sizeof(buf)) == 1) {
 	    add_entropy(&main_state, buf, sizeof(buf));
 	    entropy_p = 1;
 	    memset(buf, 0, sizeof(buf));
