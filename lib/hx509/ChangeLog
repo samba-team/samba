@@ -1,3 +1,7 @@
+2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* switch to sha256 as default digest for signinging
+
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ca.in: Really test sub-ca code, add basic constraints tests
