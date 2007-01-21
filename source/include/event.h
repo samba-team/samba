@@ -19,11 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct event_context;
-struct timed_event;
-
-struct fd_event;
-
 /* bits for file descriptor event flags */
 #define EVENT_FD_READ 1
 #define EVENT_FD_WRITE 2

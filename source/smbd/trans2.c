@@ -4487,7 +4487,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return ERROR_NT(status);
 			}
 
-			process_pending_change_notify_queue((time_t)0);
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);

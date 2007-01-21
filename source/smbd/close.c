@@ -291,8 +291,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	/* unbecome user. */
 	pop_sec_ctx();
 	
-	process_pending_change_notify_queue((time_t)0);
-
 	TALLOC_FREE(lck);
 	return status;
 }
@@ -486,10 +484,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 		if(ok) {
 			remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_DELETE_PENDING);
-			remove_pending_change_notify_requests_by_filename(fsp, NT_STATUS_DELETE_PENDING);
-
 		}
-		process_pending_change_notify_queue((time_t)0);
 	} else {
 		TALLOC_FREE(lck);
 		remove_pending_change_notify_requests_by_fid(

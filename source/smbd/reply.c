@@ -1982,12 +1982,6 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */
-	process_pending_change_notify_queue((time_t)0);
-	
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBunlink);
@@ -4490,11 +4484,6 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */	
-	process_pending_change_notify_queue((time_t)0);
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBmv);
