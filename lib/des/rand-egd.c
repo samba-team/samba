@@ -192,7 +192,7 @@ egd_cleanup(void)
 static void
 egd_add(const void *indata, int size, double entropi)
 {
-    return egd_seed(indata, size);
+    egd_seed(indata, size);
 }
 
 static int
