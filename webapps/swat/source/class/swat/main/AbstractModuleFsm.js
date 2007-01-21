@@ -26,7 +26,7 @@ qx.Proto.buildFsm = function(module)
                   "to build its custom finite state machine.");
 };
 
-qx.Proto.addAwaitRpcResultState = function(module)
+qx.Proto.addAwaitRpcResultState = function(module, blockedEvents)
 {
   var fsm = module.fsm;
   var _this = this;
@@ -47,104 +47,124 @@ qx.Proto.addAwaitRpcResultState = function(module)
    *  "failed" (on RPC)
    *  "execute" on swat.main.fsmUtils.abort_rpc
    */
-  var state = new qx.util.fsm.State(
-    "State_AwaitRpcResult",
+
+  var stateInfo =
+  {
+    "autoActionsBeforeOnentry" :
     {
-      "autoActionsBeforeOnentry" :
-      {
-        // The name of a function.
-        "setEnabled" :
-        [
-          {
-            // We want to enable objects in the group
-            // swat.main.fsmUtils.enable_during_rpc
-            "parameters" : [ true ],
-
-            // Call this.getObject(<object>).setEnabled(true) on
-            // state entry, for each <object> in the group called
-            // "swat.main.fsmUtils.enable_during_rpc".
-            "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
-          },
-
-          {
-            // We want to disable objects in the group
-            // swat.main.fsmUtils.disable_during_rpc
-            "parameters" : [ false ],
-
-            // Call this.getObject(<object>).setEnabled(false) on
-            // state entry, for each <object> in the group called
-            // "swat.main.fsmUtils.disable_during_rpc".
-            "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
-          }
-        ]
-      },
-
-      "autoActionsBeforeOnexit" :
-      {
-        // The name of a function.
-        "setEnabled" :
-        [
-          {
-            // We want to re-disable objects we had enabled, in the group
-            // swat.main.fsmUtils.enable_during_rpc
-            "parameters" : [ false ],
-
-            // Call this.getObject(<object>).setEnabled(false) on
-            // state entry, for each <object> in the group called
-            // "swat.main.fsmUtils.enable_during_rpc".
-            "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
-          },
-
-          {
-            // We want to re-enable objects we had disabled, in the group
-            // swat.main.fsmUtils.disable_during_rpc
-            "parameters" : [ true ],
-
-            // Call this.getObject(<object>).setEnabled(true) on
-            // state entry, for each <object> in the group called
-            // "swat.main.fsmUtils.disable_during_rpc".
-            "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
-          }
-        ]
-      },
-
-      "onentry" :
-        function(fsm, event)
+      // The name of a function.
+      "setEnabled" :
+      [
         {
-          var bAuthCompleted = false;
+          // We want to enable objects in the group
+          // swat.main.fsmUtils.enable_during_rpc
+          "parameters" : [ true ],
 
-          // See if we just completed an authentication
-          if (fsm.getPreviousState() == "State_Authenticate" &&
-              event.getType() == "complete")
-          {
-            bAuthCompleted = true;
-          }
-
-          // If we didn't just complete an authentication and we're coming
-          // from some other state...
-          if (! bAuthCompleted &&
-              fsm.getPreviousState() != "State_AwaitRpcResult")
-          {
-            // ... then push the previous state onto the state stack
-            fsm.pushState(false);
-          }
+          // Call this.getObject(<object>).setEnabled(true) on
+          // state entry, for each <object> in the group called
+          // "swat.main.fsmUtils.enable_during_rpc".
+          "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
         },
 
-      "events" :
-      {
-        "execute"  :
         {
-          "swat.main.fsmUtils.abort_rpc" :
-            "Transition_AwaitRpcResult_to_AwaitRpcResult_via_button_abort"
+          // We want to disable objects in the group
+          // swat.main.fsmUtils.disable_during_rpc
+          "parameters" : [ false ],
+
+          // Call this.getObject(<object>).setEnabled(false) on
+          // state entry, for each <object> in the group called
+          // "swat.main.fsmUtils.disable_during_rpc".
+          "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
+        }
+      ]
+    },
+
+    "autoActionsBeforeOnexit" :
+    {
+      // The name of a function.
+      "setEnabled" :
+      [
+        {
+          // We want to re-disable objects we had enabled, in the group
+          // swat.main.fsmUtils.enable_during_rpc
+          "parameters" : [ false ],
+
+          // Call this.getObject(<object>).setEnabled(false) on
+          // state entry, for each <object> in the group called
+          // "swat.main.fsmUtils.enable_during_rpc".
+          "groups"      : [ "swat.main.fsmUtils.enable_during_rpc" ]
         },
 
-        "completed" :
-          "Transition_AwaitRpcResult_to_PopStack_via_complete",
+        {
+          // We want to re-enable objects we had disabled, in the group
+          // swat.main.fsmUtils.disable_during_rpc
+          "parameters" : [ true ],
 
-        "failed" :
-          qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE
+          // Call this.getObject(<object>).setEnabled(true) on
+          // state entry, for each <object> in the group called
+          // "swat.main.fsmUtils.disable_during_rpc".
+          "groups"      : [ "swat.main.fsmUtils.disable_during_rpc" ]
+        }
+      ]
+    },
+
+    "onentry" :
+      function(fsm, event)
+      {
+        var bAuthCompleted = false;
+
+        // See if we just completed an authentication
+        if (fsm.getPreviousState() == "State_Authenticate" &&
+            event.getType() == "complete")
+        {
+          bAuthCompleted = true;
+        }
+
+        // If we didn't just complete an authentication and we're coming
+        // from some other state...
+        if (! bAuthCompleted &&
+            fsm.getPreviousState() != "State_AwaitRpcResult")
+        {
+          // ... then push the previous state onto the state stack
+          fsm.pushState(false);
+        }
+      },
+
+    "events" :
+    {
+      "execute"  :
+      {
+        "swat.main.fsmUtils.abort_rpc" :
+          "Transition_AwaitRpcResult_to_AwaitRpcResult_via_button_abort"
+      },
+
+      "completed" :
+        "Transition_AwaitRpcResult_to_PopStack_via_complete",
+
+      "failed" :
+        qx.util.fsm.FiniteStateMachine.EventHandling.PREDICATE
+    }
+  };
+
+  // If there are blocked events specified...
+  if (blockedEvents)
+  {
+    // ... then add them to the state info events object
+    for (var blockedEvent in blockedEvents)
+    {
+      // Ensure it's not already there.  Avoid programmer headaches.
+      if (stateInfo["events"][blockedEvent])
+      {
+        throw new Error("Attempt to add blocked event " +
+                        blockedEvent + " but it is already handled");
       }
-    });
+
+      // Add the event.
+      stateInfo["events"][blockedEvent] = blockedEvents[blockedEvent];
+    }
+  }
+
+  var state = new qx.util.fsm.State( "State_AwaitRpcResult", stateInfo);
   fsm.addState(state);
 
   /*** Transitions that use a PREDICATE appear first ***/
