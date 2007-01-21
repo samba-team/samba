@@ -36,7 +36,7 @@ typedef void (*event_fd_handler_t)(struct event_context *, struct fd_event *,
 typedef void (*event_timed_handler_t)(struct event_context *, struct timed_event *, 
 				      struct timeval , void *);
 typedef void (*event_signal_handler_t)(struct event_context *, struct signal_event *, 
-				       int , int, void *);
+				       int , int, void *, void *);
 typedef void (*event_aio_handler_t)(struct event_context *, struct aio_event *, 
 				    int, void *);
 
@@ -54,7 +54,7 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 				    void *private);
 
 struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
-				      int signum,
+				      int signum, int sa_flags,
 				      event_signal_handler_t handler, 
 				      void *private);
 
