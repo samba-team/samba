@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -38,11 +38,32 @@ srcdir="@srcdir@"
 
 rsa="${TESTS_ENVIRONMENT} ./test_rsa"
 engine="${TESTS_ENVIRONMENT} ./test_engine_dso"
+rand="${TESTS_ENVIRONMENT} ./test_rand"
 
 ${rsa} --key=${srcdir}/rsakey.der || \
 	{ echo "rsa test failed" ; exit 1; }
 
 ${engine} --rsa=${srcdir}/rsakey.der || \
 	{ echo "engine test failed" ; exit 1; }
+
+
+for a in unix fortuna egd ;do
+	${rand} --method=${a} crypto-test 2>error
+	res=$?
+	if test "X$res" != X0 ; then
+	    grep "random not ready yet" error || exit 1
+	    echo "random metod $a out for lunch"
+	    continue
+	fi
+	${rand} --method=${a} crypto-test2 2>error
+	res=$?
+	if test "X$res" != X0 ; then
+	    grep "random not ready yet" error || exit 1
+	    echo "random metod $a out for dinner"
+	    continue
+	fi
+	cmp crypto-test crypto-test2 && { echo "rand output same!" ; exit 1; }
+done
+
 
 exit 0
