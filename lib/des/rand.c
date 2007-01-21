@@ -57,7 +57,7 @@ init_method(void)
     if (selected_meth != NULL)
 	return;
 
-    if (_hc_rand_unix_status() == 1)
+    if ((*hc_rand_unix_method.status)() == 1)
 	selected_meth = &hc_rand_unix_method;
     else
 	selected_meth = &hc_rand_fortuna_method;
@@ -158,7 +158,7 @@ RAND_write_file(const char *filename)
     size_t len;
     int res, fd;
 
-    fd = open(filename, O_WRONLY | O_CREAT | O_BINARY | O_TRUNC, 0600);
+    fd = open(filename, O_WRONLY | O_CREAT | O_BINARY, 0600);
     if (fd < 0)
 	return 0;
 
@@ -177,37 +177,4 @@ RAND_write_file(const char *filename)
     close(fd);
 
     return res;
-}
-
-int
-RAND_egd(const char *filename)
-{
-    return RAND_egd_bytes(filename, 128);
-}
-
-int
-RAND_egd_bytes(const char *filename, int size)
-{
-    void *data;
-    int ret;
-
-    if (size <= 0)
-	return 0;
-
-    data = malloc(size);
-    if (data == NULL)
-	return 0;
-
-    ret = _hc_rand_egd_bytes(filename, data, size);
-    if (ret != 1) {
-	free(data);
-	return ret;
-    }
-
-    RAND_seed(data, size);
-
-    memset(data, 0, sizeof(data));
-    free(data);
-
-    return 1;
 }
