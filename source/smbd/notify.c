@@ -527,6 +527,11 @@ BOOL init_change_notify(void)
 {
 	cnotify = NULL;
 
+#if HAVE_INOTIFY
+	if ((cnotify == NULL) && lp_kernel_change_notify()) {
+		cnotify = inotify_notify_init(smbd_event_context());
+	}
+#endif
 #if HAVE_KERNEL_CHANGE_NOTIFY
 	if (cnotify == NULL && lp_kernel_change_notify())
 		cnotify = kernel_notify_init(smbd_event_context());
