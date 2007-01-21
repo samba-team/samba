@@ -185,38 +185,40 @@ int common_event_check_signal(struct event_context *ev)
 	}
 	
 	for (i=0;i<NUM_SIGNALS+1;i++) {
+		struct signal_event *se, *next;
 		uint32_t count = sig_state.signal_count[i];
-		if (count != 0) {
-			struct signal_event *se, *next;
-			for (se=sig_state.sig_handlers[i];se;se=next) {
-				next = se->next;
-#ifdef SA_SIGINFO
-				if (se->sa_flags & SA_SIGINFO) {
-					int j;
-					for (j=0;j<count;j++) {
-						se->handler(ev, se, i, 1, 
-							    (void*)&sig_state.sig_info[i][j], 
-							    se->private_data);
-					}
-					if (count == SA_INFO_QUEUE_COUNT) {
-						/* we'd filled the queue, unblock the
-						   signal now */
-						sigset_t set;
-						sigemptyset(&set);
-						sigaddset(&set, i);
-						sigprocmask(SIG_UNBLOCK, &set, NULL);
-					}
-					continue;
-				}
-#endif
-				se->handler(ev, se, i, count, NULL, se->private_data);
-				if (se->sa_flags & SA_RESETHAND) {
-					talloc_free(se);
-				}
-			}
-			sig_state.signal_count[i] -= count;
-			sig_state.got_signal -= count;
+
+		if (count == 0) {
+			continue;
 		}
+		for (se=sig_state.sig_handlers[i];se;se=next) {
+			next = se->next;
+#ifdef SA_SIGINFO
+			if (se->sa_flags & SA_SIGINFO) {
+				int j;
+				for (j=0;j<count;j++) {
+					se->handler(ev, se, i, 1, 
+						    (void*)&sig_state.sig_info[i][j], 
+						    se->private_data);
+				}
+				if (count == SA_INFO_QUEUE_COUNT) {
+					/* we'd filled the queue, unblock the
+					   signal now */
+					sigset_t set;
+					sigemptyset(&set);
+					sigaddset(&set, i);
+					sigprocmask(SIG_UNBLOCK, &set, NULL);
+				}
+				continue;
+			}
+#endif
+			se->handler(ev, se, i, count, NULL, se->private_data);
+			if (se->sa_flags & SA_RESETHAND) {
+				talloc_free(se);
+			}
+		}
+		sig_state.signal_count[i] -= count;
+		sig_state.got_signal -= count;
 	}
 
 	return 1;
