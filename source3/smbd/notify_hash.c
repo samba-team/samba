@@ -3,6 +3,7 @@
    change notify handling - hash based implementation
    Copyright (C) Jeremy Allison 1994-1998
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) Volker Lendecke 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,16 +22,26 @@
 
 #include "includes.h"
 
-struct change_data {
+struct hash_change_data {
 	time_t last_check_time; /* time we last checked this entry */
-	struct timespec modify_time; /* Info from the directory we're monitoring. */
-	struct timespec status_time; /* Info from the directory we're monitoring. */
-	time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
-	unsigned int num_entries; /* Zero or the number of files in the directory. */
+	struct timespec modify_time; /* Info from the directory we're
+				      * monitoring. */
+	struct timespec status_time; /* Info from the directory we're
+				      * monitoring. */
+	time_t total_time; /* Total time of all directory entries - don't care
+			    * if it wraps. */
+	unsigned int num_entries; /* Zero or the number of files in the
+				   * directory. */
 	unsigned int mode_sum;
 	unsigned char name_hash[16];
 };
 
+struct hash_notify_ctx {
+	struct hash_change_data *data;
+	files_struct *fsp;
+	char *path;
+	uint32 filter;
+};
 
 /* Compare struct timespec. */
 #define TIMESTAMP_NEQ(x, y) (((x).tv_sec != (y).tv_sec) || ((x).tv_nsec != (y).tv_nsec))
@@ -40,7 +51,8 @@ struct change_data {
 *****************************************************************************/
 
 static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags, 
-			struct change_data *data, struct change_data *old_data)
+			struct hash_change_data *data,
+			struct hash_change_data *old_data)
 {
 	SMB_STRUCT_STAT st;
 	pstring full_name;
@@ -71,7 +83,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	}
  
         if (S_ISDIR(st.st_mode) && 
-            (flags & ~(FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME)) == 0)
+            (flags & ~(FILE_NOTIFY_CHANGE_FILE_NAME
+		       | FILE_NOTIFY_CHANGE_DIR_NAME)) == 0)
         {
 		/* This is the case of a client wanting to know only when
 		 * the contents of a directory changes. Since any file
@@ -80,11 +93,6 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 */
                 return True;
         }
-
-	if (lp_change_notify_timeout(SNUM(conn)) <= 0) {
-		/* It change notify timeout has been disabled, never scan the directory. */
-		return True;
-	}
 
 	/*
 	 * If we are to watch for changes that are only stored
@@ -138,10 +146,13 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 * If requested hash the names.
 		 */
 
-		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
+		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME
+			     |FILE_NOTIFY_CHANGE_FILE_NAME
+			     |FILE_NOTIFY_CHANGE_FILE)) {
 			int i;
 			unsigned char tmp_hash[16];
-			mdfour(tmp_hash, (const unsigned char *)fname, strlen(fname));
+			mdfour(tmp_hash, (const unsigned char *)fname,
+			       strlen(fname));
 			for (i=0;i<16;i++)
 				data->name_hash[i] ^= tmp_hash[i];
 		}
@@ -150,7 +161,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 * If requested sum the mode_t's.
 		 */
 
-		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_SECURITY))
+		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES
+			     |FILE_NOTIFY_CHANGE_SECURITY))
 			data->mode_sum += st.st_mode;
 	}
 	
@@ -159,77 +171,111 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	return True;
 }
 
-/****************************************************************************
- Register a change notify request.
-*****************************************************************************/
-
-static void *hash_register_notify(connection_struct *conn, char *path, uint32 flags)
+static void hash_change_notify_handler(struct event_context *event_ctx,
+				       struct timed_event *te,
+				       const struct timeval *now,
+				       void *private_data)
 {
-	struct change_data data;
+	struct hash_change_data *new_data;
+	struct hash_notify_ctx *ctx =
+		talloc_get_type_abort(private_data,
+				      struct hash_notify_ctx);
 
-	if (!notify_hash(conn, path, flags, &data, NULL))
+	TALLOC_FREE(te);
+
+	if (!(new_data = TALLOC_P(ctx, struct hash_change_data))) {
+		DEBUG(0, ("talloc failed\n"));
+		/*
+		 * No new timed event;
+		 */
+		return;
+	}
+
+	if (!notify_hash(ctx->fsp->conn, ctx->fsp->fsp_name,
+			 ctx->filter, new_data, ctx->data)
+	    || TIMESTAMP_NEQ(new_data->modify_time, ctx->data->modify_time)
+	    || TIMESTAMP_NEQ(new_data->status_time, ctx->data->status_time)
+	    || new_data->total_time != ctx->data->total_time
+	    || new_data->num_entries != ctx->data->num_entries
+	    || new_data->mode_sum != ctx->data->mode_sum
+	    || (memcmp(new_data->name_hash, ctx->data->name_hash,
+		       sizeof(new_data->name_hash)))) {
+		notify_fsp(ctx->fsp, 0, NULL);
+	}
+
+	TALLOC_FREE(ctx->data);
+	ctx->data = new_data;
+
+        event_add_timed(
+		event_ctx, ctx,
+		timeval_current_ofs(
+			lp_change_notify_timeout(SNUM(ctx->fsp->conn)), 0),
+		"hash_change_notify_handler",
+		hash_change_notify_handler, ctx);
+}
+
+
+
+static void *hash_notify_add(TALLOC_CTX *mem_ctx,
+			     struct event_context *event_ctx,
+			     files_struct *fsp,
+			     uint32 *filter)
+{
+	struct hash_notify_ctx *ctx;
+	int timeout = lp_change_notify_timeout(SNUM(fsp->conn));
+	pstring fullpath;
+
+	if (timeout <= 0) {
+		/* It change notify timeout has been disabled, never scan the
+		 * directory. */
 		return NULL;
-
-	data.last_check_time = time(NULL);
-
-	return (void *)memdup(&data, sizeof(data));
-}
-
-/****************************************************************************
- Check if a change notify should be issued.
- A time of zero means instantaneous check - don't modify the last check time.
-*****************************************************************************/
-
-static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *datap, time_t t)
-{
-	struct change_data *data = (struct change_data *)datap;
-	struct change_data data2;
-	int cnto = lp_change_notify_timeout(SNUM(conn));
-
-	if (t && cnto <= 0) {
-		/* Change notify turned off on this share.
-		 * Only scan when (t==0) - we think something changed. */
-		return False;
 	}
 
-	if (t && t < data->last_check_time + cnto) {
-		return False;
+	pstrcpy(fullpath, fsp->fsp_name);
+	if (!canonicalize_path(fsp->conn, fullpath)) {
+		DEBUG(0, ("failed to canonicalize path '%s'\n", fullpath));
+		return NULL;
 	}
 
-	if (!change_to_user(conn,vuid))
-		return True;
-	if (!set_current_service(conn,FLAG_CASELESS_PATHNAMES,True)) {
-		change_to_root_user();
-		return True;
+	if (*fullpath != '/') {
+		DEBUG(0, ("canonicalized path '%s' into `%s`\n", fsp->fsp_name,
+			  fullpath));
+		DEBUGADD(0, ("but expected an absolute path\n"));
+		return NULL;
+	}
+	
+	if (!(ctx = TALLOC_P(mem_ctx, struct hash_notify_ctx))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
 	}
 
-	if (!notify_hash(conn, path, flags, &data2, data) ||
-	    TIMESTAMP_NEQ(data2.modify_time, data->modify_time) ||
-	    TIMESTAMP_NEQ(data2.status_time, data->status_time) ||
-	    data2.total_time != data->total_time ||
-	    data2.num_entries != data->num_entries ||
-		data2.mode_sum != data->mode_sum ||
-		memcmp(data2.name_hash, data->name_hash, sizeof(data2.name_hash))) {
-		change_to_root_user();
-		return True;
+	if (!(ctx->path = talloc_strdup(ctx, fullpath))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		TALLOC_FREE(ctx);
+		return NULL;
 	}
 
-	if (t) {
-		data->last_check_time = t;
+	if (!(ctx->data = TALLOC_P(ctx, struct hash_change_data))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(ctx);
+		return NULL;
 	}
 
-	change_to_root_user();
+	ctx->fsp = fsp;
 
-	return False;
-}
+	/*
+	 * Don't change the Samba filter, hash can only be a very bad attempt
+	 * anyway.
+	 */
+	ctx->filter = *filter;
 
-/****************************************************************************
- Remove a change notify data structure.
-*****************************************************************************/
+	notify_hash(fsp->conn, ctx->path, ctx->filter, ctx->data, NULL);
 
-static void hash_remove_notify(void *datap)
-{
-	free(datap);
+	event_add_timed(event_ctx, ctx, timeval_current_ofs(timeout, 0),
+			"hash_change_notify_handler",
+			hash_change_notify_handler, ctx);
+
+	return (void *)ctx;
 }
 
 /****************************************************************************
@@ -240,22 +286,7 @@ struct cnotify_fns *hash_notify_init(void)
 {
 	static struct cnotify_fns cnotify;
 
-	cnotify.register_notify = hash_register_notify;
-	cnotify.check_notify = hash_check_notify;
-	cnotify.remove_notify = hash_remove_notify;
-	cnotify.select_time = 60; /* Start with 1 minute default. */
-	cnotify.notification_fd = -1;
+	cnotify.notify_add = hash_notify_add;
 
 	return &cnotify;
 }
-
-/*
-  change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
-  change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_NOTIFY_ENUM_DIR);
-
-  chain_size = 0;
-  file_chain_reset();
-
-  uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
-  SVAL(cnbp->request_buf,smb_uid);
-*/

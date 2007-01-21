@@ -1074,9 +1074,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
 	
-	/* Setup the minimum value for a change notify wait time (seconds). */
-	set_change_notify_timeout(lp_change_notify_timeout(snum));
-
 	/* we've finished with the user stuff - go back to root */
 	change_to_root_user();
 	return(conn);
