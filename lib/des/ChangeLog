@@ -1,5 +1,21 @@
 2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: clean more files
+
+	* rand-egd.c: access private functions though the RAND_METHOD
+	switch, move global egd function to rand-egd.c
+
+	* rand-fortuna.c: access private functions though the RAND_METHOD
+	switch
+
+	* rand-unix.c: unexport private functions.
+
+	* randi.h: Unexport internal functions.
+
+	* rand.c: access private functions though the RAND_METHOD switch,
+	don't truncate the seed-file, move global egd function to
+	rand-egd.c
+
 	* test_crypto.in: add basic random tests
 
 	* rand-egd.c: SGI cc doesn' like return void_returning_function();
