@@ -26,13 +26,17 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 struct idmap_rid_context {
-	DOM_SID dom_sid;
+	const char *domain_name;
 	uint32_t low_id;
 	uint32_t high_id;
 	uint32_t base_rid;
 };
 
-/* compat params can't be used because of the completely different way we support multiple domains in the new idmap */
+/******************************************************************************
+  compat params can't be used because of the completely different way
+  we support multiple domains in the new idmap
+ *****************************************************************************/
+
 static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom, const char *compat_params)
 {
 	NTSTATUS ret;
@@ -40,8 +44,7 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom, const char *compa
 	char *config_option = NULL;
 	const char *range;
 
-	ctx = talloc_zero(dom, struct idmap_rid_context);
-	if ( ! ctx) {
+	if ( (ctx = talloc_zero(dom, struct idmap_rid_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -54,23 +57,23 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom, const char *compa
 	}
 
 	range = lp_parm_const_string(-1, config_option, "range", NULL);
-	if (( ! range) ||
+	if ( !range ||
 	    (sscanf(range, "%u - %u", &ctx->low_id, &ctx->high_id) != 2) ||
-	    (ctx->low_id > ctx->high_id)) {
+	    (ctx->low_id > ctx->high_id)) 
+	{
 		ctx->low_id = 0;
 		ctx->high_id = 0;
 	}
 
-	if (( ! ctx->low_id) || ( ! ctx->high_id)) {
+	if ( !ctx->low_id || !ctx->high_id ) {
 		DEBUG(1, ("ERROR: Invalid configuration, ID range missing\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
 
 	ctx->base_rid = lp_parm_int(-1, config_option, "base_rid", 0);
-
-	sid_copy(&ctx->dom_sid, dom->sid);
-
+	ctx->domain_name = talloc_strdup( ctx, dom->name );
+	
 	dom->private_data = ctx;
 
 	talloc_free(config_option);
@@ -86,6 +89,7 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 	const char *domname, *name;
 	enum lsa_SidType sid_type;
 	BOOL ret;
+	struct winbindd_domain *domain;	
 
 	/* apply filters before checking */
 	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
@@ -94,7 +98,11 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	sid_compose(map->sid, &ctx->dom_sid, map->xid.id - ctx->low_id + ctx->base_rid);
+	if ( (domain = find_domain_from_name_noinit(ctx->domain_name)) == NULL ) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+	
+	sid_compose(map->sid, &domain->sid, map->xid.id - ctx->low_id + ctx->base_rid);
 
 	/* by default calls to winbindd are disabled
 	   the following call will not recurse so this is safe */

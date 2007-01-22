@@ -37,7 +37,6 @@
 #define SMB_IDMAP_INTERFACE_VERSION 4
 
 struct idmap_domain {
-	DOM_SID *sid;
 	const char *name;
 	BOOL default_domain;
 	BOOL readonly;
