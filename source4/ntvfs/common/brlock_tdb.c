@@ -423,7 +423,7 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
-	struct lock_struct *locks;
+	struct lock_struct *locks, *lock;
 	struct lock_context context;
 	NTSTATUS status;
 
@@ -449,42 +449,58 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 	count = dbuf.dsize / sizeof(*locks);
 
 	for (i=0; i<count; i++) {
-		struct lock_struct *lock = &locks[i];
-		
+		lock = &locks[i];
+		if (brl_tdb_same_context(&lock->context, &context) &&
+		    lock->ntvfs == brlh->ntvfs &&
+		    lock->start == start &&
+		    lock->size == size &&
+		    lock->lock_type == WRITE_LOCK) {
+			break;
+		}
+	}
+	if (i < count) goto found;
+
+	for (i=0; i<count; i++) {
+		lock = &locks[i];
 		if (brl_tdb_same_context(&lock->context, &context) &&
 		    lock->ntvfs == brlh->ntvfs &&
 		    lock->start == start &&
 		    lock->size == size &&
 		    lock->lock_type < PENDING_READ_LOCK) {
-			/* found it - delete it */
-			if (count == 1) {
-				if (tdb_delete(brl->w->tdb, kbuf) != 0) {
-					status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-					goto fail;
-				}
-			} else {
-				struct lock_struct removed_lock = *lock;
-				if (i < count-1) {
-					memmove(&locks[i], &locks[i+1], 
-						sizeof(*locks)*((count-1) - i));
-				}
-				count--;
-
-				/* send notifications for any relevant pending locks */
-				brl_tdb_notify_unlock(brl, locks, count, &removed_lock);
-
-				dbuf.dsize = count * sizeof(*locks);
-
-				if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-					status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-					goto fail;
-				}
-			}
-			
-			free(dbuf.dptr);
-			tdb_chainunlock(brl->w->tdb, kbuf);
-			return NT_STATUS_OK;
+			break;
 		}
+	}
+
+found:
+	if (i < count) {
+		/* found it - delete it */
+		if (count == 1) {
+			if (tdb_delete(brl->w->tdb, kbuf) != 0) {
+				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto fail;
+			}
+		} else {
+			struct lock_struct removed_lock = *lock;
+			if (i < count-1) {
+				memmove(&locks[i], &locks[i+1], 
+					sizeof(*locks)*((count-1) - i));
+			}
+			count--;
+			
+			/* send notifications for any relevant pending locks */
+			brl_tdb_notify_unlock(brl, locks, count, &removed_lock);
+			
+			dbuf.dsize = count * sizeof(*locks);
+			
+			if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
+				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto fail;
+			}
+		}
+		
+		free(dbuf.dptr);
+		tdb_chainunlock(brl->w->tdb, kbuf);
+		return NT_STATUS_OK;
 	}
 	
 	/* we didn't find it */
