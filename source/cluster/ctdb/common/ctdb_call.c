@@ -390,6 +390,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	TDB_DATA reply_data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	reply_data.dptr = c->data;
 	reply_data.dsize = c->datalen;
@@ -415,6 +416,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	TDB_DATA data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -450,6 +452,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	talloc_steal(state, c);
 
@@ -471,6 +474,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	talloc_steal(state, c);
 	
