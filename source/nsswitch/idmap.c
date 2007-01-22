@@ -18,7 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.*/
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 #include "includes.h"
 #include "winbindd.h"
@@ -225,7 +226,7 @@ NTSTATUS idmap_close(void)
 static const char *idmap_default_domain[] = { "default domain", NULL };
 
 NTSTATUS idmap_init(void)
-{
+{	
 	NTSTATUS ret;
 	struct idmap_domain *dom;
 	const char *compat_backend = NULL;
@@ -241,27 +242,23 @@ NTSTATUS idmap_init(void)
 		return NT_STATUS_OK;
 	}
 
-	idmap_ctx = talloc_named_const(NULL, 0, "IDMAP MEMORY CONTEXT");
-	if ( ! idmap_ctx) {
+	if ( (idmap_ctx = talloc_named_const(NULL, 0, "idmap_ctx")) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* init cache */
-	idmap_cache = idmap_cache_init(idmap_ctx);
-	if ( ! idmap_cache) {
+	if ( (idmap_cache = idmap_cache_init(idmap_ctx)) == NULL ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* register static backends */
 	static_init_idmap;
 
-	if ((dom_list = lp_idmap_domains()) != NULL) {
-		if (lp_idmap_backend()) {
-			DEBUG(0, ("WARNING: idmap backend and idmap domains are mutually excusive!\n"));
-			DEBUGADD(0, ("        idmap backend option will be IGNORED!\n"));
-		}
-		
-	} else if (lp_idmap_backend()) {
+	dom_list = lp_idmap_domains();
+	
+	if ( dom_list && lp_idmap_backend() ) {
+		DEBUG(0, ("WARNING: idmap backend and idmap domains are "
+			  "mutually excusive!\n"));
+		DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
+	} else if ( lp_idmap_backend() ) {
 		const char **compat_list = lp_idmap_backend();
 		const char *p;
 
@@ -313,19 +310,13 @@ NTSTATUS idmap_init(void)
 		/* default or specific ? */
 
 		dom->default_domain = lp_parm_bool(-1, config_option, "default", False);
+
 		if (dom->default_domain ||
 		    strequal(dom_list[i], idmap_default_domain[0])) {
-			/* the default domain is a cacth all domain
-			 * so no specific domain sid is provided */
-			dom->sid = NULL;
+
 			/* make sure this is set even when we match idmap_default_domain[0] */
 			dom->default_domain = True;
 
-			if (lp_parm_const_string(-1, config_option, "domain sid", NULL)) {
-				DEBUG(1, ("WARNING: Can't force a /domain sid/ on the DEFAULT domain, Ignoring!"));
-			}
-
-			/* only one default domain is permitted */
 			if (default_already_defined) {
 				DEBUG(1, ("ERROR: Multiple domains defined as default!\n"));
 				ret = NT_STATUS_INVALID_PARAMETER;
@@ -334,38 +325,16 @@ NTSTATUS idmap_init(void)
 
 			default_already_defined = True;
 
-		} else {
-			const char *sid;
+		} 
 
-			sid = lp_parm_const_string(-1, config_option, "domain sid", NULL);
-			if (sid) {
-				dom->sid = string_sid_talloc(dom, sid);
-			} else {
-				struct winbindd_domain *wdom = find_domain_from_name(dom->name);
-				if (wdom) {
-					dom->sid = sid_dup_talloc(dom, &wdom->sid);
-					IDMAP_CHECK_ALLOC(dom->sid);
-				}
-			}
-
-			if ( ! dom->sid) {
-				DEBUG(1, ("ERROR: Could not find DOMAIN SID for domain %s\n", dom->name));
-				DEBUGADD(1, ("      Consider to set explicitly the /domain sid/ option\n"));
-				ret = NT_STATUS_NO_SUCH_DOMAIN;
-				goto done;
-			}
-		}
-
-		/* is this a readonly domain ? */
 		dom->readonly = lp_parm_bool(-1, config_option, "readonly", False);
 
 		/* find associated backend (default: tdb) */
 		if (compat) {
 			parm_backend = talloc_strdup(idmap_ctx, compat_backend);
 		} else {
-			parm_backend =
-				talloc_strdup(idmap_ctx,
-					lp_parm_const_string(-1, config_option, "backend", "tdb"));
+			parm_backend = talloc_strdup(idmap_ctx,
+						     lp_parm_const_string(-1, config_option, "backend", "tdb"));
 		}
 		IDMAP_CHECK_ALLOC(parm_backend);
 
@@ -412,8 +381,8 @@ NTSTATUS idmap_init(void)
 			def_dom_num = i;
 		}
 
-		DEBUG(10, ("Domain %s - Sid %s - Backend %s - %sdefault - %sreadonly\n",
-				dom->name, sid_string_static(dom->sid), parm_backend,
+		DEBUG(10, ("Domain %s - Backend %s - %sdefault - %sreadonly\n",
+				dom->name, parm_backend,
 				dom->default_domain?"":"not ", dom->readonly?"":"not "));
 
 		talloc_free(config_option);
@@ -426,13 +395,6 @@ NTSTATUS idmap_init(void)
 	if ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
 	    ( ! pri_dom_is_in_list) &&
 	    lp_winbind_trusted_domains_only()) {
-		DOM_SID our_sid;
-
-		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
-			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
 
 		dom = talloc_zero(idmap_ctx, struct idmap_domain);
 		IDMAP_CHECK_ALLOC(dom);
@@ -442,9 +404,6 @@ NTSTATUS idmap_init(void)
 
 		dom->default_domain = False;
 		dom->readonly = True;
-
-		dom->sid = sid_dup_talloc(dom, &our_sid);
-		IDMAP_CHECK_ALLOC(dom->sid);
 
 		/* get the backend methods for passdb */
 		dom->methods = get_methods(backends, "nss");
@@ -475,8 +434,7 @@ NTSTATUS idmap_init(void)
 		}
 		idmap_domains[num_domains] = dom;
 
-		DEBUG(10, ("Domain %s - Sid %s - Backend nss - not default - readonly\n",
-				dom->name, sid_string_static(dom->sid)));
+		DEBUG(10, ("Domain %s - Backend nss - not default - readonly\n", dom->name ));
 
 		num_domains++;
 	}
@@ -490,9 +448,6 @@ NTSTATUS idmap_init(void)
 
 	dom->default_domain = False;
 	dom->readonly = True;
-
-	dom->sid = sid_dup_talloc(dom, get_global_sam_sid());
-	IDMAP_CHECK_ALLOC(dom->sid);
 
 	/* get the backend methods for passdb */
 	dom->methods = get_methods(backends, "passdb");
@@ -526,9 +481,7 @@ NTSTATUS idmap_init(void)
 	/* needed to handle special BUILTIN and wellknown SIDs cases */
 	pdb_dom_num = num_domains;
 
-	DEBUG(10, ("Domain %s - Sid %s - Backend passdb - not default - readonly\n",
-			dom->name, sid_string_static(dom->sid)));
-	DEBUGADD(10, ("        (special: includes handling BUILTIN and Wellknown SIDs as well)\n"));
+	DEBUG(10, ("Domain %s - Backend passdb - not default - readonly\n", dom->name));
 
 	num_domains++;
 	/**** finished adding idmap_passdb backend ****/
@@ -652,6 +605,66 @@ NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 	return alloc_methods->set_id_hwm(id);
 }
 
+/******************************************************************************
+ Lookup an idmap_domain give a full user or group SID
+ ******************************************************************************/
+
+static struct idmap_domain* find_idmap_domain_from_sid( DOM_SID *account_sid )
+{
+	DOM_SID domain_sid;
+	uint32 rid;
+	struct winbindd_domain *domain = NULL;
+	int i;
+	
+	/* 1. Handle BUILTIN or Special SIDs and prevent them from
+	   falling into the default domain space (if we have a
+	   configured passdb backend. */
+
+	if ( (pdb_dom_num != -1) && 
+	     (sid_check_is_in_builtin(account_sid) ||
+	      sid_check_is_in_wellknown_domain(account_sid)) ) 
+	{
+		return idmap_domains[pdb_dom_num];
+	}
+
+	/* 2. Lookup the winbindd_domain from the account_sid */
+
+	sid_copy( &domain_sid, account_sid );
+	sid_split_rid( &domain_sid, &rid );	
+	domain = find_domain_from_sid_noinit( &domain_sid );	
+
+	for (i = 0; domain && i < num_domains; i++) {
+		if ( strequal( idmap_domains[i]->name, domain->name ) ) {
+			return idmap_domains[i];
+		}
+	}
+
+	/* 3. Fall back to the default domain */
+
+	if ( def_dom_num != -1 ) {
+		return idmap_domains[def_dom_num];
+	}
+
+	return NULL;
+}
+
+/******************************************************************************
+ Lookup an index given an idmap_domain pointer
+ ******************************************************************************/
+
+static uint32 find_idmap_domain_index( struct idmap_domain *id_domain)
+{
+	int i;
+	
+	for (i = 0; i < num_domains; i++) {
+		if ( idmap_domains[i] == id_domain )
+			return i;		
+	}
+
+	return -1;	
+}
+
+
 /*********************************************************
  Check if creating a mapping is permitted for the domain
 *********************************************************/
@@ -659,7 +672,6 @@ NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 static NTSTATUS idmap_can_map(const struct id_map *map, struct idmap_domain **ret_dom)
 {
 	struct idmap_domain *dom;
-	int i;
 
 	/* Check we do not create mappings for our own local domain, or BUILTIN or special SIDs */
 	if ((sid_compare_domain(map->sid, get_global_sam_sid()) == 0) ||
@@ -679,23 +691,15 @@ static NTSTATUS idmap_can_map(const struct id_map *map, struct idmap_domain **re
 		}
 	}
 
-	for (i = 0, dom = NULL; i < num_domains; i++) {
-		if ((idmap_domains[i]->default_domain) || /* ok set it into the default domain */
-		    (sid_compare_domain(idmap_domains[i]->sid, map->sid) == 0)) { /* ok found a specific domain */
-			dom = idmap_domains[i];
-			break;
-		}
-	}
-
-	if (! dom) {
+	if ( (dom = find_idmap_domain_from_sid( map->sid )) == NULL ) {
 		/* huh, couldn't find a suitable domain, let's just leave it unmapped */
-		DEBUG(10, ("Could not find imdap backend for SID %s", sid_string_static(map->sid)));
+		DEBUG(10, ("Could not find idmap backend for SID %s", sid_string_static(map->sid)));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
 	if (dom->readonly) {
 		/* ouch the domain is read only, let's just leave it unmapped */
-		DEBUG(10, ("imdap backend for SID %s is READONLY!\n", sid_string_static(map->sid)));
+		DEBUG(10, ("idmap backend for SID %s is READONLY!\n", sid_string_static(map->sid)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -790,7 +794,7 @@ static NTSTATUS idmap_backends_set_mapping(const struct id_map *map)
 		return ret;
 	}
 
-	DEBUG(10, ("set_mapping for domain %s(%s)\n", dom->name, sid_string_static(dom->sid)));
+	DEBUG(10,("set_mapping for domain %s\n", dom->name ));	
 
 	return dom->methods->set_mapping(dom, map);
 }
@@ -832,7 +836,7 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 
 		dom = idmap_domains[n];
 
-		DEBUG(10, ("Query sids from domain %s(%s)\n", dom->name, sid_string_static(dom->sid)));
+		DEBUG(10, ("Query sids from domain %s\n", dom->name));
 		
 		ret = dom->methods->unixids_to_sids(dom, _ids);
 		IDMAP_CHECK_RET(ret);
@@ -892,13 +896,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	NTSTATUS ret;
 	int i, *counters;
 
-	if (!ids || !*ids) {
-		DEBUG(1, ("Invalid list of maps\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ctx = talloc_named_const(NULL, 0, "idmap_backends_sids_to_unixids ctx");
-	if ( ! ctx) {
+	if ( (ctx = talloc_named_const(NULL, 0, "be_sids_to_ids")) == NULL ) {
 		DEBUG(1, ("failed to allocate talloc context, OOM?\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -906,66 +904,47 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	DEBUG(10, ("Query backends to map sids->ids\n"));
 
 	/* split list per domain */
+
 	dom_ids = talloc_zero_array(ctx, struct id_map **, num_domains);
 	IDMAP_CHECK_ALLOC(dom_ids);
 	counters = talloc_zero_array(ctx, int, num_domains);
 
+	/* partition the requests by domain */
+
 	for (i = 0; ids[i]; i++) {
-		int dom_num;
+		uint32 idx;		
 
 		/* make sure they are unknown to start off */
 		ids[i]->status = ID_UNKNOWN;
 
-		for (dom_num = 0, dom = NULL; dom_num < num_domains; dom_num++) {
-			if (idmap_domains[dom_num]->default_domain) {
-				/* we got to the default domain */
-				dom = idmap_domains[dom_num];
-				break;
-			}
-			if (sid_compare_domain(idmap_domains[dom_num]->sid, ids[i]->sid) == 0) {
-				dom = idmap_domains[dom_num];
-				break;
-			}
-		}
-		if (( ! dom) || dom->default_domain) {
-			/* handle BUILTIN or Special SIDs
-			 * and prevent them from falling into the default domain space */
-			if ((sid_check_is_in_builtin(ids[i]->sid) ||
-			    sid_check_is_in_wellknown_domain(ids[i]->sid))) {
-
-				if (pdb_dom_num != -1) {
-					dom = idmap_domains[pdb_dom_num];
-					dom_num = pdb_dom_num;
-				} else {
-					dom = NULL;
-				}
-			}
-		}
-		if ( ! dom) {
-			/* no dom move on */
+		if ( (dom = find_idmap_domain_from_sid( ids[i]->sid )) == NULL ) {
+			/* no vailable idmap_domain.  Move on */
 			continue;
 		}
 
-		DEBUG(10, ("SID %s is being handled by %s(%d)\n",
-			sid_string_static(ids[i]->sid),
-			dom?dom->name:"none",
-			dom_num));
+		DEBUG(10,("SID %s is being handled by %s\n", 
+			  sid_string_static(ids[i]->sid),  
+			  dom ? dom->name : "none" ));
 
-		dom_ids[dom_num] = talloc_realloc(ctx, dom_ids[dom_num], struct id_map *, counters[dom_num] + 2);
-		IDMAP_CHECK_ALLOC(dom_ids[dom_num]);
+		idx = find_idmap_domain_index( dom );
+		SMB_ASSERT( idx != -1 );
+		
+		dom_ids[idx] = talloc_realloc(ctx, dom_ids[idx], 
+					      struct id_map *, counters[idx] + 2);
+		IDMAP_CHECK_ALLOC(dom_ids[idx]);
 
-		dom_ids[dom_num][counters[dom_num]] = ids[i];
-		counters[dom_num]++;
-		dom_ids[dom_num][counters[dom_num]] = NULL;
+		dom_ids[idx][counters[idx]] = ids[i];
+		counters[idx]++;
+		dom_ids[idx][counters[idx]] = NULL;
 	}
 
-	/* ok all the ids have been dispatched in the right queues
-	 * let's cycle through the filled ones */
+	/* All the ids have been dispatched in the right queues.
+	   Let's cycle through the filled ones */
 
 	for (i = 0; i < num_domains; i++) {
-		if (dom_ids[i]) { /* ok, we have ids in this one */
+		if (dom_ids[i]) {
 			dom = idmap_domains[i];
-			DEBUG(10, ("Query ids from domain %s(%s)\n", dom->name, sid_string_static(dom->sid)));
+			DEBUG(10, ("Query ids from domain %s\n", dom->name));
 			ret = dom->methods->sids_to_unixids(dom, dom_ids[i]);
 			IDMAP_CHECK_RET(ret);
 		}
