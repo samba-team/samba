@@ -28,14 +28,12 @@
 #include "system/filesys.h"
 #include "cluster/ctdb/include/ctdb_private.h"
 
-
 /*
   queue a packet or die
 */
 static void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
-	DEBUG(0,("queueing destnode=%u srcnode=%u\n", hdr->destnode, hdr->srcnode));
 	node = ctdb->nodes[hdr->destnode];
 	if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
 		ctdb_fatal(ctdb, "Unable to queue packet\n");
@@ -210,7 +208,6 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 
 	if (r->hdr.destnode == ctdb->vnn) {
 		/* we are the lmaster - don't send to ourselves */
-		DEBUG(0,("XXXX local ctdb_req_dmaster\n"));
 		ctdb_request_dmaster(ctdb, &r->hdr);
 	} else {
 		ctdb_queue_packet(ctdb, &r->hdr);
@@ -234,7 +231,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 {
 	struct ctdb_req_dmaster *c = (struct ctdb_req_dmaster *)hdr;
 	struct ctdb_reply_dmaster *r;
-	TDB_DATA key, data;
+	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header header;
 	int ret, len;
 
@@ -243,13 +240,8 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dptr = c->data + c->keylen;
 	data.dsize = c->datalen;
 
-	DEBUG(0,("request dmaster reqid=%d\n", hdr->reqid));
-
-	DEBUG(0,("change dmaster: stage 2 - new dmaster will be %d\n",
-		 c->dmaster));
-
 	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data2);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
@@ -260,8 +252,6 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_fatal(ctdb, "dmaster request from non-master");
 		return;
 	}
-
-	DEBUG(0,("request dmaster reqid=%d %s\n", hdr->reqid, __location__));
 
 	header.dmaster = c->dmaster;
 	if (ctdb_ltdb_store(ctdb, key, &header, data) != 0) {
@@ -281,13 +271,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	DEBUG(0,("request dmaster reqid=%d %s\n", hdr->reqid, __location__));
-
 	if (r->hdr.destnode == r->hdr.srcnode) {
 		ctdb_reply_dmaster(ctdb, &r->hdr);
 	} else {
 		ctdb_queue_packet(ctdb, &r->hdr);
-		DEBUG(0,("request dmaster reqid=%d %s\n", hdr->reqid, __location__));
 	}
 
 	talloc_free(r);
@@ -331,8 +318,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record */
 	if (header.laccessor == c->hdr.srcnode &&
 	    header.lacount >= ctdb->max_lacount) {
-		DEBUG(0,("change dmaster: stage 1 - new dmaster will be %d\n",
-			 header.laccessor));
 		ctdb_call_send_dmaster(ctdb, c, &header, &key, &data);
 		talloc_free(data.dptr);
 		return;
@@ -423,9 +408,6 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	talloc_steal(state, c);
 
-	DEBUG(0,("change dmaster: stage 3 - new dmaster is %d\n",
-		 ctdb->vnn));
-
 	/* we're now the dmaster - update our local ltdb with new header
 	   and data */
 	state->header.dmaster = ctdb->vnn;
@@ -494,7 +476,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
-//	idr_remove(state->node->ctdb->idr, state->c->hdr.reqid);
+	idr_remove(state->node->ctdb->idr, state->c->hdr.reqid);
 	return 0;
 }
 
@@ -582,7 +564,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
-	DEBUG(0,("Allocate reqid %u\n", state->c->hdr.reqid));
 	state->c->callid        = call_id;
 	state->c->keylen        = key.dsize;
 	state->c->calldatalen   = call_data?call_data->dsize:0;

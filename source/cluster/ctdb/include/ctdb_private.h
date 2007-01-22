@@ -89,7 +89,7 @@ struct ctdb_context {
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;
-	struct tdb_context *ltdb;
+	struct tdb_wrap *ltdb;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */

@@ -101,8 +101,6 @@ static struct brl_context *brl_ctdb_init(TALLOC_CTX *mem_ctx, struct server_id s
 	brl->server = server;
 	brl->messaging_ctx = messaging_ctx;
 
-	DEBUG(0,("brl_ctdb_init: brl=%p\n", brl));
-
 	return brl;
 }
 
@@ -115,9 +113,6 @@ static struct brl_handle *brl_ctdb_create_handle(TALLOC_CTX *mem_ctx, struct ntv
 	if (brlh == NULL) {
 		return NULL;
 	}
-
-	DEBUG(0,("file_key\n"));
-	dump_data(0,file_key->data, file_key->length);
 
 	brlh->key = *file_key;
 	brlh->ntvfs = ntvfs;
@@ -261,23 +256,6 @@ static NTSTATUS brl_ctdb_lock_failed(struct brl_handle *brlh, struct lock_struct
 	return NT_STATUS_LOCK_NOT_GRANTED;
 }
 
-
-static void show_locks(const char *op, struct lock_struct *locks, int count)
-{
-	int i;
-	DEBUG(0,("OP: %s\n", op));
-	for (i=0;i<count;i++) {
-		DEBUG(0,("%2d: %4d %4d %d.%d.%d %p %p\n",
-			 i, (int)locks[i].start, (int)locks[i].size, 
-			 locks[i].context.server.node,
-			 locks[i].context.server.id,
-			 locks[i].context.smbpid,
-			 locks[i].context.ctx,
-			 locks[i].ntvfs));
-	}
-}
-
-
 struct ctdb_lock_req {
 	uint16_t smbpid;
 	uint64_t start;
@@ -333,22 +311,10 @@ static int brl_ctdb_lock_func(struct ctdb_call *call)
 	lock.lock_type = req->lock_type;
 	lock.notify_ptr = req->notify_ptr;
 
-	{
-		int xlen = sizeof(lock);
-		uint8_t *xx = &lock;
-		int ii, fd = open("/dev/null", O_WRONLY);
-		for (ii=0;ii<xlen;ii++) {
-			write(fd, &xx[ii], 1);
-		}
-		close(fd);
-	}
-
 	if (dbuf.dptr) {
 		/* there are existing locks - make sure they don't conflict */
 		locks = (struct lock_struct *)dbuf.dptr;
 		count = dbuf.dsize / sizeof(*locks);
-
-		show_locks("lock", locks, count);
 
 		for (i=0; i<count; i++) {
 			if (brl_ctdb_conflict(&locks[i], &lock)) {
@@ -374,8 +340,6 @@ static int brl_ctdb_lock_func(struct ctdb_call *call)
 	if (req->lock_type >= PENDING_READ_LOCK) {
 		status = NT_STATUS_LOCK_NOT_GRANTED;
 	}
-
-	DEBUG(0,("lock: size now %d\n", call->new_data->dsize));
 
 reply:
 	call->reply_data = talloc(call, TDB_DATA);
@@ -428,10 +392,9 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 	req.server = brl->server;
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
-		
+
 	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_LOCK, &rbuf, &sbuf);
 	if (ret == -1) {
-		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -523,8 +486,6 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 
-	show_locks("unlock", locks, count);
-
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 		
@@ -561,10 +522,6 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 		}
 	}
 
-	if (call->new_data) {
-		DEBUG(0,("unlock: size now %d\n", call->new_data->dsize));
-	}
-	
 	if (i == count) {
 		/* we didn't find it */
 		status = NT_STATUS_RANGE_NOT_LOCKED;
@@ -650,8 +607,6 @@ static int brl_ctdb_remove_pending_func(struct ctdb_call *call)
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 
-	show_locks("remove_pending", locks, count);
-
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 		
@@ -676,10 +631,6 @@ static int brl_ctdb_remove_pending_func(struct ctdb_call *call)
 		}
 	}
 	
-	if (call->new_data) {
-		DEBUG(0,("remove_pending: size now %d\n", call->new_data->dsize));
-	}
-
 	if (i == count) {
 		/* we didn't find it */
 		status = NT_STATUS_RANGE_NOT_LOCKED;
@@ -768,8 +719,6 @@ static int brl_ctdb_locktest_func(struct ctdb_call *call)
 	/* there are existing locks - find a match */
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
-
-	show_locks("locktest", locks, count);
 
 	for (i=0; i<count; i++) {
 		if (brl_ctdb_conflict_other(&locks[i], &lock)) {
@@ -860,11 +809,6 @@ static int brl_ctdb_close_func(struct ctdb_call *call)
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 
-	show_locks("close", locks, count);
-
-	DEBUG(0,("closing ctx=%p server=%d.%d ntvfs=%p\n",
-		 req->brl, req->server.node, req->server.id, req->ntvfs));
-
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
@@ -897,12 +841,6 @@ static int brl_ctdb_close_func(struct ctdb_call *call)
 		memcpy(call->new_data->dptr, locks, count*sizeof(struct lock_struct));
 	}
 
-	if (call->new_data) {
-		DEBUG(0,("close: size now %d\n", call->new_data->dsize));
-	}
-
-	DEBUG(0,("brl_ctdb_close_func dcount=%d count=%d\n", dcount, count));
-	
 	call->reply_data = talloc(call, TDB_DATA);
 	if (call->reply_data == NULL) {
 		return CTDB_ERR_NOMEM;
@@ -939,8 +877,6 @@ static NTSTATUS brl_ctdb_close(struct brl_context *brl,
 	req.brl = brl;
 	req.server = brl->server;
 	req.ntvfs = brlh->ntvfs;
-
-	DEBUG(0,("brl_ctdb_close %u.%u %p\n", req.server.node, req.server.id, brl));
 
 	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_CLOSE, &rbuf, &sbuf);
 	if (ret == -1) {
