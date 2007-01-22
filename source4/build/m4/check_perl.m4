@@ -26,6 +26,3 @@ fi
 export PERL
 
 AC_PATH_PROG(YAPP, yapp, false)
-
-PIDL_ARGS=""
-AC_SUBST(PIDL_ARGS)

@@ -208,10 +208,10 @@ $(IDL_HEADER_FILES) \
 	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES): idl
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL $(PIDL_ARGS)
+	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
 
 idl: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL $(PIDL_ARGS)
+	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL 
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
 	-$(YAPP) -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp ||\

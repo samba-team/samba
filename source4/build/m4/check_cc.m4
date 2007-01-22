@@ -47,8 +47,7 @@ AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_
 ],
 	SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=yes,SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=no)])
 if test x"$SMB_BUILD_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
-	AC_MSG_WARN([using --unit-enums for pidl])
-	PIDL_ARGS="$PIDL_ARGS --uint-enums"
+	AC_DEFINE(USE_UINT_ENUMS, 1, [Whether the compiler has uint enum support])
 fi
 
 AC_MSG_CHECKING([for test routines])
