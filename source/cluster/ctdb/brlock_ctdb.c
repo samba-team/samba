@@ -81,6 +81,23 @@ struct brl_handle {
 	struct lock_struct last_lock;
 };
 
+#if 0
+static void show_locks(const char *op, struct lock_struct *locks, int count)
+{
+	int i;
+	DEBUG(0,("OP: %s\n", op));
+	for (i=0;i<count;i++) {
+		DEBUG(0,("%2d: %4d %4d %d.%d.%d %p %p\n",
+			 i, (int)locks[i].start, (int)locks[i].size, 
+			 locks[i].context.server.node,
+			 locks[i].context.server.id,
+			 locks[i].context.smbpid,
+			 locks[i].context.ctx,
+			 locks[i].ntvfs));
+	}
+}
+#endif
+
 /*
   Open up the brlock.tdb database. Close it down using
   talloc_free(). We need the messaging_ctx to allow for
@@ -472,7 +489,7 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 	struct ctdb_unlock_req *req = (struct ctdb_unlock_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
 	int count, i;
-	struct lock_struct *locks;
+	struct lock_struct *locks, *lock;
 	struct lock_context context;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -487,38 +504,53 @@ static int brl_ctdb_unlock_func(struct ctdb_call *call)
 	count = dbuf.dsize / sizeof(*locks);
 
 	for (i=0; i<count; i++) {
-		struct lock_struct *lock = &locks[i];
-		
+		lock = &locks[i];
+		if (brl_ctdb_same_context(&lock->context, &context) &&
+		    lock->ntvfs == req->ntvfs &&
+		    lock->start == req->start &&
+		    lock->size == req->size &&
+		    lock->lock_type == WRITE_LOCK) {
+			break;
+		}
+	}
+	if (i < count) goto found;
+
+	for (i=0; i<count; i++) {
+		lock = &locks[i];
 		if (brl_ctdb_same_context(&lock->context, &context) &&
 		    lock->ntvfs == req->ntvfs &&
 		    lock->start == req->start &&
 		    lock->size == req->size &&
 		    lock->lock_type < PENDING_READ_LOCK) {
-#if ENABLE_NOTIFIES
-			struct lock_struct removed_lock = *lock;
-#endif
-
-			call->new_data = talloc(call, TDB_DATA);
-			if (call->new_data == NULL) {
-				return CTDB_ERR_NOMEM;
-			}
-
-			call->new_data->dptr = talloc_size(call, dbuf.dsize - sizeof(lock));
-			if (call->new_data->dptr == NULL) {
-				return CTDB_ERR_NOMEM;
-			}
-			call->new_data->dsize = dbuf.dsize - sizeof(lock);
-
-			memcpy(call->new_data->dptr, locks, i*sizeof(lock));
-			memcpy(call->new_data->dptr+i*sizeof(lock), locks+i+1,
-			       (count-(i+1))*sizeof(lock));
-			
-			if (count > 1) {
-#if ENABLE_NOTIFIES
-				brl_ctdb_notify_unlock(req->brl, locks, count, &removed_lock);
-#endif
-			}
 			break;
+		}
+	}
+
+found:
+	if (i < count) {
+#if ENABLE_NOTIFIES
+		struct lock_struct removed_lock = *lock;
+#endif
+
+		call->new_data = talloc(call, TDB_DATA);
+		if (call->new_data == NULL) {
+			return CTDB_ERR_NOMEM;
+		}
+		
+		call->new_data->dptr = talloc_size(call, dbuf.dsize - sizeof(*lock));
+		if (call->new_data->dptr == NULL) {
+			return CTDB_ERR_NOMEM;
+		}
+		call->new_data->dsize = dbuf.dsize - sizeof(*lock);
+		
+		memcpy(call->new_data->dptr, locks, i*sizeof(*lock));
+		memcpy(call->new_data->dptr+i*sizeof(*lock), locks+i+1,
+		       (count-(i+1))*sizeof(*lock));
+		
+		if (count > 1) {
+#if ENABLE_NOTIFIES
+			brl_ctdb_notify_unlock(req->brl, locks, count, &removed_lock);
+#endif
 		}
 	}
 
@@ -618,15 +650,15 @@ static int brl_ctdb_remove_pending_func(struct ctdb_call *call)
 				return CTDB_ERR_NOMEM;
 			}
 
-			call->new_data->dptr = talloc_size(call, dbuf.dsize - sizeof(lock));
+			call->new_data->dptr = talloc_size(call, dbuf.dsize - sizeof(*lock));
 			if (call->new_data->dptr == NULL) {
 				return CTDB_ERR_NOMEM;
 			}
-			call->new_data->dsize = dbuf.dsize - sizeof(lock);
+			call->new_data->dsize = dbuf.dsize - sizeof(*lock);
 
-			memcpy(call->new_data->dptr, locks, i*sizeof(lock));
-			memcpy(call->new_data->dptr+i*sizeof(lock), locks+i+1,
-			       (count-(i+1))*sizeof(lock));
+			memcpy(call->new_data->dptr, locks, i*sizeof(*lock));
+			memcpy(call->new_data->dptr+i*sizeof(*lock), locks+i+1,
+			       (count-(i+1))*sizeof(*lock));
 			break;
 		}
 	}
