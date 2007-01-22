@@ -42,6 +42,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	struct ldb_result *schema_res;
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
+	struct ldb_val info_val_default;
 	struct ldb_result *a_res;
 	struct ldb_result *c_res;
 	uint32_t i;
@@ -116,10 +117,13 @@ static int schema_fsmo_init(struct ldb_module *module)
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
 	if (!info_val) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: no schemaInfo attribute found\n");
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		if (!info_val_default.data) {
+			ldb_oom(module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		talloc_steal(mem_ctx, info_val_default.data);
+		info_val = &info_val_default;
 	}
 
 	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
