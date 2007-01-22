@@ -125,7 +125,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	va_list ap;
 	struct ctdb_reply_error *r;
 	char *msg;
-	int len;
+	int msglen, len;
 
 	va_start(ap, fmt);
 	msg = talloc_vasprintf(ctdb, fmt, ap);
@@ -134,17 +134,19 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	}
 	va_end(ap);
 
-	len = strlen(msg)+1;
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + len);
+	msglen = strlen(msg)+1;
+	len = offsetof(struct ctdb_reply_error, msg);
+	r = ctdb->methods->allocate_pkt(ctdb, len + msglen);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) - 1 + len;
+
+	r->hdr.length    = len + msglen;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = hdr->reqid;
 	r->status        = status;
-	r->msglen        = len;
-	memcpy(&r->msg[0], msg, len);
+	r->msglen        = msglen;
+	memcpy(&r->msg[0], msg, msglen);
 
 	talloc_free(msg);
 
@@ -192,7 +194,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	struct ctdb_req_dmaster *r;
 	int len;
 	
-	len = sizeof(*r) - 1 + key->dsize + data->dsize;
+	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
@@ -234,7 +236,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_reply_dmaster *r;
 	TDB_DATA key, data;
 	struct ctdb_ltdb_header header;
-	int ret;
+	int ret, len;
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
@@ -268,9 +270,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + data.dsize);
+	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
+	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) - 1 + data.dsize;
+	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = c->dmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -299,7 +302,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_req_call *c = (struct ctdb_req_call *)hdr;
 	TDB_DATA key, data, call_data, reply_data;
 	struct ctdb_reply_call *r;
-	int ret;
+	int ret, len;
 	struct ctdb_ltdb_header header;
 
 	key.dptr = c->data;
@@ -339,9 +342,10 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			call_data.dsize?&call_data:NULL,
 			&reply_data, c->hdr.srcnode);
 
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) - 1 + reply_data.dsize);
+	len = offsetof(struct ctdb_reply_call, data) + reply_data.dsize;
+	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) - 1 + reply_data.dsize;
+	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
@@ -564,7 +568,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	state = talloc_zero(ctdb, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
-	len = sizeof(*state->c) - 1 + key.dsize + (call_data?call_data->dsize:0);
+	len = offsetof(struct ctdb_req_call, data) + key.dsize + (call_data?call_data->dsize:0);
 	state->c = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 
