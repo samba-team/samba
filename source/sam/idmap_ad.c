@@ -170,14 +170,14 @@ static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_t
 		case ID_USERID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
-				ads->schema.posix_uidnumber_attr, (int)unid.uid) == -1) {
+				attr_uidnumber, (int)unid.uid) == -1) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			break;
 		case ID_GROUPID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP,
-				ads->schema.posix_gidnumber_attr, (int)unid.gid) == -1) {
+				attr_gidnumber, (int)unid.gid) == -1) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			break;
