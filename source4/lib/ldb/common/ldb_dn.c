@@ -1421,6 +1421,7 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const str
 		dn->valid_case = false;
 	}
 	LDB_FREE(dn->casefold);
+	LDB_FREE(dn->linearized);
 
 	return LDB_SUCCESS;
 }
