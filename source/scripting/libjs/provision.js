@@ -481,6 +481,9 @@ function provision_become_dc(subobj, message, paths, session_info)
 	message("Setting up " + paths.samdb + " indexes\n");
 	setup_add_ldif("provision_index.ldif", info, samdb, false);
 
+	message("Setting up " + paths.samdb + " templates\n");
+	setup_add_ldif("provision_templates.ldif", info, samdb, false);
+
 	ok = samdb.transaction_commit();
 	assert(ok);
 
