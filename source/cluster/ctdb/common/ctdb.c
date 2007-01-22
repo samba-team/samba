@@ -186,8 +186,6 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 		return;
 	}
 
-	DEBUG(0,("got ctdb op %d reqid %d\n", hdr->operation, hdr->reqid));
-
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		ctdb_request_call(ctdb, hdr);
