@@ -87,17 +87,6 @@ sub print_uuid($)
 		"{".join(',', map {"0x$_"} @node)."}}";
 }
 
-# a hack to build on platforms that don't like negative enum values
-my $useUintEnums = 0;
-sub setUseUintEnums($)
-{
-	$useUintEnums = shift;
-}
-sub useUintEnums()
-{
-	return $useUintEnums;
-}
-
 sub ParseExpr($$$)
 {
 	my($expr, $varlist, $e) = @_;
