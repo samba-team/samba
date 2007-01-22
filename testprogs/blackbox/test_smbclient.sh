@@ -97,6 +97,17 @@ echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN1" -m LANMAN1 || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $failed + 1`
 
-rm -f tmpfile tmpfile-old tmpfilex
+echo ls | testit "Test login with --machine-pass" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass
+
+echo "password=$PASSWORD\nusername=$USERNAME\ndomain=$DOMAIN" > tmpauthfile
+
+echo ls | testit "Test login with --authentication-file" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile 
+
+echo "$PASSWORD" > tmppassfile
+
+echo ls | PASSWD_FILE="tmppassfile" testit "Test login with PASSWD_FILE" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME"
+
+
+rm -f tmpfile tmpfile-old tmpfilex tmpauthfile tmppassfile
 
 exit $failed
