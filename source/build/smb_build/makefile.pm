@@ -154,7 +154,6 @@ XSLTPROC=$self->{config}->{XSLTPROC}
 LEX=$self->{config}->{LEX}
 YACC=$self->{config}->{YACC}
 YAPP=$self->{config}->{YAPP}
-PIDL_ARGS=$self->{config}->{PIDL_ARGS}
 
 GCOV=$self->{config}->{GCOV}
 
