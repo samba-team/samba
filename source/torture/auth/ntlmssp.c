@@ -72,6 +72,18 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 	torture_assert(tctx, 0 == memcmp(sig.data, expected_sig.data, sig.length),
 				   "data mismatch");
 
+	torture_assert_ntstatus_equal(tctx, 
+				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+								  data.data, data.length, data.data, data.length, &sig),
+				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
+
+	gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
+
+	torture_assert_ntstatus_equal(tctx, 
+				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+								  data.data, data.length, data.data, data.length, &sig),
+				      NT_STATUS_NO_USER_SESSION_KEY, "Check of just signed packet without a session key should fail");
+
 	talloc_free(gensec_security);
 
 	torture_assert_ntstatus_ok(tctx, 
@@ -113,6 +125,11 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	torture_assert(tctx,  0 == memcmp(sig.data+8, expected_sig.data+8, sig.length-8),
 				   "data mismatch");
+
+	torture_assert_ntstatus_equal(tctx, 
+				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+								  data.data, data.length, data.data, data.length, &sig),
+				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
 
 	talloc_free(gensec_security);
 	return true;
