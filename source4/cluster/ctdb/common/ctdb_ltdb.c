@@ -24,6 +24,8 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "cluster/ctdb/include/ctdb_private.h"
+#include "db_wrap.h"
+
 
 /*
   attach to a specific database
@@ -34,7 +36,7 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 	/* when we have a separate daemon this will need to be a real
 	   file, not a TDB_INTERNAL, so the parent can access it to
 	   for ltdb bypass */
-	ctdb->ltdb = tdb_open(name, 0, /* tdb_flags */ TDB_INTERNAL, open_flags, mode);
+	ctdb->ltdb = tdb_wrap_open(ctdb, name, 0, TDB_INTERNAL, open_flags, mode);
 	if (ctdb->ltdb == NULL) {
 		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
 		return -1;
@@ -76,7 +78,7 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb,
 {
 	TDB_DATA rec;
 
-	rec = tdb_fetch(ctdb->ltdb, key);
+	rec = tdb_fetch(ctdb->ltdb->tdb, key);
 	if (rec.dsize < sizeof(*header)) {
 		/* return an initial header */
 		free(rec.dptr);
@@ -116,7 +118,7 @@ int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key,
 	memcpy(rec.dptr, header, sizeof(*header));
 	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
 
-	ret = tdb_store(ctdb->ltdb, key, rec, TDB_REPLACE);
+	ret = tdb_store(ctdb->ltdb->tdb, key, rec, TDB_REPLACE);
 	talloc_free(rec.dptr);
 
 	return ret;
