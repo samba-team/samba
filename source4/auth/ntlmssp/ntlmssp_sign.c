@@ -168,7 +168,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 	}
 
 	if (sig->length < 8) {
-		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n", 
+		DEBUG(1, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n", 
 			  (unsigned long)sig->length));
 	}
 
@@ -192,7 +192,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 			DEBUG(5, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
 			dump_data(5, sig->data, sig->length);
 			
-			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature on %llu bytes of input!\n", (unsigned long long)pdu_length));
+			DEBUG(1, ("NTLMSSP NTLM2 packet check failed due to invalid signature on %llu bytes of input!\n", (unsigned long long)pdu_length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
@@ -205,7 +205,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 			DEBUG(5, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
 			dump_data(5, sig->data, sig->length);
 			
-			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
+			DEBUG(1, ("NTLMSSP NTLM1 packet check failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
