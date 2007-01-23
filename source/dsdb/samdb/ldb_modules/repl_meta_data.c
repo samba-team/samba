@@ -267,13 +267,6 @@ static int replmd_prepare_originating(struct ldb_module *module, struct ldb_requ
 	schema = dsdb_get_schema(module->ldb);
 	if (!schema) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_modify: no dsdb_schema loaded");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
 			      "%s: no dsdb_schema loaded",
 			      fn_name);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
