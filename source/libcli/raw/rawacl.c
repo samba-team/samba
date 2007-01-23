@@ -131,12 +131,12 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
 
-	ndr = ndr_push_init();
+	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return NULL;
 
 	status = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		ndr_push_free(ndr);
+		talloc_free(ndr);
 		return NULL;
 	}
 
@@ -144,7 +144,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 
 	req = smb_raw_nttrans_send(tree, &nt);
 
-	ndr_push_free(ndr);
+	talloc_free(ndr);
 	return req;
 }
 
