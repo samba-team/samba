@@ -134,20 +134,6 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	return ndr;
 }
 
-
-/* create a ndr_push structure, ready for some marshalling */
-_PUBLIC_ struct ndr_push *ndr_push_init(void)
-{
-	return ndr_push_init_ctx(NULL);
-}
-
-/* free a ndr_push structure */
-_PUBLIC_ void ndr_push_free(struct ndr_push *ndr)
-{
-	talloc_free(ndr);
-}
-
-
 /* return a DATA_BLOB structure for the current ndr_push marshalled data */
 _PUBLIC_ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 {
