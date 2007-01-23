@@ -107,6 +107,7 @@ mechsrc = \
 	mech/gss_oid_equal.c \
 	mech/gss_oid_to_str.c \
 	mech/gss_process_context_token.c \
+	mech/gss_pseudo_random.c \
 	mech/gss_release_buffer.c \
 	mech/gss_release_cred.c \
 	mech/gss_release_name.c \
