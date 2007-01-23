@@ -72,9 +72,27 @@ SKIP: {
 		$outfile = "./test-$name";
 	}
 
+	my $cflags = $ENV{CFLAGS};
+	unless (defined($cflags)) {
+		$cflags = "";
+	}
+
+	my $ldflags = $ENV{LDFLAGS};
+	unless (defined($ldflags)) {
+		$ldflags = "";
+	}
+
+	my $cc = $ENV{CC};
+	unless (defined($cc)) {
+		$cc = "cc";
+	}
+
 	my $flags = `pkg-config --libs --cflags ndr samba-config`;
 
-	open CC, "|cc -x c - -o $outfile $flags";
+	my $cmd = "$cc $cflags -x c - -o $outfile $flags $ldflags";
+	$cmd =~ s/\n//g;
+	print "$cmd\n";
+	open CC, "|$cmd";
 	print CC "#define uint_t unsigned int\n";
 	print CC "#define _GNU_SOURCE\n";
 	print CC "#include <stdint.h>\n";
@@ -120,7 +138,6 @@ sub test_warnings($$)
 
 	is($warnings, $exp);
 }
-
 
 sub test_errors($$)
 {
