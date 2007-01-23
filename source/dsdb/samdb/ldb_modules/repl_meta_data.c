@@ -53,6 +53,8 @@ struct replmd_replicated_request {
 	struct ldb_handle *handle;
 	struct ldb_request *orig_req;
 
+	const struct dsdb_schema *schema;
+
 	struct dsdb_extended_replicated_objects *objs;
 
 	uint32_t index_current;
@@ -73,6 +75,14 @@ static struct replmd_replicated_request *replmd_replicated_init_handle(struct ld
 {
 	struct replmd_replicated_request *ar;
 	struct ldb_handle *h;
+	const struct dsdb_schema *schema;
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "replmd_replicated_init_handle: no loaded schema found\n");
+		return NULL;
+	}
 
 	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
@@ -96,6 +106,7 @@ static struct replmd_replicated_request *replmd_replicated_init_handle(struct ld
 	ar->module	= module;
 	ar->handle	= h;
 	ar->orig_req	= req;
+	ar->schema	= schema;
 	ar->objs	= objs;
 
 	req->handle = h;
@@ -166,6 +177,75 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return 0;
+}
+
+static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMetaData1 *m1,
+						   const struct replPropertyMetaData1 *m2,
+						   const uint32_t *rdn_attid)
+{
+	if (m1->attid == m2->attid) {
+		return 0;
+	}
+
+	/*
+	 * the rdn attribute should be at the end!
+	 * so we need to return a value greater than zero
+	 * which means m1 is greater than m2
+	 */
+	if (m1->attid == *rdn_attid) {
+		return 1;
+	}
+
+	/*
+	 * the rdn attribute should be at the end!
+	 * so we need to return a value less than zero
+	 * which means m2 is greater than m1
+	 */
+	if (m2->attid == *rdn_attid) {
+		return -1;
+	}
+
+	return m1->attid - m2->attid;
+}
+
+static void replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
+						 const uint32_t *rdn_attid)
+{
+	ldb_qsort(ctr1->array, ctr1->count, sizeof(struct replPropertyMetaData1),
+		  discard_const_p(void, rdn_attid), (ldb_qsort_cmp_fn_t)replmd_replPropertyMetaData1_attid_sort);
+}
+
+static int replmd_ldb_message_element_attid_sort(const struct ldb_message_element *e1,
+						 const struct ldb_message_element *e2,
+						 const struct dsdb_schema *schema)
+{
+	const struct dsdb_attribute *a1;
+	const struct dsdb_attribute *a2;
+
+	/* 
+	 * TODO: make this faster by caching the dsdb_attribute pointer
+	 *       on the ldb_messag_element
+	 */
+
+	a1 = dsdb_attribute_by_lDAPDisplayName(schema, e1->name);
+	a2 = dsdb_attribute_by_lDAPDisplayName(schema, e2->name);
+
+	/*
+	 * TODO: remove this check, we should rely on e1 and e2 having valid attribute names
+	 *       in the schema
+	 */
+	if (!a1 || !a2) {
+		return strcasecmp(e1->name, e2->name);
+	}
+
+	return a1->attributeID_id - a2->attributeID_id;
+}
+
+static void replmd_ldb_message_sort(struct ldb_message *msg,
+				    const struct dsdb_schema *schema)
+{
+	ldb_qsort(msg->elements, msg->num_elements, sizeof(struct ldb_message_element),
+		  discard_const_p(void, schema), (ldb_qsort_cmp_fn_t)replmd_ldb_message_element_attid_sort);
 }
 
 static int replmd_prepare_originating(struct ldb_module *module, struct ldb_request *req,
@@ -489,7 +569,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		return replmd_replicated_request_error(ar, ret);
 	}
 
-	md = ar->objs->objects[ar->index_current].meta_data;
+	/*
+	 * the meta data array is already sorted by the caller
+	 */
 	for (i=0; i < md->ctr.ctr1.count; i++) {
 		md->ctr.ctr1.array[i].local_usn = seq_num;
 	}
@@ -502,6 +584,8 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	if (ret != LDB_SUCCESS) {
 		return replmd_replicated_request_error(ar, ret);
 	}
+
+	replmd_ldb_message_sort(msg, ar->schema);
 
 	ret = ldb_build_add_req(&ar->sub.change_req,
 				ar->module->ldb,
@@ -530,12 +614,6 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	return LDB_SUCCESS;
 #endif
-}
-
-static int replmd_replPropertyMetaData1_attid_compare(struct replPropertyMetaData1 *m1,
-						      struct replPropertyMetaData1 *m2)
-{
-	return m1->attid - m2->attid;
 }
 
 static int replmd_replPropertyMetaData1_conflict_compare(struct replPropertyMetaData1 *m1,
@@ -696,30 +774,15 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 * 'cn' for most objects is the last entry in the meta data array
 	 * we have stored
 	 *
-	 * as it should stay the last one in the new list, we move it to the end
+	 * sort the new meta data array
 	 */
 	{
-		struct replPropertyMetaData1 *rdn_p, rdn, *last_p;
+		struct replPropertyMetaData1 *rdn_p;
 		uint32_t rdn_idx = omd.ctr.ctr1.count - 1;
-		uint32_t last_idx = ni - 1;
 
 		rdn_p = &nmd.ctr.ctr1.array[rdn_idx];
-		rdn = *rdn_p;
-		last_p = &nmd.ctr.ctr1.array[last_idx];
-
-		if (last_idx > rdn_idx) {
-			memmove(rdn_p, rdn_p+1, (last_idx - rdn_idx)*sizeof(rdn));
-			*last_p = rdn;
-		}
+		replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, &rdn_p->attid);
 	}
-
-	/*
-	 * sort the meta data entries by attid, but skip the last one containing
-	 * the rdn attribute
-	 */
-	qsort(nmd.ctr.ctr1.array, nmd.ctr.ctr1.count - 1,
-	      sizeof(struct replPropertyMetaData1),
-	      (comparison_fn_t)replmd_replPropertyMetaData1_attid_compare);
 
 	/* create the meta data value */
 	nt_status = ndr_push_struct_blob(&nmd_value, msg, &nmd,
@@ -756,6 +819,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	if (ret != LDB_SUCCESS) {
 		return replmd_replicated_request_error(ar, ret);
 	}
+
+	replmd_ldb_message_sort(msg, ar->schema);
 
 	/* we want to replace the old values */
 	for (i=0; i < msg->num_elements; i++) {
