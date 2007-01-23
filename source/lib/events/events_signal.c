@@ -171,6 +171,11 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 	se->private_data	= private_data;
 	se->signum              = signum;
 	se->sa_flags            = sa_flags;
+	
+	/* Ensure, no matter the destruction order, that we always have a handle on the global sig_state */
+	if (!talloc_reference(se, sig_state)) {
+		return NULL;
+	}
 
 	/* only install a signal handler if not already installed */
 	if (sig_state->sig_handlers[signum] == NULL) {
