@@ -100,7 +100,7 @@ WERROR dreplsrv_periodic_schedule(struct dreplsrv_service *service, uint32_t nex
 	W_ERROR_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(4,("dreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
+	DEBUG(6,("dreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
 		next_interval,
 		(service->periodic.te?"re":""),
 		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
