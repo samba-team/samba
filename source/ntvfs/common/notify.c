@@ -213,6 +213,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	}
 
 	tmp_ctx = talloc_new(notify);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	status = ndr_push_struct_blob(&blob, tmp_ctx, notify->array, 
 				      (ndr_push_flags_fn_t)ndr_push_notify_array);
@@ -245,6 +246,10 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 	struct notify_event ev;
 	TALLOC_CTX *tmp_ctx = talloc_new(notify);
 	struct notify_list *listel;
+
+	if (tmp_ctx == NULL) {
+		return;
+	}
 
 	status = ndr_pull_struct_blob(data, tmp_ctx, &ev, 
 				      (ndr_pull_flags_fn_t)ndr_pull_notify_event);
