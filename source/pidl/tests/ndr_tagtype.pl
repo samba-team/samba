@@ -18,7 +18,7 @@ test_samba4_ndr('struct-notypedef',
 	};
 ',
 '
-	struct ndr_push *ndr = ndr_push_init();
+	struct ndr_push *ndr = ndr_push_init_ctx(NULL);
 	struct bla r;
 	uint8_t expected[] = { 0x0D };
 	DATA_BLOB expected_blob = { expected, 1 };

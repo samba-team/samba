@@ -340,7 +340,8 @@ test_cov:
 	@$(MAKE) test \
 		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
 		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
-		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)"
+		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
+		SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)"
 
 gcov: test_cov
 	for I in $(sort $(dir $(ALL_OBJS))); \
