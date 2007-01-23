@@ -20,9 +20,11 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/util/dlinklist.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
 
@@ -199,15 +201,20 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 	struct ctdb_tcp_packet *pkt;
+	uint32_t length2;
 
 	/* enforce the length and alignment rules from the tcp packet allocator */
-	length = (length+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
-	*(uint32_t *)data = length;
+	length2 = (length+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
+	*(uint32_t *)data = length2;
+
+	if (length2 != length) {
+		memset(data+length, 0, length2-length);
+	}
 	
 	/* if the queue is empty then try an immediate write, avoiding
 	   queue overhead. This relies on non-blocking sockets */
 	if (tnode->queue == NULL && tnode->fd != -1) {
-		ssize_t n = write(tnode->fd, data, length);
+		ssize_t n = write(tnode->fd, data, length2);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			event_add_timed(node->ctdb->ev, node, timeval_zero(), 
 					ctdb_tcp_node_dead, node);
@@ -217,18 +224,18 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 		}
 		if (n > 0) {
 			data += n;
-			length -= n;
+			length2 -= n;
 		}
-		if (length == 0) return 0;
+		if (length2 == 0) return 0;
 	}
 
 	pkt = talloc(tnode, struct ctdb_tcp_packet);
 	CTDB_NO_MEMORY(node->ctdb, pkt);
 
-	pkt->data = talloc_memdup(pkt, data, length);
+	pkt->data = talloc_memdup(pkt, data, length2);
 	CTDB_NO_MEMORY(node->ctdb, pkt->data);
 
-	pkt->length = length;
+	pkt->length = length2;
 
 	if (tnode->queue == NULL && tnode->fd != -1) {
 		EVENT_FD_WRITEABLE(tnode->fde);

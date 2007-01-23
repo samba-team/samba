@@ -20,9 +20,10 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
 static void set_nonblocking(int fd)
@@ -88,7 +89,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
 	
-	if (connect(tnode->fd, &sock_out, sizeof(sock_out)) != 0 &&
+	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sizeof(sock_out)) != 0 &&
 	    errno != EINPROGRESS) {
 		/* try again once a second */
 		close(tnode->fd);

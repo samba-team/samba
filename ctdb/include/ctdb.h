@@ -18,6 +18,8 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifndef _CTDB_H
+#define _CTDB_H
 
 /*
   structure passed to a ctdb call function
@@ -55,6 +57,11 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
+
+/*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count);
 
 /*
   tell ctdb what address to listen on, in transport specific format
@@ -109,3 +116,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb);
 */
 void ctdb_wait_loop(struct ctdb_context *ctdb);
 
+/* return vnn of this node */
+uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
+
+#endif

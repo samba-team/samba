@@ -23,10 +23,10 @@
 */
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
-
+#include "../include/ctdb_private.h"
 
 /*
   queue a packet or die
@@ -115,12 +115,15 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key,
 */
 static void ctdb_send_error(struct ctdb_context *ctdb, 
 			    struct ctdb_req_header *hdr, uint32_t status,
+			    const char *fmt, ...) PRINTF_ATTRIBUTE(4,5);
+static void ctdb_send_error(struct ctdb_context *ctdb, 
+			    struct ctdb_req_header *hdr, uint32_t status,
 			    const char *fmt, ...)
 {
 	va_list ap;
 	struct ctdb_reply_error *r;
 	char *msg;
-	int len;
+	int msglen, len;
 
 	va_start(ap, fmt);
 	msg = talloc_vasprintf(ctdb, fmt, ap);
@@ -129,17 +132,19 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	}
 	va_end(ap);
 
-	len = strlen(msg)+1;
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + len);
+	msglen = strlen(msg)+1;
+	len = offsetof(struct ctdb_reply_error, msg);
+	r = ctdb->methods->allocate_pkt(ctdb, len + msglen);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + len;
+
+	r->hdr.length    = len + msglen;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = hdr->reqid;
 	r->status        = status;
-	r->msglen        = len;
-	memcpy(&r->msg[0], msg, len);
+	r->msglen        = msglen;
+	memcpy(&r->msg[0], msg, msglen);
 
 	talloc_free(msg);
 
@@ -187,7 +192,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	struct ctdb_req_dmaster *r;
 	int len;
 	
-	len = sizeof(*r) + key->dsize + data->dsize;
+	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
@@ -201,7 +206,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	memcpy(&r->data[0], key->dptr, key->dsize);
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
-	if (r->hdr.destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (r->hdr.destnode == ctdb->vnn) {
 		/* we are the lmaster - don't send to ourselves */
 		ctdb_request_dmaster(ctdb, &r->hdr);
 	} else {
@@ -226,9 +231,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 {
 	struct ctdb_req_dmaster *c = (struct ctdb_req_dmaster *)hdr;
 	struct ctdb_reply_dmaster *r;
-	TDB_DATA key, data;
+	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header header;
-	int ret;
+	int ret, len;
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
@@ -236,7 +241,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dsize = c->datalen;
 
 	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data2);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
@@ -255,9 +260,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + data.dsize);
+	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
+	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + data.dsize;
+	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = c->dmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -265,7 +271,11 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	ctdb_queue_packet(ctdb, &r->hdr);
+	if (r->hdr.destnode == r->hdr.srcnode) {
+		ctdb_reply_dmaster(ctdb, &r->hdr);
+	} else {
+		ctdb_queue_packet(ctdb, &r->hdr);
+	}
 
 	talloc_free(r);
 }
@@ -279,7 +289,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_req_call *c = (struct ctdb_req_call *)hdr;
 	TDB_DATA key, data, call_data, reply_data;
 	struct ctdb_reply_call *r;
-	int ret;
+	int ret, len;
 	struct ctdb_ltdb_header header;
 
 	key.dptr = c->data;
@@ -307,7 +317,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* if this nodes has done enough consecutive calls on the same record
 	   then give them the record */
 	if (header.laccessor == c->hdr.srcnode &&
-	    header.lacount >= CTDB_MAX_LACOUNT) {
+	    header.lacount >= ctdb->max_lacount) {
 		ctdb_call_send_dmaster(ctdb, c, &header, &key, &data);
 		talloc_free(data.dptr);
 		return;
@@ -317,9 +327,10 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			call_data.dsize?&call_data:NULL,
 			&reply_data, c->hdr.srcnode);
 
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + reply_data.dsize);
+	len = offsetof(struct ctdb_reply_call, data) + reply_data.dsize;
+	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.length = sizeof(*r) + reply_data.dsize;
+	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
@@ -364,6 +375,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	TDB_DATA reply_data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	reply_data.dptr = c->data;
 	reply_data.dsize = c->datalen;
@@ -389,6 +401,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	TDB_DATA data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -421,6 +434,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	talloc_steal(state, c);
 
@@ -442,6 +456,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
 
 	talloc_steal(state, c);
 	
@@ -474,7 +489,8 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_call_state *state = talloc_get_type(private, struct ctdb_call_state);
 	state->state = CTDB_CALL_ERROR;
-	ctdb_set_error(state->node->ctdb, "ctdb_call timed out");
+	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
+		       state->c->hdr.reqid);
 }
 
 /*
@@ -538,7 +554,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	state = talloc_zero(ctdb, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
-	len = sizeof(*state->c) + key.dsize + (call_data?call_data->dsize:0);
+	len = offsetof(struct ctdb_req_call, data) + key.dsize + (call_data?call_data->dsize:0);
 	state->c = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 

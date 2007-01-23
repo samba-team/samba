@@ -20,9 +20,10 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
 
 /*
   attach to a specific database

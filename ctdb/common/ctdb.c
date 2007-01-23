@@ -19,10 +19,12 @@
 */
 
 #include "includes.h"
+#include "lib/tdb/include/tdb.h"
 #include "lib/events/events.h"
+#include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
 
 /*
   choose the transport we will use
@@ -46,6 +48,13 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 	ctdb->flags |= flags;
 }
 
+/*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
+{
+	ctdb->max_lacount = count;
+}
 
 /*
   add a node to the list of active nodes
@@ -145,6 +154,14 @@ int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id)
 }
 
 /*
+  return the vnn of this node
+*/
+uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
+{
+	return ctdb->vnn;
+}
+
+/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
@@ -168,6 +185,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 			       hdr->length, length);
 		return;
 	}
+
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		ctdb_request_call(ctdb, hdr);
@@ -268,6 +286,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev = ev;
 	ctdb->upcalls = &ctdb_upcalls;
 	ctdb->idr = idr_init(ctdb);
+	ctdb->max_lacount = CTDB_DEFAULT_MAX_LACOUNT;
 
 	return ctdb;
 }
