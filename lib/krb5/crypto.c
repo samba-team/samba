@@ -126,6 +126,9 @@ struct encryption_type {
 			       krb5_boolean encryptp,
 			       int usage,
 			       void *ivec);
+    size_t prf_length;
+    krb5_error_code (*prf)(krb5_context,
+			   krb5_crypto, const krb5_data *, krb5_data *);
 };
 
 #define ENCRYPTION_USAGE(U) (((U) << 8) | 0xAA)
@@ -2449,6 +2452,58 @@ ARCFOUR_encrypt(krb5_context context,
 
 
 /*
+ *
+ */
+
+static krb5_error_code
+AES_PRF(krb5_context context,
+	krb5_crypto crypto,
+	const krb5_data *in,
+	krb5_data *out)
+{
+    struct checksum_type *ct = crypto->et->checksum;
+    krb5_error_code ret;
+    Checksum result;
+    krb5_keyblock *derived;
+
+    result.cksumtype = ct->type;
+    ret = krb5_data_alloc(&result.checksum, ct->checksumsize);
+    if (ret) {
+	krb5_set_error_string(context, "out memory");
+	return ret;
+    }
+
+    (*ct->checksum)(context, NULL, in->data, in->length, 0, &result);
+
+    if (result.checksum.length < crypto->et->blocksize)
+	krb5_abortx(context, "internal prf error");
+
+    derived = NULL;
+    ret = krb5_derive_key(context, crypto->key.key, 
+			  crypto->et->type, "prf", 3, &derived);
+    if (ret)
+	krb5_abortx(context, "krb5_derive_key");
+
+    ret = krb5_data_alloc(out, crypto->et->blocksize);
+    if (ret)
+	krb5_abortx(context, "malloc failed");
+    
+    { 
+	AES_KEY key;
+
+	AES_set_encrypt_key(derived->keyvalue.data, 
+			    crypto->et->keytype->bits, &key);
+	AES_encrypt(result.checksum.data, out->data, &key);
+	memset(&key, 0, sizeof(key));
+    }
+
+    krb5_data_free(&result.checksum);
+    krb5_free_keyblock(context, derived);
+
+    return ret;
+}
+
+/*
  * these should currently be in reverse preference order.
  * (only relevant for !F_PSEUDO) */
 
@@ -2464,6 +2519,8 @@ static struct encryption_type enctype_null = {
     NULL,
     F_DISABLED,
     NULL_encrypt,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des_cbc_crc = {
     ETYPE_DES_CBC_CRC,
@@ -2477,6 +2534,8 @@ static struct encryption_type enctype_des_cbc_crc = {
     NULL,
     0,
     DES_CBC_encrypt_key_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des_cbc_md4 = {
     ETYPE_DES_CBC_MD4,
@@ -2490,6 +2549,8 @@ static struct encryption_type enctype_des_cbc_md4 = {
     &checksum_rsa_md4_des,
     0,
     DES_CBC_encrypt_null_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des_cbc_md5 = {
     ETYPE_DES_CBC_MD5,
@@ -2503,6 +2564,8 @@ static struct encryption_type enctype_des_cbc_md5 = {
     &checksum_rsa_md5_des,
     0,
     DES_CBC_encrypt_null_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_arcfour_hmac_md5 = {
     ETYPE_ARCFOUR_HMAC_MD5,
@@ -2515,7 +2578,9 @@ static struct encryption_type enctype_arcfour_hmac_md5 = {
     &checksum_hmac_md5,
     NULL,
     F_SPECIAL,
-    ARCFOUR_encrypt
+    ARCFOUR_encrypt,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des3_cbc_md5 = { 
     ETYPE_DES3_CBC_MD5,
@@ -2529,6 +2594,8 @@ static struct encryption_type enctype_des3_cbc_md5 = {
     &checksum_rsa_md5_des3,
     0,
     DES3_CBC_encrypt,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des3_cbc_sha1 = {
     ETYPE_DES3_CBC_SHA1,
@@ -2542,6 +2609,8 @@ static struct encryption_type enctype_des3_cbc_sha1 = {
     &checksum_hmac_sha1_des3,
     F_DERIVED,
     DES3_CBC_encrypt,
+    0,
+    NULL
 };
 static struct encryption_type enctype_old_des3_cbc_sha1 = {
     ETYPE_OLD_DES3_CBC_SHA1,
@@ -2555,6 +2624,8 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
     &checksum_hmac_sha1_des3,
     0,
     DES3_CBC_encrypt,
+    0,
+    NULL
 };
 static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     ETYPE_AES128_CTS_HMAC_SHA1_96,
@@ -2568,6 +2639,8 @@ static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     &checksum_hmac_sha1_aes128,
     F_DERIVED,
     AES_CTS_encrypt,
+    16,
+    AES_PRF
 };
 static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     ETYPE_AES256_CTS_HMAC_SHA1_96,
@@ -2581,6 +2654,8 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     &checksum_hmac_sha1_aes256,
     F_DERIVED,
     AES_CTS_encrypt,
+    16,
+    AES_PRF
 };
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
@@ -2594,6 +2669,8 @@ static struct encryption_type enctype_des_cbc_none = {
     NULL,
     F_PSEUDO,
     DES_CBC_encrypt_null_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des_cfb64_none = {
     ETYPE_DES_CFB64_NONE,
@@ -2607,6 +2684,8 @@ static struct encryption_type enctype_des_cfb64_none = {
     NULL,
     F_PSEUDO,
     DES_CFB64_encrypt_null_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des_pcbc_none = {
     ETYPE_DES_PCBC_NONE,
@@ -2620,6 +2699,8 @@ static struct encryption_type enctype_des_pcbc_none = {
     NULL,
     F_PSEUDO,
     DES_PCBC_encrypt_key_ivec,
+    0,
+    NULL
 };
 static struct encryption_type enctype_des3_cbc_none = {
     ETYPE_DES3_CBC_NONE,
@@ -2633,6 +2714,8 @@ static struct encryption_type enctype_des3_cbc_none = {
     NULL,
     F_PSEUDO,
     DES3_CBC_encrypt,
+    0,
+    NULL
 };
 
 static struct encryption_type *etypes[] = {
@@ -3931,6 +4014,44 @@ _krb5_pk_octetstring2key(krb5_context context,
     free(keydata);
     return ret;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_prf_length(krb5_context context,
+		       krb5_enctype type,
+		       size_t *length)
+{
+    struct encryption_type *et = _find_enctype(type);
+
+    if(et == NULL || et->prf_length == 0) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+
+    *length = et->prf_length;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_prf(krb5_context context,
+		const krb5_crypto crypto,
+		const krb5_data *input, 
+		krb5_data *output)
+{
+    struct encryption_type *et = crypto->et;
+
+    krb5_data_zero(output);
+
+    if(et->prf == NULL) {
+	krb5_set_error_string(context, "kerberos prf for %s not supported",
+			      et->name);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+
+    return (*et->prf)(context, crypto, input, output);
+}
+	
+
 
 
 #ifdef CRYPTO_DEBUG
