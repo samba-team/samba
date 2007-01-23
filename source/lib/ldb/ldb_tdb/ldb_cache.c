@@ -488,55 +488,6 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	return ret;
 }
 
-
-/*
-  return the attribute flags from the @ATTRIBUTES record 
-  for the given attribute
-*/
-int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	const struct ldb_message_element *attr_el;
-	int i, j, ret=0;
-
-	if (ltdb->cache->last_attribute.name &&
-	    ldb_attr_cmp(ltdb->cache->last_attribute.name, attr_name) == 0) {
-		return ltdb->cache->last_attribute.flags;
-	}
-
-	/* objectclass is a special default case */
-	if (ldb_attr_cmp(attr_name, LTDB_OBJECTCLASS) == 0) {
-		ret = LTDB_FLAG_OBJECTCLASS | LTDB_FLAG_CASE_INSENSITIVE;
-	}
-
-	attr_el = ldb_msg_find_element(ltdb->cache->attributes, attr_name);
-
-	if (!attr_el) {
-		/* check if theres a wildcard attribute */
-		attr_el = ldb_msg_find_element(ltdb->cache->attributes, "*");
-
-		if (!attr_el) {
-			return ret;
-		}
-	}
-
-	for (i = 0; i < attr_el->num_values; i++) {
-		for (j=0; ltdb_valid_attr_flags[j].name; j++) {
-			if (strcmp(ltdb_valid_attr_flags[j].name, 
-				   (char *)attr_el->values[i].data) == 0) {
-				ret |= ltdb_valid_attr_flags[j].value;
-			}
-		}
-	}
-
-	talloc_free(ltdb->cache->last_attribute.name);
-
-	ltdb->cache->last_attribute.name = talloc_strdup(ltdb->cache, attr_name);
-	ltdb->cache->last_attribute.flags = ret;
-
-	return ret;
-}
-
 int ltdb_check_at_attributes_values(const struct ldb_val *value)
 {
 	int i;
