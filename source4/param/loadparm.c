@@ -607,7 +607,7 @@ static void init_globals(void)
 	do_parameter("max connections", "-1", NULL);
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo", NULL);
-	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc winbind", NULL);
+	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind", NULL);
 	do_parameter("ntptr providor", "simple_ldb", NULL);
 	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
