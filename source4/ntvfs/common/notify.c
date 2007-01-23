@@ -50,7 +50,7 @@ struct notify_context {
 
 struct notify_list {
 	struct notify_list *next, *prev;
-	void *private;
+	void *private_data;
 	void (*callback)(void *, const struct notify_event *);
 	void *sys_notify_handle;
 	int depth;
@@ -62,7 +62,7 @@ struct notify_list {
 #define NOTIFY_ENABLE_DEFAULT	True
 
 static NTSTATUS notify_remove_all(struct notify_context *notify);
-static void notify_handler(struct messaging_context *msg_ctx, void *private, 
+static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
 
 /*
@@ -237,10 +237,10 @@ static NTSTATUS notify_save(struct notify_context *notify)
 /*
   handle incoming notify messages
 */
-static void notify_handler(struct messaging_context *msg_ctx, void *private, 
+static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
 {
-	struct notify_context *notify = talloc_get_type(private, struct notify_context);
+	struct notify_context *notify = talloc_get_type(private_data, struct notify_context);
 	NTSTATUS status;
 	struct notify_event ev;
 	TALLOC_CTX *tmp_ctx = talloc_new(notify);
@@ -254,8 +254,8 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private,
 	}
 
 	for (listel=notify->list;listel;listel=listel->next) {
-		if (listel->private == ev.private) {
-			listel->callback(listel->private, &ev);
+		if (listel->private_data == ev.private_data) {
+			listel->callback(listel->private_data, &ev);
 			break;
 		}
 	}
@@ -270,15 +270,15 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
 				void *ptr, struct notify_event *ev)
 {
 	struct notify_list *listel = talloc_get_type(ptr, struct notify_list);
-	ev->private = listel;
-	listel->callback(listel->private, ev);
+	ev->private_data = listel;
+	listel->callback(listel->private_data, ev);
 }
 
 /*
   add an entry to the notify array
 */
 static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_entry *e,
-				 void *private, int depth)
+				 void *private_data, int depth)
 {
 	int i;
 	struct notify_depth *d;
@@ -304,7 +304,7 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_en
 	d->entries = ee;
 
 	d->entries[d->num_entries] = *e;
-	d->entries[d->num_entries].private = private;
+	d->entries[d->num_entries].private_data = private_data;
 	d->entries[d->num_entries].server = notify->server;
 	d->entries[d->num_entries].path_len = strlen(e->path);
 	d->num_entries++;
@@ -334,7 +334,7 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_en
 */
 NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *), 
-		    void *private)
+		    void *private_data)
 {
 	struct notify_entry e = *e0;
 	NTSTATUS status;
@@ -375,7 +375,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		goto done;
 	}
 
-	listel->private = private;
+	listel->private_data = private_data;
 	listel->callback = callback;
 	listel->depth = depth;
 	DLIST_ADD(notify->list, listel);
@@ -399,7 +399,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	   then we need to install it in the array used for the
 	   intra-samba notify handling */
 	if (e.filter != 0 || e.subdir_filter != 0) {
-		status = notify_add_array(notify, &e, private, depth);
+		status = notify_add_array(notify, &e, private_data, depth);
 	}
 
 done:
@@ -412,7 +412,7 @@ done:
 /*
   remove a notify watch. Called when the directory handle is closed
 */
-NTSTATUS notify_remove(struct notify_context *notify, void *private)
+NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 {
 	NTSTATUS status;
 	struct notify_list *listel;
@@ -425,7 +425,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	}
 
 	for (listel=notify->list;listel;listel=listel->next) {
-		if (listel->private == private) {
+		if (listel->private_data == private_data) {
 			DLIST_REMOVE(notify->list, listel);
 			break;
 		}
@@ -456,7 +456,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	d = &notify->array->depth[depth];
 
 	for (i=0;i<d->num_entries;i++) {
-		if (private == d->entries[i].private &&
+		if (private_data == d->entries[i].private_data &&
 		    cluster_id_equal(&notify->server, &d->entries[i].server)) {
 			break;
 		}
@@ -540,7 +540,7 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 
 	ev.action = action;
 	ev.path = path;
-	ev.private = e->private;
+	ev.private_data = e->private_data;
 
 	tmp_ctx = talloc_new(notify);
 
