@@ -45,7 +45,7 @@ struct sigcounter {
 /*
   the poor design of signals means that this table must be static global
 */
-static struct {
+static struct sig_state {
 	struct signal_event *sig_handlers[NUM_SIGNALS];
 	struct sigaction *oldact[NUM_SIGNALS];
 	struct sigcounter signal_count[NUM_SIGNALS];
@@ -56,7 +56,7 @@ static struct {
 	siginfo_t *sig_info[NUM_SIGNALS];
 	struct sigcounter sig_blocked[NUM_SIGNALS];
 #endif
-} sig_state;
+} *sig_state;
 
 /*
   return number of sigcounter events not processed yet
@@ -75,10 +75,10 @@ static uint32_t sig_count(struct sigcounter s)
 static void signal_handler(int signum)
 {
 	char c = 0;
-	SIG_INCREMENT(sig_state.signal_count[signum]);
-	SIG_INCREMENT(sig_state.got_signal);
+	SIG_INCREMENT(sig_state->signal_count[signum]);
+	SIG_INCREMENT(sig_state->got_signal);
 	/* doesn't matter if this pipe overflows */
-	write(sig_state.pipe_hack[1], &c, 1);
+	write(sig_state->pipe_hack[1], &c, 1);
 }
 
 #ifdef SA_SIGINFO
@@ -87,8 +87,8 @@ static void signal_handler(int signum)
 */
 static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 {
-	uint32_t count = sig_count(sig_state.signal_count[signum]);
-	sig_state.sig_info[signum][count] = *info;
+	uint32_t count = sig_count(sig_state->signal_count[signum]);
+	sig_state->sig_info[signum][count] = *info;
 
 	signal_handler(signum);
 
@@ -100,7 +100,7 @@ static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 		sigemptyset(&set);
 		sigaddset(&set, signum);
 		sigprocmask(SIG_BLOCK, &set, NULL);
-		SIG_INCREMENT(sig_state.sig_blocked[signum]);
+		SIG_INCREMENT(sig_state->sig_blocked[signum]);
 	}
 }
 #endif
@@ -111,15 +111,15 @@ static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 static int signal_event_destructor(struct signal_event *se)
 {
 	se->event_ctx->num_signal_handlers--;
-	DLIST_REMOVE(sig_state.sig_handlers[se->signum], se);
-	if (sig_state.sig_handlers[se->signum] == NULL) {
+	DLIST_REMOVE(sig_state->sig_handlers[se->signum], se);
+	if (sig_state->sig_handlers[se->signum] == NULL) {
 		/* restore old handler, if any */
-		sigaction(se->signum, sig_state.oldact[se->signum], NULL);
-		sig_state.oldact[se->signum] = NULL;
+		sigaction(se->signum, sig_state->oldact[se->signum], NULL);
+		sig_state->oldact[se->signum] = NULL;
 #ifdef SA_SIGINFO
 		if (se->sa_flags & SA_SIGINFO) {
-			talloc_free(sig_state.sig_info[se->signum]);
-			sig_state.sig_info[se->signum] = NULL;
+			talloc_free(sig_state->sig_info[se->signum]);
+			sig_state->sig_info[se->signum] = NULL;
 		}
 #endif
 	}
@@ -134,7 +134,7 @@ static void signal_pipe_handler(struct event_context *ev, struct fd_event *fde,
 {
 	char c[16];
 	/* its non-blocking, doesn't matter if we read too much */
-	read(sig_state.pipe_hack[0], c, sizeof(c));
+	read(sig_state->pipe_hack[0], c, sizeof(c));
 }
 
 /*
@@ -154,6 +154,15 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 		return NULL;
 	}
 
+	/* the sig_state needs to be on a global context as it can last across
+	   multiple event contexts */
+	if (sig_state == NULL) {
+		sig_state = talloc_zero(talloc_autofree_context(), struct sig_state);
+		if (sig_state == NULL) {
+			return NULL;
+		}
+	}
+
 	se = talloc(mem_ctx?mem_ctx:ev, struct signal_event);
 	if (se == NULL) return NULL;
 
@@ -164,7 +173,7 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 	se->sa_flags            = sa_flags;
 
 	/* only install a signal handler if not already installed */
-	if (sig_state.sig_handlers[signum] == NULL) {
+	if (sig_state->sig_handlers[signum] == NULL) {
 		struct sigaction act;
 		ZERO_STRUCT(act);
 		act.sa_handler   = signal_handler;
@@ -173,40 +182,40 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 		if (sa_flags & SA_SIGINFO) {
 			act.sa_handler   = NULL;
 			act.sa_sigaction = signal_handler_info;
-			if (sig_state.sig_info[signum] == NULL) {
-				sig_state.sig_info[signum] = talloc_array(ev, siginfo_t, SA_INFO_QUEUE_COUNT);
-				if (sig_state.sig_info[signum] == NULL) {
+			if (sig_state->sig_info[signum] == NULL) {
+				sig_state->sig_info[signum] = talloc_array(sig_state, siginfo_t, SA_INFO_QUEUE_COUNT);
+				if (sig_state->sig_info[signum] == NULL) {
 					talloc_free(se);
 					return NULL;
 				}
 			}
 		}
 #endif
-		sig_state.oldact[signum] = talloc(ev, struct sigaction);
-		if (sig_state.oldact[signum] == NULL) {
+		sig_state->oldact[signum] = talloc(sig_state, struct sigaction);
+		if (sig_state->oldact[signum] == NULL) {
 			talloc_free(se);
 			return NULL;			
 		}
-		if (sigaction(signum, &act, sig_state.oldact[signum]) == -1) {
+		if (sigaction(signum, &act, sig_state->oldact[signum]) == -1) {
 			talloc_free(se);
 			return NULL;
 		}
 	}
 
-	DLIST_ADD(sig_state.sig_handlers[signum], se);
+	DLIST_ADD(sig_state->sig_handlers[signum], se);
 
 	talloc_set_destructor(se, signal_event_destructor);
 
 	/* we need to setup the pipe hack handler if not already
 	   setup */
 	if (ev->pipe_fde == NULL) {
-		if (sig_state.pipe_hack[0] == 0 && 
-		    sig_state.pipe_hack[1] == 0) {
-			pipe(sig_state.pipe_hack);
-			set_blocking(sig_state.pipe_hack[0], False);
-			set_blocking(sig_state.pipe_hack[1], False);
+		if (sig_state->pipe_hack[0] == 0 && 
+		    sig_state->pipe_hack[1] == 0) {
+			pipe(sig_state->pipe_hack);
+			set_blocking(sig_state->pipe_hack[0], False);
+			set_blocking(sig_state->pipe_hack[1], False);
 		}
-		ev->pipe_fde = event_add_fd(ev, ev, sig_state.pipe_hack[0],
+		ev->pipe_fde = event_add_fd(ev, ev, sig_state->pipe_hack[0],
 					    EVENT_FD_READ, signal_pipe_handler, NULL);
 	}
 	ev->num_signal_handlers++;
@@ -222,19 +231,20 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 int common_event_check_signal(struct event_context *ev)
 {
 	int i;
-	if (!SIG_PENDING(sig_state.got_signal)) {
+
+	if (!sig_state || !SIG_PENDING(sig_state->got_signal)) {
 		return 0;
 	}
 	
 	for (i=0;i<NUM_SIGNALS+1;i++) {
 		struct signal_event *se, *next;
-		struct sigcounter counter = sig_state.signal_count[i];
+		struct sigcounter counter = sig_state->signal_count[i];
 		uint32_t count = sig_count(counter);
 
 		if (count == 0) {
 			continue;
 		}
-		for (se=sig_state.sig_handlers[i];se;se=next) {
+		for (se=sig_state->sig_handlers[i];se;se=next) {
 			next = se->next;
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
@@ -244,17 +254,17 @@ int common_event_check_signal(struct event_context *ev)
 					   ring buffer */
 					int ofs = (counter.count + j) % SA_INFO_QUEUE_COUNT;
 					se->handler(ev, se, i, 1, 
-						    (void*)&sig_state.sig_info[i][ofs], 
+						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);
 				}
-				if (SIG_PENDING(sig_state.sig_blocked[i])) {
+				if (SIG_PENDING(sig_state->sig_blocked[i])) {
 					/* we'd filled the queue, unblock the
 					   signal now */
 					sigset_t set;
 					sigemptyset(&set);
 					sigaddset(&set, i);
-					SIG_SEEN(sig_state.sig_blocked[i], 
-						 sig_count(sig_state.sig_blocked[i]));
+					SIG_SEEN(sig_state->sig_blocked[i], 
+						 sig_count(sig_state->sig_blocked[i]));
 					sigprocmask(SIG_UNBLOCK, &set, NULL);
 				}
 				if (se->sa_flags & SA_RESETHAND) {
@@ -268,8 +278,8 @@ int common_event_check_signal(struct event_context *ev)
 				talloc_free(se);
 			}
 		}
-		SIG_SEEN(sig_state.signal_count[i], count);
-		SIG_SEEN(sig_state.got_signal, count);
+		SIG_SEEN(sig_state->signal_count[i], count);
+		SIG_SEEN(sig_state->got_signal, count);
 	}
 
 	return 1;
