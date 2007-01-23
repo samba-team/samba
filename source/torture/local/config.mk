@@ -26,12 +26,14 @@ OBJ_FILES = \
 		util_file.o \
 		sddl.o \
 		ndr.o \
+		tdr.o \
 		event.o \
 		local.o \
 		dbspeed.o \
 		torture.o
 PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
+		TDR \
 		LIBCLI_SMB \
 		MESSAGING \
 		ICONV \

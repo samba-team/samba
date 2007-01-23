@@ -40,6 +40,7 @@
 	torture_local_resolve,
 	torture_local_sddl,
 	torture_local_ndr, 
+	torture_local_tdr, 
 	torture_local_event, 
 	torture_local_torture,
 	torture_local_dbspeed, 
