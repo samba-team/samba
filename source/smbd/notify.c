@@ -512,7 +512,8 @@ static void notify_message_callback(int msgtype, struct process_id pid,
 
 	for(fsp = fsp_find_di_first(msg.dev, msg.inode); fsp;
 	    fsp = fsp_find_di_next(fsp)) {
-		if ((fsp->notify->requests != NULL)
+		if ((fsp->notify != NULL) 
+		    && (fsp->notify->requests != NULL)
 		    && (fsp->notify->requests->filter & msg.filter)) {
 			notify_fsp(fsp, msg.action, msg.name);
 		}
