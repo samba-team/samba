@@ -695,6 +695,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *domain,
 				   const char *username,
 				   const char *password,
+				   const char *workstation,
 				   int logon_type)
 {
 	prs_struct qbuf, rbuf;
@@ -712,7 +713,11 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
 
-	fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
+	if (workstation) {
+		fstr_sprintf( clnt_name_slash, "\\\\%s", workstation );
+	} else {
+		fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
+	}
 
         /* Initialise input parameters */
 
