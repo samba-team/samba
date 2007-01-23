@@ -298,6 +298,15 @@ typedef OM_uint32 _gss_set_cred_option (
  	      );
 
 
+typedef OM_uint32 _gss_pseudo_random(
+    	       OM_uint32 *minor_status,
+	       gss_ctx_id_t context,
+	       int prf_key,
+	       const gss_buffer_t prf_in,
+	       ssize_t desired_output_len,
+	       gss_buffer_t prf_out
+              );
+
 #define GMI_VERSION 1
 
 typedef struct gssapi_mech_interface_desc {
@@ -337,6 +346,7 @@ typedef struct gssapi_mech_interface_desc {
 	_gss_inquire_cred_by_oid	*gm_inquire_cred_by_oid;
 	_gss_set_sec_context_option	*gm_set_sec_context_option;
 	_gss_set_cred_option		*gm_set_cred_option;
+	_gss_pseudo_random		*gm_pseudo_random;
 } gssapi_mech_interface_desc, *gssapi_mech_interface;
 
 gssapi_mech_interface
