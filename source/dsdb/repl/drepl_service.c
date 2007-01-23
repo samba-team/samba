@@ -158,7 +158,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	service->periodic.interval	= 30; /* in seconds */
+	service->periodic.interval	= 300; /* in seconds */
 
 	status = dreplsrv_periodic_schedule(service, service->periodic.interval);
 	if (!W_ERROR_IS_OK(status)) {
