@@ -1055,8 +1055,12 @@ extern void build_options(BOOL screen);
 
 	init_modules();
 
-	/* possibly reload the services file. */
-	reload_services(True);
+	/* Possibly reload the services file. Only worth doing in
+	 * daemon mode. In inetd mode, we know we only just loaded this.
+	 */
+	if (is_daemon) {
+		reload_services(True);
+	}
 
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
