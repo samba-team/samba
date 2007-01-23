@@ -23,3 +23,17 @@ OBJ_FILES = \
 #
 # End SUBSYSTEM SAMDB
 ################################################
+
+#######################
+# Start SUBSYSTEM DREPL_SRV
+[MODULE::DREPL_SRV]
+INIT_FUNCTION = server_service_drepl_init
+SUBSYSTEM = service
+OBJ_FILES = \
+		repl/drepl_service.o
+PRIVATE_PROTO_HEADER = repl/drepl_service_proto.h
+PRIVATE_DEPENDENCIES = \
+		SAMDB \
+		process_model 
+# End SUBSYSTEM DREPL_SRV
+#######################
