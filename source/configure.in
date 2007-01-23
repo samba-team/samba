@@ -5839,7 +5839,7 @@ MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
 
 AC_ARG_WITH(static-modules,
-[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
+[  --with-static-modules=MODULES  Comma-separated list of names of modules to statically link in],
 [ if test $withval; then
 	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
@@ -5848,7 +5848,7 @@ AC_ARG_WITH(static-modules,
 fi ])
 
 AC_ARG_WITH(shared-modules,
-[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+[  --with-shared-modules=MODULES  Comma-separated list of names of modules to build shared],
 [ if test $withval; then
 	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
