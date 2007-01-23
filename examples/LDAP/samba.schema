@@ -292,7 +292,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.47 NAME 'sambaMungedDial'
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory'
-	DESC 'Concatenated MD4 hashes of the unicode passwords used on this account'
+	DESC 'Concatenated MD5 hashes of the salted NT passwords used on this account'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} )
 
