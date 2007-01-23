@@ -181,7 +181,7 @@ int rep_ftruncate(int,off_t);
 #endif
 
 #ifndef HAVE_INITGROUPS
-#define ftruncate rep_ftruncate
+#define initgroups rep_initgroups
 int rep_initgroups(char *name, gid_t id);
 #endif
 
