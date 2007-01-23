@@ -117,7 +117,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(r,
 					"Connection to DRSUAPI pipe of PDC of domain '%s' failed: %s",
-					r->in.domain_name,
+					r->out.domain_name,
 					nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
