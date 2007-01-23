@@ -160,3 +160,4 @@ source/pidl/blib
 source/pidl/pm_to_blib
 source/coverage
 source/st
+source/samba.info

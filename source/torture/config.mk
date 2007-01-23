@@ -336,20 +336,18 @@ MANPAGE = man/locktest.1
 GCOV_FLAGS = -ftest-coverage -fprofile-arcs
 GCOV_LIBS = -lgcov
 
-gcov: 
+test_cov:
 	@$(MAKE) test \
 		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
 		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
 		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)"
+
+gcov: test_cov
 	for I in $(sort $(dir $(ALL_OBJS))); \
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
-lcov:
-	@$(MAKE) test \
-		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
-		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
-		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)"
-	rm **/{lex,parse}.{gcda,gcno}
+lcov: test_cov
+	rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
