@@ -580,17 +580,6 @@ static void kdc_task_init(struct task_server *task)
 
 	kdc->task = task;
 
-	/* Setup the KDC configuration */
-	kdc->config = talloc(kdc, krb5_kdc_configuration);
-	if (!kdc->config) {
-		task_server_terminate(task, "kdc: out of memory");
-		return;
-	}
-	krb5_kdc_default_config(kdc->config);
-
-	kdc->config->enable_pkinit = lp_parm_bool(-1, "kdc", "pkinit", True);
-	kdc->config->enable_pkinit_princ_in_cert = lp_parm_bool(-1, "kdc", "pkinit_princ_in_cert", True);
-
 	initialize_krb5_error_table();
 
 	ret = smb_krb5_init_context(kdc, &kdc->smb_krb5_context);
@@ -602,6 +591,23 @@ static void kdc_task_init(struct task_server *task)
 	}
 
 	krb5_add_et_list(kdc->smb_krb5_context->krb5_context, initialize_hdb_error_table_r);
+
+	/* Registar WinDC hooks */
+	ret = _krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+				    PLUGIN_TYPE_DATA, "windc",
+				    &windc_plugin_table);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register hdb keytab");
+		return;
+	}
+
+	/* Setup the KDC configuration */
+	kdc->config = talloc(kdc, krb5_kdc_configuration);
+	if (!kdc->config) {
+		task_server_terminate(task, "kdc: out of memory");
+		return;
+	}
+	krb5_kdc_default_config(kdc->config);
 
 	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc->config, struct HDB *);
@@ -624,18 +630,9 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
+	krb5_kdc_configure(kdc->smb_krb5_context->krb5_context, kdc->config);
+
 	kdc_mem_ctx = kdc->smb_krb5_context;
-
-	/* Registar WinDC hooks */
-	ret = _krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
-				    PLUGIN_TYPE_DATA, "windc",
-				    &windc_plugin_table);
-	if(ret) {
-		task_server_terminate(task, "kdc: failed to register hdb keytab");
-		return;
-	}
-
-	_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc);

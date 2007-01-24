@@ -55,6 +55,18 @@ extern int enable_http;
 
 extern int detach_from_console;
 
+extern int require_preauth; /* 1 == require preauth for all principals */
+
+extern const char *trpolicy_str;
+
+extern int disable_des;
+extern int enable_v4;
+extern int enable_kaserver;
+extern int enable_524;
+extern int enable_v4_cross_realm;
+
+extern char *v4_realm;
+
 extern const struct units _kdc_digestunits[];
 
 #define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
@@ -68,5 +80,7 @@ loop(krb5_context context, krb5_kdc_configuration *config);
 
 krb5_kdc_configuration *
 configure(krb5_context context, int argc, char **argv);
+
+void krb5_kdc_configure(krb5_context context, krb5_kdc_configuration *config);
 
 #endif /* __KDC_LOCL_H__ */
