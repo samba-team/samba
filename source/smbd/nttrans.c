@@ -2715,44 +2715,44 @@ static int handle_nttrans(connection_struct *conn,
 	switch(state->call) {
 		case NT_TRANSACT_CREATE:
 		{
-			START_PROFILE_NESTED(NT_transact_create);
+			START_PROFILE(NT_transact_create);
 			outsize = call_nt_transact_create(conn, inbuf, outbuf,
 							  size, bufsize, 
 							&state->setup, state->setup_count,
 							&state->param, state->total_param, 
 							&state->data, state->total_data,
 							  state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_create);
+			END_PROFILE(NT_transact_create);
 			break;
 		}
 
 		case NT_TRANSACT_IOCTL:
 		{
-			START_PROFILE_NESTED(NT_transact_ioctl);
+			START_PROFILE(NT_transact_ioctl);
 			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_ioctl);
+			END_PROFILE(NT_transact_ioctl);
 			break;
 		}
 
 		case NT_TRANSACT_SET_SECURITY_DESC:
 		{
-			START_PROFILE_NESTED(NT_transact_set_security_desc);
+			START_PROFILE(NT_transact_set_security_desc);
 			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_set_security_desc);
+			END_PROFILE(NT_transact_set_security_desc);
 			break;
 		}
 
 		case NT_TRANSACT_NOTIFY_CHANGE:
 		{
-			START_PROFILE_NESTED(NT_transact_notify_change);
+			START_PROFILE(NT_transact_notify_change);
 			outsize = call_nt_transact_notify_change(
 				conn, inbuf, outbuf, size, bufsize, 
 				&state->setup, state->setup_count,
@@ -2760,56 +2760,56 @@ static int handle_nttrans(connection_struct *conn,
 				&state->data, state->total_data,
 				state->max_data_return,
 				state->max_param_return);
-			END_PROFILE_NESTED(NT_transact_notify_change);
+			END_PROFILE(NT_transact_notify_change);
 			break;
 		}
 
 		case NT_TRANSACT_RENAME:
 		{
-			START_PROFILE_NESTED(NT_transact_rename);
+			START_PROFILE(NT_transact_rename);
 			outsize = call_nt_transact_rename(conn, inbuf, outbuf,
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_rename);
+			END_PROFILE(NT_transact_rename);
 			break;
 		}
 
 		case NT_TRANSACT_QUERY_SECURITY_DESC:
 		{
-			START_PROFILE_NESTED(NT_transact_query_security_desc);
+			START_PROFILE(NT_transact_query_security_desc);
 			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_query_security_desc);
+			END_PROFILE(NT_transact_query_security_desc);
 			break;
 		}
 
 #ifdef HAVE_SYS_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
 		{
-			START_PROFILE_NESTED(NT_transact_get_user_quota);
+			START_PROFILE(NT_transact_get_user_quota);
 			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_get_user_quota);
+			END_PROFILE(NT_transact_get_user_quota);
 			break;
 		}
 
 		case NT_TRANSACT_SET_USER_QUOTA:
 		{
-			START_PROFILE_NESTED(NT_transact_set_user_quota);
+			START_PROFILE(NT_transact_set_user_quota);
 			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
 							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
-			END_PROFILE_NESTED(NT_transact_set_user_quota);
+			END_PROFILE(NT_transact_set_user_quota);
 			break;					
 		}
 #endif /* HAVE_SYS_QUOTAS */

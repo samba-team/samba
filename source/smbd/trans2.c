@@ -5092,147 +5092,147 @@ int handle_trans2(connection_struct *conn,
 	switch(state->call)  {
 	case TRANSACT2_OPEN:
 	{
-		START_PROFILE_NESTED(Trans2_open);
+		START_PROFILE(Trans2_open);
 		outsize = call_trans2open(
 			conn, inbuf, outbuf, bufsize, 
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_open);
+		END_PROFILE(Trans2_open);
 		break;
 	}
 
 	case TRANSACT2_FINDFIRST:
 	{
-		START_PROFILE_NESTED(Trans2_findfirst);
+		START_PROFILE(Trans2_findfirst);
 		outsize = call_trans2findfirst(
 			conn, inbuf, outbuf, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_findfirst);
+		END_PROFILE(Trans2_findfirst);
 		break;
 	}
 
 	case TRANSACT2_FINDNEXT:
 	{
-		START_PROFILE_NESTED(Trans2_findnext);
+		START_PROFILE(Trans2_findnext);
 		outsize = call_trans2findnext(
 			conn, inbuf, outbuf, size, bufsize, 
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_findnext);
+		END_PROFILE(Trans2_findnext);
 		break;
 	}
 
 	case TRANSACT2_QFSINFO:
 	{
-		START_PROFILE_NESTED(Trans2_qfsinfo);
+		START_PROFILE(Trans2_qfsinfo);
 		outsize = call_trans2qfsinfo(
 			conn, inbuf, outbuf, size, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_qfsinfo);
+		END_PROFILE(Trans2_qfsinfo);
 	    break;
 	}
 
 	case TRANSACT2_SETFSINFO:
 	{
-		START_PROFILE_NESTED(Trans2_setfsinfo);
+		START_PROFILE(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(
 			conn, inbuf, outbuf, size, bufsize, 
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_setfsinfo);
+		END_PROFILE(Trans2_setfsinfo);
 		break;
 	}
 
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
 	{
-		START_PROFILE_NESTED(Trans2_qpathinfo);
+		START_PROFILE(Trans2_qpathinfo);
 		outsize = call_trans2qfilepathinfo(
 			conn, inbuf, outbuf, size, bufsize, state->call,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_qpathinfo);
+		END_PROFILE(Trans2_qpathinfo);
 		break;
 	}
 
 	case TRANSACT2_SETPATHINFO:
 	case TRANSACT2_SETFILEINFO:
 	{
-		START_PROFILE_NESTED(Trans2_setpathinfo);
+		START_PROFILE(Trans2_setpathinfo);
 		outsize = call_trans2setfilepathinfo(
 			conn, inbuf, outbuf, size, bufsize, state->call,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_setpathinfo);
+		END_PROFILE(Trans2_setpathinfo);
 		break;
 	}
 
 	case TRANSACT2_FINDNOTIFYFIRST:
 	{
-		START_PROFILE_NESTED(Trans2_findnotifyfirst);
+		START_PROFILE(Trans2_findnotifyfirst);
 		outsize = call_trans2findnotifyfirst(
 			conn, inbuf, outbuf, size, bufsize, 
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_findnotifyfirst);
+		END_PROFILE(Trans2_findnotifyfirst);
 		break;
 	}
 
 	case TRANSACT2_FINDNOTIFYNEXT:
 	{
-		START_PROFILE_NESTED(Trans2_findnotifynext);
+		START_PROFILE(Trans2_findnotifynext);
 		outsize = call_trans2findnotifynext(
 			conn, inbuf, outbuf, size, bufsize, 
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_findnotifynext);
+		END_PROFILE(Trans2_findnotifynext);
 		break;
 	}
 
 	case TRANSACT2_MKDIR:
 	{
-		START_PROFILE_NESTED(Trans2_mkdir);
+		START_PROFILE(Trans2_mkdir);
 		outsize = call_trans2mkdir(
 			conn, inbuf, outbuf, size, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_mkdir);
+		END_PROFILE(Trans2_mkdir);
 		break;
 	}
 
 	case TRANSACT2_GET_DFS_REFERRAL:
 	{
-		START_PROFILE_NESTED(Trans2_get_dfs_referral);
+		START_PROFILE(Trans2_get_dfs_referral);
 		outsize = call_trans2getdfsreferral(
 			conn, inbuf, outbuf, size, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_get_dfs_referral);
+		END_PROFILE(Trans2_get_dfs_referral);
 		break;
 	}
 
 	case TRANSACT2_IOCTL:
 	{
-		START_PROFILE_NESTED(Trans2_ioctl);
+		START_PROFILE(Trans2_ioctl);
 		outsize = call_trans2ioctl(
 			conn, inbuf, outbuf, size, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
-		END_PROFILE_NESTED(Trans2_ioctl);
+		END_PROFILE(Trans2_ioctl);
 		break;
 	}
 
