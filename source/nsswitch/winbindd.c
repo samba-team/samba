@@ -1009,6 +1009,8 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(1, ("Could not init idmap! - Sid/[UG]id mapping will not be available\n"));
 	}
 
+	nss_init( lp_winbind_nss_info() );
+
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 

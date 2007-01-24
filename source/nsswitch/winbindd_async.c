@@ -764,7 +764,9 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 	}
 
 	fstrcpy(state->response.data.name.dom_name, dom_name);
+	TALLOC_FREE(dom_name);
 	fstrcpy(state->response.data.name.name, name);
+	TALLOC_FREE(name);
 	state->response.data.name.type = type;
 
 	TALLOC_FREE(dom_name);
@@ -1397,13 +1399,13 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 {
 	void (*cont)(void *priv, BOOL succ, const char *acct_name,
 		     const char *full_name, const char *homedir, 
-		     const char *shell, uint32 group_rid) =
+		     const char *shell, uint32 gid, uint32 group_rid) =
 		(void (*)(void *, BOOL, const char *, const char *,
-			  const char *, const char *, uint32))c;
+			  const char *, const char *, uint32, uint32))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger query_user\n"));
-		cont(private_data, False, NULL, NULL, NULL, NULL, -1);
+		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
 		return;
 	}
 
@@ -1411,6 +1413,7 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	     response->data.user_info.full_name,
 	     response->data.user_info.homedir,
 	     response->data.user_info.shell,
+	     response->data.user_info.primary_gid,
 	     response->data.user_info.group_rid);
 }
 
@@ -1421,6 +1424,7 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 				   const char *full_name,
 				   const char *homedir,
 				   const char *shell,
+				   gid_t gid,
 				   uint32 group_rid),
 		      void *private_data)
 {

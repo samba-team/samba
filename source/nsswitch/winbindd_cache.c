@@ -827,6 +827,7 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 	centry_put_string(centry, info->full_name);
 	centry_put_string(centry, info->homedir);
 	centry_put_string(centry, info->shell);
+	centry_put_uint32(centry, info->primary_gid);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
 	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
@@ -854,7 +855,7 @@ static void wcache_save_lockout_policy(struct winbindd_domain *domain, NTSTATUS 
 }
 
 static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *policy)
-{
+ {
 	struct cache_entry *centry;
 
 	centry = centry_start(domain, status);
@@ -1589,6 +1590,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->full_name = centry_string(centry, mem_ctx);
 	info->homedir = centry_string(centry, mem_ctx);
 	info->shell = centry_string(centry, mem_ctx);
+	info->primary_gid = centry_uint32(centry);
 	centry_sid(centry, mem_ctx, &info->user_sid);
 	centry_sid(centry, mem_ctx, &info->group_sid);
 	status = centry->status;

@@ -768,6 +768,8 @@ enum flush_reason_enum {
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
     NUM_FLUSH_REASONS};
 
+#include "nss_info.h"
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

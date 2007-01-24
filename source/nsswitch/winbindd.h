@@ -112,6 +112,8 @@ typedef struct {
 	char *full_name;
 	char *homedir;
 	char *shell;
+	gid_t primary_gid;                   /* allow the nss_info
+						backend to set the primary group */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 } WINBIND_USERINFO;
