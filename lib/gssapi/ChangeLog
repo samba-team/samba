@@ -1,5 +1,18 @@
 2007-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/external.c (krb5_mech): add _gsskrb5_pseudo_random
+
+	* mech/gss_pseudo_random.c: Catch error from underlaying mech on
+	failure.
+
+	* Makefile.am: Add krb5/prf.c
+
+	* krb5/prf.c: gss_pseudo_random for krb5
+
+	* test_context.c: Checks for gss_pseudo_random.
+
+	* krb5/gkrb5_err.et: add KG_INPUT_TOO_LONG
+
 	* Makefile.am: Add mech/gss_pseudo_random.c
 
 	* gssapi/gssapi.h: try to load pseudo_random
