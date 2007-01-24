@@ -20,6 +20,8 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifdef WITH_ADS 
+
 #include "includes.h"
 #include "nss_info.h"
 
@@ -82,3 +84,5 @@ NTSTATUS nss_info_template_init( void )
 				      "template", 
 				      &nss_template_methods);	
 }
+
+#endif /* WITH_ADS */
