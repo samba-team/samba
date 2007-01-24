@@ -346,9 +346,9 @@ void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
 			slprintf(&p[i*2], 3, "%02X", pwd[i]);
 	} else {
 		if (acct_ctrl & ACB_PWNOTREQ)
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
+			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
 		else
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
+			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
 	}
 }
 
