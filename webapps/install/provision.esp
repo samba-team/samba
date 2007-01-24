@@ -61,7 +61,7 @@ if (form['submit'] == "Provision") {
 	} else {
 		var paths = provision_default_paths(subobj);
 		if (!provision(subobj, writefln, false, paths, 
-			       session.authinfo.session_info, session.authinfo.credentials)) {
+			       session.authinfo.session_info, session.authinfo.credentials, false)) {
 			writefln("Provision failed!");
 		} else if (!provision_dns(subobj, writefln, paths,
 					  session.authinfo.session_info, session.authinfo.credentials)) {
