@@ -12,12 +12,41 @@ var options = GetOptions(ARGV,
 			 "POPT_AUTOHELP",
 			 "POPT_COMMON_SAMBA",
 			 "POPT_COMMON_CREDENTIALS",
-			 "verbose");
+			 "verbose",
+			 "classes",
+			 "attributes",
+			 "subschema",
+			 "subschema-auto");
 if (options == undefined) {
    println("Failed to parse options");
    return -1;
 }
 verbose = options["verbose"];
+dump_all = "yes";
+dump_classes = options["classes"];
+dump_attributes = options["attributes"];
+dump_subschema = options["subschema"];
+dump_subschema_auto = options["subschema-auto"];
+
+if (dump_classes != undefined) {
+	dump_all = undefined;
+}
+if (dump_attributes != undefined) {
+	dump_all = undefined;
+}
+if (dump_subschema != undefined) {
+	dump_all = undefined;
+}
+if (dump_subschema_auto != undefined) {
+	dump_all = undefined;
+	dump_subschema = "yes";
+}
+if (dump_all != undefined) {
+	dump_classes = "yes";
+	dump_attributes = "yes";
+	dump_subschema = "yes";
+	dump_subschema_auto = "yes";
+}
 
 if (options.ARGV.length != 2) {
    println("Usage: minschema.js <URL> <classfile>");
@@ -678,6 +707,10 @@ function write_aggregate() {
 objectClass: subSchema
 objectCategory: CN=SubSchema,${SCHEMADN}
 ");
+	if (dump_subschema_auto == undefined) {
+		return;	
+	}
+
 	for (i in objectclasses) {
 		write_aggregate_objectclass(objectclasses[i]);
 	}
@@ -776,10 +809,15 @@ for (i in objectclasses) {
 /*
   dump an ldif form of the attributes and objectclasses
 */
-write_ldif(attributes, attrib_attrs);
-write_ldif(objectclasses, class_attrs);
-
-write_aggregate();
+if (dump_attributes != undefined) {
+	write_ldif(attributes, attrib_attrs);
+}
+if (dump_classes != undefined) {
+	write_ldif(objectclasses, class_attrs);
+}
+if (dump_subschema != undefined) {
+	write_aggregate();
+}
 
 if (verbose == undefined) {
 	exit(0);
