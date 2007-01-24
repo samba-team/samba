@@ -123,6 +123,28 @@ _PUBLIC_ char *data_path(TALLOC_CTX* mem_ctx, const char *name)
 }
 
 /**
+ * @brief Returns an absolute path to a file in the directory containing the current config file
+ *
+ * @param name File to find, relative to the config file directory.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
+
+_PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, const char *name)
+{
+	char *fname, *config_dir, *p;
+	config_dir = talloc_strdup(mem_ctx, lp_configfile());
+	p = strrchr(config_dir, '/');
+	if (!p) {
+		return NULL;
+	}
+	p[0] = '\0';
+	fname = talloc_asprintf(mem_ctx, "%s/%s", config_dir, name);
+	talloc_free(config_dir);
+	return fname;
+}
+
+/**
  * @brief Returns an absolute path to a file in the Samba private directory.
  *
  * @param name File to find, relative to PRIVATEDIR.
