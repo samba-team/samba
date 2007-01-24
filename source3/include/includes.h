@@ -777,9 +777,6 @@ enum flush_reason_enum {
 
 #ifdef HAVE_LDAP
 #include "ads_protos.h"
-#else
-struct _LDAPMessage;
-typedef struct _LDAPMessage *LDAPMessage;
 #endif
 
 /* We need this after proto.h to reference GetTimeOfDay(). */
