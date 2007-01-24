@@ -824,11 +824,13 @@ INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
 		iniparser/src/strlib.o
 
 TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o $(LIBREPLACE_OBJ) \
-	$(TDBBASE_OBJ)
+	$(TDBBASE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ)
+TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+	$(SOCKET_WRAPPER_OBJ)
 
-TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ)
+TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+	$(SOCKET_WRAPPER_OBJ)
 
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
 
@@ -1541,15 +1543,15 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ) $(SOCKET_WRAPPER_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ)
 
 bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBTOOL_OBJ) $(SOCKET_WRAPPER_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBTOOL_OBJ)
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ) $(SOCKET_WRAPPER_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ)
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
