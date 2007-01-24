@@ -20,28 +20,13 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifdef WITH_ADS
+
 #include "includes.h"
 #include "nss_info.h"
 
 static struct nss_function_entry *backends = NULL;
 static struct nss_domain_entry *nss_domain_list = NULL;
-
-/**********************************************************************
- **********************************************************************/
-
-const char *wb_posix_map_str(enum wb_posix_mapping mtype)
-{
-	switch (mtype) {
-		case WB_POSIX_MAP_SFU:
-			return "sfu";
-		case WB_POSIX_MAP_RFC2307:
-			return "rfc2307";
-		default:
-			break;
-	}
-	return NULL;
-}
-
 
 /**********************************************************************
  Get idmap nss methods.
@@ -63,7 +48,7 @@ static struct nss_function_entry *nss_get_backend(const char *name )
  Allow a module to register itself as a backend.
 **********************************************************************/
 
-NTSTATUS smb_register_idmap_nss(int version, const char *name, struct nss_info_methods *methods)
+ NTSTATUS smb_register_idmap_nss(int version, const char *name, struct nss_info_methods *methods)
 {
 	struct nss_function_entry *entry;
 
@@ -145,7 +130,7 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
  to initialize the state on a per domain basis.
  *******************************************************************/
 
-NTSTATUS nss_init( const char **nss_list )
+ NTSTATUS nss_init( const char **nss_list )
 {
 	NTSTATUS status;
 	int i;
@@ -230,7 +215,7 @@ NTSTATUS nss_init( const char **nss_list )
 /********************************************************************
  *******************************************************************/
 
-NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
+ NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
 		       TALLOC_CTX *ctx,
 		       ADS_STRUCT *ads, LDAPMessage *msg,
 		       char **homedir, char **shell, char **gecos,
@@ -263,7 +248,7 @@ NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
 /********************************************************************
  *******************************************************************/
 
-NTSTATUS nss_close( const char *parameters )
+ NTSTATUS nss_close( const char *parameters )
 {
 	struct nss_domain_entry *p = nss_domain_list;
 	struct nss_domain_entry *q;
@@ -285,7 +270,7 @@ NTSTATUS nss_close( const char *parameters )
  Invoke the init function for a given domain's backend
  *******************************************************************/
 
-NTSTATUS idmap_nss_init_domain( const char *domain )
+ NTSTATUS idmap_nss_init_domain( const char *domain )
 {
 	struct nss_domain_entry *p;
 	
@@ -302,4 +287,6 @@ NTSTATUS idmap_nss_init_domain( const char *domain )
 	
 	return NT_STATUS_NO_SUCH_DOMAIN;	
 }
+
+#endif /* WITH_ADS */
 

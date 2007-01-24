@@ -20,6 +20,8 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifdef WITH_ADS
+
 #ifndef _IDMAP_NSS_H
 #define _IDMAP_NSS_H
 
@@ -60,13 +62,31 @@ struct nss_info_methods {
 	NTSTATUS (*get_nss_info)( struct nss_domain_entry *e, 
 				  const DOM_SID *sid, 
 				  TALLOC_CTX *ctx, 
-#ifdef WITH_ADS
 				  ADS_STRUCT *ads, LDAPMessage *msg,
-#else
-				  void *ads, void *msg,
-#endif
 				  char **homedir, char **shell, char **gecos, gid_t *p_gid);
 	NTSTATUS (*close_fn)( void );
 };
 
+
+/* The following definitions come from nsswitch/nss_info.c  */
+
+NTSTATUS smb_register_idmap_nss(int version, 
+				const char *name, 
+				struct nss_info_methods *methods);
+
+NTSTATUS nss_init( const char **nss_list );
+
+NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
+                       TALLOC_CTX *ctx,
+		       ADS_STRUCT *ads, LDAPMessage *msg,
+                       char **homedir, char **shell, char **gecos,
+                       gid_t *p_gid);
+
+NTSTATUS nss_close( const char *parameters );
+
+NTSTATUS idmap_nss_init_domain( const char *domain );
+
+
 #endif /* _IDMAP_NSS_H_ */
+
+#endif /* WITH_ADS */
