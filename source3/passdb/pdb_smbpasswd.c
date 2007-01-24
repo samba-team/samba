@@ -1129,7 +1129,8 @@ static BOOL del_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 		size_t new_entry_length;
 
 		if (strequal(name, pwd->smb_name)) {
-			DEBUG(10, ("add_smbfilepwd_entry: found entry with name %s - deleting it.\n", name));
+			DEBUG(10, ("del_smbfilepwd_entry: found entry with "
+				   "name %s - deleting it.\n", name));
 			continue;
 		}
 
