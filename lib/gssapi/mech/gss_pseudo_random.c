@@ -46,6 +46,7 @@ gss_pseudo_random(OM_uint32 *minor_status,
 {
     struct _gss_context *ctx = (struct _gss_context *) context;
     gssapi_mech_interface m = ctx->gc_mech;
+    OM_uint32 major_status;
 
     _mg_buffer_zero(prf_out);
     *minor_status = 0;
@@ -57,8 +58,12 @@ gss_pseudo_random(OM_uint32 *minor_status,
 
     if (m->gm_pseudo_random == NULL)
 	return GSS_S_UNAVAILABLE;
+    
+    major_status = (*m->gm_pseudo_random)(minor_status, ctx->gc_ctx,
+					  prf_key, prf_in, desired_output_len,
+					  prf_out);
+    if (major_status != GSS_S_COMPLETE)
+	_gss_mg_error(m, major_status, *minor_status);
 
-    return (*m->gm_pseudo_random)(minor_status, ctx->gc_ctx,
-				  prf_key, prf_in, desired_output_len,
-				  prf_out);
+    return major_status;
 }
