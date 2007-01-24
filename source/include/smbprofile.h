@@ -757,10 +757,6 @@ struct profile_header {
 
 extern struct profile_header *profile_h;
 extern struct profile_stats *profile_p;
-extern struct timeval profile_starttime;
-extern struct timeval profile_endtime;
-extern struct timeval profile_starttime_nested;
-extern struct timeval profile_endtime_nested;
 extern BOOL do_profile_flag;
 extern BOOL do_profile_times;
 
@@ -846,8 +842,6 @@ static inline SMB_BIG_UINT profile_timestamp(void)
 		    profile_timestamp() - __profstamp_##x); \
 	}
 
-#define START_PROFILE_NESTED(x) START_PROFILE(x)
-#define END_PROFILE_NESTED(x) END_PROFILE(x)
 
 #else /* WITH_PROFILE */
 
@@ -856,10 +850,8 @@ static inline SMB_BIG_UINT profile_timestamp(void)
 #define DO_PROFILE_DEC_INC(x,y)
 #define DO_PROFILE_ADD(x,n)
 #define START_PROFILE(x)
-#define START_PROFILE_NESTED(x)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
-#define END_PROFILE_NESTED(x)
 
 #endif /* WITH_PROFILE */
 
