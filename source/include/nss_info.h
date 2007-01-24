@@ -20,10 +20,14 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#ifdef WITH_ADS
-
 #ifndef _IDMAP_NSS_H
 #define _IDMAP_NSS_H
+
+#ifndef HAVE_LDAP
+#  ifndef LDAPMessage
+#    define LDAPMessage void
+#  endif
+#endif
 
 /* The interface version specifier */
 
@@ -84,9 +88,5 @@ NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
 
 NTSTATUS nss_close( const char *parameters );
 
-NTSTATUS idmap_nss_init_domain( const char *domain );
-
-
 #endif /* _IDMAP_NSS_H_ */
 
-#endif /* WITH_ADS */

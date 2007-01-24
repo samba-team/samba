@@ -20,8 +20,6 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#ifdef WITH_ADS 
-
 #include "includes.h"
 #include "nss_info.h"
 
@@ -73,9 +71,9 @@ static NTSTATUS nss_template_close( void )
  ***********************************************************************/
 
 static struct nss_info_methods nss_template_methods = {
-	nss_template_init,
-	nss_template_get_info,
-	nss_template_close
+	.init         = nss_template_init,
+	.get_nss_info = nss_template_get_info,
+	.close_fn     = nss_template_close
 };
 		
 NTSTATUS nss_info_template_init( void )
@@ -85,4 +83,3 @@ NTSTATUS nss_info_template_init( void )
 				      &nss_template_methods);	
 }
 
-#endif /* WITH_ADS */

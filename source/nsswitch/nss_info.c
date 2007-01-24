@@ -20,8 +20,6 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#ifdef WITH_ADS
-
 #include "includes.h"
 #include "nss_info.h"
 
@@ -265,28 +263,4 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
 
 	return NT_STATUS_OK;
 }
-
-/********************************************************************
- Invoke the init function for a given domain's backend
- *******************************************************************/
-
- NTSTATUS idmap_nss_init_domain( const char *domain )
-{
-	struct nss_domain_entry *p;
-	
-	DEBUG(10,("idmap_nss_init_domain: Searching for %s's init() function\n", 
-		  domain));
-	
-	for ( p=nss_domain_list; p; p=p->next ) {
-		if ( strequal( p->domain, domain ) ) {
-			DEBUG(10,("idmap_nss_init_domain: Calling init function for %s\n",
-				  domain));			
-			return p->backend->methods->init( p );
-		}
-	}
-	
-	return NT_STATUS_NO_SUCH_DOMAIN;	
-}
-
-#endif /* WITH_ADS */
 

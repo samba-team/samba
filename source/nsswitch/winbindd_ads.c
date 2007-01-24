@@ -125,10 +125,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	/* initialize the nss backend for this domain */
-
-	idmap_nss_init_domain( domain->name );
-
 	/* set the flag that says we don't own the memory even 
 	   though we do so that ads_destroy() won't destroy the 
 	   structure we pass back by reference */
