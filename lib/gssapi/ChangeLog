@@ -1,5 +1,7 @@
 2007-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/prf.c: constrain desired_output_len
+
 	* krb5/external.c (krb5_mech): add _gsskrb5_pseudo_random
 
 	* mech/gss_pseudo_random.c: Catch error from underlaying mech on
