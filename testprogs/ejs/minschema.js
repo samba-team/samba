@@ -40,22 +40,69 @@ rootDse = new Object();
 objectclasses_expanded = new Object();
 
 /* the attributes we need for objectclasses */
-class_attrs = new Array("objectClass", 
-			"auxiliaryClass", "systemAuxiliaryClass",
-			"possSuperiors", "systemPossSuperiors",
-			"lDAPDisplayName", "governsID",
-			"rDNAttID", "mustContain", "systemMustContain",
-			"mayContain", "systemMayContain",
-			"objectClassCategory", "subClassOf", 
-			"defaultObjectCategory", "defaultHidingValue", 
-			"systemFlags", "systemOnly", "defaultSecurityDescriptor",
-			"objectCategory", "possibleInferiors", "displaySpecification",
-			"schemaIDGUID");
+class_attrs = new Array("objectClass",
+			"subClassOf",
+			"governsID",
+			"possSuperiors",
+			"mayContain",
+			"mustContain",
+			"auxiliaryClass",
+			"rDNAttID",
+			"showInAdvancedViewOnly",
+			"adminDisplayName",
+			"adminDescription",
+			"objectClassCategory",
+			"lDAPDisplayName",
+			"schemaIDGUID",
+			"systemOnly",
+			"systemPossSuperiors",
+			"systemMayContain",
+			"systemMustContain",
+			"systemAuxiliaryClass",
+			"defaultSecurityDescriptor",
+			"systemFlags",
+			"defaultHidingValue",
+			"objectCategory",
+			"defaultObjectCategory",
 
-attrib_attrs = new Array("objectClass", "lDAPDisplayName", 
-			 "isSingleValued", "linkID", "systemFlags", "systemOnly",
-			 "schemaIDGUID", "adminDisplayName", "attributeID",
-			 "attributeSyntax", "oMSyntax", "oMObjectClass");
+			/* this attributes are not used by w2k3 */
+			"schemaFlagsEx",
+			"msDs-IntId",
+			"msDs-Schema-Extensions",
+			"classDisplayName",
+			"isDefunct");
+
+
+attrib_attrs = new Array("objectClass",
+			 "attributeID",
+			 "attributeSyntax",
+			 "isSingleValued",
+			 "rangeLower",
+			 "rangeUpper",
+			 "mAPIID",
+			 "linkID",
+			 "showInAdvancedViewOnly",
+			 "adminDisplayName",
+			 "oMObjectClass",
+			 "adminDescription",
+			 "oMSyntax",
+			 "searchFlags",
+			 "extendedCharsAllowed",
+			 "lDAPDisplayName",
+			 "schemaIDGUID",
+			 "attributeSecurityGUID",
+			 "systemOnly",
+			 "systemFlags",
+			 "isMemberOfPartialAttributeSet",
+			 "objectCategory",
+
+			 /* this attributes are not used by w2k3 */
+			 "schemaFlagsEx",
+			 "msDs-IntId",
+			 "msDs-Schema-Extensions",
+			 "classDisplayName",
+			 "isEphemeral",
+			 "isDefunct");
 
 /*
   notes:
@@ -144,14 +191,14 @@ function map_attribute_syntax(s) {
 
 
 /*
-  fix a string DN to use ${BASEDN}
+  fix a string DN to use ${SCHEMADN}
 */
 function fix_dn(dn) {
-	var s = strstr(dn, rootDse.defaultNamingContext);
+	var s = strstr(dn, rootDse.schemaNamingContext);
 	if (s == NULL) {
 		return dn;
 	}
-	return substr(dn, 0, strlen(dn) - strlen(s)) + "${BASEDN}";
+	return substr(dn, 0, strlen(dn) - strlen(s)) + "${SCHEMADN}";
 }
 
 /*
@@ -159,9 +206,7 @@ function fix_dn(dn) {
 */
 function write_ldif_one(o, attrs) {
 	var i;
-	printf("dn: CN=%s,CN=Schema,CN=Configuration,${BASEDN}\n", o.cn);
-	printf("cn: %s\n", o.cn);
-	printf("name: %s\n", o.cn);
+	printf("dn: CN=%s,${SCHEMADN}\n", o.cn);
 	for (i=0;i<attrs.length;i++) {
 		var a = attrs[i];
 		if (o[a] == undefined) {
@@ -616,6 +661,10 @@ function write_aggregate_attribute(attrib) {
 	if (attrib['isSingleValued'] == "TRUE") {
 		printf("SINGLE-VALUE ");
 	}
+	if (attrib['systemOnly'] == "TRUE") {
+		printf("NO-USER-MODIFICATION ");
+	}
+
 	printf(")\n");
 }
 
@@ -624,13 +673,10 @@ function write_aggregate_attribute(attrib) {
   write the aggregate record
 */
 function write_aggregate() {
-	printf("dn: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}\n");
+	printf("dn: CN=Aggregate,${SCHEMADN}\n");
 	print("objectClass: top
 objectClass: subSchema
-cn: Aggregate
-instanceType: 4
-name: Aggregate
-objectCategory: CN=SubSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=SubSchema,${SCHEMADN}
 ");
 	for (i in objectclasses) {
 		write_aggregate_objectclass(objectclasses[i]);
@@ -679,7 +725,7 @@ for (i in objectclasses) {
 	num_classes++;
 }
 /* so EJS do not have while nor the break statement
-   can't find any other way than doing more loops
+   cannot find any other way than doing more loops
    than necessary to recursively expand all classes
  */
 var inf;
