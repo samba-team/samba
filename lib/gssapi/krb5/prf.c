@@ -57,6 +57,11 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 	return GSS_S_NO_CONTEXT;
     }
 
+    if (desired_output_len <= 0) {
+	*minor_status = 0;
+	return GSS_S_FAILURE;
+    }
+
     GSSAPI_KRB5_INIT (&context);
 
     switch(prf_key) {
