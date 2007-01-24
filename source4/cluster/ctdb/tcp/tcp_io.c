@@ -24,7 +24,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "cluster/ctdb/include/ctdb_private.h"
+#include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
 
@@ -209,13 +209,6 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 
 	if (length2 != length) {
 		memset(data+length, 0, length2-length);
-	}
-	{
-		int i, fd = open("/dev/null", O_WRONLY);
-		for (i=0;i<length2;i++) {
-			write(fd, &data[i], 1);
-		}
-		close(fd);
 	}
 	
 	/* if the queue is empty then try an immediate write, avoiding
