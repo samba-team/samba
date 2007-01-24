@@ -204,10 +204,10 @@ static int setup_epoll_wait(struct aio_event_context *aio_ev)
 	aio_ev->epoll_iocb->u.c.offset = -1;
 	aio_ev->epoll_iocb->u.c.buf = aio_ev->epevent;
 
-	aio_ev->is_epoll_set = 1;
 	if (io_submit(aio_ev->ioctx, 1, &aio_ev->epoll_iocb) != 1) {
 		return -1;
 	}
+	aio_ev->is_epoll_set = 1;
 
 	return 0;
 }
