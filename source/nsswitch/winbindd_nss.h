@@ -447,6 +447,7 @@ struct winbindd_response {
 			fstring full_name;
 			fstring homedir;
 			fstring shell;
+			uint32 primary_gid;			
 			uint32 group_rid;
 		} user_info;
 		struct {

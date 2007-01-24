@@ -57,18 +57,19 @@ typedef struct {
 		time_t current_time;
 		int tried_closest_dc;
 	} config;
-
-	/* info derived from the servers schema */
-	struct {
-		enum wb_posix_mapping map_type;
-		char *posix_homedir_attr;
-		char *posix_shell_attr;
-		char *posix_uidnumber_attr;
-		char *posix_gidnumber_attr;
-		char *posix_gecos_attr;
-	} schema;
-
 } ADS_STRUCT;
+
+/* used to remember the names of the posix attributes in AD */
+/* see the rfc2307 & sfu nss backends */
+
+struct posix_schema {
+	char *posix_homedir_attr;
+	char *posix_shell_attr;
+	char *posix_uidnumber_attr;
+	char *posix_gidnumber_attr;
+	char *posix_gecos_attr;
+};
+
 
 /* there are 5 possible types of errors the ads subsystem can produce */
 enum ads_error_type {ENUM_ADS_ERROR_KRB5, ENUM_ADS_ERROR_GSS, 
