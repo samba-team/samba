@@ -29,7 +29,7 @@
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
 #include "ntvfs/common/brlock.h"
-#include "cluster/ctdb/include/ctdb.h"
+#include "include/ctdb.h"
 
 #define ENABLE_NOTIFIES 0
 

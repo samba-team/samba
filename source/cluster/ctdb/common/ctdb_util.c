@@ -23,7 +23,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "cluster/ctdb/include/ctdb_private.h"
+#include "../include/ctdb_private.h"
 
 /*
   return error string for last error
@@ -46,7 +46,6 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 	DEBUG(0,("ctdb error: %s\n", ctdb->err_msg));
 	va_end(ap);
 }
-
 
 /*
   a fatal internal error occurred - no hope for recovery

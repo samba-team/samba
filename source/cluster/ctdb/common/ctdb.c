@@ -24,7 +24,7 @@
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "cluster/ctdb/include/ctdb_private.h"
+#include "../include/ctdb_private.h"
 
 /*
   choose the transport we will use

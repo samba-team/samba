@@ -26,7 +26,7 @@
 #include "system/filesys.h"
 #include "cluster/cluster_private.h"
 #include "lib/tdb/include/tdb.h"
-#include "cluster/ctdb/include/ctdb.h"
+#include "include/ctdb.h"
 #include "db_wrap.h"
 
 struct cluster_state {
