@@ -98,7 +98,11 @@ static bool test_event_context(struct torture_context *test,
 
 	t = timeval_current();
 	while (!finished) {
-		event_loop_once(ev_ctx);
+		if (event_loop_once(ev_ctx) == -1) {
+			torture_fail(test, "Failed event loop\n");
+			talloc_free(ev_ctx);
+			return False;
+		}
 	}
 
 	talloc_free(fde);
@@ -106,7 +110,9 @@ static bool test_event_context(struct torture_context *test,
 	close(fd[1]);
 
 	while (alarm_count < fde_count+1) {
-		event_loop_once(ev_ctx);
+		if (event_loop_once(ev_ctx) == -1) {
+			break;
+		}
 	}
 
 	torture_comment(test, "Got %.2f pipe events/sec\n", fde_count/timeval_elapsed(&t));
