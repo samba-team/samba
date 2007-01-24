@@ -60,7 +60,11 @@ struct nss_info_methods {
 	NTSTATUS (*get_nss_info)( struct nss_domain_entry *e, 
 				  const DOM_SID *sid, 
 				  TALLOC_CTX *ctx, 
+#ifdef WITH_ADS
 				  ADS_STRUCT *ads, LDAPMessage *msg,
+#else
+				  void *ads, void *msg,
+#endif
 				  char **homedir, char **shell, char **gecos, gid_t *p_gid);
 	NTSTATUS (*close_fn)( void );
 };
