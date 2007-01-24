@@ -41,7 +41,7 @@ static BOOL fillup_pw_field(const char *lp_template,
 	if (out == NULL)
 		return False;
 
-	if (in && !strequal(in,"") && lp_security() == SEC_ADS && (get_nss_info(domname))) {
+	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
 		safe_strcpy(out, in, sizeof(fstring) - 1);
 		return True;
 	}
@@ -156,6 +156,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 	fstrcpy(state->response.data.user_info.full_name, user_info.full_name);
 	fstrcpy(state->response.data.user_info.homedir, user_info.homedir);
 	fstrcpy(state->response.data.user_info.shell, user_info.shell);
+	state->response.data.user_info.primary_gid = user_info.primary_gid;	
 	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
 				&state->response.data.user_info.group_rid)) {
 		DEBUG(1, ("Could not extract group rid out of %s\n",
@@ -184,6 +185,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *full_name, 
 				    const char *homedir,
 				    const char *shell,
+				    uint32 gid,
 				    uint32 group_rid);
 static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid);
 static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
@@ -222,6 +224,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *full_name, 
 				    const char *homedir,
 				    const char *shell,
+				    uint32 gid,
 				    uint32 group_rid)
 {
 	fstring username;
@@ -241,6 +244,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
 	s->shell = talloc_strdup(s->state->mem_ctx, shell);
+	s->gid = gid;	
 	sid_copy(&s->group_sid, &s->domain->sid);
 	sid_append_rid(&s->group_sid, group_rid);
 
@@ -272,13 +276,29 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	struct winbindd_pw *pw;
 	fstring output_username;
 
+	/* allow the nss backend to override the primary group ID.
+	   If the gid has already been set, then keep it.
+	   This makes me feel dirty.  If the nss backend already
+	   gave us a gid, we don't really care whether the sid2gid()
+	   call worked or not.   --jerry  */
+
+	if ( s->gid == (gid_t)-1 ) {
 	if (!success) {
 		DEBUG(5, ("Could not query user's %s\\%s\n gid",
 			  s->domain->name, s->username));
 		goto failed;
 	}
 
+		/* take what the sid2gid() call gave us */
 	s->gid = gid;
+	}
+
+	/* allow the nss backend to override the primary group ID.
+	   If the gid has already been set, then keep it */
+
+	if ( s->gid == (gid_t)-1 ) {
+		s->gid = gid;
+	}
 
 	pw = &s->state->response.data.pw;
 	pw->pw_uid = s->uid;

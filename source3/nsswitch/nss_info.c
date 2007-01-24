@@ -1,111 +1,305 @@
 /* 
    Unix SMB/CIFS implementation.
-   nss info helpers
-   Copyright (C) Guenther Deschner 2006
+   Idmap NSS headers
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Copyright (C) Gerald Carter             2006
 
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.*/
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+   
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the
+   Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA  02111-1307, USA.   
+*/
 
 #include "includes.h"
+#include "nss_info.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_IDMAP
+static struct nss_function_entry *backends = NULL;
+static struct nss_domain_entry *nss_domain_list = NULL;
 
-static enum wb_posix_mapping wb_posix_map_type(const char *map_str)
-{
-	if (strequal(map_str, "template")) 
-		return WB_POSIX_MAP_TEMPLATE;
-	else if (strequal(map_str, "sfu"))
-		return WB_POSIX_MAP_SFU;
-	else if (strequal(map_str, "rfc2307"))
-		return WB_POSIX_MAP_RFC2307;
-	else if (strequal(map_str, "unixinfo"))
-		return WB_POSIX_MAP_UNIXINFO;
-	
-	return WB_POSIX_MAP_UNKNOWN;
-}
-
-/* winbind nss info = rfc2307 SO36:sfu FHAIN:rfc2307 PANKOW:template
- *
- * syntax is:
- *	1st param: default setting
- *	following ":" separated list elements:
- *		DOMAIN:setting
- *	setting can be one of "sfu", "rfc2307", "template", "unixinfo"
- */
-
-enum wb_posix_mapping get_nss_info(const char *domain_name)
-{
-	const char **list = lp_winbind_nss_info();
-	enum wb_posix_mapping map_templ = WB_POSIX_MAP_TEMPLATE;
-	int i;
-
-	DEBUG(11,("get_nss_info for %s\n", domain_name));
-
-	if (!lp_winbind_nss_info() || !*lp_winbind_nss_info()) {
-		return WB_POSIX_MAP_TEMPLATE;
-	}
-
-	if ((map_templ = wb_posix_map_type(list[0])) == WB_POSIX_MAP_UNKNOWN) {
-		DEBUG(0,("get_nss_info: invalid setting: %s\n", list[0]));
-		return WB_POSIX_MAP_TEMPLATE;
-	}
-
-	DEBUG(11,("get_nss_info: using \"%s\" by default\n", list[0]));
-
-	for (i=0; list[i]; i++) {
-
-		const char *p = list[i];
-		fstring tok;
-
-		if (!next_token(&p, tok, ":", sizeof(tok))) {
-			DEBUG(0,("get_nss_info: no \":\" delimitier found\n"));
-			continue;
-		}
-
-		if (strequal(tok, domain_name)) {
-		
-			enum wb_posix_mapping type;
-			
-			if ((type = wb_posix_map_type(p)) == WB_POSIX_MAP_UNKNOWN) {
-				DEBUG(0,("get_nss_info: invalid setting: %s\n", p));
-				/* return WB_POSIX_MAP_TEMPLATE; */
-				continue;
-			}
-
-			DEBUG(11,("get_nss_info: using \"%s\" for domain: %s\n", p, tok));
-			
-			return type;
-		}
-	}
-
-	return map_templ;
-}
+/**********************************************************************
+ **********************************************************************/
 
 const char *wb_posix_map_str(enum wb_posix_mapping mtype)
 {
 	switch (mtype) {
-		case WB_POSIX_MAP_TEMPLATE:
-			return "template";
 		case WB_POSIX_MAP_SFU:
 			return "sfu";
 		case WB_POSIX_MAP_RFC2307:
 			return "rfc2307";
-		case WB_POSIX_MAP_UNIXINFO:
-			return "unixinfo";
 		default:
 			break;
 	}
 	return NULL;
 }
+
+
+/**********************************************************************
+ Get idmap nss methods.
+**********************************************************************/
+
+static struct nss_function_entry *nss_get_backend(const char *name )
+{
+	struct nss_function_entry *entry = backends;
+
+	for(entry = backends; entry; entry = entry->next) {
+		if ( strequal(entry->name, name) )
+			return entry;
+	}
+
+	return NULL;
+}
+
+/*********************************************************************
+ Allow a module to register itself as a backend.
+**********************************************************************/
+
+NTSTATUS smb_register_idmap_nss(int version, const char *name, struct nss_info_methods *methods)
+{
+	struct nss_function_entry *entry;
+
+ 	if ((version != SMB_NSS_INFO_INTERFACE_VERSION)) {
+		DEBUG(0, ("smb_register_idmap_nss: Failed to register idmap_nss module.\n"
+		          "The module was compiled against SMB_NSS_INFO_INTERFACE_VERSION %d,\n"
+		          "current SMB_NSS_INFO_INTERFACE_VERSION is %d.\n"
+		          "Please recompile against the current version of samba!\n",  
+			  version, SMB_NSS_INFO_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+  	}
+
+	if (!name || !name[0] || !methods) {
+		DEBUG(0,("smb_register_idmap_nss: called with NULL pointer or empty name!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if ( nss_get_backend(name) ) {
+		DEBUG(0,("smb_register_idmap_nss: idmap module %s "
+			 "already registered!\n", name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	entry = SMB_XMALLOC_P(struct nss_function_entry);
+	entry->name = smb_xstrdup(name);
+	entry->methods = methods;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5, ("smb_register_idmap_nss: Successfully added idmap "
+		  "nss backend '%s'\n", name));
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ *******************************************************************/
+
+static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
+{
+	char *p;
+	char *q;
+	int len;
+
+	*backend = *domain = NULL;
+	
+	if ( !config )
+		return False;
+	
+	p = strchr( config, ':' );
+	
+	/* if no : then the string must be the backend name only */
+
+	if ( !p ) {
+		*backend = SMB_STRDUP( config );
+		return (*backend != NULL);
+	}
+
+	/* split the string and return the two parts */
+
+	if ( strlen(p+1) > 0 ) {
+		*domain = SMB_STRDUP( p+1 );
+	}
+	
+	len = PTR_DIFF(p,config)+1;
+	if ( (q = SMB_MALLOC_ARRAY( char, len )) == NULL ) {
+		SAFE_FREE( *backend );
+		return False;
+	}
+	
+	StrnCpy( q, config, len-1);
+	q[len-1] = '\0';
+	*backend = q;
+
+	return True;
+}
+
+/********************************************************************
+ Each nss backend must not store global state, but rather be able 
+ to initialize the state on a per domain basis.
+ *******************************************************************/
+
+NTSTATUS nss_init( const char **nss_list )
+{
+	NTSTATUS status;
+	int i;
+	char *backend, *domain;
+	struct nss_function_entry *nss_backend;
+	struct nss_domain_entry *nss_domain;
+
+	/* The "template" backend should alqays be registered as it
+	   is a static module */
+
+	if ( (nss_backend = nss_get_backend( "template" )) == NULL ) {
+		static_init_nss_info;	       
+	}
+
+	/* Create the list of nss_domains (loading any shared plugins
+	   as necessary) */
+
+	for ( i=0; nss_list && nss_list[i]; i++ ) {
+
+		if ( !parse_nss_parm(nss_list[i], &backend, &domain) ) 	{
+			DEBUG(0,("nss_init: failed to parse \"%s\"!\n",
+				 nss_list[0]));
+			continue;			
+		}
+
+		/* validate the backend */
+
+		if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
+			/* attempt to register the backend */
+			status = smb_probe_module( "nss_info", backend );
+			if ( !NT_STATUS_IS_OK(status) ) {
+				continue;
+			}
+			
+			/* try again */
+			if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
+				DEBUG(0,("nss_init: unregistered backend %s!.  Skipping\n",
+					 backend));
+				continue;
+			}
+
+		}
+
+     		/* fill in the nss_domain_entry and add it to the 
+		   list of domains */
+
+		nss_domain = TALLOC_ZERO_P( nss_domain_list, struct nss_domain_entry );
+		if ( !nss_domain ) {
+			DEBUG(0,("nss_init: talloc() failure!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		nss_domain->backend = nss_backend;
+		nss_domain->domain  = talloc_strdup( nss_domain, domain );
+
+		status = nss_domain->backend->methods->init( nss_domain );
+		if ( NT_STATUS_IS_OK( status ) ) {
+			DLIST_ADD( nss_domain_list, nss_domain );
+		} else {
+			DEBUG(0,("nss_init: Failed to init backend for %s domain!\n", 
+				 nss_domain->domain));
+		}
+
+		/* cleanup */
+
+		SAFE_FREE( backend );
+		SAFE_FREE( domain );		
+	}
+
+	if ( !nss_domain_list ) {
+		DEBUG(3,("nss_init: no nss backends configured.  "
+			 "Defaulting to \"template\".\n"));
+
+
+		/* we shouild default to use template here */
+	}
+	
+		
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ *******************************************************************/
+
+NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
+		       TALLOC_CTX *ctx,
+		       ADS_STRUCT *ads, LDAPMessage *msg,
+		       char **homedir, char **shell, char **gecos,
+		       gid_t *p_gid)
+{
+	struct nss_domain_entry *p;
+	struct nss_info_methods *m;
+	
+	for ( p=nss_domain_list; p; p=p->next ) {
+		if ( strequal( p->domain, domain ) )
+			break;
+	}
+	
+	/* If we didn't find a match, then use the default nss info */
+
+	if ( !p ) {
+		if ( !nss_domain_list ) {
+			return NT_STATUS_NOT_FOUND;
+		}
+		
+		p = nss_domain_list;		
+	}
+
+	m = p->backend->methods;
+
+	return m->get_nss_info( p, user_sid, ctx, ads, msg, 
+				homedir, shell, gecos, p_gid );
+}
+
+/********************************************************************
+ *******************************************************************/
+
+NTSTATUS nss_close( const char *parameters )
+{
+	struct nss_domain_entry *p = nss_domain_list;
+	struct nss_domain_entry *q;
+
+	while ( p && p->backend && p->backend->methods ) {
+		/* close the backend */
+		p->backend->methods->close_fn();
+
+		/* free the memory */
+		q = p;
+		p = p->next;
+		TALLOC_FREE( q );
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ Invoke the init function for a given domain's backend
+ *******************************************************************/
+
+NTSTATUS idmap_nss_init_domain( const char *domain )
+{
+	struct nss_domain_entry *p;
+	
+	DEBUG(10,("idmap_nss_init_domain: Searching for %s's init() function\n", 
+		  domain));
+	
+	for ( p=nss_domain_list; p; p=p->next ) {
+		if ( strequal( p->domain, domain ) ) {
+			DEBUG(10,("idmap_nss_init_domain: Calling init function for %s\n",
+				  domain));			
+			return p->backend->methods->init( p );
+		}
+	}
+	
+	return NT_STATUS_NO_SUCH_DOMAIN;	
+}
+
