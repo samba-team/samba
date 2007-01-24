@@ -57,7 +57,7 @@ BOOL set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
 	}
 	else {	
-		deny |= (share_access & (FILE_SHARE_WRITE|FILE_SHARE_DELETE)) ?
+		deny |= (share_access & FILE_SHARE_WRITE) ?
 			0 : GPFS_DENY_WRITE;
 		deny |= (share_access & (FILE_SHARE_READ)) ?
 			0 : GPFS_DENY_READ;
