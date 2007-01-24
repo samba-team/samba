@@ -364,6 +364,7 @@ main(int argc, char **argv)
 	krb5_context context;
 	time_t time, skew;
 	gss_buffer_desc authz_data;
+	gss_buffer_desc in, out1, out2;
 	krb5_keyblock *keyblock, *keyblock2;
 	krb5_timestamp now;
 	krb5_error_code ret;
@@ -489,6 +490,52 @@ main(int argc, char **argv)
 	    gss_release_buffer(&min_stat, &authz_data);
 
 	krb5_free_context(context);
+
+
+	memset(&out1, 0, sizeof(out1));
+	memset(&out2, 0, sizeof(out2));
+
+	in.value = "foo";
+	in.length = 3;
+
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in, 
+			  100, &out1);
+	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_FULL, &in, 
+			  100, &out2);
+
+	if (out1.length != out2.length)
+	    errx(1, "prf len mismatch");
+	if (memcmp(out1.value, out2.value, out1.length) != 0)
+	    errx(1, "prf data mismatch");
+	
+	gss_release_buffer(&min_stat, &out1);
+
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in, 
+			  100, &out1);
+
+	if (out1.length != out2.length)
+	    errx(1, "prf len mismatch");
+	if (memcmp(out1.value, out2.value, out1.length) != 0)
+	    errx(1, "prf data mismatch");
+
+	gss_release_buffer(&min_stat, &out1);
+	gss_release_buffer(&min_stat, &out2);
+
+	in.value = "bar";
+	in.length = 3;
+
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_PARTIAL, &in, 
+			  100, &out1);
+	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_PARTIAL, &in, 
+			  100, &out2);
+
+	if (out1.length != out2.length)
+	    errx(1, "prf len mismatch");
+	if (memcmp(out1.value, out2.value, out1.length) != 0)
+	    errx(1, "prf data mismatch");
+
+	gss_release_buffer(&min_stat, &out1);
+	gss_release_buffer(&min_stat, &out2);
 
 	wrapunwrap_flag = 1;
 	getverifymic_flag = 1;
