@@ -54,6 +54,7 @@ krb5src = \
 	krb5/inquire_names_for_mech.c \
 	krb5/inquire_sec_context_by_oid.c \
 	krb5/process_context_token.c \
+	krb5/prf.c \
 	krb5/release_buffer.c \
 	krb5/release_cred.c \
 	krb5/release_name.c \
