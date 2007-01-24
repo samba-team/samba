@@ -76,7 +76,7 @@ if (form['submit'] == "Migrate") {
 
 		/* Setup a basic database structure, but don't setup any users */
 		if (!provision(subobj, writefln, true, paths,
-			       session_info, credentials)) {
+			       session_info, credentials, false)) {
 			writefln("Provision failed!");
 
 		/* Join domain */
