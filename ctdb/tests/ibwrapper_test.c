@@ -54,6 +54,8 @@ struct ibwtest_ctx {
 
 	int	cnt;
 
+	int	nmsg; /* number of messages to send (client) */
+
 	int	kill_me;
 	struct ibw_ctx	*ibwctx;
 };
@@ -227,6 +229,14 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 			fprintf(stderr, "ibw_send error #2\n");
 			return -2;
 		}
+	} else {
+		if (tcx->nmsg) {
+			char	msg[26];
+			sprintf(msg, "hello world %d", tcx->nmsg--);
+			ibwtest_send_test_msg(tcx, conn, msg);
+			if (tcx->nmsg==0)
+				tcx->kill_me = 1;
+		}
 	}
 
 	return 0;
@@ -355,7 +365,9 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t-o name1:value1,name2:value2,... is a list of (name, value) pairs\n");
 	printf("\t-d addr1:port1,addr2:port2,... is a list of destination ip addresses\n");
 	printf("\t-t nsec delta time between sends in nanosec [default %d]\n", tcx->nsec);
+	printf("\t\t send message periodically and endless when nsec is non-zero\n");
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
+	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -368,7 +380,8 @@ int main(int argc, char *argv[])
 
 	tcx = talloc_zero(NULL, struct ibwtest_ctx);
 	memset(tcx, 0, sizeof(struct ibwtest_ctx));
-	tcx->nsec = 1000;
+	tcx->nsec = 0;
+	tcx->nmsg = 1000;
 
 	/* here is the only case we can't avoid using global... */
 	testctx = tcx;
@@ -426,8 +439,9 @@ int main(int argc, char *argv[])
 		goto cleanup;
 
 	while(!tcx->kill_me) {
-		event_add_timed(ev, tcx, timeval_current_ofs(0, tcx->nsec),
-			ibwtest_timeout_handler, tcx);
+		if (tcx->nsec)
+			event_add_timed(ev, tcx, timeval_current_ofs(0, tcx->nsec),
+				ibwtest_timeout_handler, tcx);
 		event_loop_once(ev);
 	}
 
