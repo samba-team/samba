@@ -3,42 +3,59 @@ developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba 4 is currently not yet in a state where it is usable in
-production environments. Note the WARNINGS below, and the STATUS file,
+While we welcome your interest in Samba 4, we don't want you to run your network with it quite yet. Please note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-With 3 years of development under our belt since Tridge first proposed
+With 4 years of development under our belt since Tridge first proposed
 a new Virtual File System (VFS) layer for Samba3 (a project which
-eventually lead to our Active Directory efforts), it was felt that we
+eventually lead to our Active Directory efforts), we was felt that we
 should create something we could 'show off' to our users.  This is a
-Technology Preview (TP), aimed at allowing users, managers and
-developers to see how we have progressed, and to invite feedback and
+Technology Preview (TP), aimed at allowing you, our users, managers and
+developers to see how we have progressed, and to invite your feedback and
 support.
 
 WARNINGS
 ========
 
-Samba4 TP is currently a pre-alpha technology.  It may eat your cat, but
-is far more likely to choose to munch on your password database. We
-recommend against upgrading any production servers from Samba 3 to
-Samba 4 at this stage.  If you are upgrading an experimental server,
-you should backup all configuration and data.
+Samba4 TP is currently a pre-alpha technology.  That is more a
+reference to Samba4's lack of the features we expect you will need
+than a statement of code quality, but clearly it hasn't seen a broad
+deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
+Samba4, you would find many things work, but that other key features
+you may have relied on simply are not there yet.
 
-We expect that format changes will require that the user database be
-rebuilt from scratch a number of times before we make a final release,
-losing password data each time.
+For example, while Samba 3.0 is an excellent member of a Active
+Directory domain, Samba4 is happier as a domain controller: (This is
+where we have done most of the research and development).
 
+While Samba4 is subjected to an awesome battery of tests on an
+automated basis, and we have found Samba4 to be very stable in it's
+behaviour, we have to recommend against upgrading production servers
+from Samba 3 to Samba 4 at this stage.  If you are upgrading an
+experimental server, or looking to develop and test Samba, you should
+backup all configuration and data.
+
+As we research the needs of Active Directory integration more closely,
+we may need to change the format of the user database, in particular
+as we begin to understand how the attributes are generated and stored.
+At a worst case, we expect users will be able to extract the stored
+data as LDIF and hand munge it, but until we make an alpha release, we
+won't do this automatically.  Indeed, many module changes are simply
+easier to cope with if you just re-provision after the upgrade.
+
+We value the security of your computers, and so we must warn you that
 Samba 4 Technology Preview includes basic Access Control List (ACL)
 protection on the main user database, but due to time constraints,
 none on the registry at this stage.  We also do not currently have
 ACLs on the SWAT web-based management tool. This means that Samba 4
-Technology Preview is not secure.
+Technology Preview is not secure, and should not be exposed to
+untrusted networks..
 
-File system access should occur as the logged in user, much as Samba3
-does.
+Within the above proviso, file system access should occur as the
+logged in user, much as Samba3 does.
 
-Again, we strongly recommend against use in a production environment
-at this stage.
+As such, we must strongly recommend against using Samba4 in a
+production environment at this stage.
 
 NEW FEATURES
 ============
@@ -48,7 +65,7 @@ used by Windows 2000 and later, so we can do full domain join
 and domain logon operations with these clients.
 
 Our Domain Controller (DC) implementation includes our own built-in
-LDAP server and Kerberos Key Distribution Center (KDC) as well as the
+LDAP server and Kerberos Key Distribution Centre (KDC) as well as the
 Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
@@ -59,7 +76,7 @@ setup and migration tools.  Using SWAT, you can migrate windows
 domains in Samba 4, allowing easy setup of initial user databases, and
 upgrades from Samba 3.
 
-The new VFS features in Samba 4 adapts the filesystem on the server to
+The new VFS features in Samba 4 adapts the file-system on the server to
 match the Windows client semantics, allowing Samba 4 to better match
 windows behaviour and application expectations.  This includes file
 annotation information (in streams) and NT ACLs in particular.  The
@@ -71,8 +88,8 @@ JavaScript programs to interface to Samba's internals.
 The Samba 4 architecture is based around an LDAP-like database that
 can use a range of modular backends.  One of the backends supports
 standards compliant LDAP servers (including OpenLDAP), and we are
-working on modules to map between AD-like behaviours and this backend.
-We are aiming for Samba 4 to be powerful frontend to large
+working on modules to map between AD-like behaviours and this back-end.
+We are aiming for Samba 4 to be powerful front-end to large
 directories.
 
 CHANGES
@@ -98,9 +115,6 @@ KNOWN ISSUES
 
 - SWAT can be painful with <TAB> and forms.  Just use the mouse, as
   the JavaScript layer doing this will change.
-
-- Domain logons (using Kerberos) from windows clients incorrectly
-  state that the password expires today.
 
 RUNNING Samba4
 ==============

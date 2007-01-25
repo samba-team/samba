@@ -1,171 +1,72 @@
-This file contains a history of changes since the first Samba 4 Technology 
-Preview. For a general introduction to Samba 4, see the README file in this 
-directory. The NEWS file contains a list of differences between 
-Samba 3 and Samba 4.
+'Samba4 TP4' presents you with an opportunity to see a Technology
+Preview (TP) snapshot of Samba4's development, as at January 2007.
+
+In the last few months since TP3 was released in October 2006,
+significant work has been done across many parts of Samba4.  Since that
+time, we have added the basis for some new and exciting features:
+
+  PKINIT support to Samba4's KDC will allow, smart-card login to a
+  Samba4 domain.  TP4 demonstrates this with static key files, but
+  work will continue to enable actual hardware cards.
+
+  Clustering support was always a design goal of Samba4, and with TP4
+  we have the ctdb framework, a cluster-aware shared database.  This
+  allows Samba4 to share a shared cluster file-system with it's clients. 
+  Presented at this year's linux.conf.au, including a highly rigged
+  demo, you can expect to see this mature over the next few months.
+
+  Non-blocking and Asynchronous IO support, has always been a design
+  goal in Samba4, and TP4 will use new Linux Kernel features to
+  implement event driven asynchronous IO.  This makes Samba more
+  efficient on systems where some data may be 'further away' than a
+  local disk, such as HSM systems.  This allows the Kernel to handle
+  reading the returned data from the disk, only notifying Samba when
+  the data is ready for dispatch to the client. 
+
+  Our web-management console, known as SWAT, is being revamped, and in
+  TP4 you can find a new Web 2.0 style user interface, being used to
+  support a web-based ldb browser.  We hope this new system will allow
+  things simple not possible with the form-submit style of web
+  management.
+
+  Using LDB LDAP back-end integration has improved in this release, with an
+  improved mapping module allowing the start of Fedora DS back-end
+  support.  
+
+In continuing our research effort, TP4 includes the work to better
+understand and implement the DRSUAPI replication protocols.  By better
+understanding the needs of replication now, we can structure our
+databases so that their format will have to change less in future.
+
+We hope to use this replication function to replace the SamSync based
+Vampire process so effectively demonstrated since TP1, and to
+eventually join an Active Directory domain, as a replicating partner.
+
+Behind the scenes, much of the core infrastructure of Samba4 continues
+development:
+
+  In Kerberos, we have continued to track the development of the
+  Heimdal Kerberos implementation, and reduce the custom diff between
+  our branch and upstream.  Heimdal now provides plug-in APIs for
+  almost all of the hooks we need, including management and validation
+  of the PAC.
+
+  In testing, our test infrastructure has undergone a quiet
+  revolution, as we improve our unit test framework.  Likewise, the
+  tests themselves have continued to expand, as we follow our
+  test-driven development pattern.
+
+  In providing an abstraction above our raw RPC layer, the libnet
+  library continues to expand, becoming a C and JS management API for
+  Samba4 and remote servers.
+
+  To ensure that, as an administrator and developer, you can easily
+  read and edit our internal databases, our LDB layer has been
+  optimised for speed.  The aim here is to avoid needing to use the faster, but
+  more opaque, TDB layer.  
+
+These are just some of the highlights of the work done in the past few
+months.  More details can be found in our SVN history.
 
-========================================
-Changes in Samba4-TP2
-Release date: 22 March 2006
-========================================
 
- * Make ldb async internally (idra)
 
- * Use HDB-LDB as the keytab (abartlet)
-
- * Call the wins hook script again (metze)
-
- * Make sure no more than 25 records are added in the WINS database (metze)
- 
- * Documentation updates (jelmer)
-
- * Fix termination issue in winreg server (metze)
-
- * AES fix for Samba 4 <-> Samba4 (abartlet)
-
- * Better conformance to FHS (abartlet, jelmer)
-
- * Improve internal API and code quality in smbclient (jelmer)
-
- * Add testsuite for smbclient (jelmer)
-
- * Remove support for password as an optional second parameter in 
-   smbclient (jelmer)
-
- * Various warning fixes (metze)
-
- * Several clarifications of comments (abartlet)
-
- * Remove use of pstring in some places (jelmer)
-
- * Re-add the global -k option to enable kerberos (abartlet)
-
- * Various memory allocation fixes (abartlet)
-
- * Add new cifsdd client (jpeach)
-
- * Add tests for even more insane delete-on-close semantics (jra, tridge)
- 
- * Initial work on BASE-DELETE test passing (tridge)
-
- * Optimizations in tdb (tridge)
-
- * Improvements to ldb documentation (idra, Brad Hards)
-
- * Check attribute names to obey rfc2251 (idra)
-
- * Allow WINS replication with NT4SP6A (metze)
-
- * Add ManageDSAIT control (Pete Rowley, idra)
-
- * Add tests for LDB controls (idra)
-
- * Various LDB crash fixes (idra)
-
- * Initial work on vlv LDB control (idra)
-
- * Add -p option to smbtorture (jpeach)
-
- * Several improvements to the SMB URL and UNC parsing (jpeach)
-
- * Make DCE/RPC connect functions work async (rafal)
-
- * Fix invalid steal on supportedControls (closes: #3525) (abartlet)
-
- * Start parsing saslauthd requests (metze)
-
- * Split the NBT-WINSREPLICATION test into multiple tests (metze)
-
- * Add new ACB-bits as seen in acct_flags in the PAC info3 (gd)
-
- * Move header files out of include/ (jelmer)
- 
- * Create separate library for generic utility functions (jelmer)
-
- * Add highestCommittedUSN, uSNChanged and uSNCreated support to LDB (tridge)
-
- * Allow more control over the the winbindd socket location (abartlet)
-
- * Allow messaging without a server messaging context (abartlet) 
-
- * Make GSSAPI SASL mech work (abartlet)
-
- * Write out Samba4 version when provisioning (idra)
-
- * Allow servers to bind to non-broadcast interfaces (tridge, abartlet)
-
- * Initialize some ASN.1 elements that are optional (metze)
-
- * Various improvements to RPC-SCHANNEL (abartlet)
-
- * Make Samba4 pass some of the newer schannel tests (abartlet)
-
- * Better handling of connections without SPNEGO (abartlet)
-
- * Generate seperate headers for RPC client functions (jelmer)
-
- * Improve NTLMSSP tests (abartlet, vl)
-
- * Support any size pointers in pidl (tridge)
-
- * Large overhaul of the opendb code to pass BASE-DELETE (tridge)
-
- * Use doxygen for documenting lib/util and lib/registry (jelmer)
-
- * Add registration mechanism for modules and backends in ldb (idra, jelmer)
-
- * Support building shared libraries in the build system (metze, jelmer)
-
- * Install headers in a sane location (jelmer)
-
- * Fix BASE-NEGNOWAIT (tridge)
-
- * Add prefixes to most of the SMB-related functions (metze) 
-
- * Get rid of proto.h (jelmer)
-
- * Reduce number of headers included in includes.h (jelmer)
-
- * Support header dependencies (jelmer)
-
- * Add RAW-NOTIFY (tridge, metze)
-
- * Fix 'your password has expired' on every login (abartlet)
-
- * Improvements to RPC-SAMSYNC (abartlet)
-
- * Work on supporting change notify (tridge, metze)
-
- * Reopen log files after SIGHUP (metze)
-
- * Add BUGS.txt (#3523) (jelmer)
-
- * Add summary to configure (#3442) (metze, jelmer)
-
- * Swig fixes (idra)
-
- * Improve NBT-WINSREPLICATION-OWNED test (metze)
-
- * Fix a lot of compiler warnings (metze)
-
- * Several code improvements found by static code checker (tridge, metze)
-
- * Force correct alignment when in ASCII mode (#2921) (tridge)
- 
- * Fix coverity bug #127 (vl)
-
- * Add support for changing process titles (metze)
-
- * Support raw NTLMSSP (abartlet)
-
- * Fix debug levels in several places (abartlet)
-
- * Work to unify the ntvfs structures for smb and smb2 (metze, tridge)
-
- * Initial work on asynchronous libnet (rafal)
-
- * Improvements to the wide character set functions (tridge)
-
- * Several heimdal build improvements (abartlet, jelmer)
-
- * A lot of small cleanups and typo fixes 
-   (metze, abartlet, idra, jpeach, tridge, jelmer)
