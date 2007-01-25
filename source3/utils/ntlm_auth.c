@@ -272,7 +272,7 @@ static BOOL check_plaintext_auth(const char *user, const char *pass,
 	fstrcpy(request.data.auth.user, user);
 	fstrcpy(request.data.auth.pass, pass);
 	if (require_membership_of_sid)
-		fstrcpy(request.data.auth.require_membership_of_sid, require_membership_of_sid);
+		pstrcpy(request.data.auth.require_membership_of_sid, require_membership_of_sid);
 
 	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
