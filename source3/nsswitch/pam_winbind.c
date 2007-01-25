@@ -879,7 +879,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	} else if (PAM_WB_CACHED_LOGON(response.data.auth.info3.user_flgs)) {
 
 		_make_remark(pamh, PAM_ERROR_MSG, 
-			"Logging on using cached account. Network ressources can be unavailable");
+			"Logging on using cached account. Network resources can be unavailable");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			"User %s logged on using cached account\n", user);
 	}
