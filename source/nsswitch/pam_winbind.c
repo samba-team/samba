@@ -91,19 +91,16 @@ static void _pam_log_debug(const pam_handle_t *pamh, int ctrl, int err, const ch
 	va_end(args);
 }
 
-static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char **argv, dictionary **d)
+static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char **argv, dictionary **result_d)
 {
 	int ctrl = 0;
 	const char *config_file = NULL;
 	int i;
 	const char **v;
+	dictionary *d = NULL;
 
 	if (flags & PAM_SILENT) {
 		ctrl |= WINBIND_SILENT;
-	}
-
-	if (d == NULL) {
-		goto config_from_pam;
 	}
 
 	for (i=argc,v=argv; i-- > 0; ++v) {
@@ -118,34 +115,38 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		config_file = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	*d = iniparser_load(config_file);
-	if (*d == NULL) {
+	d = iniparser_load(config_file);
+	if (d == NULL) {
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(*d, "global:debug", False)) {
+	if (iniparser_getboolean(d, "global:debug", False)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(*d, "global:cached_login", False)) {
+	if (iniparser_getboolean(d, "global:cached_login", False)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(*d, "global:krb5_auth", False)) {
+	if (iniparser_getboolean(d, "global:krb5_auth", False)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getboolean(*d, "global:silent", False)) {
+	if (iniparser_getboolean(d, "global:silent", False)) {
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstr(*d, "global:krb5_ccache_type") != NULL) {
+	if (iniparser_getstr(d, "global:krb5_ccache_type") != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 	
-	if ((iniparser_getstr(*d, "global:require-membership-of") != NULL) ||
-	    (iniparser_getstr(*d, "global:require_membership_of") != NULL)) {
+	if ((iniparser_getstr(d, "global:require-membership-of") != NULL) ||
+	    (iniparser_getstr(d, "global:require_membership_of") != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
+	}
+
+	if (iniparser_getboolean(d, "global:try_first_pass", False)) {
+		ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 	}
 
 config_from_pam:
@@ -179,6 +180,15 @@ config_from_pam:
 		}
 
 	}
+
+	if (result_d) {
+		*result_d = d;
+	} else {
+		if (d) {
+			iniparser_freedict(d);
+		}
+	}
+
 	return ctrl;
 };
 
@@ -447,6 +457,147 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winb
 	/* no warning sent */
 }
 
+#define IS_SID_STRING(name) (strncmp("S-", name, 2) == 0)
+
+int safe_append_string(char *dest,
+			const char *src,
+			int dest_buffer_size)
+/**
+ * Append a string, making sure not to overflow and to always return a NULL-terminated
+ * string.
+ *
+ * @param dest Destination string buffer (must already be NULL-terminated).
+ * @param src Source string buffer.
+ * @param dest_buffer_size Size of dest buffer in bytes.
+ *
+ * @return 0 if dest buffer is not big enough (no bytes copied), non-zero on success.
+ */
+{
+	int dest_length = strlen(dest);
+	int src_length = strlen(src);
+
+	if ( dest_length + src_length + 1 > dest_buffer_size ) {
+		return 0;
+	}
+
+	memcpy(dest + dest_length, src, src_length + 1);
+	return 1;
+}
+
+static int winbind_name_to_sid_string(pam_handle_t *pamh,
+				int ctrl,
+				const char *user,
+				const char *name,
+				char *sid_list_buffer,
+				int sid_list_buffer_size)
+/**
+ * Convert a names into a SID string, appending it to a buffer.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param user User in PAM request.
+ * @param name Name to convert.
+ * @param sid_list_buffer Where to append the string sid.
+ * @param sid_list_buffer Size of sid_list_buffer (in bytes).
+ *
+ * @return 0 on failure, non-zero on success.
+ */
+{
+	const char* sid_string;
+	struct winbindd_response sid_response;
+
+	/* lookup name? */ 
+	if (IS_SID_STRING(name)) {
+		sid_string = name;
+	} else {
+		struct winbindd_request sid_request;
+
+		ZERO_STRUCT(sid_request);
+		ZERO_STRUCT(sid_response);
+
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "no sid given, looking up: %s\n", name);
+
+		/* fortunatly winbindd can handle non-separated names */
+		strncpy(sid_request.data.name.name, name,
+			sizeof(sid_request.data.name.name) - 1);
+
+		if (pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, &sid_request, &sid_response, user)) {
+			_pam_log(pamh, ctrl, LOG_INFO, "could not lookup name: %s\n", name); 
+			return 0;
+		}
+
+		sid_string = sid_response.data.sid.sid;
+	}
+
+	if (!safe_append_string(sid_list_buffer, sid_string, sid_list_buffer_size)) {
+		return 0;
+	}
+
+	return 1;
+}
+
+static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
+				int ctrl,
+				const char *user,
+				const char *name_list,
+				char *sid_list_buffer,
+				int sid_list_buffer_size)
+/**
+ * Convert a list of names into a list of sids.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param user User in PAM request.
+ * @param name_list List of names or string sids, separated by commas.
+ * @param sid_list_buffer Where to put the list of string sids.
+ * @param sid_list_buffer Size of sid_list_buffer (in bytes).
+ *
+ * @return 0 on failure, non-zero on success.
+ */
+{
+	int result = 0;
+	char *current_name = NULL;
+	const char *search_location;
+	const char *comma;
+
+	if ( sid_list_buffer_size > 0 ) {
+		sid_list_buffer[0] = 0;
+	}
+
+	search_location = name_list;
+	while ( (comma = strstr(search_location, ",")) != NULL ) {
+		current_name = strndup(search_location, comma - search_location);
+		if (NULL == current_name) {
+			goto out;
+		}
+
+		if (!winbind_name_to_sid_string(pamh, ctrl, user, current_name, sid_list_buffer, sid_list_buffer_size)) {
+			goto out;
+		}
+
+		free(current_name);
+		current_name = NULL;
+
+		if (!safe_append_string(sid_list_buffer, ",", sid_list_buffer_size)) {
+			goto out;
+		}
+
+		search_location = comma + 1;
+	}
+
+	if (!winbind_name_to_sid_string(pamh, ctrl, user, search_location, sid_list_buffer, sid_list_buffer_size)) {
+		goto out;
+	}
+
+	result = 1;
+
+out:
+	if (current_name != NULL) {
+		free(current_name);
+	}
+	return result;
+}
+
 /* talk to winbindd */
 static int winbind_auth_request(pam_handle_t * pamh,
 				int ctrl, 
@@ -514,36 +665,16 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	request.data.auth.require_membership_of_sid[0] = '\0';
 
 	if (member != NULL) {
-		strncpy(request.data.auth.require_membership_of_sid, member, 
-		        sizeof(request.data.auth.require_membership_of_sid)-1);
-	}
 
-	/* lookup name? */ 
-	if ( (member != NULL) && (strncmp("S-", member, 2) != 0) ) {
-		
-		struct winbindd_request sid_request;
-		struct winbindd_response sid_response;
+		if (!winbind_name_list_to_sid_string_list(pamh, ctrl, user, member,
+			request.data.auth.require_membership_of_sid,
+			sizeof(request.data.auth.require_membership_of_sid))) {
 
-		ZERO_STRUCT(sid_request);
-		ZERO_STRUCT(sid_response);
-
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "no sid given, looking up: %s\n", member);
-
-		/* fortunatly winbindd can handle non-separated names */
-		strncpy(sid_request.data.name.name, member,
-			sizeof(sid_request.data.name.name) - 1);
-
-		if (pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, &sid_request, &sid_response, user)) {
-			_pam_log(pamh, ctrl, LOG_INFO, "could not lookup name: %s\n", member); 
+			_pam_log_debug(pamh, ctrl, LOG_ERR, "failed to serialize membership of sid \"%s\"\n", member);
 			return PAM_AUTH_ERR;
 		}
-
-		member = sid_response.data.sid.sid;
-
-		strncpy(request.data.auth.require_membership_of_sid, member, 
-		        sizeof(request.data.auth.require_membership_of_sid)-1);
 	}
-	
+
 	ret = pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_AUTH, &request, &response, user);
 
 	if (pwd_last_set) {
