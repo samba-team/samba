@@ -108,6 +108,18 @@ static int ctdb_ibw_add_node(struct ctdb_node *node)
 	return 0;
 }
 
+static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
+{
+	struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
+	int	rc;
+
+	rc = ibw_send(conn, data, last_key, length);
+	last_key = NULL;
+
+	return rc;
+}
+
+#ifdef __NOTDEF__
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
@@ -120,17 +132,6 @@ static void *ctdb_ibw_allocate_pkt(struct ctdb_node *node, size_t size)
 		return NULL;
 
 	return buf;
-}
-
-static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
-{
-	struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
-	int	rc;
-
-	rc = ibw_send(conn, data, last_key, length);
-	last_key = NULL;
-
-	return rc;
 }
 
 static void ctdb_ibw_dealloc_pkt(struct ctdb_node *node, void *data)
@@ -151,14 +152,16 @@ static int ctdb_ibw_stop(struct ctdb_context *cctx)
 	return ibw_stop(ictx);
 }
 
+#endif /* __NOTDEF__ */
+
 static const struct ctdb_methods ctdb_ibw_methods = {
 	.start     = ctdb_ibw_start,
 	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
-	.allocate_pkt = ctdb_ibw_allocate_pkt,
+//	.allocate_pkt = ctdb_ibw_allocate_pkt,
 
-	.dealloc_pkt = ctdb_ibw_dealloc_pkt,
-	.stop = ctdb_ibw_stop
+//	.dealloc_pkt = ctdb_ibw_dealloc_pkt,
+//	.stop = ctdb_ibw_stop
 };
 
 /*
