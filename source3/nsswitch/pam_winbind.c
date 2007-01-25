@@ -1179,6 +1179,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	int retval = PAM_AUTH_ERR;
 	dictionary *d = NULL;
 	char *username_ret = NULL;
+	char *new_authtok_required = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
@@ -1227,14 +1228,12 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
 
-		char *buf;
-
-		if (!asprintf(&buf, "%d", retval)) {
+		if (!asprintf(&new_authtok_required, "%d", retval)) {
 			retval = PAM_BUF_ERR;
 			goto out;
 		}
 
-		pam_set_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (void *)buf, _pam_winbind_cleanup_func);
+		pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, new_authtok_required, _pam_winbind_cleanup_func);
 
 		retval = PAM_SUCCESS;
 		goto out;
@@ -1294,6 +1293,10 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
  out:
 	if (d) {
 		iniparser_freedict(d);
+	}
+
+	if (!new_authtok_required) {
+		pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, NULL, NULL);
 	}
 
 	return ret;
