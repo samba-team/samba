@@ -73,7 +73,7 @@ static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, 
 }
 #endif /* HAVE_PAM_VSYSLOG */
 
-static inline int _pam_log_is_silent(int ctrl)
+static int _pam_log_is_silent(int ctrl)
 {
 	return (ctrl & WINBIND_SILENT) ? 1 : 0;
 }
@@ -91,7 +91,7 @@ static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *fo
 	va_end(args);
 }
 
-static inline int _pam_log_is_debug_enabled(int ctrl)
+static int _pam_log_is_debug_enabled(int ctrl)
 {
 	if (ctrl == -1) {
 		return 0;
@@ -108,7 +108,7 @@ static inline int _pam_log_is_debug_enabled(int ctrl)
 	return 1;
 }
 
-static inline int _pam_log_is_debug_state_enabled(int ctrl)
+static int _pam_log_is_debug_state_enabled(int ctrl)
 {
 	if (!(ctrl & WINBIND_DEBUG_STATE)) {
 		return 0;
@@ -1406,7 +1406,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 	_PAM_LOG_FUNCTION_ENTER("pam_sm_setcred", pamh, ctrl, flags);
 
-	switch (flags & ~PAM_SILENT) {
+	switch (flag) {
 
 		case PAM_DELETE_CRED:
 			ret = pam_sm_close_session(pamh, flags, argc, argv);
@@ -1794,7 +1794,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			goto out;
 		}
 		
-		lctrl = ctrl;
+		lctrl = ctrl & ~WINBIND_TRY_FIRST_PASS_ARG;
 		
 		if (on(WINBIND_USE_AUTHTOK_ARG, lctrl)) {
 			lctrl |= WINBIND_USE_FIRST_PASS_ARG;
