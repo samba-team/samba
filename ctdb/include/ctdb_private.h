@@ -18,6 +18,10 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifndef _CTDB_PRIVATE_H
+#define _CTDB_PRIVATE_H
+
+#include "ctdb.h"
 
 /*
   an installed ctdb remote call
@@ -55,9 +59,7 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
-	void *(*allocate_pkt)(struct ctdb_node *, size_t);
-	void (*dealloc_pkt)(struct ctdb_node *, void *data);
-	int (*stop)(struct ctdb_context *); /* initiate stopping the protocol */
+	void *(*allocate_pkt)(struct ctdb_context *, size_t );
 };
 
 /*
@@ -72,9 +74,6 @@ struct ctdb_upcalls {
 
 	/* node_connected is called when a connection to a node is established */
 	void (*node_connected)(struct ctdb_node *);
-
-	/* protocol has been stopped */
-	void (*stopped)(struct ctdb_context *);
 };
 
 /* main state of the ctdb daemon */
@@ -90,10 +89,11 @@ struct ctdb_context {
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;
-	struct tdb_context *ltdb;
+	struct tdb_wrap *ltdb;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
+	unsigned max_lacount;
 };
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
@@ -116,7 +116,7 @@ struct ctdb_context {
 
 /* number of consecutive calls from the same node before we give them
    the record */
-#define CTDB_MAX_LACOUNT 7
+#define CTDB_DEFAULT_MAX_LACOUNT 7
 
 /*
   the extended header for records in the ltdb
@@ -157,20 +157,20 @@ struct ctdb_req_call {
 	uint32_t callid;
 	uint32_t keylen;
 	uint32_t calldatalen;
-	uint8_t data[0]; /* key[] followed by calldata[] */
+	uint8_t data[1]; /* key[] followed by calldata[] */
 };
 
 struct ctdb_reply_call {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 struct ctdb_reply_error {
 	struct ctdb_req_header hdr;
 	uint32_t status;
 	uint32_t msglen;
-	uint8_t  msg[0];
+	uint8_t  msg[1];
 };
 
 struct ctdb_reply_redirect {
@@ -183,17 +183,17 @@ struct ctdb_req_dmaster {
 	uint32_t dmaster;
 	uint32_t keylen;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 struct ctdb_reply_dmaster {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
-	uint8_t  data[0];
+	uint8_t  data[1];
 };
 
 /* internal prototypes */
-void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
+void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
 int ctdb_parse_address(struct ctdb_context *ctdb,
@@ -214,3 +214,4 @@ int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key,
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 
 
+#endif

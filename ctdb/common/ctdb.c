@@ -19,10 +19,12 @@
 */
 
 #include "includes.h"
+#include "lib/tdb/include/tdb.h"
 #include "lib/events/events.h"
+#include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
 
 /*
   choose the transport we will use
@@ -30,18 +32,10 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
-#ifdef USE_INFINIBAND
-	int ctdb_ibw_init(struct ctdb_context *ctdb);
-#endif /*HAVE_INFINIBAND*/
 
 	if (strcmp(transport, "tcp") == 0) {
 		return ctdb_tcp_init(ctdb);
 	}
-#ifdef USE_INFINIBAND
-	if (strcmp(transport, "ib") == 0) {
-		return ctdb_ibw_init(ctdb);
-	}
-#endif /*HAVE_INFINIBAND*/
 	ctdb_set_error(ctdb, "Unknown transport '%s'\n", transport);
 	return -1;
 }
@@ -54,6 +48,13 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 	ctdb->flags |= flags;
 }
 
+/*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
+{
+	ctdb->max_lacount = count;
+}
 
 /*
   add a node to the list of active nodes
@@ -153,6 +154,14 @@ int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id)
 }
 
 /*
+  return the vnn of this node
+*/
+uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
+{
+	return ctdb->vnn;
+}
+
+/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
@@ -176,6 +185,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 			       hdr->length, length);
 		return;
 	}
+
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		ctdb_request_call(ctdb, hdr);
@@ -256,15 +266,10 @@ void ctdb_wait_loop(struct ctdb_context *ctdb)
 	}
 }
 
-void ctdb_stopped(struct ctdb_context *ctdb)
-{
-}
-
 static const struct ctdb_upcalls ctdb_upcalls = {
 	.recv_pkt       = ctdb_recv_pkt,
 	.node_dead      = ctdb_node_dead,
-	.node_connected = ctdb_node_connected,
-	.stopped        = ctdb_stopped
+	.node_connected = ctdb_node_connected
 };
 
 /*
@@ -281,6 +286,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev = ev;
 	ctdb->upcalls = &ctdb_upcalls;
 	ctdb->idr = idr_init(ctdb);
+	ctdb->max_lacount = CTDB_DEFAULT_MAX_LACOUNT;
 
 	return ctdb;
 }

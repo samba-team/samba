@@ -18,11 +18,20 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifndef _CTDB_H
+#define _CTDB_H
+
+struct ctdb_call {
+	int call_id;
+	TDB_DATA key;
+	TDB_DATA call_data;
+	TDB_DATA reply_data;
+};
 
 /*
-  structure passed to a ctdb call function
+  structure passed to a ctdb call backend function
 */
-struct ctdb_call {
+struct ctdb_call_info {
 	TDB_DATA key;          /* record key */
 	TDB_DATA record_data;  /* current data in the record */
 	TDB_DATA *new_data;    /* optionally updated record data */
@@ -57,6 +66,11 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
+  set max acess count before a dmaster migration
+*/
+void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count);
+
+/*
   tell ctdb what address to listen on, in transport specific format
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
@@ -78,7 +92,7 @@ int ctdb_start(struct ctdb_context *ctdb);
 const char *ctdb_errstr(struct ctdb_context *);
 
 /* a ctdb call function */
-typedef int (*ctdb_fn_t)(struct ctdb_call *);
+typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 
 /*
   setup a ctdb call function
@@ -96,8 +110,7 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
   make a ctdb call. The associated ctdb call function will be called on the DMASTER
   for the given record
 */
-int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
-	      TDB_DATA *call_data, TDB_DATA *reply_data);
+int ctdb_call(struct ctdb_context *ctdb, struct ctdb_call *call);
 
 /*
   wait for all nodes to be connected - useful for test code
@@ -109,3 +122,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb);
 */
 void ctdb_wait_loop(struct ctdb_context *ctdb);
 
+/* return vnn of this node */
+uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
+
+#endif

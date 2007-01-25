@@ -50,7 +50,7 @@ enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 /*
   ctdb call function to increment an integer
 */
-static int incr_func(struct ctdb_call *call)
+static int incr_func(struct ctdb_call_info *call)
 {
 	if (call->record_data.dsize == 0) {
 		call->new_data = talloc(call, TDB_DATA);
@@ -70,7 +70,7 @@ static int incr_func(struct ctdb_call *call)
 /*
   ctdb call function to fetch a record
 */
-static int fetch_func(struct ctdb_call *call)
+static int fetch_func(struct ctdb_call_info *call)
 {
 	call->reply_data = &call->record_data;
 	return 0;
@@ -81,18 +81,23 @@ static int fetch_func(struct ctdb_call *call)
 */
 static void bench_incr(struct ctdb_context *ctdb)
 {
-	TDB_DATA key, data;
 	int loops=0;
 	int ret, i;
+	struct ctdb_call call;
+
+	ZERO_STRUCT(call);
 
 	start_timer();
 
 	while (1) {
 		uint32_t v = loops % num_records;
-		key.dptr = &v;
-		key.dsize = 4;
+
+		call.call_id = FUNC_INCR;
+		call.key.dptr = (uint8_t *)&v;
+		call.key.dsize = 4;
+
 		for (i=0;i<num_repeats;i++) {
-			ret = ctdb_call(ctdb, key, FUNC_INCR, NULL, NULL);
+			ret = ctdb_call(ctdb, &call);
 			if (ret != 0) {
 				printf("incr call failed - %s\n", ctdb_errstr(ctdb));
 				return;
@@ -105,14 +110,16 @@ static void bench_incr(struct ctdb_context *ctdb)
 		}
 	}
 
-	ret = ctdb_call(ctdb, key, FUNC_FETCH, NULL, &data);
+	call.call_id = FUNC_FETCH;
+
+	ret = ctdb_call(ctdb, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		return;
 	}
 
 	printf("Incr: %.2f ops/sec (loops=%d val=%d)\n", 
-	       num_repeats*loops/end_timer(), loops, *(uint32_t *)data.dptr);
+	       num_repeats*loops/end_timer(), loops, *(uint32_t *)call.reply_data.dptr);
 }
 
 /*
