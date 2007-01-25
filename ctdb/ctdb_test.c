@@ -33,7 +33,7 @@ static int int_compare(int *i1, int *i2)
 /*
   add an integer into a record in sorted order
 */
-static int sort_func(struct ctdb_call *call)
+static int sort_func(struct ctdb_call_info *call)
 {
 	if (call->call_data == NULL ||
 	    call->call_data->dsize != sizeof(int)) {
@@ -64,7 +64,7 @@ static int sort_func(struct ctdb_call *call)
 /*
   ctdb call function to fetch a record
 */
-static int fetch_func(struct ctdb_call *call)
+static int fetch_func(struct ctdb_call_info *call)
 {
 	call->reply_data = &call->record_data;
 	return 0;

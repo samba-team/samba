@@ -49,10 +49,10 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key,
 			   int call_id, TDB_DATA *call_data, TDB_DATA *reply_data,
 			   uint32_t caller)
 {
-	struct ctdb_call *c;
+	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
 
-	c = talloc(ctdb, struct ctdb_call);
+	c = talloc(ctdb, struct ctdb_call_info);
 	CTDB_NO_MEMORY(ctdb, c);
 
 	c->key = key;

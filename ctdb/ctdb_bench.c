@@ -50,7 +50,7 @@ enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 /*
   ctdb call function to increment an integer
 */
-static int incr_func(struct ctdb_call *call)
+static int incr_func(struct ctdb_call_info *call)
 {
 	if (call->record_data.dsize == 0) {
 		call->new_data = talloc(call, TDB_DATA);
@@ -70,7 +70,7 @@ static int incr_func(struct ctdb_call *call)
 /*
   ctdb call function to fetch a record
 */
-static int fetch_func(struct ctdb_call *call)
+static int fetch_func(struct ctdb_call_info *call)
 {
 	call->reply_data = &call->record_data;
 	return 0;

@@ -24,7 +24,7 @@
 /*
   structure passed to a ctdb call function
 */
-struct ctdb_call {
+struct ctdb_call_info {
 	TDB_DATA key;          /* record key */
 	TDB_DATA record_data;  /* current data in the record */
 	TDB_DATA *new_data;    /* optionally updated record data */
@@ -85,7 +85,7 @@ int ctdb_start(struct ctdb_context *ctdb);
 const char *ctdb_errstr(struct ctdb_context *);
 
 /* a ctdb call function */
-typedef int (*ctdb_fn_t)(struct ctdb_call *);
+typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 
 /*
   setup a ctdb call function
