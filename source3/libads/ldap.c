@@ -301,6 +301,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			goto again;
 		}
 		
+		SAFE_FREE(sitename);
 		return status;
 	}
 
