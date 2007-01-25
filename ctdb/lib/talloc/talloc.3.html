@@ -1,0 +1,433 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>talloc</title><meta name="generator" content="DocBook XSL Stylesheets V1.71.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="id2478266"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>talloc &#8212; hierarchical reference counted memory pool system with destructors</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">#include &lt;talloc/talloc.h&gt;</pre></div><div class="refsect1" lang="en"><a name="id2517036"></a><h2>DESCRIPTION</h2><p>
+      If you are used to talloc from Samba3 then please read this
+      carefully, as talloc has changed a lot.
+    </p><p>
+      The new talloc is a hierarchical, reference counted memory pool
+      system with destructors.	Quite a mouthful really, but not too bad
+      once you get used to it.
+    </p><p>
+      Perhaps the biggest change from Samba3 is that there is no
+      distinction between a "talloc context" and a "talloc pointer".  Any
+      pointer returned from talloc() is itself a valid talloc context. 
+      This means you can do this:
+    </p><pre class="programlisting">
+    struct foo *X = talloc(mem_ctx, struct foo);
+    X-&gt;name = talloc_strdup(X, "foo");
+    </pre><p>
+      and the pointer <code class="literal">X-&gt;name</code>
+      would be a "child" of the talloc context <code class="literal">X</code> which is itself a child of
+      <code class="literal">mem_ctx</code>.  So if you do
+      <code class="literal">talloc_free(mem_ctx)</code> then
+      it is all destroyed, whereas if you do <code class="literal">talloc_free(X)</code> then just <code class="literal">X</code> and <code class="literal">X-&gt;name</code> are destroyed, and if
+      you do <code class="literal">talloc_free(X-&gt;name)</code> then just
+      the name element of <code class="literal">X</code> is
+      destroyed.
+    </p><p>
+      If you think about this, then what this effectively gives you is an
+      n-ary tree, where you can free any part of the tree with
+      talloc_free().
+    </p><p>
+      If you find this confusing, then I suggest you run the <code class="literal">testsuite</code> program to watch talloc
+      in action.  You may also like to add your own tests to <code class="literal">testsuite.c</code> to clarify how some
+      particular situation is handled.
+    </p></div><div class="refsect1" lang="en"><a name="id2478366"></a><h2>TALLOC API</h2><p>
+      The following is a complete guide to the talloc API. Read it all at
+      least twice.
+    </p><div class="refsect2" lang="en"><a name="id2478375"></a><h3>(type *)talloc(const void *ctx, type);</h3><p>
+	  The talloc() macro is the core of the talloc library.  It takes a
+	  memory <span class="italic">ctx</span> and a <span class="italic">type</span>, and returns a pointer to a new
+	  area of memory of the given <span class="italic">type</span>.
+        </p><p>
+	  The returned pointer is itself a talloc context, so you can use
+	  it as the <span class="italic">ctx</span> argument to more
+	  calls to talloc() if you wish.
+        </p><p>
+	  The returned pointer is a "child" of the supplied context.  This
+	  means that if you talloc_free() the <span class="italic">ctx</span> then the new child disappears as
+	  well.  Alternatively you can free just the child.
+        </p><p>
+	  The <span class="italic">ctx</span> argument to talloc()
+	  can be NULL, in which case a new top level context is created.
+        </p></div><div class="refsect2" lang="en"><a name="id2478439"></a><h3>void *talloc_size(const void *ctx, size_t size);</h3><p>
+	  The function talloc_size() should be used when you don't have a
+	  convenient type to pass to talloc().	Unlike talloc(), it is not
+	  type safe (as it returns a void *), so you are on your own for
+	  type checking.
+        </p></div><div class="refsect2" lang="en"><a name="id2478452"></a><h3>(typeof(ptr)) talloc_ptrtype(const void *ctx, ptr);</h3><p>
+	  The talloc_ptrtype() macro should be used when you have a pointer and
+	  want to allocate memory to point at with this pointer. When compiling
+	  with gcc &gt;= 3 it is typesafe. Note this is a wrapper of talloc_size()
+	  and talloc_get_name() will return the current location in the source file.
+	  and not the type.
+        </p></div><div class="refsect2" lang="en"><a name="id2478467"></a><h3>int talloc_free(void *ptr);</h3><p>
+	  The talloc_free() function frees a piece of talloc memory, and
+	  all its children.  You can call talloc_free() on any pointer
+	  returned by talloc().
+        </p><p>
+	  The return value of talloc_free() indicates success or failure,
+	  with 0 returned for success and -1 for failure.  The only
+	  possible failure condition is if <span class="italic">ptr</span> had a destructor attached to it and
+	  the destructor returned -1.  See <a href="#talloc_set_destructor" title="void talloc_set_destructor(const void *ptr, int (*destructor)(void *));">&#8220;<span class="quote">talloc_set_destructor()</span>&#8221;</a>
+	  for details on destructors.
+        </p><p>
+	  If this pointer has an additional parent when talloc_free() is
+	  called then the memory is not actually released, but instead the
+	  most recently established parent is destroyed.  See <a href="#talloc_reference" title="void *talloc_reference(const void *ctx, const void *ptr);">&#8220;<span class="quote">talloc_reference()</span>&#8221;</a>
+	  for details on establishing additional parents.
+        </p><p>
+	  For more control on which parent is removed, see <a href="#talloc_unlink" title="int talloc_unlink(const void *ctx, const void *ptr);">&#8220;<span class="quote">talloc_unlink()</span>&#8221;</a>.
+        </p><p>
+	  talloc_free() operates recursively on its children.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_reference"></a><h3>void *talloc_reference(const void *ctx, const void *ptr);</h3><p>
+	  The talloc_reference() function makes <span class="italic">ctx</span> an additional parent of <span class="italic">ptr</span>.
+        </p><p>
+	  The return value of talloc_reference() is always the original
+	  pointer <span class="italic">ptr</span>, unless talloc ran
+	  out of memory in creating the reference in which case it will
+	  return NULL (each additional reference consumes around 48 bytes
+	  of memory on intel x86 platforms).
+        </p><p>
+	  If <span class="italic">ptr</span> is NULL, then the
+	  function is a no-op, and simply returns NULL.
+        </p><p>
+	  After creating a reference you can free it in one of the
+	  following ways:
+        </p><p>
+        </p><div class="itemizedlist"><ul type="disc"><li><p>
+	      you can talloc_free() any parent of the original pointer. 
+	      That will reduce the number of parents of this pointer by 1,
+	      and will cause this pointer to be freed if it runs out of
+	      parents.
+            </p></li><li><p>
+	      you can talloc_free() the pointer itself.  That will destroy
+	      the most recently established parent to the pointer and leave
+	      the pointer as a child of its current parent.
+            </p></li></ul></div><p>
+      </p><p>
+	For more control on which parent to remove, see <a href="#talloc_unlink" title="int talloc_unlink(const void *ctx, const void *ptr);">&#8220;<span class="quote">talloc_unlink()</span>&#8221;</a>.
+      </p></div><div class="refsect2" lang="en"><a name="talloc_unlink"></a><h3>int talloc_unlink(const void *ctx, const void *ptr);</h3><p>
+	  The talloc_unlink() function removes a specific parent from
+	  <span class="italic">ptr</span>. The <span class="italic">ctx</span> passed must either be a context used
+	  in talloc_reference() with this pointer, or must be a direct
+	  parent of ptr.
+        </p><p>
+	  Note that if the parent has already been removed using
+	  talloc_free() then this function will fail and will return -1. 
+	  Likewise, if <span class="italic">ptr</span> is NULL, then
+	  the function will make no modifications and return -1.
+        </p><p>
+	  Usually you can just use talloc_free() instead of
+	  talloc_unlink(), but sometimes it is useful to have the
+	  additional control on which parent is removed.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_set_destructor"></a><h3>void talloc_set_destructor(const void *ptr, int (*destructor)(void *));</h3><p>
+	  The function talloc_set_destructor() sets the <span class="italic">destructor</span> for the pointer <span class="italic">ptr</span>.  A <span class="italic">destructor</span> is a function that is called
+	  when the memory used by a pointer is about to be released.  The
+	  destructor receives <span class="italic">ptr</span> as an
+	  argument, and should return 0 for success and -1 for failure.
+        </p><p>
+	  The <span class="italic">destructor</span> can do anything
+	  it wants to, including freeing other pieces of memory.  A common
+	  use for destructors is to clean up operating system resources
+	  (such as open file descriptors) contained in the structure the
+	  destructor is placed on.
+        </p><p>
+	  You can only place one destructor on a pointer.  If you need more
+	  than one destructor then you can create a zero-length child of
+	  the pointer and place an additional destructor on that.
+        </p><p>
+	  To remove a destructor call talloc_set_destructor() with NULL for
+	  the destructor.
+        </p><p>
+	  If your destructor attempts to talloc_free() the pointer that it
+	  is the destructor for then talloc_free() will return -1 and the
+	  free will be ignored.  This would be a pointless operation
+	  anyway, as the destructor is only called when the memory is just
+	  about to go away.
+        </p></div><div class="refsect2" lang="en"><a name="id2479422"></a><h3>int talloc_increase_ref_count(const void *<span class="italic">ptr</span>);</h3><p>
+	  The talloc_increase_ref_count(<span class="italic">ptr</span>) function is exactly equivalent to:
+        </p><pre class="programlisting">talloc_reference(NULL, ptr);</pre><p>
+	  You can use either syntax, depending on which you think is
+	  clearer in your code.
+        </p><p>
+	  It returns 0 on success and -1 on failure.
+        </p></div><div class="refsect2" lang="en"><a name="id2479459"></a><h3>size_t talloc_reference_count(const void *<span class="italic">ptr</span>);</h3><p>
+	  Return the number of references to the pointer.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_set_name"></a><h3>void talloc_set_name(const void *ptr, const char *fmt, ...);</h3><p>
+	  Each talloc pointer has a "name".  The name is used principally
+	  for debugging purposes, although it is also possible to set and
+	  get the name on a pointer in as a way of "marking" pointers in
+	  your code.
+        </p><p>
+	  The main use for names on pointer is for "talloc reports".  See
+	  <a href="#talloc_report" title="void talloc_report(const void *ptr, FILE *f);">&#8220;<span class="quote">talloc_report_depth_cb()</span>&#8221;</a>,
+	  <a href="#talloc_report" title="void talloc_report(const void *ptr, FILE *f);">&#8220;<span class="quote">talloc_report_depth_file()</span>&#8221;</a>,
+	  <a href="#talloc_report" title="void talloc_report(const void *ptr, FILE *f);">&#8220;<span class="quote">talloc_report()</span>&#8221;</a>
+	  <a href="#talloc_report" title="void talloc_report(const void *ptr, FILE *f);">&#8220;<span class="quote">talloc_report()</span>&#8221;</a>
+	  and <a href="#talloc_report_full" title="void talloc_report_full(const void *ptr, FILE *f);">&#8220;<span class="quote">talloc_report_full()</span>&#8221;</a>
+	  for details.	Also see <a href="#talloc_enable_leak_report" title="void talloc_enable_leak_report(void);">&#8220;<span class="quote">talloc_enable_leak_report()</span>&#8221;</a>
+	  and <a href="#talloc_enable_leak_report_full" title="void talloc_enable_leak_report_full(void);">&#8220;<span class="quote">talloc_enable_leak_report_full()</span>&#8221;</a>.
+        </p><p>
+	  The talloc_set_name() function allocates memory as a child of the
+	  pointer.  It is logically equivalent to:
+        </p><pre class="programlisting">talloc_set_name_const(ptr, talloc_asprintf(ptr, fmt, ...));</pre><p>
+	  Note that multiple calls to talloc_set_name() will allocate more
+	  memory without releasing the name.  All of the memory is released
+	  when the ptr is freed using talloc_free().
+        </p></div><div class="refsect2" lang="en"><a name="id2479578"></a><h3>void talloc_set_name_const(const void *<span class="italic">ptr</span>, const char *<span class="italic">name</span>);</h3><p>
+	  The function talloc_set_name_const() is just like
+	  talloc_set_name(), but it takes a string constant, and is much
+	  faster.  It is extensively used by the "auto naming" macros, such
+	  as talloc_p().
+        </p><p>
+	  This function does not allocate any memory.  It just copies the
+	  supplied pointer into the internal representation of the talloc
+	  ptr. This means you must not pass a <span class="italic">name</span> pointer to memory that will
+	  disappear before <span class="italic">ptr</span> is freed
+	  with talloc_free().
+        </p></div><div class="refsect2" lang="en"><a name="id2479622"></a><h3>void *talloc_named(const void *<span class="italic">ctx</span>, size_t <span class="italic">size</span>, const char *<span class="italic">fmt</span>, ...);</h3><p>
+	  The talloc_named() function creates a named talloc pointer.  It
+	  is equivalent to:
+        </p><pre class="programlisting">ptr = talloc_size(ctx, size);
+talloc_set_name(ptr, fmt, ....);</pre></div><div class="refsect2" lang="en"><a name="id2479657"></a><h3>void *talloc_named_const(const void *<span class="italic">ctx</span>, size_t <span class="italic">size</span>, const char *<span class="italic">name</span>);</h3><p>
+	  This is equivalent to:
+        </p><pre class="programlisting">ptr = talloc_size(ctx, size);
+talloc_set_name_const(ptr, name);</pre></div><div class="refsect2" lang="en"><a name="id2479692"></a><h3>const char *talloc_get_name(const void *<span class="italic">ptr</span>);</h3><p>
+	  This returns the current name for the given talloc pointer,
+	  <span class="italic">ptr</span>. See <a href="#talloc_set_name" title="void talloc_set_name(const void *ptr, const char *fmt, ...);">&#8220;<span class="quote">talloc_set_name()</span>&#8221;</a>
+	  for details.
+        </p></div><div class="refsect2" lang="en"><a name="id2479723"></a><h3>void *talloc_init(const char *<span class="italic">fmt</span>, ...);</h3><p>
+	  This function creates a zero length named talloc context as a top
+	  level context.  It is equivalent to:
+        </p><pre class="programlisting">talloc_named(NULL, 0, fmt, ...);</pre></div><div class="refsect2" lang="en"><a name="id2479746"></a><h3>void *talloc_new(void *<span class="italic">ctx</span>);</h3><p>
+	  This is a utility macro that creates a new memory context hanging
+	  off an exiting context, automatically naming it "talloc_new:
+	  __location__" where __location__ is the source line it is called
+	  from.  It is particularly useful for creating a new temporary
+	  working context.
+        </p></div><div class="refsect2" lang="en"><a name="id2526437"></a><h3>(<span class="italic">type</span> *)talloc_realloc(const void *<span class="italic">ctx</span>, void *<span class="italic">ptr</span>, <span class="italic">type</span>, <span class="italic">count</span>);</h3><p>
+	  The talloc_realloc() macro changes the size of a talloc pointer. 
+	  It has the following equivalences:
+        </p><pre class="programlisting">talloc_realloc(ctx, NULL, type, 1) ==&gt; talloc(ctx, type);
+talloc_realloc(ctx, ptr, type, 0)  ==&gt; talloc_free(ptr);</pre><p>
+	  The <span class="italic">ctx</span> argument is only used
+	  if <span class="italic">ptr</span> is not NULL, otherwise
+	  it is ignored.
+        </p><p>
+	  talloc_realloc() returns the new pointer, or NULL on failure. 
+	  The call will fail either due to a lack of memory, or because the
+	  pointer has more than one parent (see <a href="#talloc_reference" title="void *talloc_reference(const void *ctx, const void *ptr);">&#8220;<span class="quote">talloc_reference()</span>&#8221;</a>).
+        </p></div><div class="refsect2" lang="en"><a name="id2526515"></a><h3>void *talloc_realloc_size(const void *ctx, void *ptr, size_t size);</h3><p>
+	  the talloc_realloc_size() function is useful when the type is not
+	  known so the type-safe talloc_realloc() cannot be used.
+        </p></div><div class="refsect2" lang="en"><a name="id2526527"></a><h3>TYPE *talloc_steal(const void *<span class="italic">new_ctx</span>, const TYPE *<span class="italic">ptr</span>);</h3><p>
+	  The talloc_steal() function changes the parent context of a
+	  talloc pointer.  It is typically used when the context that the
+	  pointer is currently a child of is going to be freed and you wish
+	  to keep the memory for a longer time.
+        </p><p>
+	  The talloc_steal() function returns the pointer that you pass it.
+	   It does not have any failure modes.
+        </p><p>
+	  NOTE: It is possible to produce loops in the parent/child
+	  relationship if you are not careful with talloc_steal().  No
+	  guarantees are provided as to your sanity or the safety of your
+	  data if you do this.
+        </p></div><div class="refsect2" lang="en"><a name="id2526564"></a><h3>TYPE *talloc_move(const void *<span class="italic">new_ctx</span>, TYPE **<span class="italic">ptr</span>);</h3><p>
+	  The talloc_move() function is a wrapper around
+	  talloc_steal() which zeros the source pointer after the
+	  move. This avoids a potential source of bugs where a
+	  programmer leaves a pointer in two structures, and uses the
+	  pointer from the old structure after it has been moved to a
+	  new one.
+        </p></div><div class="refsect2" lang="en"><a name="id2526590"></a><h3>size_t talloc_total_size(const void *<span class="italic">ptr</span>);</h3><p>
+	  The talloc_total_size() function returns the total size in bytes
+	  used by this pointer and all child pointers.	Mostly useful for
+	  debugging.
+        </p><p>
+	  Passing NULL is allowed, but it will only give a meaningful
+	  result if talloc_enable_leak_report() or
+	  talloc_enable_leak_report_full() has been called.
+        </p></div><div class="refsect2" lang="en"><a name="id2526614"></a><h3>size_t talloc_total_blocks(const void *<span class="italic">ptr</span>);</h3><p>
+	  The talloc_total_blocks() function returns the total memory block
+	  count used by this pointer and all child pointers.  Mostly useful
+	  for debugging.
+        </p><p>
+	  Passing NULL is allowed, but it will only give a meaningful
+	  result if talloc_enable_leak_report() or
+	  talloc_enable_leak_report_full() has been called.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_report"></a><h3>void talloc_report(const void *ptr, FILE *f);</h3><p>
+	  The talloc_report() function prints a summary report of all
+	  memory used by <span class="italic">ptr</span>.  One line
+	  of report is printed for each immediate child of ptr, showing the
+	  total memory and number of blocks used by that child.
+        </p><p>
+	  You can pass NULL for the pointer, in which case a report is
+	  printed for the top level memory context, but only if
+	  talloc_enable_leak_report() or talloc_enable_leak_report_full()
+	  has been called.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_report_full"></a><h3>void talloc_report_full(const void *<span class="italic">ptr</span>, FILE *<span class="italic">f</span>);</h3><p>
+	  This provides a more detailed report than talloc_report().  It
+	  will recursively print the entire tree of memory referenced by
+	  the pointer. References in the tree are shown by giving the name
+	  of the pointer that is referenced.
+        </p><p>
+	  You can pass NULL for the pointer, in which case a report is
+	  printed for the top level memory context, but only if
+	  talloc_enable_leak_report() or talloc_enable_leak_report_full()
+	  has been called.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_report_depth_cb"></a><div class="funcsynopsis"><table border="0" summary="Function synopsis" cellspacing="0" cellpadding="0" style="padding-bottom: 1em"><tr><td><code class="funcdef">void <b class="fsfunc">talloc_report_depth_cb</b>(</code></td><td><var class="pdparam">const void *ptr</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">int depth</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">int max_depth</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">void (*callback)(const void *ptr, int depth, int max_depth, int is_ref, void *priv)</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">void *priv</var><code>)</code>;</td><td> </td></tr></table><table border="0" summary="Function argument synopsis" cellspacing="0" cellpadding="0"><tr><td><code></code> </td><td><code><var class="pdparam">const void *ptr</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">int depth</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">int max_depth</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">void (*callback)(const void *ptr, int depth, int max_depth, int is_ref, void *priv)</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">void *priv</var>;</code></td></tr></table></div><p>
+	  This provides a more flexible reports than talloc_report(). It
+	  will recursively call the callback for the entire tree of memory
+	  referenced by the pointer. References in the tree are passed with
+	  <span class="italic">is_ref = 1</span> and the pointer that is referenced.
+        </p><p>
+	  You can pass NULL for the pointer, in which case a report is
+	  printed for the top level memory context, but only if
+	  talloc_enable_leak_report() or talloc_enable_leak_report_full()
+	  has been called.
+        </p><p>
+	  The recursion is stopped when depth &gt;= max_depth.
+	  max_depth = -1 means only stop at leaf nodes.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_report_depth_file"></a><div class="funcsynopsis"><table border="0" summary="Function synopsis" cellspacing="0" cellpadding="0" style="padding-bottom: 1em"><tr><td><code class="funcdef">void <b class="fsfunc">talloc_report_depth_file</b>(</code></td><td><var class="pdparam">const void *ptr</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">int depth</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">int max_depth</var>, </td><td> </td></tr><tr><td> </td><td><var class="pdparam">FILE *f</var><code>)</code>;</td><td> </td></tr></table><table border="0" summary="Function argument synopsis" cellspacing="0" cellpadding="0"><tr><td><code></code> </td><td><code><var class="pdparam">const void *ptr</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">int depth</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">int max_depth</var>;</code></td></tr><tr><td><code></code> </td><td><code><var class="pdparam">FILE *f</var>;</code></td></tr></table></div><p>
+	  This provides a more flexible reports than talloc_report(). It
+	  will let you specify the depth and max_depth.
+        </p></div><div class="refsect2" lang="en"><a name="talloc_enable_leak_report"></a><h3>void talloc_enable_leak_report(void);</h3><p>
+	  This enables calling of talloc_report(NULL, stderr) when the
+	  program exits.  In Samba4 this is enabled by using the
+	  --leak-report command line option.
+        </p><p>
+	  For it to be useful, this function must be called before any
+	  other talloc function as it establishes a "null context" that
+	  acts as the top of the tree.	If you don't call this function
+	  first then passing NULL to talloc_report() or
+	  talloc_report_full() won't give you the full tree printout.
+        </p><p>
+	  Here is a typical talloc report:
+        </p><pre class="screen">talloc report on 'null_context' (total 267 bytes in 15 blocks)
+libcli/auth/spnego_parse.c:55  contains   31 bytes in   2 blocks
+libcli/auth/spnego_parse.c:55  contains   31 bytes in   2 blocks
+iconv(UTF8,CP850)              contains   42 bytes in   2 blocks
+libcli/auth/spnego_parse.c:55  contains   31 bytes in   2 blocks
+iconv(CP850,UTF8)              contains   42 bytes in   2 blocks
+iconv(UTF8,UTF-16LE)           contains   45 bytes in   2 blocks
+iconv(UTF-16LE,UTF8)           contains   45 bytes in   2 blocks
+      </pre></div><div class="refsect2" lang="en"><a name="talloc_enable_leak_report_full"></a><h3>void talloc_enable_leak_report_full(void);</h3><p>
+	  This enables calling of talloc_report_full(NULL, stderr) when the
+	  program exits.  In Samba4 this is enabled by using the
+	  --leak-report-full command line option.
+        </p><p>
+	  For it to be useful, this function must be called before any
+	  other talloc function as it establishes a "null context" that
+	  acts as the top of the tree.	If you don't call this function
+	  first then passing NULL to talloc_report() or
+	  talloc_report_full() won't give you the full tree printout.
+        </p><p>
+	  Here is a typical full report:
+        </p><pre class="screen">full talloc report on 'root' (total 18 bytes in 8 blocks)
+p1               contains     18 bytes in   7 blocks (ref 0)
+    r1               contains     13 bytes in   2 blocks (ref 0)
+        reference to: p2
+    p2               contains      1 bytes in   1 blocks (ref 1)
+    x3               contains      1 bytes in   1 blocks (ref 0)
+    x2               contains      1 bytes in   1 blocks (ref 0)
+    x1               contains      1 bytes in   1 blocks (ref 0)
+      </pre></div><div class="refsect2" lang="en"><a name="id2526922"></a><h3>(<span class="italic">type</span> *)talloc_zero(const void *<span class="italic">ctx</span>, <span class="italic">type</span>);</h3><p>
+	  The talloc_zero() macro is equivalent to:
+        </p><pre class="programlisting">ptr = talloc(ctx, type);
+if (ptr) memset(ptr, 0, sizeof(type));</pre></div><div class="refsect2" lang="en"><a name="id2526956"></a><h3>void *talloc_zero_size(const void *<span class="italic">ctx</span>, size_t <span class="italic">size</span>)</h3><p>
+	  The talloc_zero_size() function is useful when you don't have a
+	  known type.
+        </p></div><div class="refsect2" lang="en"><a name="id2526977"></a><h3>void *talloc_memdup(const void *<span class="italic">ctx</span>, const void *<span class="italic">p</span>, size_t size);</h3><p>
+	  The talloc_memdup() function is equivalent to:
+        </p><pre class="programlisting">ptr = talloc_size(ctx, size);
+if (ptr) memcpy(ptr, p, size);</pre></div><div class="refsect2" lang="en"><a name="id2527006"></a><h3>char *talloc_strdup(const void *<span class="italic">ctx</span>, const char *<span class="italic">p</span>);</h3><p>
+	  The talloc_strdup() function is equivalent to:
+        </p><pre class="programlisting">ptr = talloc_size(ctx, strlen(p)+1);
+if (ptr) memcpy(ptr, p, strlen(p)+1);</pre><p>
+	  This function sets the name of the new pointer to the passed
+	  string. This is equivalent to:
+        </p><pre class="programlisting">talloc_set_name_const(ptr, ptr)</pre></div><div class="refsect2" lang="en"><a name="id2527046"></a><h3>char *talloc_strndup(const void *<span class="italic">t</span>, const char *<span class="italic">p</span>, size_t <span class="italic">n</span>);</h3><p>
+	  The talloc_strndup() function is the talloc equivalent of the C
+	  library function strndup(3).
+        </p><p>
+	  This function sets the name of the new pointer to the passed
+	  string. This is equivalent to:
+        </p><pre class="programlisting">talloc_set_name_const(ptr, ptr)</pre></div><div class="refsect2" lang="en"><a name="id2527086"></a><h3>char *talloc_vasprintf(const void *<span class="italic">t</span>, const char *<span class="italic">fmt</span>, va_list <span class="italic">ap</span>);</h3><p>
+	  The talloc_vasprintf() function is the talloc equivalent of the C
+	  library function vasprintf(3).
+        </p></div><div class="refsect2" lang="en"><a name="id2527114"></a><h3>char *talloc_asprintf(const void *<span class="italic">t</span>, const char *<span class="italic">fmt</span>, ...);</h3><p>
+	  The talloc_asprintf() function is the talloc equivalent of the C
+	  library function asprintf(3).
+        </p><p>
+	  This function sets the name of the new pointer to the passed
+	  string. This is equivalent to:
+        </p><pre class="programlisting">talloc_set_name_const(ptr, ptr)</pre></div><div class="refsect2" lang="en"><a name="id2527148"></a><h3>char *talloc_asprintf_append(char *s, const char *fmt, ...);</h3><p>
+	  The talloc_asprintf_append() function appends the given formatted
+	  string to the given string.
+        </p></div><div class="refsect2" lang="en"><a name="id2527160"></a><h3>(type *)talloc_array(const void *ctx, type, uint_t count);</h3><p>
+	  The talloc_array() macro is equivalent to:
+        </p><pre class="programlisting">(type *)talloc_size(ctx, sizeof(type) * count);</pre><p>
+	  except that it provides integer overflow protection for the
+	  multiply, returning NULL if the multiply overflows.
+        </p></div><div class="refsect2" lang="en"><a name="id2527183"></a><h3>void *talloc_array_size(const void *ctx, size_t size, uint_t count);</h3><p>
+	  The talloc_array_size() function is useful when the type is not
+	  known. It operates in the same way as talloc_array(), but takes a
+	  size instead of a type.
+        </p></div><div class="refsect2" lang="en"><a name="id2527196"></a><h3>(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, uint_t count);</h3><p>
+	  The talloc_ptrtype() macro should be used when you have a pointer to an array
+	  and want to allocate memory of an array to point at with this pointer. When compiling
+	  with gcc &gt;= 3 it is typesafe. Note this is a wrapper of talloc_array_size()
+	  and talloc_get_name() will return the current location in the source file.
+	  and not the type.
+        </p></div><div class="refsect2" lang="en"><a name="id2527212"></a><h3>void *talloc_realloc_fn(const void *ctx, void *ptr, size_t size)</h3><p>
+	  This is a non-macro version of talloc_realloc(), which is useful
+	  as libraries sometimes want a realloc function pointer.  A
+	  realloc(3) implementation encapsulates the functionality of
+	  malloc(3), free(3) and realloc(3) in one call, which is why it is
+	  useful to be able to pass around a single function pointer.
+        </p></div><div class="refsect2" lang="en"><a name="id2527227"></a><h3>void *talloc_autofree_context(void);</h3><p>
+	  This is a handy utility function that returns a talloc context
+	  which will be automatically freed on program exit.  This can be
+	  used to reduce the noise in memory leak reports.
+        </p></div><div class="refsect2" lang="en"><a name="id2527240"></a><h3>void *talloc_check_name(const void *ptr, const char *name);</h3><p>
+	  This function checks if a pointer has the specified <span class="italic">name</span>.  If it does then the pointer is
+	  returned.  It it doesn't then NULL is returned.
+        </p></div><div class="refsect2" lang="en"><a name="id2527258"></a><h3>(type *)talloc_get_type(const void *ptr, type);</h3><p>
+	  This macro allows you to do type checking on talloc pointers.  It
+	  is particularly useful for void* private pointers.  It is
+	  equivalent to this:
+        </p><pre class="programlisting">(type *)talloc_check_name(ptr, #type)</pre></div><div class="refsect2" lang="en"><a name="id2527277"></a><h3>talloc_set_type(const void *ptr, type);</h3><p>
+	  This macro allows you to force the name of a pointer to be a
+	  particular <span class="emphasis"><em>type</em></span>.  This can be
+	  used in conjunction with talloc_get_type() to do type checking on
+	  void* pointers.
+        </p><p>
+	  It is equivalent to this:
+        </p><pre class="programlisting">talloc_set_name_const(ptr, #type)</pre></div></div><div class="refsect1" lang="en"><a name="id2527304"></a><h2>PERFORMANCE</h2><p>
+      All the additional features of talloc(3) over malloc(3) do come at a
+      price.  We have a simple performance test in Samba4 that measures
+      talloc() versus malloc() performance, and it seems that talloc() is
+      about 10% slower than malloc() on my x86 Debian Linux box.  For
+      Samba, the great reduction in code complexity that we get by using
+      talloc makes this worthwhile, especially as the total overhead of
+      talloc/malloc in Samba is already quite small.
+    </p></div><div class="refsect1" lang="en"><a name="id2527322"></a><h2>SEE ALSO</h2><p>
+      malloc(3), strndup(3), vasprintf(3), asprintf(3), 
+      <a href="http://talloc.samba.org/" target="_top">http://talloc.samba.org/</a>
+    </p></div><div class="refsect1" lang="en"><a name="id2527336"></a><h2>COPYRIGHT/LICENSE</h2><p>
+      Copyright (C) Andrew Tridgell 2004
+    </p><p>
+      This program is free software; you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation; either version 2 of the License, or (at
+      your option) any later version.
+    </p><p>
+      This program is distributed in the hope that it will be useful, but
+      WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+      General Public License for more details.
+    </p><p>
+      You should have received a copy of the GNU General Public License
+      along with this program; if not, write to the Free Software
+      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+    </p></div></div></body></html>

@@ -1,0 +1,11 @@
+prefix=/home/tridge/samba/samba4/prefix
+exec_prefix=/home/tridge/samba/samba4/prefix
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: tdb
+Description: Trivial Database Library
+Version: 0.0.1
+Libs: -L${libdir} -ltdb
+Libs.private: -lreplace 
+Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1
