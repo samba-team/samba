@@ -93,9 +93,9 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	int i, ret;
-	TDB_DATA key, data;
 	poptContext pc;
 	struct event_context *ev;
+	struct ctdb_call call;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -171,15 +171,19 @@ int main(int argc, const char *argv[])
 	   outide of test code) */
 	ctdb_connect_wait(ctdb);
        
-	key.dptr = "test";
-	key.dsize = strlen("test")+1;
+	ZERO_STRUCT(call);
+	call.key.dptr = "test";
+	call.key.dsize = strlen("test")+1;
 
 	/* add some random data */
 	for (i=0;i<10;i++) {
 		int v = random() % 1000;
-		data.dptr = (uint8_t *)&v;
-		data.dsize = sizeof(v);
-		ret = ctdb_call(ctdb, key, FUNC_SORT, &data, NULL);
+
+		call.call_id = FUNC_SORT;
+		call.call_data.dptr = (uint8_t *)&v;
+		call.call_data.dsize = sizeof(v);
+
+		ret = ctdb_call(ctdb, &call);
 		if (ret == -1) {
 			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
@@ -187,16 +191,20 @@ int main(int argc, const char *argv[])
 	}
 
 	/* fetch the record */
-	ret = ctdb_call(ctdb, key, FUNC_FETCH, NULL, &data);
+	call.call_id = FUNC_FETCH;
+	call.call_data.dptr = NULL;
+	call.call_data.dsize = 0;
+
+	ret = ctdb_call(ctdb, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
-	for (i=0;i<data.dsize/sizeof(int);i++) {
-		printf("%3d\n", ((int *)data.dptr)[i]);
+	for (i=0;i<call.reply_data.dsize/sizeof(int);i++) {
+		printf("%3d\n", ((int *)call.reply_data.dptr)[i]);
 	}
-	talloc_free(data.dptr);
+	talloc_free(call.reply_data.dptr);
 
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_wait_loop(ctdb);
