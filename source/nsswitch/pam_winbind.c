@@ -1406,7 +1406,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 	_PAM_LOG_FUNCTION_ENTER("pam_sm_setcred", pamh, ctrl, flags);
 
-	switch (flags) {
+	switch (flags & ~PAM_SILENT) {
 
 		case PAM_DELETE_CRED:
 			ret = pam_sm_close_session(pamh, flags, argc, argv);
