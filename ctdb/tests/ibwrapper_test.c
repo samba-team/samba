@@ -88,17 +88,20 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	char *buf;
 	void *key;
 	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
+	uint32_t	len;
 
 	DEBUG(10, ("test IBWC_CONNECTED\n"));
-	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, strlen(tcx->id)+2)) {
+	len = sizeof(uint32_t)+strlen(tcx->id)+2;
+	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		DEBUG(0, ("send_id: ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
 
-	buf[0] = (char)TESTOP_SEND_ID;
-	strcpy(buf+1, tcx->id);
+	/* first sizeof(uint32_t) size bytes are for length */
+	buf[sizeof(uint32_t)] = (char)TESTOP_SEND_ID;
+	strcpy(buf+sizeof(uint32_t)+1, tcx->id);
 
-	if (ibw_send(conn, buf, key, strlen(buf+1)+2)) {
+	if (ibw_send(conn, buf, key, len)) {
 		DEBUG(0, ("send_id: ibw_send error\n"));
 		return -1;
 	}
@@ -111,12 +114,16 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 	void *key;
 	uint32_t len;
 
+	if (conn->state!=IBWC_CONNECTED)
+		return 0; /* not yet up */
+
 	len = strlen(msg)+2 + sizeof(uint32_t);
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		fprintf(stderr, "send_test_msg: ibw_alloc_send_buf failed\n");
 		return -1;
 	}
 
+	p = buf;
 	p += sizeof(uint32_t);
 	p[0] = (char)TESTOP_SEND_DATA;
 	p++;
@@ -197,11 +204,15 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
 
 	assert(conn!=NULL);
+	assert(n>=sizeof(uint32_t)+2);
 	pconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
 
-	op = (enum testopcode)((char *)buf)[0];
+	op = (enum testopcode)((char *)buf)[sizeof(uint32_t)];
+	if (op==TESTOP_SEND_ID) {
+		pconn->id = talloc_strdup(pconn, ((char *)buf)+sizeof(uint32_t)+1);
+	}
 	DEBUG(11, ("[%d]msg from %s: \"%s\"(%d)\n", op,
-		pconn->id ? pconn->id : NULL, ((char *)buf)+1, n));
+		pconn->id ? pconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
 
 	if (tcx->is_server) {
 		char *buf2;
@@ -278,9 +289,10 @@ int ibwtest_parse_attrs(struct ibwtest_ctx *tcx, char *optext,
 
 			porcess_next = 0;
 			i++;
+			p = q; /* ++ at end */
 		}
 		if (*p==',') {
-			*p = '\0';
+			*p = '\0'; /* ++ at end */
 			porcess_next = 1;
 		}
 	}
@@ -306,9 +318,9 @@ int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 		tcx->naddrs * sizeof(struct sockaddr_in));
 	for(i=0; i<tcx->naddrs; i++) {
 		p = tcx->addrs + i;
+		p->sin_family = AF_INET;
 		p->sin_addr.s_addr = inet_addr(attrs[i].name);
 		p->sin_port = atoi(attrs[i].value);
-		p->sin_family = AF_INET;
 	}
 
 	return 0;
@@ -317,12 +329,17 @@ int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 int ibwtest_init_server(struct ibwtest_ctx *tcx)
 {
 	if (tcx->naddrs!=1) {
-		fprintf(stderr, "incorrecr number of addrs(%d!=1)\n", tcx->naddrs);
+		fprintf(stderr, "incorrect number of addrs(%d!=1)\n", tcx->naddrs);
 		return -1;
 	}
 
 	if (ibw_bind(tcx->ibwctx, &tcx->addrs[0])) {
 		DEBUG(0, ("ERROR: ibw_bind failed\n"));
+		return -1;
+	}
+	
+	if (ibw_listen(tcx->ibwctx, 1)) {
+		DEBUG(0, ("ERROR: ibw_listen failed\n"));
 		return -1;
 	}
 
@@ -357,7 +374,7 @@ int main(int argc, char *argv[])
 	testctx = tcx;
 	signal(SIGQUIT, ibwtest_sigquit_handler);
 
-	while ((op=getopt(argc, argv, "i:o:d:m:s")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
@@ -374,6 +391,9 @@ int main(int argc, char *argv[])
 			break;
 		case 's':
 			tcx->is_server = 1;
+			break;
+		case 't':
+			tcx->nsec = (unsigned int)atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);

@@ -51,8 +51,6 @@ struct ibw_ctx_priv {
 	struct rdma_event_channel *cm_channel;
 	struct fd_event *cm_channel_event;
 
-	struct ibv_pd	       *pd;
-
 	ibw_connstate_fn_t connstate_func; /* see ibw_init */
 	ibw_receive_fn_t receive_func; /* see ibw_init */
 
@@ -71,6 +69,7 @@ struct ibw_conn_priv {
 	struct fd_event *verbs_channel_event;
 
 	struct rdma_cm_id *cm_id; /* client's cm id */
+	struct ibv_pd	*pd;
 	int	is_accepted;
 
 	struct ibv_cq	*cq; /* qp is in cm_id */
