@@ -73,9 +73,9 @@ static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, 
 }
 #endif /* HAVE_PAM_VSYSLOG */
 
-static int _pam_log_is_silent(int ctrl)
+static BOOL _pam_log_is_silent(int ctrl)
 {
-	return (ctrl & WINBIND_SILENT) ? 1 : 0;
+	return on(ctrl, WINBIND_SILENT);
 }
 
 static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
@@ -91,27 +91,27 @@ static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *fo
 	va_end(args);
 }
 
-static int _pam_log_is_debug_enabled(int ctrl)
+static BOOL _pam_log_is_debug_enabled(int ctrl)
 {
 	if (ctrl == -1) {
-		return 0;
+		return False;
 	}
 
 	if (_pam_log_is_silent(ctrl)) {
-		return 0;
+		return False;
 	}
 
 	if (!(ctrl & WINBIND_DEBUG_ARG)) {
-		return 0;
+		return False;
 	}
 
-	return 1;
+	return True;
 }
 
-static int _pam_log_is_debug_state_enabled(int ctrl)
+static BOOL _pam_log_is_debug_state_enabled(int ctrl)
 {
 	if (!(ctrl & WINBIND_DEBUG_STATE)) {
-		return 0;
+		return False;
 	}
 
 	return _pam_log_is_debug_enabled(ctrl);
@@ -267,6 +267,8 @@ config_from_pam:
 		/* generic options */
 		if (!strcmp(*v,"debug"))
 			ctrl |= WINBIND_DEBUG_ARG;
+		else if (!strcasecmp(*v, "debug_state"))
+			ctrl |= WINBIND_DEBUG_STATE;
 		else if (!strcasecmp(*v, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
 		else if (!strcasecmp(*v, "use_first_pass"))
@@ -702,8 +704,7 @@ static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 			goto out;
 		}
 
-		free(current_name);
-		current_name = NULL;
+		SAFE_FREE(current_name);
 
 		if (!safe_append_string(sid_list_buffer, ",", sid_list_buffer_size)) {
 			goto out;
@@ -719,9 +720,7 @@ static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 	result = 1;
 
 out:
-	if (current_name != NULL) {
-		free(current_name);
-	}
+	SAFE_FREE(current_name);
 	return result;
 }
 
