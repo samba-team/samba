@@ -37,8 +37,6 @@ testit() {
 	return $status
 }
 
-
-
 runcopy() {
 	message="$1"
 	shift
@@ -48,7 +46,7 @@ runcopy() {
 }
 
 compare() {
-    tesit "$1" cmp "$2" "$3"
+    testit "$1" cmp "$2" "$3"
 }
 
 sourcepath=tempfile.src.$$
