@@ -26,7 +26,7 @@ fi
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-# the local tests doesn't need smbd
+# the local tests don't need smbd
 SMBD_TEST_FIFO=""
 export SMBD_TEST_FIFO
 
