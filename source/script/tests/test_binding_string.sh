@@ -28,7 +28,7 @@ for I in "ncacn_np:$server" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$server" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$server" 
 do
-	testit "$I" bin/smbtorture $TORTURE_OPTIONS "$I" -U"$username"%"$password" -W $domain --option=torture:quick=yes RPC-ECHO "$*" || failed=`expr $failed + 1`
+	testit "$I" bin/smbtorture $TORTURE_OPTIONS "$I" -U"$username"%"$password" -W $domain --option=torture:quick=yes RPC-ECHO "$*"
 done
 
 testok $0 $failed
