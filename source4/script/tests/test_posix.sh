@@ -20,7 +20,10 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-tests=`bin/smbtorture --list | grep "^(BASE|RAW|SMB2)-" | xargs`
+smb2=`bin/smbtorture --list | grep "^SMB2-" | xargs`
+raw=`bin/smbtorture --list | grep "^RAW-" | xargs`
+base=`bin/smbtorture --list | grep "^BASE-" | xargs`
+tests="$base $raw $smb2"
 
 #
 # please add tests you want to be skipped here!
