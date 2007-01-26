@@ -163,6 +163,23 @@ static void parse_dns(const char *dns)
 
 }
 
+static void print_test_list(void)
+{
+	struct torture_suite *o;
+	struct torture_suite *s;
+	struct torture_tcase *t;
+
+	for (o = torture_root->children; o; o = o->next) {
+		for (s = o->children; s; s = s->next) {
+			printf("%s-%s\n", o->name, s->name);
+		}
+
+		for (t = o->testcases; t; t = t->next) {
+			printf("%s-%s\n", o->name, t->name);
+		}
+	}
+}
+
 static void usage(poptContext pc)
 {
 	struct torture_suite *o;
@@ -487,7 +504,8 @@ int main(int argc,char *argv[])
 	NTSTATUS status;
 	int shell = False;
 	static const char *ui_ops_name = "simple";
-	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
+	static int list_tests = 0;
+	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS, OPT_BASEDIR};
 	
 	struct poptOption long_options[] = {
@@ -500,6 +518,7 @@ int main(int argc,char *argv[])
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
 		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
 		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"loadfile", 	NULL},
+		{"list", 	  0, POPT_ARG_NONE, &list_tests, 0, NULL, NULL },
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"timelimit",	't', POPT_ARG_INT,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
 		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
@@ -583,6 +602,11 @@ int main(int argc,char *argv[])
 
 	torture_init();
 	ldb_global_init();
+
+	if (list_tests) {
+		print_test_list();
+		return 0;
+	}
 
 	subunit_dir = lp_parm_string_list(-1, "torture", "subunitdir", ":");
 	if (subunit_dir == NULL) 
