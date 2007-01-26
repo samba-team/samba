@@ -8,7 +8,11 @@ cd ${srcdir}
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-PIDL="pidl ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
+if [ -z "$PIDL" ] ; then
+    PIDL=pidl
+fi
+
+PIDL="$PIDL ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
 
 ##
 ## Find newer files rather than rebuild all of them
