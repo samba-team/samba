@@ -201,6 +201,9 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 	close_conns_after_fork();
 
 	if (!override_logfile) {
+		pstring logfile;
+		pstr_sprintf(logfile, "%s/log.winbindd-dc-connect", dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
 		reopen_logs();
 	}
 
