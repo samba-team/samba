@@ -8,7 +8,7 @@ which aims to document what should and should not work.
 
 With 4 years of development under our belt since Tridge first proposed
 a new Virtual File System (VFS) layer for Samba3 (a project which
-eventually lead to our Active Directory efforts), we was felt that we
+eventually lead to our Active Directory efforts), we felt that we
 should create something we could 'show off' to our users.  This is a
 Technology Preview (TP), aimed at allowing you, our users, managers and
 developers to see how we have progressed, and to invite your feedback and
@@ -49,7 +49,7 @@ protection on the main user database, but due to time constraints,
 none on the registry at this stage.  We also do not currently have
 ACLs on the SWAT web-based management tool. This means that Samba 4
 Technology Preview is not secure, and should not be exposed to
-untrusted networks..
+untrusted networks.
 
 Within the above proviso, file system access should occur as the
 logged in user, much as Samba3 does.
