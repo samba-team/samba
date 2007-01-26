@@ -1459,7 +1459,8 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_lsa_LookupNames(p, tmp_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		printf("LookupNames of %s failed - %s\n", lsa_name.string, 
+		       nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
