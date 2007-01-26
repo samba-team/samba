@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "includes.h"
 #include "lib/events/events.h"
@@ -58,6 +59,8 @@ struct ibwtest_ctx {
 
 	int	kill_me;
 	struct ibw_ctx	*ibwctx;
+
+	struct timeval	start_time, end_time;
 };
 
 struct ibwtest_conn {
@@ -183,6 +186,10 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			DEBUG(10, ("test IBWC_INIT\n"));
 			break;
 		case IBWC_CONNECTED:
+			if (gettimeofday(&tcx->start_time, NULL)) {
+				DEBUG(0, ("gettimeofday error %d", errno));
+				return -1;
+			}
 			ibwtest_send_id(conn);
 			break;
 		case IBWC_DISCONNECTED:
@@ -374,9 +381,10 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 int main(int argc, char *argv[])
 {
 	int	rc, op;
-	int	result = 1;
+	int	result = 1, nmsg;
 	struct event_context *ev = NULL;
 	struct ibwtest_ctx *tcx = NULL;
+	float	usec;
 
 	tcx = talloc_zero(NULL, struct ibwtest_ctx);
 	memset(tcx, 0, sizeof(struct ibwtest_ctx));
@@ -387,7 +395,7 @@ int main(int argc, char *argv[])
 	testctx = tcx;
 	signal(SIGQUIT, ibwtest_sigquit_handler);
 
-	while ((op=getopt(argc, argv, "i:o:d:m:st:")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:n:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
@@ -408,6 +416,9 @@ int main(int argc, char *argv[])
 		case 't':
 			tcx->nsec = (unsigned int)atoi(optarg);
 			break;
+		case 'n':
+			tcx->nmsg = atoi(optarg);
+			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);
 			ibwtest_usage(tcx, argv[0]);
@@ -418,6 +429,7 @@ int main(int argc, char *argv[])
 		ibwtest_usage(tcx, argv[0]);
 		goto cleanup;
 	}
+	nmsg = tcx->nmsg;
 
 	ev = event_context_init(NULL);
 	assert(ev);
@@ -443,6 +455,17 @@ int main(int argc, char *argv[])
 			event_add_timed(ev, tcx, timeval_current_ofs(0, tcx->nsec),
 				ibwtest_timeout_handler, tcx);
 		event_loop_once(ev);
+	}
+
+	if (!tcx->is_server && nmsg!=0) {
+		if (gettimeofday(&tcx->end_time, NULL)) {
+			DEBUG(0, ("gettimeofday error %d", errno));
+			goto cleanup;
+		}
+		usec = (tcx->end_time.tv_sec - tcx->start_time.tv_sec) * 1000000 +
+				(tcx->end_time.tv_usec - tcx->start_time.tv_usec);
+		printf("usec: %f, nmsg: %d, usec/nmsg: %f\n",
+			usec, nmsg, usec/(float)nmsg);
 	}
 
 	result = 0; /* everything OK */
