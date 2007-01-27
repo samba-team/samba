@@ -17,7 +17,7 @@
     without Windows 95/98/ME or MS DOS clients are advised to disable
     this option.  </para>
 		
-    <para>Unlike the <command moreinfo="none">encypt
+    <para>Unlike the <command moreinfo="none">encrypt
     passwords</command> option, this parameter cannot alter client
     behaviour, and the LANMAN response will still be sent over the
     network.  See the <command moreinfo="none">client lanman
