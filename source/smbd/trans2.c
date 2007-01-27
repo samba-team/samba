@@ -4200,6 +4200,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_SET_FILE_UNIX_BASIC:
 		{
 			uint32 raw_unixmode;
+			BOOL delete_on_fail = False;
 
 			if (total_data < 100) {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -4247,8 +4248,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				uint32 dev_minor = IVAL(pdata,12);
 #endif
 
-				uid_t myuid = geteuid();
-				gid_t mygid = getegid();
 				SMB_DEV_T dev = (SMB_DEV_T)0;
 
 				if (tran_call == TRANSACT2_SETFILEINFO)
@@ -4261,13 +4260,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 #if defined(HAVE_MAKEDEV)
 				dev = makedev(dev_major, dev_minor);
 #endif
-
-				/* We can only create as the owner/group we are. */
-
-				if ((set_owner != myuid) && (set_owner != (uid_t)SMB_UID_NO_CHANGE))
-					return(ERROR_DOS(ERRDOS,ERRnoaccess));
-				if ((set_grp != mygid) && (set_grp != (gid_t)SMB_GID_NO_CHANGE))
-					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
 				switch (file_type) {
 #if defined(S_IFIFO)
@@ -4298,8 +4290,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 0%o for file %s\n", (double)dev, unixmode, fname ));
 
 				/* Ok - do the mknod. */
-				if (SMB_VFS_MKNOD(conn,fname, unixmode, dev) != 0)
+				if (SMB_VFS_MKNOD(conn,fname, unixmode, dev) != 0) {
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+
+				/* If any of the other "set" calls fail we
+ 				 * don't want to end up with a half-constructed mknod.
+ 				 */
+
+				delete_on_fail = True;
 
 				if (lp_inherit_perms(SNUM(conn))) {
 					inherit_access_acl(
@@ -4307,9 +4306,18 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						fname, unixmode);
 				}
 
-				SSVAL(params,0,0);
-				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-				return(-1);
+				if (SMB_VFS_STAT(conn, fname, &sbuf) != 0) {
+					int saved_errno = errno;
+					SMB_VFS_UNLINK(conn,fname);
+					errno = saved_errno;
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+
+				/* Ensure we don't try and change anything else. */
+				raw_unixmode = SMB_MODE_NO_CHANGE;
+				size = get_file_size(sbuf);
+				tvs.modtime = sbuf.st_mtime;
+				tvs.actime = sbuf.st_atime;
 			}
 
 			/*
@@ -4330,8 +4338,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) && (sbuf.st_uid != set_owner)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing owner %u for file %s\n",
 					(unsigned int)set_owner, fname ));
-				if (SMB_VFS_CHOWN(conn,fname,set_owner, (gid_t)-1) != 0)
+				if (SMB_VFS_CHOWN(conn,fname,set_owner, (gid_t)-1) != 0) {
+					if (delete_on_fail) {
+						int saved_errno = errno;
+						SMB_VFS_UNLINK(conn,fname);
+						errno = saved_errno;
+					}
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 			}
 
 			/*
@@ -4341,8 +4355,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) && (sbuf.st_gid != set_grp)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing group %u for file %s\n",
 					(unsigned int)set_owner, fname ));
-				if (SMB_VFS_CHOWN(conn,fname,(uid_t)-1, set_grp) != 0)
+				if (SMB_VFS_CHOWN(conn,fname,(uid_t)-1, set_grp) != 0) {
+					if (delete_on_fail) {
+						int saved_errno = errno;
+						SMB_VFS_UNLINK(conn,fname);
+						errno = saved_errno;
+					}
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 			}
 			break;
 		}
