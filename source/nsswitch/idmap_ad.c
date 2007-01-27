@@ -708,34 +708,28 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  char **gecos,
 				  uint32 *gid )
 {
-	char *home, *sh, *gec;
+	ADS_STRUCT *ads_internal = NULL;
 
-	if ( !ad_schema )
+	/* We are assuming that the internal ADS_STRUCT is for the 
+	   same forest as the incoming *ads pointer */
+
+	ads_internal = ad_idmap_cached_connection();
+
+	if ( !ads_internal || !ad_schema )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	
 	if ( !homedir || !shell || !gecos )
 		return NT_STATUS_INVALID_PARAMETER;
 
-	home = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
-	sh   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
-	gec  = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
+	*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
+	*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
+	*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
        
 	if ( gid ) {		
 		if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
 			*gid = 0;		
 	}
 		
-	if ( home )
-		*homedir = talloc_strdup( ctx, home );
-	if ( sh )
-		*shell   = talloc_strdup( ctx, sh );
-	if ( gec )
-		*gecos   = talloc_strdup( ctx, gec );
-	
-	SAFE_FREE( home );
-	SAFE_FREE( sh );
-	SAFE_FREE( gec );
-	
 	return NT_STATUS_OK;
 }
 
