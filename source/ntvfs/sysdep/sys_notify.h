@@ -28,12 +28,13 @@ typedef void (*sys_notify_callback_t)(struct sys_notify_context *,
 
 typedef NTSTATUS (*notify_watch_t)(struct sys_notify_context *ctx, 
 				   struct notify_entry *e,
-				   sys_notify_callback_t callback, void *private, 
-				   void **handle);
+				   sys_notify_callback_t callback,
+				   void *private_data, 
+				   void *handle_p);
 
 struct sys_notify_context {
 	struct event_context *ev;
-	void *private; /* for use of backend */
+	void *private_data; /* for use of backend */
 	const char *name;
 	notify_watch_t notify_watch;
 };
@@ -48,6 +49,6 @@ struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 						     TALLOC_CTX *mem_ctx, 
 						     struct event_context *ev);
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
-			  sys_notify_callback_t callback, void *private, 
-			  void **handle);
+			  sys_notify_callback_t callback, void *private_data, 
+			  void *handle);
 NTSTATUS sys_notify_init(void);
