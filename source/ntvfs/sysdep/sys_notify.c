@@ -95,13 +95,15 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_confi
   bits to remove ones handled by this backend. Any remaining bits will
   be handled by the generic notify layer
 */
-_PUBLIC_ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
-				   sys_notify_callback_t callback, void *private, void **handle)
+_PUBLIC_ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
+				   struct notify_entry *e,
+				   sys_notify_callback_t callback,
+				   void *private_data, void *handle)
 {
 	if (!ctx->notify_watch) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	return ctx->notify_watch(ctx, e, callback, private, handle);
+	return ctx->notify_watch(ctx, e, callback, private_data, handle);
 }
 
 /*
