@@ -131,6 +131,13 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
 
+	sig.length /= 2;
+
+	torture_assert_ntstatus_equal(tctx, 
+				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+								  data.data, data.length, data.data, data.length, &sig),
+				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet with short sig");
+
 	talloc_free(gensec_security);
 	return true;
 }
