@@ -40,4 +40,3 @@ extern const char *dyn_SERVICESDIR;
 extern const char *dyn_JSDIR;
 extern const char *dyn_SETUPDIR;
 extern const char *dyn_WINBINDD_SOCKET_DIR;
-extern const char *dyn_TORTUREDIR;

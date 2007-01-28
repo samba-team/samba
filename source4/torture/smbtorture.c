@@ -326,7 +326,7 @@ const static struct torture_ui_ops std_ui_ops = {
 static void subunit_suite_start(struct torture_context *ctx,
 							   struct torture_suite *suite)
 {
-	printf("testsuite: %s\n", suite->path);
+	printf("testsuite: %s\n", suite->name);
 }
 
 static void subunit_test_start (struct torture_context *ctx, 
@@ -499,7 +499,6 @@ int main(int argc,char *argv[])
 	char **argv_new;
 	poptContext pc;
 	static const char *target = "other";
-	const char **subunit_dir;
 	struct dcerpc_binding *binding_struct;
 	NTSTATUS status;
 	int shell = False;
@@ -606,14 +605,6 @@ int main(int argc,char *argv[])
 	if (list_tests) {
 		print_test_list();
 		return 0;
-	}
-
-	subunit_dir = lp_parm_string_list(-1, "torture", "subunitdir", ":");
-	if (subunit_dir == NULL) 
-		torture_subunit_load_testsuites(dyn_TORTUREDIR, true, NULL);
-	else {
-		for (i = 0; subunit_dir[i]; i++)
-			torture_subunit_load_testsuites(subunit_dir[i], true, NULL);
 	}
 
 	if (torture_seed == 0) {

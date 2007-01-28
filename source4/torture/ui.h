@@ -141,7 +141,6 @@ struct torture_tcase {
 struct torture_suite
 {
 	const char *name;
-	const char *path; /* Used by subunit tests only */
 	const char *description;
 	struct torture_tcase *testcases;
 	struct torture_suite *children;
