@@ -72,7 +72,7 @@ struct watch_context {
 	struct inotify_private *in;
 	int wd;
 	sys_notify_callback_t callback;
-	void *private;
+	void *private_data;
 	uint32_t mask; /* the inotify mask */
 	uint32_t filter; /* the windows completion filter */
 	const char *path;
@@ -175,7 +175,7 @@ static void inotify_dispatch(struct inotify_private *in,
 	for (w=in->watches;w;w=next) {
 		next = w->next;
 		if (w->wd == e->wd && filter_match(w, e)) {
-			w->callback(in->ctx, w->private, &ne);
+			w->callback(in->ctx, w->private_data, &ne);
 		}
 	}
 
@@ -194,7 +194,7 @@ static void inotify_dispatch(struct inotify_private *in,
 		next = w->next;
 		if (w->wd == e->wd && filter_match(w, e) &&
 		    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
-			w->callback(in->ctx, w->private, &ne);
+			w->callback(in->ctx, w->private_data, &ne);
 		}
 	}
 }
@@ -203,9 +203,10 @@ static void inotify_dispatch(struct inotify_private *in,
   called when the kernel has some events for us
 */
 static void inotify_handler(struct event_context *ev, struct fd_event *fde,
-			    uint16_t flags, void *private)
+			    uint16_t flags, void *private_data)
 {
-	struct inotify_private *in = talloc_get_type(private, struct inotify_private);
+	struct inotify_private *in = talloc_get_type(private_data,
+						     struct inotify_private);
 	int bufsize = 0;
 	struct inotify_event *e0, *e;
 	uint32_t prev_cookie=0;
@@ -268,7 +269,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	in->ctx = ctx;
 	in->watches = NULL;
 
-	ctx->private = in;
+	ctx->private_data = in;
 	talloc_set_destructor(in, inotify_destructor);
 
 	/* add a event waiting for the inotify fd to be readable */
@@ -332,24 +333,27 @@ static int watch_destructor(struct watch_context *w)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-static NTSTATUS inotify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
-			      sys_notify_callback_t callback, void *private, 
-			      void **handle)
+static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
+			      struct notify_entry *e,
+			      sys_notify_callback_t callback,
+			      void *private_data, 
+			      void *handle_p)
 {
 	struct inotify_private *in;
 	int wd;
 	uint32_t mask;
 	struct watch_context *w;
 	uint32_t filter = e->filter;
+	void **handle = (void **)handle_p;
 
 	/* maybe setup the inotify fd */
-	if (ctx->private == NULL) {
+	if (ctx->private_data == NULL) {
 		NTSTATUS status;
 		status = inotify_setup(ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	in = talloc_get_type(ctx->private, struct inotify_private);
+	in = talloc_get_type(ctx->private_data, struct inotify_private);
 
 	mask = inotify_map(e);
 	if (mask == 0) {
@@ -378,7 +382,7 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx, struct notify_entr
 	w->in = in;
 	w->wd = wd;
 	w->callback = callback;
-	w->private = private;
+	w->private_data = private_data;
 	w->mask = mask;
 	w->filter = filter;
 	w->path = talloc_strdup(w, e->path);
