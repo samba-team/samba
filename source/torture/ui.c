@@ -141,9 +141,6 @@ BOOL torture_run_suite(struct torture_context *context,
 	else
 		context->active_testname = talloc_strdup(context, suite->name);
 
-	if (suite->path)
-		ret &= torture_subunit_run_suite(context, suite);
-
 	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
 		ret &= torture_run_tcase(context, tcase);
 	}

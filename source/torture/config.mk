@@ -7,7 +7,6 @@ PUBLIC_HEADERS = torture.h ui.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		torture.o \
-		subunit.o \
 		ui.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
