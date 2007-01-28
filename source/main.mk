@@ -273,6 +273,7 @@ distclean: clean
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f config.pm config.mk
+	-rm -rf webapps/qooxdoo-*-sdk/frontend/framework/.cache
 	-rm -f $(PC_FILES)
 
 removebackup:
@@ -284,6 +285,7 @@ realdistclean: distclean removebackup
 	-rm -f configure
 	-rm -f $(MANPAGES)
 
+check:: test
 test: $(DEFAULT_TEST_TARGET)
 
 SELFTEST = builddir=$(builddir) srcdir=$(srcdir) \
