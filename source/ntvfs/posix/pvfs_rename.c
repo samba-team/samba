@@ -72,7 +72,7 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *nam
 	}
 
 	/* this is a strange one. w2k3 gives an additional event for CHANGE_ATTRIBUTES
-	   and CHANGE_CREATION on the new file when renming files, but not 
+	   and CHANGE_CREATION on the new file when renaming files, but not 
 	   directories */
 	if ((name1->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) == 0) {
 		notify_trigger(pvfs->notify_context, 
