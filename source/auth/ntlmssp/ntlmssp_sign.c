@@ -167,11 +167,6 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (sig->length < 8) {
-		DEBUG(1, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n", 
-			  (unsigned long)sig->length));
-	}
-
 	nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 						  data, length, 
 						  whole_pdu, pdu_length, 
