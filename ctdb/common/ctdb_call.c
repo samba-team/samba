@@ -299,6 +299,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* determine if we are the dmaster for this key. This also
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
+
 	ret = ctdb_ltdb_fetch(ctdb, call.key, &header, &data);
 	if (ret != 0) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
@@ -505,8 +506,10 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
 
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
+	state->call = *call;
 
-	ret = ctdb_call_local(ctdb, call, header, data, ctdb->vnn);
+	ret = ctdb_call_local(ctdb, &state->call, header, data, ctdb->vnn);
+
 	return state;
 }
 
@@ -557,11 +560,9 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, struct ctdb_ca
 	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);
 	memcpy(&state->c->data[call->key.dsize], 
 	       call->call_data.dptr, call->call_data.dsize);
+	state->call                = *call;
 	state->call.call_data.dptr = &state->c->data[call->key.dsize];
-	state->call.call_data.dsize = call->call_data.dsize;
-
-	state->call.key.dptr         = &state->c->data[0];
-	state->call.key.dsize        = call->key.dsize;
+	state->call.key.dptr       = &state->c->data[0];
 
 	state->node   = ctdb->nodes[header.dmaster];
 	state->state  = CTDB_CALL_WAIT;
