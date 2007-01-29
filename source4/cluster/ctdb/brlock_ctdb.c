@@ -86,6 +86,7 @@ static void show_locks(const char *op, struct lock_struct *locks, int count)
 {
 	int i;
 	DEBUG(0,("OP: %s\n", op));
+	if (locks == NULL) return;
 	for (i=0;i<count;i++) {
 		DEBUG(0,("%2d: %4d %4d %d.%d.%d %p %p\n",
 			 i, (int)locks[i].start, (int)locks[i].size, 
@@ -287,7 +288,7 @@ struct ctdb_lock_req {
 /*
   ctdb call handling brl_lock()
 */
-static int brl_ctdb_lock_func(struct ctdb_call *call)
+static int brl_ctdb_lock_func(struct ctdb_call_info *call)
 {
 	struct ctdb_lock_req *req = (struct ctdb_lock_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
@@ -389,16 +390,16 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 			      enum brl_type lock_type,
 			      void *notify_ptr)
 {
-	TDB_DATA kbuf, rbuf, sbuf;
 	struct ctdb_lock_req req;
+	struct ctdb_call call;
 	NTSTATUS status;
 	int ret;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rbuf.dptr = (uint8_t *)&req;
-	rbuf.dsize = sizeof(req);
+	call.call_id = FUNC_BRL_LOCK;
+	call.key.dptr = brlh->key.data;
+	call.key.dsize = brlh->key.length;
+	call.call_data.dptr = (uint8_t *)&req;
+	call.call_data.dsize = sizeof(req);
 
 	ZERO_STRUCT(req);
 	req.smbpid = smbpid;
@@ -410,13 +411,13 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_LOCK, &rbuf, &sbuf);
+	ret = ctdb_call(brl->ctdb, &call);
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)sbuf.dptr;
-	talloc_free(sbuf.dptr);
+	status = *(NTSTATUS *)call.reply_data.dptr;
+	talloc_free(call.reply_data.dptr);
 
 	return status;
 }
@@ -484,7 +485,7 @@ struct ctdb_unlock_req {
 /*
  Unlock a range of bytes.
 */
-static int brl_ctdb_unlock_func(struct ctdb_call *call)
+static int brl_ctdb_unlock_func(struct ctdb_call_info *call)
 {
 	struct ctdb_unlock_req *req = (struct ctdb_unlock_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
@@ -583,16 +584,16 @@ static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 				uint16_t smbpid,
 				uint64_t start, uint64_t size)
 {
-	TDB_DATA kbuf, rbuf, sbuf;
+	struct ctdb_call call;
 	struct ctdb_unlock_req req;
 	NTSTATUS status;
 	int ret;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rbuf.dptr = (uint8_t *)&req;
-	rbuf.dsize = sizeof(req);
+	call.call_id = FUNC_BRL_UNLOCK;
+	call.key.dptr = brlh->key.data;
+	call.key.dsize = brlh->key.length;
+	call.call_data.dptr = (uint8_t *)&req;
+	call.call_data.dsize = sizeof(req);
 
 	ZERO_STRUCT(req);
 	req.smbpid = smbpid;
@@ -602,14 +603,14 @@ static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 		
-	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_UNLOCK, &rbuf, &sbuf);
+	ret = ctdb_call(brl->ctdb, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)sbuf.dptr;
-	talloc_free(sbuf.dptr);
+	status = *(NTSTATUS *)call.reply_data.dptr;
+	talloc_free(call.reply_data.dptr);
 
 	return status;
 }
@@ -625,7 +626,7 @@ struct ctdb_remove_pending_req {
   given up trying to establish a lock or when they have succeeded in
   getting it. In either case they no longer need to be notified.
 */
-static int brl_ctdb_remove_pending_func(struct ctdb_call *call)
+static int brl_ctdb_remove_pending_func(struct ctdb_call_info *call)
 {
 	struct ctdb_remove_pending_req *req = (struct ctdb_remove_pending_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
@@ -687,29 +688,29 @@ static NTSTATUS brl_ctdb_remove_pending(struct brl_context *brl,
 					struct brl_handle *brlh, 
 					void *notify_ptr)
 {
-	TDB_DATA kbuf, rbuf, sbuf;
+	struct ctdb_call call;
 	struct ctdb_remove_pending_req req;
 	NTSTATUS status;
 	int ret;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rbuf.dptr = (uint8_t *)&req;
-	rbuf.dsize = sizeof(req);
+	call.call_id = FUNC_BRL_REMOVE_PENDING;
+	call.key.dptr = brlh->key.data;
+	call.key.dsize = brlh->key.length;
+	call.call_data.dptr = (uint8_t *)&req;
+	call.call_data.dsize = sizeof(req);
 
 	ZERO_STRUCT(req);
 	req.notify_ptr = notify_ptr;
 	req.server = brl->server;
 		
-	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_REMOVE_PENDING, &rbuf, &sbuf);
+	ret = ctdb_call(brl->ctdb, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)sbuf.dptr;
-	talloc_free(sbuf.dptr);
+	status = *(NTSTATUS *)call.reply_data.dptr;
+	talloc_free(call.reply_data.dptr);
 
 	return status;
 }
@@ -730,7 +731,7 @@ struct ctdb_locktest_req {
   given up trying to establish a lock or when they have succeeded in
   getting it. In either case they no longer need to be notified.
 */
-static int brl_ctdb_locktest_func(struct ctdb_call *call)
+static int brl_ctdb_locktest_func(struct ctdb_call_info *call)
 {
 	struct ctdb_locktest_req *req = (struct ctdb_locktest_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
@@ -783,16 +784,16 @@ static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 				  uint64_t start, uint64_t size, 
 				  enum brl_type lock_type)
 {
-	TDB_DATA kbuf, rbuf, sbuf;
+	struct ctdb_call call;
 	struct ctdb_locktest_req req;
 	NTSTATUS status;
 	int ret;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rbuf.dptr = (uint8_t *)&req;
-	rbuf.dsize = sizeof(req);
+	call.call_id = FUNC_BRL_LOCKTEST;
+	call.key.dptr = brlh->key.data;
+	call.key.dsize = brlh->key.length;
+	call.call_data.dptr = (uint8_t *)&req;
+	call.call_data.dsize = sizeof(req);
 
 	ZERO_STRUCT(req);
 	req.smbpid = smbpid;
@@ -803,14 +804,14 @@ static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_LOCKTEST, &rbuf, &sbuf);
+	ret = ctdb_call(brl->ctdb, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)sbuf.dptr;
-	talloc_free(sbuf.dptr);
+	status = *(NTSTATUS *)call.reply_data.dptr;
+	talloc_free(call.reply_data.dptr);
 
 	return status;
 }
@@ -827,7 +828,7 @@ struct ctdb_close_req {
   given up trying to establish a lock or when they have succeeded in
   getting it. In either case they no longer need to be notified.
 */
-static int brl_ctdb_close_func(struct ctdb_call *call)
+static int brl_ctdb_close_func(struct ctdb_call_info *call)
 {
 	struct ctdb_close_req *req = (struct ctdb_close_req *)call->call_data->dptr;
 	TDB_DATA dbuf;
@@ -894,30 +895,30 @@ static int brl_ctdb_close_func(struct ctdb_call *call)
 static NTSTATUS brl_ctdb_close(struct brl_context *brl,
 			       struct brl_handle *brlh)
 {
-	TDB_DATA kbuf, rbuf, sbuf;
+	struct ctdb_call call;
 	struct ctdb_close_req req;
 	NTSTATUS status;
 	int ret;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rbuf.dptr = (uint8_t *)&req;
-	rbuf.dsize = sizeof(req);
+	call.call_id = FUNC_BRL_CLOSE;
+	call.key.dptr = brlh->key.data;
+	call.key.dsize = brlh->key.length;
+	call.call_data.dptr = (uint8_t *)&req;
+	call.call_data.dsize = sizeof(req);
 
 	ZERO_STRUCT(req);
 	req.brl = brl;
 	req.server = brl->server;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, kbuf, FUNC_BRL_CLOSE, &rbuf, &sbuf);
+	ret = ctdb_call(brl->ctdb, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)sbuf.dptr;
-	talloc_free(sbuf.dptr);
+	status = *(NTSTATUS *)call.reply_data.dptr;
+	talloc_free(call.reply_data.dptr);
 
 	return status;
 }
@@ -945,5 +946,4 @@ void brl_ctdb_init_ops(void)
 	ctdb_set_call(ctdb, brl_ctdb_remove_pending_func,  FUNC_BRL_REMOVE_PENDING);
 	ctdb_set_call(ctdb, brl_ctdb_locktest_func,  FUNC_BRL_LOCKTEST);
 	ctdb_set_call(ctdb, brl_ctdb_close_func,  FUNC_BRL_CLOSE);
-
 }
