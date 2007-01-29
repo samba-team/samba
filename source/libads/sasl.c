@@ -42,6 +42,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
 		return ADS_ERROR_NT(nt_status);
 	}
+	ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, ads->auth.user_name))) {
 		return ADS_ERROR_NT(nt_status);
@@ -282,6 +283,12 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	krb5_principal principal;
 	krb5_context ctx = NULL;
+	krb5_enctype enc_types[] = {
+#ifdef ENCTYPE_ARCFOUR_HMAC
+			ENCTYPE_ARCFOUR_HMAC,
+#endif
+			ENCTYPE_DES_CBC_MD5,
+			ENCTYPE_NULL};
 	gss_OID_desc nt_principal = 
 	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
 
@@ -291,6 +298,10 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	initialize_krb5_error_table();
 	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
