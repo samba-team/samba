@@ -57,6 +57,8 @@ KRB5_CONFIG=$ETCDIR/krb5.conf
 PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
+
+#TLS and PKINIT crypto blobs
 TLSDIR=$PRIVATEDIR/tls
 DHFILE=$TLSDIR/dhparms.pem
 CAFILE=$TLSDIR/ca.pem
@@ -68,10 +70,15 @@ ADMINKEYFILE=$TLSDIR/adminkey.pem
 REQADMIN=$TLSDIR/req-admin.der
 ADMINKEYFILE=$TLSDIR/adminkey.pem
 ADMINCERTFILE=$TLSDIR/admincert.pem
+
 WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
 LDAPDIR=$PREFIX_ABS/ldap
 SLAPD_CONF=$LDAPDIR/slapd.conf
+FEDORA_DS_INF=$LDAPDIR/fedorads.inf
+FEDORA_DS_INITIAL_LDIF=$LDAPDIR/fedorads-initial-ldif.inf
+FEDORA_DS_LDAP_PORT=3389
+
 export CONFIGURATION
 export CONFFILE
 export SLAPD_CONF
@@ -480,6 +487,54 @@ cat > $LDAPDIR/db/DB_CONFIG <<EOF
 	set_tmp_dir             $LDAPDIR/db/tmp
 EOF
 
+FEDORA_DS_LDAP_URI="ldap://127.0.0.1:$FEDORA_DS_LDAP_PORT"
+export FEDORA_DS_LDAP_URI
+
+cat >$FEDORA_DS_INF <<EOF
+
+[General]
+FullMachineName=   localhost
+ServerRoot=   $LDAPDIR
+ConfigDirectoryLdapURL=   $FEDORA_DS_LDAP_URI/o=NetscapeRoot
+ConfigDirectoryAdminID=   $USERNAME
+AdminDomain=   localdomain
+ConfigDirectoryAdminPwd=   $PASSWORD
+
+Components= svrcore,base,slapd
+
+[slapd]
+ServerPort= $FEDORA_DS_LDAP_PORT
+Suffix= $BASEDN
+RootDN= cn=Manager,$BASEDN
+RootDNPwd= $PASSWORD
+Components= slapd
+ServerIdentifier= samba4
+InstallLdifFile=$FEDORA_DS_INITIAL_LDIF
+
+[base]
+Components= base
+
+EOF
+
+cat >$FEDORA_DS_INITIAL_LDIF<<EOF
+# These entries need to be added to get the container for the 
+# provision to be aimed at.
+
+dn: cn="dc=$BASEDN",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: UserData
+cn: $BASEDN
+
+dn: cn=UserData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: $BASEDN
+
+EOF
+
 PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --quiet --domain $DOMAIN --realm $REALM"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
@@ -493,6 +548,8 @@ export LDAPI_ESCAPE
 
 #This uses the provision we just did, to read out the schema
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema >&2
+$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $LDAPDIR/99_ad.ldif >&2
+
 #Now create an LDAP baseDN
 $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-base >&2
 
@@ -549,6 +606,7 @@ echo "SERVER=$SERVER"
 echo "NETBIOSNAME=$NETBIOSNAME"
 echo "LDAPI=$LDAPI"
 echo "LDAPI_ESCAPE=$LDAPI_ESCAPE"
+echo "FEDORA_DS_LDAP_URI=$FEDORA_DS_LDAP_URI"
 echo "DOMAIN=$DOMAIN"
 echo "USERNAME=$USERNAME"
 echo "REALM=$REALM"
