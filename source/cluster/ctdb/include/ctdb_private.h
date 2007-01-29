@@ -162,6 +162,7 @@ struct ctdb_req_call {
 
 struct ctdb_reply_call {
 	struct ctdb_req_header hdr;
+	uint32_t status;
 	uint32_t datalen;
 	uint8_t  data[1];
 };
