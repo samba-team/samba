@@ -61,6 +61,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
 	c->new_data = NULL;
 	c->reply_data = NULL;
+	c->status = 0;
 
 	for (fn=ctdb->calls;fn;fn=fn->next) {
 		if (fn->id == call->call_id) break;
@@ -101,6 +102,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
 		call->reply_data.dptr = NULL;
 		call->reply_data.dsize = 0;
 	}
+	call->status = c->status;
 
 	talloc_free(c);
 
@@ -333,12 +335,15 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
 	r->hdr.reqid     = hdr->reqid;
+	r->status        = call.status;
 	r->datalen       = call.reply_data.dsize;
-	memcpy(&r->data[0], call.reply_data.dptr, call.reply_data.dsize);
+	if (call.reply_data.dsize) {
+		memcpy(&r->data[0], call.reply_data.dptr, call.reply_data.dsize);
+		talloc_free(call.reply_data.dptr);
+	}
 
 	ctdb_queue_packet(ctdb, &r->hdr);
 
-	talloc_free(call.reply_data.dptr);
 	talloc_free(r);
 }
 
@@ -368,15 +373,13 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_call_state *state;
-	TDB_DATA reply_data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
 
-	reply_data.dptr = c->data;
-	reply_data.dsize = c->datalen;
-
-	state->call.reply_data = reply_data;
+	state->call.reply_data.dptr = c->data;
+	state->call.reply_data.dsize = c->datalen;
+	state->call.status = c->status;
 
 	talloc_steal(state, c);
 
@@ -594,10 +597,16 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 		talloc_free(state);
 		return -1;
 	}
-	call->reply_data.dptr = talloc_memdup(state->node->ctdb,
-					      state->call.reply_data.dptr,
-					      state->call.reply_data.dsize);
-	call->reply_data.dsize = state->call.reply_data.dsize;
+	if (state->call.reply_data.dsize) {
+		call->reply_data.dptr = talloc_memdup(state->node->ctdb,
+						      state->call.reply_data.dptr,
+						      state->call.reply_data.dsize);
+		call->reply_data.dsize = state->call.reply_data.dsize;
+	} else {
+		call->reply_data.dptr = NULL;
+		call->reply_data.dsize = 0;
+	}
+	call->status = state->call.status;
 	talloc_free(state);
 	return 0;
 }

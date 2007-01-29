@@ -26,6 +26,7 @@ struct ctdb_call {
 	TDB_DATA key;
 	TDB_DATA call_data;
 	TDB_DATA reply_data;
+	uint32_t status;
 };
 
 /*
@@ -37,6 +38,7 @@ struct ctdb_call_info {
 	TDB_DATA *new_data;    /* optionally updated record data */
 	TDB_DATA *call_data;   /* optionally passed from caller */
 	TDB_DATA *reply_data;  /* optionally returned by function */
+	uint32_t status;       /* optional reply status - defaults to zero */
 };
 
 #define CTDB_ERR_INVALID 1

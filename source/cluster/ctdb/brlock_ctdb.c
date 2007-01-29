@@ -360,17 +360,7 @@ static int brl_ctdb_lock_func(struct ctdb_call_info *call)
 	}
 
 reply:
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-
-	call->reply_data->dptr = talloc_size(call, sizeof(NTSTATUS));
-	call->reply_data->dsize = sizeof(NTSTATUS);
-	if (call->reply_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	*(NTSTATUS *)call->reply_data->dptr = status;
+	call->status = NT_STATUS_V(status);
 
 	return 0;
 }
@@ -392,7 +382,6 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 {
 	struct ctdb_lock_req req;
 	struct ctdb_call call;
-	NTSTATUS status;
 	int ret;
 
 	call.call_id = FUNC_BRL_LOCK;
@@ -416,10 +405,7 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)call.reply_data.dptr;
-	talloc_free(call.reply_data.dptr);
-
-	return status;
+	return NT_STATUS(call.status);
 }
 
 #if ENABLE_NOTIFIES
@@ -560,17 +546,7 @@ found:
 		status = NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-
-	call->reply_data->dptr = talloc_size(call, sizeof(NTSTATUS));
-	call->reply_data->dsize = sizeof(NTSTATUS);
-	if (call->reply_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	*(NTSTATUS *)call->reply_data->dptr = status;
+	call->status = NT_STATUS_V(status);
 
 	return 0;
 }
@@ -586,7 +562,6 @@ static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 {
 	struct ctdb_call call;
 	struct ctdb_unlock_req req;
-	NTSTATUS status;
 	int ret;
 
 	call.call_id = FUNC_BRL_UNLOCK;
@@ -609,10 +584,7 @@ static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)call.reply_data.dptr;
-	talloc_free(call.reply_data.dptr);
-
-	return status;
+	return NT_STATUS(call.status);
 }
 
 
@@ -669,17 +641,7 @@ static int brl_ctdb_remove_pending_func(struct ctdb_call_info *call)
 		status = NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-
-	call->reply_data->dptr = talloc_size(call, sizeof(NTSTATUS));
-	call->reply_data->dsize = sizeof(NTSTATUS);
-	if (call->reply_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	*(NTSTATUS *)call->reply_data->dptr = status;
+	call->status = NT_STATUS_V(status);
 
 	return 0;
 }
@@ -690,7 +652,6 @@ static NTSTATUS brl_ctdb_remove_pending(struct brl_context *brl,
 {
 	struct ctdb_call call;
 	struct ctdb_remove_pending_req req;
-	NTSTATUS status;
 	int ret;
 
 	call.call_id = FUNC_BRL_REMOVE_PENDING;
@@ -709,10 +670,7 @@ static NTSTATUS brl_ctdb_remove_pending(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)call.reply_data.dptr;
-	talloc_free(call.reply_data.dptr);
-
-	return status;
+	return NT_STATUS(call.status);
 }
 
 
@@ -760,17 +718,7 @@ static int brl_ctdb_locktest_func(struct ctdb_call_info *call)
 		}
 	}
 	
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-
-	call->reply_data->dptr = talloc_size(call, sizeof(NTSTATUS));
-	call->reply_data->dsize = sizeof(NTSTATUS);
-	if (call->reply_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	*(NTSTATUS *)call->reply_data->dptr = status;
+	call->status = NT_STATUS_V(status);
 
 	return 0;
 }
@@ -786,7 +734,6 @@ static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 {
 	struct ctdb_call call;
 	struct ctdb_locktest_req req;
-	NTSTATUS status;
 	int ret;
 
 	call.call_id = FUNC_BRL_LOCKTEST;
@@ -810,10 +757,7 @@ static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)call.reply_data.dptr;
-	talloc_free(call.reply_data.dptr);
-
-	return status;
+	return NT_STATUS(call.status);
 }
 
 
@@ -874,17 +818,7 @@ static int brl_ctdb_close_func(struct ctdb_call_info *call)
 		memcpy(call->new_data->dptr, locks, count*sizeof(struct lock_struct));
 	}
 
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-
-	call->reply_data->dptr = talloc_size(call, sizeof(NTSTATUS));
-	call->reply_data->dsize = sizeof(NTSTATUS);
-	if (call->reply_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	*(NTSTATUS *)call->reply_data->dptr = status;
+	call->status = NT_STATUS_V(status);
 
 	return 0;
 }
@@ -897,7 +831,6 @@ static NTSTATUS brl_ctdb_close(struct brl_context *brl,
 {
 	struct ctdb_call call;
 	struct ctdb_close_req req;
-	NTSTATUS status;
 	int ret;
 
 	call.call_id = FUNC_BRL_CLOSE;
@@ -917,10 +850,7 @@ static NTSTATUS brl_ctdb_close(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = *(NTSTATUS *)call.reply_data.dptr;
-	talloc_free(call.reply_data.dptr);
-
-	return status;
+	return NT_STATUS(call.status);
 }
 
 
