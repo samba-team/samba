@@ -21,10 +21,17 @@
 #ifndef _CTDB_H
 #define _CTDB_H
 
-/*
-  structure passed to a ctdb call function
-*/
 struct ctdb_call {
+	int call_id;
+	TDB_DATA key;
+	TDB_DATA call_data;
+	TDB_DATA reply_data;
+};
+
+/*
+  structure passed to a ctdb call backend function
+*/
+struct ctdb_call_info {
 	TDB_DATA key;          /* record key */
 	TDB_DATA record_data;  /* current data in the record */
 	TDB_DATA *new_data;    /* optionally updated record data */
@@ -85,7 +92,7 @@ int ctdb_start(struct ctdb_context *ctdb);
 const char *ctdb_errstr(struct ctdb_context *);
 
 /* a ctdb call function */
-typedef int (*ctdb_fn_t)(struct ctdb_call *);
+typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 
 /*
   setup a ctdb call function
@@ -103,8 +110,7 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
   make a ctdb call. The associated ctdb call function will be called on the DMASTER
   for the given record
 */
-int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
-	      TDB_DATA *call_data, TDB_DATA *reply_data);
+int ctdb_call(struct ctdb_context *ctdb, struct ctdb_call *call);
 
 /*
   wait for all nodes to be connected - useful for test code
