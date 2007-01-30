@@ -53,6 +53,7 @@ typedef struct RAND_METHOD RAND_METHOD;
 #define RAND_set_rand_method hc_RAND_set_rand_method
 #define RAND_get_rand_method hc_RAND_get_rand_method
 #define RAND_set_rand_engine hc_RAND_set_rand_engine
+#define RAND_file_name hc_RAND_file_name
 #define RAND_load_file hc_RAND_load_file
 #define RAND_write_file hc_RAND_write_file
 #define RAND_status hc_RAND_status
@@ -91,6 +92,8 @@ const RAND_METHOD *
 	RAND_get_rand_method(void);
 int	RAND_set_rand_engine(ENGINE *);
 
+const char *
+	RAND_file_name(char *, size_t);
 int	RAND_load_file(const char *, size_t);
 int	RAND_write_file(const char *);
 int	RAND_status(void);
