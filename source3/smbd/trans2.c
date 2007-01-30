@@ -3881,7 +3881,7 @@ static int smb_file_position_information(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
+	DEBUG(10,("smb_file_position_information: Set file position information for file %s to %.0f\n",
 		fsp->fsp_name, (double)position_information ));
 	fsp->fh->position_information = position_information;
 
@@ -3976,7 +3976,7 @@ static int smb_set_file_unix_link(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
+	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 			newname, link_target ));
 
 	if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0) {
@@ -4015,11 +4015,91 @@ static int smb_set_file_unix_hlink(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
+	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
 
 	status = hardlink_internals(conn, oldname, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Deal with SMB_FILE_RENAME_INFORMATION.
+****************************************************************************/
+
+static int smb_file_rename_information(connection_struct *conn,
+				char *inbuf,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp,
+				pstring fname)
+{
+	BOOL overwrite;
+	/* uint32 root_fid; */  /* Not used */
+	uint32 len;
+	pstring newname;
+	pstring base_name;
+	NTSTATUS status = NT_STATUS_OK;
+	char *p;
+
+	if (total_data < 13) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	overwrite = (CVAL(pdata,0) ? True : False);
+	/* root_fid = IVAL(pdata,4); */
+	len = IVAL(pdata,8);
+
+	if (len > (total_data - 12) || (len == 0)) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	/* Check the new name has no '/' characters. */
+	if (strchr_m(newname, '/')) {
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
+
+	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+
+	/* Create the base directory. */
+	pstrcpy(base_name, fname);
+	p = strrchr_m(base_name, '/');
+	if (p) {
+		*p = '\0';
+	}
+	/* Append the new name. */
+	pstrcat(base_name, "/");
+	pstrcat(base_name, newname);
+
+	if (fsp) {
+		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
+			fsp->fnum, fsp->fsp_name, base_name ));
+		status = rename_internals_fsp(conn, fsp, base_name, 0, overwrite);
+	} else {
+		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
+			fname, newname ));
+		status = rename_internals(conn, fname, base_name, 0, overwrite, False);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return ERROR_NT(status);
 	}
 
@@ -4590,66 +4670,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		case SMB_FILE_RENAME_INFORMATION:
 		{
-			BOOL overwrite;
-			/* uint32 root_fid; */  /* Not used */
-			uint32 len;
-			pstring newname;
-			pstring base_name;
-			char *p;
-
-			if (total_data < 13) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			overwrite = (CVAL(pdata,0) ? True : False);
-			/* root_fid = IVAL(pdata,4); */
-			len = IVAL(pdata,8);
-
-			if (len > (total_data - 12) || (len == 0)) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-
-			/* Check the new name has no '/' characters. */
-			if (strchr_m(newname, '/'))
-				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-
-			RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
-
-			/* Create the base directory. */
-			pstrcpy(base_name, fname);
-			p = strrchr_m(base_name, '/');
-			if (p)
-				*p = '\0';
-			/* Append the new name. */
-			pstrcat(base_name, "/");
-			pstrcat(base_name, newname);
-
-			if (fsp) {
-				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
-					fsp->fnum, fsp->fsp_name, base_name ));
-				status = rename_internals_fsp(conn, fsp, base_name, 0, overwrite);
-			} else {
-				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
-					fname, newname ));
-				status = rename_internals(conn, fname, base_name, 0, overwrite, False);
-			}
-
-			if (!NT_STATUS_IS_OK(status)) {
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
-			}
-
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_file_rename_information(conn,
+							inbuf,
+							outbuf,
+							bufsize,
+							params,
+							pdata,
+							total_data,
+							max_data_bytes,
+							fsp,
+							fname);
 		}
 
 #if defined(HAVE_POSIX_ACLS)
