@@ -498,7 +498,8 @@ void notify_fsp(files_struct *fsp, uint32 action, char *name)
 }
 
 static void notify_message_callback(int msgtype, struct process_id pid,
-				    void *buf, size_t len)
+				    void *buf, size_t len,
+				    void *private_data)
 {
 	struct notify_message msg;
 	files_struct *fsp;
@@ -548,7 +549,7 @@ BOOL init_change_notify(void)
 		return False;
 	}
 
-	message_register(MSG_SMB_NOTIFY, notify_message_callback);
+	message_register(MSG_SMB_NOTIFY, notify_message_callback, NULL);
 
 	return True;
 }

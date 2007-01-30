@@ -2371,7 +2371,7 @@ void wins_write_database(time_t t, BOOL background)
 ***************************************************************************/
 
 void nmbd_wins_new_entry(int msg_type, struct process_id src,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
 	WINS_RECORD *record;
 	struct name_record *namerec = NULL;

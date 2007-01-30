@@ -472,7 +472,7 @@ BOOL debug_parse_levels(const char *params_str)
 ****************************************************************************/
 
 static void debug_message(int msg_type, struct process_id src,
-			  void *buf, size_t len)
+			  void *buf, size_t len, void *private_data)
 {
 	const char *params_str = (const char *)buf;
 
@@ -509,7 +509,7 @@ void debug_message_send(pid_t pid, const char *params_str)
 ****************************************************************************/
 
 static void debuglevel_message(int msg_type, struct process_id src,
-			       void *buf, size_t len)
+			       void *buf, size_t len, void *private_data)
 {
 	char *message = debug_list_class_names_and_levels();
 
@@ -539,8 +539,8 @@ void debug_init(void)
 
 	initialised = True;
 
-	message_register(MSG_DEBUG, debug_message);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message);
+	message_register(MSG_DEBUG, debug_message, NULL);
+	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
 
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);

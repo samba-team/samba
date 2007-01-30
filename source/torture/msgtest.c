@@ -29,7 +29,8 @@ static int pong_count;
 /****************************************************************************
 a useful function for testing the message system
 ****************************************************************************/
-static void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
+static void pong_message(int msg_type, struct process_id src,
+			 void *buf, size_t len, void *private_data)
 {
 	pong_count++;
 }
@@ -57,7 +58,7 @@ static void pong_message(int msg_type, struct process_id src, void *buf, size_t 
 	pid = atoi(argv[1]);
 	n = atoi(argv[2]);
 
-	message_register(MSG_PONG, pong_message);
+	message_register(MSG_PONG, pong_message, NULL);
 
 	for (i=0;i<n;i++) {
 		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0, True);

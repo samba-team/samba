@@ -82,7 +82,8 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
  Child failed to find DC's. Reschedule check.
 ****************************************************************/
 
-static void msg_failed_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_failed_to_go_online(int msg_type, struct process_id src,
+				    void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -117,7 +118,8 @@ static void msg_failed_to_go_online(int msg_type, struct process_id src, void *b
  Actually cause a reconnect from a message.
 ****************************************************************/
 
-static void msg_try_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_try_to_go_online(int msg_type, struct process_id src,
+				 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -182,8 +184,10 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (child_pid != 0) {
 		/* Parent */
-		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,msg_try_to_go_online);
-		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,msg_failed_to_go_online);
+		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,
+				 msg_try_to_go_online, NULL);
+		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				 msg_failed_to_go_online, NULL);
 		message_unblock();
 		return True;
 	}

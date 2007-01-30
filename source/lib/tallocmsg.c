@@ -66,7 +66,8 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
  * usage stats.
  **/
 void msg_pool_usage(int msg_type, struct process_id src_pid,
-		    void *UNUSED(buf), size_t UNUSED(len))
+		    void *UNUSED(buf), size_t UNUSED(len),
+		    void *private_data)
 {
 	struct msg_pool_usage_state state;
 
@@ -100,6 +101,6 @@ void msg_pool_usage(int msg_type, struct process_id src_pid,
  **/
 void register_msg_pool_usage(void)
 {
-	message_register(MSG_REQ_POOL_USAGE, msg_pool_usage);
+	message_register(MSG_REQ_POOL_USAGE, msg_pool_usage, NULL);
 	DEBUG(2, ("Registered MSG_REQ_POOL_USAGE\n"));
 }	
