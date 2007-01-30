@@ -1,5 +1,9 @@
 2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand.c: Implement RAND_file_name.
+
+	* test_rand.c: test RAND_file_name().
+
 	* rand.c: Provide dummy implementation of RAND_file_name.
 
 	* rand.h: add RAND_file_name
