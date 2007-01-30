@@ -1,5 +1,13 @@
-2007-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/init_sec_context.c: revert 1.75: (init_auth): only turn on
+	GSS_C_CONF_FLAG and GSS_C_INT_FLAG if the caller requseted it.
+	
+	This is because Kerberos always support INT|CONF, matches behavior
+	with MS and MIT. The creates problems for the GSS-SPNEGO mech.
+	
+2007-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* krb5/prf.c: constrain desired_output_len
 
 	* krb5/external.c (krb5_mech): add _gsskrb5_pseudo_random
