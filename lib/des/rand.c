@@ -182,5 +182,34 @@ RAND_write_file(const char *filename)
 const char *
 RAND_file_name(char *filename, size_t size)
 {
-    return NULL;
+    const char *e = NULL;
+    int pathp = 0, ret;
+
+    if (!issuid()) {
+	e = getenv("RANDFILE");
+	if (e == NULL) {
+	    e = getenv("HOME");
+	    if (e)
+		pathp = 1;
+	}
+    }
+    if (e == NULL) {
+	struct passwd *pw = getpwuid(getuid());	
+	if (pw) {
+	    e = pw->pw_dir;
+	    pathp = 1;
+	}
+    }
+    if (e == NULL)
+	return NULL;
+
+    if (pathp)
+	ret = snprintf(filename, size, "%s/.randfile", e);
+    else
+	ret = snprintf(filename, size, "%s", e);
+
+    if (ret <= 0 || ret >= size)
+	return NULL;
+
+    return filename;
 }
