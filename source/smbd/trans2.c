@@ -4292,6 +4292,60 @@ static int smb_set_posix_lock(connection_struct *conn,
 }
 
 /****************************************************************************
+ Deal with SMB_INFO_STANDARD.
+****************************************************************************/
+
+static NTSTATUS smb_set_info_standard(const char *pdata, int total_data, struct utimbuf *p_tvs)
+{
+	if (total_data < 12) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* access time */
+	p_tvs->actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
+	/* write time */
+	p_tvs->modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Deal with SMB_SET_FILE_BASIC_INFO.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_basic_info(const char *pdata, int total_data, struct utimbuf *p_tvs, int *p_dosmode)
+{
+	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
+	time_t write_time;
+	time_t changed_time;
+
+	if (total_data < 36) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Ignore create time at offset pdata. */
+
+	/* access time */
+	p_tvs->actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
+
+	write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
+	changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
+
+	p_tvs->modtime = MIN(write_time, changed_time);
+
+	if (write_time > p_tvs->modtime && write_time != (time_t)-1) {
+		p_tvs->modtime = write_time;
+	}
+	/* Prefer a defined time to an undefined one. */
+	if (null_mtime(p_tvs->modtime)) {
+		p_tvs->modtime = null_mtime(write_time) ? changed_time : write_time;
+	}
+
+	/* attributes */
+	*p_dosmode = IVAL(pdata,32);
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
@@ -4437,20 +4491,18 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)SMB_GID_NO_CHANGE;
 
 	switch (info_level) {
+
 		case SMB_INFO_STANDARD:
 		{
-			if (total_data < 12) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			status = smb_set_info_standard(pdata, total_data, &tvs);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
 			}
-
-			/* access time */
-			tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
-			/* write time */
-			tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
 			break;
 		}
 
 		case SMB_INFO_SET_EA:
+		{
 			return smb_info_set_ea(conn,
 						outbuf,
 						bufsize,
@@ -4460,38 +4512,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						max_data_bytes,
 						fsp,
 						fname);
+		}
 
 		case SMB_SET_FILE_BASIC_INFO:
 		case SMB_FILE_BASIC_INFORMATION:
 		{
-			/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-			time_t write_time;
-			time_t changed_time;
-
-			if (total_data < 36) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			status = smb_set_file_basic_info(pdata, total_data, &tvs, &dosmode);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
 			}
-
-			/* Ignore create time at offset pdata. */
-
-			/* access time */
-			tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
-
-			write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
-			changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
-
-			tvs.modtime = MIN(write_time, changed_time);
-
-			if (write_time > tvs.modtime && write_time != (time_t)-1) {
-				tvs.modtime = write_time;
-			}
-			/* Prefer a defined time to an undefined one. */
-			if (null_mtime(tvs.modtime)) {
-				tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
-			}
-
-			/* attributes */
-			dosmode = IVAL(pdata,32);
 			break;
 		}
 
@@ -5018,7 +5047,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
   
-	return(-1);
+	return -1;
 }
 
 /****************************************************************************
