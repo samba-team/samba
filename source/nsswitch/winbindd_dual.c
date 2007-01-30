@@ -842,15 +842,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* The child is ok with online/offline messages now. */
 	message_unblock();
 
-	if (child->domain != NULL && lp_winbind_offline_logon()) {
-		/* We might be in the idmap child...*/
-		child->lockout_policy_event = event_add_timed(
-			winbind_event_context(), NULL, timeval_zero(),
-			"account_lockout_policy_handler",
-			account_lockout_policy_handler,
-			child);
-	}
-
 	/* Handle online/offline messages. */
 	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
 	message_register(MSG_WINBIND_ONLINE,child_msg_online);
@@ -877,6 +868,18 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	cancel_named_event(winbind_event_context(),
 			   "krb5_ticket_refresh_handler");
+
+	/* We might be in the idmap child...*/
+	if (child->domain && lp_winbind_offline_logon()) {
+
+		set_domain_online_request(child->domain);
+
+		child->lockout_policy_event = event_add_timed(
+			winbind_event_context(), NULL, timeval_zero(),
+			"account_lockout_policy_handler",
+			account_lockout_policy_handler,
+			child);
+	}
 
 	while (1) {
 
