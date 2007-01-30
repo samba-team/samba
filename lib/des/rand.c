@@ -178,3 +178,9 @@ RAND_write_file(const char *filename)
 
     return res;
 }
+
+const char *
+RAND_file_name(char *filename, size_t size)
+{
+    return NULL;
+}
