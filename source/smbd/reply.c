@@ -3990,7 +3990,7 @@ static BOOL rename_path_prefix_equal(const char *src, const char *dest)
  Rename an open file - given an fsp.
 ****************************************************************************/
 
-NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, uint32 attrs, BOOL replace_if_exists)
+NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstring newname, uint32 attrs, BOOL replace_if_exists)
 {
 	SMB_STRUCT_STAT sbuf;
 	pstring newname_last_component;
@@ -4107,7 +4107,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
  code. 
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, uint32 attrs, BOOL replace_if_exists, BOOL has_wild)
+NTSTATUS rename_internals(connection_struct *conn, pstring name, pstring newname, uint32 attrs, BOOL replace_if_exists, BOOL has_wild)
 {
 	pstring directory;
 	pstring mask;
