@@ -16,6 +16,8 @@ function()
   qx.core.Object.call(this);
 });
 
+//qx.OO.addProperty({ name : "_table", type : "object" });
+//qx.OO.addProperty({ name : "_ldbmod", type : "object" });
 
 /**
  * Build the raw graphical user interface.
@@ -141,7 +143,13 @@ qx.Proto.displayData = function(module, rpcRequest)
     break;
 
   case "tree_selection_changed":
+
+    // Always update the table, even if it is not visible
     this._displayTreeSelectionChangedResults(module, rpcRequest);
+
+    // Update the base field in ldbmod
+    this._displayLdbmodBaseChanged(module, rpcRequest);
+
     break;
 
   case "database_name_changed":
@@ -300,6 +308,17 @@ qx.Proto._buildPageBrowse = function(module, page)
   var splitpane = new qx.ui.splitpane.HorizontalSplitPane("1*", "2*");
   splitpane.setEdge(0);
 
+  // We need a vertical box layout for the tree and the buttons
+  var vlayout = new qx.ui.layout.VerticalBoxLayout();
+  vlayout.set({
+               height: "100%",
+               top: 5,
+               left: 5,
+               right: 5,
+               bottom: 5,
+               spacing: 10
+           });
+
   // Create a tree row structure for the tree root
   var trsInstance = qx.ui.treefullcontrol.TreeRowStructure.getInstance();
   var trs = trsInstance.standard(module.dbFile);
@@ -310,11 +329,7 @@ qx.Proto._buildPageBrowse = function(module, page)
                backgroundColor: 255,
                border: qx.renderer.border.BorderPresets.getInstance().inset,
                overflow: "auto",
-               height: null,
-               top: 10,
-               left: 0,
-               right: 0,
-               bottom: 10,
+               height: "1*",
                open: false,
                alwaysShowPlusMinusSymbol: true
            });
@@ -333,8 +348,36 @@ qx.Proto._buildPageBrowse = function(module, page)
   fsm.addObject("tree", tree);
   fsm.addObject("tree:manager", tree.getManager());
 
-  // Add the tree to the page.
-  splitpane.addLeft(tree);
+  // Add the tree to the vlayout.
+  vlayout.add(tree);
+
+  // Add an horizonatl layout for the "New" and "Modify" buttons
+  // We need a vertical box layout for the tree and the buttons
+  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+  hlayout.set({
+               height: "auto",
+               spacing: 10
+           });
+
+  // Add the "New" button
+  this._newb = new qx.ui.form.Button("New");
+  this._newb.addEventListener("execute", this._switchToNewrecord, this);
+
+  // Add the button to the hlayout
+  hlayout.add(this._newb);
+
+  // Add the "New" button
+  this._modb = new qx.ui.form.Button("Modify");
+  this._modb.addEventListener("execute", this._switchToModrecord, this);
+
+  // Add the button to the hlayout
+  hlayout.add(this._modb);
+  
+  // Add the hlayout to the vlayout.
+  vlayout.add(hlayout);
+
+  //Add the left vlayout to the splitpane
+  splitpane.addLeft(vlayout);
 
   // Create a simple table model
   var tableModel = new qx.ui.table.SimpleTableModel();
@@ -345,8 +388,8 @@ qx.Proto._buildPageBrowse = function(module, page)
   fsm.addObject("tableModel:browse", tableModel);
 
   // Create a table
-  var table = new qx.ui.table.Table(tableModel);
-  table.set({
+  this._table = new qx.ui.table.Table(tableModel);
+  this._table.set({
                 top: 10,
                 left: 0,
                 right: 0,
@@ -354,24 +397,66 @@ qx.Proto._buildPageBrowse = function(module, page)
                 statusBarVisible: false,
                 columnVisibilityButtonVisible: false
             });
-  table.setColumnWidth(0, 180);
-  table.setColumnWidth(1, 320);
-  table.setMetaColumnCounts([1, -1]);
-  fsm.addObject("table:browse", table);
+  this._table.setColumnWidth(0, 180);
+  this._table.setColumnWidth(1, 320);
+  this._table.setMetaColumnCounts([1, -1]);
+  fsm.addObject("table:browse", this._table);
+
+  //table.setDisplay(false);
 
   // Add the table to the bottom portion of the splitpane
-  splitpane.addRight(table);
+  splitpane.addRight(this._table);
+
+  // Build the create/modify widget
+  this._ldbmod = new swat.module.ldbbrowse.LdbModify(fsm);
+  this._ldbmod.set({
+                top: 10,
+                left: 0,
+                right: 0,
+                bottom: 10
+            });
+  // Not displayed by default
+  this._ldbmod.setDisplay(false);
+
+  fsm.addObject("ldbmod:browse", this._ldbmod);
+
+  splitpane.addRight(this._ldbmod);
 
   // Add the first splitpane to the page
   page.add(splitpane);
 };
 
+qx.Proto._switchToNormal = function()
+{
+  this._table.setDisplay(true);
+  this._ldbmod.setDisplay(false);
+  this._newb.setEnabled(true);
+  this._modb.setEnabled(true);
+}
+
+qx.Proto._switchToNewrecord = function()
+{
+  this._table.setDisplay(false);
+  this._ldbmod.setDisplay(true);
+  this._newb.setEnabled(false);
+  this._modb.setEnabled(false);
+  this._ldbmod.initNew(this._switchToNormal, this);
+}
+
+qx.Proto._switchToModrecord = function()
+{
+  this._table.setDisplay(false);
+  this._ldbmod.setDisplay(true);
+  this._newb.setEnabled(false);
+  this._modb.setEnabled(false);
+  this._ldbmod.initMod(this._table, this._switchToNormal, this);
+}
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
 {
   var fsm = module.fsm;
 
-  // Obtain the table and tableModel objects
+  // Obtain the ldif object
   var ldifview = fsm.getObject("LdifView");
 
   ldifview.reset();
@@ -455,6 +540,22 @@ qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
   }
 };
 
+qx.Proto._displayLdbmodBaseChanged = function(module, rpcRequest)
+{
+  var fsm = module.fsm;
+
+  // Obtain the result object
+  var result = rpcRequest.getUserData("result").data;
+
+  // If we received an empty list, ...
+  if (result == null)
+  {
+    // ... then ??
+    return;
+  }
+
+  this._ldbmod.setBase(result[0]["dn"]);
+};
 
 qx.Proto._displayTreeSelectionChangedResults = function(module, rpcRequest)
 {
