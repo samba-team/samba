@@ -583,8 +583,14 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	/*
 	 * w2k3 returns the first address of the 0x1B record as first address
 	 * to a 0x1C query
+	 *
+	 * since Windows 2000 Service Pack 2 there's on option to trigger this behavior:
+	 *
+	 * HKEY_LOCAL_MACHINE\System\CurrentControlset\Services\WINS\Parameters\Prepend1BTo1CQueries
+	 * Typ: Daten REG_DWORD
+	 * Value: 0 = deactivated, 1 = activated
 	 */
-	if (name->type == NBT_NAME_LOGON) {
+	if (name->type == NBT_NAME_LOGON && lp_parm_bool(-1, "nbtd", "wins_prepend1Bto1Cqueries", True)) {
 		struct nbt_name name_1b;
 
 		name_1b = *name;
