@@ -1,5 +1,11 @@
-2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand.c: Provide dummy implementation of RAND_file_name.
+
+	* rand.h: add RAND_file_name
+	
+2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: clean more files
 
 	* rand-egd.c: access private functions though the RAND_METHOD
