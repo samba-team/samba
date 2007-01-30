@@ -90,6 +90,7 @@ main(int argc, char **argv)
 {
     int idx = 0;
     char *buffer;
+    char path[MAXPATHLEN];
 
     setprogname(argv[0]);
 
@@ -123,6 +124,9 @@ main(int argc, char **argv)
 	    errx(1, "unknown method %s", rand_method);
     }
 	    
+    if (RAND_file_name(path, sizeof(path)) == NULL)
+	errx(1, "RAND_file_name failed");
+
     if (RAND_status() != 1)
 	errx(1, "random not ready yet");
 
