@@ -1,5 +1,9 @@
-2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Try to help how to use this command.
+	
+2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* switch to sha256 as default digest for signing
 
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
