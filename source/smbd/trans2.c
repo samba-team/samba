@@ -3745,7 +3745,8 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
  Deal with SMB_INFO_SET_EA.
 ****************************************************************************/
 
-static int smb_info_set_ea(connection_struct *conn,
+static int smb_info_set_ea(
+		connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
@@ -3798,6 +3799,50 @@ static int smb_info_set_ea(connection_struct *conn,
 	}
 
 	/* We're done. We only get EA info in this call. */
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Deal with SMB_SET_FILE_DISPOSITION_INFO.
+****************************************************************************/
+
+static int smb_set_file_disposition_info(connection_struct *conn,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				int total_params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp,
+				int dosmode)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	BOOL delete_on_close;
+
+	if (total_data < 1) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	delete_on_close = (CVAL(pdata,0) ? True : False);
+
+	if (fsp == NULL) {
+		return(UNIXERROR(ERRDOS,ERRbadfid));
+	}
+
+	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
+ 
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	/* The set is across all open files on this dev/inode pair. */
+	if (!set_delete_on_close(fsp, delete_on_close, &current_user.ut)) {
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
 	return -1;
@@ -4107,36 +4152,25 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_DISPOSITION_INFORMATION:
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
-			BOOL delete_on_close;
-
 			if (total_data < 1) {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			delete_on_close = (CVAL(pdata,0) ? True : False);
-
 			/* Just ignore this set on a path. */
-			if (tran_call != TRANSACT2_SETFILEINFO)
+			if (tran_call != TRANSACT2_SETFILEINFO) {
 				break;
-
-			if (fsp == NULL)
-				return(UNIXERROR(ERRDOS,ERRbadfid));
-
-			status = can_set_delete_on_close(fsp, delete_on_close,
-							 dosmode);
- 
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
 			}
 
-			/* The set is across all open files on this dev/inode pair. */
-			if (!set_delete_on_close(fsp, delete_on_close, &current_user.ut)) {
-				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-			}
-
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_set_file_disposition_info(conn,
+						outbuf,
+						bufsize,
+						params,
+						total_params,
+						*ppdata,
+						total_data,
+						max_data_bytes,
+						fsp,
+						dosmode);
 		}
 
 		case SMB_FILE_POSITION_INFORMATION:
