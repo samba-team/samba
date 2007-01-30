@@ -3745,8 +3745,7 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
  Deal with SMB_INFO_SET_EA.
 ****************************************************************************/
 
-static int smb_info_set_ea(
-		connection_struct *conn,
+static int smb_info_set_ea(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
@@ -3826,11 +3825,11 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	delete_on_close = (CVAL(pdata,0) ? True : False);
-
 	if (fsp == NULL) {
 		return(UNIXERROR(ERRDOS,ERRbadfid));
 	}
+
+	delete_on_close = (CVAL(pdata,0) ? True : False);
 
 	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
  
@@ -3843,6 +3842,47 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Deal with SMB_FILE_POSITION_INFORMATION.
+****************************************************************************/
+
+static int smb_file_position_information(connection_struct *conn,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				int total_params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp)
+{
+	SMB_BIG_UINT position_information;
+
+	if (total_data < 8) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	position_information = (SMB_BIG_UINT)IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+	position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if (IVAL(pdata,4) != 0) {
+		/* more than 32 bits? */
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+#endif /* LARGE_SMB_OFF_T */
+	if (fsp) {
+		DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
+			fsp->fsp_name, (double)position_information ));
+		fsp->fh->position_information = position_information;
+	}
+
+	/* We're done. We only set position info in this call. */
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
 	return -1;
@@ -4152,15 +4192,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_DISPOSITION_INFORMATION:
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
-			if (total_data < 1) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
+#if 0 /* JRA - should we just ignore this on a path ? */
 			/* Just ignore this set on a path. */
 			if (tran_call != TRANSACT2_SETFILEINFO) {
 				break;
 			}
-
+#endif
 			return smb_set_file_disposition_info(conn,
 						outbuf,
 						bufsize,
@@ -4175,31 +4212,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_FILE_POSITION_INFORMATION:
 		{
-			SMB_BIG_UINT position_information;
-
-			if (total_data < 8) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			position_information = (SMB_BIG_UINT)IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
-			position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0) {
-				/* more than 32 bits? */
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-#endif /* LARGE_SMB_OFF_T */
-			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
-					fname, (double)position_information ));
-			if (fsp) {
-				fsp->fh->position_information = position_information;
-			}
-
-			/* We're done. We only get position info in this call. */
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_file_position_information(conn,
+						outbuf,
+						bufsize,
+						params,
+						total_params,
+						*ppdata,
+						total_data,
+						max_data_bytes,
+						fsp);
 		}
 
 		/* From tridge Samba4 : 
