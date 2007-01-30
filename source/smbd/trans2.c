@@ -3749,7 +3749,6 @@ static int smb_info_set_ea(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				int total_params,
 				char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
@@ -3811,7 +3810,6 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				int total_params,
 				char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
@@ -3855,7 +3853,6 @@ static int smb_file_position_information(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				int total_params,
 				char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
@@ -3867,6 +3864,10 @@ static int smb_file_position_information(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
+	if (fsp == NULL) {
+		return(UNIXERROR(ERRDOS,ERRbadfid));
+	}
+
 	position_information = (SMB_BIG_UINT)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
 	position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
@@ -3876,13 +3877,40 @@ static int smb_file_position_information(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 #endif /* LARGE_SMB_OFF_T */
-	if (fsp) {
-		DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
-			fsp->fsp_name, (double)position_information ));
-		fsp->fh->position_information = position_information;
-	}
+
+	DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
+		fsp->fsp_name, (double)position_information ));
+	fsp->fh->position_information = position_information;
 
 	/* We're done. We only set position info in this call. */
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Deal with SMB_FILE_MODE_INFORMATION.
+****************************************************************************/
+
+static int smb_file_mode_information(connection_struct *conn,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes)
+{
+	uint32 mode;
+
+	if (total_data < 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	mode = IVAL(pdata,0);
+	if (mode != 0 && mode != 2 && mode != 4 && mode != 6) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	/* We're done. We only set (?) mode info in this call. */
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
 	return -1;
@@ -4052,7 +4080,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						outbuf,
 						bufsize,
 						params,
-						total_params,
 						*ppdata,
 						total_data,
 						max_data_bytes,
@@ -4202,7 +4229,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						outbuf,
 						bufsize,
 						params,
-						total_params,
 						*ppdata,
 						total_data,
 						max_data_bytes,
@@ -4216,7 +4242,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						outbuf,
 						bufsize,
 						params,
-						total_params,
 						*ppdata,
 						total_data,
 						max_data_bytes,
@@ -4231,20 +4256,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_FILE_MODE_INFORMATION:
 		{
-			uint32 mode;
-
-			if (total_data < 4) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-			mode = IVAL(pdata,0);
-			if (mode != 0 && mode != 2 && mode != 4 && mode != 6) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			/* We're done. We only get mode info in this call. */
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_file_mode_information(conn,
+						outbuf,
+						bufsize,
+						params,
+						*ppdata,
+						total_data,
+						max_data_bytes);
 		}
 
 		/*
