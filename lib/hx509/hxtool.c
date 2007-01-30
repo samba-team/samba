@@ -53,6 +53,7 @@ static void
 usage(int code)
 {
     arg_printusage(args, num_args, NULL, "command");
+    printf("Use \"%s help\" to get more help\n", getprogname());
     exit(code);
 }
 
