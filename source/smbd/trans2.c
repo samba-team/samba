@@ -3745,13 +3745,9 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
  Deal with SMB_INFO_SET_EA.
 ****************************************************************************/
 
-static int smb_info_set_ea(connection_struct *conn,
-				char *outbuf,
-				int bufsize,
-				char *params,
+static NTSTATUS smb_info_set_ea(connection_struct *conn,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp,
 				const char *fname)
 {
@@ -3766,53 +3762,40 @@ static int smb_info_set_ea(connection_struct *conn,
 
 		if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
 			/* We're done. We only get EA info in this call. */
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-			return -1;
+			return NT_STATUS_OK;
 		}
 
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (IVAL(pdata,0) > total_data) {
 		DEBUG(10,("smb_info_set_ea: bad total data size (%u) > %u\n",
 			IVAL(pdata,0), (unsigned int)total_data));
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	ctx = talloc_init("SMB_INFO_SET_EA");
 	if (!ctx) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return NT_STATUS_NO_MEMORY;
 	}
 	ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
 	if (!ea_list) {
 		talloc_destroy(ctx);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	status = set_ea(conn, fsp, fname, ea_list);
 	talloc_destroy(ctx);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
-	}
-
-	/* We're done. We only get EA info in this call. */
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return status;
 }
 
 /****************************************************************************
  Deal with SMB_SET_FILE_DISPOSITION_INFO.
 ****************************************************************************/
 
-static int smb_set_file_disposition_info(connection_struct *conn,
-				char *outbuf,
-				int bufsize,
-				char *params,
+static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp,
 				int dosmode)
 {
@@ -3820,11 +3803,11 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 	BOOL delete_on_close;
 
 	if (total_data < 1) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (fsp == NULL) {
-		return(UNIXERROR(ERRDOS,ERRbadfid));
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	delete_on_close = (CVAL(pdata,0) ? True : False);
@@ -3832,43 +3815,34 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
  
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		return status;
 	}
 
 	/* The set is across all open files on this dev/inode pair. */
 	if (!set_delete_on_close(fsp, delete_on_close, &current_user.ut)) {
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Deal with SMB_FILE_POSITION_INFORMATION.
 ****************************************************************************/
 
-static int smb_file_position_information(connection_struct *conn,
-				char *outbuf,
-				int bufsize,
-				char *params,
+static NTSTATUS smb_file_position_information(connection_struct *conn,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp)
 {
 	SMB_BIG_UINT position_information;
 
 	if (total_data < 8) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!fsp) {
+	if (fsp == NULL) {
 		/* Ignore on pathname based set. */
-		SSVAL(params,0,0);
-		send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-		return -1;
+		return NT_STATUS_OK;
 	}
 
 	position_information = (SMB_BIG_UINT)IVAL(pdata,0);
@@ -3884,53 +3858,37 @@ static int smb_file_position_information(connection_struct *conn,
 	DEBUG(10,("smb_file_position_information: Set file position information for file %s to %.0f\n",
 		fsp->fsp_name, (double)position_information ));
 	fsp->fh->position_information = position_information;
-
-	/* We're done. We only set position info in this call. */
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Deal with SMB_FILE_MODE_INFORMATION.
 ****************************************************************************/
 
-static int smb_file_mode_information(connection_struct *conn,
-				char *outbuf,
-				int bufsize,
-				char *params,
+static NTSTATUS smb_file_mode_information(connection_struct *conn,
 				const char *pdata,
-				int total_data,
-				unsigned int max_data_bytes)
+				int total_data)
 {
 	uint32 mode;
 
 	if (total_data < 4) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	mode = IVAL(pdata,0);
 	if (mode != 0 && mode != 2 && mode != 4 && mode != 6) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	/* We're done. We only set (?) mode info in this call. */
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Deal with SMB_SET_FILE_UNIX_LINK (create a UNIX symlink).
 ****************************************************************************/
 
-static int smb_set_file_unix_link(connection_struct *conn,
+static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				char *inbuf,
-				char *outbuf,
-				int bufsize,
-				char *params,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				const char *fname)
 {
 	pstring link_target;
@@ -3941,11 +3899,11 @@ static int smb_set_file_unix_link(connection_struct *conn,
 	/* Don't allow this if follow links is false. */
 
 	if (total_data == 0) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!lp_symlinks(SNUM(conn))) {
-		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
@@ -3959,7 +3917,7 @@ static int smb_set_file_unix_link(connection_struct *conn,
 		unix_format(link_target);
 		if (*link_target == '/') {
 			/* No absolute paths allowed. */
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return NT_STATUS_ACCESS_DENIED;
 		}
 		pstrcpy(rel_name, newname);
 		last_dirp = strrchr_m(rel_name, '/');
@@ -3972,7 +3930,7 @@ static int smb_set_file_unix_link(connection_struct *conn,
 
 		status = check_name(conn, rel_name);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			return status;
 		}
 	}
 
@@ -3980,26 +3938,20 @@ static int smb_set_file_unix_link(connection_struct *conn,
 			newname, link_target ));
 
 	if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return map_nt_error_from_unix(errno);
 	}
 
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Deal with SMB_SET_FILE_UNIX_HLINK (create a UNIX hard link).
 ****************************************************************************/
 
-static int smb_set_file_unix_hlink(connection_struct *conn,
+static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				char *inbuf,
-				char *outbuf,
-				int bufsize,
-				char *params,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				pstring fname)
 {
 	pstring oldname;
@@ -4007,39 +3959,29 @@ static int smb_set_file_unix_hlink(connection_struct *conn,
 
 	/* Set a hard link. */
 	if (total_data == 0) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), total_data, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		return status;
 	}
 
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
 
-	status = hardlink_internals(conn, oldname, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
-	}
-
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return hardlink_internals(conn, oldname, fname);
 }
 
 /****************************************************************************
  Deal with SMB_FILE_RENAME_INFORMATION.
 ****************************************************************************/
 
-static int smb_file_rename_information(connection_struct *conn,
+static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				char *inbuf,
 				char *outbuf,
-				int bufsize,
-				char *params,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp,
 				pstring fname)
 {
@@ -4052,7 +3994,7 @@ static int smb_file_rename_information(connection_struct *conn,
 	char *p;
 
 	if (total_data < 13) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	overwrite = (CVAL(pdata,0) ? True : False);
@@ -4060,20 +4002,20 @@ static int smb_file_rename_information(connection_struct *conn,
 	len = IVAL(pdata,8);
 
 	if (len > (total_data - 12) || (len == 0)) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		return status;
 	}
 
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH_STATUS(newname, conn, inbuf, outbuf);
 
 	/* Create the base directory. */
 	pstrcpy(base_name, fname);
@@ -4095,18 +4037,11 @@ static int smb_file_rename_information(connection_struct *conn,
 		status = rename_internals(conn, fname, base_name, 0, overwrite, False);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-			/* We have re-scheduled this call. */
-			return -1;
-		}
-		return ERROR_NT(status);
+	if (NT_STATUS_IS_OK(status)) {
+		process_pending_change_notify_queue((time_t)0);
 	}
 
-	process_pending_change_notify_queue((time_t)0);
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return status;
 }
 
 /****************************************************************************
@@ -4114,14 +4049,11 @@ static int smb_file_rename_information(connection_struct *conn,
 ****************************************************************************/
 
 #if defined(HAVE_POSIX_ACLS)
-static int smb_set_posix_acl(connection_struct *conn,
-				char *outbuf,
-				int bufsize,
-				char *params,
+static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp,
+				SMB_STRUCT_STAT *psbuf,
 				const char *fname)
 {
 	uint16 posix_acl_version;
@@ -4131,7 +4063,7 @@ static int smb_set_posix_acl(connection_struct *conn,
 	BOOL valid_def_acls = True;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	posix_acl_version = SVAL(pdata,0);
 	num_file_acls = SVAL(pdata,2);
@@ -4148,28 +4080,25 @@ static int smb_set_posix_acl(connection_struct *conn,
 	}
 
 	if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
 			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
 			pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return map_nt_error_from_unix(errno);
 	}
 
-	if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, &sbuf, num_def_acls,
+	if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, psbuf, num_def_acls,
 			pdata + SMB_POSIX_ACL_HEADER_SIZE +
 			(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return map_nt_error_from_unix(errno);
 	}
-
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return NT_STATUS_OK;
 }
 #endif
 
@@ -4177,15 +4106,11 @@ static int smb_set_posix_acl(connection_struct *conn,
  Deal with SMB_SET_POSIX_LOCK.
 ****************************************************************************/
 
-static int smb_set_posix_lock(connection_struct *conn,
+static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 				char *inbuf,
-				char *outbuf,
 				int length,
-				int bufsize,
-				char *params,
 				const char *pdata,
 				int total_data,
-				unsigned int max_data_bytes,
 				files_struct *fsp)
 {
 	SMB_BIG_UINT count;
@@ -4196,11 +4121,11 @@ static int smb_set_posix_lock(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (fsp == NULL || fsp->fh->fd == -1) {
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (total_data != POSIX_LOCK_DATA_SIZE) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
@@ -4210,7 +4135,7 @@ static int smb_set_posix_lock(connection_struct *conn,
 		case POSIX_LOCK_TYPE_WRITE:
 			/* Return the right POSIX-mappable error code for files opened read-only. */
 			if (!fsp->can_write) {
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+				return NT_STATUS_INVALID_HANDLE;
 			}
 			lock_type = WRITE_LOCK;
 			break;
@@ -4218,7 +4143,7 @@ static int smb_set_posix_lock(connection_struct *conn,
 			lock_type = UNLOCK_LOCK;
 			break;
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
@@ -4226,7 +4151,7 @@ static int smb_set_posix_lock(connection_struct *conn,
 	} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
 		blocking_lock = True;
 	} else {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!lp_blocking_locks(SNUM(conn))) { 
@@ -4277,19 +4202,13 @@ static int smb_set_posix_lock(connection_struct *conn,
 						offset,
 						count)) {
 				TALLOC_FREE(br_lck);
-				return -1;
+				return status;
 			}
 		}
 		TALLOC_FREE(br_lck);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
-	}
-
-	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
-	return -1;
+	return status;
 }
 
 /****************************************************************************
@@ -4433,6 +4352,35 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 }
 
 /****************************************************************************
+ Deal with SMB_SET_FILE_END_OF_FILE_INFO.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					const char *fname,
+					SMB_OFF_T *p_size)
+{
+	if (total_data < 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*p_size = IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+	*p_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if (IVAL(pdata,4) != 0)	{
+		/* more than 32 bits? */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif /* LARGE_SMB_OFF_T */
+	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
+		"file %s to %.0f\n", fname, (double)*p_size ));
+	return NT_STATUS_OK;
+}
+
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
@@ -4456,8 +4404,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	mode_t unixmode = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (!params)
+	if (!params) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	ZERO_STRUCT(sbuf);
 	ZERO_STRUCT(tvs);
@@ -4548,8 +4497,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	if (VALID_STAT(sbuf))
+	if (VALID_STAT(sbuf)) {
 		unixmode = sbuf.st_mode;
+	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
@@ -4581,7 +4531,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_INFO_STANDARD:
 		{
-			status = smb_set_info_standard(pdata, total_data, &tvs);
+			status = smb_set_info_standard(pdata,
+							total_data,
+							&tvs);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4590,21 +4542,24 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_INFO_SET_EA:
 		{
-			return smb_info_set_ea(conn,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
+			status = smb_info_set_ea(conn,
+						pdata,
 						total_data,
-						max_data_bytes,
 						fsp,
 						fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		case SMB_SET_FILE_BASIC_INFO:
 		case SMB_FILE_BASIC_INFORMATION:
 		{
-			status = smb_set_file_basic_info(pdata, total_data, &tvs, &dosmode);
+			status = smb_set_file_basic_info(pdata,
+							total_data,
+							&tvs,
+							&dosmode);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4634,20 +4589,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_SET_FILE_END_OF_FILE_INFO:
 		{
-			if (total_data < 8) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			status = smb_set_file_end_of_file_info(conn,
+								pdata,
+								total_data,
+								fname,
+								&size);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
 			}
-
-			size = IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
-			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0)	{
-				/* more than 32 bits? */
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-#endif /* LARGE_SMB_OFF_T */
-			DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
 			break;
 		}
 
@@ -4663,27 +4612,27 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
 #endif
-			return smb_set_file_disposition_info(conn,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
+			status = smb_set_file_disposition_info(conn,
+						pdata,
 						total_data,
-						max_data_bytes,
 						fsp,
 						dosmode);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		case SMB_FILE_POSITION_INFORMATION:
 		{
-			return smb_file_position_information(conn,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
+			status = smb_file_position_information(conn,
+						pdata,
 						total_data,
-						max_data_bytes,
 						fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		/* From tridge Samba4 : 
@@ -4694,13 +4643,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_FILE_MODE_INFORMATION:
 		{
-			return smb_file_mode_information(conn,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
-						total_data,
-						max_data_bytes);
+			status = smb_file_mode_information(conn,
+						pdata,
+						total_data);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		/*
@@ -4883,15 +4832,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				/* We must have a pathname for this. */
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-			return smb_set_file_unix_link(conn,
+			status = smb_set_file_unix_link(conn,
 						inbuf,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
+						pdata,
 						total_data,
-						max_data_bytes,
 						fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		case SMB_SET_FILE_UNIX_HLINK:
@@ -4900,58 +4849,71 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				/* We must have a pathname for this. */
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-			return smb_set_file_unix_hlink(conn,
+			status = smb_set_file_unix_hlink(conn,
 						inbuf,
-						outbuf,
-						bufsize,
-						params,
-						*ppdata,
+						pdata,
 						total_data,
-						max_data_bytes,
 						fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		case SMB_FILE_RENAME_INFORMATION:
 		{
-			return smb_file_rename_information(conn,
+			status = smb_file_rename_information(conn,
 							inbuf,
 							outbuf,
-							bufsize,
-							params,
 							pdata,
 							total_data,
-							max_data_bytes,
 							fsp,
 							fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
+				if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+					return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+				}
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 #if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
-			return smb_set_posix_acl(conn,
-						outbuf,
-						bufsize,
-						params,
+			status = smb_set_posix_acl(conn,
 						pdata,
 						total_data,
-						max_data_bytes,
 						fsp,
+						&sbuf,
 						fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 #endif
 
 		case SMB_SET_POSIX_LOCK:
 		{
-			return smb_set_posix_lock(conn,
+			status = smb_set_posix_lock(conn,
 						inbuf,
-						outbuf,
 						length,
-						bufsize,
-						params,
 						pdata,
 						total_data,
-						max_data_bytes,
 						fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				if (blocking_lock_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
+				return ERROR_NT(status);
+			}
+			goto out;
 		}
 
 		default:
@@ -4972,10 +4934,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	DEBUG(6,("size: %.0f ", (double)size));
 
 	if (dosmode) {
-		if (S_ISDIR(sbuf.st_mode))
+		if (S_ISDIR(sbuf.st_mode)) {
 			dosmode |= aDIR;
-		else
+		} else {
 			dosmode &= ~aDIR;
+		}
 	}
 
 	DEBUG(6,("dosmode: %x\n"  , dosmode));
@@ -5074,6 +5037,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 	}
+
+  out:
 
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
