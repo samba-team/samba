@@ -476,7 +476,8 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 
 /* Set our domains as offline and forward the offline message to our children. */
 
-void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_offline(int msg_type, struct process_id src,
+			 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -527,7 +528,8 @@ void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t 
 
 /* Set our domains as online and forward the online message to our children. */
 
-void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_online(int msg_type, struct process_id src,
+			void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -579,7 +581,8 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 }
 
 /* Forward the online/offline messages to our children. */
-void winbind_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_onlinestatus(int msg_type, struct process_id src,
+			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 
@@ -641,7 +644,8 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 
 /* Deal with a request to go offline. */
 
-static void child_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_offline(int msg_type, struct process_id src,
+			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -678,7 +682,8 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 /* Deal with a request to go online. */
 
-static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_online(int msg_type, struct process_id src,
+			     void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -739,7 +744,8 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	return buf;
 }
 
-static void child_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_onlinestatus(int msg_type, struct process_id src,
+				   void *buf, size_t len, void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message;
@@ -843,9 +849,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_unblock();
 
 	/* Handle online/offline messages. */
-	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
-	message_register(MSG_WINBIND_ONLINE,child_msg_online);
-	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
+	message_register(MSG_WINBIND_OFFLINE, child_msg_offline, NULL);
+	message_register(MSG_WINBIND_ONLINE, child_msg_online, NULL);
+	message_register(MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus,
+			 NULL);
 
 	if ( child->domain ) {
 		child->domain->startup = True;

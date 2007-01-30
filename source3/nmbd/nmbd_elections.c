@@ -379,7 +379,7 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
 ***************************************************************************/
 
 void nmbd_message_election(int msg_type, struct process_id src,
-			   void *buf, size_t len)
+			   void *buf, size_t len, void *private_data)
 {
 	struct subnet_record *subrec;
 
