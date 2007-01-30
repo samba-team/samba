@@ -3679,7 +3679,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  code.
 ****************************************************************************/
 
-NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newname)
+NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring newname)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	pstring last_component_oldname;
@@ -3988,6 +3988,45 @@ static int smb_set_file_unix_link(connection_struct *conn,
 	return -1;
 }
 
+/****************************************************************************
+ Deal with SMB_SET_FILE_UNIX_HLINK (create a UNIX hard link).
+****************************************************************************/
+
+static int smb_set_file_unix_hlink(connection_struct *conn,
+				char *inbuf,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				pstring fname)
+{
+	pstring oldname;
+	NTSTATUS status = NT_STATUS_OK;
+
+	/* Set a hard link. */
+	if (total_data == 0) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), total_data, STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
+		fname, oldname));
+
+	status = hardlink_internals(conn, oldname, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
 
 /****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
@@ -4534,30 +4573,19 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		case SMB_SET_FILE_UNIX_HLINK:
 		{
-			pstring oldname;
-			char *newname = fname;
-
-			/* Set a hard link. */
-			if (total_data == 0) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			if (tran_call != TRANSACT2_SETPATHINFO) {
+				/* We must have a pathname for this. */
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-
-			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), total_data, STR_TERMINATE, &status);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-
-			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
-				fname, oldname));
-
-			status = hardlink_internals(conn, oldname, newname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_set_file_unix_hlink(conn,
+						inbuf,
+						outbuf,
+						bufsize,
+						params,
+						*ppdata,
+						total_data,
+						max_data_bytes,
+						fname);
 		}
 
 		case SMB_FILE_RENAME_INFORMATION:
