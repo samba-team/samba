@@ -79,26 +79,12 @@ struct torture_context
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
 
-	char **expected_failures;
-
-	struct torture_results {
-		int skipped;
-		int todo;
-		int success;
-		int failed;
-		int errors;
-
-		const char **unexpected_failures;
-		const char **unexpected_successes;
-		const char **unexpected_errors;
-
-		bool returncode;
-	} results;
-
 	bool quiet; /* Whether tests should avoid writing output to stdout */
 
 	enum torture_result last_result;
 	char *last_reason;
+
+	bool returncode;
 
 	char *outputdir;
 	int level;

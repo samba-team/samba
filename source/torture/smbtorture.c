@@ -670,57 +670,14 @@ int main(int argc,char *argv[])
 	} else if (shell) {
 		run_shell(torture);
 	} else {
-		int total;
-		double rate;
-		int unexpected_failures;
 		for (i=2;i<argc_new;i++) {
 			if (!run_test(torture, argv_new[i])) {
 				correct = false;
 			}
 		}
-
-		unexpected_failures = str_list_length(torture->results.unexpected_failures);
-
-		total = torture->results.skipped+torture->results.success+torture->results.failed+torture->results.errors;
-		if (total == 0) {
-			printf("No tests run.\n");
-		} else {
-			rate = ((total - unexpected_failures - torture->results.errors) * (100.0 / total));
-		
-			printf("Tests: %d, Failures: %d", total, torture->results.failed);
-			if (torture->results.failed - unexpected_failures) {
-				printf(" (%d expected)", torture->results.failed - unexpected_failures);
-			}
-			printf(", Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
-			   torture->results.errors, torture->results.skipped, rate);
-		}
-
-		if (unexpected_failures) {
-			printf("The following tests failed:\n");
-			for (i = 0; torture->results.unexpected_failures[i]; i++) {
-				printf("  %s\n", torture->results.unexpected_failures[i]);
-			}
-			printf("\n");
-		}
-
-		if (str_list_length(torture->results.unexpected_errors)) {
-			printf("Errors occurred while running the following tests:\n");
-			for (i = 0; torture->results.unexpected_errors[i]; i++) {
-				printf("  %s\n", torture->results.unexpected_errors[i]);
-			}
-			printf("\n");
-		}
-
-		if (str_list_length(torture->results.unexpected_successes)) {
-			printf("The following tests were expected to fail but succeeded:\n");
-			for (i = 0; torture->results.unexpected_successes[i]; i++) {
-				printf("  %s\n", torture->results.unexpected_successes[i]);
-			}
-			printf("\n");
-		}
 	}
 
-	if (torture->results.returncode) {
+	if (torture->returncode) {
 		return(0);
 	} else {
 		return(1);
