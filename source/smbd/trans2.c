@@ -3864,8 +3864,11 @@ static int smb_file_position_information(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (fsp == NULL) {
-		return(UNIXERROR(ERRDOS,ERRbadfid));
+	if (!fsp) {
+		/* Ignore on pathname based set. */
+		SSVAL(params,0,0);
+		send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+		return -1;
 	}
 
 	position_information = (SMB_BIG_UINT)IVAL(pdata,0);
@@ -3915,6 +3918,76 @@ static int smb_file_mode_information(connection_struct *conn,
 	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
 	return -1;
 }
+
+/****************************************************************************
+ Deal with SMB_SET_FILE_UNIX_LINK (create a UNIX symlink).
+****************************************************************************/
+
+static int smb_set_file_unix_link(connection_struct *conn,
+				char *inbuf,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				const char *fname)
+{
+	pstring link_target;
+	const char *newname = fname;
+	NTSTATUS status = NT_STATUS_OK;
+
+	/* Set a symbolic link. */
+	/* Don't allow this if follow links is false. */
+
+	if (total_data == 0) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (!lp_symlinks(SNUM(conn))) {
+		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+	}
+
+	srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
+
+	/* !widelinks forces the target path to be within the share. */
+	/* This means we can interpret the target as a pathname. */
+	if (!lp_widelinks(SNUM(conn))) {
+		pstring rel_name;
+		char *last_dirp = NULL;
+
+		unix_format(link_target);
+		if (*link_target == '/') {
+			/* No absolute paths allowed. */
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+		pstrcpy(rel_name, newname);
+		last_dirp = strrchr_m(rel_name, '/');
+		if (last_dirp) {
+			last_dirp[1] = '\0';
+		} else {
+			pstrcpy(rel_name, "./");
+		}
+		pstrcat(rel_name, link_target);
+
+		status = check_name(conn, rel_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
+		}
+	}
+
+	DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
+			newname, link_target ));
+
+	if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0) {
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
 
 /****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
@@ -4219,10 +4292,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_DISPOSITION_INFORMATION:
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
-#if 0 /* JRA - should we just ignore this on a path ? */
-			/* Just ignore this set on a path. */
+#if 0
+			/* JRA - We used to just ignore this on a path ? 
+			 * Shouldn't this be invalid level on a pathname
+			 * based call ?
+			 */
 			if (tran_call != TRANSACT2_SETFILEINFO) {
-				break;
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
 #endif
 			return smb_set_file_disposition_info(conn,
@@ -4441,55 +4517,19 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		case SMB_SET_FILE_UNIX_LINK:
 		{
-			pstring link_target;
-			char *newname = fname;
-
-			/* Set a symbolic link. */
-			/* Don't allow this if follow links is false. */
-
-			if (total_data == 0) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			if (tran_call != TRANSACT2_SETPATHINFO) {
+				/* We must have a pathname for this. */
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-
-			if (!lp_symlinks(SNUM(conn)))
-				return(ERROR_DOS(ERRDOS,ERRnoaccess));
-
-			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
-
-			/* !widelinks forces the target path to be within the share. */
-			/* This means we can interpret the target as a pathname. */
-			if (!lp_widelinks(SNUM(conn))) {
-				pstring rel_name;
-				char *last_dirp = NULL;
-
-				unix_format(link_target);
-				if (*link_target == '/') {
-					/* No absolute paths allowed. */
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
-				}
-				pstrcpy(rel_name, newname);
-				last_dirp = strrchr_m(rel_name, '/');
-				if (last_dirp) {
-					last_dirp[1] = '\0';
-				} else {
-					pstrcpy(rel_name, "./");
-				}
-				pstrcat(rel_name, link_target);
-
-				status = check_name(conn, rel_name);
-				if (!NT_STATUS_IS_OK(status)) {
-					return ERROR_NT(status);
-				}
-			}
-
-			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
-				fname, link_target ));
-
-			if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0)
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_set_file_unix_link(conn,
+						inbuf,
+						outbuf,
+						bufsize,
+						params,
+						*ppdata,
+						total_data,
+						max_data_bytes,
+						fname);
 		}
 
 		case SMB_SET_FILE_UNIX_HLINK:
