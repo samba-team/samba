@@ -188,32 +188,8 @@ void torture_ui_test_result(struct torture_context *context,
 	if (context->ui_ops->test_result)
 		context->ui_ops->test_result(context, result, comment);
 
-	if (result == TORTURE_SKIP) {
-		context->results.skipped++;
-	} else if (result == TORTURE_OK) {
-		if (str_list_match(context->active_testname, 
-						   context->expected_failures)) {
-			context->results.unexpected_successes = str_list_add(
-					context->results.unexpected_successes, 
-					talloc_reference(context, context->active_testname));
-		} 
-		context->results.success++;
-	} else if (result == TORTURE_ERROR) {
-		context->results.unexpected_errors = str_list_add(
-					context->results.unexpected_errors, 
-					talloc_reference(context, context->active_testname));
-		context->results.errors++;
-		context->results.returncode = false;
-	} else if (result == TORTURE_FAIL) {
-		if (0 == str_list_match(context->active_testname, 
-						   context->expected_failures)) {
-			context->results.unexpected_failures = str_list_add(
-					context->results.unexpected_failures, 
-					talloc_reference(context, context->active_testname));
-			context->results.returncode = false;
-		} 
-		context->results.failed++;
-	}
+	if (result == TORTURE_ERROR || result == TORTURE_FAIL)
+		context->returncode = false;
 }
 
 static BOOL internal_torture_run_test(struct torture_context *context, 
