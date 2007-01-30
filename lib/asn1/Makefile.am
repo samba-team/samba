@@ -261,6 +261,10 @@ gen_files_rfc2459 =					\
 	asn1_id_x509_ce_invalidityDate.x		\
 	asn1_id_x509_ce_certificateIssuer.x		\
 	asn1_id_x509_ce_inhibitAnyPolicy.x		\
+	asn1_DistributionPointReasonFlags.x		\
+	asn1_DistributionPointName.x			\
+	asn1_DistributionPoint.x			\
+	asn1_CRLDistributionPoints.x			\
 	asn1_DSASigValue.x				\
 	asn1_DSAPublicKey.x				\
 	asn1_DSAParams.x				\

@@ -307,6 +307,32 @@ id-x509-ce-invalidityDate OBJECT IDENTIFIER ::= { id-x509-ce 24 }
 id-x509-ce-certificateIssuer   OBJECT IDENTIFIER ::= { id-x509-ce 29 }
 id-x509-ce-inhibitAnyPolicy OBJECT IDENTIFIER ::=  { id-x509-ce 54 }
 
+DistributionPointReasonFlags ::= BIT STRING {
+	unused                  (0),
+	keyCompromise           (1),
+	cACompromise            (2),
+	affiliationChanged      (3),
+	superseded              (4),
+	cessationOfOperation    (5),
+	certificateHold         (6),
+	privilegeWithdrawn      (7),
+	aACompromise            (8)
+}
+
+DistributionPointName ::= CHOICE {
+	fullName                [0]     GeneralNames,
+	nameRelativeToCRLIssuer [1]     RelativeDistinguishedName
+}
+
+DistributionPoint ::= SEQUENCE {
+	distributionPoint       [0]     DistributionPointName OPTIONAL,
+	reasons                 [1]     DistributionPointReasonFlags OPTIONAL,
+	cRLIssuer               [2]     GeneralNames OPTIONAL
+}
+
+CRLDistributionPoints ::= SEQUENCE -- SIZE (1..MAX) -- OF DistributionPoint
+
+
 -- rfc3279
 
 DSASigValue  ::=  SEQUENCE {
