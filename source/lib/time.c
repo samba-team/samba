@@ -943,7 +943,7 @@ void dos_filetime_timespec(struct timespec *tsp)
  localtime).
 ********************************************************************/
 
-static time_t make_unix_date(void *date_ptr, int zone_offset)
+static time_t make_unix_date(const void *date_ptr, int zone_offset)
 {
 	uint32 dos_date=0;
 	struct tm t;
@@ -970,7 +970,7 @@ static time_t make_unix_date(void *date_ptr, int zone_offset)
  Like make_unix_date() but the words are reversed.
 ********************************************************************/
 
-static time_t make_unix_date2(void *date_ptr, int zone_offset)
+static time_t make_unix_date2(const void *date_ptr, int zone_offset)
 {
 	uint32 x,x2;
 
@@ -978,7 +978,7 @@ static time_t make_unix_date2(void *date_ptr, int zone_offset)
 	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(&x,0,x2);
 
-	return(make_unix_date((void *)&x, zone_offset));
+	return(make_unix_date((const void *)&x, zone_offset));
 }
 
 /*******************************************************************
@@ -986,7 +986,7 @@ static time_t make_unix_date2(void *date_ptr, int zone_offset)
  these generally arrive as localtimes, with corresponding DST.
 ******************************************************************/
 
-static time_t make_unix_date3(void *date_ptr, int zone_offset)
+static time_t make_unix_date3(const void *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
 	if (!null_mtime(t)) {
@@ -995,17 +995,17 @@ static time_t make_unix_date3(void *date_ptr, int zone_offset)
 	return(t);
 }
 
-time_t srv_make_unix_date(void *date_ptr)
+time_t srv_make_unix_date(const void *date_ptr)
 {
 	return make_unix_date(date_ptr, server_zone_offset);
 }
 
-time_t srv_make_unix_date2(void *date_ptr)
+time_t srv_make_unix_date2(const void *date_ptr)
 {
 	return make_unix_date2(date_ptr, server_zone_offset);
 }
 
-time_t srv_make_unix_date3(void *date_ptr)
+time_t srv_make_unix_date3(const void *date_ptr)
 {
 	return make_unix_date3(date_ptr, server_zone_offset);
 }
@@ -1026,7 +1026,7 @@ time_t convert_timespec_to_time_t(struct timespec ts)
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
 ****************************************************************************/
 
-struct timespec interpret_long_date(char *p)
+struct timespec interpret_long_date(const char *p)
 {
 	NTTIME nt;
 	nt = IVAL(p,0) + ((uint64_t)IVAL(p,4) << 32);
