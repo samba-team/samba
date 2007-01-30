@@ -77,7 +77,7 @@ static void terminate(void)
  **************************************************************************** */
 
 static void nmbd_terminate(int msg_type, struct process_id src,
-			   void *buf, size_t len)
+			   void *buf, size_t len, void *private_data)
 {
 	terminate();
 }
@@ -272,7 +272,7 @@ static BOOL reload_nmbd_services(BOOL test)
  **************************************************************************** */
 
 static void msg_reload_nmbd_services(int msg_type, struct process_id src,
-				     void *buf, size_t len)
+				     void *buf, size_t len, void *private_data)
 {
 	write_browse_list( 0, True );
 	dump_all_namelists();
@@ -289,7 +289,7 @@ static void msg_reload_nmbd_services(int msg_type, struct process_id src,
 }
 
 static void msg_nmbd_send_packet(int msg_type, struct process_id src,
-				 void *buf, size_t len)
+				 void *buf, size_t len, void *private_data)
 {
 	struct packet_struct *p = (struct packet_struct *)buf;
 	struct subnet_record *subrec;
@@ -558,7 +558,7 @@ static void process(void)
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
 			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
-						 pid_to_procid(0), (void*) &no_subnets, 0);
+						 pid_to_procid(0), (void*) &no_subnets, 0, NULL);
 			if(no_subnets)
 				return;
 			reload_after_sighup = 0;
@@ -745,14 +745,14 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
 	pidfile_create("nmbd");
 	message_init();
-	message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+	message_register(MSG_FORCE_ELECTION, nmbd_message_election, NULL);
 #if 0
 	/* Until winsrepl is done. */
-	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry, NULL);
 #endif
-	message_register(MSG_SHUTDOWN, nmbd_terminate);
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
-	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);
+	message_register(MSG_SHUTDOWN, nmbd_terminate, NULL);
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services, NULL);
+	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet, NULL);
 
 	TimeInit();
 

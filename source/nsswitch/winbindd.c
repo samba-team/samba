@@ -174,7 +174,8 @@ static void sigchld_handler(int signum)
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_reload_services(int msg_type, struct process_id src,
+				void *buf, size_t len, void *private_data)
 {
         /* Flush various caches */
 	flush_caches();
@@ -182,7 +183,8 @@ static void msg_reload_services(int msg_type, struct process_id src, void *buf, 
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_shutdown(int msg_type, struct process_id src,
+			 void *buf, size_t len, void *private_data)
 {
 	do_sigterm = True;
 }
@@ -877,7 +879,7 @@ static void process_loop(void)
 
 		DEBUG(3, ("got SIGHUP\n"));
 
-		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0);
+		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0, NULL);
 		do_sighup = False;
 	}
 
@@ -1075,13 +1077,14 @@ int main(int argc, char **argv, char **envp)
 	
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
-	message_register(MSG_SHUTDOWN, msg_shutdown);
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services, NULL);
+	message_register(MSG_SHUTDOWN, msg_shutdown, NULL);
 
 	/* Handle online/offline messages. */
-	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
-	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
-	message_register(MSG_WINBIND_ONLINESTATUS,winbind_msg_onlinestatus);
+	message_register(MSG_WINBIND_OFFLINE, winbind_msg_offline, NULL);
+	message_register(MSG_WINBIND_ONLINE, winbind_msg_online, NULL);
+	message_register(MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus,
+			 NULL);
 
 	poptFreeContext(pc);
 

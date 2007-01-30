@@ -44,7 +44,8 @@ BOOL do_profile_times = False;
 /****************************************************************************
 receive a set profile level message
 ****************************************************************************/
-void profile_message(int msg_type, struct process_id src, void *buf, size_t len)
+void profile_message(int msg_type, struct process_id src,
+		     void *buf, size_t len, void *private_data)
 {
         int level;
 
@@ -97,7 +98,7 @@ void profile_message(int msg_type, struct process_id src, void *buf, size_t len)
 receive a request profile level message
 ****************************************************************************/
 void reqprofile_message(int msg_type, struct process_id src,
-			void *buf, size_t len)
+			void *buf, size_t len, void *private_data)
 {
         int level;
 
@@ -246,8 +247,8 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	profile_p = &profile_h->stats;
-	message_register(MSG_PROFILE, profile_message);
-	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
+	message_register(MSG_PROFILE, profile_message, NULL);
+	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message, NULL);
 	return True;
 }
 

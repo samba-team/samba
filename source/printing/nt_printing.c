@@ -629,14 +629,15 @@ BOOL nt_printing_init(void)
 	 * drivers are installed
 	 */
 
-	message_register( MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer );
+	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer, NULL);
 
 	/*
 	 * register callback to handle updating printer data
 	 * when a driver is initialized
 	 */
 
-	message_register( MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata );
+	message_register(MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata,
+			 NULL);
 
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL 

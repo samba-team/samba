@@ -66,7 +66,9 @@ struct message_rec {
 static struct dispatch_fns {
 	struct dispatch_fns *next, *prev;
 	int msg_type;
-	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len);
+	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len,
+		   void *private_data);
+	void *private_data;
 } *dispatch_fns;
 
 /****************************************************************************
@@ -102,7 +104,7 @@ static void sig_usr1(void)
 ****************************************************************************/
 
 static void ping_message(int msg_type, struct process_id src,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
 	const char *msg = buf ? (const char *)buf : "none";
 
@@ -133,7 +135,7 @@ BOOL message_init(void)
 
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
-	message_register(MSG_PING, ping_message);
+	message_register(MSG_PING, ping_message, NULL);
 
 	/* Register some debugging related messages */
 
@@ -493,7 +495,9 @@ void message_dispatch(void)
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
 				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
-				dfn->fn(msg_type, src, len ? (void *)buf : NULL, len);
+				dfn->fn(msg_type, src,
+					len ? (void *)buf : NULL, len,
+					dfn->private_data);
 				n_handled++;
 				break;
 			}
@@ -516,7 +520,9 @@ void message_dispatch(void)
 
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, struct process_id pid,
-				 void *buf, size_t len))
+				 void *buf, size_t len,
+				 void *private_data),
+		      void *private_data)
 {
 	struct dispatch_fns *dfn;
 
@@ -535,6 +541,7 @@ void message_register(int msg_type,
 
 		dfn->msg_type = msg_type;
 		dfn->fn = fn;
+		dfn->private_data = private_data;
 
 		DLIST_ADD(dispatch_fns, dfn);
 	}

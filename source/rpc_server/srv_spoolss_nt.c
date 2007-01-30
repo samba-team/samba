@@ -1107,7 +1107,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  ********************************************************************/
 
 static void receive_notify2_message_list(int msg_type, struct process_id src,
-					 void *msg, size_t len)
+					 void *msg, size_t len,
+					 void *private_data)
 {
 	size_t 			msg_count, i;
 	char 			*buf = (char *)msg;
@@ -1219,7 +1220,8 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src,
+			    void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
 	int snum;
@@ -1317,7 +1319,7 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  **********************************************************************/
  
 void reset_all_printerdata(int msg_type, struct process_id src,
-			   void *buf, size_t len)
+			   void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
 	int snum;
@@ -2597,7 +2599,8 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ip, unix_printer ))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
+		message_register(MSG_PRINTER_NOTIFY2,
+				 receive_notify2_message_list, NULL);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
 		register_message_flags( True, FLAG_MSG_PRINT_NOTIFY );
