@@ -455,7 +455,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	case RDMA_CM_EVENT_ESTABLISHED:
 		/* expected after ibw_accept and ibw_connect[not directly] */
-		DEBUG(0, ("ESTABLISHED (conn: %u)\n", (unsigned int)cma_id->context));
+		DEBUG(0, ("ESTABLISHED (conn: %p)\n", cma_id->context));
 		conn = talloc_get_type(cma_id->context, struct ibw_conn);
 		assert(conn!=NULL); /* important assumption */
 
@@ -623,7 +623,7 @@ static inline int ibw_wc_send(struct ibw_conn *conn, struct ibv_wc *wc)
 	} else { /* "extra" request - not optimized */
 		DEBUG(10, ("ibw_wc_send#2 %u\n", (int)wc->wr_id));
 		for(p=pconn->extra_sent; p!=NULL; p=p->next)
-			if (p->wr_id==(int)wc->wr_id)
+			if ((p->wr_id + pctx->opts.max_recv_wr)==(int)wc->wr_id)
 				break;
 		if (p==NULL) {
 			sprintf(ibw_lasterr, "failed to find wr_id %d\n", (int)wc->wr_id);
@@ -1042,6 +1042,7 @@ int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, uint32_t l
 			}
 			*buf = (void *)p->msg_large;
 		}
+		/* p->wr_id is already filled in ibw_init_memory */
 	} else {
 		DEBUG(10, ("ibw_alloc_send_buf#2: cmid=%p, len=%d\n", pconn->cm_id, len));
 		/* not optimized */

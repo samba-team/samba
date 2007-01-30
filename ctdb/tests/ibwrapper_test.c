@@ -51,13 +51,15 @@ struct ibwtest_ctx {
 	struct sockaddr_in *addrs; /* dynamic array of dest addrs */
 	int	naddrs;
 
-	unsigned int	nsec; /* nanosleep between messages */
+	unsigned int	nsec; /* delta times between messages in nanosec */
+	unsigned int	sleep_nsec; /* nanosleep in the main loop to emulate overloading */
 
 	int	cnt;
 
 	int	nmsg; /* number of messages to send (client) */
 
 	int	kill_me;
+	int	error;
 	struct ibw_ctx	*ibwctx;
 
 	struct timeval	start_time, end_time;
@@ -71,6 +73,26 @@ enum testopcode {
 	TESTOP_SEND_ID = 1,
 	TESTOP_SEND_DATA = 2
 };
+
+int ibwtest_nanosleep(unsigned int sleep_nsec)
+{
+	int nanosleep(const struct timespec *req, struct timespec *rem);
+	struct timespec req, rem;
+
+	memset(&req, 0, sizeof(struct timespec));
+	memset(&rem, 0, sizeof(struct timespec));
+	req.tv_sec = 0;
+	req.tv_nsec = sleep_nsec;
+
+	while (nanosleep(&req, &rem) < 0) {
+		if (errno != EINTR) {
+			DEBUG(0, ("nanosleep ERROR: %d\n", errno));
+			return -1;
+		}
+		memcpy(&req, &rem, sizeof(struct timespec));
+	}
+	return 0;
+}
 
 int ibwtest_connect_everybody(struct ibwtest_ctx *tcx)
 {
@@ -90,9 +112,9 @@ int ibwtest_connect_everybody(struct ibwtest_ctx *tcx)
 
 int ibwtest_send_id(struct ibw_conn *conn)
 {
+	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
 	char *buf;
 	void *key;
-	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
 	uint32_t	len;
 
 	DEBUG(10, ("test IBWC_CONNECTED\n"));
@@ -240,7 +262,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 		if (tcx->nmsg) {
 			char	msg[26];
 			sprintf(msg, "hello world %d", tcx->nmsg--);
-			ibwtest_send_test_msg(tcx, conn, msg);
+			tcx->error = ibwtest_send_test_msg(tcx, conn, msg);
 			if (tcx->nmsg==0)
 				tcx->kill_me = 1;
 		}
@@ -263,7 +285,9 @@ void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te,
 
 		/* send something to everybody... */
 		for(p=tcx->ibwctx->conn_list; p!=NULL; p=p->next) {
-			ibwtest_send_test_msg(tcx, p, msg);
+			if (p->state==IBWC_CONNECTED) {
+				tcx->error = ibwtest_send_test_msg(tcx, p, msg);
+			}
 		}
 	} /* else allow main loop run */
 }
@@ -375,6 +399,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t\t send message periodically and endless when nsec is non-zero\n");
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
+	printf("\t-l nsec time to sleep in the main loop [default %d]\n", tcx->sleep_nsec);
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -395,7 +420,7 @@ int main(int argc, char *argv[])
 	testctx = tcx;
 	signal(SIGQUIT, ibwtest_sigquit_handler);
 
-	while ((op=getopt(argc, argv, "i:o:d:m:st:n:")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
@@ -418,6 +443,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			tcx->nmsg = atoi(optarg);
+			break;
+		case 'l':
+			tcx->sleep_nsec = (unsigned int)atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);
@@ -450,16 +478,23 @@ int main(int argc, char *argv[])
 	if (rc)
 		goto cleanup;
 
-	while(!tcx->kill_me) {
-		if (tcx->nsec)
+	while(!tcx->kill_me && !tcx->error) {
+		if (tcx->nsec) {
 			event_add_timed(ev, tcx, timeval_current_ofs(0, tcx->nsec),
 				ibwtest_timeout_handler, tcx);
+		}
+
 		event_loop_once(ev);
+
+		if (tcx->sleep_nsec) {
+			if (ibwtest_nanosleep(tcx->sleep_nsec))
+				goto cleanup;
+		}
 	}
 
-	if (!tcx->is_server && nmsg!=0) {
+	if (!tcx->is_server && nmsg!=0 && !tcx->error) {
 		if (gettimeofday(&tcx->end_time, NULL)) {
-			DEBUG(0, ("gettimeofday error %d", errno));
+			DEBUG(0, ("gettimeofday error %d\n", errno));
 			goto cleanup;
 		}
 		usec = (tcx->end_time.tv_sec - tcx->start_time.tv_sec) * 1000000 +
@@ -468,7 +503,8 @@ int main(int argc, char *argv[])
 			usec, nmsg, usec/(float)nmsg);
 	}
 
-	result = 0; /* everything OK */
+	if (!tcx->error)
+		result = 0; /* everything OK */
 
 cleanup:
 	if (tcx)
