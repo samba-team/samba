@@ -560,6 +560,23 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
+ Is this mid a blocking lock request on the queue ?
+*****************************************************************************/
+
+BOOL blocking_lock_was_deferred(int mid)
+{
+	blocking_lock_record *blr, *next = NULL;
+
+	for(blr = blocking_lock_queue; blr; blr = next) {
+		next = blr->next;
+		if(SVAL(blr->inbuf,smb_mid) == mid) {
+			return True;
+		}
+	}
+	return False;
+}
+
+/****************************************************************************
   Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
 
