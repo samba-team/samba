@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison			1994-2003
+   Copyright (C) Jeremy Allison			1994-2007
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005
    Copyright (C) Steve French			2005
@@ -4346,6 +4346,92 @@ static NTSTATUS smb_set_file_basic_info(const char *pdata, int total_data, struc
 }
 
 /****************************************************************************
+ Deal with SMB_SET_FILE_ALLOCATION_INFO.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					files_struct *fsp,
+					const char *fname,
+					SMB_STRUCT_STAT *psbuf,
+					SMB_OFF_T *p_size)
+{
+	int ret = -1;
+	SMB_BIG_UINT allocation_size;
+
+	if (total_data < 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	allocation_size = (SMB_BIG_UINT)IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if (IVAL(pdata,4) != 0) {
+		/* more than 32 bits? */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif /* LARGE_SMB_OFF_T */
+
+	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for file %s to %.0f\n",
+			fname, (double)allocation_size ));
+
+	if (allocation_size) {
+		allocation_size = smb_roundup(conn, allocation_size);
+	}
+
+	if(allocation_size != get_file_size(*psbuf)) {
+		SMB_STRUCT_STAT new_sbuf;
+ 
+		DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
+			fname, (double)allocation_size ));
+ 
+		if (fsp && fsp->fh->fd != -1) {
+			/* Open file. */
+			ret = vfs_allocate_file_space(fsp, allocation_size);
+			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&new_sbuf) != 0) {
+				DEBUG(3,("smb_set_file_allocation_info: fstat of fnum %d failed (%s)\n",
+							fsp->fnum, strerror(errno)));
+				ret = -1;
+			}
+		} else {
+			/* Pathname or stat or directory file. */
+			files_struct *new_fsp = NULL;
+			NTSTATUS status;
+
+			status = open_file_ntcreate(conn, fname, psbuf,
+						FILE_WRITE_DATA,
+						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+						FILE_OPEN,
+						0,
+						FILE_ATTRIBUTE_NORMAL,
+						FORCE_OPLOCK_BREAK_TO_NONE,
+						NULL, &new_fsp);
+ 
+			if (!NT_STATUS_IS_OK(status)) {
+				/* NB. We check for open_was_deferred in the caller. */
+				return status;
+			}
+			ret = vfs_allocate_file_space(new_fsp, allocation_size);
+			if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
+				DEBUG(3,("smb_set_file_allocation_info: fstat of fnum %d failed (%s)\n",
+						new_fsp->fnum, strerror(errno)));
+				ret = -1;
+			}
+			close_file(new_fsp,NORMAL_CLOSE);
+		}
+		if (ret == -1) {
+			return NT_STATUS_DISK_FULL;
+		}
+
+		/* Allocate can truncate size... */
+		*p_size = get_file_size(new_sbuf);
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
@@ -4527,76 +4613,20 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_ALLOCATION_INFORMATION:
 		case SMB_SET_FILE_ALLOCATION_INFO:
 		{
-			int ret = -1;
-			SMB_BIG_UINT allocation_size;
-
-			if (total_data < 8) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			allocation_size = (SMB_BIG_UINT)IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
-			allocation_size |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0) {
-				/* more than 32 bits? */
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-#endif /* LARGE_SMB_OFF_T */
-			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
-					fname, (double)allocation_size ));
-
-			if (allocation_size) {
-				allocation_size = smb_roundup(conn, allocation_size);
-			}
-
-			if(allocation_size != get_file_size(sbuf)) {
-				SMB_STRUCT_STAT new_sbuf;
- 
-				DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
-					fname, (double)allocation_size ));
- 
-				if (fd == -1) {
-					files_struct *new_fsp = NULL;
- 
-					status = open_file_ntcreate(conn, fname, &sbuf,
-									FILE_WRITE_DATA,
-									FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-									FILE_OPEN,
-									0,
-									FILE_ATTRIBUTE_NORMAL,
-									FORCE_OPLOCK_BREAK_TO_NONE,
-									NULL, &new_fsp);
- 
-					if (!NT_STATUS_IS_OK(status)) {
-						if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-							/* We have re-scheduled this call. */
-							return -1;
-						}
-						return(UNIXERROR(ERRDOS,ERRnoaccess));
-					}
-					ret = vfs_allocate_file_space(new_fsp, allocation_size);
-					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
-						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
-									new_fsp->fnum, strerror(errno)));
-						ret = -1;
-					}
-					close_file(new_fsp,NORMAL_CLOSE);
-				} else {
-					ret = vfs_allocate_file_space(fsp, allocation_size);
-					if (SMB_VFS_FSTAT(fsp,fd,&new_sbuf) != 0) {
-						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
-									fsp->fnum, strerror(errno)));
-						ret = -1;
-					}
+			status = smb_set_file_allocation_info(conn,
+								pdata,
+								total_data,
+								fsp,
+								fname,
+								&sbuf,
+								&size);
+			if (!NT_STATUS_IS_OK(status)) {
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
 				}
-				if (ret == -1)
-					return ERROR_NT(NT_STATUS_DISK_FULL);
-
-				/* Allocate can truncate size... */
-				size = get_file_size(new_sbuf);
+				return ERROR_NT(status);
 			}
-
 			break;
 		}
 
