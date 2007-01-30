@@ -454,6 +454,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 
 	if (((SMB_OFF_T)len) < 0) {
 		DEBUG(0,("vfs_allocate_file_space: %s negative len requested.\n", fsp->fsp_name ));
+		errno = EINVAL;
 		return -1;
 	}
 
