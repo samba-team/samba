@@ -568,9 +568,9 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
 
 int send_trans2_replies(char *outbuf,
 			int bufsize,
-			char *params, 
+			const char *params, 
 			int paramsize,
-			char *pdata,
+			const char *pdata,
 			int datasize,
 			int max_data_bytes)
 {
@@ -583,8 +583,8 @@ int send_trans2_replies(char *outbuf,
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
 	int useable_space;
-	char *pp = params;
-	char *pd = pdata;
+	const char *pp = params;
+	const char *pd = pdata;
 	int params_sent_thistime, data_sent_thistime, total_sent_thistime;
 	int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
 	int data_alignment_offset = 0;
@@ -3749,7 +3749,7 @@ static int smb_info_set_ea(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				files_struct *fsp,
@@ -3810,7 +3810,7 @@ static int smb_set_file_disposition_info(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				files_struct *fsp,
@@ -3853,7 +3853,7 @@ static int smb_file_position_information(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				files_struct *fsp)
@@ -3899,7 +3899,7 @@ static int smb_file_mode_information(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes)
 {
@@ -3928,7 +3928,7 @@ static int smb_set_file_unix_link(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				const char *fname)
@@ -3997,7 +3997,7 @@ static int smb_set_file_unix_hlink(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				pstring fname)
@@ -4037,7 +4037,7 @@ static int smb_file_rename_information(connection_struct *conn,
 				char *outbuf,
 				int bufsize,
 				char *params,
-				char *pdata,
+				const char *pdata,
 				int total_data,
 				unsigned int max_data_bytes,
 				files_struct *fsp,
@@ -4104,6 +4104,189 @@ static int smb_file_rename_information(connection_struct *conn,
 	}
 
 	process_pending_change_notify_queue((time_t)0);
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Deal with SMB_SET_POSIX_ACL.
+****************************************************************************/
+
+#if defined(HAVE_POSIX_ACLS)
+static int smb_set_posix_acl(connection_struct *conn,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				const char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp,
+				const char *fname)
+{
+	uint16 posix_acl_version;
+	uint16 num_file_acls;
+	uint16 num_def_acls;
+	BOOL valid_file_acls = True;
+	BOOL valid_def_acls = True;
+
+	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	posix_acl_version = SVAL(pdata,0);
+	num_file_acls = SVAL(pdata,2);
+	num_def_acls = SVAL(pdata,4);
+
+	if (num_file_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
+		valid_file_acls = False;
+		num_file_acls = 0;
+	}
+
+	if (num_def_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
+		valid_def_acls = False;
+		num_def_acls = 0;
+	}
+
+	if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
+			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
+			pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, &sbuf, num_def_acls,
+			pdata + SMB_POSIX_ACL_HEADER_SIZE +
+			(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+#endif
+
+/****************************************************************************
+ Deal with SMB_SET_POSIX_LOCK.
+****************************************************************************/
+
+static int smb_set_posix_lock(connection_struct *conn,
+				char *inbuf,
+				char *outbuf,
+				int length,
+				int bufsize,
+				char *params,
+				const char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp)
+{
+	SMB_BIG_UINT count;
+	SMB_BIG_UINT offset;
+	uint32 lock_pid;
+	BOOL blocking_lock = False;
+	enum brl_type lock_type;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (fsp == NULL || fsp->fh->fd == -1) {
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	}
+
+	if (total_data != POSIX_LOCK_DATA_SIZE) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
+		case POSIX_LOCK_TYPE_READ:
+			lock_type = READ_LOCK;
+			break;
+		case POSIX_LOCK_TYPE_WRITE:
+			/* Return the right POSIX-mappable error code for files opened read-only. */
+			if (!fsp->can_write) {
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			}
+			lock_type = WRITE_LOCK;
+			break;
+		case POSIX_LOCK_TYPE_UNLOCK:
+			lock_type = UNLOCK_LOCK;
+			break;
+		default:
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
+		blocking_lock = False;
+	} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
+		blocking_lock = True;
+	} else {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (!lp_blocking_locks(SNUM(conn))) { 
+		blocking_lock = False;
+	}
+
+	lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+#if defined(HAVE_LONGLONG)
+	offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+			((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
+	count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+			((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+#else /* HAVE_LONGLONG */
+	offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
+	count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
+#endif /* HAVE_LONGLONG */
+
+	if (lock_type == UNLOCK_LOCK) {
+		status = do_unlock(fsp,
+				lock_pid,
+				count,
+				offset,
+				POSIX_LOCK);
+	} else {
+		struct byte_range_lock *br_lck = do_lock(fsp,
+							lock_pid,
+							count,
+							offset,
+							lock_type,
+							POSIX_LOCK,
+							blocking_lock,
+							&status);
+
+		if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
+			/*
+			 * A blocking lock was requested. Package up
+			 * this smb into a queued request and push it
+			 * onto the blocking lock queue.
+			 */
+			if(push_blocking_lock_request(br_lck,
+						inbuf, length,
+						fsp,
+						-1, /* infinite timeout. */
+						0,
+						lock_pid,
+						lock_type,
+						POSIX_LOCK,
+						offset,
+						count)) {
+				TALLOC_FREE(br_lck);
+				return -1;
+			}
+		}
+		TALLOC_FREE(br_lck);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
 	return -1;
@@ -4686,158 +4869,30 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 #if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
-			uint16 posix_acl_version;
-			uint16 num_file_acls;
-			uint16 num_def_acls;
-			BOOL valid_file_acls = True;
-			BOOL valid_def_acls = True;
-
-			if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-			posix_acl_version = SVAL(pdata,0);
-			num_file_acls = SVAL(pdata,2);
-			num_def_acls = SVAL(pdata,4);
-
-			if (num_file_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
-				valid_file_acls = False;
-				num_file_acls = 0;
-			}
-
-			if (num_def_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
-				valid_def_acls = False;
-				num_def_acls = 0;
-			}
-
-			if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
-					(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
-					pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-
-			if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, &sbuf, num_def_acls,
-					pdata + SMB_POSIX_ACL_HEADER_SIZE +
-					(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_set_posix_acl(conn,
+						outbuf,
+						bufsize,
+						params,
+						pdata,
+						total_data,
+						max_data_bytes,
+						fsp,
+						fname);
 		}
 #endif
 
 		case SMB_SET_POSIX_LOCK:
 		{
-			SMB_BIG_UINT count;
-			SMB_BIG_UINT offset;
-			uint32 lock_pid;
-			BOOL blocking_lock = False;
-			enum brl_type lock_type;
-
-			if (fsp == NULL || fsp->fh->fd == -1) {
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-			}
-
-			if (total_data != POSIX_LOCK_DATA_SIZE) {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
-				case POSIX_LOCK_TYPE_READ:
-					lock_type = READ_LOCK;
-					break;
-				case POSIX_LOCK_TYPE_WRITE:
-					/* Return the right POSIX-mappable error code for files opened read-only. */
-					if (!fsp->can_write) {
-						return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-					}
-					lock_type = WRITE_LOCK;
-					break;
-				case POSIX_LOCK_TYPE_UNLOCK:
-					lock_type = UNLOCK_LOCK;
-					break;
-				default:
-					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
-				blocking_lock = False;
-			} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
-				blocking_lock = True;
-			} else {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			if (!lp_blocking_locks(SNUM(conn))) { 
-				blocking_lock = False;
-			}
-
-			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
-#if defined(HAVE_LONGLONG)
-			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
-			count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
-#else /* HAVE_LONGLONG */
-			offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
-			count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
-#endif /* HAVE_LONGLONG */
-
-			if (lock_type == UNLOCK_LOCK) {
-				status = do_unlock(fsp,
-						lock_pid,
-						count,
-						offset,
-						POSIX_LOCK);
-			} else {
-				struct byte_range_lock *br_lck = do_lock(fsp,
-									lock_pid,
-									count,
-									offset,
-									lock_type,
-									POSIX_LOCK,
-									blocking_lock,
-									&status);
-
-				if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
-					/*
-					 * A blocking lock was requested. Package up
-					 * this smb into a queued request and push it
-					 * onto the blocking lock queue.
-					 */
-					if(push_blocking_lock_request(br_lck,
-								inbuf, length,
-								fsp,
-								-1, /* infinite timeout. */
-								0,
-								lock_pid,
-								lock_type,
-								POSIX_LOCK,
-								offset,
-								count)) {
-						TALLOC_FREE(br_lck);
-						return -1;
-					}
-				}
-				TALLOC_FREE(br_lck);
-			}
-
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
+			return smb_set_posix_lock(conn,
+						inbuf,
+						outbuf,
+						length,
+						bufsize,
+						params,
+						pdata,
+						total_data,
+						max_data_bytes,
+						fsp);
 		}
 
 		default:
