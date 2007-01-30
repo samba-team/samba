@@ -3438,11 +3438,8 @@ krb5_decrypt_EncryptedData(krb5_context context,
  *                                                          *
  ************************************************************/
 
-#ifdef HAVE_OPENSSL
-#include <openssl/rand.h>
+#define ENTROPY_NEEDED 128
 
-/* From openssl/crypto/rand/rand_lcl.h */
-#define ENTROPY_NEEDED 20
 static int
 seed_something(void)
 {
@@ -3498,7 +3495,8 @@ krb5_generate_random_block(void *buf, size_t len)
     HEIMDAL_MUTEX_lock(&crypto_mutex);
     if (!rng_initialized) {
 	if (seed_something())
-	    krb5_abortx(NULL, "Fatal: could not seed the random number generator");
+	    krb5_abortx(NULL, "Fatal: could not seed the "
+			"random number generator");
 	
 	rng_initialized = 1;
     }
@@ -3506,38 +3504,6 @@ krb5_generate_random_block(void *buf, size_t len)
     if (RAND_bytes(buf, len) != 1)
 	krb5_abortx(NULL, "Failed to generate random block");
 }
-
-#else
-
-void KRB5_LIB_FUNCTION
-krb5_generate_random_block(void *buf, size_t len)
-{
-    DES_cblock key, out;
-    static DES_cblock counter;
-    static DES_key_schedule schedule;
-    int i;
-    static int initialized = 0;
-
-    HEIMDAL_MUTEX_lock(&crypto_mutex);
-    if(!initialized) {
-	DES_new_random_key(&key);
-	DES_set_key(&key, &schedule);
-	memset(&key, 0, sizeof(key));
-	DES_new_random_key(&counter);
-	initialized = 1;
-    }
-    HEIMDAL_MUTEX_unlock(&crypto_mutex);
-    while(len > 0) {
-	DES_ecb_encrypt(&counter, &out, &schedule, DES_ENCRYPT);
-	for(i = 7; i >=0; i--)
-	    if(counter[i]++)
-		break;
-	memcpy(buf, out, min(len, sizeof(out)));
-	len -= min(len, sizeof(out));
-	buf = (char*)buf + sizeof(out);
-    }
-}
-#endif
 
 static void
 DES3_postproc(krb5_context context,
