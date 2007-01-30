@@ -3742,7 +3742,69 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 }
 
 /****************************************************************************
- Reply to a TRANS2_SETFILEINFO (set file info by fileid).
+ Deal with SMB_INFO_SET_EA.
+****************************************************************************/
+
+static int smb_info_set_ea(connection_struct *conn,
+				char *outbuf,
+				int bufsize,
+				char *params,
+				int total_params,
+				char *pdata,
+				int total_data,
+				unsigned int max_data_bytes,
+				files_struct *fsp,
+				const char *fname)
+{
+	struct ea_list *ea_list = NULL;
+	TALLOC_CTX *ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (total_data < 10) {
+
+		/* OS/2 workplace shell seems to send SET_EA requests of "null"
+		   length. They seem to have no effect. Bug #3212. JRA */
+
+		if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
+			/* We're done. We only get EA info in this call. */
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+			return -1;
+		}
+
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (IVAL(pdata,0) > total_data) {
+		DEBUG(10,("smb_info_set_ea: bad total data size (%u) > %u\n",
+			IVAL(pdata,0), (unsigned int)total_data));
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	ctx = talloc_init("SMB_INFO_SET_EA");
+	if (!ctx) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+	if (!ea_list) {
+		talloc_destroy(ctx);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	status = set_ea(conn, fsp, fname, ea_list);
+	talloc_destroy(ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
+
+	/* We're done. We only get EA info in this call. */
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, bufsize, params, 2, pdata, 0, max_data_bytes);
+	return -1;
+}
+
+/****************************************************************************
+ Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
 static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
@@ -3901,79 +3963,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 
 		case SMB_INFO_SET_EA:
-		{
-			struct ea_list *ea_list = NULL;
-			TALLOC_CTX *ctx = NULL;
-
-			if (total_data < 10) {
-
-				/* OS/2 workplace shell seems to send SET_EA requests of "null"
-				   length. They seem to have no effect. Bug #3212. JRA */
-
-				if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
-					/* We're done. We only get EA info in this call. */
-					SSVAL(params,0,0);
-					send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-					return(-1);
-				}
-
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			if (IVAL(pdata,0) > total_data) {
-				DEBUG(10,("call_trans2setfilepathinfo: bad total data size (%u) > %u\n",
-					IVAL(pdata,0), (unsigned int)total_data));
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-
-			ctx = talloc_init("SMB_INFO_SET_EA");
-			if (!ctx) {
-				return ERROR_NT(NT_STATUS_NO_MEMORY);
-			}
-			ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
-			if (!ea_list) {
-				talloc_destroy(ctx);
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-			status = set_ea(conn, fsp, fname, ea_list);
-			talloc_destroy(ctx);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-
-			/* We're done. We only get EA info in this call. */
-			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-			return(-1);
-		}
-
-#if 0
-		/* The following 2 info levels are only valid on query, not set. Remove them. JRA. */
-		/* XXXX um, i don't think this is right.
-			it's also not in the cifs6.txt spec.
-		*/
-		case SMB_INFO_QUERY_EAS_FROM_LIST:
-			if (total_data < 28)
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-
-			tvs.actime = make_unix_date2(pdata+8);
-			tvs.modtime = make_unix_date2(pdata+12);
-			size = IVAL(pdata,16);
-			dosmode = IVAL(pdata,24);
-			break;
-
-		/* XXXX nor this.  not in cifs6.txt, either. */
-		case SMB_INFO_QUERY_ALL_EAS:
-			if (total_data < 28)
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-
-			tvs.actime = make_unix_date2(pdata+8);
-			tvs.modtime = make_unix_date2(pdata+12);
-			size = IVAL(pdata,16);
-			dosmode = IVAL(pdata,24);
-			break;
-#endif
+			return smb_info_set_ea(conn,
+						outbuf,
+						bufsize,
+						params,
+						total_params,
+						*ppdata,
+						total_data,
+						max_data_bytes,
+						fsp,
+						fname);
 
 		case SMB_SET_FILE_BASIC_INFO:
 		case SMB_FILE_BASIC_INFORMATION:
