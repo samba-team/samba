@@ -869,7 +869,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		set_domain_online_request(child->domain);
 
-		child->lockout_policy_event = event_add_timed(
+		child->lockout_policy_event = add_timed_event(
 			NULL, timeval_zero(),
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
