@@ -462,6 +462,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	gid_t gid;
 	union unid_t id;
 	NTSTATUS status;
+	char replace_char[2] = { 0x0, 0x0 };
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -502,6 +503,8 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	}
 
 	/* Get rid and name type from name */
+
+	ws_name_replace( name_group, '_' );
         
 	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, domain->name,
 					 name_group, &group_sid, &name_type)) {

@@ -246,7 +246,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
-	const char *full_name;
+	char *full_name;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
 
@@ -261,6 +261,8 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	ws_name_return( full_name, '_' );	
 
 	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", full_name?full_name:"", domain_name ));
 
@@ -314,6 +316,9 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	*type = (enum lsa_SidType)types[0];
 	*domain_name = domains[0];
 	*name = names[0];
+
+	ws_name_replace( *name, '_' );	
+		
 	DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 	return NT_STATUS_OK;
 }
@@ -333,6 +338,7 @@ NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	POLICY_HND lsa_policy;
 	DOM_SID *sids;
 	size_t i;
+	char **ret_names;
 
 	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
 
@@ -360,10 +366,11 @@ NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 		return result;
 	}
 
+	ret_names = *names;
 	for (i=0; i<num_rids; i++) {
 		if ((*types)[i] != SID_NAME_UNKNOWN) {
+			ws_name_replace( ret_names[i], '_' );
 			*domain_name = domains[i];
-			break;
 		}
 	}
 
