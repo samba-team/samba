@@ -72,7 +72,7 @@ _PUBLIC_ BOOL E_md4hash(const char *passwd, uint8_t p16[16])
 	if (len < 2) {
 		/* We don't want to return fixed data, as most callers
 		 * don't check */
-		mdfour(p16, passwd, strlen(passwd));
+		mdfour(p16, (const uint8_t *)passwd, strlen(passwd));
 		return False;
 	}
 	
