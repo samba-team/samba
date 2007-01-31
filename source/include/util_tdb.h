@@ -35,6 +35,11 @@ typedef struct keys_node
 	TDB_DATA node_key;
 } TDB_LIST_NODE;
 
+struct tdb_wrap {
+	struct tdb_context *tdb;
+	const char *name;
+	struct tdb_wrap *next, *prev;
+};
 
 TDB_LIST_NODE *tdb_search_keys(struct tdb_context*, const char*);
 void tdb_search_list_free(TDB_LIST_NODE*);
