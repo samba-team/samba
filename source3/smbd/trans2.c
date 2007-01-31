@@ -1005,12 +1005,24 @@ static uint32 unix_filetype(mode_t mode)
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
-static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *pst, uint32 perms)
+enum perm_type { PERM_NEW_FILE, PERM_NEW_DIR, PERM_EXISTING_FILE, PERM_EXISTING_DIR};
+
+static NTSTATUS unix_perms_from_wire( connection_struct *conn,
+				SMB_STRUCT_STAT *psbuf,
+				uint32 perms,
+				enum perm_type ptype,
+				mode_t *ret_perms)
 {
 	mode_t ret = 0;
 
-	if (perms == SMB_MODE_NO_CHANGE)
-		return pst->st_mode;
+	if (perms == SMB_MODE_NO_CHANGE) {
+		if (!VALID_STAT(*psbuf)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		} else {
+			*ret_perms = psbuf->st_mode;
+			return NT_STATUS_OK;
+		}
+	}
 
 	ret |= ((perms & UNIX_X_OTH ) ? S_IXOTH : 0);
 	ret |= ((perms & UNIX_W_OTH ) ? S_IWOTH : 0);
@@ -1031,18 +1043,34 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 	ret |= ((perms & UNIX_SET_UID ) ? S_ISUID : 0);
 #endif
 
-	if (VALID_STAT(*pst) && S_ISDIR(pst->st_mode)) {
-		ret &= lp_dir_mask(SNUM(conn));
-		/* Add in force bits */
-		ret |= lp_force_dir_mode(SNUM(conn));
-	} else {
+	switch (ptype) {
+	case PERM_NEW_FILE:
 		/* Apply mode mask */
 		ret &= lp_create_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_create_mode(SNUM(conn));
+		break;
+	case PERM_NEW_DIR:
+		ret &= lp_dir_mask(SNUM(conn));
+		/* Add in force bits */
+		ret |= lp_force_dir_mode(SNUM(conn));
+		break;
+	case PERM_EXISTING_FILE:
+		/* Apply mode mask */
+		ret &= lp_security_mask(SNUM(conn));
+		/* Add in force bits */
+		ret |= lp_force_security_mode(SNUM(conn));
+		break;
+	case PERM_EXISTING_DIR:
+		/* Apply mode mask */
+		ret &= lp_dir_security_mask(SNUM(conn));
+		/* Add in force bits */
+		ret |= lp_force_dir_security_mode(SNUM(conn));
+		break;
 	}
 
-	return ret;
+	*ret_perms = ret;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -4585,17 +4613,17 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 #endif
 	SMB_DEV_T dev = (SMB_DEV_T)0;
 	uint32 raw_unixmode = IVAL(pdata,84);
+	NTSTATUS status;
 	mode_t unixmode;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (raw_unixmode == SMB_MODE_NO_CHANGE) {
-		return NT_STATUS_INVALID_PARAMETER;
+	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_FILE, &unixmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	unixmode = unix_perms_from_wire(conn, psbuf, raw_unixmode);
 
 #if defined(HAVE_MAKEDEV)
 	dev = makedev(dev_major, dev_minor);
@@ -4645,7 +4673,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	}
 
 	if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
 		SMB_VFS_UNLINK(conn,fname);
 		return status;
 	}
@@ -4671,6 +4699,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL delete_on_fail = False;
+	enum perm_type ptype;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4694,7 +4723,21 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	set_owner = (uid_t)IVAL(pdata,40);
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
-	unixmode = unix_perms_from_wire(conn, psbuf, raw_unixmode);
+
+	if (VALID_STAT(*psbuf)) {
+		if (S_ISDIR(psbuf->st_mode)) {
+			ptype = PERM_EXISTING_DIR;
+		} else {
+			ptype = PERM_EXISTING_FILE;
+		}
+	} else {
+		ptype = PERM_NEW_FILE;
+	}
+
+	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, ptype, &unixmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC: name = %s \
 size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
