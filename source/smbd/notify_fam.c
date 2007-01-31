@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#ifdef HAVE_FAM_CHANGE_NOTIFY
+#if 0
 
 #include <fam.h>
 

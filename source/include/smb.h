@@ -1685,15 +1685,6 @@ struct kernel_oplocks {
 	int notification_fd;
 };
 
-
-/* this structure defines the functions for doing change notify in
-   various implementations */
-struct cnotify_fns {
-	void *(*notify_add)(TALLOC_CTX *mem_ctx,
-			    struct event_context *event_ctx,
-			    files_struct *fsp, uint32 *filter);
-};
-
 #include "smb_macros.h"
 
 #define MAX_NETBIOSNAME_LEN 16
