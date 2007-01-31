@@ -11,6 +11,8 @@ REQADMIN=$TLSDIR/req-admin.der
 ADMINKEYFILE=$TLSDIR/adminkey.pem
 ADMINCERTFILE=$TLSDIR/admincert.pem
 
+mkdir -p $TLSDIR 
+
 #This is specified here to avoid draining entropy on every run
 cat >$DHFILE<<EOF 
 -----BEGIN DH PARAMETERS-----
