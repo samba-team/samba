@@ -58,19 +58,6 @@ PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
 
-#TLS and PKINIT crypto blobs
-TLSDIR=$PRIVATEDIR/tls
-DHFILE=$TLSDIR/dhparms.pem
-CAFILE=$TLSDIR/ca.pem
-CERTFILE=$TLSDIR/cert.pem
-REQKDC=$TLSDIR/req-kdc.der
-KDCCERTFILE=$TLSDIR/kdc.pem
-KEYFILE=$TLSDIR/key.pem
-ADMINKEYFILE=$TLSDIR/adminkey.pem
-REQADMIN=$TLSDIR/req-admin.der
-ADMINKEYFILE=$TLSDIR/adminkey.pem
-ADMINCERTFILE=$TLSDIR/admincert.pem
-
 WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
 LDAPDIR=$PREFIX_ABS/ldap
@@ -83,7 +70,7 @@ export SERVER
 export NETBIOSNAME
 
 rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db $LDAPDIR/db/bdb-logs $LDAPDIR/db/tmp
+mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $LDAPDIR/db $LDAPDIR/db/bdb-logs $LDAPDIR/db/tmp
 
 if [ -z "$VALGRIND" ]; then
     nativeiconv="true"
