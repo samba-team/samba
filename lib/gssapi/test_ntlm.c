@@ -38,6 +38,7 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+#include "test_common.h"
 
 RCSID("$Id$");
 
@@ -92,7 +93,8 @@ test_libntlm_v1(void)
 				      NULL);
     free(data.data);
     if (GSS_ERROR(maj_stat))
-	errx(1, "accept_sec_context");
+	errx(1, "accept_sec_context v1: %s",
+	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
     if (output.length == 0)
 	errx(1, "output.length == 0");
@@ -139,7 +141,8 @@ test_libntlm_v1(void)
 				      NULL);
     free(input.value);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "accept_sec_context 2");
+	errx(1, "accept_sec_context v1 2 %s",
+	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
 
     return 0;
@@ -193,7 +196,8 @@ test_libntlm_v2(void)
 				      NULL);
     free(data.data);
     if (GSS_ERROR(maj_stat))
-	errx(1, "accept_sec_context");
+	errx(1, "accept_sec_context v2 %s",
+	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
     if (output.length == 0)
 	errx(1, "output.length == 0");
@@ -246,7 +250,8 @@ test_libntlm_v2(void)
 				      NULL);
     free(input.value);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "accept_sec_context 2");
+	errx(1, "accept_sec_context v2 2 %s",
+	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
 
     return 0;
