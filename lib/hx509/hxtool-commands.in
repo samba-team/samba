@@ -548,7 +548,12 @@ command = {
 	option = {
 	        long = "key-bits"
 		type = "integer"
-		help = "number of bits in the generated key";
+		help = "number of bits in the generated key"
+	}
+	option = {
+	        long = "crl-uri"
+		type = "string"
+		help = "URI to CRL"
 	}
 	option = {
 		long = "template-certificate"
