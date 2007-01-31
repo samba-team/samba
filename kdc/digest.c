@@ -382,11 +382,6 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
-	    ret = krb5_store_stringz(sp, *r.u.initReply.identifier);
-	    if (ret) {
-		krb5_clear_error_string(context);
-		goto out;
-	    }
 	} else
 	    r.u.initReply.identifier = NULL;
 
@@ -461,13 +456,7 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	krb5_store_stringz(sp, ireq.u.digestRequest.serverNonce);
-	if (ireq.u.digestRequest.identifier) {
-	    ret = krb5_store_stringz(sp, *ireq.u.digestRequest.identifier);
-	    if (ret) {
-		krb5_clear_error_string(context);
-		goto out;
-	    }
-	}
+
 	if (ireq.u.digestRequest.hostname) {
 	    ret = krb5_store_stringz(sp, *ireq.u.digestRequest.hostname);
 	    if (ret) {
