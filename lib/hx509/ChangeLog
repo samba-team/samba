@@ -1,5 +1,7 @@
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: Code to set CRLDistributionPoints in certificates.
+
 	* print.c: Check CRLDistributionPointNames.
 
 	* name.c (hx509_general_name_unparse): function for unparsing
