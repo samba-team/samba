@@ -678,4 +678,125 @@ void message_unblock(void)
 {
 	BlockSignals(False, SIGUSR1);
 }
+
+/*
+ * Samba4 API wrapper around the Samba3 implementation. Yes, I know, we could
+ * import the whole Samba4 thing, but I want notify.c from Samba4 in first.
+ */
+
+struct messaging_callback {
+	struct messaging_callback *prev, *next;
+	uint32 msg_type;
+	void (*fn)(struct messaging_context *msg, void *private_data, 
+		   uint32_t msg_type, 
+		   struct server_id server_id, DATA_BLOB *data);
+	void *private_data;
+};
+
+struct messaging_context {
+	struct server_id id;
+	struct messaging_callback *callbacks;
+};
+
+static int messaging_context_destructor(struct messaging_context *ctx)
+{
+	struct messaging_callback *cb;
+
+	for (cb = ctx->callbacks; cb; cb = cb->next) {
+		/*
+		 * We unconditionally remove all instances of our callback
+		 * from the tdb basis.
+		 */
+		message_deregister(cb->msg_type);
+	}
+	return 0;
+}
+
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
+					 struct server_id server_id, 
+					 struct event_context *ev)
+{
+	struct messaging_context *ctx;
+
+	if (!(ctx = TALLOC_ZERO_P(mem_ctx, struct messaging_context))) {
+		return NULL;
+	}
+
+	ctx->id = server_id;
+	talloc_set_destructor(ctx, messaging_context_destructor);
+	return ctx;
+}
+
+static void messaging_callback(int msg_type, struct process_id pid,
+			       void *buf, size_t len, void *private_data)
+{
+	struct messaging_context *ctx =	talloc_get_type_abort(
+		private_data, struct messaging_context);
+	struct messaging_callback *cb, *next;
+
+	for (cb = ctx->callbacks; cb; cb = next) {
+		/*
+		 * Allow a callback to remove itself
+		 */
+		next = cb->next;
+
+		if (msg_type == cb->msg_type) {
+			DATA_BLOB blob;
+			struct server_id id;
+
+			blob.data = (uint8 *)buf;
+			blob.length = len;
+			id.id = pid;
+
+			cb->fn(ctx, cb->private_data, msg_type, id, &blob);
+		}
+	}
+}
+
+/*
+ * Register a dispatch function for a particular message type. Allow multiple
+ * registrants
+*/
+NTSTATUS messaging_register(struct messaging_context *ctx, void *private_data,
+			    uint32_t msg_type,
+			    void (*fn)(struct messaging_context *msg,
+				       void *private_data, 
+				       uint32_t msg_type, 
+				       struct server_id server_id,
+				       DATA_BLOB *data))
+{
+	struct messaging_callback *cb;
+
+	if (!(cb = talloc(ctx, struct messaging_callback))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cb->msg_type = msg_type;
+	cb->fn = fn;
+	cb->private_data = private_data;
+
+	DLIST_ADD(ctx->callbacks, cb);
+	message_register(msg_type, messaging_callback, ctx);
+	return NT_STATUS_OK;
+}
+
+/*
+  De-register the function for a particular message type.
+*/
+void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
+			  void *private_data)
+{
+	struct messaging_callback *cb, *next;
+
+	for (cb = ctx->callbacks; cb; cb = next) {
+		next = cb->next;
+		if ((cb->msg_type == msg_type)
+		    && (cb->private_data == private_data)) {
+			DLIST_REMOVE(ctx->callbacks, cb);
+			TALLOC_FREE(cb);
+		}
+	}
+}
+
+
 /** @} **/
