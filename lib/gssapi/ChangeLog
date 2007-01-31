@@ -1,5 +1,7 @@
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_display_status.c: Use right printf formater.
+
 	* test_*.[ch]: split out the error printing function and try to
 	return better errors
 
