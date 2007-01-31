@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-static struct cnotify_fns *cnotify;
 static struct notify_mid_map *notify_changes_by_mid;
 
 /*
@@ -262,157 +261,6 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 }
 
-/* notify message definition
-
-Offset  Data			length.
-0	SMB_DEV_T dev		8
-8	SMB_INO_T inode		8
-16	uint32 filter           4
-20	uint32 action		4
-24..	name
-*/
-
-#define MSG_NOTIFY_MESSAGE_SIZE 25 /* Includes at least the '\0' terminator */
-
-struct notify_message {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	uint32 filter;
-	uint32 action;
-	char *name;
-};
-
-static DATA_BLOB notify_message_to_buf(const struct notify_message *msg)
-{
-	DATA_BLOB result;
-	size_t len;
-
-	len = strlen(msg->name);
-
-	result = data_blob(NULL, MSG_NOTIFY_MESSAGE_SIZE + len);
-	if (!result.data) {
-		return result;
-	}
-
-	SDEV_T_VAL(result.data, 0, msg->dev);
-	SINO_T_VAL(result.data, 8, msg->inode);
-	SIVAL(result.data, 16, msg->filter);
-	SIVAL(result.data, 20, msg->action);
-	memcpy(result.data+24, msg->name, len+1);
-
-	return result;
-}
-
-static BOOL buf_to_notify_message(void *buf, size_t len,
-				  struct notify_message *msg)
-{
-	if (len < MSG_NOTIFY_MESSAGE_SIZE) {
-		DEBUG(0, ("Got invalid notify message of len %d\n",
-			  (int)len));
-		return False;
-	}
-
-	msg->dev     = DEV_T_VAL(buf, 0);
-	msg->inode   = INO_T_VAL(buf, 8);
-	msg->filter  = IVAL(buf, 16);
-	msg->action  = IVAL(buf, 20);
-	msg->name    = ((char *)buf)+24;
-	return True;
-}
-
-void notify_action(connection_struct *conn, const char *parent,
-		   const char *name, uint32 filter, uint32_t action)
-{
-	struct share_mode_lock *lck;
-	SMB_STRUCT_STAT sbuf;
-	int i;
-	struct notify_message msg;
-	DATA_BLOB blob;
-
-	struct process_id *pids;
-	int num_pids;
-
-	DEBUG(10, ("notify_action: parent=%s, name=%s, action=%u\n",
-		   parent, name, (unsigned)action));
-
-	if (SMB_VFS_STAT(conn, parent, &sbuf) != 0) {
-		/*
-		 * Not 100% critical, ignore failure
-		 */
-		return;
-	}
-
-	{
-		char *fullpath;
-
-		if (asprintf(&fullpath, "%s/%s/%s", conn->connectpath,
-			     parent, name) != -1) {
-			notify_trigger(conn->notify_ctx, action, filter,
-				       fullpath);
-			SAFE_FREE(fullpath);
-		}
-		return;
-	}
-
-	if (!(lck = get_share_mode_lock(NULL, sbuf.st_dev, sbuf.st_ino,
-					NULL, NULL))) {
-		return;
-	}
-
-	msg.dev = sbuf.st_dev;
-	msg.inode = sbuf.st_ino;
-	msg.filter = filter;
-	msg.action = action;
-	msg.name = CONST_DISCARD(char *, name);
-
-	blob = notify_message_to_buf(&msg);
-	if (blob.data == NULL) {
-		DEBUG(0, ("notify_message_to_buf failed\n"));
-		return;
-	}
-
-	pids = NULL;
-	num_pids = 0;
-
-	become_root_uid_only();
-
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
-		int j;
-		struct process_id *tmp;
-
-		for (j=0; j<num_pids; j++) {
-			if (procid_equal(&e->pid, &pids[j])) {
-				break;
-			}
-		}
-
-		if (j < num_pids) {
-			/*
-			 * Already sent to that process, skip it
-			 */
-			continue;
-		}
-
-		message_send_pid(lck->share_modes[i].pid, MSG_SMB_NOTIFY,
-				 blob.data, blob.length, True);
-
-		if (!(tmp = TALLOC_REALLOC_ARRAY(lck, pids, struct process_id,
-						 num_pids+1))) {
-			DEBUG(0, ("realloc failed\n"));
-			break;
-		}
-		pids = tmp;
-		pids[num_pids] = e->pid;
-		num_pids += 1;
-	}
-
-	unbecome_root_uid_only();
-
-	data_blob_free(&blob);
-	TALLOC_FREE(lck);
-}
-
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
@@ -514,30 +362,6 @@ void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	fsp->notify->num_changes = 0;
 }
 
-static void notify_message_callback(int msgtype, struct process_id pid,
-				    void *buf, size_t len,
-				    void *private_data)
-{
-	struct notify_message msg;
-	files_struct *fsp;
-
-	if (!buf_to_notify_message(buf, len, &msg)) {
-		return;
-	}
-
-	DEBUG(10, ("Received notify_message for 0x%x/%.0f: %d\n",
-		   (unsigned)msg.dev, (double)msg.inode, msg.action));
-
-	for(fsp = fsp_find_di_first(msg.dev, msg.inode); fsp;
-	    fsp = fsp_find_di_next(fsp)) {
-		if ((fsp->notify != NULL) 
-		    && (fsp->notify->requests != NULL)
-		    && (fsp->notify->requests->filter & msg.filter)) {
-			notify_fsp(fsp, msg.action, msg.name);
-		}
-	}
-}
-
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
 {
 	char *result = NULL;
@@ -574,34 +398,6 @@ char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
 
 	result[strlen(result)-1] = '\0';
 	return result;
-}
-
-/****************************************************************************
- Initialise the change notify subsystem.
-****************************************************************************/
-
-BOOL init_change_notify(void)
-{
-	cnotify = NULL;
-
-#if HAVE_KERNEL_CHANGE_NOTIFY
-	if (cnotify == NULL && lp_kernel_change_notify())
-		cnotify = kernel_notify_init(smbd_event_context());
-#endif
-#if HAVE_FAM_CHANGE_NOTIFY
-	if (cnotify == NULL && lp_fam_change_notify())
-		cnotify = fam_notify_init(smbd_event_context());
-#endif
-	if (!cnotify) cnotify = hash_notify_init();
-	
-	if (!cnotify) {
-		DEBUG(0,("Failed to init change notify system\n"));
-		return False;
-	}
-
-	message_register(MSG_SMB_NOTIFY, notify_message_callback, NULL);
-
-	return True;
 }
 
 struct sys_notify_context *sys_notify_context_create(struct share_params *scfg,
