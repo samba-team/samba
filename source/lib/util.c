@@ -3007,9 +3007,22 @@ struct process_id procid_self(void)
 	return pid_to_procid(sys_getpid());
 }
 
+struct server_id server_id_self(void)
+{
+	struct server_id id;
+	id.id = procid_self();
+	return id;
+}
+
 BOOL procid_equal(const struct process_id *p1, const struct process_id *p2)
 {
 	return (p1->pid == p2->pid);
+}
+
+BOOL cluster_id_equal(const struct server_id *id1,
+		      const struct server_id *id2)
+{
+	return procid_equal(&id1->id, &id2->id);
 }
 
 BOOL procid_is_me(const struct process_id *pid)

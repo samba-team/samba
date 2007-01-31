@@ -23,11 +23,8 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
-#include "ntvfs/sysdep/sys_notify.h"
-#include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
-#include "libcli/raw/smb.h"
+
+#ifdef HAVE_INOTIFY
 
 #include <linux/inotify.h>
 #include <asm/unistd.h>
@@ -71,7 +68,9 @@ struct watch_context {
 	struct watch_context *next, *prev;
 	struct inotify_private *in;
 	int wd;
-	sys_notify_callback_t callback;
+	void (*callback)(struct sys_notify_context *ctx, 
+			 void *private_data,
+			 struct notify_event *ev);
 	void *private_data;
 	uint32_t mask; /* the inotify mask */
 	uint32_t filter; /* the windows completion filter */
@@ -95,6 +94,9 @@ static int inotify_destructor(struct inotify_private *in)
 */
 static BOOL filter_match(struct watch_context *w, struct inotify_event *e)
 {
+	DEBUG(10, ("filter_match: e->mask=%x, w->mask=%x, w->filter=%x\n",
+		   e->mask, w->mask, w->filter));
+
 	if ((e->mask & w->mask) == 0) {
 		/* this happens because inotify_add_watch() coalesces watches on the same
 		   path, oring their masks together */
@@ -142,6 +144,9 @@ static void inotify_dispatch(struct inotify_private *in,
 	struct watch_context *w, *next;
 	struct notify_event ne;
 
+	DEBUG(10, ("inotify_dispatch called with mask=%x, name=[%s]\n",
+		   e->mask, e->len ? e->name : ""));
+
 	/* ignore extraneous events, such as unmount and IN_IGNORED events */
 	if ((e->mask & (IN_ATTRIB|IN_MODIFY|IN_CREATE|IN_DELETE|
 			IN_MOVED_FROM|IN_MOVED_TO)) == 0) {
@@ -170,6 +175,9 @@ static void inotify_dispatch(struct inotify_private *in,
 		ne.action = NOTIFY_ACTION_MODIFIED;
 	}
 	ne.path = e->name;
+
+	DEBUG(10, ("inotify_dispatch: ne.action = %d, ne.path = %s\n",
+		   ne.action, ne.path));
 
 	/* find any watches that have this watch descriptor */
 	for (w=in->watches;w;w=next) {
@@ -222,7 +230,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	e0 = e = talloc_size(in, bufsize);
+	e0 = e = (struct inotify_event *)talloc_size(in, bufsize);
 	if (e == NULL) return;
 
 	if (read(in->fd, e0, bufsize) != bufsize) {
@@ -323,7 +331,12 @@ static int watch_destructor(struct watch_context *w)
 		if (w->wd == wd) break;
 	}
 	if (w == NULL) {
-		inotify_rm_watch(in->fd, wd);
+		DEBUG(10, ("Deleting inotify watch %d\n", wd));
+		if (inotify_rm_watch(in->fd, wd) == -1) {
+			DEBUG(1, ("inotify_rm_watch returned %s\n",
+				  strerror(errno)));
+		}
+		
 	}
 	return 0;
 }
@@ -333,11 +346,13 @@ static int watch_destructor(struct watch_context *w)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
-			      struct notify_entry *e,
-			      sys_notify_callback_t callback,
-			      void *private_data, 
-			      void *handle_p)
+NTSTATUS inotify_watch(struct sys_notify_context *ctx,
+		       struct notify_entry *e,
+		       void (*callback)(struct sys_notify_context *ctx, 
+					void *private_data,
+					struct notify_event *ev),
+		       void *private_data, 
+		       void *handle_p)
 {
 	struct inotify_private *in;
 	int wd;
@@ -369,8 +384,12 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	wd = inotify_add_watch(in->fd, e->path, mask);
 	if (wd == -1) {
 		e->filter = filter;
+		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
+
+	DEBUG(10, ("inotify_add_watch for %s mask %x returned wd %d\n",
+		   e->path, mask, wd));
 
 	w = talloc(in, struct watch_context);
 	if (w == NULL) {
@@ -402,17 +421,4 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	return NT_STATUS_OK;
 }
 
-
-static struct sys_notify_backend inotify = {
-	.name = "inotify",
-	.notify_watch = inotify_watch
-};
-
-/*
-  initialialise the inotify module
- */
-NTSTATUS sys_notify_inotify_init(void)
-{
-	/* register ourselves as a system inotify module */
-	return sys_notify_register(&inotify);
-}
+#endif
