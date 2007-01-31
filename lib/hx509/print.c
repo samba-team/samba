@@ -316,6 +316,64 @@ check_dnssrv_san(hx509_validate_ctx ctx, heim_any *a)
     return 0;
 }
 
+static int
+check_CRLDistributionPoints(hx509_validate_ctx ctx, 
+			   struct cert_status *status,
+			   enum critical_flag cf,
+			   const Extension *e)
+{
+    CRLDistributionPoints dp;
+    size_t size;
+    int ret, i, j;
+
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_CRLDistributionPoints(e->extnValue.data, 
+				       e->extnValue.length,
+				       &dp, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding CRL Distribution Points failed: %d", ret);
+	return 1;
+    }
+
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "CRL Distribution Points:");
+    for (i = 0 ; i < dp.len; i++) {
+	if (dp.val[i].distributionPoint) {
+	    switch (dp.val[i].distributionPoint->element) {
+	    case choice_DistributionPointName_fullName:
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "Fullname: ");
+		
+		for (j = 0 ; j < dp.val[i].distributionPoint->u.fullName.len; j++) {
+		    char *s;
+		    GeneralName *name = 
+			&dp.val[i].distributionPoint->u.fullName.val[j];
+
+		    ret = hx509_general_name_unparse(name, &s);
+		    if (ret == 0 && s != NULL) {
+			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", s);
+			free(s);
+		    }
+		}
+		break;
+	    case choice_DistributionPointName_nameRelativeToCRLIssuer:
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			       "Unknown nameRelativeToCRLIssuer");
+		break;
+	    default:
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "Unknown DistributionPointName");
+		break;
+	    }
+	}
+
+    }
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
+
+    return 0;
+}
+
+
 struct {
     const char *name;
     const heim_oid *(*oid)(void);
@@ -520,7 +578,7 @@ struct {
     { ext(issuingDistributionPoint, Null), M_C },
     { ext(certificateIssuer, Null), M_C },
     { ext(nameConstraints, Null), M_C },
-    { ext(cRLDistributionPoints, Null), S_N_C },
+    { ext(cRLDistributionPoints, CRLDistributionPoints), S_N_C },
     { ext(certificatePolicies, Null) },
     { ext(policyMappings, Null), M_N_C },
     { ext(authorityKeyIdentifier, authorityKeyIdentifier), M_N_C },
