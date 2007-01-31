@@ -221,7 +221,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
 		 librpc/gen_ndr/ndr_srvsvc.o librpc/gen_ndr/ndr_svcctl.o \
-		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o
+		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o \
+		 librpc/gen_ndr/ndr_notify.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -919,7 +920,7 @@ cac: SHOWFLAGS $(LIBMSRPC)
 #####################################################################
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
-			srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl
+	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl
 
 idl: 
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
