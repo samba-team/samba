@@ -421,6 +421,7 @@ struct fd_handle {
 	unsigned long file_id;
 };
 
+struct messaging_context;
 struct event_context;
 struct fd_event;
 struct timed_event;
