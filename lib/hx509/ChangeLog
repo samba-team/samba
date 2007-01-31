@@ -1,5 +1,14 @@
-2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c: Check CRLDistributionPointNames.
+
+	* name.c (hx509_general_name_unparse): function for unparsing
+	GeneralName, only supports GeneralName.URI
+
+	* cert.c (is_proxy_cert): free info if we wont return it.
+	
+2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* hxtool.c: Try to help how to use this command.
 	
 2007-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
