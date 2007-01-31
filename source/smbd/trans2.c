@@ -5087,8 +5087,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fsp,
-						&sbuf,
-						fname);
+						fname,
+						&sbuf);
 			break;
 		}
 #endif
