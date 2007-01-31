@@ -847,7 +847,9 @@ find_parent(hx509_context context,
  */
 
 static int
-is_proxy_cert(hx509_context context, const Certificate *cert, ProxyCertInfo *rinfo)
+is_proxy_cert(hx509_context context, 
+	      const Certificate *cert, 
+	      ProxyCertInfo *rinfo)
 {
     ProxyCertInfo info;
     const Extension *e;
