@@ -537,7 +537,7 @@ $(gen_files_cms) cms_asn1.h: cms_asn1_files
 $(gen_files_test) test_asn1.h: test_asn1_files
 
 rfc2459_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/rfc2459.asn1
-	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
 
 cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
