@@ -4107,7 +4107,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
  code. 
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn, pstring name, pstring newname, uint32 attrs, BOOL replace_if_exists, BOOL has_wild)
+NTSTATUS rename_internals(connection_struct *conn, pstring name,
+			  pstring newname, uint32 attrs,
+			  BOOL replace_if_exists, BOOL has_wild)
 {
 	pstring directory;
 	pstring mask;
@@ -4124,12 +4126,14 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name, pstring newname
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(conn, name, has_wild, last_component_src, &sbuf1);
+	status = unix_convert(conn, name, has_wild, last_component_src,
+			      &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = unix_convert(conn, newname, True, last_component_dest, &sbuf2);
+	status = unix_convert(conn, newname, True, last_component_dest,
+			      &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4185,10 +4189,13 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name, pstring newname
 			pstrcpy(newname, tmpstr);
 		}
 		
-		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, \
-directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n", 
-			 conn->case_sensitive, conn->case_preserve, conn->short_case_preserve, directory, 
-			 newname, last_component_dest, is_short_name));
+		DEBUG(3, ("rename_internals: case_sensitive = %d, "
+			  "case_preserve = %d, short case preserve = %d, "
+			  "directory = %s, newname = %s, "
+			  "last_component_dest = %s, is_8_3 = %d\n", 
+			  conn->case_sensitive, conn->case_preserve,
+			  conn->short_case_preserve, directory, 
+			  newname, last_component_dest, is_short_name));
 
 		/*
 		 * Check for special case with case preserving and not
@@ -4231,13 +4238,16 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		 */
 
 		if (!vfs_object_exist(conn, directory, &sbuf1)) {
-			DEBUG(3,("rename_internals: source doesn't exist doing rename %s -> %s\n",
+			DEBUG(3, ("rename_internals: source doesn't exist "
+				  "doing rename %s -> %s\n",
 				directory,newname));
 
-			if (errno == ENOTDIR || errno == EISDIR || errno == ENOENT) {
+			if (errno == ENOTDIR || errno == EISDIR
+			    || errno == ENOENT) {
 				/*
-				 * Must return different errors depending on whether the parent
-				 * directory existed or not.
+				 * Must return different errors depending on
+				 * whether the parent directory existed or
+				 * not.
 				 */
 
 				p = strrchr_m(directory, '/');
@@ -4249,8 +4259,9 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
 			status = map_nt_error_from_unix(errno);
-			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				nt_errstr(status), directory,newname));
+			DEBUG(3, ("rename_internals: Error %s rename %s -> "
+				  "%s\n", nt_errstr(status), directory,
+				  newname));
 
 			return status;
 		}
@@ -4258,8 +4269,9 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		status = can_rename(conn,directory,attrs,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-				nt_errstr(status), directory,newname));
+			DEBUG(3,("rename_internals: Error %s rename %s -> "
+				 "%s\n", nt_errstr(status), directory,
+				 newname));
 			return status;
 		}
 
@@ -4269,14 +4281,17 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		 */
 
 		if (strcsequal(directory, newname)) {
-			rename_open_files(conn, NULL, sbuf1.st_dev, sbuf1.st_ino, newname);
-			DEBUG(3,("rename_internals: identical names in rename %s - returning success\n", directory));
+			rename_open_files(conn, NULL, sbuf1.st_dev,
+					  sbuf1.st_ino, newname);
+			DEBUG(3, ("rename_internals: identical names in "
+				  "rename %s - returning success\n",
+				  directory));
 			return NT_STATUS_OK;
 		}
 
 		if(!replace_if_exists && vfs_object_exist(conn,newname,NULL)) {
-			DEBUG(3,("rename_internals: dest exists doing rename %s -> %s\n",
-				directory,newname));
+			DEBUG(3,("rename_internals: dest exists doing "
+				 "rename %s -> %s\n", directory, newname));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
@@ -4284,12 +4299,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino, NULL, NULL);
+		lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino,
+					  NULL, NULL);
 
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
-			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
-				directory,newname));
-			rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
+			DEBUG(3,("rename_internals: succeeded doing rename "
+				 "on %s -> %s\n", directory, newname));
+			rename_open_files(conn, lck, sbuf1.st_dev,
+					  sbuf1.st_ino, newname);
 			TALLOC_FREE(lck);
 			return NT_STATUS_OK;	
 		}
@@ -4328,7 +4345,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		}
 		
 		status = NT_STATUS_NO_SUCH_FILE;
-/*		Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
+		/*
+		 * Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		 * - gentest fix. JRA
+		 */
 			
 		while ((dname = ReadDirName(dir_hnd, &offset))) {
 			pstring fname;
@@ -4338,7 +4358,8 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				
 			/* Quick check for "." and ".." */
 			if (fname[0] == '.') {
-				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+				if (!fname[1]
+				    || (fname[1] == '.' && !fname[2])) {
 					if (attrs & aDIR) {
 						sysdir_entry = True;
 					} else {
@@ -4347,7 +4368,8 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				}
 			}
 
-			if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+			if (!is_visible_file(conn, directory, dname, &sbuf1,
+					     False)) {
 				continue;
 			}
 
@@ -4361,34 +4383,40 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			}
 
 			status = NT_STATUS_ACCESS_DENIED;
-			slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
+			slprintf(fname, sizeof(fname)-1, "%s/%s", directory,
+				 dname);
 			if (!vfs_object_exist(conn, fname, &sbuf1)) {
 				status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(status)));
+				DEBUG(6, ("rename %s failed. Error %s\n",
+					  fname, nt_errstr(status)));
 				continue;
 			}
 			status = can_rename(conn,fname,attrs,&sbuf1);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(6,("rename %s refused\n", fname));
+				DEBUG(6, ("rename %s refused\n", fname));
 				continue;
 			}
 			pstrcpy(destname,newname);
 			
 			if (!resolve_wildcards(fname,destname)) {
-				DEBUG(6,("resolve_wildcards %s %s failed\n", 
-                                                fname, destname));
+				DEBUG(6, ("resolve_wildcards %s %s failed\n", 
+					  fname, destname));
 				continue;
 			}
 				
 			if (strcsequal(fname,destname)) {
-				rename_open_files(conn, NULL, sbuf1.st_dev, sbuf1.st_ino, newname);
-				DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
+				rename_open_files(conn, NULL, sbuf1.st_dev,
+						  sbuf1.st_ino, newname);
+				DEBUG(3,("rename_internals: identical names "
+					 "in wildcard rename %s - success\n",
+					 fname));
 				count++;
 				status = NT_STATUS_OK;
 				continue;
 			}
 
-			if (!replace_if_exists && vfs_file_exist(conn,destname, NULL)) {
+			if (!replace_if_exists
+			    && vfs_file_exist(conn,destname, NULL)) {
 				DEBUG(6,("file_exist %s\n", destname));
 				status = NT_STATUS_OBJECT_NAME_COLLISION;
 				continue;
@@ -4398,15 +4426,18 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				return NT_STATUS_SHARING_VIOLATION;
 			}
 
-			lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino, NULL, NULL);
+			lck = get_share_mode_lock(NULL, sbuf1.st_dev,
+						  sbuf1.st_ino, NULL, NULL);
 
 			if (!SMB_VFS_RENAME(conn,fname,destname)) {
-				rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
+				rename_open_files(conn, lck, sbuf1.st_dev,
+						  sbuf1.st_ino, newname);
 				count++;
 				status = NT_STATUS_OK;
 			}
 			TALLOC_FREE(lck);
-			DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
+			DEBUG(3,("rename_internals: doing rename on %s -> "
+				 "%s\n",fname,destname));
 		}
 		CloseDir(dir_hnd);
 	}
