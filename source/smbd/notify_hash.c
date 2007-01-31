@@ -222,7 +222,6 @@ static void *hash_notify_add(TALLOC_CTX *mem_ctx,
 {
 	struct hash_notify_ctx *ctx;
 	int timeout = lp_change_notify_timeout(SNUM(fsp->conn));
-	pstring fullpath;
 
 	if (timeout <= 0) {
 		/* It change notify timeout has been disabled, never scan the
@@ -230,26 +229,14 @@ static void *hash_notify_add(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	pstrcpy(fullpath, fsp->fsp_name);
-	if (!canonicalize_path(fsp->conn, fullpath)) {
-		DEBUG(0, ("failed to canonicalize path '%s'\n", fullpath));
-		return NULL;
-	}
-
-	if (*fullpath != '/') {
-		DEBUG(0, ("canonicalized path '%s' into `%s`\n", fsp->fsp_name,
-			  fullpath));
-		DEBUGADD(0, ("but expected an absolute path\n"));
-		return NULL;
-	}
-	
 	if (!(ctx = TALLOC_P(mem_ctx, struct hash_notify_ctx))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (!(ctx->path = talloc_strdup(ctx, fullpath))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+	if (!(ctx->path = talloc_asprintf(ctx, "%s/%s", fsp->conn->connectpath,
+					  fsp->fsp_name))) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
 		TALLOC_FREE(ctx);
 		return NULL;
 	}

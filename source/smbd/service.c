@@ -22,6 +22,31 @@
 
 extern userdom_struct current_user_info;
 
+BOOL canonicalize_path(connection_struct *conn, pstring path)
+{
+#ifdef REALPATH_TAKES_NULL
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	SAFE_FREE(resolved_name);
+	return True;
+#else
+#ifdef PATH_MAX
+        char resolved_name_buf[PATH_MAX+1];
+#else
+        pstring resolved_name_buf;
+#endif
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	return True;
+#endif /* REALPATH_TAKES_NULL */
+}
+
 /****************************************************************************
  Ensure when setting connectpath it is a canonicalized (no ./ // or ../)
  absolute path stating in / and not ending in /.
