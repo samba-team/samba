@@ -488,11 +488,11 @@ cat > $LDAPDIR/db/DB_CONFIG <<EOF
 EOF
 
 FEDORA_DS_LDAP_URI="ldap://127.0.0.1:$FEDORA_DS_LDAP_PORT"
-export FEDORA_DS_LDAP_URI
 
 cat >$FEDORA_DS_INF <<EOF
 
 [General]
+SuiteSpotUserID = $ROOT
 FullMachineName=   localhost
 ServerRoot=   $LDAPDIR
 ConfigDirectoryLdapURL=   $FEDORA_DS_LDAP_URI/o=NetscapeRoot
@@ -510,6 +510,18 @@ RootDNPwd= $PASSWORD
 Components= slapd
 ServerIdentifier= samba4
 InstallLdifFile=$FEDORA_DS_INITIAL_LDIF
+
+inst_dir= $LDAPDIR/slapd-samba4
+config_dir= $LDAPDIR/slapd-samba4
+schema_dir= $LDAPDIR/slapd-samba4/schema
+lock_dir= $LDAPDIR/slapd-samba4/lock
+log_dir= $LDAPDIR/slapd-samba4/logs
+run_dir= $LDAPDIR/slapd-samba4/logs
+db_dir= $LDAPDIR/slapd-samba4/db
+bak_dir= $LDAPDIR/slapd-samba4/bak
+tmp_dir= $LDAPDIR/slapd-samba4/tmp
+ldif_dir= $LDAPDIR/slapd-samba4/ldif
+cert_dir= $LDAPDIR/slapd-samba4
 
 [base]
 Components= base
@@ -541,17 +553,27 @@ PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --simple-bind-dn=cn=Manager,$BASEDN --password=$PASSWORD --root=$ROOT"
 $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS >&2
 
-LDAPI="ldapi://$LDAPDIR/ldapi"
-LDAPI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
+if test -z "$FEDORA_DS_PREFIX"; then
+    LDAP_URI="ldapi://$LDAPDIR/ldapi"
+    LDAP_URI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
 export LDAPI
 export LDAPI_ESCAPE
+else
+    LDAP_URI=$FEDORA_DS_LDAP_URI;
+    LDAP_URI_ESCAPE=$FEDORA_DS_LDAP_URI;
+    PROVISION_OPTIONS="$PROVISION_OPTIONS --ldap-module=nsuniqueid"
+   #it is easier to base64 encode this than correctly escape it:
+   # (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
+   PROVISION_ACI="--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK"
+fi
+
 
 #This uses the provision we just did, to read out the schema
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema >&2
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $LDAPDIR/99_ad.ldif >&2
 
 #Now create an LDAP baseDN
-$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-base >&2
+$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS "$PROVISION_ACI" --ldap-base >&2
 
 OLDPATH=$PATH
 PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
@@ -604,8 +626,9 @@ echo "PIDDIR=$PIDDIR"
 echo "AUTH=$AUTH"
 echo "SERVER=$SERVER"
 echo "NETBIOSNAME=$NETBIOSNAME"
-echo "LDAPI=$LDAPI"
-echo "LDAPI_ESCAPE=$LDAPI_ESCAPE"
+echo "LDAP_URI=$LDAP_URI"
+echo "LDAP_URI_ESCAPE=$LDAP_URI_ESCAPE"
+echo "FEDORA_DS_INF=$FEDORA_DS_INF"
 echo "FEDORA_DS_LDAP_URI=$FEDORA_DS_LDAP_URI"
 echo "DOMAIN=$DOMAIN"
 echo "USERNAME=$USERNAME"
