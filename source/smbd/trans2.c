@@ -3742,6 +3742,162 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 }
 
 /****************************************************************************
+ Deal with setting the time from any of the setfilepathinfo functions.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_time(connection_struct *conn,
+				files_struct *fsp,
+				const char *fname,
+				const SMB_STRUCT_STAT *psbuf,
+				struct utimbuf tvs)
+{
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	/* get some defaults (no modifications) if any info is zero or -1. */
+	if (null_mtime(tvs.actime)) {
+		tvs.actime = psbuf->st_atime;
+	}
+
+	if (null_mtime(tvs.modtime)) {
+		tvs.modtime = psbuf->st_mtime;
+	}
+
+	DEBUG(6,("smb_set_file_time: actime: %s " , ctime(&tvs.actime)));
+	DEBUG(6,("smb_set_file_time: modtime: %s ", ctime(&tvs.modtime)));
+
+	/*
+	 * Try and set the times of this file if
+	 * they are different from the current values.
+	 */
+
+	if (psbuf->st_mtime == tvs.modtime && psbuf->st_atime == tvs.actime) {
+		return NT_STATUS_OK;
+	}
+
+	if(fsp != NULL) {
+		/*
+		 * This was a setfileinfo on an open file.
+		 * NT does this a lot. We also need to 
+		 * set the time here, as it can be read by 
+		 * FindFirst/FindNext and with the patch for bug #2045
+		 * in smbd/fileio.c it ensures that this timestamp is
+		 * kept sticky even after a write. We save the request
+		 * away and will set it on file close and after a write. JRA.
+		 */
+
+		if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
+			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
+			fsp_set_pending_modtime(fsp, tvs.modtime);
+		}
+
+	}
+	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+
+	if(file_utime(conn, fname, &tvs)!=0) {
+		return map_nt_error_from_unix(errno);
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Deal with setting the dosmode from any of the setfilepathinfo functions.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf,
+				uint32 dosmode)
+{
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (dosmode) {
+		if (S_ISDIR(psbuf->st_mode)) {
+			dosmode |= aDIR;
+		} else {
+			dosmode &= ~aDIR;
+		}
+	}
+
+	DEBUG(6,("smb_set_file_dosmode: dosmode: 0x%x\n", (unsigned int)dosmode));
+
+	/* check the mode isn't different, before changing it */
+	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, psbuf))) {
+
+		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode 0x%x\n",
+					fname, (unsigned int)dosmode ));
+
+		if(file_set_dosmode(conn, fname, dosmode, psbuf, False)) {
+			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of %s failed (%s)\n",
+						fname, strerror(errno)));
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Deal with setting the size from any of the setfilepathinfo functions.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_size(connection_struct *conn,
+				files_struct *fsp,
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf,
+				SMB_OFF_T size)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	files_struct *new_fsp = NULL;
+
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	DEBUG(6,("smb_set_file_size: size: %.0f ", (double)size));
+
+	if (size == get_file_size(*psbuf)) {
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
+		fname, (double)size ));
+
+	if (fsp && fsp->fh->fd != -1) {
+		/* Handle based call. */
+		if (vfs_set_filelen(fsp, size) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		return NT_STATUS_OK;
+	}
+
+	status = open_file_ntcreate(conn, fname, psbuf,
+				FILE_WRITE_DATA,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				FORCE_OPLOCK_BREAK_TO_NONE,
+				NULL, &new_fsp);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		/* NB. We check for open_was_deferred in the caller. */
+		return status;
+	}
+
+	if (vfs_set_filelen(new_fsp, size) == -1) {
+		status = map_nt_error_from_unix(errno);
+		close_file(new_fsp,NORMAL_CLOSE);
+		return status;
+	}
+
+	close_file(new_fsp,NORMAL_CLOSE);
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Deal with SMB_INFO_SET_EA.
 ****************************************************************************/
 
@@ -3797,10 +3953,12 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				int dosmode)
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL delete_on_close;
+	uint32 dosmode = 0;
 
 	if (total_data < 1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -3811,6 +3969,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	}
 
 	delete_on_close = (CVAL(pdata,0) ? True : False);
+	dosmode = dos_mode(conn, fname, psbuf);
 
 	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
  
@@ -4049,8 +4208,8 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				SMB_STRUCT_STAT *psbuf,
-				const char *fname)
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf)
 {
 	uint16 posix_acl_version;
 	uint16 num_file_acls;
@@ -4211,59 +4370,86 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
  Deal with SMB_INFO_STANDARD.
 ****************************************************************************/
 
-static NTSTATUS smb_set_info_standard(const char *pdata,
+static NTSTATUS smb_set_info_standard(connection_struct *conn,
+					const char *pdata,
 					int total_data,
-					struct utimbuf *p_tvs)
+					files_struct *fsp,
+					const char *fname,
+					const SMB_STRUCT_STAT *psbuf)
 {
+	struct utimbuf tvs;
+
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* access time */
-	p_tvs->actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
+	tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
 	/* write time */
-	p_tvs->modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
-	return NT_STATUS_OK;
+	tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
+
+	return smb_set_file_time(conn,
+				fsp,
+				fname,
+				psbuf,
+				tvs);
 }
 
 /****************************************************************************
  Deal with SMB_SET_FILE_BASIC_INFO.
 ****************************************************************************/
 
-static NTSTATUS smb_set_file_basic_info(const char *pdata,
+static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
+					const char *pdata,
 					int total_data,
-					struct utimbuf *p_tvs,
-					int *p_dosmode)
+					files_struct *fsp,
+					const char *fname,
+					SMB_STRUCT_STAT *psbuf)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 	time_t write_time;
 	time_t changed_time;
+	uint32 dosmode = 0;
+	struct utimbuf tvs;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* Set the attributes */
+	dosmode = IVAL(pdata,32);
+	status = smb_set_file_dosmode(conn,
+					fname,
+					psbuf,
+					dosmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* Ignore create time at offset pdata. */
 
 	/* access time */
-	p_tvs->actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
+	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
 
 	write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
 	changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
 
-	p_tvs->modtime = MIN(write_time, changed_time);
+	tvs.modtime = MIN(write_time, changed_time);
 
-	if (write_time > p_tvs->modtime && write_time != (time_t)-1) {
-		p_tvs->modtime = write_time;
+	if (write_time > tvs.modtime && write_time != (time_t)-1) {
+		tvs.modtime = write_time;
 	}
 	/* Prefer a defined time to an undefined one. */
-	if (null_mtime(p_tvs->modtime)) {
-		p_tvs->modtime = null_mtime(write_time) ? changed_time : write_time;
+	if (null_mtime(tvs.modtime)) {
+		tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
 	}
 
-	/* attributes */
-	*p_dosmode = IVAL(pdata,32);
-	return NT_STATUS_OK;
+	return smb_set_file_time(conn,
+				fsp,
+				fname,
+				psbuf,
+				tvs);
 }
 
 /****************************************************************************
@@ -4275,10 +4461,15 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 					int total_data,
 					files_struct *fsp,
 					const char *fname,
-					SMB_STRUCT_STAT *psbuf,
-					SMB_OFF_T *p_size)
+					SMB_STRUCT_STAT *psbuf)
 {
-	SMB_BIG_UINT allocation_size;
+	SMB_BIG_UINT allocation_size = 0;
+	NTSTATUS status = NT_STATUS_OK;
+	files_struct *new_fsp = NULL;
+
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	if (total_data < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4301,61 +4492,43 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	if(allocation_size != get_file_size(*psbuf)) {
-		int ret = -1;
-		SMB_STRUCT_STAT new_sbuf;
+	if(allocation_size == get_file_size(*psbuf)) {
+		return NT_STATUS_OK;
+	}
  
-		DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
+	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
 			fname, (double)allocation_size ));
  
-		if (fsp && fsp->fh->fd != -1) {
-			/* Open file. */
-			ret = vfs_allocate_file_space(fsp, allocation_size);
-			if (ret == -1) {
-				return map_nt_error_from_unix(errno);
-			}
-			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&new_sbuf) != 0) {
-				DEBUG(3,("smb_set_file_allocation_info: fstat of fnum %d failed (%s)\n",
-							fsp->fnum, strerror(errno)));
-				return map_nt_error_from_unix(errno);
-			}
-		} else {
-			/* Pathname or stat or directory file. */
-			files_struct *new_fsp = NULL;
-			NTSTATUS status;
-
-			status = open_file_ntcreate(conn, fname, psbuf,
-						FILE_WRITE_DATA,
-						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-						FILE_OPEN,
-						0,
-						FILE_ATTRIBUTE_NORMAL,
-						FORCE_OPLOCK_BREAK_TO_NONE,
-						NULL, &new_fsp);
- 
-			if (!NT_STATUS_IS_OK(status)) {
-				/* NB. We check for open_was_deferred in the caller. */
-				return status;
-			}
-			ret = vfs_allocate_file_space(new_fsp, allocation_size);
-			if (ret == -1) {
-				status = map_nt_error_from_unix(errno);
-				close_file(new_fsp,NORMAL_CLOSE);
-				return status;
-			}
-			if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
-				DEBUG(3,("smb_set_file_allocation_info: fstat of fnum %d failed (%s)\n",
-						new_fsp->fnum, strerror(errno)));
-				status = map_nt_error_from_unix(errno);
-				close_file(new_fsp,NORMAL_CLOSE);
-				return status;
-			}
-			close_file(new_fsp,NORMAL_CLOSE);
+	if (fsp && fsp->fh->fd != -1) {
+		/* Open file handle. */
+		if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
+			return map_nt_error_from_unix(errno);
 		}
-
-		/* Allocate can truncate size... */
-		*p_size = get_file_size(new_sbuf);
+		return NT_STATUS_OK;
 	}
+
+	/* Pathname or stat or directory file. */
+
+	status = open_file_ntcreate(conn, fname, psbuf,
+				FILE_WRITE_DATA,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				FORCE_OPLOCK_BREAK_TO_NONE,
+				NULL, &new_fsp);
+ 
+	if (!NT_STATUS_IS_OK(status)) {
+		/* NB. We check for open_was_deferred in the caller. */
+		return status;
+	}
+	if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
+		status = map_nt_error_from_unix(errno);
+		close_file(new_fsp,NORMAL_CLOSE);
+		return status;
+	}
+
+	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -4366,16 +4539,19 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
+					files_struct *fsp,
 					const char *fname,
-					SMB_OFF_T *p_size)
+					SMB_STRUCT_STAT *psbuf)
 {
+	SMB_OFF_T size;
+
 	if (total_data < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*p_size = IVAL(pdata,0);
+	size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-	*p_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+	size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if (IVAL(pdata,4) != 0)	{
 		/* more than 32 bits? */
@@ -4383,7 +4559,96 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
-		"file %s to %.0f\n", fname, (double)*p_size ));
+		"file %s to %.0f\n", fname, (double)size ));
+
+	return smb_set_file_size(conn,
+				fsp,
+				fname,
+				psbuf,
+				size);
+}
+
+/****************************************************************************
+ Allow a UNIX info mknod.
+****************************************************************************/
+
+static NTSTATUS smb_unix_mknod(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					const char *fname,
+					SMB_STRUCT_STAT *psbuf)
+{
+	uint32 file_type = IVAL(pdata,56);
+#if defined(HAVE_MAKEDEV)
+	uint32 dev_major = IVAL(pdata,60);
+	uint32 dev_minor = IVAL(pdata,68);
+#endif
+	SMB_DEV_T dev = (SMB_DEV_T)0;
+	uint32 raw_unixmode = IVAL(pdata,84);
+	mode_t unixmode;
+
+	if (total_data < 100) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (raw_unixmode == SMB_MODE_NO_CHANGE) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	unixmode = unix_perms_from_wire(conn, psbuf, raw_unixmode);
+
+#if defined(HAVE_MAKEDEV)
+	dev = makedev(dev_major, dev_minor);
+#endif
+
+	switch (file_type) {
+#if defined(S_IFIFO)
+		case UNIX_TYPE_FIFO:
+			unixmode |= S_IFIFO;
+			break;
+#endif
+#if defined(S_IFSOCK)
+		case UNIX_TYPE_SOCKET:
+			unixmode |= S_IFSOCK;
+			break;
+#endif
+#if defined(S_IFCHR)
+		case UNIX_TYPE_CHARDEV:
+			unixmode |= S_IFCHR;
+			break;
+#endif
+#if defined(S_IFBLK)
+		case UNIX_TYPE_BLKDEV:
+			unixmode |= S_IFBLK;
+			break;
+#endif
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DEBUG(10,("smb_unix_mknod: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
+0%o for file %s\n", (double)dev, (unsigned int)unixmode, fname ));
+
+	/* Ok - do the mknod. */
+	if (SMB_VFS_MKNOD(conn, fname, unixmode, dev) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	/* If any of the other "set" calls fail we
+ 	 * don't want to end up with a half-constructed mknod.
+ 	 */
+
+	if (lp_inherit_perms(SNUM(conn))) {
+		inherit_access_acl(
+			conn, parent_dirname(fname),
+			fname, unixmode);
+	}
+
+	if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		SMB_VFS_UNLINK(conn,fname);
+		return status;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -4396,30 +4661,26 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					int total_data,
 					files_struct *fsp,
 					const char *fname,
-					SMB_STRUCT_STAT *psbuf,
-					SMB_OFF_T *p_size,
-					struct utimbuf *p_tvs,
-					mode_t *p_unixmode,
-					int *p_dosmode)
+					SMB_STRUCT_STAT *psbuf)
 {
+	struct utimbuf tvs;
+	uint32 raw_unixmode;
+	mode_t unixmode;
+	SMB_OFF_T size = 0;
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
-	uint32 raw_unixmode;
-	BOOL delete_on_fail = False;
 	NTSTATUS status = NT_STATUS_OK;
+	BOOL delete_on_fail = False;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	set_owner = VALID_STAT(*psbuf) ? psbuf->st_uid : (uid_t)SMB_UID_NO_CHANGE;
-	set_grp = VALID_STAT(*psbuf) ? psbuf->st_gid : (gid_t)SMB_GID_NO_CHANGE;
-
 	if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
 	   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
-		*p_size=IVAL(pdata,0); /* first 8 Bytes are size */
+		size=IVAL(pdata,0); /* first 8 Bytes are size */
 #ifdef LARGE_SMB_OFF_T
-		*p_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+		size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
 		if (IVAL(pdata,4) != 0)	{
 			/* more than 32 bits? */
@@ -4428,102 +4689,43 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	pdata+=24;          /* ctime & st_blocks are not changed */
-	p_tvs->actime = convert_timespec_to_time_t(interpret_long_date(pdata)); /* access_time */
-	p_tvs->modtime = convert_timespec_to_time_t(interpret_long_date(pdata+8)); /* modification_time */
-	pdata+=16;
-	set_owner = (uid_t)IVAL(pdata,0);
-	pdata += 8;
-	set_grp = (gid_t)IVAL(pdata,0);
-	pdata += 8;
-	raw_unixmode = IVAL(pdata,28);
-	*p_unixmode = unix_perms_from_wire(conn, psbuf, raw_unixmode);
-	*p_dosmode = 0; /* Ensure dos mode change doesn't override this. */
+	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+24)); /* access_time */
+	tvs.modtime = convert_timespec_to_time_t(interpret_long_date(pdata+32)); /* modification_time */
+	set_owner = (uid_t)IVAL(pdata,40);
+	set_grp = (gid_t)IVAL(pdata,48);
+	raw_unixmode = IVAL(pdata,84);
+	unixmode = unix_perms_from_wire(conn, psbuf, raw_unixmode);
 
 	DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC: name = %s \
 size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
-		fname, (double)*p_size, (unsigned int)set_owner, (unsigned int)set_grp, (int)raw_unixmode));
+		fname, (double)size, (unsigned int)set_owner, (unsigned int)set_grp, (int)raw_unixmode));
 
 	if (!VALID_STAT(*psbuf)) {
-
 		/*
 		 * The only valid use of this is to create character and block
 		 * devices, and named pipes. This is deprecated (IMHO) and 
 		 * a new info level should be used for mknod. JRA.
 		 */
 
-		uint32 file_type = IVAL(pdata,0);
-#if defined(HAVE_MAKEDEV)
-		uint32 dev_major = IVAL(pdata,4);
-		uint32 dev_minor = IVAL(pdata,12);
-#endif
-
-		SMB_DEV_T dev = (SMB_DEV_T)0;
-
-		if (raw_unixmode == SMB_MODE_NO_CHANGE) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-#if defined(HAVE_MAKEDEV)
-		dev = makedev(dev_major, dev_minor);
-#endif
-
-		switch (file_type) {
-#if defined(S_IFIFO)
-			case UNIX_TYPE_FIFO:
-				*p_unixmode |= S_IFIFO;
-				break;
-#endif
-#if defined(S_IFSOCK)
-			case UNIX_TYPE_SOCKET:
-				*p_unixmode |= S_IFSOCK;
-				break;
-#endif
-#if defined(S_IFCHR)
-			case UNIX_TYPE_CHARDEV:
-				*p_unixmode |= S_IFCHR;
-				break;
-#endif
-#if defined(S_IFBLK)
-			case UNIX_TYPE_BLKDEV:
-				*p_unixmode |= S_IFBLK;
-				break;
-#endif
-			default:
-				return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
-0%o for file %s\n", (double)dev, *p_unixmode, fname ));
-
-		/* Ok - do the mknod. */
-		if (SMB_VFS_MKNOD(conn, fname, *p_unixmode, dev) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-
-		/* If any of the other "set" calls fail we
- 		 * don't want to end up with a half-constructed mknod.
- 		 */
-
-		delete_on_fail = True;
-
-		if (lp_inherit_perms(SNUM(conn))) {
-			inherit_access_acl(
-				conn, parent_dirname(fname),
-				fname, *p_unixmode);
-		}
-
-		if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
-			status = map_nt_error_from_unix(errno);
-			SMB_VFS_UNLINK(conn,fname);
+		status = smb_unix_mknod(conn,
+					pdata,
+					total_data,
+					fname,
+					psbuf);
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
-		*p_size = get_file_size(*psbuf);
-		p_tvs->modtime = psbuf->st_mtime;
-		p_tvs->actime = psbuf->st_atime;
+		size = get_file_size(*psbuf);
+		tvs.modtime = psbuf->st_mtime;
+		tvs.actime = psbuf->st_atime;
+		/* 
+		 * We continue here as we might want to change the 
+		 * owner uid/gid.
+		 */
+		delete_on_fail = True;
 	}
 
 	/*
@@ -4532,8 +4734,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	if (raw_unixmode != SMB_MODE_NO_CHANGE) {
 		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
-			(unsigned int)*p_unixmode, fname ));
-		if (SMB_VFS_CHMOD(conn,fname,*p_unixmode) != 0) {
+			(unsigned int)unixmode, fname ));
+		if (SMB_VFS_CHMOD(conn, fname, unixmode) != 0) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
@@ -4569,7 +4771,25 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return status;
 		}
 	}
-	return NT_STATUS_OK;
+
+	/* Deal with any size changes. */
+
+	status = smb_set_file_size(conn,
+				fsp,
+				fname,
+				psbuf,
+				size);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Deal with any time changes. */
+
+	return smb_set_file_time(conn,
+				fsp,
+				fname,
+				psbuf,
+				tvs);
 }
 
 /****************************************************************************
@@ -4584,14 +4804,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	uint16 info_level;
-	int dosmode=0;
-	SMB_OFF_T size=0;
-	struct utimbuf tvs;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname;
-	int fd = -1;
 	files_struct *fsp = NULL;
-	mode_t unixmode = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!params) {
@@ -4599,7 +4814,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	}
 
 	ZERO_STRUCT(sbuf);
-	ZERO_STRUCT(tvs);
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
 		if (total_params < 4) {
@@ -4641,9 +4855,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			fd = fsp->fh->fd;
 
-			if (SMB_VFS_FSTAT(fsp,fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
@@ -4680,15 +4893,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	}
 
-	if (!CAN_WRITE(conn))
+	if (!CAN_WRITE(conn)) {
 		return ERROR_DOS(ERRSRV,ERRaccess);
+	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
-	}
-
-	if (VALID_STAT(sbuf)) {
-		unixmode = sbuf.st_mode;
 	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
@@ -4708,22 +4918,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		sbuf.st_mtime = fsp->pending_modtime;
 	}
 
-	size = get_file_size(sbuf);
-	tvs.modtime = sbuf.st_mtime;
-	tvs.actime = sbuf.st_atime;
-	dosmode = dos_mode(conn,fname,&sbuf);
-	unixmode = sbuf.st_mode;
-
 	switch (info_level) {
 
 		case SMB_INFO_STANDARD:
 		{
-			status = smb_set_info_standard(pdata,
-							total_data,
-							&tvs);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
+			status = smb_set_info_standard(conn,
+					pdata,
+					total_data,
+					fsp,
+					fname,
+					&sbuf);
 			break;
 		}
 
@@ -4734,22 +4938,18 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						total_data,
 						fsp,
 						fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		case SMB_SET_FILE_BASIC_INFO:
 		case SMB_FILE_BASIC_INFORMATION:
 		{
-			status = smb_set_file_basic_info(pdata,
+			status = smb_set_file_basic_info(conn,
+							pdata,
 							total_data,
-							&tvs,
-							&dosmode);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
+							fsp,
+							fname,
+							&sbuf);
 			break;
 		}
 
@@ -4761,15 +4961,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 								total_data,
 								fsp,
 								fname,
-								&sbuf,
-								&size);
-			if (!NT_STATUS_IS_OK(status)) {
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
-			}
+								&sbuf);
 			break;
 		}
 
@@ -4779,11 +4971,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			status = smb_set_file_end_of_file_info(conn,
 								pdata,
 								total_data,
+								fsp,
 								fname,
-								&size);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
+								&sbuf);
 			break;
 		}
 
@@ -4803,11 +4993,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fsp,
-						dosmode);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+						fname,
+						&sbuf);
+			break;
 		}
 
 		case SMB_FILE_POSITION_INFORMATION:
@@ -4816,10 +5004,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		/* From tridge Samba4 : 
@@ -4833,10 +5018,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			status = smb_file_mode_information(conn,
 						pdata,
 						total_data);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		/*
@@ -4854,14 +5036,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 							total_data,
 							fsp,
 							fname,
-							&sbuf,
-							&size,
-							&tvs,
-							&unixmode,
-							&dosmode);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
+							&sbuf);
 			break;
 		}
 
@@ -4876,10 +5051,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		case SMB_SET_FILE_UNIX_HLINK:
@@ -4893,10 +5065,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		case SMB_FILE_RENAME_INFORMATION:
@@ -4908,17 +5077,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 							total_data,
 							fsp,
 							fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-					return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
-				}
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 #if defined(HAVE_POSIX_ACLS)
@@ -4930,10 +5089,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						fsp,
 						&sbuf,
 						fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 #endif
 
@@ -4945,139 +5101,28 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						pdata,
 						total_data,
 						fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				if (blocking_lock_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
-			}
-			goto out;
+			break;
 		}
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (null_mtime(tvs.actime)) {
-		tvs.actime = sbuf.st_atime;
-	}
-
-	if (null_mtime(tvs.modtime)) {
-		tvs.modtime = sbuf.st_mtime;
-	}
-
-	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
-	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
-	DEBUG(6,("size: %.0f ", (double)size));
-
-	if (dosmode) {
-		if (S_ISDIR(sbuf.st_mode)) {
-			dosmode |= aDIR;
-		} else {
-			dosmode &= ~aDIR;
-		}
-	}
-
-	DEBUG(6,("dosmode: %x\n"  , dosmode));
-
-	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
-		(info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
-		(info_level == SMB_FILE_ALLOCATION_INFORMATION) ||
-		(info_level == SMB_FILE_END_OF_FILE_INFORMATION))) {
-
-		/*
-		 * Only do this test if we are not explicitly
-		 * changing the size of a file.
-		 */
-		if (!size)
-			size = get_file_size(sbuf);
-	}
-
-	/*
-	 * Try and set the times, size and mode of this file -
-	 * if they are different from the current values
-	 */
-
-	/* check the mode isn't different, before changing it */
-	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, &sbuf))) {
-
-		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n", fname, dosmode ));
-
-		if(file_set_dosmode(conn, fname, dosmode, &sbuf, False)) {
-			DEBUG(2,("file_set_dosmode of %s failed (%s)\n", fname, strerror(errno)));
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-		}
-	}
-
-	/* Now the size. */
-	if (size != get_file_size(sbuf)) {
-
-		int ret;
-
-		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
-			fname, (double)size ));
-
-		if (fd == -1) {
-			files_struct *new_fsp = NULL;
-
-			status = open_file_ntcreate(conn, fname, &sbuf,
-						FILE_WRITE_DATA,
-						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-						FILE_OPEN,
-						0,
-						FILE_ATTRIBUTE_NORMAL,
-						FORCE_OPLOCK_BREAK_TO_NONE,
-						NULL, &new_fsp);
 	
-			if (!NT_STATUS_IS_OK(status)) {
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-			ret = vfs_set_filelen(new_fsp, size);
-			close_file(new_fsp,NORMAL_CLOSE);
-		} else {
-			ret = vfs_set_filelen(fsp, size);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
 		}
-
-		if (ret == -1) {
-			return (UNIXERROR(ERRHRD,ERRdiskfull));
+		if (blocking_lock_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
 		}
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
 	}
-
-	/*
-	 * Finally the times.
-	 */
-	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
-		if(fsp != NULL) {
-			/*
-			 * This was a setfileinfo on an open file.
-			 * NT does this a lot. We also need to 
-			 * set the time here, as it can be read by 
-			 * FindFirst/FindNext and with the patch for bug #2045
-			 * in smbd/fileio.c it ensures that this timestamp is
-			 * kept sticky even after a write. We save the request
-			 * away and will set it on file close and after a write. JRA.
-			 */
-
-			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
-				fsp_set_pending_modtime(fsp, tvs.modtime);
-			}
-
-		}
-		DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
-
-		if(file_utime(conn, fname, &tvs)!=0) {
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-		}
-	}
-
-  out:
 
 	SSVAL(params,0,0);
 	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
