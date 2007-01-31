@@ -192,7 +192,7 @@ gss_display_status(OM_uint32 *minor_status,
 		    oid.length = 7;
 		}
 
-		asprintf (&buf, "unknown mech-code %d for mech %.*s",
+		asprintf (&buf, "unknown mech-code %lu for mech %.*s",
 			  (unsigned long)status_value,
 			  (int)oid.length, (char *)oid.value);
 		if (maj_junk == GSS_S_COMPLETE)
