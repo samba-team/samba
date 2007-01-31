@@ -322,4 +322,12 @@ ${hxtool} verify --missing-revoke \
 	chain:FILE:cert-sub-ca2.pem \
 	anchor:FILE:cert-ca.pem > /dev/null && exit 1
 
+echo "issue ee cert (crl uri)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:cert-ca.pem \
+	  --req="pkcs10-request.der" \
+	  --crl-uri="ftp://ftp.test.h5l.se/crl1.crl" \
+	  --subject="cn=cert-ee-crl-uri" \
+	  --certificate="FILE:cert-ee.pem" || exit 1
+
 exit 0
