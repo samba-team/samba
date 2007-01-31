@@ -1929,9 +1929,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				count++;
 				DEBUG(3,("unlink_internals: succesful unlink "
 					 "[%s]\n",fname));
-				notify_action(conn, directory, dname,
-					      FILE_NOTIFY_CHANGE_FILE_NAME,
-					      NOTIFY_ACTION_REMOVED);
+				notify_fname(conn, NOTIFY_ACTION_REMOVED,
+					     FILE_NOTIFY_CHANGE_FILE_NAME,
+					     fname);
 			}
 				
 		}
