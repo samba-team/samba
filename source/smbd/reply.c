@@ -1867,7 +1867,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
 			notify_fname(conn, directory,
-				     FILE_NOTIFY_CHANGE_FILE,
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
 				     NOTIFY_ACTION_REMOVED);
 		}
 	} else {
@@ -1930,7 +1930,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				DEBUG(3,("unlink_internals: succesful unlink "
 					 "[%s]\n",fname));
 				notify_action(conn, directory, dname,
-					      FILE_NOTIFY_CHANGE_FILE,
+					      FILE_NOTIFY_CHANGE_FILE_NAME,
 					      NOTIFY_ACTION_REMOVED);
 			}
 				

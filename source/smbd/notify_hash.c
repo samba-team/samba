@@ -147,8 +147,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 */
 
 		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME
-			     |FILE_NOTIFY_CHANGE_FILE_NAME
-			     |FILE_NOTIFY_CHANGE_FILE)) {
+			     |FILE_NOTIFY_CHANGE_FILE_NAME)) {
 			int i;
 			unsigned char tmp_hash[16];
 			mdfour(tmp_hash, (const unsigned char *)fname,

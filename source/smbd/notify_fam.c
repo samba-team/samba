@@ -191,8 +191,8 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 	struct fam_notify_ctx *ctx;
 	pstring fullpath;
 
-	if ((*filter & FILE_NOTIFY_CHANGE_FILE) == 0) {
-		DEBUG(10, ("filter = %u, no FILE_NOTIFY_CHANGE_FILE\n",
+	if ((*filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
+		DEBUG(10, ("filter = %u, no FILE_NOTIFY_CHANGE_FILE_NAME\n",
 			   *filter));
 		return NULL;
 	}
@@ -224,7 +224,7 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 	 * FAMCreated and FAMDeleted events
 	 */
 
-	ctx->filter = FILE_NOTIFY_CHANGE_FILE;
+	ctx->filter = FILE_NOTIFY_CHANGE_FILE_NAME;
 
 	if (!(ctx->path = talloc_strdup(ctx, fullpath))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
@@ -236,7 +236,7 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 	 * Leave the rest to smbd itself
 	 */
 
-	*filter &= ~FILE_NOTIFY_CHANGE_FILE;
+	*filter &= ~FILE_NOTIFY_CHANGE_FILE_NAME;
 
 	DLIST_ADD(fam_notify_list, ctx);
 	talloc_set_destructor(ctx, fam_notify_ctx_destructor);
