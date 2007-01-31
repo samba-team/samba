@@ -133,8 +133,8 @@ sub ParseFunction($$)
 
 	pidl "ZERO_STRUCT(r.out);" if ($hasout);
 
-	my $proto = "_$fn->{NAME}(pipes_struct *p";
-	my $ret = "_$fn->{NAME}(p";
+	my $proto = "_$fn->{NAME}(pipes_struct *p, struct $fn->{NAME} *r";
+	my $ret = "_$fn->{NAME}(p, &r";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
@@ -143,10 +143,6 @@ sub ParseFunction($$)
 				 has_property($_, "represent_as")) {
 			AllocOutVar($_, "mem_ctx", "r.out.$_->{NAME}", \%env);
 		}
-		if (grep(/in/, @dir)) { $ret .= ", r.in.$_->{NAME}"; }
-		else { $ret .= ", r.out.$_->{NAME}"; }
-
-		$proto .= ", " . DeclLong($_);
 	}
 	$ret .= ")";
 	$proto .= ");";
