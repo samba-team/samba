@@ -78,7 +78,7 @@ qx.Proto.buildFsm = function(module)
 
       "events" :
         {
-          // If the search button is activated, issue a seacrh request
+          // If the search button is activated, issue a search request
           "execute" :
           {
             "search" :
@@ -200,7 +200,7 @@ qx.Proto.buildFsm = function(module)
           if (parent == tree)
           {
             // ... then we want the defaultNamingContext, ...
-            attributes = [ "defaultNamingContext" ];
+            attributes = [ "defaultNamingContext", "namingContexts" ];
 
             // ... and we want only base scope
             scope = "base";

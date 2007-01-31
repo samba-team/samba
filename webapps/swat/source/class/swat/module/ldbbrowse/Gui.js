@@ -510,33 +510,63 @@ qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
     return;
   }
 
-  for (var i = 0; i < result.length; i++)
-  {
-    var name;
+  // base object, add naming contexts to the root
+  if ((result.length == 1) &&
+      ((result[0]["dn"] == "") ||
+       (result[0]["dn"].toLowerCase() == "cn=rootdse"))) {
 
-    child = result[i];
+    defnc = result[0]["defaultNamingContext"];
 
-    // Determine name for new tree row.  If first level, use entire
-    // DN.  Otherwise, strip off first additional component.
-    if (attributes == "defaultNamingContext")
-    {
-      name = child["defaultNamingContext"];
+    // Build a tree row for the defaultNamingContext
+    if (defnc) {
+      trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(defnc);
+      // This row is a "folder" (it can have children)
+      t = new qx.ui.treefullcontrol.TreeFolder(trs);
+      t.setAlwaysShowPlusMinusSymbol(true);
+
+      // Add this row to its parent
+      parent.add(t);
     }
-    else
+
+    var ncs = result[0]["namingContexts"];
+
+    // If it's multi-valued (type is an array) we have other naming contexts to show
+    if (typeof(ncs) == "object") {
+      
+      for (var i = 0; i < ncs.length; i++) {
+        if (ncs[i] != defnc) { //skip default naming context
+          trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(ncs[i]);
+          // This row is a "folder" (it can have children)
+          t = new qx.ui.treefullcontrol.TreeFolder(trs);
+          t.setAlwaysShowPlusMinusSymbol(true);
+  
+          // Add this row to its parent
+          parent.add(t);
+        }
+      }
+    }
+  }
+  else {
+
+    for (var i = 0; i < result.length; i++)
     {
-      //FIXME: must check for escapes, as ',' is also a valid value, not only a separator
+      var name;
+  
+      child = result[i];
+  
       name = child["dn"].split(",")[0];
+  
+      // Build a standard tree row
+      trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(name);
+  
+      // This row is a "folder" (it can have children)
+      t = new qx.ui.treefullcontrol.TreeFolder(trs);
+      t.setAlwaysShowPlusMinusSymbol(true);
+  
+      // Add this row to its parent
+      parent.add(t);
     }
 
-    // Build a standard tree row
-    trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(name);
-
-    // This row is a "folder" (it can have children)
-    t = new qx.ui.treefullcontrol.TreeFolder(trs);
-    t.setAlwaysShowPlusMinusSymbol(true);
-
-    // Add this row to its parent
-    parent.add(t);
   }
 };
 
