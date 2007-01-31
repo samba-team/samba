@@ -1,3 +1,23 @@
+2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: don't verify identifier in CHAP, its the client
+	that chooses it.
+	
+2007-01-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: Basic test of prf.
+
+	* lib/krb5/test_prf.c: Basic test of prf.
+
+	* lib/krb5/mit_glue.c: Add MIT glue for Kerberos RFC 3961 PRF
+	functions.
+
+	* lib/krb5/crypto.c: Add Kerberos RFC 3961 PRF functions.
+
+	* lib/krb5/krb5_data.3: Document krb5_data_cmp.
+
+	* lib/krb5/data.c: Add krb5_data_cmp.
+	
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kx509.c: Don't use C99 syntax.
