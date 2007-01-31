@@ -402,8 +402,8 @@ void notify_action(connection_struct *conn, const char *parent,
 	TALLOC_FREE(lck);
 }
 
-void notify_fname(connection_struct *conn, const char *path,
-		  uint32 filter, uint32 action)
+void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
+		  const char *path)
 {
 	char *parent;
 	const char *name;

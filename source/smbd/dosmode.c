@@ -492,8 +492,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	}
 
 	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0) {
-		notify_fname(conn, fname, FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     NOTIFY_ACTION_MODIFIED);
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		return 0;
 	}
 
@@ -524,8 +524,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		ret = SMB_VFS_FCHMOD(fsp, fsp->fh->fd, unixmode);
 		unbecome_root();
 		close_file_fchmod(fsp);
-		notify_fname(conn, fname, FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     NOTIFY_ACTION_MODIFIED);
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 	}
 
 	return( ret );
@@ -599,8 +599,8 @@ BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
 		return False;
 	}
 
-	notify_fname(conn, fname, FILE_NOTIFY_CHANGE_LAST_WRITE,
-		     NOTIFY_ACTION_MODIFIED);
+	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+		     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
   
 	return(True);
 } 
