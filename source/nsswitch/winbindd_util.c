@@ -1311,3 +1311,37 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 
 	return status;
 }
+
+/*********************************************************************
+ We use this to remove spaces from user and group names
+********************************************************************/
+
+void ws_name_replace( char *name, char replace )
+{
+	char replace_char[2] = { 0x0, 0x0 };
+    
+	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
+		return;
+
+	replace_char[0] = replace;	
+	all_string_sub( name, " ", replace_char, 0 );
+
+	return;	
+}
+
+/*********************************************************************
+ We use this to do the inverse of ws_name_replace()
+********************************************************************/
+
+void ws_name_return( char *name, char replace )
+{
+	char replace_char[2] = { 0x0, 0x0 };
+    
+	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
+		return;
+	
+	replace_char[0] = replace;	
+	all_string_sub( name, replace_char, " ", 0 );
+
+	return;	
+}

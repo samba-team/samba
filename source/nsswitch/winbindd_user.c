@@ -238,6 +238,9 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 	fstrcpy( username, acct_name );
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
+
+	ws_name_replace( s->username, '_' );
+	 
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
 	s->shell = talloc_strdup(s->state->mem_ctx, shell);
