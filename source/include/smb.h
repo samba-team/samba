@@ -446,6 +446,11 @@ struct notify_change {
 };
 
 struct notify_mid_map;
+struct sys_notify_backend;
+struct sys_notify_context {
+	struct event_context *ev;
+	void *private_data;
+};
 
 struct notify_change_request {
 	struct notify_change_request *prev, *next;

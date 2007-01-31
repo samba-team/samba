@@ -25,17 +25,7 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
-#include "lib/tdb/include/tdb.h"
-#include "lib/util/util_tdb.h"
-#include "messaging/messaging.h"
-#include "db_wrap.h"
-#include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_notify.h"
-#include "lib/util/dlinklist.h"
-#include "ntvfs/common/ntvfs_common.h"
-#include "ntvfs/sysdep/sys_notify.h"
-#include "cluster/cluster.h"
 
 struct notify_context {
 	struct tdb_wrap *w;
@@ -83,11 +73,11 @@ static int notify_destructor(struct notify_context *notify)
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
-				   struct share_config *scfg)
+				   struct share_params *scfg)
 {
 	struct notify_context *notify;
 
-	if (share_bool_option(scfg, NOTIFY_ENABLE, NOTIFY_ENABLE_DEFAULT) != True) {
+	if (!lp_parm_bool(scfg->service, "notify", "enable", True)) {
 		return NULL;
 	}
 
@@ -96,7 +86,9 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->w = cluster_tdb_tmp_open(notify, "notify.tdb", TDB_SEQNUM);
+	notify->w = tdb_wrap_open(notify, lock_path("notify.tdb"),
+				  0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				  O_RDWR|O_CREAT, 0644);
 	if (notify->w == NULL) {
 		talloc_free(notify);
 		return NULL;
@@ -167,7 +159,7 @@ static NTSTATUS notify_load(struct notify_context *notify)
 		return NT_STATUS_OK;
 	}
 
-	blob.data = dbuf.dptr;
+	blob.data = (uint8 *)dbuf.dptr;
 	blob.length = dbuf.dsize;
 
 	status = ndr_pull_struct_blob(&blob, notify->array, notify->array, 
@@ -182,7 +174,8 @@ static NTSTATUS notify_load(struct notify_context *notify)
 */
 static int notify_compare(const void *p1, const void *p2)
 {
-	const struct notify_entry *e1 = p1, *e2 = p2;
+	const struct notify_entry *e1 = (const struct notify_entry *)p1;
+	const struct notify_entry *e2 = (const struct notify_entry *)p2;
 	return strcmp(e1->path, e2->path);
 }
 
@@ -222,7 +215,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 		return status;
 	}
 
-	dbuf.dptr = blob.data;
+	dbuf.dptr = (char *)blob.data;
 	dbuf.dsize = blob.length;
 		
 	ret = tdb_store_bystring(notify->w->tdb, NOTIFY_KEY, dbuf, TDB_REPLACE);
@@ -276,6 +269,8 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
 {
 	struct notify_list *listel = talloc_get_type(ptr, struct notify_list);
 	ev->private_data = listel;
+	DEBUG(10, ("sys_notify_callback called with action=%d, for %s\n",
+		   ev->action, ev->path));
 	listel->callback(listel->private_data, ev);
 }
 
@@ -575,6 +570,9 @@ void notify_trigger(struct notify_context *notify,
 	NTSTATUS status;
 	int depth;
 	const char *p, *next_p;
+
+	DEBUG(10, ("notify_trigger called action=0x%x, filter=0x%x, "
+		   "path=%s\n", (unsigned)action, (unsigned)filter, path));
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {

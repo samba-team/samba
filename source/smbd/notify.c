@@ -548,3 +548,30 @@ BOOL init_change_notify(void)
 
 	return True;
 }
+
+struct sys_notify_context *sys_notify_context_create(struct share_params *scfg,
+						     TALLOC_CTX *mem_ctx, 
+						     struct event_context *ev)
+{
+	struct sys_notify_context *ctx;
+
+	if (!(ctx = TALLOC_P(mem_ctx, struct sys_notify_context))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	ctx->ev = ev;
+	ctx->private_data = NULL;
+	return ctx;
+}
+
+NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
+			  struct notify_entry *e,
+			  void (*callback)(struct sys_notify_context *ctx, 
+					   void *private_data,
+					   struct notify_event *ev),
+			  void *private_data, void *handle)
+{
+	return inotify_watch(ctx, e, callback, private_data, handle);
+}
+
