@@ -152,7 +152,7 @@ static int kernel_register_notify(connection_struct *conn, char *path,
 	kernel_flags = DN_CREATE|DN_DELETE|DN_RENAME; /* creation/deletion
 						       * changes
 						       * everything! */
-	if (flags & FILE_NOTIFY_CHANGE_FILE)        kernel_flags |= DN_MODIFY;
+	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_DIR_NAME)    kernel_flags
 							    |= DN_RENAME
 							    |DN_DELETE;
