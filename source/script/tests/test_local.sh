@@ -21,9 +21,23 @@ incdir=`dirname $0`
 # the local tests don't need smbd
 SMBD_TEST_FIFO=""
 export SMBD_TEST_FIFO
+skipped="LOCAL-RESOLVE LOCAL-REGISTRY"
+
+echo "WARNING: Skipping $skipped"
 
 failed=0
 for t in $local_tests; do
+    skip=0
+    for s in $skipped; do
+    	if [ x"$s" = x"$t" ]; then
+    	    skip=1;
+	    break;
+	fi
+    done
+    if [ $skip = 1 ]; then
+    	continue;
+    fi
+
 	name="$t"
 	testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
 done
