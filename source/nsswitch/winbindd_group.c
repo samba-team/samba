@@ -462,7 +462,6 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	gid_t gid;
 	union unid_t id;
 	NTSTATUS status;
-	char replace_char[2] = { 0x0, 0x0 };
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
