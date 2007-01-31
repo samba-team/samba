@@ -31,6 +31,7 @@ q
 END
 autoreconf --force --install
 (cd doc && makeinfo heimdal.texi)
+(cd doc && makeinfo hx509.texi)
 
 find . -name Makefile.am | while read f; do
 	for i in `sed -n -e '/^man_MANS/{
