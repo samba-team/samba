@@ -642,6 +642,13 @@ static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_addr
 		/* 
 		 * if we haven't found an address in the same subnet, search in ones
 		 * which match the client more
+		 *
+		 * some notes:
+		 *
+		 * it's not "idx = idx % r" but "idx = r % idx"
+		 * because in "a % b" b is the allowed range
+		 * and b-1 is the maximum possible result, so it must be decreasing
+		 * and the above idx == 0 check breaks the while(1) loop.
 		 */
 		idx = r % idx;
 	}
