@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,7 +34,6 @@
 #include "config.h"
 
 #include <stdio.h>
-#include <gssapi.h>
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
