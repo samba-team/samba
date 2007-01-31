@@ -798,5 +798,16 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 	}
 }
 
+/*
+  Send a message to a particular server
+*/
+NTSTATUS messaging_send(struct messaging_context *msg,
+			struct server_id server, 
+			uint32_t msg_type, DATA_BLOB *data)
+{
+	return message_send_pid_internal(server.id, msg_type, data->data,
+					 data->length, True, 0)
+		? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+}
 
 /** @} **/
