@@ -72,6 +72,7 @@ make_proto () {
 make_proto lib/krb5 krb5-protos.h krb5-private.h '$(dist_libkrb5_la_SOURCES)' KRB5_LIB_FUNCTION
 make_proto lib/kadm5 kadm5-protos.h kadm5-private.h '$(dist_libkadm5srv_la_SOURCES) $(dist_libkadm5clnt_la_SOURCES)'
 make_proto lib/hdb hdb-protos.h hdb-private.h '$(dist_libhdb_la_SOURCES)'
+make_proto lib/ntlm heimntlm-protos.h /dev/null '$(libheimntlm_la_SOURCES)'
 make_proto lib/hx509 hx509-protos.h hx509-private.h '$(dist_libhx509_la_SOURCES)'
 make_proto lib/gssapi /dev/null spnego/spnego-private.h '$(spnegosrc)'
 make_proto lib/gssapi /dev/null krb5/gsskrb5-private.h '$(krb5src)'
