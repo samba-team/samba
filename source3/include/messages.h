@@ -96,4 +96,12 @@ struct process_id {
 	pid_t pid;
 };
 
+/*
+ * Samba4 API compatibility layer
+ */
+
+struct server_id {
+	struct process_id id;
+};
+
 #endif

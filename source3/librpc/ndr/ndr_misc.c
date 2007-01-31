@@ -237,3 +237,36 @@ void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const stru
 	ndr_print_GUID(ndr, "uuid", &r->uuid);
 	ndr->depth--;
 }
+
+NTSTATUS ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
+					  (uint32_t)r->id.pid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		uint32_t pid;
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &pid));
+		r->id.pid = (pid_t)pid;
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r)
+{
+	ndr_print_struct(ndr, name, "server_id");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "id", (uint32_t)r->id.pid);
+	ndr->depth--;
+}
