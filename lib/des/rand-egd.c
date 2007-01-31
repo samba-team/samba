@@ -150,7 +150,7 @@ egd_seed(const void *indata, int size)
     close(fd);
 }
 
-int 
+static int 
 get_bytes(const char *path, unsigned char *outdata, int size)
 {
     size_t len;
