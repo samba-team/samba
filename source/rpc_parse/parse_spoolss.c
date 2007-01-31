@@ -3930,8 +3930,8 @@ BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 		prs_debug(ps, depth, "", "sec_io_desc_buf");
 		if (!prs_uint32("size", ps, depth + 1, &dummy))
 			return False;
-		if (!prs_uint32("ptr", ps, depth + 1, &dummy)) return
-								       False;
+		if (!prs_uint32("ptr", ps, depth + 1, &dummy))
+			return False;
 	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
