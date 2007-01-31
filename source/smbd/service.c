@@ -22,7 +22,7 @@
 
 extern userdom_struct current_user_info;
 
-BOOL canonicalize_path(connection_struct *conn, pstring path)
+static BOOL canonicalize_path(connection_struct *conn, pstring path)
 {
 #ifdef REALPATH_TAKES_NULL
 	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
