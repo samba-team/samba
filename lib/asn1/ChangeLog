@@ -1,4 +1,14 @@
+2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: seq rules for CRLDistributionPoints
+	
+2007-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: add CRLDistributionPoints and friends
+	
 2007-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* check-der.c: check BMPstring oddlength more
 
 	* check-der.c: Test for NUL char in string in GENERAL STRING.
 
