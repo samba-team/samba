@@ -1866,9 +1866,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
-			notify_fname(conn, directory,
+			notify_fname(conn, NOTIFY_ACTION_REMOVED,
 				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     NOTIFY_ACTION_REMOVED);
+				     directory);
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
@@ -3714,8 +3714,9 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 
 	ret = SMB_VFS_RMDIR(conn,directory);
 	if (ret == 0) {
-		notify_fname(conn, directory, FILE_NOTIFY_CHANGE_DIR_NAME,
-			     NOTIFY_ACTION_REMOVED);
+		notify_fname(conn, NOTIFY_ACTION_REMOVED,
+			     FILE_NOTIFY_CHANGE_DIR_NAME,
+			     directory);
 		return True;
 	}
 
@@ -3793,8 +3794,9 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 		return False;
 	}
 
-	notify_fname(conn, directory, FILE_NOTIFY_CHANGE_DIR_NAME,
-		     NOTIFY_ACTION_REMOVED);
+	notify_fname(conn, NOTIFY_ACTION_REMOVED,
+		     FILE_NOTIFY_CHANGE_DIR_NAME,
+		     directory);
 
 	return True;
 }
