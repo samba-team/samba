@@ -449,7 +449,7 @@ qx.Proto._switchToModrecord = function()
   this._ldbmod.setDisplay(true);
   this._newb.setEnabled(false);
   this._modb.setEnabled(false);
-  this._ldbmod.initMod(this._table, this._switchToNormal, this);
+  this._ldbmod.initMod(this._table.getTableModel(), this._switchToNormal, this);
 }
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
