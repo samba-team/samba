@@ -946,6 +946,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		set_conn_connectpath(conn,s);
 	}
 
+	if ((!conn->printer) && (!conn->ipc)) {
+		conn->notify_ctx = notify_init(conn->mem_ctx, server_id_self(),
+					       smbd_messaging_context(),
+					       smbd_event_context(),
+					       conn->params);
+	}
+
 /* ROOT Activities: */	
 	/* check number of connections */
 	if (!claim_connection(conn,
