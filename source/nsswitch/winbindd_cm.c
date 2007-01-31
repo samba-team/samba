@@ -1126,9 +1126,9 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		   We deliberately don't care about the
 		   return here. */
 
-		get_dc_name(domain->name, lp_realm(), dcname, &ip);
+		get_dc_name(domain->name, domain->alt_name, dcname, &ip);
 
-		sitename = sitename_fetch(lp_realm());
+		sitename = sitename_fetch(domain->alt_name);
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
