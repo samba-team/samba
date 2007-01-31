@@ -189,7 +189,6 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 			    files_struct *fsp, uint32 *filter)
 {
 	struct fam_notify_ctx *ctx;
-	pstring fullpath;
 
 	if ((*filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
 		DEBUG(10, ("filter = %u, no FILE_NOTIFY_CHANGE_FILE_NAME\n",
@@ -197,21 +196,6 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	/* FAM needs an absolute pathname. */
-
-	pstrcpy(fullpath, fsp->fsp_name);
-	if (!canonicalize_path(fsp->conn, fullpath)) {
-		DEBUG(0, ("failed to canonicalize path '%s'\n", fullpath));
-		return NULL;
-	}
-
-	if (*fullpath != '/') {
-		DEBUG(0, ("canonicalized path '%s' into `%s`\n", fsp->fsp_name,
-			  fullpath));
-		DEBUGADD(0, ("but expected an absolute path\n"));
-		return NULL;
-	}
-	
 	if (!(ctx = TALLOC_P(mem_ctx, struct fam_notify_ctx))) {
 		return NULL;
 	}
@@ -226,8 +210,9 @@ static void *fam_notify_add(TALLOC_CTX *mem_ctx,
 
 	ctx->filter = FILE_NOTIFY_CHANGE_FILE_NAME;
 
-	if (!(ctx->path = talloc_strdup(ctx, fullpath))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+	if (!(ctx->path = talloc_asprintf(ctx, "%s/%s", fsp->conn->connectpath,
+					  fsp->fsp_name))) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
