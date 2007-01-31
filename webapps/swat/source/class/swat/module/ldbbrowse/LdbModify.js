@@ -126,10 +126,12 @@ qx.Proto.initNew = function(callback, obj) {
 
   this._mainArea.add(hlayout);
 
+  this._createAttributesArea();
+
   return;
 }
 
-qx.Proto.initMod = function(table, callback, obj) {
+qx.Proto.initMod = function(tablemodel, callback, obj) {
 
   this._setExitCallback(callback, obj);
 
@@ -145,9 +147,14 @@ qx.Proto.initMod = function(table, callback, obj) {
 
   this._mainArea.add(this._dn);
 
-  //TODO: for each entry in the table, add new entries in the object
+  this._createAttributesArea();
 
-  return;
+  // for each entry in the table, add new entries in the object
+  var count = tablemodel.getRowCount();
+  for (var i = 0; i < count; i++) {
+    var row = tablemodel.getRowData(i);
+    this._addNewAttribute(row[0], row[1]);
+  }
 }
 
 qx.Proto._setExitCallback = function(vFunction, vObject) {
@@ -194,4 +201,81 @@ qx.Proto._cancelOp = function() {
 
   this._reset();
   this._callExitCallback();
+}
+
+qx.Proto._addNewAttribute = function(name, value, before) {
+
+  // do not add a new attribute if the name is null
+  if (name == null || name == "") {
+    return;
+  }
+
+  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+  hlayout.set({ width: "auto", height: "auto", spacing: 10 });
+
+  var rButton = new qx.ui.form.Button("-");
+  rButton.addEventListener("execute", function() {
+    hlayout.setParent(null);
+  });
+
+  var aLabel = new qx.ui.basic.Label(name);
+
+  var aTextField = new qx.ui.form.TextField(value);
+
+  var aButton = new qx.ui.form.Button("+");
+  aButton.addEventListener("execute", function() {
+    this._addNewAttribute(name, null, hlayout);
+  }, this);
+
+  hlayout.add(rButton, aLabel, aTextField, aButton);
+
+  if (before) {
+    this._attrArea.addAfter(hlayout, before);
+  } else {
+    this._attrArea.addBefore(hlayout, this._attrAddButton);
+  }
+}
+
+qx.Proto._createNewAttribute = function() {
+
+  var main = qx.ui.core.ClientDocument.getInstance();
+
+  var amw = new qx.ui.window.Window("New Attribute Name");
+  amw.setSpace(100, 200, 100, 150);
+  amw.setModal(true);
+  amw.setShowMinimize(false);
+  amw.setShowMaximize(false);
+  amw.setShowClose(false);
+  amw.setResizeable(false);
+
+  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+  hlayout.set({ width: "auto", height: "auto", spacing: 10 });
+
+  attrName = new qx.ui.form.TextField();
+
+  var okButton = new qx.ui.form.Button("OK");
+  okButton.addEventListener("execute", function() {
+    this._addNewAttribute(attrName.getValue());
+    amw.close();
+  }, this);
+
+  hlayout.add(attrName, okButton);
+
+  amw.add(hlayout);
+
+  main.add(amw);
+
+  amw.open();
+}
+
+qx.Proto._createAttributesArea = function() {
+
+  this._attrArea = new qx.ui.layout.VerticalBoxLayout();
+
+  this._attrAddButton = new qx.ui.form.Button("+");
+  this._attrAddButton.addEventListener("execute", this._createNewAttribute, this);
+
+  this._attrArea.add(this._attrAddButton);
+
+  this._mainArea.add(this._attrArea);
 }
