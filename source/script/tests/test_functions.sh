@@ -71,7 +71,7 @@ slapd_start() {
     export PATH
 # running slapd in the background means it stays in the same process group, so it can be
 # killed by timelimit
-    slapd -d0 -f $SLAPD_CONF -h $LDAPI_ESCAPE &
+    slapd -d0 -f $SLAPD_CONF -h $LDAP_URI_ESCAPE &
     PATH=$OLDPATH
     export PATH
     return $?;
