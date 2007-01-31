@@ -72,10 +72,14 @@ incdir=`dirname $ARG0`
 
 #Start slapd before smbd
 if [ x"$TEST_LDAP" = x"yes" ]; then
-    slapd_start || exit 1;
+    if test -z "$FEDORA_DS_PREFIX"; then
+	slapd_start || exit 1;
+    else
+	perl $FEDORA_DS_PREFIX/lib/fedora-ds/ds_newinst.pl $FEDORA_DS_INF || exit 1;
+    fi
     echo -n "LDAP PROVISIONING..."
-    $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI || {
-	echo "LDAP PROVISIONING failed: $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI"
+    $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS "$PROVISION_ACI" --ldap-backend=$LDAP_URI || {
+	echo "LDAP PROVISIONING failed: $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS $PROVISION_ACI --ldap-backend=$LDAP_URI"
 	exit 1;
     }
     #LDAP is slow
@@ -246,7 +250,11 @@ totalfailed=$?
 kill `cat $PIDDIR/smbd.pid`
 
 if [ "$TEST_LDAP"x = "yesx" ]; then
-    kill `cat $PIDDIR/slapd.pid`
+    if test -z "$FEDORA_DS_PREFIX"; then
+	kill `cat $PIDDIR/slapd.pid`
+    else
+	$LDAPDIR/slapd-samba4/stop-slapd
+    fi
 fi
 
 END=`date`
