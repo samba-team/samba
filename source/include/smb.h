@@ -442,7 +442,7 @@ struct vfs_fsp_data {
 
 struct notify_change {
 	uint32_t action;
-	char *name;
+	const char *name;
 };
 
 struct notify_mid_map;
