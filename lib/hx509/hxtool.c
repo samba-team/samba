@@ -1518,6 +1518,13 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_subject");
     }
 
+    if (opt->crl_uri_string) {
+	ret = hx509_ca_tbs_add_crl_dp_uri(context, tbs, 
+					  opt->crl_uri_string, NULL);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_crl_dp_uri");
+    }
+
     eval_types(context, tbs, opt);
 
     if (opt->issue_ca_flag) {
