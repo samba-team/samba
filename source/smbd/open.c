@@ -309,8 +309,8 @@ static NTSTATUS open_file(files_struct *fsp,
 							    fsp);
 			}
 
-			notify_action(conn, parent_dir, name, -1,
-				      NOTIFY_ACTION_ADDED);
+			notify_fname(conn, NOTIFY_ACTION_ADDED,
+				     FILE_NOTIFY_CHANGE_FILE_NAME, path);
 		}
 
 	} else {
