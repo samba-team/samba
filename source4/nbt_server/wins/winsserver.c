@@ -29,7 +29,9 @@
 #include "system/time.h"
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
+#include "system/network.h"
 #include "lib/socket/socket.h"
+#include "lib/socket/netif.h"
 #include "lib/ldb/include/ldb.h"
 
 /*
@@ -558,6 +560,98 @@ done:
 	nbtd_name_registration_reply(nbtsock, packet, src, rcode);
 }
 
+static uint32_t ipv4_match_bits(struct ipv4_addr ip1,struct ipv4_addr ip2)
+{
+	uint32_t i, j, match=0;
+	uint8_t *p1, *p2;
+
+	p1 = (uint8_t *)&ip1.addr;
+	p2 = (uint8_t *)&ip2.addr;
+
+	for (i=0; i<4; i++) {
+		if (p1[i] != p2[i]) break;
+		match += 8;
+	}
+
+	if (i==4) return match;
+
+	for (j=0; j<8; j++) {
+		if ((p1[i] & (1<<(7-j))) != (p2[i] & (1<<(7-j))))
+			break;
+		match++;
+	}
+
+	return match;
+}
+
+static int nbtd_wins_randomize1Clist_sort(void *p1,/* (const char **) */
+					  void *p2,/* (const char **) */
+					  struct socket_address *src)
+{
+	const char *a1 = (const char *)*(const char **)p1;
+	const char *a2 = (const char *)*(const char **)p2;
+	uint32_t match_bits1;
+	uint32_t match_bits2;
+
+	match_bits1 = ipv4_match_bits(interpret_addr2(a1), interpret_addr2(src->addr));
+	match_bits2 = ipv4_match_bits(interpret_addr2(a2), interpret_addr2(src->addr));
+
+	return match_bits2 - match_bits1;
+}
+
+static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_address *src)
+{
+	const char *mask;
+	const char *tmp;
+	uint32_t num_addrs;
+	uint32_t idx, sidx;
+	int r;
+
+	for (num_addrs=0; addresses[num_addrs]; num_addrs++) { /* noop */ }
+
+	if (num_addrs <= 1) return; /* nothing to do */
+
+	/* first sort the addresses depending on the matching to the client */
+	ldb_qsort(addresses, num_addrs , sizeof(addresses[0]),
+		  src, (ldb_qsort_cmp_fn_t)nbtd_wins_randomize1Clist_sort);
+
+	mask = lp_parm_string(-1, "nbtd", "wins_randomize1Clist_mask");
+	if (!mask) {
+		mask = "255.255.255.0";
+	}
+
+	/* 
+	 * choose a random address to be the first in the response to the client,
+	 * preferr the addresses inside the nbtd:wins_randomize1Clist_mask netmask
+	 */
+	r = random();
+	idx = sidx = r % num_addrs;
+
+	while (1) {
+		BOOL same;
+
+		/* if the current one is in the same subnet, use it */
+		same = iface_same_net(addresses[idx], src->addr, mask);
+		if (same) {
+			sidx = idx;
+			break;
+		}
+
+		/* we need to check for idx == 0, after checking for the same net */
+		if (idx == 0) break;
+		/* 
+		 * if we haven't found an address in the same subnet, search in ones
+		 * which match the client more
+		 */
+		idx = r % idx;
+	}
+
+	/* note sidx == 0 is also valid here ... */
+	tmp		= addresses[0];
+	addresses[0]	= addresses[sidx];
+	addresses[sidx]	= tmp;
+}
+
 /*
   query a name
 */
@@ -676,6 +770,17 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 		nb_flags |= NBT_NM_GROUP;
 	} else {
 		nb_flags |= (rec->node <<13);
+	}
+
+	/*
+	 * since Windows 2000 Service Pack 2 there's on option to trigger this behavior:
+	 *
+	 * HKEY_LOCAL_MACHINE\System\CurrentControlset\Services\WINS\Parameters\Randomize1CList
+	 * Typ: Daten REG_DWORD
+	 * Value: 0 = deactivated, 1 = activated
+	 */
+	if (name->type == NBT_NAME_LOGON && lp_parm_bool(-1, "nbtd", "wins_randomize1Clist", False)) {
+		nbtd_wins_randomize1Clist(addresses, src);
 	}
 
 found:
