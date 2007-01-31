@@ -669,6 +669,7 @@ typedef struct connection_struct {
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
+	struct notify_context *notify_ctx;
 } connection_struct;
 
 struct current_user {

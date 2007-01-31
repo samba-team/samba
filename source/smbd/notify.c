@@ -159,7 +159,8 @@ void change_notify_reply(const char *request_buf, uint32 max_param_count,
 }
 
 NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
-				   uint32 filter, struct files_struct *fsp)
+				   uint32 filter, BOOL recursive,
+				   struct files_struct *fsp)
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
@@ -177,9 +178,7 @@ NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
 	request->max_param_count = max_param_count;
 	request->filter = filter;
 	request->fsp = fsp;
-
-	request->backend_data = cnotify->notify_add(NULL, smbd_event_context(),
-						    fsp, &request->filter);
+	request->backend_data = NULL;
 	
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
@@ -343,6 +342,18 @@ void notify_action(connection_struct *conn, const char *parent,
 		return;
 	}
 
+	{
+		char *fullpath;
+
+		if (asprintf(&fullpath, "%s/%s/%s", conn->connectpath,
+			     parent, name) != -1) {
+			notify_trigger(conn->notify_ctx, action, filter,
+				       fullpath);
+			SAFE_FREE(fullpath);
+		}
+		return;
+	}
+
 	if (!(lck = get_share_mode_lock(NULL, sbuf.st_dev, sbuf.st_ino,
 					NULL, NULL))) {
 		return;
@@ -405,20 +416,21 @@ void notify_action(connection_struct *conn, const char *parent,
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
-	char *parent;
-	const char *name;
+	char *fullpath;
 
-	if (!parent_dirname_talloc(tmp_talloc_ctx(), path, &parent, &name)) {
+	if (asprintf(&fullpath, "%s/%s", conn->connectpath, path) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
 		return;
 	}
 
-	notify_action(conn, parent, name, filter, action);
-	TALLOC_FREE(parent);
+	notify_trigger(conn->notify_ctx, action, filter, fullpath);
+	SAFE_FREE(fullpath);
 }
 
-void notify_fsp(files_struct *fsp, uint32 action, char *name)
+void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
 	struct notify_change *change, *changes;
+	char *name2;
 
 	if (fsp->notify == NULL) {
 		/*
@@ -427,35 +439,12 @@ void notify_fsp(files_struct *fsp, uint32 action, char *name)
 		return;
 	}
 
-	if (fsp->notify->requests != NULL) {
-		/*
-		 * Someone is waiting for the change, trigger the reply
-		 * immediately.
-		 *
-		 * TODO: do we have to walk the lists of requests pending?
-		 */
-
-		struct notify_change_request *req = fsp->notify->requests;
-		struct notify_change onechange;
-
-		if (name == NULL) {
-			/*
-			 * Catch-all change, possibly from notify_hash.c
-			 */
-			change_notify_reply(req->request_buf,
-					    req->max_param_count,
-					    -1, NULL);
+	if (!(name2 = talloc_strdup(fsp->notify, name))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
 			return;
 		}
 
-		onechange.action = action;
-		onechange.name = name;
-
-		change_notify_reply(req->request_buf, req->max_param_count,
-				    1, &onechange);
-		change_notify_remove_request(req);
-		return;
-	}
+	string_replace(name2, '/', '\\');
 
 	/*
 	 * Someone has triggered a notify previously, queue the change for
@@ -468,6 +457,7 @@ void notify_fsp(files_struct *fsp, uint32 action, char *name)
 		 * W2k3 seems to store at most 30 changes.
 		 */
 		TALLOC_FREE(fsp->notify->changes);
+		TALLOC_FREE(name2);
 		fsp->notify->num_changes = -1;
 		return;
 	}
@@ -480,6 +470,7 @@ void notify_fsp(files_struct *fsp, uint32 action, char *name)
 		      fsp->notify, fsp->notify->changes,
 		      struct notify_change, fsp->notify->num_changes+1))) {
 		DEBUG(0, ("talloc_realloc failed\n"));
+		TALLOC_FREE(name2);
 		return;
 	}
 
@@ -487,14 +478,40 @@ void notify_fsp(files_struct *fsp, uint32 action, char *name)
 
 	change = &(fsp->notify->changes[fsp->notify->num_changes]);
 
-	if (!(change->name = talloc_strdup(changes, name))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
-		return;
-	}
+	change->name = talloc_move(changes, &name2);
 	change->action = action;
 	fsp->notify->num_changes += 1;
 
+	if (fsp->notify->requests == NULL) {
+		/*
+		 * Nobody is waiting, so don't send anything. The ot
+		 */
+		return;
+	}
+
+	if (action == NOTIFY_ACTION_OLD_NAME) {
+		/*
+		 * We have to send the two rename events in one reply. So hold
+		 * the first part back.
+		 */
 	return;
+	}
+
+	/*
+	 * Someone is waiting for the change, trigger the reply immediately.
+	 *
+	 * TODO: do we have to walk the lists of requests pending?
+	 */
+
+	change_notify_reply(fsp->notify->requests->request_buf,
+			    fsp->notify->requests->max_param_count,
+			    fsp->notify->num_changes,
+			    fsp->notify->changes);
+
+	change_notify_remove_request(fsp->notify->requests);
+
+	TALLOC_FREE(fsp->notify->changes);
+	fsp->notify->num_changes = 0;
 }
 
 static void notify_message_callback(int msgtype, struct process_id pid,
