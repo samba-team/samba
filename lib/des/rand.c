@@ -156,7 +156,7 @@ RAND_write_file(const char *filename)
 {
     unsigned char buf[128];
     size_t len;
-    int res, fd;
+    int res = 0, fd;
 
     fd = open(filename, O_WRONLY | O_CREAT | O_BINARY, 0600);
     if (fd < 0)
