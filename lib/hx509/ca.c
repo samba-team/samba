@@ -51,6 +51,7 @@ struct hx509_ca_tbs {
     time_t notBefore;
     time_t notAfter;
     int pathLenConstraint; /* both for CA and Proxy */
+    CRLDistributionPoints crldp;
 };
 
 int
@@ -66,6 +67,8 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
     (*tbs)->eku.len = 0;
     (*tbs)->eku.val = NULL;
     (*tbs)->pathLenConstraint = 0;
+    (*tbs)->crldp.len = 0;
+    (*tbs)->crldp.val = NULL;
 
     return 0;
 }
@@ -80,6 +83,7 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     free_GeneralNames(&(*tbs)->san);
     free_ExtKeyUsage(&(*tbs)->eku);
     der_free_heim_integer(&(*tbs)->serial);
+    free_CRLDistributionPoints(&(*tbs)->crldp);
 
     hx509_name_free(&(*tbs)->subject);
 
@@ -270,6 +274,73 @@ hx509_ca_tbs_add_eku(hx509_context context,
     }
     tbs->eku.len += 1;
     return 0;
+}
+
+int
+hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    const char *uri,
+			    hx509_name issuername)
+{
+    GeneralNames crlissuer;
+    DistributionPoint dp;
+    DistributionPointName name;
+    int ret;
+
+    memset(&dp, 0, sizeof(dp));
+    memset(&name, 0, sizeof(name));
+    memset(&crlissuer, 0, sizeof(crlissuer));
+
+    {
+	GeneralName gn;
+
+	gn.element = choice_GeneralName_uniformResourceIdentifier;
+	gn.u.uniformResourceIdentifier = rk_UNCONST(uri);
+
+	name.element = choice_DistributionPointName_fullName;
+	ret = add_GeneralNames(&name.u.fullName, &gn);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    goto out;
+	}
+    }
+    dp.distributionPoint = &name;
+
+    if (issuername) {
+	GeneralName gn;
+	Name n;
+
+	gn.element = choice_GeneralName_directoryName;
+	ret = hx509_name_to_Name(issuername, &n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    goto out;
+	}
+
+	gn.u.directoryName.element = n.element;
+	gn.u.directoryName.u.rdnSequence = n.u.rdnSequence;
+
+	ret = add_GeneralNames(&crlissuer, &gn);
+	free_Name(&n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    goto out;
+	}
+
+	dp.cRLIssuer = &crlissuer;
+    }
+
+    ret = add_CRLDistributionPoints(&tbs->crldp, &dp);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	goto out;
+    }
+
+out:
+    free_GeneralNames(&crlissuer);
+    free_DistributionPointName(&name);
+
+    return ret;
 }
 
 int
@@ -871,6 +942,23 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
+    if (tbs->crldp.len) {
+
+	ASN1_MALLOC_ENCODE(CRLDistributionPoints, data.data, data.length,
+			   &tbs->crldp, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, FALSE,
+			    oid_id_x509_ce_cRLDistributionPoints(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
