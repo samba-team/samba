@@ -610,6 +610,10 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
 					   struct notify_event *ev),
 			  void *private_data, void *handle)
 {
+#ifdef HAVE_INOTIFY
 	return inotify_watch(ctx, e, callback, private_data, handle);
+#else
+	return NT_STATUS_OK;
+#endif
 }
 
