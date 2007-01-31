@@ -1,5 +1,11 @@
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: Add test for ca --crl-uri.
+
+	* hxtool.c: Add ca --crl-uri.
+
+	* hxtool-commands.in: add ca --crl-uri
+
 	* ca.c: Code to set CRLDistributionPoints in certificates.
 
 	* print.c: Check CRLDistributionPointNames.
