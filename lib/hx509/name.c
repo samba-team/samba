@@ -675,3 +675,24 @@ hx509_name_is_null_p(const hx509_name name)
 {
     return name->der_name.u.rdnSequence.len == 0;
 }
+
+int
+hx509_general_name_unparse(GeneralName *name, char **str)
+{
+    struct rk_strpool *strpool = NULL;
+
+    *str = NULL;
+
+    switch (name->element) {
+    case choice_GeneralName_uniformResourceIdentifier:
+	strpool = rk_strpoolprintf(strpool, "URI: %s", 
+				   name->u.uniformResourceIdentifier);
+	break;
+    default:
+	return EINVAL;
+    }
+
+    *str = rk_strpoolcollect(strpool);
+
+    return 0;
+}
