@@ -299,7 +299,7 @@ alias|alias|alias|alias...
 
 	<para>Starting with Samba version 3.0.23 the capability for non-root users to add, modify, and delete
 	their own share definitions has been added. This capability is called <emphasis>usershares</emphasis> and
-	is controlled by a set of parameters in the <smbconfsection>[global]</smbconfsection> section of the smb.conf.
+	is controlled by a set of parameters in the [global] section of the smb.conf.
 	The relevant parameters are :
 	</para>
 
@@ -327,13 +327,13 @@ alias|alias|alias|alias...
 
 		<varlistentry>
 		<term>usershare prefix allow list</term>
-		<listitem><para>Comma-separated list of abolute pathnames restricting what directories
+		<listitem><para>Comma-separated list of absolute pathnames restricting what directories
 		can be shared. Only directories below the pathnames in this list are permitted.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>usershare prefix deny list</term>
-		<listitem><para>Comma-separated list of abolute pathnames restricting what directories
+		<listitem><para>Comma-separated list of absolute pathnames restricting what directories
 		can be shared. Directories below the pathnames in this list are prohibited.</para></listitem>
 		</varlistentry>
 
