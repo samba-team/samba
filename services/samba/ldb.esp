@@ -95,6 +95,8 @@ function _connect(params, error)
 
     /* Database was not previously opened.  Connect to it. */
     ldb = ldb_init();
+    ldb.session_info = session.authinfo.session_info;
+    ldb.credentials = session.authinfo.credentials;
     var ret = ldb.connect(private_dir + "/" + params[0]);
     if (ret && ldb.db)
     {
