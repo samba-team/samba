@@ -75,7 +75,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	krb5_ccache cc = NULL;
 	krb5_principal me;
 	krb5_creds my_creds;
-	krb5_get_init_creds_opt opt;
+	krb5_get_init_creds_opt *opt = NULL;
 	smb_krb5_addresses *addr = NULL;
 
 	initialize_krb5_error_table();
@@ -96,47 +96,60 @@ int kerberos_kinit_password_ext(const char *principal,
 	}
 	
 	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
+		krb5_cc_close(ctx, cc);
 		krb5_free_context(ctx);	
 		return code;
 	}
 
-	krb5_get_init_creds_opt_init(&opt);
-	krb5_get_init_creds_opt_set_renew_life(&opt, renewable_time);
-	krb5_get_init_creds_opt_set_forwardable(&opt, 1);
-	
-	if (request_pac) {
+	code = krb5_get_init_creds_opt_alloc(ctx, &opt);
+	if (code) {
+		krb5_cc_close(ctx, cc);
+		krb5_free_context(ctx);	
+		return code;
+	}
+
+	krb5_get_init_creds_opt_set_renew_life(opt, renewable_time);
+	krb5_get_init_creds_opt_set_forwardable(opt, True);
+
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
-		code = krb5_get_init_creds_opt_set_pac_request(ctx, &opt, True);
+	if (request_pac) {
+		code = krb5_get_init_creds_opt_set_pac_request(ctx, opt, (krb5_boolean)request_pac);
 		if (code) {
+			krb5_cc_close(ctx, cc);
 			krb5_free_principal(ctx, me);
 			krb5_free_context(ctx);
 			return code;
 		}
-#endif
 	}
-
+#endif
 	if (add_netbios_addr) {
 		code = smb_krb5_gen_netbios_krb5_address(&addr);
 		if (code) {
+			krb5_cc_close(ctx, cc);
 			krb5_free_principal(ctx, me);
 			krb5_free_context(ctx);		
 			return code;	
 		}
-		krb5_get_init_creds_opt_set_address_list(&opt, addr->addrs);
+		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, NULL, 0, NULL, &opt)))
+						 kerb_prompter, NULL, 0, NULL, opt)))
 	{
+		krb5_get_init_creds_opt_free(opt);
 		smb_krb5_free_addresses(ctx, addr);
+		krb5_cc_close(ctx, cc);
 		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
+		krb5_free_context(ctx);
 		return code;
 	}
-	
+
+	krb5_get_init_creds_opt_free(opt);
+
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
 		smb_krb5_free_addresses(ctx, addr);
 		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_cc_close(ctx, cc);
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
 		return code;
