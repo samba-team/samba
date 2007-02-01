@@ -677,6 +677,19 @@ krb5_digest_set_qop(krb5_context context,
     return 0;
 }
 
+int
+krb5_digest_set_responseData(krb5_context context,
+			     krb5_digest digest,
+			     const char *response)
+{
+    digest->request.responseData = strdup(response);
+    if (digest->request.responseData == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
 krb5_error_code
 krb5_digest_request(krb5_context context,
 		    krb5_digest digest,
@@ -734,11 +747,11 @@ out:
     return ret;
 }
 
-const char *
-krb5_digest_get_responseData(krb5_context context,
-			     krb5_digest digest)
+krb5_boolean
+krb5_digest_rep_get_status(krb5_context context, 
+			   krb5_digest digest)
 {
-    return digest->response.responseData;
+    return digest->response.success ? TRUE : FALSE;
 }
 
 const char *
