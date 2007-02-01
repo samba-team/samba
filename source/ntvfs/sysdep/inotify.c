@@ -64,11 +64,11 @@ static int inotify_rm_watch(int fd, int wd)
 struct inotify_private {
 	struct sys_notify_context *ctx;
 	int fd;
-	struct watch_context *watches;
+	struct inotify_watch_context *watches;
 };
 
-struct watch_context {
-	struct watch_context *next, *prev;
+struct inotify_watch_context {
+	struct inotify_watch_context *next, *prev;
 	struct inotify_private *in;
 	int wd;
 	sys_notify_callback_t callback;
@@ -93,7 +93,8 @@ static int inotify_destructor(struct inotify_private *in)
   see if a particular event from inotify really does match a requested
   notify event in SMB
 */
-static BOOL filter_match(struct watch_context *w, struct inotify_event *e)
+static BOOL filter_match(struct inotify_watch_context *w,
+			 struct inotify_event *e)
 {
 	if ((e->mask & w->mask) == 0) {
 		/* this happens because inotify_add_watch() coalesces watches on the same
@@ -139,7 +140,7 @@ static void inotify_dispatch(struct inotify_private *in,
 			     uint32_t prev_cookie,
 			     struct inotify_event *e2)
 {
-	struct watch_context *w, *next;
+	struct inotify_watch_context *w, *next;
 	struct notify_event ne;
 
 	/* ignore extraneous events, such as unmount and IN_IGNORED events */
@@ -312,7 +313,7 @@ static uint32_t inotify_map(struct notify_entry *e)
 /*
   destroy a watch
 */
-static int watch_destructor(struct watch_context *w)
+static int watch_destructor(struct inotify_watch_context *w)
 {
 	struct inotify_private *in = w->in;
 	int wd = w->wd;
@@ -342,7 +343,7 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	struct inotify_private *in;
 	int wd;
 	uint32_t mask;
-	struct watch_context *w;
+	struct inotify_watch_context *w;
 	uint32_t filter = e->filter;
 	void **handle = (void **)handle_p;
 
@@ -372,7 +373,7 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 		return map_nt_error_from_unix(errno);
 	}
 
-	w = talloc(in, struct watch_context);
+	w = talloc(in, struct inotify_watch_context);
 	if (w == NULL) {
 		inotify_rm_watch(in->fd, wd);
 		e->filter = filter;
