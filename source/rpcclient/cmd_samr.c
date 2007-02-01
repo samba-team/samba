@@ -2040,6 +2040,60 @@ done:
 
 /* Change user password */
 
+static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli, 
+				    TALLOC_CTX *mem_ctx,
+				    int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *user, *oldpass, *newpass;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+
+	if (argc < 3) {
+		printf("Usage: %s username oldpass newpass\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = argv[1];
+	oldpass = argv[2];
+	newpass = argv[3];
+	
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get domain policy handle */
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Change user password */
+	result = rpccli_samr_chgpasswd_user(cli, mem_ctx, user, newpass, oldpass);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+ done:
+	return result;
+}
+
+
+/* Change user password */
+
 static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli, 
 				    TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv) 
@@ -2146,6 +2200,7 @@ struct cmd_set samr_commands[] = {
 	{ "getusrdompwinfo",    RPC_RTYPE_NTSTATUS, cmd_samr_get_usrdom_pwinfo,     NULL, PI_SAMR, NULL, "Retrieve user domain password info", "" },
 
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
+	{ "chgpasswd2",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd2,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ NULL }
 };
