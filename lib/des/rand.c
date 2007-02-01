@@ -204,7 +204,7 @@ RAND_file_name(char *filename, size_t size)
 	return NULL;
 
     if (pathp)
-	ret = snprintf(filename, size, "%s/.randfile", e);
+	ret = snprintf(filename, size, "%s/.rnd", e);
     else
 	ret = snprintf(filename, size, "%s", e);
 
