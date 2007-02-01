@@ -568,6 +568,9 @@ static int net_usershare_add(int argc, const char **argv)
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
+			if (strlen(arg_acl) == 0) {
+				arg_acl = "S-1-1-0:R";
+			}
 			if (!strnequal(argv[4], "guest_ok=", 9)) {
 				return net_usershare_add_usage(argc, argv);
 			}
@@ -588,10 +591,9 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Ensure we're under the "usershare max shares" number. Advisory only. */
 	num_usershares = count_num_usershares();
-	if (num_usershares > lp_usershare_max_shares()) {
-		d_fprintf(stderr, "net usershare add: too many usershares already defined (%d), "
-			"maximum number allowed is %d.\n",
-			num_usershares, lp_usershare_max_shares() );
+	if (num_usershares >= lp_usershare_max_shares()) {
+		d_fprintf(stderr, "net usershare add: maximum number of allowed usershares (%d) reached\n",
+			lp_usershare_max_shares() );
 		SAFE_FREE(sharename);
 		return -1;
 	}
