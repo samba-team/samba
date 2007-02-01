@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 1999-2001, 2003, PADL Software Pty Ltd.
  * Copyright (c) 2004, Andrew Bartlett.
- * Copyright (c) 2003 - 2004, Kungliga Tekniska Högskolan.
+ * Copyright (c) 2003 - 2007, Kungliga Tekniska Högskolan.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
