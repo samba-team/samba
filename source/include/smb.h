@@ -446,10 +446,13 @@ struct notify_change {
 };
 
 struct notify_mid_map;
+struct notify_entry;
+struct notify_event;
 struct sys_notify_backend;
 struct sys_notify_context {
 	struct event_context *ev;
-	void *private_data;
+	struct connection_struct *conn;
+	void *private_data; 	/* For use by the system backend */
 };
 
 struct notify_change_request {

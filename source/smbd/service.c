@@ -950,7 +950,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->notify_ctx = notify_init(conn->mem_ctx, server_id_self(),
 					       smbd_messaging_context(),
 					       smbd_event_context(),
-					       conn->params);
+					       conn);
 	}
 
 /* ROOT Activities: */	

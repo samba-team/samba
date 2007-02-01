@@ -400,7 +400,7 @@ char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
 	return result;
 }
 
-struct sys_notify_context *sys_notify_context_create(struct share_params *scfg,
+struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 						     TALLOC_CTX *mem_ctx, 
 						     struct event_context *ev)
 {
@@ -412,6 +412,7 @@ struct sys_notify_context *sys_notify_context_create(struct share_params *scfg,
 	}
 
 	ctx->ev = ev;
+	ctx->conn = conn;
 	ctx->private_data = NULL;
 	return ctx;
 }
@@ -423,10 +424,7 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
 					   struct notify_event *ev),
 			  void *private_data, void *handle)
 {
-#ifdef HAVE_INOTIFY
-	return inotify_watch(ctx, e, callback, private_data, handle);
-#else
-	return NT_STATUS_OK;
-#endif
+	return SMB_VFS_NOTIFY_WATCH(ctx->conn, ctx, e, callback, private_data,
+				    handle);
 }
 

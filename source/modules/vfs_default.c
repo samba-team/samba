@@ -833,6 +833,21 @@ static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path, char
 	return result;
 }
 
+static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
+				     struct sys_notify_context *ctx,
+				     struct notify_entry *e,
+				     void (*callback)(struct sys_notify_context *ctx, 
+						      void *private_data,
+						      struct notify_event *ev),
+				     void *private_data, void *handle)
+{
+#ifdef HAVE_INOTIFY
+	return inotify_watch(ctx, e, callback, private_data, handle);
+#else
+	return NT_STATUS_OK;
+#endif
+}
+
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
 	size_t result;
@@ -1211,6 +1226,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_mknod),	SMB_VFS_OP_MKNOD,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_realpath),	SMB_VFS_OP_REALPATH,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_notify_watch),	SMB_VFS_OP_NOTIFY_WATCH,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */
