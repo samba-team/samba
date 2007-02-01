@@ -865,7 +865,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	cancel_named_event("krb5_ticket_refresh_handler");
 
 	/* We might be in the idmap child...*/
-	if (child->domain && lp_winbind_offline_logon()) {
+	if (child->domain && !(child->domain->internal) &&
+	    lp_winbind_offline_logon()) {
 
 		set_domain_online_request(child->domain);
 
