@@ -1,4 +1,20 @@
+2007-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: Better logging and return status = FALSE when
+	checksum doesn't match.
+
+	* kdc/digest.c: Check the digest response in the KDC.
+
+	* lib/krb5/digest.c: New functions to send in requestResponse to
+	KDC and get status of the request.
+
+	* kdc/digest.c: Add support for MS-CHAP v2.
+
+	* lib/hdb/hdb-ldap.c: Set hdb->hdb_db for ldap.
+	
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* fix-export: Make hx509.info too
 
 	* kdc/digest.c: don't verify identifier in CHAP, its the client
 	that chooses it.
