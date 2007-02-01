@@ -25,6 +25,7 @@ DigestRequest ::= SEQUENCE  {
     type		UTF8String, -- http, sasl-md5, chap, cram-md5 --
     digest		UTF8String, -- http:md5/md5-sess sasl:clear/int/conf --
     username		UTF8String, -- username user used
+    responseData	UTF8String, -- client response
     authid		[0] UTF8String OPTIONAL,
     authentication-user	[1] Principal OPTIONAL, -- principal to get key from
     realm		[2] UTF8String OPTIONAL,
@@ -48,7 +49,7 @@ DigestError ::= SEQUENCE {
 }
 
 DigestResponse ::= SEQUENCE  {
-    responseData	UTF8String,
+    success		BOOLEAN,
     rsp			[0] UTF8String OPTIONAL,
     tickets		[1] SEQUENCE OF OCTET STRING OPTIONAL,
     channel		[2] SEQUENCE {
