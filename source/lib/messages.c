@@ -166,7 +166,7 @@ static TDB_DATA message_key_pid(struct process_id pid)
  then delete its record in the database.
 ****************************************************************************/
 
-static BOOL message_notify(struct process_id procid)
+static NTSTATUS message_notify(struct process_id procid)
 {
 	pid_t pid = procid.pid;
 	int ret;
@@ -191,25 +191,40 @@ static BOOL message_notify(struct process_id procid)
 
 	if (ret == -1) {
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
+			DEBUG(2,("pid %d doesn't exist - deleting messages record\n",
+				 (int)pid));
 			tdb_delete(tdb, message_key_pid(procid));
-		} else {
-			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
+
+			/*
+			 * INVALID_HANDLE is the closest I can think of -- vl
+			 */
+			return NT_STATUS_INVALID_HANDLE;
 		}
-		return False;
+
+		DEBUG(2,("message to process %d failed - %s\n", (int)pid,
+			 strerror(errno)));
+
+		/*
+		 * No call to map_nt_error_from_unix -- don't want to link in
+		 * errormap.o into lots of utils.
+		 */
+
+		if (errno == EINVAL) return NT_STATUS_INVALID_PARAMETER;
+		if (errno == EPERM)  return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Send a message to a particular pid.
 ****************************************************************************/
 
-static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
-				      const void *buf, size_t len,
-				      BOOL duplicates_allowed,
-				      unsigned int timeout)
+static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
+					  const void *buf, size_t len,
+					  BOOL duplicates_allowed,
+					  unsigned int timeout)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -239,8 +254,9 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	kbuf = message_key_pid(pid);
 
 	dbuf.dptr = (char *)SMB_MALLOC(len + sizeof(rec));
-	if (!dbuf.dptr)
-		return False;
+	if (!dbuf.dptr) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	memcpy(dbuf.dptr, &rec, sizeof(rec));
 	if (len > 0 && buf)
@@ -255,13 +271,15 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		/* lock the record for the destination */
 		if (timeout) {
 			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-				return False;
+				DEBUG(0,("message_send_pid_internal: failed to get "
+					 "chainlock with timeout %ul.\n", timeout));
+				return NT_STATUS_IO_TIMEOUT;
 			}
 		} else {
 			if (tdb_chainlock(tdb, kbuf) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-				return False;
+				DEBUG(0,("message_send_pid_internal: failed to get "
+					 "chainlock.\n"));
+				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 		}	
 		tdb_append(tdb, kbuf, dbuf);
@@ -275,13 +293,15 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	/* lock the record for the destination */
 	if (timeout) {
 		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-			return False;
+			DEBUG(0,("message_send_pid_internal: failed to get chainlock "
+				 "with timeout %ul.\n", timeout));
+			return NT_STATUS_IO_TIMEOUT;
 		}
 	} else {
 		if (tdb_chainlock(tdb, kbuf) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-			return False;
+			DEBUG(0,("message_send_pid_internal: failed to get "
+				 "chainlock.\n"));
+			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 	}	
 
@@ -310,10 +330,11 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		if (!memcmp(ptr, &rec, sizeof(rec))) {
 			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 				tdb_chainunlock(tdb, kbuf);
-				DEBUG(10,("message_send_pid_internal: discarding duplicate message.\n"));
+				DEBUG(10,("message_send_pid_internal: discarding "
+					  "duplicate message.\n"));
 				SAFE_FREE(dbuf.dptr);
 				SAFE_FREE(old_dbuf.dptr);
-				return True;
+				return NT_STATUS_OK;
 			}
 		}
 		memcpy(&prec, ptr, sizeof(prec));
@@ -336,19 +357,23 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
  Send a message to a particular pid - no timeout.
 ****************************************************************************/
 
-BOOL message_send_pid(struct process_id pid, int msg_type, const void *buf, size_t len, BOOL duplicates_allowed)
+NTSTATUS message_send_pid(struct process_id pid, int msg_type, const void *buf,
+			  size_t len, BOOL duplicates_allowed)
 {
-	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, 0);
+	return message_send_pid_internal(pid, msg_type, buf, len,
+					 duplicates_allowed, 0);
 }
 
 /****************************************************************************
  Send a message to a particular pid, with timeout in seconds.
 ****************************************************************************/
 
-BOOL message_send_pid_with_timeout(struct process_id pid, int msg_type, const void *buf, size_t len,
-		BOOL duplicates_allowed, unsigned int timeout)
+NTSTATUS message_send_pid_with_timeout(struct process_id pid, int msg_type,
+				       const void *buf, size_t len,
+				       BOOL duplicates_allowed, unsigned int timeout)
 {
-	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, timeout);
+	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed,
+					 timeout);
 }
 
 /****************************************************************************
@@ -586,6 +611,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 {
 	struct connections_data crec;
 	struct msg_all *msg_all = (struct msg_all *)state;
+	NTSTATUS status;
 
 	if (dbuf.dsize != sizeof(crec))
 		return 0;
@@ -603,18 +629,17 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	/* If the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
 
-	if (!message_send_pid(crec.pid, msg_all->msg_type,
-			      msg_all->buf, msg_all->len,
-			      msg_all->duplicates)) {
+	status = message_send_pid(crec.pid, msg_all->msg_type,
+				  msg_all->buf, msg_all->len,
+				  msg_all->duplicates);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
 		/* If the pid was not found delete the entry from connections.tdb */
 
-		if (errno == ESRCH) {
-			DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-				 procid_str_static(&crec.pid),
-				 crec.cnum, crec.name));
-			tdb_delete(the_tdb, kbuf);
-		}
+		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+			 procid_str_static(&crec.pid), crec.cnum, crec.name));
+		tdb_delete(the_tdb, kbuf);
 	}
 	msg_all->n_sent++;
 	return 0;
@@ -806,8 +831,7 @@ NTSTATUS messaging_send(struct messaging_context *msg,
 			uint32_t msg_type, DATA_BLOB *data)
 {
 	return message_send_pid_internal(server.id, msg_type, data->data,
-					 data->length, True, 0)
-		? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+					 data->length, True, 0);
 }
 
 /** @} **/
