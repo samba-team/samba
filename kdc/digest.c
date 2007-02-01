@@ -629,18 +629,18 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
-	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
-	    free(mdx);
-	    if (ret != 0) {
-		krb5_set_error_string(context, 
-				      "CHAP reply mismatch for %s",
-				      ireq.u.digestRequest.username);
-		ret = EINVAL;
-		goto out;
-	    }
-
 	    r.element = choice_DigestRepInner_response;
-	    r.u.response.success = TRUE;
+
+	    ret = strcasecmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret == 0) {
+		r.u.response.success = TRUE;
+	    } else {
+		kdc_log(context, config, 0, 
+			"CHAP reply mismatch for %s",
+			ireq.u.digestRequest.username);
+		r.u.response.success = FALSE;
+	    }
 
 	} else if (strcasecmp(ireq.u.digestRequest.type, "SASL-DIGEST-MD5") == 0) {
 	    MD5_CTX ctx;
@@ -742,18 +742,17 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
-	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
-	    free(mdx);
-	    if (ret != 0) {
-		krb5_set_error_string(context, 
-				      "Digest-MD5 reply mismatch for %s",
-				      ireq.u.digestRequest.username);
-		ret = EINVAL;
-		goto out;
-	    }
-
 	    r.element = choice_DigestRepInner_response;
-	    r.u.response.success = TRUE;
+	    ret = strcasecmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret == 0) {
+		r.u.response.success = TRUE;
+	    } else {
+		kdc_log(context, config, 0, 
+			"DIGEST-MD5 reply mismatch for %s",
+			ireq.u.digestRequest.username);
+		r.u.response.success = FALSE;
+	    }
 
 	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
 	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
@@ -857,19 +856,17 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
-	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
-	    free(mdx);
-	    if (ret != 0) {
-		free(answer.data);
-		krb5_set_error_string(context, 
-				      "MS-CHAP-V2 reply mismatch for %s",
-				      ireq.u.digestRequest.username);
-		ret = EINVAL;
-		goto out;
-	    }
-
 	    r.element = choice_DigestRepInner_response;
-	    r.u.response.success = TRUE;
+	    ret = strcasecmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret == 0) {
+		r.u.response.success = TRUE;
+	    } else {
+		kdc_log(context, config, 0, 
+			"MS-CHAP-V2 reply mismatch for %s",
+			ireq.u.digestRequest.username);
+		r.u.response.success = FALSE;
+	    }
 
 	    /* GenerateAuthenticatorResponse */
 	    SHA1_Init(&ctx);
