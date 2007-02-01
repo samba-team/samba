@@ -842,10 +842,14 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 				     void *private_data, void *handle)
 {
 #ifdef HAVE_INOTIFY
-	return inotify_watch(ctx, e, callback, private_data, handle);
-#else
-	return NT_STATUS_OK;
+	if (lp_kernel_change_notify(ctx->conn->params)) {
+		return inotify_watch(ctx, e, callback, private_data, handle);
+	}
 #endif
+	/*
+	 * Do nothing, leave everything to notify_internal.c
+	 */
+	return NT_STATUS_OK;
 }
 
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
