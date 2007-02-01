@@ -1379,6 +1379,32 @@ done:
 	return ret;
 }
 
+#ifndef HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC 
+ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context context, krb5_get_init_creds_opt **opt)
+{
+	krb5_get_init_creds_opt *my_opt;
+
+	*opt = NULL;
+
+	if ((my_opt = SMB_MALLOC(sizeof(krb5_get_init_creds_opt))) == NULL) {
+		return ENOMEM;
+	}
+
+	krb5_get_init_creds_opt_init(my_opt);
+
+	*opt =  my_opt;
+	return 0;
+}
+#endif
+
+#ifndef HAVE_KRB5_GET_INIT_CREDS_OPT_FREE 
+ void krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
+{
+	SAFE_FREE(opt);
+	opt = NULL;
+}
+#endif
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
