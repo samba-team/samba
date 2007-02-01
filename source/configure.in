@@ -2557,8 +2557,7 @@ if test x$enable_fam != xno; then
     fi
 
     if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
-        AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
-                [Whether FAM file notifications are available])
+        default_shared_modules="$default_shared_modules vfs_notify_fam"
         AC_TRY_COMPILE([#include <fam.h>],
                     [FAMCodes code = FAMChanged;],
                     AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
@@ -5960,6 +5959,7 @@ SMB_MODULE(vfs_cacheprime, \$(VFS_CACHEPRIME_OBJ), "bin/cacheprime.$SHLIBEXT", V
 SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
