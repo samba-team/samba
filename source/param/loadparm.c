@@ -299,8 +299,6 @@ typedef struct {
 	BOOL bHostnameLookups;
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
-	BOOL bKernelChangeNotify;
-	BOOL bFamChangeNotify;
 	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
 	BOOL bEnablePrivileges;
@@ -452,11 +450,12 @@ typedef struct {
 	BOOL bAclCheckPermissions;
 	BOOL bAclMapFullControl;
 	BOOL bAclGroupControl;
+	BOOL bChangeNotify;
+	BOOL bKernelChangeNotify;
 	int iallocation_roundup_size;
 	int iAioReadSize;
 	int iAioWriteSize;
 	int iMap_readonly;
-	int ichange_notify_timeout;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -591,11 +590,12 @@ static service sDefault = {
 	True,			/* bAclCheckPermissions */
 	True,			/* bAclMapFullControl */
 	False,			/* bAclGroupControl */
+	True,			/* bChangeNotify */
+	True,			/* bKernelChangeNotify */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
 	MAP_READONLY_YES,	/* iMap_readonly */
-	60,			/* ichange_notify_timeout = 1 minute default. */
 	
 	NULL,			/* Parametric options */
 
@@ -1006,12 +1006,11 @@ static struct parm_struct parm_table[] = {
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"change notify timeout", P_INTEGER, P_LOCAL, &sDefault.ichange_notify_timeout, NULL, NULL, FLAG_ADVANCED}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
-	{"kernel change notify", P_BOOL, P_GLOBAL, &Globals.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED}, 
-	{"fam change notify", P_BOOL, P_GLOBAL, &Globals.bFamChangeNotify, NULL, NULL, FLAG_ADVANCED},
+	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
+	{"kernel change notify", P_BOOL, P_LOCAL, &sDefault.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, FLAG_ADVANCED}, 
 	{"max smbd processes", P_INTEGER, P_GLOBAL, &Globals.iMaxSmbdProcesses, NULL, NULL, FLAG_ADVANCED}, 
@@ -1524,8 +1523,6 @@ static void init_globals(BOOL first_time_only)
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
-	Globals.bKernelChangeNotify = True;	/* On if we have it. */
-	Globals.bFamChangeNotify = True;	/* On if we have it. */
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
@@ -1939,8 +1936,8 @@ FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
-FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
-FN_GLOBAL_BOOL(lp_fam_change_notify, &Globals.bFamChangeNotify)
+FN_LOCAL_PARM_BOOL(lp_change_notify, bChangeNotify)
+FN_LOCAL_PARM_BOOL(lp_kernel_change_notify, bKernelChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
@@ -2102,7 +2099,6 @@ FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
-FN_LOCAL_INTEGER(lp_change_notify_timeout, ichange_notify_timeout)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)

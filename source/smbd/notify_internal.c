@@ -77,8 +77,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 {
 	struct notify_context *notify;
 
-	if (!lp_parm_bool(conn->params->service, "notify", "enable",
-			  True)) {
+	if (!lp_change_notify(conn->params)) {
 		return NULL;
 	}
 
