@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,6 +36,7 @@
 
 RCSID("$Id$");
 
+#define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
 #define DIGEST_MD5	0x08
 #define NTLM_V2		0x04
@@ -43,6 +44,7 @@ RCSID("$Id$");
 #define NTLM_V1		0x01
 
 const struct units _kdc_digestunits[] = {
+	{"ms-chap-v2",		1U << 5},
 	{"chap-md5",		1U << 4},
 	{"digest-md5",		1U << 3},
 	{"ntlm-v2",		1U << 2},
@@ -133,6 +135,23 @@ fill_targetinfo(krb5_context context,
 
     return 0;
 }
+
+
+static const unsigned char ms_chap_v1_magic1[39] = {
+    0x4D, 0x61, 0x67, 0x69, 0x63, 0x20, 0x73, 0x65, 0x72, 0x76,
+    0x65, 0x72, 0x20, 0x74, 0x6F, 0x20, 0x63, 0x6C, 0x69, 0x65,
+    0x6E, 0x74, 0x20, 0x73, 0x69, 0x67, 0x6E, 0x69, 0x6E, 0x67,
+    0x20, 0x63, 0x6F, 0x6E, 0x73, 0x74, 0x61, 0x6E, 0x74
+};
+static const unsigned char ms_chap_v1_magic2[41] = {
+    0x50, 0x61, 0x64, 0x20, 0x74, 0x6F, 0x20, 0x6D, 0x61, 0x6B,
+    0x65, 0x20, 0x69, 0x74, 0x20, 0x64, 0x6F, 0x20, 0x6D, 0x6F,
+    0x72, 0x65, 0x20, 0x74, 0x68, 0x61, 0x6E, 0x20, 0x6F, 0x6E,
+    0x65, 0x20, 0x69, 0x74, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6F,
+    0x6E
+};
+
+
 
 
 /*
@@ -706,6 +725,137 @@ _kdc_do_digest(krb5_context context,
 
 	    if (r.u.response.responseData == NULL) {
 		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+
+	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
+	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+	    const char *username;
+	    struct ntlm_buf answer;
+	    Key *key = NULL;
+	    SHA_CTX ctx;
+
+	    if ((config->digests_allowed & MS_CHAP_V2) == 0) {
+		kdc_log(context, config, 0, "MS-CHAP-V2 not allowed");
+		goto out;
+	    }
+
+	    if (ireq.u.digestRequest.clientNonce == NULL)  {
+		krb5_set_error_string(context, 
+				      "MS-CHAP-V2 clientNonce missing");
+		ret = EINVAL;
+		goto out;
+	    }	    
+	    if (serverNonce.length != 16) {
+		krb5_set_error_string(context, 
+				      "MS-CHAP-V2 serverNonce wrong length");
+		ret = EINVAL;
+		goto out;
+	    }
+
+	    /* strip of the domain component */
+	    username = strchr(ireq.u.digestRequest.username, '\\');
+	    if (username == NULL)
+		username = ireq.u.digestRequest.username;
+	    else
+		username++;
+
+	    /* ChallangeHash */
+	    SHA1_Init(&ctx);
+	    {
+		ssize_t ssize;
+		krb5_data clientNonce;
+		
+		clientNonce.length = strlen(*ireq.u.digestRequest.clientNonce);
+		clientNonce.data = malloc(clientNonce.length);
+		if (clientNonce.data == NULL) {
+		    ret = ENOMEM;
+		    krb5_set_error_string(context, "out of memory");
+		    goto out;
+		}
+
+		ssize = hex_decode(*ireq.u.digestRequest.clientNonce, 
+				   clientNonce.data, clientNonce.length);
+		if (ssize != 16) {
+		    krb5_set_error_string(context, 
+					  "Failed to decode clientNonce");
+		    ret = ENOMEM;
+		    goto out;
+		}
+		SHA1_Update(&ctx, clientNonce.data, clientNonce.length);
+		free(clientNonce.data);
+	    }
+	    SHA1_Update(&ctx, serverNonce.data, serverNonce.length);
+	    SHA1_Update(&ctx, username, strlen(username));
+	    SHA1_Final(challange, &ctx);
+
+	    /* NtPasswordHash */
+	    ret = krb5_parse_name(context, username, &clientprincipal);
+	    if (ret)
+		goto out;
+	    
+	    ret = _kdc_db_fetch(context, config, clientprincipal,
+				HDB_F_GET_CLIENT, NULL, &user);
+	    krb5_free_principal(context, clientprincipal);
+	    if (ret) {
+		krb5_set_error_string(context, 
+				      "MS-CHAP-V2 user %s not in database",
+				      username);
+		goto out;
+	    }
+
+	    ret = hdb_enctype2key(context, &user->entry, 
+				  ETYPE_ARCFOUR_HMAC_MD5, &key);
+	    if (ret) {
+		krb5_set_error_string(context, 
+				      "MS-CHAP-V2 missing arcfour key %s",
+				      username);
+		goto out;
+	    }
+
+	    /* ChallengeResponse */
+	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
+					    key->key.keyvalue.length,
+					    challange, &answer);
+	    if (ret) {
+		krb5_set_error_string(context, "NTLM missing arcfour key");
+		goto out;
+	    }
+	    
+	    r.element = choice_DigestRepInner_response;
+	    hex_encode(answer.data, answer.length, &r.u.response.responseData);
+	    if (r.u.response.responseData == NULL) {
+		free(answer.data);
+		krb5_clear_error_string(context);
+		ret = ENOMEM;
+		goto out;
+	    }
+
+	    /* GenerateAuthenticatorResponse */
+	    SHA1_Init(&ctx);
+	    SHA1_Update(&ctx, key->key.keyvalue.data, key->key.keyvalue.length);
+	    SHA1_Update(&ctx, answer.data, answer.length);
+	    SHA1_Update(&ctx, ms_chap_v1_magic1, sizeof(ms_chap_v1_magic1));
+	    SHA1_Final(md, &ctx);
+	    free(answer.data);
+
+	    SHA1_Init(&ctx);
+	    SHA1_Update(&ctx, md, sizeof(md));
+	    SHA1_Update(&ctx, challange, 8);
+	    SHA1_Update(&ctx, ms_chap_v1_magic2, sizeof(ms_chap_v1_magic2));
+	    SHA1_Final(md, &ctx);
+
+	    r.u.response.rsp = calloc(1, sizeof(*r.u.response.rsp));
+	    if (r.u.response.rsp == NULL) {
+		krb5_clear_error_string(context);
+		ret = ENOMEM;
+		goto out;
+	    }
+
+	    hex_encode(md, sizeof(md), r.u.response.rsp);
+	    if (r.u.response.responseData == NULL) {
+		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	    }
