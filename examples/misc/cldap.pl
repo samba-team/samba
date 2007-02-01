@@ -136,7 +136,9 @@ sub send_cldap_netlogon ($$$$) {
 				) || die "failed to encode pdu: $@";
 
 	if ($opt_debug) {
+		print"------------\n";
 		asn_dump($pdu_req);
+		print"------------\n";
 	}
 
 	return $sock->send($pdu_req) || die "no send: $@";
@@ -290,10 +292,13 @@ sub recv_cldap_netlogon ($\$) {
 	#$ret = sysread($sock, $pdu_out, 8192);
 
 	if ($opt_debug) {
+		print"------------\n";
 		asn_dump($pdu_out);
+		print"------------\n";
 	}
 
 	my $asn_cldap_rep = Convert::ASN1->new;
+	my $asn_cldap_rep_fail = Convert::ASN1->new;
 
 	$asn_cldap_rep->prepare(q<
 		SEQUENCE {
@@ -320,9 +325,24 @@ sub recv_cldap_netlogon ($\$) {
 		}
 	>);
 
-	my $asn1_rep = $asn_cldap_rep->decode($pdu_out) || die "failed to decode pdu: $@";
+	$asn_cldap_rep_fail->prepare(q<
+		SEQUENCE {
+			msgid2 INTEGER,
+			[APPLICATION 5] SEQUENCE {
+				error_code ENUMERATED,
+				matched_dn OCTET STRING,
+				error_message OCTET STRING
+			}
+		}
+	>);
 
-	$$return_string = $asn1_rep->{'val'};
+	my $asn1_rep =  $asn_cldap_rep->decode($pdu_out) || 
+			$asn_cldap_rep_fail->decode($pdu_out) || 
+			die "failed to decode pdu: $@";
+
+	if ($asn1_rep->{'error_code'} == 0) {
+		$$return_string = $asn1_rep->{'val'};
+	} 
 
 	return $ret;
 }
@@ -452,6 +472,11 @@ sub main() {
 		die("failed to receive CLDAP reply from $server");
 	}
 	close($sock);
+
+	if (!$reply) {
+		printf("no 'NetLogon' attribute received\n");
+		exit 0;
+	}
 
 	%cldap_netlogon_reply = parse_cldap_reply($reply);
 	if (!%cldap_netlogon_reply) {
