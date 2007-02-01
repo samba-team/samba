@@ -116,6 +116,12 @@ command = {
 		help = ""
 	}
 	option = {
+		long = "client-response"
+		type = "string"
+		argument = "response"
+		help = ""
+	}
+	option = {
 		long = "opaque"
 		type = "string"
 		argument = "string"
