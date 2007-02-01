@@ -73,11 +73,12 @@ static int notify_destructor(struct notify_context *notify)
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
-				   struct share_params *scfg)
+				   connection_struct *conn)
 {
 	struct notify_context *notify;
 
-	if (!lp_parm_bool(scfg->service, "notify", "enable", True)) {
+	if (!lp_parm_bool(conn->params->service, "notify", "enable",
+			  True)) {
 		return NULL;
 	}
 
@@ -107,7 +108,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	messaging_register(notify->messaging_ctx, notify, 
 			   MSG_PVFS_NOTIFY, notify_handler);
 
-	notify->sys_notify_ctx = sys_notify_context_create(scfg, notify, ev);
+	notify->sys_notify_ctx = sys_notify_context_create(conn, notify, ev);
 
 	return notify;
 }
