@@ -246,7 +246,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
-	char *full_name;
+	char *full_name = NULL;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
 
@@ -271,7 +271,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return result;
 
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, 1, 
-					 &full_name, NULL, &sids, &types);
+					 (const char**) &full_name, NULL, &sids, &types);
         
 	if (!NT_STATUS_IS_OK(result))
 		return result;
