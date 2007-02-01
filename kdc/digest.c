@@ -595,6 +595,7 @@ _kdc_do_digest(krb5_context context,
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
 	    MD5_CTX ctx;
 	    unsigned char md[MD5_DIGEST_LENGTH];
+	    char *mdx;
 	    char id;
 
 	    if ((config->digests_allowed & CHAP_MD5) == 0) {
@@ -621,16 +622,30 @@ _kdc_do_digest(krb5_context context,
 	    MD5_Update(&ctx, serverNonce.data, serverNonce.length);
 	    MD5_Final(md, &ctx);
 
-	    r.element = choice_DigestRepInner_response;
-	    hex_encode(md, sizeof(md), &r.u.response.responseData);
-	    if (r.u.response.responseData == NULL) {
+	    hex_encode(md, sizeof(md), &mdx);
+	    if (mdx == NULL) {
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	    }
+
+	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret != 0) {
+		krb5_set_error_string(context, 
+				      "CHAP reply mismatch for %s",
+				      ireq.u.digestRequest.username);
+		ret = EINVAL;
+		goto out;
+	    }
+
+	    r.element = choice_DigestRepInner_response;
+	    r.u.response.success = TRUE;
+
 	} else if (strcasecmp(ireq.u.digestRequest.type, "SASL-DIGEST-MD5") == 0) {
 	    MD5_CTX ctx;
 	    unsigned char md[MD5_DIGEST_LENGTH];
+	    char *mdx;
 	    char *A1, *A2;
 
 	    if ((config->digests_allowed & DIGEST_MD5) == 0) {
@@ -717,20 +732,32 @@ _kdc_do_digest(krb5_context context,
 
 	    MD5_Final(md, &ctx);
 
-	    r.element = choice_DigestRepInner_response;
-	    hex_encode(md, sizeof(md), &r.u.response.responseData);
-
 	    free(A1);
 	    free(A2);
 
-	    if (r.u.response.responseData == NULL) {
-		krb5_set_error_string(context, "out of memory");
+	    hex_encode(md, sizeof(md), &mdx);
+	    if (mdx == NULL) {
+		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	    }
 
+	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret != 0) {
+		krb5_set_error_string(context, 
+				      "Digest-MD5 reply mismatch for %s",
+				      ireq.u.digestRequest.username);
+		ret = EINVAL;
+		goto out;
+	    }
+
+	    r.element = choice_DigestRepInner_response;
+	    r.u.response.success = TRUE;
+
 	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
 	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+	    char *mdx;
 	    const char *username;
 	    struct ntlm_buf answer;
 	    Key *key = NULL;
@@ -823,14 +850,26 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	    
-	    r.element = choice_DigestRepInner_response;
-	    hex_encode(answer.data, answer.length, &r.u.response.responseData);
-	    if (r.u.response.responseData == NULL) {
-		free(answer.data);
+	    hex_encode(md, sizeof(md), &mdx);
+	    if (mdx == NULL) {
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	    }
+
+	    ret = strcmp(mdx, ireq.u.digestRequest.responseData);
+	    free(mdx);
+	    if (ret != 0) {
+		free(answer.data);
+		krb5_set_error_string(context, 
+				      "MS-CHAP-V2 reply mismatch for %s",
+				      ireq.u.digestRequest.username);
+		ret = EINVAL;
+		goto out;
+	    }
+
+	    r.element = choice_DigestRepInner_response;
+	    r.u.response.success = TRUE;
 
 	    /* GenerateAuthenticatorResponse */
 	    SHA1_Init(&ctx);
@@ -854,7 +893,7 @@ _kdc_do_digest(krb5_context context,
 	    }
 
 	    hex_encode(md, sizeof(md), r.u.response.rsp);
-	    if (r.u.response.responseData == NULL) {
+	    if (r.u.response.rsp == NULL) {
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
@@ -862,7 +901,7 @@ _kdc_do_digest(krb5_context context,
 
 	} else {
 	    r.element = choice_DigestRepInner_error;
-	    asprintf(&r.u.error.reason, "unsupported digest type %s", 
+	    asprintf(&r.u.error.reason, "Unsupported digest type %s", 
 		     ireq.u.digestRequest.type);
 	    if (r.u.error.reason == NULL) {
 		krb5_set_error_string(context, "out of memory");
@@ -883,7 +922,6 @@ _kdc_do_digest(krb5_context context,
 	    kdc_log(context, config, 0, "NTLM not allowed");
 	    goto out;
 	}
-
 
 	r.element = choice_DigestRepInner_ntlmInitReply;
 
