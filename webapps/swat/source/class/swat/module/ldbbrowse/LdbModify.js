@@ -17,6 +17,7 @@ function(fsm)
 
   this._mainArea = new qx.ui.layout.VerticalBoxLayout();
   this._mainArea.set({
+                     overflow: "auto",
                      height: "1*",
                      spacing: 5
                     });
@@ -214,15 +215,19 @@ qx.Proto._addNewAttribute = function(name, value, before) {
   hlayout.set({ width: "auto", height: "auto", spacing: 10 });
 
   var rButton = new qx.ui.form.Button("-");
+  rButton.set({ width: 15, height: 15});
   rButton.addEventListener("execute", function() {
     hlayout.setParent(null);
   });
 
   var aLabel = new qx.ui.basic.Label(name);
+  aLabel.setWidth(150);
 
   var aTextField = new qx.ui.form.TextField(value);
+  aTextField.setWidth(250);
 
   var aButton = new qx.ui.form.Button("+");
+  aButton.set({ left: 5, width: 15, height: 15});
   aButton.addEventListener("execute", function() {
     this._addNewAttribute(name, null, hlayout);
   }, this);
@@ -241,27 +246,34 @@ qx.Proto._createNewAttribute = function() {
   var main = qx.ui.core.ClientDocument.getInstance();
 
   var amw = new qx.ui.window.Window("New Attribute Name");
-  amw.setSpace(100, 200, 100, 150);
-  amw.setModal(true);
-  amw.setShowMinimize(false);
-  amw.setShowMaximize(false);
-  amw.setShowClose(false);
-  amw.setResizeable(false);
+  amw.set({
+    width: 200,
+    height: 70,
+    modal: true,
+    centered: true,
+    restrictToPageOnOpen: true,
+    showMinimize: false,
+    showMaximize: false,
+    showClose: false,
+    resizeable: false
+  });
 
-  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
-  hlayout.set({ width: "auto", height: "auto", spacing: 10 });
 
-  attrName = new qx.ui.form.TextField();
+  var attrName = new qx.ui.form.TextField();
+  attrName.addEventListener("execute", function() {
+    this._addNewAttribute(attrName.getValue());
+    amw.close();
+  }, this);
+  attrName.set({ top: 15, left: 10 });
+  amw.add(attrName);
 
   var okButton = new qx.ui.form.Button("OK");
   okButton.addEventListener("execute", function() {
     this._addNewAttribute(attrName.getValue());
     amw.close();
   }, this);
-
-  hlayout.add(attrName, okButton);
-
-  amw.add(hlayout);
+  okButton.set({ top: 12, left: 155 });
+  amw.add(okButton);
 
   main.add(amw);
 
@@ -273,6 +285,7 @@ qx.Proto._createAttributesArea = function() {
   this._attrArea = new qx.ui.layout.VerticalBoxLayout();
 
   this._attrAddButton = new qx.ui.form.Button("+");
+  this._attrAddButton.set({ width: 15, height: 15});
   this._attrAddButton.addEventListener("execute", this._createNewAttribute, this);
 
   this._attrArea.add(this._attrAddButton);
