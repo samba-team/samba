@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_FAM_CHANGE_NOTIFY
-
 #include <fam.h>
 
 #if !defined(HAVE_FAM_H_FAMCODES_TYPEDEF)
@@ -202,13 +200,14 @@ static int fam_watch_context_destructor(struct fam_watch_context *ctx)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-NTSTATUS fam_watch(struct sys_notify_context *ctx,
-		   struct notify_entry *e,
-		   void (*callback)(struct sys_notify_context *ctx, 
-				    void *private_data,
-				    struct notify_event *ev),
-		   void *private_data, 
-		   void *handle_p)
+static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
+			  struct sys_notify_context *ctx,
+			  struct notify_entry *e,
+			  void (*callback)(struct sys_notify_context *ctx, 
+					   void *private_data,
+					   struct notify_event *ev),
+			  void *private_data, 
+			  void *handle_p)
 {
 	const uint32 fam_mask = (FILE_NOTIFY_CHANGE_FILE_NAME|
 				 FILE_NOTIFY_CHANGE_DIR_NAME);
@@ -280,4 +279,24 @@ NTSTATUS fam_watch(struct sys_notify_context *ctx,
 	return NT_STATUS_OK;
 }
 
-#endif /* HAVE_FAM_CHANGE_NOTIFY */
+/* VFS operations structure */
+
+static vfs_op_tuple notify_fam_op_tuples[] = {
+
+	{SMB_VFS_OP(fam_watch),
+	 SMB_VFS_OP_NOTIFY_WATCH,
+	 SMB_VFS_LAYER_OPAQUE},
+
+	{SMB_VFS_OP(NULL),
+	 SMB_VFS_OP_NOOP,
+	 SMB_VFS_LAYER_NOOP}
+
+};
+
+
+NTSTATUS vfs_notify_fam_init(void);
+NTSTATUS vfs_notify_fam_init(void)
+{
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "notify_fam",
+				notify_fam_op_tuples);
+}
