@@ -198,16 +198,38 @@ ${kdigest} digest-server-request \
     --type=CHAP \
     --username="$username"  \
     --opaque="$opaque"  \
+    --client-response="$cresponseData"  \
     --server-identifier="$identifier"  \
     --server-nonce="$snonce"  \
     > s2digest-reply || exitcode=1
 
-sresponseData=`grep responseData= s2digest-reply | cut -f2- -d=`
+status=`grep status= s2digest-reply | cut -f2- -d=`
 
-if test "$cresponseData" = "$sresponseData" ; then
-    echo "CHAP response matches"
+if test "X$status" = "Xok" ; then
+    echo "CHAP response ok"
 else
-    echo "CHAP response doesnt match"
+    echo "CHAP response failed"
+    exitcode=1
+fi
+
+cresponseData=`echo $cresponseData | sed 's/..../DEADBEEF/'`
+
+${kdigest} digest-server-request \
+    --kerberos-realm=${R} \
+    --type=CHAP \
+    --username="$username"  \
+    --opaque="$opaque"  \
+    --client-response="$cresponseData" \
+    --server-identifier="$identifier"  \
+    --server-nonce="$snonce"  \
+    > s2digest-reply || exitcode=1
+
+status=`grep status= s2digest-reply | cut -f2- -d=`
+
+if test "X$status" = "Xfailed" ; then
+    echo "CHAP response fail as it should"
+else
+    echo "CHAP response succeeded errorously"
     exitcode=1
 fi
 
