@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -111,7 +111,7 @@ digest_server_request(struct digest_server_request_options *opt,
 {
     krb5_error_code ret;
     krb5_digest digest;
-    const char *h;
+    const char *status;
 
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
@@ -119,6 +119,8 @@ digest_server_request(struct digest_server_request_options *opt,
 	errx(1, "type missing");
     if (opt->opaque_string == NULL)
 	errx(1, "opaque missing");
+    if (opt->client_response_string == NULL)
+	errx(1, "client response missing");
 
     ret = krb5_digest_alloc(context, &digest);
     if (ret)
@@ -151,14 +153,19 @@ digest_server_request(struct digest_server_request_options *opt,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_opaque");
 
+    ret = krb5_digest_set_responseData(context, digest, 
+				       opt->client_response_string);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_digest_set_responseData");
+
     ret = krb5_digest_request(context, digest,
 			      opt->kerberos_realm_string, id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_request");
 
-    h = krb5_digest_get_responseData(context, digest);
+    status = krb5_digest_rep_get_status(context, digest) ? "ok" : "failed";
 
-    printf("responseData=%s\n", h);
+    printf("status=%s\n", status);
     printf("tickets=no\n");
 
     return 0;
