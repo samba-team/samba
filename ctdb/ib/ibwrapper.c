@@ -476,21 +476,10 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	case RDMA_CM_EVENT_DISCONNECTED:
 		if (cma_id!=pctx->cm_id) {
-			DEBUG(0, ("client DISCONNECT event\n"));
+			DEBUG(0, ("client DISCONNECT event cm_id=%p\n", cma_id));
 			conn = talloc_get_type(cma_id->context, struct ibw_conn);
 			conn->state = IBWC_DISCONNECTED;
 			pctx->connstate_func(NULL, conn);
-
-			talloc_free(conn);
-
-			/* if we are the last... */
-			if (ctx->conn_list==NULL)
-				rdma_disconnect(pctx->cm_id);
-		} else {
-			DEBUG(0, ("server DISCONNECT event\n"));
-			ctx->state = IBWS_STOPPED; /* ??? TODO: try it... */
-			/* talloc_free(ctx) should be called within or after this func */
-			pctx->connstate_func(ctx, NULL);
 		}
 		break;
 
@@ -894,15 +883,20 @@ cleanup:
 
 int ibw_stop(struct ibw_ctx *ctx)
 {
+	struct ibw_ctx_priv *pctx = (struct ibw_ctx_priv *)ctx->internal;
 	struct ibw_conn *p;
 
 	DEBUG(10, ("ibw_stop\n"));
+
 	for(p=ctx->conn_list; p!=NULL; p=p->next) {
 		if (ctx->state==IBWC_ERROR || ctx->state==IBWC_CONNECTED) {
 			if (ibw_disconnect(p))
 				return -1;
 		}
 	}
+
+	ctx->state = IBWS_STOPPED;
+	pctx->connstate_func(ctx, NULL);
 
 	return 0;
 }
@@ -1003,19 +997,16 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
 int ibw_disconnect(struct ibw_conn *conn)
 {
 	int	rc;
-	struct ibw_ctx_priv *pctx = talloc_get_type(conn->ctx->internal, struct ibw_ctx_priv);
 	struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
 
 	DEBUG(10, ("ibw_disconnect: cmid=%p\n", pconn->cm_id));
 
-	rc = rdma_disconnect(pctx->cm_id);
+	rc = rdma_disconnect(pconn->cm_id);
 	if (rc) {
 		sprintf(ibw_lasterr, "ibw_disconnect failed with %d", rc);
 		DEBUG(0, (ibw_lasterr));
 		return rc;
 	}
-
-	/* continued at RDMA_CM_EVENT_DISCONNECTED */
 
 	return 0;
 }
@@ -1092,7 +1083,7 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 	*((uint32_t *)buf) = htonl(len);
 
 	/* can we send it right now? */
-	if (pconn->wr_sent<=pctx->opts.max_send_wr) {
+	if (pconn->wr_sent<pctx->opts.max_send_wr) {
 		struct ibv_sge list = {
 			.addr 	= (uintptr_t) NULL,
 			.length = len,

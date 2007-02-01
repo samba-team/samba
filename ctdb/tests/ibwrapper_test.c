@@ -59,6 +59,7 @@ struct ibwtest_ctx {
 	int	nmsg; /* number of messages to send (client) */
 
 	int	kill_me;
+	int	stopping;
 	int	error;
 	struct ibw_ctx	*ibwctx;
 
@@ -187,8 +188,6 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			break;
 		case IBWS_STOPPED:
 			DEBUG(10, ("test IBWS_STOPPED\n"));
-			talloc_free(tcx->ibwctx);
-			DEBUG(10, ("talloc_free(tcx->ibwctx) DONE\n"));
 			tcx->kill_me = 1; /* main loop can exit */
 			break;
 		case IBWS_ERROR:
@@ -263,8 +262,10 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 			char	msg[26];
 			sprintf(msg, "hello world %d", tcx->nmsg--);
 			tcx->error = ibwtest_send_test_msg(tcx, conn, msg);
-			if (tcx->nmsg==0)
-				tcx->kill_me = 1;
+			if (tcx->nmsg==0) {
+				ibw_stop(tcx->ibwctx);
+				tcx->stopping = 1;
+			}
 		}
 	}
 
@@ -294,11 +295,18 @@ void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te,
 
 static struct ibwtest_ctx *testctx = NULL;
 
-void ibwtest_sigquit_handler(int sig)
+void ibwtest_sigint_handler(int sig)
 {
-	DEBUG(0, ("got SIGQUIT\n"));
-	if (testctx)
-		ibw_stop(testctx->ibwctx);
+	DEBUG(0, ("got SIGINT\n"));
+	if (testctx) {
+		if (testctx->stopping) {
+			DEBUG(10, ("forcing exit...\n"));
+			testctx->kill_me = 1;
+		} else {
+			ibw_stop(testctx->ibwctx);
+			testctx->stopping = 1;
+		}
+	}
 }
 
 int ibwtest_parse_attrs(struct ibwtest_ctx *tcx, char *optext,
@@ -418,7 +426,7 @@ int main(int argc, char *argv[])
 
 	/* here is the only case we can't avoid using global... */
 	testctx = tcx;
-	signal(SIGQUIT, ibwtest_sigquit_handler);
+	signal(SIGINT, ibwtest_sigint_handler);
 
 	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:")) != -1) {
 		switch (op) {
