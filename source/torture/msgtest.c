@@ -101,10 +101,14 @@ static void pong_message(int msg_type, struct process_id src,
 
 		printf("Sending pings for %d seconds\n", (int)timelimit);
 		while (timeval_elapsed(&tv) < timelimit) {		
-			if(message_send_pid(pid_to_procid(pid), MSG_PING,
-					    buf, 11, False)) ping_count++;
-			if(message_send_pid(pid_to_procid(pid), MSG_PING,
-					    NULL, 0, False)) ping_count++;
+			if(NT_STATUS_IS_OK(message_send_pid(pid_to_procid(pid),
+							    MSG_PING,
+							    buf, 11, False)))
+			   ping_count++;
+			if(NT_STATUS_IS_OK(message_send_pid(pid_to_procid(pid),
+							    MSG_PING,
+							    NULL, 0, False)))
+			   ping_count++;
 
 			while (ping_count > pong_count + 20) {
 				message_dispatch();
