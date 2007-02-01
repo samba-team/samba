@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if 0
+#ifdef HAVE_FAM_CHANGE_NOTIFY
 
 #include <fam.h>
 
@@ -44,23 +44,30 @@ typedef enum FAMCodes FAMCodes;
  *	http://sourceforge.net/projects/bsdfam/
  */
 
-static void *fam_notify_add(TALLOC_CTX *mem_ctx,
-			    struct event_context *event_ctx,
-			    files_struct *fsp, uint32 *filter);
-
 /* ------------------------------------------------------------------------- */
 
-struct fam_notify_ctx {
-	struct fam_notify_ctx *prev, *next;
+struct fam_watch_context {
+	struct fam_watch_context *prev, *next;
 	FAMConnection *fam_connection;
 	struct FAMRequest fr;
-	files_struct *fsp;
-	char *path;
-	uint32 filter;
+	struct sys_notify_context *sys_ctx;
+	void (*callback)(struct sys_notify_context *ctx, 
+			 void *private_data,
+			 struct notify_event *ev);
+	void *private_data;
+	uint32_t mask; /* the inotify mask */
+	uint32_t filter; /* the windows completion filter */
+	const char *path;
 };
 
-static struct fam_notify_ctx *fam_notify_list;
+
+/*
+ * We want one FAM connection per smbd, not one per tcon.
+ */
 static FAMConnection fam_connection;
+static BOOL fam_connection_initialized = False;
+
+static struct fam_watch_context *fam_notify_list;
 static void fam_handler(struct event_context *event_ctx,
 			struct fd_event *fd_event,
 			uint16 flags,
@@ -84,7 +91,7 @@ static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
 	SAFE_FREE(name);
 
 	if (res < 0) {
-		DEBUG(5, ("FAM file change notifications not available\n"));
+		DEBUG(10, ("FAM file change notifications not available\n"));
 		/*
 		 * No idea how to get NT_STATUS from a FAM result
 		 */
@@ -107,9 +114,9 @@ static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
 
 static void fam_reopen(FAMConnection *fam_conn,
 		       struct event_context *event_ctx,
-		       struct fam_notify_ctx *notify_list)
+		       struct fam_watch_context *notify_list)
 {
-	struct fam_notify_ctx *ctx;
+	struct fam_watch_context *ctx;
 
 	DEBUG(5, ("Re-opening FAM connection\n"));
 
@@ -132,8 +139,8 @@ static void fam_handler(struct event_context *event_ctx,
 {
 	FAMConnection *fam_conn = (FAMConnection *)private_data;
 	FAMEvent fam_event;
-	struct fam_notify_ctx *ctx;
-	char *name;
+	struct fam_watch_context *ctx;
+	struct notify_event ne;
 
 	if (FAMPending(fam_conn) == 0) {
 		DEBUG(10, ("fam_handler called but nothing pending\n"));
@@ -141,13 +148,23 @@ static void fam_handler(struct event_context *event_ctx,
 	}
 
 	if (FAMNextEvent(fam_conn, &fam_event) != 1) {
-		DEBUG(10, ("FAMNextEvent returned an error\n"));
+		DEBUG(5, ("FAMNextEvent returned an error\n"));
 		TALLOC_FREE(fd_event);
 		fam_reopen(fam_conn, event_ctx, fam_notify_list);
 		return;
 	}
 
-	if ((fam_event.code != FAMCreated) && (fam_event.code != FAMDeleted)) {
+	DEBUG(10, ("Got FAMCode %d for %s\n", fam_event.code,
+		   fam_event.filename));
+
+	switch (fam_event.code) {
+	case FAMCreated:
+		ne.action = NOTIFY_ACTION_ADDED;
+		break;
+	case FAMDeleted:
+		ne.action = NOTIFY_ACTION_REMOVED;
+		break;
+	default:
 		DEBUG(10, ("Ignoring code FAMCode %d for file %s\n",
 			   (int)fam_event.code, fam_event.filename));
 		return;
@@ -165,17 +182,14 @@ static void fam_handler(struct event_context *event_ctx,
 		return;
 	}
 
-	if ((name = strrchr_m(fam_event.filename, '\\')) == NULL) {
-		name = fam_event.filename;
+	if ((ne.path = strrchr_m(fam_event.filename, '\\')) == NULL) {
+		ne.path = fam_event.filename;
 	}
 
-	notify_fsp(ctx->fsp,
-		   fam_event.code == FAMCreated
-		   ? NOTIFY_ACTION_ADDED : NOTIFY_ACTION_REMOVED,
-		   name);
+	ctx->callback(ctx->sys_ctx, ctx->private_data, &ne);
 }
 
-static int fam_notify_ctx_destructor(struct fam_notify_ctx *ctx)
+static int fam_watch_context_destructor(struct fam_watch_context *ctx)
 {
 	if (FAMCONNECTION_GETFD(ctx->fam_connection) != -1) {
 		FAMCancelMonitor(&fam_connection, &ctx->fr);
@@ -184,86 +198,86 @@ static int fam_notify_ctx_destructor(struct fam_notify_ctx *ctx)
 	return 0;
 }
 
-static void *fam_notify_add(TALLOC_CTX *mem_ctx,
-			    struct event_context *event_ctx,
-			    files_struct *fsp, uint32 *filter)
+/*
+  add a watch. The watch is removed when the caller calls
+  talloc_free() on *handle
+*/
+NTSTATUS fam_watch(struct sys_notify_context *ctx,
+		   struct notify_entry *e,
+		   void (*callback)(struct sys_notify_context *ctx, 
+				    void *private_data,
+				    struct notify_event *ev),
+		   void *private_data, 
+		   void *handle_p)
 {
-	struct fam_notify_ctx *ctx;
+	const uint32 fam_mask = (FILE_NOTIFY_CHANGE_FILE_NAME|
+				 FILE_NOTIFY_CHANGE_DIR_NAME);
+	struct fam_watch_context *watch;
+	void **handle = (void **)handle_p;
 
-	if ((*filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
-		DEBUG(10, ("filter = %u, no FILE_NOTIFY_CHANGE_FILE_NAME\n",
-			   *filter));
-		return NULL;
+	if ((e->filter & fam_mask) == 0) {
+		DEBUG(10, ("filter = %u, ignoring in FAM\n", e->filter));
+		return NT_STATUS_OK;
 	}
 
-	if (!(ctx = TALLOC_P(mem_ctx, struct fam_notify_ctx))) {
-		return NULL;
+	if (!fam_connection_initialized) {
+		if (!NT_STATUS_IS_OK(fam_open_connection(&fam_connection,
+							 ctx->ev))) {
+			/*
+			 * Just let smbd do all the work itself
+			 */
+			return NT_STATUS_OK;
+		}
+		fam_connection_initialized = True;
 	}
 
-	ctx->fsp = fsp;
-	ctx->fam_connection = &fam_connection;
+	if (!(watch = TALLOC_P(ctx, struct fam_watch_context))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	watch->fam_connection = &fam_connection;
+
+	watch->callback = callback;
+	watch->private_data = private_data;
+	watch->sys_ctx = ctx;
+
+	if (!(watch->path = talloc_strdup(watch, e->path))) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		TALLOC_FREE(watch);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * The FAM module in this early state will only take care of
-	 * FAMCreated and FAMDeleted events
+	 * FAMCreated and FAMDeleted events, Leave the rest to
+	 * notify_internal.c
 	 */
 
-	ctx->filter = FILE_NOTIFY_CHANGE_FILE_NAME;
+	watch->filter = fam_mask;
+	e->filter &= ~fam_mask;
 
-	if (!(ctx->path = talloc_asprintf(ctx, "%s/%s", fsp->conn->connectpath,
-					  fsp->fsp_name))) {
-		DEBUG(0, ("talloc_asprintf failed\n"));
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
-	/*
-	 * Leave the rest to smbd itself
-	 */
-
-	*filter &= ~FILE_NOTIFY_CHANGE_FILE_NAME;
-
-	DLIST_ADD(fam_notify_list, ctx);
-	talloc_set_destructor(ctx, fam_notify_ctx_destructor);
+	DLIST_ADD(fam_notify_list, watch);
+	talloc_set_destructor(watch, fam_watch_context_destructor);
 
 	/*
 	 * Only directories monitored so far
 	 */
 
-	if (FAMCONNECTION_GETFD(ctx->fam_connection) != -1) {
-		FAMMonitorDirectory(ctx->fam_connection, ctx->path, &ctx->fr,
-				    NULL);
+	if (FAMCONNECTION_GETFD(watch->fam_connection) != -1) {
+		FAMMonitorDirectory(watch->fam_connection, watch->path,
+				    &watch->fr, NULL);
 	}
 	else {
 		/*
 		 * If the re-open is successful, this will establish the
 		 * FAMMonitor from the list
 		 */
-		fam_reopen(ctx->fam_connection, event_ctx, fam_notify_list);
+		fam_reopen(watch->fam_connection, ctx->ev, fam_notify_list);
 	}
 
-	return ctx;
-}
+	*handle = (void *)watch;
 
-static struct cnotify_fns global_fam_notify =
-{
-    fam_notify_add,
-};
-
-struct cnotify_fns *fam_notify_init(struct event_context *event_ctx)
-{
-
-	ZERO_STRUCT(fam_connection);
-	FAMCONNECTION_GETFD(&fam_connection) = -1;
-
-	if (!NT_STATUS_IS_OK(fam_open_connection(&fam_connection,
-						 event_ctx))) {
-		DEBUG(0, ("FAM file change notifications not available\n"));
-		return NULL;
-	}
-
-	DEBUG(10, ("enabling FAM change notifications\n"));
-	return &global_fam_notify;
+	return NT_STATUS_OK;
 }
 
 #endif /* HAVE_FAM_CHANGE_NOTIFY */
