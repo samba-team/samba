@@ -59,7 +59,8 @@ static BOOL send_message(struct process_id pid, int msg_type,
 		return False;
 
 	if (procid_to_pid(&pid) != 0)
-		return message_send_pid(pid, msg_type, buf, len, duplicates);
+		return NT_STATUS_IS_OK(message_send_pid(pid, msg_type, buf, len,
+							duplicates));
 
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
 			   TDB_DEFAULT, O_RDWR, 0);

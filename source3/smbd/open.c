@@ -652,7 +652,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 	BOOL valid_entry = False;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
-	BOOL ret;
+	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
 	if (oplock_request & INTERNAL_OPEN_ONLY) {
@@ -740,10 +740,11 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 		SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
 	}
 
-	ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-			       msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-	if (!ret) {
-		DEBUG(3, ("Could not send oplock break message\n"));
+	status = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
+				  msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Could not send oplock break message: %s\n",
+			  nt_errstr(status)));
 	}
 
 	return True;
