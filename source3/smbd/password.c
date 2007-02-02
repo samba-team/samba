@@ -23,6 +23,8 @@
 /* users from session setup */
 static char *session_userlist = NULL;
 static int len_session_userlist = 0;
+/* workgroup from session setup. */
+static char *session_workgroup = NULL;
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users;
@@ -400,6 +402,29 @@ void add_session_user(const char *user)
 
 	safe_strcat(session_userlist," ",len_session_userlist-1);
 	safe_strcat(session_userlist,suser,len_session_userlist-1);
+}
+
+/****************************************************************************
+ In security=share mode we need to store the client workgroup, as that's
+  what Vista uses for the NTLMv2 calculation.
+****************************************************************************/
+
+void add_session_workgroup(const char *workgroup)
+{
+	if (session_workgroup) {
+		SAFE_FREE(session_workgroup);
+	}
+	session_workgroup = smb_xstrdup(workgroup);
+}
+
+/****************************************************************************
+ In security=share mode we need to return the client workgroup, as that's
+  what Vista uses for the NTLMv2 calculation.
+****************************************************************************/
+
+const char *get_session_workgroup(void)
+{
+	return session_workgroup;
 }
 
 /****************************************************************************
