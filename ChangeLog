@@ -1,5 +1,17 @@
 2007-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Fix ms-chap-v2 get_masterkey
+
+	* kdc/digest.c: Fix ms-chap-v2 mutual response auth code.
+
+	* kuser/kdigest.c: Print session key if there is one.
+
+	* lib/krb5/digest.c: rename hash-a1 to session key
+
+	* kdc/digest.c: Add get_master from RFC 3079 3.4 for MS-CHAP-V2
+
+	* kuser/kdigest.c: print rsp if there is one, from Klas.
+
 	* kdc/digest.c: Use right size, from Klas Lindfors.
 
 	* kuser/kdigest.c: Set client nonce if avaible, from Klas.
