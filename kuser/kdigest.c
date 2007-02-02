@@ -145,6 +145,14 @@ digest_server_request(struct digest_server_request_options *opt,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_server_nonce");
 
+    if(opt->client_nonce_string) {
+	ret = krb5_digest_set_client_nonce(context, digest, 
+					   opt->client_nonce_string);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_digest_set_client_nonce");
+    }
+
+
     ret = krb5_digest_set_opaque(context, digest, opt->opaque_string);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_opaque");
