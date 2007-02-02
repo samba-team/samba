@@ -1839,7 +1839,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	}
 
 	if((!fsp->is_directory) || (conn != fsp->conn)) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (fsp->notify == NULL) {
