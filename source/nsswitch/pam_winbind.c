@@ -1320,19 +1320,18 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		ZERO_STRUCT(response);
 
 		retval = pam_get_user(pamh, &user, "Username: ");
-		if (retval == PAM_SUCCESS) {
-			if (user == NULL) {
-				_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
-				retval = PAM_USER_UNKNOWN;
-				goto out;
-			}
-			if (retval == PAM_SUCCESS) {
-				_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained", user);
-			}
-		} else {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "could not identify user");
+		if (retval) {
+			_pam_log(pamh, ctrl, LOG_ERR, "could not identify user");
 			goto out;
 		}
+
+		if (user == NULL) {
+			_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
+			retval = PAM_USER_UNKNOWN;
+			goto out;
+		}
+
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained", user);
 
 		ccname = pam_getenv(pamh, "KRB5CCNAME");
 		if (ccname == NULL) {
@@ -1401,21 +1400,19 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	 * First get the name of a user
 	 */
 	ret = pam_get_user(pamh, &user, "Username: ");
-	if (ret == PAM_SUCCESS) {
-		if (user == NULL) {
-			_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
-			ret = PAM_USER_UNKNOWN;
-			goto out;
-		}
-		if (ret == PAM_SUCCESS) {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained",
-				 user);
-		}
-	} else {
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+	if (ret) {
+		_pam_log(pamh, ctrl, LOG_ERR,
 			 "password - could not identify user");
 		goto out;
 	}
+
+	if (user == NULL) {
+		_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
+		ret = PAM_USER_UNKNOWN;
+		goto out;
+	}
+
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained", user);
 
 	/* check if this is really a user in winbindd, not only in NSS */
 	ret = valid_user(pamh, ctrl, user);
