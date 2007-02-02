@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "includes.h"
 #include "lib/events/events.h"
@@ -53,6 +54,7 @@ struct ibwtest_ctx {
 
 	unsigned int	nsec; /* delta times between messages in nanosec */
 	unsigned int	sleep_nsec; /* nanosleep in the main loop to emulate overloading */
+	uint32_t	maxsize; /* maximum variable message size */
 
 	int	cnt;
 
@@ -72,12 +74,13 @@ struct ibwtest_conn {
 
 enum testopcode {
 	TESTOP_SEND_ID = 1,
-	TESTOP_SEND_DATA = 2
+	TESTOP_SEND_TEXT = 2,
+	TESTOP_SEND_RND = 3
 };
 
 int ibwtest_nanosleep(unsigned int sleep_nsec)
 {
-	int nanosleep(const struct timespec *req, struct timespec *rem);
+//	int nanosleep(const struct timespec *req, struct timespec *rem);
 	struct timespec req, rem;
 
 	memset(&req, 0, sizeof(struct timespec));
@@ -118,7 +121,7 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	void *key;
 	uint32_t	len;
 
-	DEBUG(10, ("test IBWC_CONNECTED\n"));
+	DEBUG(10, ("ibwtest_send_id\n"));
 	len = sizeof(uint32_t)+strlen(tcx->id)+2;
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		DEBUG(0, ("send_id: ibw_alloc_send_buf failed\n"));
@@ -145,7 +148,7 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 	if (conn->state!=IBWC_CONNECTED)
 		return 0; /* not yet up */
 
-	len = strlen(msg)+2 + sizeof(uint32_t);
+	len = strlen(msg) + 2 + sizeof(uint32_t);
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		fprintf(stderr, "send_test_msg: ibw_alloc_send_buf failed\n");
 		return -1;
@@ -153,7 +156,7 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 
 	p = buf;
 	p += sizeof(uint32_t);
-	p[0] = (char)TESTOP_SEND_DATA;
+	p[0] = (char)TESTOP_SEND_TEXT;
 	p++;
 	strcpy(p, msg);
 
@@ -163,6 +166,83 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 	}
 	return 0;
 }
+
+unsigned char ibwtest_fill_random(unsigned char *buf, uint32_t size)
+{
+	uint32_t	i = size;
+	unsigned char	sum = 0;
+	unsigned char	value;
+	while(i) {
+		i--;
+		value = (unsigned char)(256.0 * (rand() / (RAND_MAX + 1.0)));
+		buf[i] = value;
+		sum += value;
+	}
+	return sum;
+}
+
+unsigned char ibwtest_get_sum(unsigned char *buf, uint32_t size)
+{
+	uint32_t	i = size;
+	unsigned char	sum = 0;
+
+	while(i) {
+		i--;
+		sum += buf[i];
+	}
+	return sum;
+}
+
+int ibwtest_do_varsize_scenario_conn_size(struct ibwtest_ctx *tcx, struct ibw_conn *conn, uint32_t size)
+{
+	unsigned char *buf;
+	void	*key;
+	uint32_t	len;
+	unsigned char	sum;
+
+	len = sizeof(uint32_t) + 1 + size + 1;
+	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
+		DEBUG(0, ("varsize/ibw_alloc_send_buf failed\n"));
+		return -1;
+	}
+	buf[sizeof(uint32_t)] = TESTOP_SEND_RND;
+	sum = ibwtest_fill_random(buf + sizeof(uint32_t) + 1, size);
+	buf[sizeof(uint32_t) + 1 + size] = sum;
+	if (ibw_send(conn, buf, key, len)) {
+		DEBUG(0, ("varsize/ibw_send failed\n"));
+		return -1;
+	}
+	return 0;
+}
+
+int ibwtest_do_varsize_scenario_conn(struct ibwtest_ctx *tcx, struct ibw_conn *conn)
+{
+	uint32_t	size;
+	int	i;
+
+	for(i=0; i<tcx->nmsg; i++)
+	{
+		//size = (uint32_t)((float)(tcx->maxsize) * (rand() / (RAND_MAX + 1.0)));
+		size = (uint32_t)((float)(tcx->maxsize) * ((float)i/(float)tcx->nmsg));
+		if (ibwtest_do_varsize_scenario_conn_size(tcx, conn, size))
+			return -1;
+	}
+	return 0;
+}
+
+/*int ibwtest_do_varsize_scenario(ibwtest_ctx *tcx)
+{
+	int	rc;
+	struct ibw_conn *conn;
+
+	for(conn=tcx->ibwctx->conn_list; conn!=NULL; conn=conn->next) {
+		if (conn->state==IBWC_CONNECTED) {
+			rc = ibwtest_do_varsize_scenario_conn(tcx, conn);
+			if (rc)
+				tcx->error = rc;
+		}
+	}
+}*/
 
 int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 {
@@ -215,6 +295,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			break;
 		case IBWC_DISCONNECTED:
 			DEBUG(10, ("test IBWC_DISCONNECTED\n"));
+			talloc_free(conn);
 			break;
 		case IBWC_ERROR:
 			DEBUG(10, ("test IBWC_ERROR\n"));
@@ -232,36 +313,62 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 	struct ibwtest_conn *pconn;
 	enum testopcode op;
 	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
+	int	rc = 0;
 
 	assert(conn!=NULL);
-	assert(n>=sizeof(uint32_t)+2);
+	assert(n>=sizeof(uint32_t)+1);
 	pconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
 
 	op = (enum testopcode)((char *)buf)[sizeof(uint32_t)];
 	if (op==TESTOP_SEND_ID) {
 		pconn->id = talloc_strdup(pconn, ((char *)buf)+sizeof(uint32_t)+1);
 	}
-	DEBUG(11, ("[%d]msg from %s: \"%s\"(%d)\n", op,
-		pconn->id ? pconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
+	if (op==TESTOP_SEND_ID || op==TESTOP_SEND_TEXT) {
+		DEBUG(11, ("[%d]msg from %s: \"%s\"(%d)\n", op,
+			pconn->id ? pconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
+	}
 
 	if (tcx->is_server) {
-		char *buf2;
-		void *key2;
-		/* bounce message */
-		if (ibw_alloc_send_buf(conn, (void **)&buf2, &key2, n)) {
-			fprintf(stderr, "ibw_alloc_send_buf error #2\n");
-			return -1;
+		if (op==TESTOP_SEND_RND) {
+			unsigned char sum;
+			sum = ibwtest_get_sum((unsigned char *)buf + sizeof(uint32_t) + 1,
+				n - sizeof(uint32_t) - 2);
+			DEBUG(11, ("[%d]msg varsize %u/sum %u from %s\n",
+				op,
+				n - sizeof(uint32_t) - 2,
+				(uint32_t)sum,
+				pconn->id ? pconn->id : "NULL"));
+			if (sum!=((unsigned char *)buf)[n-1]) {
+				DEBUG(0, ("ERROR: checksum mismatch %u!=%u\n",
+					(uint32_t)sum, (uint32_t)((unsigned char *)buf)[n-1]));
+				ibw_stop(tcx->ibwctx);
+				return -3;
+			}
+		} else {
+			char *buf2;
+			void *key2;
+
+			/* bounce message regardless what it is */
+			if (ibw_alloc_send_buf(conn, (void **)&buf2, &key2, n)) {
+				fprintf(stderr, "ibw_alloc_send_buf error #2\n");
+				return -1;
+			}
+			memcpy(buf2, buf, n);
+			if (ibw_send(conn, buf2, key2, n)) {
+				fprintf(stderr, "ibw_send error #2\n");
+				return -2;
+			}
 		}
-		memcpy(buf2, buf, n);
-		if (ibw_send(conn, buf2, key2, n)) {
-			fprintf(stderr, "ibw_send error #2\n");
-			return -2;
+	} else { /* client: */
+		if (op==TESTOP_SEND_ID && tcx->maxsize) {
+			/* send them in one blow */
+			rc = ibwtest_do_varsize_scenario_conn(tcx, conn);
 		}
-	} else {
+
 		if (tcx->nmsg) {
 			char	msg[26];
 			sprintf(msg, "hello world %d", tcx->nmsg--);
-			tcx->error = ibwtest_send_test_msg(tcx, conn, msg);
+			rc = ibwtest_send_test_msg(tcx, conn, msg);
 			if (tcx->nmsg==0) {
 				ibw_stop(tcx->ibwctx);
 				tcx->stopping = 1;
@@ -269,25 +376,31 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 		}
 	}
 
-	return 0;
+	if (rc)
+		tcx->error = rc;
+
+	return rc;
 }
 
 void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te, 
 	struct timeval t, void *private)
 {
 	struct ibwtest_ctx *tcx = talloc_get_type(private, struct ibwtest_ctx);
+	int	rc;
 
 	if (!tcx->is_server) {
-		struct ibw_conn *p;
+		struct ibw_conn *conn;
 		char	msg[50];
 
 		/* fill it with something variable... */
 		sprintf(msg, "hello world %d", tcx->cnt++);
 
 		/* send something to everybody... */
-		for(p=tcx->ibwctx->conn_list; p!=NULL; p=p->next) {
-			if (p->state==IBWC_CONNECTED) {
-				tcx->error = ibwtest_send_test_msg(tcx, p, msg);
+		for(conn=tcx->ibwctx->conn_list; conn!=NULL; conn=conn->next) {
+			if (conn->state==IBWC_CONNECTED) {
+				rc = ibwtest_send_test_msg(tcx, conn, msg);
+				if (rc)
+					tcx->error = rc;
 			}
 		}
 	} /* else allow main loop run */
@@ -299,13 +412,20 @@ void ibwtest_sigint_handler(int sig)
 {
 	DEBUG(0, ("got SIGINT\n"));
 	if (testctx) {
-		if (testctx->stopping) {
-			DEBUG(10, ("forcing exit...\n"));
+		if (testctx->ibwctx->state==IBWS_READY ||
+			testctx->ibwctx->state==IBWS_CONNECT_REQUEST ||
+			testctx->ibwctx->state==IBWS_ERROR)
+		{
+			if (testctx->stopping) {
+				DEBUG(10, ("forcing exit...\n"));
+				testctx->kill_me = 1;
+			} else {
+				/* mostly expected case */
+				ibw_stop(testctx->ibwctx);
+				testctx->stopping = 1;
+			}
+		} else
 			testctx->kill_me = 1;
-		} else {
-			ibw_stop(testctx->ibwctx);
-			testctx->stopping = 1;
-		}
 	}
 }
 
@@ -408,6 +528,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
 	printf("\t-l nsec time to sleep in the main loop [default %d]\n", tcx->sleep_nsec);
+	printf("\t-v max variable msg size in bytes [default %d], 0=don't send var. size\n", tcx->maxsize);
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -427,8 +548,9 @@ int main(int argc, char *argv[])
 	/* here is the only case we can't avoid using global... */
 	testctx = tcx;
 	signal(SIGINT, ibwtest_sigint_handler);
+	srand((unsigned)time(NULL));
 
-	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:v:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
@@ -454,6 +576,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'l':
 			tcx->sleep_nsec = (unsigned int)atoi(optarg);
+			break;
+		case 'v':
+			tcx->maxsize = (unsigned int)atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);
