@@ -849,8 +849,9 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	    
-	    hex_encode(md, sizeof(md), &mdx);
+	    hex_encode(answer.data, answer.length, &mdx);
 	    if (mdx == NULL) {
+		free(answer.data);
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
