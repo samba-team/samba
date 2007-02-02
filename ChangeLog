@@ -1,5 +1,11 @@
 2007-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Use right size, from Klas Lindfors.
+
+	* kuser/kdigest.c: Set client nonce if avaible, from Klas.
+
+	* kdc/digest.c: First version from kllin.
+
 	* kuser/kdigest.c: Don't restrict the type.
 	
 2007-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
