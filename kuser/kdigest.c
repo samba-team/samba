@@ -108,6 +108,7 @@ digest_server_request(struct digest_server_request_options *opt,
     krb5_error_code ret;
     krb5_digest digest;
     const char *status, *rsp;
+    krb5_data session_key;
 
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
@@ -174,6 +175,20 @@ digest_server_request(struct digest_server_request_options *opt,
     if (rsp)
 	printf("rsp=%s\n", rsp);
     printf("tickets=no\n");
+
+    ret = krb5_digest_get_session_key(context, digest, &session_key);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_digest_get_session_key");
+
+    if (session_key.length) {
+	char *key;
+	hex_encode(session_key.data, session_key.length, &key);
+	if (key == NULL)
+	    krb5_errx(context, 1, "hex_encode");
+	krb5_data_free(&session_key);
+	printf("session-key=%s\n", key);
+	free(key);
+    }
 
     return 0;
 }
