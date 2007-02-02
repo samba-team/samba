@@ -252,6 +252,39 @@ done:
 	return ret;
 }
 
+/*
+ * Check notify reply for a rename action. Not sure if this is a valid thing
+ * to do, but depending on timing between inotify and messaging we get the
+ * add/remove/modify in any order. This routines tries to find the action/name
+ * pair in any of the three following notify_changes.
+ */
+
+static BOOL check_rename_reply(struct smbcli_state *cli,
+			       int line,
+			       struct notify_changes *actions,
+			       uint32_t action, const char *name)
+{
+	int i;
+
+	for (i=0; i<3; i++) {
+		if (actions[i].action == action) {
+			if ((actions[i].name.s == NULL)
+			    || (strcmp(actions[i].name.s, name) != 0)
+			    || (wire_bad_flags(&actions[i].name, STR_UNICODE,
+					       cli))) {
+				printf("(%d) name [%s] != %s\n", line,
+				       actions[i].name.s, name);
+				return False;
+			}
+			return True;
+		}
+	}
+
+	printf("(%d) expected action %d, not found\n", line, action);
+	return False;
+}
+
+
 
 /* 
    testing of recursive change notify
@@ -344,28 +377,29 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(notify.nttrans.out.changes[4].action, NOTIFY_ACTION_NEW_NAME);
 	CHECK_WSTR(notify.nttrans.out.changes[4].name, "subdir-name\\subname1-r", STR_UNICODE);
 
-	/* the remove/add between directories is acceptable in either order */
-	if (notify.nttrans.out.changes[5].action == NOTIFY_ACTION_ADDED) {
-		CHECK_VAL(notify.nttrans.out.changes[6].action, NOTIFY_ACTION_REMOVED);
-		CHECK_WSTR(notify.nttrans.out.changes[6].name, "subdir-name\\subname2", STR_UNICODE);
-		CHECK_VAL(notify.nttrans.out.changes[5].action, NOTIFY_ACTION_ADDED);
-		CHECK_WSTR(notify.nttrans.out.changes[5].name, "subname2-r", STR_UNICODE);
-	} else {
-		CHECK_VAL(notify.nttrans.out.changes[5].action, NOTIFY_ACTION_REMOVED);
-		CHECK_WSTR(notify.nttrans.out.changes[5].name, "subdir-name\\subname2", STR_UNICODE);
-		CHECK_VAL(notify.nttrans.out.changes[6].action, NOTIFY_ACTION_ADDED);
-		CHECK_WSTR(notify.nttrans.out.changes[6].name, "subname2-r", STR_UNICODE);
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[5],
+		NOTIFY_ACTION_ADDED, "subname2-r");
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[5],
+		NOTIFY_ACTION_REMOVED, "subdir-name\\subname2");
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[5],
+		NOTIFY_ACTION_MODIFIED, "subname2-r");
+		
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[8],
+		NOTIFY_ACTION_OLD_NAME, "subname2-r");
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[8],
+		NOTIFY_ACTION_NEW_NAME, "subname3-r");
+	ret &= check_rename_reply(
+		cli, __LINE__, &notify.nttrans.out.changes[8],
+		NOTIFY_ACTION_MODIFIED, "subname3-r");
+
+	if (!ret) {
+		goto done;
 	}
-
-	CHECK_VAL(notify.nttrans.out.changes[7].action, NOTIFY_ACTION_MODIFIED);
-	CHECK_WSTR(notify.nttrans.out.changes[7].name, "subname2-r", STR_UNICODE);
-
-	CHECK_VAL(notify.nttrans.out.changes[8].action, NOTIFY_ACTION_OLD_NAME);
-	CHECK_WSTR(notify.nttrans.out.changes[8].name, "subname2-r", STR_UNICODE);
-	CHECK_VAL(notify.nttrans.out.changes[9].action, NOTIFY_ACTION_NEW_NAME);
-	CHECK_WSTR(notify.nttrans.out.changes[9].name, "subname3-r", STR_UNICODE);
-	CHECK_VAL(notify.nttrans.out.changes[10].action, NOTIFY_ACTION_MODIFIED);
-	CHECK_WSTR(notify.nttrans.out.changes[10].name, "subname3-r", STR_UNICODE);
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
