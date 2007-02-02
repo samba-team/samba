@@ -17,7 +17,7 @@
 
 [kdc]
 	enable-digest = true
-	digests_allowed = chap-md5,digest-md5,ntlm-v1,ntlm-v1-session,ntlm-v2
+	digests_allowed = chap-md5,digest-md5,ntlm-v1,ntlm-v1-session,ntlm-v2,ms-chap-v2
 
 	enable-pkinit = true
 	pkinit_identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
