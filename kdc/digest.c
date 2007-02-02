@@ -151,8 +151,11 @@ static const unsigned char ms_chap_v1_magic2[41] = {
     0x6E
 };
 
-
-
+static const unsigned char ms_rfc3079_magic1[27] = {
+    0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x74,
+    0x68, 0x65, 0x20, 0x4d, 0x50, 0x50, 0x45, 0x20, 0x4d,
+    0x61, 0x73, 0x74, 0x65, 0x72, 0x20, 0x4b, 0x65, 0x79
+};
 
 /*
  *
@@ -875,7 +878,6 @@ _kdc_do_digest(krb5_context context,
 	    SHA1_Update(&ctx, answer.data, answer.length);
 	    SHA1_Update(&ctx, ms_chap_v1_magic1, sizeof(ms_chap_v1_magic1));
 	    SHA1_Final(md, &ctx);
-	    free(answer.data);
 
 	    SHA1_Init(&ctx);
 	    SHA1_Update(&ctx, md, sizeof(md));
@@ -885,6 +887,7 @@ _kdc_do_digest(krb5_context context,
 
 	    r.u.response.rsp = calloc(1, sizeof(*r.u.response.rsp));
 	    if (r.u.response.rsp == NULL) {
+		free(answer.data);
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
@@ -892,8 +895,42 @@ _kdc_do_digest(krb5_context context,
 
 	    hex_encode(md, sizeof(md), r.u.response.rsp);
 	    if (r.u.response.rsp == NULL) {
+		free(answer.data);
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
+		goto out;
+	    }
+
+	    /* hash hash */
+	    {
+		MD4_CTX hctx;
+
+		MD4_Init(&hctx);
+		MD4_Update(&hctx, key->key.keyvalue.data, 
+			   key->key.keyvalue.length);
+		MD4_Final(md, &hctx);
+	    }
+
+	    /* get_master, rfc 3079 3.4 */
+	    SHA1_Init(&ctx);
+	    SHA1_Update(&ctx, md, 16); /* md4(hash) */
+	    SHA1_Update(&ctx, answer.data, answer.length);
+	    SHA1_Update(&ctx, ms_rfc3079_magic1, sizeof(ms_rfc3079_magic1));
+	    SHA1_Final(md, &ctx);
+
+	    free(answer.data);
+
+	    r.u.response.session_key = 
+		calloc(1, sizeof(*r.u.response.session_key));
+	    if (r.u.response.session_key == NULL) {
+		krb5_clear_error_string(context);
+		ret = ENOMEM;
+		goto out;
+	    }
+
+	    ret = krb5_data_copy(r.u.response.session_key, md, sizeof(md));
+	    if (ret) {
+		krb5_clear_error_string(context);
 		goto out;
 	    }
 
