@@ -56,7 +56,7 @@ DigestResponse ::= SEQUENCE  {
     	cb-type		UTF8String,
     	cb-binding	UTF8String
     } OPTIONAL,
-    hash-a1		[3] OCTET STRING OPTIONAL
+    session-key		[3] OCTET STRING OPTIONAL
 }
 
 NTLMInit ::= SEQUENCE {
