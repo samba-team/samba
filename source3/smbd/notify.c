@@ -22,6 +22,19 @@
 
 #include "includes.h"
 
+struct notify_change_request {
+	struct notify_change_request *prev, *next;
+	struct files_struct *fsp;	/* backpointer for cancel by mid */
+	char request_buf[smb_size];
+	uint32 filter;
+	uint32 max_param_count;
+	uint32 current_bufsize;
+	struct notify_mid_map *mid_map;
+	void *backend_data;
+};
+
+static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
+
 static struct notify_mid_map *notify_changes_by_mid;
 
 /*
@@ -114,19 +127,20 @@ static void change_notify_reply_packet(const char *request_buf,
 }
 
 void change_notify_reply(const char *request_buf, uint32 max_param_count,
-			 int num_changes, struct notify_change *changes)
+			 struct notify_change_buf *notify_buf)
 {
 	char *outbuf = NULL;
 	prs_struct ps;
 	size_t buflen = smb_size+38+max_param_count;
 
-	if (num_changes == -1) {
+	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
 		return;
 	}
 
 	if (!prs_init(&ps, 0, NULL, False)
-	    || !notify_marshall_changes(num_changes, changes, &ps)) {
+	    || !notify_marshall_changes(notify_buf->num_changes,
+					notify_buf->changes, &ps)) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
@@ -155,6 +169,49 @@ void change_notify_reply(const char *request_buf, uint32 max_param_count,
  done:
 	SAFE_FREE(outbuf);
 	prs_mem_free(&ps);
+
+	TALLOC_FREE(notify_buf->changes);
+	notify_buf->num_changes = 0;
+}
+
+static void notify_callback(void *private_data, const struct notify_event *e)
+{
+	files_struct *fsp = (files_struct *)private_data;
+	DEBUG(10, ("notify_callback called for %s\n", fsp->fsp_name));
+	notify_fsp(fsp, e->action, e->path);
+}
+
+NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
+			      BOOL recursive)
+{
+	char *fullpath;
+	struct notify_entry e;
+	NTSTATUS status;
+
+	SMB_ASSERT(fsp->notify == NULL);
+
+	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_change_buf))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
+		     fsp->fsp_name) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	e.path = fullpath;
+	e.filter = filter;
+	e.subdir_filter = 0;
+	if (recursive) {
+		e.subdir_filter = filter;
+	}
+
+	status = notify_add(fsp->conn->notify_ctx, &e, notify_callback, fsp);
+	SAFE_FREE(fullpath);
+
+	return status;
 }
 
 NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
@@ -175,6 +232,7 @@ NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
 
 	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
 	request->max_param_count = max_param_count;
+	request->current_bufsize = 0;
 	request->filter = filter;
 	request->fsp = fsp;
 	request->backend_data = NULL;
@@ -275,7 +333,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 	SAFE_FREE(fullpath);
 }
 
-void notify_fsp(files_struct *fsp, uint32 action, const char *name)
+static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
 	struct notify_change *change, *changes;
 	char *name2;
@@ -290,19 +348,19 @@ void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	if (!(name2 = talloc_strdup(fsp->notify, name))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 			return;
-		}
+	}
 
 	string_replace(name2, '/', '\\');
 
 	/*
 	 * Someone has triggered a notify previously, queue the change for
-	 * later. TODO: Limit the number of changes queued, test how filters
-	 * apply here. Do we have to store them?
+	 * later.
 	 */
 
-	if ((fsp->notify->num_changes > 30) || (name == NULL)) {
+	if ((fsp->notify->num_changes > 1000) || (name == NULL)) {
 		/*
-		 * W2k3 seems to store at most 30 changes.
+		 * The real number depends on the client buf, just provide a
+		 * guard against a DoS here.
 		 */
 		TALLOC_FREE(fsp->notify->changes);
 		TALLOC_FREE(name2);
@@ -353,13 +411,9 @@ void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	change_notify_reply(fsp->notify->requests->request_buf,
 			    fsp->notify->requests->max_param_count,
-			    fsp->notify->num_changes,
-			    fsp->notify->changes);
+			    fsp->notify);
 
 	change_notify_remove_request(fsp->notify->requests);
-
-	TALLOC_FREE(fsp->notify->changes);
-	fsp->notify->num_changes = 0;
 }
 
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)

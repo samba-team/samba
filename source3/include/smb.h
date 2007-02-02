@@ -448,21 +448,12 @@ struct notify_change {
 struct notify_mid_map;
 struct notify_entry;
 struct notify_event;
+struct notify_change_request;
 struct sys_notify_backend;
 struct sys_notify_context {
 	struct event_context *ev;
 	struct connection_struct *conn;
 	void *private_data; 	/* For use by the system backend */
-};
-
-struct notify_change_request {
-	struct notify_change_request *prev, *next;
-	struct files_struct *fsp;	/* backpointer for cancel by mid */
-	char request_buf[smb_size];
-	uint32 filter;
-	uint32 max_param_count;
-	struct notify_mid_map *mid_map;
-	void *backend_data;
 };
 
 struct notify_change_buf {

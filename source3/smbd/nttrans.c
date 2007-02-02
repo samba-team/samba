@@ -1787,13 +1787,6 @@ int reply_ntrename(connection_struct *conn,
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static void notify_callback(void *private_data, const struct notify_event *e)
-{
-	files_struct *fsp = (files_struct *)private_data;
-	DEBUG(10, ("notify_callback called for %s\n", fsp->fsp_name));
-	notify_fsp(fsp, e->action, e->path);
-}
-
 static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 					  char *outbuf, int length,
 					  int bufsize, 
@@ -1843,33 +1836,11 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	}
 
 	if (fsp->notify == NULL) {
-		char *fullpath;
-		struct notify_entry e;
 
-		if (!(fsp->notify = TALLOC_ZERO_P(
-			      NULL, struct notify_change_buf))) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-
-		if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
-			     fsp->fsp_name) == -1) {
-			DEBUG(0, ("asprintf failed\n"));
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-
-		e.path = fullpath;
-		e.filter = filter;
-		e.subdir_filter = 0;
-		if (recursive) {
-			e.subdir_filter = filter;
-		}
-
-		status = notify_add(fsp->conn->notify_ctx, &e, notify_callback,
-				    fsp);
-		SAFE_FREE(fullpath);
+		status = change_notify_create(fsp, filter, recursive);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("notify_add returned %s\n",
+			DEBUG(10, ("change_notify_create returned %s\n",
 				   nt_errstr(status)));
 			return ERROR_NT(status);
 		}
@@ -1887,11 +1858,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 */
 
 		change_notify_reply(inbuf, max_param_count,
-				    fsp->notify->num_changes,
-				    fsp->notify->changes);
-
-		TALLOC_FREE(fsp->notify->changes);
-		fsp->notify->num_changes = 0;
+				    fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
