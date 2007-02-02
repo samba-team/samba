@@ -57,6 +57,8 @@ function(fsm)
   this._active = false;
 
   this.basedn = "";
+
+  this._amw = null;
 });
 
 qx.OO.addProperty({ name : "basedn", type : "string" });
@@ -214,11 +216,11 @@ qx.Proto._addNewAttribute = function(name, value, before) {
   var hlayout = new qx.ui.layout.HorizontalBoxLayout();
   hlayout.set({ width: "auto", height: "auto", spacing: 10 });
 
-  var rButton = new qx.ui.form.Button("-");
-  rButton.set({ width: 15, height: 15});
-  rButton.addEventListener("execute", function() {
-    hlayout.setParent(null);
-  });
+  var aButton = new qx.ui.form.Button("+");
+  aButton.set({ width: 15, height: 15});
+  aButton.addEventListener("execute", function() {
+    this._addNewAttribute(name, null, hlayout);
+  }, this);
 
   var aLabel = new qx.ui.basic.Label(name);
   aLabel.setWidth(150);
@@ -226,17 +228,18 @@ qx.Proto._addNewAttribute = function(name, value, before) {
   var aTextField = new qx.ui.form.TextField(value);
   aTextField.setWidth(250);
 
-  var aButton = new qx.ui.form.Button("+");
-  aButton.set({ left: 5, width: 15, height: 15});
-  aButton.addEventListener("execute", function() {
-    this._addNewAttribute(name, null, hlayout);
+  var rButton = new qx.ui.form.Button("-");
+  rButton.set({ left: 5, width: 15, height: 15});
+  rButton.addEventListener("execute", function() {
+    hlayout.setParent(null);
   }, this);
 
-  hlayout.add(rButton, aLabel, aTextField, aButton);
+  hlayout.add(aButton, aLabel, aTextField, rButton);
 
   if (before) {
     this._attrArea.addAfter(hlayout, before);
   } else {
+    //TODO: check the same attribute is not already present, if so just add a new value instead
     this._attrArea.addBefore(hlayout, this._attrAddButton);
   }
 }
@@ -245,39 +248,51 @@ qx.Proto._createNewAttribute = function() {
 
   var main = qx.ui.core.ClientDocument.getInstance();
 
-  var amw = new qx.ui.window.Window("New Attribute Name");
-  amw.set({
-    width: 200,
-    height: 70,
-    modal: true,
-    centered: true,
-    restrictToPageOnOpen: true,
-    showMinimize: false,
-    showMaximize: false,
-    showClose: false,
-    resizeable: false
-  });
+  if (this._amw == null) {
 
+    this._amw = new qx.ui.window.Window("New Attribute Name");
+    this._amw.set({
+      width: 200,
+      height: 70,
+      modal: true,
+      centered: true,
+      restrictToPageOnOpen: true,
+      showMinimize: false,
+      showMaximize: false,
+      showClose: false,
+      resizeable: false
+    });
 
-  var attrName = new qx.ui.form.TextField();
-  attrName.addEventListener("execute", function() {
-    this._addNewAttribute(attrName.getValue());
-    amw.close();
-  }, this);
-  attrName.set({ top: 15, left: 10 });
-  amw.add(attrName);
+    attrName = new qx.ui.form.TextField();
+    var enterCommand = new qx.client.Command("Enter");
+    enterCommand.addEventListener("execute", function() { 
+      this._addNewAttribute(attrName.getComputedValue());
+      this._amw.close();
+    }, this);
+    attrName.set({ top: 15, left: 10, command: enterCommand });
+    this._amw.add(attrName);
 
-  var okButton = new qx.ui.form.Button("OK");
-  okButton.addEventListener("execute", function() {
-    this._addNewAttribute(attrName.getValue());
-    amw.close();
-  }, this);
-  okButton.set({ top: 12, left: 155 });
-  amw.add(okButton);
+    this._amw.setUserData("textfield", attrName);
+ 
+    var okButton = new qx.ui.form.Button("OK");
+    okButton.addEventListener("execute", function() {
+      this._addNewAttribute(attrName.getValue());
+      this._amw.close();
+    }, this);
+    okButton.set({ top: 12, left: 155 });
+    this._amw.add(okButton);
 
-  main.add(amw);
+    this._amw.addEventListener("appear",function() {
+      attrName.focus();
+    }, this._amw);
+  
+    main.add(this._amw);
+  }
+  else {
+    this._amw.getUserData("textfield").setValue("");
+  }
 
-  amw.open();
+  this._amw.open();
 }
 
 qx.Proto._createAttributesArea = function() {
