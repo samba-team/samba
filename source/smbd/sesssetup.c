@@ -1050,6 +1050,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 		map_username(sub_user);
 		add_session_user(sub_user);
+		add_session_workgroup(domain);
 		/* Then force it to null for the benfit of the code below */
 		*user = 0;
 	}
