@@ -809,7 +809,7 @@ _kdc_do_digest(krb5_context context,
 		    ret = ENOMEM;
 		    goto out;
 		}
-		SHA1_Update(&ctx, clientNonce.data, clientNonce.length);
+		SHA1_Update(&ctx, clientNonce.data, ssize);
 		free(clientNonce.data);
 	    }
 	    SHA1_Update(&ctx, serverNonce.data, serverNonce.length);
