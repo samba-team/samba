@@ -541,13 +541,21 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	printf("testing set file create time\n");
-	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
-		smbcli_fsetatr(cli->tree, fnum2, 0, t, 0, 0, 0);,
-		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
-		NOTIFY_ACTION_MODIFIED,
-		FILE_NOTIFY_CHANGE_CREATION, 1);
+	if (lp_parm_bool(-1, "torture", "samba3", False)) {
+		printf("Samba3 does not yet support create times "
+		       "everywhere\n");
+	}
+	else {
+		printf("testing set file create time\n");
+		NOTIFY_MASK_TEST(
+			fnum2 = create_complex_file(cli, mem_ctx,
+						    BASEDIR "\\tname1");,
+			smbcli_fsetatr(cli->tree, fnum2, 0, t, 0, 0, 0);,
+			(smbcli_close(cli->tree, fnum2),
+			 smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+			NOTIFY_ACTION_MODIFIED,
+			FILE_NOTIFY_CHANGE_CREATION, 1);
+	}
 
 	printf("testing set file access time\n");
 	NOTIFY_MASK_TEST(
