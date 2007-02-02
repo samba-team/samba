@@ -107,7 +107,7 @@ digest_server_request(struct digest_server_request_options *opt,
 {
     krb5_error_code ret;
     krb5_digest digest;
-    const char *status;
+    const char *status, *rsp;
 
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
@@ -168,8 +168,11 @@ digest_server_request(struct digest_server_request_options *opt,
 	krb5_err(context, 1, ret, "krb5_digest_request");
 
     status = krb5_digest_rep_get_status(context, digest) ? "ok" : "failed";
+    rsp = krb5_digest_get_rsp(context, digest);
 
     printf("status=%s\n", status);
+    if (rsp)
+	printf("rsp=%s\n", rsp);
     printf("tickets=no\n");
 
     return 0;
