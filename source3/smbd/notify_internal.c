@@ -51,7 +51,8 @@ struct notify_list {
 #define NOTIFY_ENABLE		"notify:enable"
 #define NOTIFY_ENABLE_DEFAULT	True
 
-static NTSTATUS notify_remove_all(struct notify_context *notify);
+static NTSTATUS notify_remove_all(struct notify_context *notify,
+				  const struct server_id *server);
 static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
 
@@ -61,7 +62,11 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 static int notify_destructor(struct notify_context *notify)
 {
 	messaging_deregister(notify->messaging_ctx, MSG_PVFS_NOTIFY, notify);
-	notify_remove_all(notify);
+
+	if (notify->list != NULL) {
+		notify_remove_all(notify, &notify->server);
+	}
+
 	return 0;
 }
 
@@ -164,6 +169,11 @@ static NTSTATUS notify_load(struct notify_context *notify)
 
 	status = ndr_pull_struct_blob(&blob, notify->array, notify->array, 
 				      (ndr_pull_flags_fn_t)ndr_pull_notify_array);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(notify_array, notify->array);
+	}
+
 	free(dbuf.dptr);
 
 	return status;
@@ -480,16 +490,13 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 }
 
 /*
-  remove all notify watches for this messaging server
+  remove all notify watches for a messaging server
 */
-static NTSTATUS notify_remove_all(struct notify_context *notify)
+static NTSTATUS notify_remove_all(struct notify_context *notify,
+				  const struct server_id *server)
 {
 	NTSTATUS status;
 	int i, depth, del_count=0;
-
-	if (notify->list == NULL) {
-		return NT_STATUS_OK;
-	}
 
 	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -501,11 +508,11 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 	}
 
 	/* we have to search for all entries across all depths, looking for matches
-	   for our server id */
+	   for the server id */
 	for (depth=0;depth<notify->array->num_depths;depth++) {
 		struct notify_depth *d = &notify->array->depth[depth];
 		for (i=0;i<d->num_entries;i++) {
-			if (cluster_id_equal(&notify->server, &d->entries[i].server)) {
+			if (cluster_id_equal(server, &d->entries[i].server)) {
 				if (i < d->num_entries-1) {
 					memmove(&d->entries[i], &d->entries[i+1], 
 						sizeof(d->entries[i])*(d->num_entries-(i+1)));
@@ -530,8 +537,8 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 /*
   send a notify message to another messaging server
 */
-static void notify_send(struct notify_context *notify, struct notify_entry *e,
-			const char *path, uint32_t action)
+static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *e,
+			    const char *path, uint32_t action)
 {
 	struct notify_event ev;
 	DATA_BLOB data;
@@ -548,12 +555,13 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 				      (ndr_push_flags_fn_t)ndr_push_notify_event);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
-		return;
+		return status;
 	}
 
 	status = messaging_send(notify->messaging_ctx, e->server, 
 				MSG_PVFS_NOTIFY, &data);
 	talloc_free(tmp_ctx);
+	return status;
 }
 
 
@@ -579,6 +587,7 @@ void notify_trigger(struct notify_context *notify,
 		return;
 	}
 
+ again:
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
@@ -653,7 +662,18 @@ void notify_trigger(struct notify_context *notify,
 					continue;
 				}
 			}
-			notify_send(notify, e, path + e->path_len + 1, action);
+			status = notify_send(notify, e,	path + e->path_len + 1,
+					     action);
+
+			if (NT_STATUS_EQUAL(
+				    status, NT_STATUS_INVALID_HANDLE)) {
+
+				DEBUG(10, ("Deleting notify entries for "
+					   "process %s because it's gone\n",
+					   procid_str_static(&e->server.id)));
+				notify_remove_all(notify, &e->server);
+				goto again;
+			}
 		}
 	}
 }
