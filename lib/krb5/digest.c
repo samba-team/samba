@@ -796,16 +796,16 @@ krb5_digest_get_client_binding(krb5_context context,
 }
 
 krb5_error_code
-krb5_digest_get_a1_hash(krb5_context context,
-			krb5_digest digest,
-			krb5_data *data)
+krb5_digest_get_session_key(krb5_context context,
+			    krb5_digest digest,
+			    krb5_data *data)
 {
     krb5_error_code ret;
 
     krb5_data_zero(data);
-    if (digest->response.hash_a1 == NULL)
+    if (digest->response.session_key == NULL)
 	return 0;
-    ret = der_copy_octet_string(digest->response.hash_a1, data);
+    ret = der_copy_octet_string(digest->response.session_key, data);
     if (ret)
 	krb5_clear_error_string(context);
 
