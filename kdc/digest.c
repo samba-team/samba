@@ -924,7 +924,7 @@ _kdc_do_digest(krb5_context context,
 
 		/* get_master, rfc 3079 3.4 */
 		SHA1_Init(&ctx);
-		SHA1_Update(&ctx, md, 16); /* md4(hash) */
+		SHA1_Update(&ctx, hashhash, 16); /* md4(hash) */
 		SHA1_Update(&ctx, answer.data, answer.length);
 		SHA1_Update(&ctx, ms_rfc3079_magic1, sizeof(ms_rfc3079_magic1));
 		SHA1_Final(md, &ctx);
@@ -939,7 +939,7 @@ _kdc_do_digest(krb5_context context,
 		    goto out;
 		}
 
-		ret = krb5_data_copy(r.u.response.session_key, md, sizeof(md));
+		ret = krb5_data_copy(r.u.response.session_key, md, 16);
 		if (ret) {
 		    krb5_clear_error_string(context);
 		    goto out;
