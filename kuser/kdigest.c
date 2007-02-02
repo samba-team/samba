@@ -63,7 +63,6 @@ int
 digest_server_init(struct digest_server_init_options *opt,
 		   int argc, char ** argv)
 {
-    const char *typ = opt->type_string;
     krb5_error_code ret;
     krb5_digest digest;
 
