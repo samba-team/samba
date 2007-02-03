@@ -71,6 +71,11 @@ command = {
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
 	}
+	option = {
+		long = "detached-signature"
+		type = "flag"
+		help = "create a detached signature"
+	}
 	min_args="2"
 	max_args="2"
 	argument="in-file out-file"
@@ -106,6 +111,11 @@ command = {
 		long = "content-info"
 		type = "flag"
 		help = "unwrap in-data that's in a ContentInfo"
+	}
+	option = {
+		long = "signed-content"
+		type = "string"
+		help = "file containing content"
 	}
 	min_args="2"
 	max_args="2"
