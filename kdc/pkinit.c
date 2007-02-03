@@ -527,6 +527,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				      kdc_identity->verify_ctx,
 				      signed_content.data,
 				      signed_content.length,
+				      NULL,
 				      kdc_identity->certpool,
 				      &eContentType,
 				      &eContent,
@@ -768,6 +769,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    goto out;
 	
 	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					0,
 					oid_id_pkrkeydata(),
 					buf.data,
 					buf.length,
@@ -785,6 +787,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	goto out;
 
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
+			       0,
 			       client_params->cert,
 			       signed_data.data, signed_data.length, NULL,
 			       oid_id_pkcs7_signedData(), &buf);
@@ -881,6 +884,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 	    goto out;
 	
 	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					0,
 					oid_id_pkdhkeydata(),
 					buf.data,
 					buf.length,
