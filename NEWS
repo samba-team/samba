@@ -16,6 +16,9 @@ Changes in release 0.8
 
  * A new ntlm library (heimntlm) and related crypto functions.
 
+ * Updated the built-in crypto library with bignum support using
+   imath, support for RSA and DH and renamed it to libhcrypto.
+
  * Subsystem in the KDC, digest, that will perform the digest
    operation in the KDC, currently supports: CHAP, MS-CHAP-V2, SASL
    DIGEST-MD5 NTLMv1 and NTLMv2.
