@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -302,6 +302,11 @@ hx509_cms_unenvelope(hx509_context context,
 	    goto out;
 	}
 	enccontent = encryptedContent;
+    } else if (encryptedContent != NULL) {
+	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_set_error_string(context, 0, ret,
+			       "Both internal and external encrypted data");
+	goto out;
     }
 
     cert = NULL;
@@ -423,6 +428,7 @@ out:
 
 int
 hx509_cms_envelope_1(hx509_context context,
+		     int flags,
 		     hx509_cert cert,
 		     const void *data,
 		     size_t length,
@@ -621,6 +627,7 @@ hx509_cms_verify_signed(hx509_context context,
 			hx509_verify_ctx ctx,
 			const void *data,
 			size_t length,
+			const heim_octet_string *signedContent,
 			hx509_certs store,
 			heim_oid *contentType,
 			heim_octet_string *content,
@@ -648,12 +655,20 @@ hx509_cms_verify_signed(hx509_context context,
 	goto out;
     }
 
-    if (sd.encapContentInfo.eContent == NULL) {
+    if (sd.encapContentInfo.eContent == NULL && signedContent == NULL) {
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
 	hx509_set_error_string(context, 0, ret,
 			       "No content data in SignedData");
 	goto out;
     }
+    if (sd.encapContentInfo.eContent && signedContent) {
+	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_set_error_string(context, 0, ret,
+			       "Both external and internal SignedData");
+	goto out;
+    }
+    if (sd.encapContentInfo.eContent)
+	signedContent = sd.encapContentInfo.eContent;
 
     ret = hx509_certs_init(context, "MEMORY:cms-cert-buffer",
 			   0, NULL, &certs);
@@ -739,7 +754,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    ret = _hx509_verify_signature(context,
 					  NULL,
 					  &signer_info->digestAlgorithm,
-					  sd.encapContentInfo.eContent,
+					  signedContent,
 					  &os);
 	    der_free_octet_string(&os);
 	    if (ret) {
@@ -801,7 +816,7 @@ hx509_cms_verify_signed(hx509_context context,
 		_hx509_abort("internal ASN.1 encoder error");
 
 	} else {
-	    signed_data = sd.encapContentInfo.eContent;
+	    signed_data = rk_UNCONST(signedContent);
 	    match_oid = oid_id_pkcs7_data();
 	}
 
@@ -824,7 +839,7 @@ hx509_cms_verify_signed(hx509_context context,
 				       "Failed to verify sigature in "
 				       "CMS SignedData");
 	}
-	if (signed_data != sd.encapContentInfo.eContent) {
+	if (signed_data != signedContent) {
 	    der_free_octet_string(signed_data);
 	    free(signed_data);
 	}
@@ -861,14 +876,14 @@ hx509_cms_verify_signed(hx509_context context,
 	goto out;
     }
 
-    content->data = malloc(sd.encapContentInfo.eContent->length);
+    content->data = malloc(signedContent->length);
     if (content->data == NULL) {
 	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
-    content->length = sd.encapContentInfo.eContent->length;
-    memcpy(content->data,sd.encapContentInfo.eContent->data,content->length);
+    content->length = signedContent->length;
+    memcpy(content->data, signedContent->data, content->length);
 
 out:
     free_SignedData(&sd);
@@ -918,6 +933,7 @@ add_one_attribute(Attribute **attr,
 	
 int
 hx509_cms_create_signed_1(hx509_context context,
+			  int flags,
 			  const heim_oid *eContentType,
 			  const void *data, size_t length,
 			  const AlgorithmIdentifier *digest_alg,
@@ -930,7 +946,7 @@ hx509_cms_create_signed_1(hx509_context context,
     AlgorithmIdentifier digest;
     hx509_name name;
     SignerInfo *signer_info;
-    heim_octet_string buf;
+    heim_octet_string buf, content;
     SignedData sd;
     int ret;
     size_t size;
@@ -940,6 +956,9 @@ hx509_cms_create_signed_1(hx509_context context,
     memset(&name, 0, sizeof(name));
     memset(&path, 0, sizeof(path));
     memset(&digest, 0, sizeof(digest));
+
+    content.data = rk_UNCONST(data);
+    content.length = length;
 
     if (_hx509_cert_private_key(cert) == NULL) {
 	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
@@ -961,21 +980,25 @@ hx509_cms_create_signed_1(hx509_context context,
     sd.version = CMSVersion_v3;
 
     der_copy_oid(eContentType, &sd.encapContentInfo.eContentType);
-    ALLOC(sd.encapContentInfo.eContent, 1);
-    if (sd.encapContentInfo.eContent == NULL) {
-	hx509_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
 
-    sd.encapContentInfo.eContent->data = malloc(length);
-    if (sd.encapContentInfo.eContent->data == NULL) {
-	hx509_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
+    /* */
+    if ((flags & HX509_CMS_SIGATURE_DETACHED) == 0) {
+	ALLOC(sd.encapContentInfo.eContent, 1);
+	if (sd.encapContentInfo.eContent == NULL) {
+	    hx509_clear_error_string(context);
+	    ret = ENOMEM;
+	    goto out;
+	}
+	
+	sd.encapContentInfo.eContent->data = malloc(length);
+	if (sd.encapContentInfo.eContent->data == NULL) {
+	    hx509_clear_error_string(context);
+	    ret = ENOMEM;
+	    goto out;
+	}
+	memcpy(sd.encapContentInfo.eContent->data, data, length);
+	sd.encapContentInfo.eContent->length = length;
     }
-    memcpy(sd.encapContentInfo.eContent->data, data, length);
-    sd.encapContentInfo.eContent->length = length;
 
     ALLOC_SEQ(&sd.signerInfos, 1);
     if (sd.signerInfos.val == NULL) {
@@ -1015,7 +1038,7 @@ hx509_cms_create_signed_1(hx509_context context,
 	ret = _hx509_create_signature(context,
 				      NULL,
 				      &digest,
-				      sd.encapContentInfo.eContent,
+				      &content,
 				      NULL,
 				      &sig);
 	if (ret) {
