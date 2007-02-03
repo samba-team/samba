@@ -1242,14 +1242,16 @@ int smbc_chown(const char *url, uid_t owner, gid_t group);
  */
 int smbc_chmod(const char *url, mode_t mode);
 
-/**@ingroup attribute
+/**
+ * @ingroup attribute
  * Change the last modification time on a file
  *
  * @param url       The smb url of the file or directory to change
  *                  the modification time of
- * 
- * @param tbuf      A timeval structure which contains the desired
- *                  modification time.  NOTE: Only the tv_sec field is
+ *
+ * @param tbuf      An array of two timeval structures which contains,
+ *                  respectively, the desired access and modification times.
+ *                  NOTE: Only the tv_sec field off each timeval structure is
  *                  used.  The tv_usec (microseconds) portion is ignored.
  *
  * @return          0 on success, < 0 on error with errno set:
@@ -1260,15 +1262,15 @@ int smbc_chmod(const char *url, mode_t mode);
 int smbc_utimes(const char *url, struct timeval *tbuf);
 
 #ifdef HAVE_UTIME_H
-/**@ingroup attribute
+/**
+ * @ingroup attribute
  * Change the last modification time on a file
  *
  * @param url       The smb url of the file or directory to change
  *                  the modification time of
- * 
- * @param utbuf     A utimebuf structure which contains the desired
- *                  modification time.  NOTE: Although the structure contains
- *                  an access time as well, the access time value is ignored.
+ *
+ * @param utbuf     A pointer to a utimebuf structure which contains the
+ *                  desired access and modification times.
  *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL The client library is not properly initialized
