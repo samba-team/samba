@@ -118,4 +118,7 @@ typedef enum {
 #define HX509_CA_TEMPLATE_KU 32
 #define HX509_CA_TEMPLATE_EKU 64
 
+/* flags hx509_cms_create_signed* */
+#define HX509_CMS_SIGATURE_DETACHED 1
+
 #include <hx509-protos.h>
