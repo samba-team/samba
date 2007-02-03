@@ -1,5 +1,9 @@
 2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: pass extra flags for detached signatures.
+
+	* lib/krb5/pkinit.c: pass extra flags for detached signatures.
+
 	* kdc/digest.c: Remove debug output.
 
 	* kuser/kdigest.c: Add support for ms-chap-v2 client.

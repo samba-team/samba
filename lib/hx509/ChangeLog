@@ -1,5 +1,15 @@
 2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* file.c: Allow mapping using heim_octet_string.
+
+	* hxtool.c: Add options to generate detached signatures.
+
+	* cms.c: Add flags to generate detached signatures.
+
+	* hx509.h: Flag to generate detached signatures.
+
+	* test_cms.in: Support detached sigatures.
+
 	* name.c (hx509_general_name_unparse): unparse the other
 	GeneralName nametypes.
 
