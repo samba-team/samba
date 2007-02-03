@@ -35,6 +35,27 @@
 RCSID("$ID$");
 
 int
+_hx509_map_file_os(const char *fn, heim_octet_string *os, struct stat *rsb)
+{
+    size_t length;
+    void *data;
+    int ret;
+
+    ret = _hx509_map_file(fn, &data, &length, rsb);
+
+    os->data = data;
+    os->length = length;
+
+    return ret;
+}
+
+void
+_hx509_unmap_file_os(heim_octet_string *os)
+{
+    _hx509_unmap_file(os->data, os->length);
+}
+
+int
 _hx509_map_file(const char *fn, void **data, size_t *length, struct stat *rsb)
 {
     struct stat sb;
