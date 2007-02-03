@@ -150,7 +150,6 @@ static const unsigned char ms_chap_v2_magic2[41] = {
     0x65, 0x20, 0x69, 0x74, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6F,
     0x6E
 };
-
 static const unsigned char ms_rfc3079_magic1[27] = {
     0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x74,
     0x68, 0x65, 0x20, 0x4d, 0x50, 0x50, 0x45, 0x20, 0x4d,
@@ -891,14 +890,6 @@ _kdc_do_digest(krb5_context context,
 		SHA1_Update(&ctx, answer.data, answer.length);
 		SHA1_Update(&ctx, ms_chap_v2_magic1,sizeof(ms_chap_v2_magic1));
 		SHA1_Final(md, &ctx);
-
-		{
-		    char *foo;
-		    hex_encode(challange, 8, &foo);
-		    kdc_log(context, config, 0, 
-			    "MS-CHAP-V2 challange %s", foo);
-		    free(foo);
-		}
 
 		SHA1_Init(&ctx);
 		SHA1_Update(&ctx, md, sizeof(md));
