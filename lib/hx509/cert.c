@@ -836,7 +836,7 @@ find_parent(hx509_context context,
 	
 	hx509_set_error_string(context, 0, HX509_ISSUER_NOT_FOUND,
 			       "Failed to find issuer for "
-			       "certificate with subject: %s", str);
+			       "certificate with subject: '%s'", str);
 	free(str);
     }
     return HX509_ISSUER_NOT_FOUND;
@@ -973,8 +973,10 @@ _hx509_calculate_path(hx509_context context,
 	current = parent;
 
 	if (path->len > max_depth) {
+	    hx509_cert_free(current);
 	    hx509_set_error_string(context, 0, HX509_PATH_TOO_LONG,
-				   "Path too long while bulding certificate chain");
+				   "Path too long while bulding "
+				   "certificate chain");
 	    return HX509_PATH_TOO_LONG;
 	}
     }
