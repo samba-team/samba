@@ -3779,6 +3779,11 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf,
 				struct utimbuf tvs)
 {
+	uint32 action =
+		FILE_NOTIFY_CHANGE_LAST_ACCESS
+		|FILE_NOTIFY_CHANGE_LAST_WRITE;
+
+	
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -3786,10 +3791,12 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (null_mtime(tvs.actime)) {
 		tvs.actime = psbuf->st_atime;
+		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
 	if (null_mtime(tvs.modtime)) {
 		tvs.modtime = psbuf->st_mtime;
+		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
 	DEBUG(6,("smb_set_file_time: actime: %s " , ctime(&tvs.actime)));
@@ -3825,6 +3832,9 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	if(file_utime(conn, fname, &tvs)!=0) {
 		return map_nt_error_from_unix(errno);
+	}
+	if (action != 0) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
 	}
 	return NT_STATUS_OK;
 }
