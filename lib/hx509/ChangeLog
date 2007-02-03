@@ -1,5 +1,10 @@
 2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c (hx509_general_name_unparse): unparse the other
+	GeneralName nametypes.
+
+	* print.c: Use less printf. Use hx509_general_name_unparse.
+
 	* cert.c: Fix printing and plug leak-on-error.
 	
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
