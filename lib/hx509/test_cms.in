@@ -236,6 +236,27 @@ ${hxtool} cms-create-sd \
 	"$srcdir/test_chain.in" \
 	sd.data > /dev/null || exit 1
 
+echo "create signed data (detached)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--detached-signature \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify signed data (detached)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--signed-content="$srcdir/test_chain.in" \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "verify failure signed data (detached)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null 2>/dev/null && exit 1
+
 echo "envelope data (content-info)"
 ${hxtool} cms-envelope \
 	--certificate=FILE:$srcdir/data/test.crt \
