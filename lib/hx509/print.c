@@ -243,7 +243,8 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
 	char *id;
 	hex_encode(si.data, si.length, &id);
 	if (id) {
-	    printf("\tsubject key id: %s\n", id);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "\tsubject key id: %s\n", id);
 	    free(id);
 	}
     }
@@ -287,7 +288,8 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
 	char *id;
 	hex_encode(ai.keyIdentifier->data, ai.keyIdentifier->length, &id);
 	if (id) {
-	    printf("\tauthority key id: %s\n", id);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "\tauthority key id: %s\n", id);
 	    free(id);
 	}
     }
@@ -439,17 +441,21 @@ check_altName(hx509_validate_ctx ctx,
     check_Null(ctx, status, cf, e);
 
     if (e->extnValue.length == 0) {
-	printf("%sAltName empty, not allowed", name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "%sAltName empty, not allowed", name);
 	return 1;
     }
     ret = decode_GeneralNames(e->extnValue.data, e->extnValue.length,
 			      &gn, &size);
     if (ret) {
-	printf("\tret = %d while decoding %s GeneralNames\n", ret, name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "\tret = %d while decoding %s GeneralNames\n", 
+		       ret, name);
 	return 1;
     }
     if (gn.len == 0) {
-	printf("%sAltName generalName empty, not allowed", name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "%sAltName generalName empty, not allowed", name);
 	return 1;
     }
 
@@ -477,41 +483,18 @@ check_altName(hx509_validate_ctx ctx,
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
 	}
-	case choice_GeneralName_rfc822Name:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name: %s\n",
-			   gn.val[i].u.rfc822Name);
-	    break;
-	case choice_GeneralName_dNSName:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "dNSName: %s\n",
-			   gn.val[i].u.dNSName);
-	    break;
-	case choice_GeneralName_directoryName: {
-	    Name dir;
+	default: {
 	    char *s;
-	    dir.element = gn.val[i].u.directoryName.element;
-	    dir.u.rdnSequence = gn.val[i].u.directoryName.u.rdnSequence;
-	    ret = _hx509_unparse_Name(&dir, &s);
+	    ret = hx509_general_name_unparse(&gn.val[i], &s);
 	    if (ret) {
-		printf("unable to parse %sAltName directoryName\n", name);
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "ret = %d unparsing GeneralName\n", ret);
 		return 1;
 	    }
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "directoryName: %s\n", s);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s\n", s);
 	    free(s);
 	    break;
 	}
-	case choice_GeneralName_uniformResourceIdentifier:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "uri: %s\n",
-			   gn.val[i].u.uniformResourceIdentifier);
-	    break;
-	case choice_GeneralName_iPAddress:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "ip address\n");
-	    break;
-	case choice_GeneralName_registeredID:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "registered id: ");
-		hx509_oid_print(&gn.val[i].u.registeredID,
-				validate_vprint, ctx);
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
-	    break;
 	}
     }
 
