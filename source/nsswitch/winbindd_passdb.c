@@ -159,7 +159,7 @@ BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
 		add_expanded_sid(&members[i], gr_mem, num_gr_mem);
 	}
 
-	SAFE_FREE(members);
+	TALLOC_FREE(members);
 
 	if (*gr_mem != NULL) {
 		size_t len;
