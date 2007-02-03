@@ -1,5 +1,11 @@
-2007-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Remove debug output.
+
+	* kuser/kdigest.c: Add support for ms-chap-v2 client.
+	
+2007-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+		
 	* kdc/digest.c: Fix ms-chap-v2 get_masterkey
 
 	* kdc/digest.c: Fix ms-chap-v2 mutual response auth code.

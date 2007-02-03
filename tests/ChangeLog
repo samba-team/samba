@@ -1,5 +1,18 @@
-2007-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-digest.in: Test ms-chap-v2 (client response, server
+	response, session key)
+	
+2007-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/krb5.conf.in: allow ms-chap-v2
+	
+2007-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/check-digest.in: Negative check too.
+	
+2007-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/check-uu.in: save log, wait longer
 	
 2007-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
