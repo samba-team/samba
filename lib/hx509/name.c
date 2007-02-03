@@ -684,13 +684,79 @@ hx509_general_name_unparse(GeneralName *name, char **str)
     *str = NULL;
 
     switch (name->element) {
+    case choice_GeneralName_otherName: {
+	char *str;
+	hx509_oid_sprint(&name->u.otherName.type_id, &str);
+	if (str == NULL)
+	    return ENOMEM;
+	strpool = rk_strpoolprintf(strpool, "otherName: %s", str);
+	free(str);
+	break;
+    }
+    case choice_GeneralName_rfc822Name:
+	strpool = rk_strpoolprintf(strpool, "rfc822Name: %s\n",
+				   name->u.rfc822Name);
+	break;
+    case choice_GeneralName_dNSName:
+	strpool = rk_strpoolprintf(strpool, "dNSName: %s\n",
+				   name->u.dNSName);
+	break;
+    case choice_GeneralName_directoryName: {
+	Name dir;
+	char *s;
+	int ret;
+	dir.element = name->u.directoryName.element;
+	dir.u.rdnSequence = name->u.directoryName.u.rdnSequence;
+	ret = _hx509_unparse_Name(&dir, &s);
+	if (ret)
+	    return ret;
+	strpool = rk_strpoolprintf(strpool, "directoryName: %s", s);
+	free(s);
+	break;
+    }
     case choice_GeneralName_uniformResourceIdentifier:
 	strpool = rk_strpoolprintf(strpool, "URI: %s", 
 				   name->u.uniformResourceIdentifier);
 	break;
+    case choice_GeneralName_iPAddress: {
+	unsigned char *a = name->u.iPAddress.data;
+
+	strpool = rk_strpoolprintf(strpool, "IPAddress: ");
+	if (strpool == NULL)
+	    break;
+	if (name->u.iPAddress.length == 4)
+	    strpool = rk_strpoolprintf(strpool, "%d.%d.%d.%d", 
+				       a[0], a[1], a[2], a[3]);
+	else if (name->u.iPAddress.length == 16)
+	    strpool = rk_strpoolprintf(strpool, 
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X", 
+				       a[0], a[1], a[2], a[3],
+				       a[4], a[5], a[6], a[7],
+				       a[8], a[9], a[10], a[11],
+				       a[12], a[13], a[14], a[15]);
+	else
+	    strpool = rk_strpoolprintf(strpool, 
+				       "unknown IP address of length %lu",
+				       (unsigned long)name->u.iPAddress.length);
+	break;
+    }
+    case choice_GeneralName_registeredID: {
+	char *str;
+	hx509_oid_sprint(&name->u.registeredID, &str);
+	if (str == NULL)
+	    return ENOMEM;
+	strpool = rk_strpoolprintf(strpool, "registeredID: %s", str);
+	free(str);
+	break;
+    }
     default:
 	return EINVAL;
     }
+    if (strpool == NULL)
+	return ENOMEM;
 
     *str = rk_strpoolcollect(strpool);
 
