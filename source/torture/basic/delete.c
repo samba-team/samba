@@ -1135,6 +1135,10 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	/* Test 20 -- non-empty directory hardest to get right... */
 
+	if (torture_setting_bool(tctx, "samba3", False)) {
+		return True;
+	}
+
 	smbcli_deltree(cli1->tree, dname);
 
 	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
