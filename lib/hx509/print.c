@@ -238,6 +238,16 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
     if (si.length > 20)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "SKI is too long");
+
+    {
+	char *id;
+	hex_encode(si.data, si.length, &id);
+	if (id) {
+	    printf("\tsubject key id: %s\n", id);
+	    free(id);
+	}
+    }
+
     free_SubjectKeyIdentifier(&si);
 
     return 0;
@@ -249,8 +259,39 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
 			     enum critical_flag cf,
 			     const Extension *e)
 {
+    AuthorityKeyIdentifier ai;
+    size_t size;
+    int ret;
+
     status->haveAKI = 1;
     check_Null(ctx, status, cf, e);
+
+    status->haveSKI = 1;
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_AuthorityKeyIdentifier(e->extnValue.data, 
+					e->extnValue.length,
+					&ai, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding AuthorityKeyIdentifier failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SKI ahve extra bits on the end");
+	return 1;
+    }
+
+    if (ai.keyIdentifier) {
+	char *id;
+	hex_encode(ai.keyIdentifier->data, ai.keyIdentifier->length, &id);
+	if (id) {
+	    printf("\tauthority key id: %s\n", id);
+	    free(id);
+	}
+    }
+
     return 0;
 }
 
