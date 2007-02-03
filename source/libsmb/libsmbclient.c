@@ -499,8 +499,30 @@ static int
 smbc_check_server(SMBCCTX * context,
                   SMBCSRV * server) 
 {
-	if ( send_keepalive(server->cli->fd) == False )
-		return 1;
+        int size;
+        struct sockaddr addr;
+
+        /*
+         * Although the use of port 139 is not a guarantee that we're using
+         * netbios, we assume so.  We don't want to send a keepalive packet if
+         * not netbios because it's not valid, and Vista, at least,
+         * disconnects the client on such a request.
+         */
+        if (server->cli->port == 139) {
+                /* Assuming netbios.  Send a keepalive packet */
+                if ( send_keepalive(server->cli->fd) == False ) {
+                        return 1;
+                }
+        } else {
+                /*
+                 * Assuming not netbios.  Try a different method to detect if
+                 * the connection is still alive.
+                 */
+                size = sizeof(addr);
+                if (getpeername(server->cli->fd, &addr, &size) == -1) {
+                        return 1;
+                }
+        }
 
 	/* connection is ok */
 	return 0;
@@ -917,6 +939,7 @@ smbc_attr_server(SMBCCTX *context,
                  fstring password,
                  POLICY_HND *pol)
 {
+        int flags;
         struct in_addr ip;
 	struct cli_state *ipc_cli;
 	struct rpc_pipe_client *pipe_hnd;
@@ -951,12 +974,17 @@ smbc_attr_server(SMBCCTX *context,
                         }
                 }
         
+                flags = 0;
+                if (context->flags & SMB_CTX_FLAG_USE_KERBEROS) {
+                        flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+                }
+
                 zero_ip(&ip);
                 nt_status = cli_full_connection(&ipc_cli,
                                                 global_myname(), server, 
                                                 &ip, 0, "IPC$", "?????",  
                                                 username, workgroup,
-                                                password, 0,
+                                                password, flags,
                                                 Undefined, NULL);
                 if (! NT_STATUS_IS_OK(nt_status)) {
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
