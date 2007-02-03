@@ -354,13 +354,13 @@ void cli_cm_set_dest_ip(struct in_addr ip )
 	have_ip = True;
 }
 
-/********************************************************************
- split a dfs path into the server and share name components
-********************************************************************/
+/**********************************************************************
+ split a dfs path into the server, share name, and extrapath components
+**********************************************************************/
 
-static void split_dfs_path( const char *nodepath, fstring server, fstring share )
+static void split_dfs_path( const char *nodepath, fstring server, fstring share, fstring extrapath )
 {
-	char *p;
+	char *p, *q;
 	pstring path;
 
 	pstrcpy( path, nodepath );
@@ -368,7 +368,7 @@ static void split_dfs_path( const char *nodepath, fstring server, fstring share 
 	if ( path[0] != '\\' )
 		return;
 
-	p = strrchr_m( path, '\\' );
+	p = strchr_m( path + 1, '\\' );
 
 	if ( !p )
 		return;
@@ -376,6 +376,16 @@ static void split_dfs_path( const char *nodepath, fstring server, fstring share 
 	*p = '\0';
 	p++;
 
+	/* Look for any extra/deep path */
+	q = strchr_m(p, '\\');
+	if (q != NULL) {
+		*q = '\0';
+		q++;
+		fstrcpy( extrapath, q );
+	} else {
+		fstrcpy( extrapath, '\0' );
+	}
+	
 	fstrcpy( share, p );
 	fstrcpy( server, &path[1] );
 }
@@ -576,13 +586,13 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	size_t num_refs;
 	uint16 consumed;
 	struct cli_state *cli_ipc;
-	pstring fullpath, cleanpath;
+	pstring fullpath, cleanpath, extrapath;
 	int pathlen;
 	fstring server, share;
 	struct cli_state *newcli;
 	pstring newpath;
 	pstring newmount;
-	char *ppath;
+	char *ppath, *temppath = NULL;
 	
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
@@ -637,8 +647,14 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	consumed = MIN(pathlen, consumed );
 	pstrcpy( targetpath, &fullpath[consumed/2] );
 
-	split_dfs_path( refs[0].dfspath, server, share );
+	split_dfs_path( refs[0].dfspath, server, share, extrapath );
 	SAFE_FREE( refs );
+
+	if (strlen(extrapath) > 0) {
+		string_append(&temppath, extrapath);
+		string_append(&temppath, targetpath);
+		pstrcpy( targetpath, temppath );
+	}
 	
 	/* open the connection to the target path */
 	
@@ -690,6 +706,7 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	pstring fullpath;
 	BOOL res;
 	uint16 cnum;
+	fstring newextrapath;
 	
 	if ( !cli || !sharename )
 		return False;
@@ -725,7 +742,7 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 		return False;
 	}
 	
-	split_dfs_path( refs[0].dfspath, newserver, newshare );
+	split_dfs_path( refs[0].dfspath, newserver, newshare, newextrapath );
 
 	/* check that this is not a self-referral */
 
