@@ -9532,6 +9532,16 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	/* copy data into the reply */
 	
 	r_u->ctr.size        	= r_u->needed;
+
+	/* Fix from Martin Zielinski <mz@seh.de> - ensure
+	 * the hand marshalled container size is a multiple
+	 * of 4 bytes for RPC alignment.
+	 */
+
+	if (needed % 4) {
+		r_u->ctr.size += 4-(needed % 4);
+	}
+
 	r_u->ctr.size_of_array 	= r_u->returned;
 	r_u->ctr.values 	= enum_values;
 	
