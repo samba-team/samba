@@ -115,11 +115,11 @@ echo "Trying NTLM"
 NTLM_ACCEPTOR_CCACHE="$cache"
 export NTLM_ACCEPTOR_CCACHE
 
-#echo "Trying server-init"
-#echo ${kdigest} ntlm-server-init \
-#    --kerberos-realm=${R} \
-#    > sdigest-init || exitcode=1
-#
+echo "Trying server-init"
+echo ${kdigest} ntlm-server-init \
+    --kerberos-realm=${R} \
+    > sdigest-init || exitcode=1
+
 echo "test_ntlm"
 ${test_ntlm} || { echo "test_ntlm failed"; exit 1; }
 
@@ -162,11 +162,6 @@ done
 
 
 echo "Trying CHAP"
-
-${kdigest} digest-server-init \
-    --kerberos-realm=${R} \
-    --type=CHAP \
-    > /dev/null || exitcode=1
 
 ${kdigest} digest-server-init \
     --kerberos-realm=${R} \
@@ -230,6 +225,62 @@ if test "X$status" = "Xfailed" ; then
     echo "CHAP response fail as it should"
 else
     echo "CHAP response succeeded errorously"
+    exitcode=1
+fi
+
+echo "Trying MS-CHAP-V2"
+
+${kdigest} digest-server-init \
+    --kerberos-realm=${R} \
+    --type=MS-CHAP-V2 \
+    > sdigest-reply || exitcode=1
+
+snonce=`grep server-nonce= sdigest-reply | cut -f2- -d=`
+opaque=`grep opaque= sdigest-reply | cut -f2- -d=`
+cnonce="21402324255E262A28295F2B3A337C7E"
+
+echo "MS-CHAP-V2 client request"
+${kdigest} digest-client-request \
+    --type=MS-CHAP-V2 \
+    --username="$username"  \
+    --password="$userpassword"  \
+    --opaque="$opaque"  \
+    --client-nonce="$cnonce"  \
+    --server-nonce="$snonce" \
+    > cdigest-reply || exitcode=1
+
+cresponseData=`grep responseData= cdigest-reply | cut -f2- -d=`
+cRsp=`grep AuthenticatorResponse= cdigest-reply | cut -f2- -d=`
+ckey=`grep session-key= cdigest-reply | cut -f2- -d=`
+
+${kdigest} digest-server-request \
+    --kerberos-realm=${R} \
+    --type=MS-CHAP-V2 \
+    --username="$username"  \
+    --opaque="$opaque"  \
+    --client-response="$cresponseData"  \
+    --client-nonce="$cnonce"  \
+    --server-nonce="$snonce"  \
+    > s2digest-reply || exitcode=1
+
+status=`grep status= s2digest-reply | cut -f2- -d=`
+sRsp=`grep rsp= s2digest-reply | cut -f2- -d=`
+skey=`grep session-key= s2digest-reply | cut -f2- -d=`
+
+if test "X$sRsp" != "X$cRsp" ; then
+    echo "rsp wrong $sRsp != $cRsp"
+    exitcode=1
+fi
+
+if test "X$skey" != "X$ckey" ; then
+    echo "rsp wrong"
+    exitcode=1
+fi
+
+if test "X$status" = "Xok" ; then
+    echo "MS-CHAP-V2 response ok"
+else
+    echo "MS-CHAP-V2 response failed"
     exitcode=1
 fi
 
