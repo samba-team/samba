@@ -14,6 +14,12 @@ Changes in release 0.8
 
  * A new X.509 library (hx509) and related crypto functions.
 
+ * A new ntlm library (heimntlm) and related crypto functions.
+
+ * Subsystem in the KDC, digest, that will perform the digest
+   operation in the KDC, currently supports: CHAP, MS-CHAP-V2, SASL
+   DIGEST-MD5 NTLMv1 and NTLMv2.
+
  * KDC will return the "response too big" error to force TCP retries
    for large (default 1400 bytes) UDP replies.  This is common for
    PK-INIT request.
