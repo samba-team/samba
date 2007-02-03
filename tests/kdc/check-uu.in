@@ -117,6 +117,8 @@ echo "trying to contact server with client (using user2)"
 KRB5CCNAME=$cache2 ${uu_client} localhost > messages.log 2>&1 || \
     { ec=1; eval "${testfailed}"; }
 
+sleep 5
+
 echo "checking if server got the right message"
 cmp uuserver.log ${srcdir}/uuserver.txt || \
     { ec=1; eval "${testfailed}"; }
