@@ -1,5 +1,9 @@
-2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: Fix printing and plug leak-on-error.
+	
+2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_ca.in: Add test for ca --crl-uri.
 
 	* hxtool.c: Add ca --crl-uri.
