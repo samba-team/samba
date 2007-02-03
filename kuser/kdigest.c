@@ -36,6 +36,7 @@ RCSID("$Id$");
 #include <kdigest-commands.h>
 #include <hex.h>
 #include <base64.h>
+#include <heimntlm.h>
 #include "crypto-headers.h"
 
 static int version_flag = 0;
@@ -193,47 +194,190 @@ digest_server_request(struct digest_server_request_options *opt,
     return 0;
 }
 
+static void
+client_chap(const void *server_nonce, size_t snoncelen,
+	    unsigned char server_identifier,
+	    const char *password)
+{
+    MD5_CTX ctx;
+    unsigned char md[MD5_DIGEST_LENGTH];
+    char *h;
+
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, &server_identifier, 1);
+    MD5_Update(&ctx, password, strlen(password));
+    MD5_Update(&ctx, server_nonce, snoncelen);
+    MD5_Final(md, &ctx);
+
+    hex_encode(md, 16, &h);
+
+    printf("responseData=%s\n", h);
+    free(h);
+}
+
+static const unsigned char ms_chap_v2_magic1[39] = {
+    0x4D, 0x61, 0x67, 0x69, 0x63, 0x20, 0x73, 0x65, 0x72, 0x76,
+    0x65, 0x72, 0x20, 0x74, 0x6F, 0x20, 0x63, 0x6C, 0x69, 0x65,
+    0x6E, 0x74, 0x20, 0x73, 0x69, 0x67, 0x6E, 0x69, 0x6E, 0x67,
+    0x20, 0x63, 0x6F, 0x6E, 0x73, 0x74, 0x61, 0x6E, 0x74
+};
+static const unsigned char ms_chap_v2_magic2[41] = {
+    0x50, 0x61, 0x64, 0x20, 0x74, 0x6F, 0x20, 0x6D, 0x61, 0x6B,
+    0x65, 0x20, 0x69, 0x74, 0x20, 0x64, 0x6F, 0x20, 0x6D, 0x6F,
+    0x72, 0x65, 0x20, 0x74, 0x68, 0x61, 0x6E, 0x20, 0x6F, 0x6E,
+    0x65, 0x20, 0x69, 0x74, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6F,
+    0x6E
+};
+static const unsigned char ms_rfc3079_magic1[27] = {
+    0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x74,
+    0x68, 0x65, 0x20, 0x4d, 0x50, 0x50, 0x45, 0x20, 0x4d,
+    0x61, 0x73, 0x74, 0x65, 0x72, 0x20, 0x4b, 0x65, 0x79
+};
+
+static void
+client_mschapv2(const void *server_nonce, size_t snoncelen,
+		const void *client_nonce, size_t cnoncelen,
+		const char *username,
+		const char *password)
+{
+    SHA_CTX ctx;
+    MD4_CTX hctx;
+    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+    unsigned char hmd[MD4_DIGEST_LENGTH];
+    struct ntlm_buf answer;
+    int i, len, ret;
+    char *h;
+
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, client_nonce, cnoncelen);
+    SHA1_Update(&ctx, server_nonce, snoncelen);
+    SHA1_Update(&ctx, username, strlen(username));
+    SHA1_Final(md, &ctx);
+
+    MD4_Init(&hctx);
+    len = strlen(password);
+    for (i = 0; i < len; i++) {
+	MD4_Update(&hctx, &password[i], 1);
+	MD4_Update(&hctx, &password[len], 1);
+    }	
+    MD4_Final(hmd, &hctx);
+
+    /* ChallengeResponse */
+    ret = heim_ntlm_calculate_ntlm1(hmd, sizeof(hmd), md, &answer);
+    if (ret)
+	errx(1, "heim_ntlm_calculate_ntlm1");
+
+    hex_encode(answer.data, answer.length, &h);
+    printf("responseData=%s\n", h);
+    free(h);
+
+    /* PasswordHash */
+    MD4_Init(&hctx);
+    MD4_Update(&hctx, hmd, sizeof(hmd));
+    MD4_Final(hmd, &hctx);
+
+    /* GenerateAuthenticatorResponse */
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, hmd, sizeof(hmd));
+    SHA1_Update(&ctx, answer.data, answer.length);
+    SHA1_Update(&ctx, ms_chap_v2_magic1, sizeof(ms_chap_v2_magic1));
+    SHA1_Final(md, &ctx);
+    
+    /* ChallengeHash */
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, client_nonce, cnoncelen);
+    SHA1_Update(&ctx, server_nonce, snoncelen);
+    SHA1_Update(&ctx, username, strlen(username));
+    SHA1_Final(challange, &ctx);
+
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, md, sizeof(md));
+    SHA1_Update(&ctx, challange, 8);
+    SHA1_Update(&ctx, ms_chap_v2_magic2, sizeof(ms_chap_v2_magic2));
+    SHA1_Final(md, &ctx);
+
+    hex_encode(md, sizeof(md), &h);
+    printf("AuthenticatorResponse=%s\n", h);
+    free(h);
+
+    /* get_master, rfc 3079 3.4 */
+    SHA1_Init(&ctx);
+    SHA1_Update(&ctx, hmd, sizeof(hmd));
+    SHA1_Update(&ctx, answer.data, answer.length);
+    SHA1_Update(&ctx, ms_rfc3079_magic1, sizeof(ms_rfc3079_magic1));
+    SHA1_Final(md, &ctx);
+
+    free(answer.data);
+
+    hex_encode(md, 16, &h);
+    printf("session-key=%s\n", h);
+    free(h);
+}
+
+
 int
 digest_client_request(struct digest_client_request_options *opt, 
 		      int argc, char **argv)
 {
-    char *server_nonce, server_identifier;
-    ssize_t size;
-    MD5_CTX ctx;
-    unsigned char md[16];
-    char *h;
+    char *server_nonce, *client_nonce = NULL, server_identifier;
+    ssize_t snoncelen, cnoncelen = 0;
 
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
-    if (opt->server_identifier_string == NULL)
-	errx(1, "server identifier missing");
     if (opt->password_string == NULL)
 	errx(1, "password missing");
 
     if (opt->opaque_string == NULL)
 	errx(1, "opaque missing");
 
-    size = strlen(opt->server_nonce_string);
-    server_nonce = malloc(size);
+    snoncelen = strlen(opt->server_nonce_string);
+    server_nonce = malloc(snoncelen);
     if (server_nonce == NULL)
 	errx(1, "server_nonce");
 
-    size = hex_decode(opt->server_nonce_string, server_nonce, size);
-    if (size <= 0) 
+    snoncelen = hex_decode(opt->server_nonce_string, server_nonce, snoncelen);
+    if (snoncelen <= 0) 
 	errx(1, "server nonce wrong");
 
-    if (hex_decode(opt->server_identifier_string, &server_identifier, 1) != 1)
-	errx(1, "server identifier wrong length");
+    if (opt->client_nonce_string) {
+	cnoncelen = strlen(opt->client_nonce_string);
+	client_nonce = malloc(cnoncelen);
+	if (client_nonce == NULL)
+	    errx(1, "client_nonce");
+	
+	cnoncelen = hex_decode(opt->client_nonce_string, 
+			       client_nonce, cnoncelen);
+	if (cnoncelen <= 0) 
+	    errx(1, "client nonce wrong");
+    }
 
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, &server_identifier, 1);
-    MD5_Update(&ctx, opt->password_string, strlen(opt->password_string));
-    MD5_Update(&ctx, server_nonce, size);
-    MD5_Final(md, &ctx);
+    if (opt->server_identifier_string) {
+	int ret;
 
-    hex_encode(md, 16, &h);
+	ret = hex_decode(opt->server_identifier_string, &server_identifier, 1);
+	if (ret != 1)
+	    errx(1, "server identifier wrong length");
+    }
 
-    printf("responseData=%s\n", h);
+    if (strcasecmp(opt->type_string, "CHAP") == 0) {
+	if (opt->server_identifier_string == NULL)
+	    errx(1, "server identifier missing");
+
+	client_chap(server_nonce, snoncelen, server_identifier, 
+		    opt->password_string);
+
+    } else if (strcasecmp(opt->type_string, "MS-CHAP-V2") == 0) {
+	if (opt->client_nonce_string == NULL)
+	    errx(1, "client nonce missing");
+	if (opt->username_string == NULL)
+	    errx(1, "client nonce missing");
+
+	client_mschapv2(server_nonce, snoncelen,
+			client_nonce, cnoncelen, 
+			opt->username_string,
+			opt->password_string);
+    }
+	
 
     return 0;
 }
