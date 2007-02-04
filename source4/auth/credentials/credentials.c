@@ -349,8 +349,12 @@ BOOL cli_credentials_set_nt_hash(struct cli_credentials *cred,
 {
 	if (obtained >= cred->password_obtained) {
 		cli_credentials_set_password(cred, NULL, obtained);
-		cred->nt_hash = talloc(cred, struct samr_Password);
-		*cred->nt_hash = *nt_hash;
+		if (nt_hash) {
+			cred->nt_hash = talloc(cred, struct samr_Password);
+			*cred->nt_hash = *nt_hash;
+		} else {
+			cred->nt_hash = NULL;
+		}
 		return True;
 	}
 
