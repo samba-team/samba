@@ -67,7 +67,7 @@ function _connect(params, error)
 {
     if (params.length < 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <db_name> [<option> ...]");
         return error;
     }
@@ -128,7 +128,7 @@ function _close(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
@@ -169,7 +169,7 @@ function _transaction_start(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
@@ -202,7 +202,7 @@ function _transaction_cancel(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
@@ -235,7 +235,7 @@ function _transaction_commit(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
@@ -285,7 +285,7 @@ function _search(params, error)
 {
     if (params.length < 2 || params.length > 5)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: " +
                        "<resource_id> <expr> [<baseDN> [<scope> [<attrs>]]]");
         return error;
@@ -327,7 +327,7 @@ function _search(params, error)
     }
     else
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "invalid scope: " + scope);
         return error;
     }
@@ -357,7 +357,7 @@ function _add(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <ldif>");
         return error;
     }
@@ -393,7 +393,7 @@ function _modify(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <ldif>");
         return error;
     }
@@ -429,7 +429,7 @@ function _del(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <dn>");
         return error;
     }
@@ -468,7 +468,7 @@ function _rename(params, error)
 {
     if (params.length != 3)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <old_dn> <new_dn>");
         return error;
     }
@@ -504,7 +504,7 @@ function _base64encode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_encoded>");
         return error;
     }
@@ -540,7 +540,7 @@ function _base64decode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_decoded>");
         return error;
     }
@@ -576,7 +576,7 @@ function _base64decode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_decoded>");
         return error;
     }
@@ -608,7 +608,7 @@ function _errstring(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
