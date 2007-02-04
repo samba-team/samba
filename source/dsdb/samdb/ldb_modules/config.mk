@@ -133,8 +133,7 @@ OBJ_FILES = \
 SUBSYSTEM = ldb
 INIT_FUNCTION = password_hash_module_init
 OBJ_FILES = password_hash.o
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5
-PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC
+PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC HEIMDAL_KRB5
 #
 # End MODULE ldb_password_hash
 ################################################
@@ -210,5 +209,18 @@ OBJ_FILES = \
 		schema.o schema_syntax.o
 #
 # End MODULE ldb_schema
+################################################
+
+################################################
+# Start MODULE ldb_update_kt
+[MODULE::ldb_update_kt]
+SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC CREDENTIALS_KRB5
+#Also depends on credentials, but that would loop
+INIT_FUNCTION = ldb_update_kt_init
+OBJ_FILES = \
+		update_keytab.o 
+#
+# End MODULE ldb_update_kt
 ################################################
 

@@ -169,12 +169,12 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+				     struct ldb_context *ldb,
 				     const char *base,
 				     const char *filter)
 {
 	TALLOC_CTX *mem_ctx;
 	
-	struct ldb_context *ldb;
 	int ldb_ret;
 	struct ldb_message **msgs;
 	const char *attrs[] = {
@@ -209,13 +209,15 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
 
-	/* Local secrets are stored in secrets.ldb */
-	ldb = secrets_db_connect(mem_ctx);
 	if (!ldb) {
-		/* set anonymous as the fallback, if the machine account won't work */
-		cli_credentials_set_anonymous(cred);
-		DEBUG(1, ("Could not open secrets.ldb\n"));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		/* Local secrets are stored in secrets.ldb */
+		ldb = secrets_db_connect(mem_ctx);
+		if (!ldb) {
+			/* set anonymous as the fallback, if the machine account won't work */
+			cli_credentials_set_anonymous(cred);
+			DEBUG(1, ("Could not open secrets.ldb\n"));
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
 	}
 
 	/* search for the secret record */
@@ -327,7 +329,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	cred->machine_account_pending = False;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, SECRETS_PRIMARY_DOMAIN_DN,
+	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
 }
 
@@ -347,7 +349,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
+	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRINCIPALS_DN,
 					   filter);
 }
 
@@ -369,7 +371,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
+	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRINCIPALS_DN,
 					   filter);
 }
 
@@ -387,67 +389,4 @@ void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
 	cred->machine_account_pending = True;
 }
 
-
-NTSTATUS cli_credentials_update_all_keytabs(TALLOC_CTX *parent_ctx)
-{
-	TALLOC_CTX *mem_ctx;
-	int ldb_ret;
-	struct ldb_context *ldb;
-	struct ldb_message **msgs;
-	const char *attrs[] = { NULL };
-	struct cli_credentials *creds;
-	const char *filter;
-	NTSTATUS status;
-	int i, ret;
-
-	mem_ctx = talloc_new(parent_ctx);
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Local secrets are stored in secrets.ldb */
-	ldb = secrets_db_connect(mem_ctx);
-	if (!ldb) {
-		DEBUG(1, ("Could not open secrets.ldb\n"));
-		talloc_free(mem_ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* search for the secret record, but only of things we can
-	 * actually update */
-	ldb_ret = gendb_search(ldb,
-			       mem_ctx, NULL,
-			       &msgs, attrs,
-			       "(&(objectClass=kerberosSecret)(|(secret=*)(ntPwdHash=*)))");
-	if (ldb_ret == -1) {
-		DEBUG(1, ("Error looking for kerberos type secrets to push into a keytab:: %s", ldb_errstring(ldb)));
-		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	for (i=0; i < ldb_ret; i++) {
-		/* Make a credentials structure from it */
-		creds = cli_credentials_init(mem_ctx);
-		if (!creds) {
-			DEBUG(1, ("cli_credentials_init failed!"));
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		cli_credentials_set_conf(creds);
-		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_get_linearized(msgs[i]->dn));
-		status = cli_credentials_set_secrets(creds, NULL, filter);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to read secrets for keytab update for %s\n", 
-				  filter));
-			continue;
-		} 
-		ret = cli_credentials_update_keytab(creds);
-		if (ret != 0) {
-			DEBUG(1, ("Failed to update keytab for %s\n", 
-				  filter));
-			continue;
-		}
-	}
-	return NT_STATUS_OK;
-}
 
