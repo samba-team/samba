@@ -418,7 +418,7 @@ qx.Proto._buildPageBrowse = function(module, page)
   // Not displayed by default
   this._ldbmod.setDisplay(false);
 
-  fsm.addObject("ldbmod:browse", this._ldbmod);
+  fsm.addObject("ldbmod", this._ldbmod);
 
   splitpane.addRight(this._ldbmod);
 

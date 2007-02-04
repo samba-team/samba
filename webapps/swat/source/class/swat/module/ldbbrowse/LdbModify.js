@@ -42,7 +42,7 @@ function(fsm)
   this._okbtn.addEventListener("execute", fsm.eventListener, fsm);
 
   // We'll be receiving events on the object, so save its friendly name
-  fsm.addObject("domod", this._okbtn, "swat.main.fsmUtils.disable_during_rpc");
+  fsm.addObject("commit", this._okbtn, "swat.main.fsmUtils.disable_during_rpc");
 
   // Add the buttons to the hlayout
   this._hlayout.add(this._leftSpacer, this._cancelbtn, this._okbtn);
@@ -51,7 +51,7 @@ function(fsm)
   this.add(this._mainArea, this._hlayout);
 
   // By default this is a new record creator
-  this._type = "new";
+  this._type = "add";
 
   // By default this is inactive
   this._active = false;
@@ -93,7 +93,7 @@ qx.Proto.setBase = function(base) {
   this.basedn = base;
 
   if (this._active) {
-    if (this._type == "new") {
+    if (this._type == "add") {
 
       this._basedn.setValue(this.basedn);
       this._basedn.setWidth(8 * this.basedn.length);
@@ -106,7 +106,7 @@ qx.Proto.initNew = function(callback, obj) {
   this._setExitCallback(callback, obj);
 
   this._active = true;
-  this._type = "new";
+  this._type = "add";
 
   var hlayout = new qx.ui.layout.HorizontalBoxLayout();
   hlayout.set({ height: "auto", spacing: 10 });
@@ -206,6 +206,13 @@ qx.Proto._cancelOp = function() {
   this._callExitCallback();
 }
 
+qx.Proto._okOp = function() {
+
+  //TODO: disable ok/cancel buttons and call fsm instead
+  this._reset();
+  this._callExitCallback();
+}
+
 qx.Proto._addNewAttribute = function(name, value, before) {
 
   // do not add a new attribute if the name is null
@@ -235,6 +242,8 @@ qx.Proto._addNewAttribute = function(name, value, before) {
   }, this);
 
   hlayout.add(aButton, aLabel, aTextField, rButton);
+  hlayout.setUserData("attrName", name);
+  hlayout.setUserData("attrVal", aTextField);
 
   if (before) {
     this._attrArea.addAfter(hlayout, before);
@@ -306,4 +315,28 @@ qx.Proto._createAttributesArea = function() {
   this._attrArea.add(this._attrAddButton);
 
   this._mainArea.add(this._attrArea);
+}
+
+qx.Proto.getOpType = function() {
+  return this._type;
+}
+
+qx.Proto.getLdif = function() {
+  //TODO: modify
+  if (this._type != "add") {
+    return null;
+  }
+
+  var ldif = "# Add operation\n";
+  ldif = ldif + "dn: " + this._rdn + "," + this._basedn + "\n";
+
+  for (var c in this._attrArea.getChildren()) {
+    if (c instanceof qx.ui.layout.HorizontalBoxLayout) {
+      ldif = ldif + c.getUserData("attrName") + ": " + c.getUserData("attrVal").getValue() + "\n";
+    }
+  }
+  // terminate ldif record
+  ldif = ldif + "\n";
+
+  return ldif;
 }
