@@ -82,7 +82,10 @@ qx.Proto.buildFsm = function(module)
           "execute" :
           {
             "search" :
-              "Transition_Idle_to_AwaitRpcResult_via_search"
+              "Transition_Idle_to_AwaitRpcResult_via_search",
+
+            "commit" :
+              "Transition_Idle_to_AwaitRpcResult_via_commit"
           },
 
           // If a previously unexpanded tree node is expanded, issue a request
@@ -159,6 +162,47 @@ qx.Proto.buildFsm = function(module)
           // When we get the result, we'll need to know what type of request
           // we made.
           request.setUserData("requestType", "search");
+        }
+    });
+  state.addTransition(trans);
+
+  /*
+   * Transition: Idle to AwaitRpcResult
+   *
+   * Cause: "execute" on OK button
+   *
+   * Action:
+   *  Commit modification or add new record to ldb
+   */
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Idle_to_AwaitRpcResult_via_commit",
+    {
+      "nextState" :
+        "State_AwaitRpcResult",
+
+      "ontransition" :
+        function(fsm, event)
+        {
+          // Get our module descriptor
+          var module = fsm.getObject("swat.main.module");
+
+          // Retrieve the database handle
+          var dbHandle = module.dbHandle;
+
+          // Retrieve the ldbmod object
+          var ldbmod = fsm.getObject("ldbmod");
+
+          var ldif = ldbmod.getLdif();
+
+          // Issue a Search call
+          var request = _this.callRpc(fsm,
+                                      "samba.ldb",
+                                      ldbmod.getOpType(),
+				      [ ldif ]);
+
+          // When we get the result, we'll need to know what type of request
+          // we made.
+          request.setUserData("requestType", ldbmod.getOpType());
         }
     });
   state.addTransition(trans);
