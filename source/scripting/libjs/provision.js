@@ -488,15 +488,13 @@ function provision_become_dc(subobj, message, paths, session_info)
 	assert(ok);
 
 	message("Setting up " + paths.secrets + "\n");
-	setup_ldb("secrets.ldif", info, paths.secrets);
+	setup_ldb("secrets_init.ldif", info, paths.secrets);
+
+	setup_ldb("secrets.ldif", info, paths.secrets, false);
 
 	tmp = lp.get("secrets database");
 	ok = lp.set("secrets database", paths.secrets);
 	assert(ok);
-
-	message("Setting up keytabs\n");
-	var keytab_ok = credentials_update_all_keytabs();
-	assert(keytab_ok);
 
 	ok = lp.set("secrets database", tmp);
 	assert(ok);
@@ -547,12 +545,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 		setup_ldb("share.ldif", info, paths.shareconf);
 	}
 
-	message("Setting up secrets.ldb\n");
-	setup_ldb("secrets.ldif", info, paths.secrets);
-
-	message("Setting up keytabs\n");
-	var keytab_ok = credentials_update_all_keytabs();
-	assert(keytab_ok);
+	message("Setting up " + paths.secrets + "\n");
+	setup_ldb("secrets_init.ldif", info, paths.secrets);
+	setup_ldb("secrets.ldif", info, paths.secrets, false);
 
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", info, paths.hklm);

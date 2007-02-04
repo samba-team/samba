@@ -266,23 +266,11 @@ int ejs_credentials_cmdline(int eid, int argc, struct MprVar **argv)
 	return ejs_credentials_obj(obj, cmdline_credentials);
 }
 
-static int ejs_credentials_update_all_keytabs(MprVarHandle eid, int argc, struct MprVar **argv)
-{
-	if (!NT_STATUS_IS_OK(cli_credentials_update_all_keytabs(mprMemCtx()))) {
-		mpr_Return(eid, mprCreateBoolVar(False));
-	} else {
-		mpr_Return(eid, mprCreateBoolVar(True));
-	}
-	return 0;
-}
-
-
 /*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_credentials(void)
 {
 	ejsDefineCFunction(-1, "credentials_init", ejs_credentials_init, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "credentials_update_all_keytabs", ejs_credentials_update_all_keytabs, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
