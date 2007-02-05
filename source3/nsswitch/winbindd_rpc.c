@@ -391,7 +391,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
 
-	DEBUG(3,("rpc: query_user rid=%s\n",
+	DEBUG(3,("rpc: query_user sid=%s\n",
 		 sid_to_string(sid_string, user_sid)));
 
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
