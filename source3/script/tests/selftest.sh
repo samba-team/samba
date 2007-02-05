@@ -133,6 +133,7 @@ cat >$SERVERCONFFILE<<EOF
 	add machine script = /bin/false
 
 	kernel oplocks = no
+	kernel change notify = no
 
 	syslog = no
 	printing = bsd
