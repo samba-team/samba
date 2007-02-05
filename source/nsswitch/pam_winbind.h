@@ -133,7 +133,23 @@ do {                             \
 	_make_remark(h, f, PAM_ERROR_MSG, x);\
 	return ret;\
 };
-	
+
+#define PAM_WB_REMARK_CHECK_RESPONSE(h,f,x,y)\
+{\
+	const char *ntstatus = x.data.auth.nt_status_string; \
+	const char *error_string = NULL; \
+	if (!strcasecmp(ntstatus,y)) {\
+		error_string = _get_ntstatus_error_string(y);\
+		if (error_string != NULL) {\
+			_make_remark(h, f, PAM_ERROR_MSG, error_string);\
+		};\
+		if (x.data.auth.error_string[0] != '\0') {\
+			_make_remark(h, f, PAM_ERROR_MSG, x.data.auth.error_string);\
+		};\
+		_make_remark(h, f, PAM_ERROR_MSG, y);\
+	};\
+};
+
 #define PAM_WB_REMARK_CHECK_RESPONSE_RET(h,f,x,y)\
 {\
 	const char *ntstatus = x.data.auth.nt_status_string; \
