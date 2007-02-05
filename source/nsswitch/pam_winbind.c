@@ -535,13 +535,36 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 	}
 }
 
-static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, int ctrl, time_t next_change, time_t now) 
+/**
+ * send a password expiry message if required
+ * 
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param next_change expected (calculated) next expiry date.
+ * @param already_expired pointer to a boolean to indicate if the password is
+ *        already expired.
+ *
+ * @return boolean Returns True if message has been sent, False if not.
+ */
+
+static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, int ctrl, time_t next_change, time_t now, BOOL *already_expired)
 {
 	int days = 0;
 	struct tm tm_now, tm_next_change;
 
+	if (already_expired) {
+		*already_expired = False;
+	}
+
+	if (next_change <= now) {
+		PAM_WB_REMARK_DIRECT(pamh, ctrl, "NT_STATUS_PASSWORD_EXPIRED");
+		if (already_expired) {
+			*already_expired = True;
+		}
+		return True;
+	}
+
 	if ((next_change < 0) ||
-	    (next_change < now) ||
 	    (next_change > now + DAYS_TO_WARN_BEFORE_PWD_EXPIRES * SECONDS_PER_DAY)) {
 		return False;
 	}
@@ -567,10 +590,28 @@ static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, int ctrl, time
 	return False;
 }
 
-static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, struct winbindd_response *response)
+/**
+ * Send a warning if the password expires in the near future
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param response The full authentication response structure.
+ * @param already_expired boolean, is the pwd already expired?
+ *
+ * @return void.
+ */
+
+static void _pam_warn_password_expiry(pam_handle_t *pamh, 
+				      int flags, 
+				      const struct winbindd_response *response,
+				      BOOL *already_expired)
 {
 	time_t now = time(NULL);
 	time_t next_change = 0;
+
+	if (already_expired) {
+		*already_expired = False;
+	}
 
 	/* accounts with ACB_PWNOEXP set never receive a warning */
 	if (response->data.auth.info3.acct_flags & ACB_PWNOEXP) {
@@ -585,11 +626,14 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, s
 	/* check if the info3 must change timestamp has been set */
 	next_change = response->data.auth.info3.pass_must_change_time;
 
-	if (_pam_send_password_expiry_message(pamh, ctrl, next_change, now)) {
+	if (_pam_send_password_expiry_message(pamh, flags, next_change, now, 
+					      already_expired)) {
 		return;
 	}
 
 	/* now check for the global password policy */
+	/* good catch from Ralf Haferkamp: an expiry of "never" is translated
+	 * to -1 */
 	if (response->data.auth.policy.expire <= 0) {
 		return;
 	}
@@ -597,7 +641,8 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, s
 	next_change = response->data.auth.info3.pass_last_set_time + 
 		      response->data.auth.policy.expire;
 
-	if (_pam_send_password_expiry_message(pamh, ctrl, next_change, now)) {
+	if (_pam_send_password_expiry_message(pamh, flags, next_change, now, 
+					      already_expired)) {
 		return;
 	}
 
@@ -953,6 +998,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int ret;
+	BOOL already_expired = False;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -1041,43 +1087,41 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NO_LOGON_SERVERS");
-	}
-
-	/* handle the case where the auth was ok, but the password must expire right now */
-	/* good catch from Ralf Haferkamp: an expiry of "never" is translated to -1 */
-	if ( ! (response.data.auth.info3.acct_flags & ACB_PWNOEXP) &&
-	     ! (PAM_WB_GRACE_LOGON(response.data.auth.info3.user_flgs)) &&
-	    (response.data.auth.policy.expire > 0) && 
-	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire < time(NULL))) {
-
-		ret = PAM_AUTHTOK_EXPIRED;
-
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"Password has expired (Password was last set: %d, "
-			       "the policy says it should expire here %d (now it's: %d)\n",
-			       response.data.auth.info3.pass_last_set_time,
-			       response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire,
-			       time(NULL));
-
-		PAM_WB_REMARK_DIRECT_RET(pamh, ctrl, "NT_STATUS_PASSWORD_EXPIRED");
-
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_WRONG_PASSWORD");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCESS_DENIED");
 	}
 
 	/* warn a user if the password is about to expire soon */
-	_pam_warn_password_expires_in_future(pamh, ctrl, &response);
+	_pam_warn_password_expiry(pamh, ctrl, &response, &already_expired);
+	
+	if (already_expired == True) {
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Password has expired "
+			       "(Password was last set: %d, the policy says "
+			       "it should expire here %d (now it's: %d)\n",
+			       response.data.auth.info3.pass_last_set_time, 
+			       response.data.auth.info3.pass_last_set_time +
+			       response.data.auth.policy.expire,
+			       time(NULL));
 
-	/* inform about logon type */
-	_pam_warn_logon_type(pamh, ctrl, user, response.data.auth.info3.user_flgs);
+		return PAM_AUTHTOK_EXPIRED;
+	}
 
-	/* set some info3 info for other modules in the stack */
-	_pam_set_data_info3(pamh, ctrl, &response);
+	if (ret == PAM_SUCCESS) {
 
-	/* put krb5ccname into env */
-	_pam_setup_krb5_env(pamh, ctrl, response.data.auth.krb5ccname);
+		/* inform about logon type */
+		_pam_warn_logon_type(pamh, ctrl, user, response.data.auth.info3.user_flgs);
 
-	/* If winbindd returned a username, return the pointer to it here. */
-	if (user_ret && response.extra_data.data) {
-		/* We have to trust it's a null terminated string. */
-		*user_ret = (char *)response.extra_data.data;
+		/* set some info3 info for other modules in the stack */
+		_pam_set_data_info3(pamh, ctrl, &response);
+
+		/* put krb5ccname into env */
+		_pam_setup_krb5_env(pamh, ctrl, response.data.auth.krb5ccname);
+
+		/* If winbindd returned a username, return the pointer to it here. */
+		if (user_ret && response.extra_data.data) {
+			/* We have to trust it's a null terminated string. */
+			*user_ret = (char *)response.extra_data.data;
+		}
 	}
 
 	return ret;
@@ -2000,6 +2044,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 			if (ret == PAM_SUCCESS) {
 			
+				/* warn a user if the password is about to expire soon */
+				_pam_warn_password_expiry(pamh, ctrl, &response, NULL);
+
 				/* set some info3 info for other modules in the stack */
 				_pam_set_data_info3(pamh, ctrl, &response);
 
