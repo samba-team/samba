@@ -1609,7 +1609,7 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 	
-	DEBUG(10,("sid_to_name: [Cached] - doing backend query for info for domain %s\n",
+	DEBUG(10,("query_user: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
 	status = domain->backend->query_user(domain, mem_ctx, user_sid, info);
