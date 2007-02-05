@@ -22,8 +22,8 @@ id-pkinit-san	OBJECT IDENTIFIER ::=
     x509-sanan(2) }
 
 id-pkinit-ms-san OBJECT IDENTIFIER ::=
-  { iso(1) org(3) dod(6) internet(1) foo1(4) 
-    foo2(1) foo3(311) foo4(20) foo5(2) foo6(3) }
+  { iso(1) org(3) dod(6) internet(1) private(4) 
+    enterprise(1) microsoft(311) foo4(20) foo5(2) foo6(3) }
 
 pa-pk-as-req INTEGER ::=                  16
 pa-pk-as-rep INTEGER ::=                  17
