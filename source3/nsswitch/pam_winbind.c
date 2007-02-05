@@ -444,21 +444,34 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	close_sock();
 
 	/* Copy reply data from socket */
-	if (response->result != WINBINDD_OK) {
-		if (response->data.auth.pam_error != PAM_SUCCESS) {
-			_pam_log(pamh, ctrl, LOG_ERR, "request failed: %s, PAM error was %s (%d), NT error was %s", 
-				 response->data.auth.error_string,
-				 pam_strerror(pamh, response->data.auth.pam_error),
-				 response->data.auth.pam_error,
-				 response->data.auth.nt_status_string);
-			return response->data.auth.pam_error;
-		} else {
-			_pam_log(pamh, ctrl, LOG_ERR, "request failed, but PAM error 0!");
-			return PAM_SERVICE_ERR;
-		}
+	if (response->result == WINBINDD_OK) {
+		return PAM_SUCCESS;
 	}
 
-	return PAM_SUCCESS;
+	/* no need to check for pam_error codes for getpwnam() */
+	switch (req_type) {
+
+		case WINBINDD_GETPWNAM:
+		case WINBINDD_LOOKUPNAME:
+			_pam_log(pamh, ctrl, LOG_ERR, "request failed: %s, NT error was %s", 
+				response->data.auth.nt_status_string);
+			return PAM_USER_UNKNOWN;
+		default:
+			break;
+	}
+
+	if (response->data.auth.pam_error != PAM_SUCCESS) {
+		_pam_log(pamh, ctrl, LOG_ERR, "request failed: %s, PAM error was %s (%d), NT error was %s", 
+			 response->data.auth.error_string,
+			 pam_strerror(pamh, response->data.auth.pam_error),
+			 response->data.auth.pam_error,
+			 response->data.auth.nt_status_string);
+		return response->data.auth.pam_error;
+	} 
+	
+	_pam_log(pamh, ctrl, LOG_ERR, "request failed, but PAM error 0!");
+
+	return PAM_SERVICE_ERR;
 }
 
 static int pam_winbind_request_log(pam_handle_t * pamh,
