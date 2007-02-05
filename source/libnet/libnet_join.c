@@ -1154,7 +1154,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		}
 		cli_credentials_set_conf(creds);
 		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_get_linearized(msg->dn));
-		status = cli_credentials_set_secrets(creds, NULL, filter);
+		status = cli_credentials_set_secrets(creds, NULL, NULL, filter);
 		if (!NT_STATUS_IS_OK(status)) {
 			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to read secrets for keytab update for %s", 
 							      filter);
