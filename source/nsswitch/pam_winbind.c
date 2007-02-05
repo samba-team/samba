@@ -465,6 +465,42 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, s
 }
 
 /**
+ * put krb5ccname variable into environment
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param krb5ccname env variable retrieved from winbindd.
+ *
+ * @return void.
+ */
+
+static void _pam_setup_krb5_env(pam_handle_t *pamh, int ctrl, const char *krb5ccname)
+{
+	char var[PATH_MAX];
+	int ret;
+
+	if (off(ctrl, WINBIND_KRB5_AUTH)) {
+		return;
+	}
+
+	if (!krb5ccname || (strlen(krb5ccname) == 0)) {
+		return;
+	}
+
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "request returned KRB5CCNAME: %s", krb5ccname);
+	
+	if (snprintf(var, sizeof(var), "KRB5CCNAME=%s", krb5ccname) == -1) {
+		return;
+	}
+	
+	ret = pam_putenv(pamh, var);
+	if (ret) {
+		_pam_log(pamh, ctrl, LOG_ERR, "failed to set KRB5CCNAME to %s: %s", 
+			var, pam_strerror(pamh, ret));
+	}
+}	
+
+/**
  * Set string into the PAM stack.
  *
  * @param pamh PAM handle
@@ -524,6 +560,36 @@ static void _pam_free_data_info3(pam_handle_t *pamh)
 	pam_set_data(pamh, PAM_WINBIND_LOGONSCRIPT, NULL, NULL);
 	pam_set_data(pamh, PAM_WINBIND_LOGONSERVER, NULL, NULL);
 	pam_set_data(pamh, PAM_WINBIND_PROFILEPATH, NULL, NULL);
+}
+
+/**
+ * Send PAM_ERROR_MSG for cached or grace logons.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param username User in PAM request.
+ * @param info3_user_flgs Info3 flags containing logon type bits.
+ *
+ * @return void.
+ */
+
+static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *username, uint32 info3_user_flgs)
+{
+	/* inform about logon type */
+	if (PAM_WB_GRACE_LOGON(info3_user_flgs)) {
+
+		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
+			"Grace login. Please change your password as soon you're online again");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+			"User %s logged on using grace logon\n", username);
+
+	} else if (PAM_WB_CACHED_LOGON(info3_user_flgs)) {
+
+		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
+			"Logging on using cached account. Network resources can be unavailable");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+			"User %s logged on using cached account\n", username);
+	}
 }
 
 /**
@@ -698,23 +764,6 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		*pwd_last_set = response.data.auth.info3.pass_last_set_time;
 	}
 
-	if ((ctrl & WINBIND_KRB5_AUTH) && 
-	    response.data.auth.krb5ccname[0] != '\0') {
-
-		char var[PATH_MAX];
-
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "request returned KRB5CCNAME: %s", 
-			       response.data.auth.krb5ccname);
-	
-		snprintf(var, sizeof(var), "KRB5CCNAME=%s", response.data.auth.krb5ccname);
-	
-		ret = pam_putenv(pamh, var);
-		if (ret != PAM_SUCCESS) {
-			_pam_log(pamh, ctrl, LOG_ERR, "failed to set KRB5CCNAME to %s", var);
-			return ret;
-		}
-	}
-
 	if (p_response) {
 		/* We want to process the response in the caller. */
 		*p_response = response;
@@ -759,23 +808,13 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	_pam_warn_password_expires_in_future(pamh, ctrl, &response);
 
 	/* inform about logon type */
-	if (PAM_WB_GRACE_LOGON(response.data.auth.info3.user_flgs)) {
-
-		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
-			"Grace login. Please change your password as soon you're online again");
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
-			"User %s logged on using grace logon\n", user);
-
-	} else if (PAM_WB_CACHED_LOGON(response.data.auth.info3.user_flgs)) {
-
-		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
-			"Logging on using cached account. Network resources can be unavailable");
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
-			"User %s logged on using cached account\n", user);
-	}
+	_pam_warn_logon_type(pamh, ctrl, user, response.data.auth.info3.user_flgs);
 
 	/* set some info3 info for other modules in the stack */
 	_pam_set_data_info3(pamh, ctrl, &response);
+
+	/* put krb5ccname into env */
+	_pam_setup_krb5_env(pamh, ctrl, response.data.auth.krb5ccname);
 
 	/* If winbindd returned a username, return the pointer to it here. */
 	if (user_ret && response.extra_data.data) {
