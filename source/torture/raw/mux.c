@@ -206,6 +206,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	struct smbcli_request *req;
 	struct smb_lock_entry lock[1];
+	struct timeval t;
 
 	printf("TESTING MULTIPLEXED LOCK/LOCK/UNLOCK\n");
 
@@ -238,6 +239,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
 	printf("this will too, but we'll unlock while waiting\n");
+	t = timeval_current();
 	req = smb_raw_lock_send(cli->tree, &io);
 
 	printf("unlock the first range\n");
@@ -251,6 +253,12 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("recv the async reply\n");
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_OK);	
+
+	printf("async lock took %.2f msec\n", timeval_elapsed(&t) * 1000);
+	if (timeval_elapsed(&t) > 0.1) {
+		printf("failed to trigger early lock retry\n");
+		return False;		
+	}
 
 	printf("reopening with an exit\n");
 	smb_raw_exit(cli->session);
