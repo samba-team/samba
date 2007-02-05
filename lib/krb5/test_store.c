@@ -133,7 +133,7 @@ test_uint16(krb5_context context, krb5_storage *sp)
     krb5_error_code ret;
     int i;
     uint16_t val[] = {
-	0, 1, -1, 65535
+	0, 1, 65535
     }, v;
 
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
