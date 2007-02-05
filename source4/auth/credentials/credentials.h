@@ -116,6 +116,7 @@ struct cli_credentials {
 	BOOL callback_running;
 };
 
+struct ldb_context;
 #include "auth/credentials/credentials_proto.h"
 
 #endif /* __CREDENTIALS_H__ */
