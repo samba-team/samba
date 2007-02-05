@@ -737,6 +737,75 @@ out:
 	return result;
 }
 
+/**
+ * Compose Password Restriction String for a PAM_ERROR_MSG conversation.
+ *
+ * @param response The struct winbindd_response.
+ *
+ * @return string (caller needs to free).
+ */
+
+static char *_pam_compose_pwd_restriction_string(struct winbindd_response *response)
+{
+	char *str = NULL;
+	size_t offset = 0, ret = 0, str_size = 1024;
+
+	str = (char *)malloc(str_size);
+	if (!str) {
+		return NULL;
+	}
+
+	memset(str, '\0', str_size);
+
+	offset = snprintf(str, str_size, "Your password ");
+	if (offset == -1) {
+		goto failed;
+	}
+
+	if (response->data.auth.policy.min_length_password > 0) {
+		ret = snprintf(str+offset, str_size-offset,
+			     "must be at least %d characters; ",
+			     response->data.auth.policy.min_length_password);
+		if (ret == -1) {
+			goto failed;
+		}
+		offset += ret;
+	}
+	
+	if (response->data.auth.policy.password_history > 0) {
+		ret = snprintf(str+offset, str_size-offset,
+			     "cannot repeat any of your previous %d passwords; ",
+			     response->data.auth.policy.password_history);
+		if (ret == -1) {
+			goto failed;
+		}
+		offset += ret;
+	}
+	
+	if (response->data.auth.policy.password_properties & DOMAIN_PASSWORD_COMPLEX) {
+		ret = snprintf(str+offset, str_size-offset,
+			     "must contain capitals, numerals or punctuation; "
+			     "and cannot contain your account or full name; ");
+		if (ret == -1) {
+			goto failed;
+		}
+		offset += ret;
+	}
+
+	ret = snprintf(str+offset, str_size-offset, 
+		     "Please type a different password. "
+		     "Type a password which meets these requirements in both text boxes.");
+	if (ret == -1) {
+		goto failed;
+	}
+
+	return str;
+
+ failed:
+ 	SAFE_FREE(str);
+	return NULL;
+}
+
 /* talk to winbindd */
 static int winbind_auth_request(pam_handle_t * pamh,
 				int ctrl, 
@@ -1002,6 +1071,8 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 
 	if (!strcasecmp(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION")) {
 
+		char *pwd_restriction_string = NULL;
+
 		/* FIXME: avoid to send multiple PAM messages after another */
 		switch (response.data.auth.reject_reason) {
 			case -1:
@@ -1028,18 +1099,11 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 				break;
 		}
 
-		_make_remark_format(pamh, PAM_ERROR_MSG,  
-			"Your password must be at least %d characters; "
-			"cannot repeat any of the your previous %d passwords"
-			"%s. "
-			"Please type a different password. "
-			"Type a password which meets these requirements in both text boxes.",
-			response.data.auth.policy.min_length_password,
-			response.data.auth.policy.password_history,
-			(response.data.auth.policy.password_properties & DOMAIN_PASSWORD_COMPLEX) ? 
-				"; must contain capitals, numerals or punctuation; and cannot contain your account or full name" : 
-				"");
-
+		pwd_restriction_string = _pam_compose_pwd_restriction_string(&response);
+		if (pwd_restriction_string) {
+			_make_remark(pamh, PAM_ERROR_MSG, pwd_restriction_string);
+			SAFE_FREE(pwd_restriction_string);
+		}
 	}
 
 	return ret;
