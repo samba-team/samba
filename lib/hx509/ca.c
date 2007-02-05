@@ -51,7 +51,9 @@ struct hx509_ca_tbs {
     time_t notBefore;
     time_t notAfter;
     int pathLenConstraint; /* both for CA and Proxy */
+#ifdef HAVE_CRLDistributionPoints
     CRLDistributionPoints crldp;
+#endif
 };
 
 int
@@ -67,8 +69,10 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
     (*tbs)->eku.len = 0;
     (*tbs)->eku.val = NULL;
     (*tbs)->pathLenConstraint = 0;
+#ifdef HAVE_CRLDistributionPoints
     (*tbs)->crldp.len = 0;
     (*tbs)->crldp.val = NULL;
+#endif
 
     return 0;
 }
@@ -83,7 +87,9 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     free_GeneralNames(&(*tbs)->san);
     free_ExtKeyUsage(&(*tbs)->eku);
     der_free_heim_integer(&(*tbs)->serial);
+#ifdef HAVE_CRLDistributionPoints
     free_CRLDistributionPoints(&(*tbs)->crldp);
+#endif
 
     hx509_name_free(&(*tbs)->subject);
 
@@ -282,6 +288,7 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 			    const char *uri,
 			    hx509_name issuername)
 {
+#ifdef HAVE_CRLDistributionPoints
     GeneralNames crlissuer;
     DistributionPoint dp;
     DistributionPointName name;
@@ -341,6 +348,11 @@ out:
     free_DistributionPointName(&name);
 
     return ret;
+#else 
+    hx509_set_error_string(context, 0, EINVAL,
+			   "CRLDistributionPoints not yet supported");
+    return EINVAL;
+#endif /* HAVE_CRLDistributionPoints */
 }
 
 int
@@ -942,6 +954,7 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
+#ifdef HAVE_CRLDistributionPoints
     if (tbs->crldp.len) {
 
 	ASN1_MALLOC_ENCODE(CRLDistributionPoints, data.data, data.length,
@@ -959,6 +972,7 @@ ca_sign(hx509_context context,
 	if (ret)
 	    goto out;
     }
+#endif
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
