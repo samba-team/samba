@@ -493,7 +493,8 @@ _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 	af = AF_INET6;
 #endif
 
-	strncpy(request.data.winsreq, argp->key.name, strlen(argp->key.name)) ;
+	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
+	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
 
 	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
 		== NSS_STATUS_SUCCESS ) {
@@ -515,7 +516,8 @@ _nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
 	
-	strncpy(request.data.winsreq, argp->key.name, strlen(argp->key.name));
+	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
+	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
 
 	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
 		== NSS_STATUS_SUCCESS ) {
