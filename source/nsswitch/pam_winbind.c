@@ -601,7 +601,7 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winb
 
 #define IS_SID_STRING(name) (strncmp("S-", name, 2) == 0)
 
-int safe_append_string(char *dest,
+static BOOL safe_append_string(char *dest,
 			const char *src,
 			int dest_buffer_size)
 /**
@@ -612,21 +612,21 @@ int safe_append_string(char *dest,
  * @param src Source string buffer.
  * @param dest_buffer_size Size of dest buffer in bytes.
  *
- * @return 0 if dest buffer is not big enough (no bytes copied), non-zero on success.
+ * @return False if dest buffer is not big enough (no bytes copied), True on success.
  */
 {
 	int dest_length = strlen(dest);
 	int src_length = strlen(src);
 
 	if ( dest_length + src_length + 1 > dest_buffer_size ) {
-		return 0;
+		return False;
 	}
 
 	memcpy(dest + dest_length, src, src_length + 1);
-	return 1;
+	return True;
 }
 
-static int winbind_name_to_sid_string(pam_handle_t *pamh,
+static BOOL winbind_name_to_sid_string(pam_handle_t *pamh,
 				int ctrl,
 				const char *user,
 				const char *name,
@@ -642,7 +642,7 @@ static int winbind_name_to_sid_string(pam_handle_t *pamh,
  * @param sid_list_buffer Where to append the string sid.
  * @param sid_list_buffer Size of sid_list_buffer (in bytes).
  *
- * @return 0 on failure, non-zero on success.
+ * @return False on failure, True on success.
  */
 {
 	const char* sid_string;
@@ -665,20 +665,20 @@ static int winbind_name_to_sid_string(pam_handle_t *pamh,
 
 		if (pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, &sid_request, &sid_response, user)) {
 			_pam_log(pamh, ctrl, LOG_INFO, "could not lookup name: %s\n", name); 
-			return 0;
+			return False;
 		}
 
 		sid_string = sid_response.data.sid.sid;
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string, sid_list_buffer_size)) {
-		return 0;
+		return False;
 	}
 
-	return 1;
+	return True;
 }
 
-static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
+static BOOL winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 				int ctrl,
 				const char *user,
 				const char *name_list,
@@ -694,10 +694,10 @@ static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
  * @param sid_list_buffer Where to put the list of string sids.
  * @param sid_list_buffer Size of sid_list_buffer (in bytes).
  *
- * @return 0 on failure, non-zero on success.
+ * @return False on failure, True on success.
  */
 {
-	int result = 0;
+	BOOL result = False;
 	char *current_name = NULL;
 	const char *search_location;
 	const char *comma;
@@ -730,7 +730,7 @@ static int winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 		goto out;
 	}
 
-	result = 1;
+	result = True;
 
 out:
 	SAFE_FREE(current_name);
