@@ -80,6 +80,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	
 	DEBUG(10, ("group SID %s\n", sid_to_string(sid_string, group_sid)));
 
+	/* Initialize with no members */
 	*num_gr_mem = 0;
 
 	/* HACK ALERT!! This whole routine does not cope with group members
@@ -201,11 +202,13 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 			DEBUG(10,("fill_grent_mem: user %s in 'Domain Users' in domain %s\n",
 				name, domain->name ));
+
+			/* user is the only member */
+			*num_gr_mem = 1;
 		}
 		
 		*gr_mem = buf;
 		*gr_mem_len = buf_len;
-		*num_gr_mem = 1;
 
 		DEBUG(10, ("num_mem = %u, len = %u, mem = %s\n", (unsigned int)*num_gr_mem, 
 		   (unsigned int)buf_len, *num_gr_mem ? buf : "NULL")); 
