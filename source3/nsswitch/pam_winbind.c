@@ -193,6 +193,7 @@ static void _pam_log_state(const pam_handle_t *pamh, int ctrl)
 
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_HOMEDIR);
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_LOGONSCRIPT);
+	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_LOGONSERVER);
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_PROFILEPATH);
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_NEW_AUTHTOK_REQD); /* Use atoi to get PAM result code */
 	_PAM_LOG_STATE_DATA_POINTER(pamh, ctrl, PAM_WINBIND_PWD_LAST_SET);
