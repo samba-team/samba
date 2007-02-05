@@ -664,7 +664,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE)
 				&& (access_mask & DELETE_ACCESS)) {
 #endif
-		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		status = can_delete(conn, fname, file_attributes, bad_path, True, False);
 		/* We're only going to fail here if it's access denied, as that's the
 		   only error we care about for "can we delete this ?" questions. */
 		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
@@ -1281,7 +1281,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	/* Setting FILE_SHARE_DELETE is the hint. */
 	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (access_mask & DELETE_ACCESS)) {
 #endif
-		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		status = can_delete(conn, fname, file_attributes, bad_path, True, False);
 		/* We're only going to fail here if it's access denied, as that's the
 		   only error we care about for "can we delete this ?" questions. */
 		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
@@ -1888,8 +1888,14 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 
 	status = rename_internals(conn, fsp->fsp_name,
 				  new_name, 0, replace_if_exists, path_contains_wcard);
-	if (!NT_STATUS_IS_OK(status))
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return ERROR_NT(status);
+	}
 
 	/*
 	 * Rename was successful.

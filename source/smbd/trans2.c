@@ -4446,9 +4446,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					fname, newname ));
 				status = rename_internals(conn, fname, base_name, 0, overwrite, False);
 			}
+
 			if (!NT_STATUS_IS_OK(status)) {
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
 				return ERROR_NT(status);
 			}
+
 			process_pending_change_notify_queue((time_t)0);
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);

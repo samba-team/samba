@@ -4839,7 +4839,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 			pstrcpy( file, s );
 			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting driverfile [%s]\n", s));
-			unlink_internals(conn, 0, file, False);
+			unlink_internals(conn, 0, file, False, False);
 		}
 	}
 		
@@ -4848,7 +4848,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 			pstrcpy( file, s );
 			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting configfile [%s]\n", s));
-			unlink_internals(conn, 0, file, False);
+			unlink_internals(conn, 0, file, False, False);
 		}
 	}
 	
@@ -4857,7 +4857,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 			pstrcpy( file, s );
 			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting datafile [%s]\n", s));
-			unlink_internals(conn, 0, file, False);
+			unlink_internals(conn, 0, file, False, False);
 		}
 	}
 	
@@ -4866,7 +4866,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 			pstrcpy( file, s );
 			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting helpfile [%s]\n", s));
-			unlink_internals(conn, 0, file, False);
+			unlink_internals(conn, 0, file, False, False);
 		}
 	}
 	
@@ -4882,7 +4882,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 				pstrcpy( file, p );
 				driver_unix_convert(file, conn, NULL, &bad_path, &st);
 				DEBUG(10,("deleting dependent file [%s]\n", file));
-				unlink_internals(conn, 0, file, False);
+				unlink_internals(conn, 0, file, False, False);
 			}
 			
 			i++;

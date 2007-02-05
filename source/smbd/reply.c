@@ -1865,7 +1865,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL bad_path, BOOL check_is_at_open)
+NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL bad_path, BOOL check_is_at_open, BOOL can_defer)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1938,7 +1938,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 					FILE_OPEN,
 					0,
 					FILE_ATTRIBUTE_NORMAL,
-					0,
+					can_defer ? 0 : INTERNAL_OPEN_ONLY,
 					NULL);
 
 		if (!fsp) {
@@ -1960,7 +1960,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
  code.
 ****************************************************************************/
 
-NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, BOOL has_wild)
+NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, BOOL has_wild, BOOL can_defer)
 {
 	pstring directory;
 	pstring mask;
@@ -2000,7 +2000,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(conn,directory,dirtype,bad_path,False);
+		error = can_delete(conn,directory,dirtype,bad_path,False,can_defer);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -2058,7 +2058,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(conn,fname,dirtype,bad_path,False);
+				error = can_delete(conn,fname,dirtype,bad_path,False,False);
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
@@ -2104,7 +2104,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
-	status = unlink_internals(conn, dirtype, name, path_contains_wcard);
+	status = unlink_internals(conn, dirtype, name, path_contains_wcard, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */

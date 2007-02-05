@@ -901,7 +901,7 @@ static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	ZERO_STRUCT(dir_acl);
 	ZERO_STRUCT(file_acl);
 
-	pstr_sprintf(name, fsp->fsp_name);
+	pstrcpy(name, fsp->fsp_name);
 
 	if (!fsp->is_directory) {
 		/* We need to get the name of the directory containing the

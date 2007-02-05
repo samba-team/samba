@@ -1,3 +1,49 @@
+                   ==============================
+                   Release Notes for Samba 3.0.24
+                             Feb 5, 2007
+                   ==============================
+
+This is the latest stable release of Samba. This is the version 
+that production Samba servers should be running for all current 
+bug-fixes.  Please read the changes in this section and for the 
+original 3.0.23 release regarding new features and difference 
+in behavior from previous releases.
+
+Important issues addressed in 3.0.24 include:
+
+  o Fixes for the following security advisories:
+    - CVE-2007-0452 (Potential Denial of Service bug in smbd)
+    - CVE-2007-0453 (Buffer overrun in NSS host lookup Winbind
+      NSS library on Solaris)
+    - CVE-2007-0454 (Format string bug in afsacl.so VFS plugin)
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23d
+---------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix for CVE-2007-0452 & CVE-2007-0454
+
+
+o   Olivier Gay <ouah@ouah.org>
+    * Fix for CVE-2007-0453
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix for CVE-2007-0452
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
                    ===============================
                    Release Notes for Samba 3.0.23d
                              Nov 14, 2006
