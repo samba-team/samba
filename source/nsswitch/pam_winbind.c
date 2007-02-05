@@ -465,6 +465,68 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, s
 }
 
 /**
+ * Set string into the PAM stack.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param data_name Key name for pam_set_data.
+ * @param value String value.
+ *
+ * @return void.
+ */
+
+static void _pam_set_data_string(pam_handle_t *pamh, int ctrl, const char *data_name, const char *value)
+{
+	int ret;
+
+	if ( !data_name || !value || (strlen(data_name) == 0) || (strlen(value) == 0) ) {
+		return;
+	}
+
+	ret = pam_set_data(pamh, data_name, (void *)strdup(value), _pam_winbind_cleanup_func);
+	if (ret) {
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data %s: %s\n", 
+			data_name, pam_strerror(pamh, ret));
+	}
+
+}
+
+/**
+ * Set info3 strings into the PAM stack.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param data_name Key name for pam_set_data.
+ * @param value String value.
+ *
+ * @return void.
+ */
+
+static void _pam_set_data_info3(pam_handle_t *pamh, int ctrl, struct winbindd_response *response)
+{
+	_pam_set_data_string(pamh, ctrl, PAM_WINBIND_HOMEDIR, response->data.auth.info3.home_dir);
+	_pam_set_data_string(pamh, ctrl, PAM_WINBIND_LOGONSCRIPT, response->data.auth.info3.logon_script);
+	_pam_set_data_string(pamh, ctrl, PAM_WINBIND_LOGONSERVER, response->data.auth.info3.logon_srv);
+	_pam_set_data_string(pamh, ctrl, PAM_WINBIND_PROFILEPATH, response->data.auth.info3.profile_path);
+}
+
+/**
+ * Free info3 strings in the PAM stack.
+ *
+ * @param pamh PAM handle
+ *
+ * @return void.
+ */
+
+static void _pam_free_data_info3(pam_handle_t *pamh)
+{
+	pam_set_data(pamh, PAM_WINBIND_HOMEDIR, NULL, NULL);
+	pam_set_data(pamh, PAM_WINBIND_LOGONSCRIPT, NULL, NULL);
+	pam_set_data(pamh, PAM_WINBIND_LOGONSERVER, NULL, NULL);
+	pam_set_data(pamh, PAM_WINBIND_PROFILEPATH, NULL, NULL);
+}
+
+/**
  * Compose Password Restriction String for a PAM_ERROR_MSG conversation.
  *
  * @param response The struct winbindd_response.
@@ -712,42 +774,8 @@ static int winbind_auth_request(pam_handle_t * pamh,
 			"User %s logged on using cached account\n", user);
 	}
 
-	/* save the CIFS homedir for pam_cifs / pam_mount */
-	if (response.data.auth.info3.home_dir[0] != '\0') {
-
-		int ret2 = pam_set_data(pamh, PAM_WINBIND_HOMEDIR,
-					(void *) strdup(response.data.auth.info3.home_dir),
-					_pam_winbind_cleanup_func);
-		if (ret2) {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
-				       pam_strerror(pamh, ret2));
-		}
-
-	}
-
-	/* save the logon script path for other PAM modules */
-	if (response.data.auth.info3.logon_script[0] != '\0') {
-
-		int ret2 = pam_set_data(pamh, PAM_WINBIND_LOGONSCRIPT, 
-					(void *) strdup(response.data.auth.info3.logon_script), 
-					_pam_winbind_cleanup_func);
-		if (ret2) {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
-				       pam_strerror(pamh, ret2));
-		}
-	}
-
-	/* save the profile path for other PAM modules */
-	if (response.data.auth.info3.profile_path[0] != '\0') {
-
-		int ret2 = pam_set_data(pamh, PAM_WINBIND_PROFILEPATH, 
-					(void *) strdup(response.data.auth.info3.profile_path), 
-					_pam_winbind_cleanup_func);
-		if (ret2) {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
-				       pam_strerror(pamh, ret2));
-		}
-	}
+	/* set some info3 info for other modules in the stack */
+	_pam_set_data_info3(pamh, ctrl, &response);
 
 	/* If winbindd returned a username, return the pointer to it here. */
 	if (user_ret && response.extra_data.data) {
@@ -1200,6 +1228,11 @@ out:
 	if (d) {
 		iniparser_freedict(d);
 	}
+
+ 	if (retval != PAM_SUCCESS) {
+ 		_pam_free_data_info3(pamh);
+ 	}
+ 
 	return retval;
 }
 
