@@ -245,13 +245,17 @@ static int converse(pam_handle_t *pamh, int nargs,
 }
 
 
-static int _make_remark(pam_handle_t * pamh, int type, const char *text)
+static int _make_remark(pam_handle_t * pamh, int flags, int type, const char *text)
 {
 	int retval = PAM_SUCCESS;
 
 	struct pam_message *pmsg[1], msg[1];
 	struct pam_response *resp;
 	
+	if (flags & WINBIND_SILENT) {
+		return PAM_SUCCESS;
+	}
+
 	pmsg[0] = &msg[0];
 	msg[0].msg = CONST_DISCARD(char *, text);
 	msg[0].msg_style = type;
@@ -265,7 +269,7 @@ static int _make_remark(pam_handle_t * pamh, int type, const char *text)
 	return retval;
 }
 
-static int _make_remark_format(pam_handle_t * pamh, int type, const char *format, ...)
+static int _make_remark_format(pam_handle_t * pamh, int flags, int type, const char *format, ...)
 {
 	va_list args;
 	char *var;
@@ -275,7 +279,7 @@ static int _make_remark_format(pam_handle_t * pamh, int type, const char *format
 	vasprintf(&var, format, args);
 	va_end(args);
 
-	ret = _make_remark(pamh, type, var);
+	ret = _make_remark(pamh, flags, type, var);
 	SAFE_FREE(var);
 	return ret;
 }
@@ -391,7 +395,7 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 	}
 }
 
-static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, time_t next_change, time_t now) 
+static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, int ctrl, time_t next_change, time_t now) 
 {
 	int days = 0;
 	struct tm tm_now, tm_next_change;
@@ -410,12 +414,12 @@ static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, time_t next_ch
 	days = (tm_next_change.tm_yday+tm_next_change.tm_year*365) - (tm_now.tm_yday+tm_now.tm_year*365);
 
 	if (days == 0) {
-		_make_remark(pamh, PAM_TEXT_INFO, "Your password expires today");
+		_make_remark(pamh, ctrl, PAM_TEXT_INFO, "Your password expires today");
 		return True;
 	} 
 	
 	if (days > 0 && days < DAYS_TO_WARN_BEFORE_PWD_EXPIRES) {
-		_make_remark_format(pamh, PAM_TEXT_INFO, "Your password will expire in %d %s", 
+		_make_remark_format(pamh, ctrl, PAM_TEXT_INFO, "Your password will expire in %d %s", 
 			days, (days > 1) ? "days":"day");
 		return True;
 	}
@@ -423,7 +427,7 @@ static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh, time_t next_ch
 	return False;
 }
 
-static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winbindd_response *response)
+static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, int ctrl, struct winbindd_response *response)
 {
 	time_t now = time(NULL);
 	time_t next_change = 0;
@@ -441,7 +445,7 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winb
 	/* check if the info3 must change timestamp has been set */
 	next_change = response->data.auth.info3.pass_must_change_time;
 
-	if (_pam_send_password_expiry_message(pamh, next_change, now)) {
+	if (_pam_send_password_expiry_message(pamh, ctrl, next_change, now)) {
 		return;
 	}
 
@@ -453,7 +457,7 @@ static void _pam_warn_password_expires_in_future(pam_handle_t *pamh, struct winb
 	next_change = response->data.auth.info3.pass_last_set_time + 
 		      response->data.auth.policy.expire;
 
-	if (_pam_send_password_expiry_message(pamh, next_change, now)) {
+	if (_pam_send_password_expiry_message(pamh, ctrl, next_change, now)) {
 		return;
 	}
 
@@ -656,18 +660,18 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	if (ret) {
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PASSWORD_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PASSWORD_MUST_CHANGE");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_INVALID_WORKSTATION");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_INVALID_LOGON_HOURS");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_DISABLED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_LOCKED_OUT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NO_LOGON_SERVERS");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_PASSWORD_EXPIRED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_PASSWORD_MUST_CHANGE");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_INVALID_WORKSTATION");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_INVALID_LOGON_HOURS");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCOUNT_EXPIRED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCOUNT_DISABLED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCOUNT_LOCKED_OUT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NO_LOGON_SERVERS");
 	}
 
 	/* handle the case where the auth was ok, but the password must expire right now */
@@ -685,24 +689,24 @@ static int winbind_auth_request(pam_handle_t * pamh,
 			       response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire,
 			       time(NULL));
 
-		PAM_WB_REMARK_DIRECT_RET(pamh, "NT_STATUS_PASSWORD_EXPIRED");
+		PAM_WB_REMARK_DIRECT_RET(pamh, ctrl, "NT_STATUS_PASSWORD_EXPIRED");
 
 	}
 
 	/* warn a user if the password is about to expire soon */
-	_pam_warn_password_expires_in_future(pamh, &response);
+	_pam_warn_password_expires_in_future(pamh, ctrl, &response);
 
 	/* inform about logon type */
 	if (PAM_WB_GRACE_LOGON(response.data.auth.info3.user_flgs)) {
 
-		_make_remark(pamh, PAM_ERROR_MSG, 
+		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
 			"Grace login. Please change your password as soon you're online again");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			"User %s logged on using grace logon\n", user);
 
 	} else if (PAM_WB_CACHED_LOGON(response.data.auth.info3.user_flgs)) {
 
-		_make_remark(pamh, PAM_ERROR_MSG, 
+		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
 			"Logging on using cached account. Network resources can be unavailable");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			"User %s logged on using cached account\n", user);
@@ -798,19 +802,19 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 		return ret;
 	}
 
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_BACKUP_CONTROLLER");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NO_LOGON_SERVERS");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCESS_DENIED");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_BACKUP_CONTROLLER");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_NO_LOGON_SERVERS");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCESS_DENIED");
 
 	/* TODO: tell the min pwd length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_TOO_SHORT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_PWD_TOO_SHORT");
 
 	/* TODO: tell the minage ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_TOO_RECENT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_PWD_TOO_RECENT");
 
 	/* TODO: tell the history length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_HISTORY_CONFLICT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_PWD_HISTORY_CONFLICT");
 
 	if (!strcasecmp(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION")) {
 
@@ -823,17 +827,17 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 			case REJECT_REASON_OTHER:
 				if ((response.data.auth.policy.min_passwordage > 0) &&
 				    (pwd_last_set + response.data.auth.policy.min_passwordage > time(NULL))) {
-					PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_TOO_RECENT");
+					PAM_WB_REMARK_DIRECT(pamh, ctrl, "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
 			case REJECT_REASON_TOO_SHORT:
-				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_TOO_SHORT");
+				PAM_WB_REMARK_DIRECT(pamh, ctrl, "NT_STATUS_PWD_TOO_SHORT");
 				break;
 			case REJECT_REASON_IN_HISTORY:
-				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_HISTORY_CONFLICT");
+				PAM_WB_REMARK_DIRECT(pamh, ctrl, "NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
 			case REJECT_REASON_NOT_COMPLEX:
-				_make_remark(pamh, PAM_ERROR_MSG, "Password does not meet complexity requirements");
+				_make_remark(pamh, ctrl, PAM_ERROR_MSG, "Password does not meet complexity requirements");
 				break;
 			default:
 				_pam_log_debug(pamh, ctrl, LOG_DEBUG,
@@ -844,7 +848,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 
 		pwd_restriction_string = _pam_compose_pwd_restriction_string(&response);
 		if (pwd_restriction_string) {
-			_make_remark(pamh, PAM_ERROR_MSG, pwd_restriction_string);
+			_make_remark(pamh, ctrl, PAM_ERROR_MSG, pwd_restriction_string);
 			SAFE_FREE(pwd_restriction_string);
 		}
 	}
@@ -965,7 +969,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 
 		/* prepare to converse */
 
-		if (comment != NULL) {
+		if (comment != NULL && off(ctrl, WINBIND_SILENT)) {
 			pmsg[0] = &msg[0];
 			msg[0].msg_style = PAM_TEXT_INFO;
 			msg[0].msg = CONST_DISCARD(char *, comment);
@@ -1003,7 +1007,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 						    || strcmp(token, resp[i - 1].resp)) {
 							_pam_delete(token);	/* mistyped */
 							retval = PAM_AUTHTOK_RECOVER_ERR;
-							_make_remark(pamh, PAM_ERROR_MSG, MISTYPED_PASS);
+							_make_remark(pamh, ctrl, PAM_ERROR_MSG, MISTYPED_PASS);
 						}
 					}
 				} else {
@@ -1553,13 +1557,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 				iniparser_freedict(d);
 			}
 			/* Deal with offline errors. */
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_NO_LOGON_SERVERS");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_ACCESS_DENIED");
 			return ret;
@@ -1660,13 +1664,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 				iniparser_freedict(d);
 			}
 			/* Deal with offline errors. */
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_NO_LOGON_SERVERS");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
 						response,
 						"NT_STATUS_ACCESS_DENIED");
 			return ret;
