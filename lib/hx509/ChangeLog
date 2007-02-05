@@ -1,5 +1,8 @@
 2007-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: Disable CRLDistributionPoints for now, its IMPLICIT code
+	in the asn1 parser.
+
 	* print.c: Add some more \n's.
 	
 2007-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
