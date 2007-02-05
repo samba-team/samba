@@ -2669,40 +2669,6 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 	</sect2>
 
 	<sect2>
-	<title>Users Being Added to the Wrong Backend Database</title>
-
-	<para>
-	A few complaints have been received from users who just moved to Samba-3. The following
-	&smb.conf; file entries were causing problems: new accounts were being added to the old
-	smbpasswd file, not to the tdbsam passdb.tdb file:
-	</para>
-
-	<para>
-	<smbconfblock>
-	<smbconfsection name="[global]"/>
-	<member>...</member>
-	<smbconfoption name="passdb backend">smbpasswd, tdbsam</smbconfoption>
-	<member>...</member>
-	</smbconfblock>
-	</para>
-
-	<para>
-	Samba will add new accounts to the first entry in the <emphasis>passdb backend</emphasis>
-	parameter entry. If you want to update to the tdbsam, then change the entry to:
-	</para>
-
-	<para>
-<smbconfblock>
-[globals]
-...
-<smbconfoption name="passdb backend">tdbsam, smbpasswd</smbconfoption>
-...
-</smbconfblock>
-	</para>
-
-	</sect2>
-
-	<sect2>
 	<title>Configuration of <parameter>auth methods</parameter></title>
 
 	<para>
