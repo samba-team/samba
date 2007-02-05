@@ -1091,22 +1091,22 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl, response, "NT_STATUS_ACCESS_DENIED");
 	}
 
-	/* warn a user if the password is about to expire soon */
-	_pam_warn_password_expiry(pamh, ctrl, &response, &already_expired);
-	
-	if (already_expired == True) {
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Password has expired "
-			       "(Password was last set: %d, the policy says "
-			       "it should expire here %d (now it's: %d)\n",
-			       response.data.auth.info3.pass_last_set_time, 
-			       response.data.auth.info3.pass_last_set_time +
-			       response.data.auth.policy.expire,
-			       time(NULL));
-
-		return PAM_AUTHTOK_EXPIRED;
-	}
-
 	if (ret == PAM_SUCCESS) {
+
+		/* warn a user if the password is about to expire soon */
+		_pam_warn_password_expiry(pamh, ctrl, &response, &already_expired);
+
+		if (already_expired == True) {
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Password has expired "
+				       "(Password was last set: %d, the policy says "
+				       "it should expire here %d (now it's: %d))\n",
+				       response.data.auth.info3.pass_last_set_time, 
+				       response.data.auth.info3.pass_last_set_time +
+				       response.data.auth.policy.expire,
+				       time(NULL));
+
+			return PAM_AUTHTOK_EXPIRED;
+		}
 
 		/* inform about logon type */
 		_pam_warn_logon_type(pamh, ctrl, user, response.data.auth.info3.user_flgs);
