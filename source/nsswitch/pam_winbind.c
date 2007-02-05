@@ -1813,6 +1813,10 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	
 	int retry = 0;
 	dictionary *d = NULL;
+	char *username_ret = NULL;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(response);
 
 	ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
@@ -1862,7 +1866,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	 */
 
 	if (flags & PAM_PRELIM_CHECK) {
-		struct winbindd_response response;
 		time_t pwdlastset_prelim = 0;
 		
 		/* instruct user what is happening */
@@ -1901,20 +1904,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		    ret != PAM_NEW_AUTHTOK_REQD &&
 		    ret != PAM_SUCCESS) {
 			pass_old = NULL;
-			if (d) {
-				iniparser_freedict(d);
-			}
-			/* Deal with offline errors. */
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_NO_LOGON_SERVERS");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_ACCESS_DENIED");
-			return ret;
+			goto out;
 		}
 		
 		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, NULL);
@@ -1998,30 +1988,32 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		/* just in case we need krb5 creds after a password change over msrpc */
 
 		if (ctrl & WINBIND_KRB5_AUTH) {
-			struct winbindd_response response;
 
 			const char *member = get_member_from_config(pamh, argc, argv, ctrl, d);
 			const char *cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
 
 			ret = winbind_auth_request(pamh, ctrl, user, pass_new,
-							member, cctype, &response, NULL, NULL);
+							member, cctype, &response, NULL, &username_ret);
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
-			if (d) {
-				iniparser_freedict(d);
+
+			if (ret == PAM_SUCCESS) {
+			
+				/* set some info3 info for other modules in the stack */
+				_pam_set_data_info3(pamh, ctrl, &response);
+
+				/* put krb5ccname into env */
+				_pam_setup_krb5_env(pamh, ctrl, response.data.auth.krb5ccname);
+
+				if (username_ret) {
+					pam_set_item (pamh, PAM_USER, username_ret);
+					_pam_log_debug(pamh, ctrl, LOG_INFO, "Returned user was '%s'", username_ret);
+					free(username_ret);
+				}
 			}
-			/* Deal with offline errors. */
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_NO_LOGON_SERVERS");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, ctrl,
-						response,
-						"NT_STATUS_ACCESS_DENIED");
-			return ret;
+
+			goto out;
 		}
 	} else {
 		ret = PAM_SERVICE_ERR;
@@ -2031,6 +2023,11 @@ out:
 	if (d) {
 		iniparser_freedict(d);
 	}
+
+	/* Deal with offline errors. */
+	PAM_WB_REMARK_CHECK_RESPONSE(pamh, ctrl, response, "NT_STATUS_NO_LOGON_SERVERS");
+	PAM_WB_REMARK_CHECK_RESPONSE(pamh, ctrl, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+	PAM_WB_REMARK_CHECK_RESPONSE(pamh, ctrl, response, "NT_STATUS_ACCESS_DENIED");
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_chauthtok", pamh, ctrl, ret);
 	
