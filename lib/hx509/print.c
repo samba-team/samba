@@ -376,11 +376,11 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 				       &dp, &size);
     if (ret) {
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
-		       "Decoding CRL Distribution Points failed: %d", ret);
+		       "Decoding CRL Distribution Points failed: %d\n", ret);
 	return 1;
     }
 
-    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "CRL Distribution Points:");
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "CRL Distribution Points:\n");
     for (i = 0 ; i < dp.len; i++) {
 	if (dp.val[i].distributionPoint) {
 	    switch (dp.val[i].distributionPoint->element) {
