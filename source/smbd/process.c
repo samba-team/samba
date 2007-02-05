@@ -973,7 +973,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 			/* Does it need write permission? */
 			if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
-				return(ERROR_DOS(ERRSRV,ERRaccess));
+				return ERROR_NT(NT_STATUS_MEDIA_WRITE_PROTECTED);
 			}
 
 			/* IPC services are limited */
