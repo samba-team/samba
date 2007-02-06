@@ -507,6 +507,21 @@ Offset Size         Name
    (NB statfs field flags can come from FILE_SYSTEM_DEVICE_INFO call)  
 */
 
+#define SMB_QUERY_POSIX_WHO_AM_I  0x202 /* QFS Info */
+/* returns:
+        __u32 flags;  0 = Authenticated user 1 = GUEST 
+        __u32 mask;  which flags bits server understands ie 0x0001 
+        __u64 unix_user_id;
+        __u64 unix_user_gid;
+        __u32 number_of_supplementary_gids;  may be zero 
+        __u32 number_of_sids;  may be zero
+        __u32 length_of_sid_array;  in bytes - may be zero 
+        __u32 pad;  reserved - MBZ 
+        __u64 gid_array[0];  may be empty 
+        __u8 * psid_list  may be empty
+*/
+
+
 /* ... more as we think of them :-). */
 
 /* SMB POSIX ACL definitions. */
