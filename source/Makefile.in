@@ -188,7 +188,7 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 ######################################################################
 
 TDBBASE_OBJ = tdb/common/tdb.o tdb/common/dump.o tdb/common/error.o \
-	tdb/common/freelist.o tdb/common/io.o tdb/common/lock.o \
+	tdb/common/freelist.o tdb/common/freelistcheck.o tdb/common/io.o tdb/common/lock.o \
 	tdb/common/open.o tdb/common/transaction.o tdb/common/traverse.o
 
 TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o tdb/common/tdbback.o

@@ -855,7 +855,7 @@ static void wcache_save_lockout_policy(struct winbindd_domain *domain, NTSTATUS 
 }
 
 static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *policy)
-{
+ {
 	struct cache_entry *centry;
 
 	centry = centry_start(domain, status);
@@ -2592,6 +2592,267 @@ void set_global_winbindd_state_online(void)
 BOOL get_global_winbindd_state_offline(void)
 {
 	return global_winbindd_offline_state;
+}
+
+/***********************************************************************
+ Validate functions for all possible cache tdb keys.
+***********************************************************************/
+
+static int bad_cache_entry;
+
+static int validate_seqnum(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_ns(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_sn(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_u(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_loc_pol(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_pwd_pol(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_cred(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_ul(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_gl(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_ug(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_ua(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_gm(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_dr(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_de(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_trustdoms(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_offline(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+/***********************************************************************
+ A list of all possible cache tdb keys with associated validation
+ functions.
+***********************************************************************/
+
+struct key_val_struct {
+	const char *keyname;
+	int (*validate_data_fn)(TDB_DATA kbuf, TDB_DATA dbuf);
+} key_val[] = {
+	{"SEQNUM/", validate_seqnum},
+	{"NS/", validate_ns},
+	{"SN/", validate_sn},
+	{"U/", validate_u},
+	{"LOC_POL/", validate_loc_pol},
+	{"PWD_POL/", validate_pwd_pol},
+	{"CRED/", validate_cred},
+	{"UL/", validate_ul},
+	{"GL/", validate_gl},
+	{"UG/", validate_ug},
+	{"UA", validate_ua},
+	{"GM/", validate_gm},
+	{"DR/", validate_dr},
+	{"DE/", validate_de},
+	{"TRUSTDOMS/", validate_trustdoms},
+	{"WINBINDD_OFFLINE", validate_offline},
+	{NULL, NULL}
+};
+
+/***********************************************************************
+ Function to look at every entry in the tdb and validate it as far as
+ possible.
+***********************************************************************/
+
+static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	int i;
+
+	for (i = 0; key_val[i].keyname; i++) {
+		size_t namelen = strlen(key_val[i].keyname);
+		if (kbuf.dsize >= namelen && (
+				strncmp(key_val[i].keyname, kbuf.dptr, namelen)) == 0) {
+			return key_val[i].validate_data_fn(kbuf, dbuf);
+		}
+	}
+
+	DEBUG(0,("cache_traverse_validate_fn: unknown cache entry\nkey :\n"));
+	dump_data(0, kbuf.dptr, kbuf.dsize);
+	DEBUG(0,("data :\n"));
+	dump_data(0, dbuf.dptr, dbuf.dsize);
+	return 1; /* terminate. */
+}
+
+/* Handle any signals generated when validating a possibly
+   bad cache tdb. */
+
+static jmp_buf jmpbuf;
+
+#ifdef SIGSEGV
+static void sig_segv(int sig)
+{
+	longjmp(jmpbuf, SIGSEGV);
+}
+#endif
+
+#ifdef SIGBUS
+static void sig_bus(int sig)
+{
+	longjmp(jmpbuf, SIGBUS);
+}
+#endif
+
+#ifdef SIGABRT
+static void sig_abrt(int sig)
+{
+	longjmp(jmpbuf, SIGABRT);
+}
+#endif
+
+/***********************************************************************
+ Try and validate every entry in the winbindd cache. If we fail here,
+ delete the cache tdb and return non-zero - the caller (main winbindd
+ function) will restart us as we don't know if we crashed or not.
+***********************************************************************/
+
+int winbindd_validate_cache(void)
+{
+	BOOL ret = -1;
+	int fd = -1;
+	int num_entries = 0;
+	TDB_CONTEXT *tdb = NULL;
+	const char *cache_path = lock_path("winbindd_cache.tdb");
+
+#ifdef SIGSEGV
+	void (*old_segv_handler)(int) = CatchSignal(SIGSEGV,SIGNAL_CAST sig_segv);
+#endif
+#ifdef SIGBUS
+	void (*old_bus_handler)(int) = CatchSignal(SIGBUS,SIGNAL_CAST sig_bus);
+#endif
+#ifdef SIGABRT
+	void (*old_abrt_handler)(int) = CatchSignal(SIGABRT,SIGNAL_CAST sig_abrt);
+#endif
+
+	switch((ret = setjmp(jmpbuf))) {
+		case 0:
+			ret = -1;
+			break;
+		case SIGSEGV:
+		case SIGBUS:
+		case SIGABRT:
+		default:
+			goto out;
+	}
+
+	tdb = tdb_open_log(cache_path,
+			WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+			lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST),
+			O_RDWR|O_CREAT, 0600);
+	if (!tdb) {
+		goto out;
+	}
+
+	fd = tdb_fd(tdb);
+
+	/* Check the cache freelist is good. */
+	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
+		DEBUG(0,("winbindd_validate_cache: bad freelist in cache %s\n",
+			cache_path));
+		goto out;
+	}
+
+	DEBUG(10,("winbindd_validate_cache: cache %s freelist has %d entries\n",
+		cache_path, num_entries));
+
+	/* Now traverse the cache to validate it. */
+	num_entries = tdb_traverse(tdb, cache_traverse_validate_fn, NULL);
+	if (num_entries == -1 || bad_cache_entry) {
+		DEBUG(0,("winbindd_validate_cache: cache %s traverse failed\n",
+			cache_path));
+		goto out;
+	}
+
+	DEBUG(10,("winbindd_validate_cache: cache %s is good "
+		"with %d entries\n", cache_path, num_entries));
+	ret = 0; /* Cache is good. */
+
+  out:
+
+	/* Ensure if we segv on exit we use the original
+	   handlers to avoid a loop. */
+
+#ifdef SIGSEGV
+	CatchSignal(SIGSEGV,SIGNAL_CAST old_segv_handler);
+#endif
+#ifdef SIGBUS
+	CatchSignal(SIGBUS,SIGNAL_CAST old_bus_handler);
+#endif
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST old_abrt_handler);
+#endif
+
+	if (tdb) {
+		if (ret == 0) {
+			tdb_close(tdb);
+		} else if (fd != -1) {
+			close(fd);
+		}
+	}
+
+	if (ret) {
+		unlink(cache_path);
+	}
+
+	return ret;
 }
 
 /* the cache backend methods are exposed via this structure */
