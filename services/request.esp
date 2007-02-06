@@ -322,7 +322,7 @@ scriptTransportId = jsonrpc.Constant.ScriptTransport.NotInUse;
 
 /* What type of request did we receive? */
 if (request["REQUEST_METHOD"] == "POST" &&
-    request["CONTENT_TYPE"] == "text/json")
+    request["CONTENT_TYPE"] == "application/json")
 {
     /* We found literal POSTed json-rpc data (we hope) */
     input = request["POST_DATA"];
