@@ -1,0 +1,7 @@
+window.application.main\s*\=\s*function\(\)[^\0]*?\{\s* = qx.core.Init.getInstance().defineMain(function() {\n
+
+\}\;[\n\s]*<\/script> = });</script>
+
+#this\.getClientWindow\(\)\.getClientDocument\(\) = qx.ui.core.ClientDocument.getInstance()
+
+#this\.add = qx.ui.core.ClientDocument.getInstance().add

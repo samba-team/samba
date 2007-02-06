@@ -1,0 +1,2 @@
+\bqx\.client\.NativeWindow\b=NativeWindow now also supports "load" and "close" events.
+

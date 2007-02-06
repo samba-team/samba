@@ -1,0 +1,106 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for the qx.ui.popup.Popup widget. qx.ui.popup.Popups are planned as the source constructor for tooltips, menus, ...</p>
+    <p>There is also a qx.manager.object.PopupManager which hides all registered qx.ui.popup.Popup instances which are configured to auto hide.
+    This is a nice method to omit to show more than one qx.ui.popup.Popup together (omit multiple QxTooltips, ...).</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+
+    var w1 = new qx.ui.form.Button("Press");
+    with(w1)
+    {
+      setTop(48);
+      setLeft(20);
+      setBackgroundColor(new qx.renderer.color.Color("#BDD2EF"));
+      setWidth(100);
+      setHeight(100);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+      setHorizontalAlign("center");
+    };
+    d.add(w1);
+
+
+    var w2 = new qx.ui.form.Button("Press");
+    with(w2)
+    {
+      setTop(48);
+      setLeft(140);
+      setBackgroundColor(new qx.renderer.color.Color("#D1DFAD"));
+      setWidth(100);
+      setHeight(100);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+      setHorizontalAlign("center");
+    };
+    d.add(w2);
+
+
+
+
+
+
+
+
+    var p1 = new qx.ui.popup.Popup;
+    d.add(p1);
+
+    var a1 = new qx.ui.basic.Atom("Hello World #1", "icon/16/apps/graphics-image-viewer.png");
+    p1.add(a1);
+
+    with(p1)
+    {
+      setBackgroundColor(new qx.renderer.color.Color("#FFFAD3"));
+      setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      setPadding(2, 4);
+    };
+
+    w1.addEventListener("click", function(e)
+    {
+      p1.setTop(e.getPageY() + 3);
+      p1.setLeft(e.getPageX() + 3);
+      p1.show();
+      p1.bringToFront();
+    });
+
+
+
+    var p2 = new qx.ui.popup.Popup;
+    d.add(p2);
+
+    var a2 = new qx.ui.basic.Atom("Hello World #2", "icon/32/apps/accessories-clock.png");
+    p2.add(a2);
+
+    with(p2)
+    {
+      setBackgroundColor(new qx.renderer.color.Color("#DFFAD3"));
+      setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      setPadding(2, 4);
+    };
+
+    w2.addEventListener("click", function(e)
+    {
+      p2.setTop(e.getPageY() + 3);
+      p2.setLeft(e.getPageX() + 3);
+      p2.show();
+      p2.bringToFront();
+    });
+  });
+  </script>
+</body>
+</html>

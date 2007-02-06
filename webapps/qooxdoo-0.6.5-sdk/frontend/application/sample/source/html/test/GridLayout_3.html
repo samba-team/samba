@@ -1,0 +1,82 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for qx.ui.layout.GridLayout.</p>
+    <p>Using auto dimensions for the grid.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var gl = new qx.ui.layout.GridLayout;
+    
+    gl.setLocation(20, 48);
+    gl.setDimension("auto", "auto");
+    gl.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    gl.setPadding(2, 4);
+    gl.setColumnCount(4);
+    gl.setRowCount(2);
+    gl.setHorizontalSpacing(4);
+    gl.setVerticalSpacing(8);
+    
+    gl.setColumnWidth(0, 100);
+    gl.setColumnWidth(1, 200);
+    gl.setColumnWidth(2, 50);
+    gl.setColumnWidth(3, 100);
+    
+    gl.setRowHeight(0, 40);
+    gl.setRowHeight(1, 80);
+
+    qx.ui.core.ClientDocument.getInstance().add(gl);
+    
+    
+    
+    
+    
+    var term1 = new qx.ui.basic.Terminator;
+    term1.setBackgroundColor("yellow");
+    gl.add(term1, 0, 0);
+    
+    var term2 = new qx.ui.basic.Terminator;
+    term2.setBackgroundColor("red");
+    gl.add(term2, 1, 0);
+    
+    var term3 = new qx.ui.basic.Terminator;
+    term3.setBackgroundColor("green");
+    gl.add(term3, 2, 0);
+
+    var term4 = new qx.ui.basic.Terminator;
+    term4.setBackgroundColor("blue");
+    gl.add(term4, 3, 0);
+
+    var term5 = new qx.ui.basic.Terminator;
+    term5.setBackgroundColor("fuchsia");
+    gl.add(term5, 0, 1);
+    
+    var term6 = new qx.ui.basic.Terminator;
+    term6.setBackgroundColor("olive");
+    gl.add(term6, 1, 1);
+    
+    var term7 = new qx.ui.basic.Terminator;
+    term7.setBackgroundColor("maroon");
+    gl.add(term7, 2, 1);
+    
+    var term8 = new qx.ui.basic.Terminator;
+    term8.setBackgroundColor("navy");
+    gl.add(term8, 3, 1);            
+  });
+  </script> 
+
+</body>
+</html>

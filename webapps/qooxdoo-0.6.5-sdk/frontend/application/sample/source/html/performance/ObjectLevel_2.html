@@ -1,0 +1,88 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing the influence of inheritance to object creation performance.</p>
+    <p>Don't execute superclass constructor.</p>
+    <p>Result: No negative effect!</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    function l1() {
+      this.store = true;
+    }
+
+    function l2() {
+    }
+    l2.prototype = new l1;
+
+    function l3() {
+    }
+    l3.prototype = new l2;
+
+    function l4() {
+    }
+    l4.prototype = new l3;
+
+    function l5() {
+    }
+    l5.prototype = new l4;
+
+    function l6() {
+    }
+    l6.prototype = new l5;
+
+
+    function t1(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l1;
+      }
+    }
+
+    function t2(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l2;
+      }
+    }
+
+    function t3(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l3;
+      }
+    }
+
+    function t4(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l4;
+      }
+    }
+
+    function t5(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l5;
+      }
+    }
+
+    function t6(vLoops) {
+      for (var i=0; i<vLoops; i++) {
+        new l6;
+      }
+    }
+
+    new qx.dev.TimeTracker(t1, t2, t3, t4, t5, t6);
+  });
+  </script>
+</body>
+</html>

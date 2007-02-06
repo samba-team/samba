@@ -1,0 +1,25 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function() {
+      new qx.util.GuiBuilder().buildFromUrl(qx.ui.core.ClientDocument.getInstance(), 'Builder_2.xml');
+    });
+  </script>
+  <div id="demoDescription">
+    <p>qx.util.GuiBuilder demo.</p>
+    <p>Build your web apps using qooxdooml.</p>
+    <p>XmlHttp Example</p>
+  </div>
+</body>
+</html>

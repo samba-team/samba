@@ -1,0 +1,54 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing auto dimension possibility of qx.ui.window.Window.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var w1 = new qx.ui.window.Window("First Window");
+    w1.getPane().setPadding(10);
+    w1.setLocation(100, 100);
+    w1.setWidth("auto");
+    w1.setHeight("auto");
+
+    d.add(w1);
+
+    var a1 = new qx.ui.basic.Atom("Welcome to your first own Window.<br/>Have fun!", "icon/32/actions/favorite-add.png");
+    a1.set({ top: 0, left: 100 });
+    w1.add(a1);
+
+    var chk1 = new qx.ui.form.CheckBox("Show Statusbar");
+    chk1.set({ top: 45, left: 0 });
+
+    chk1.addEventListener("changeChecked", function(e) {
+      w1.setShowStatusbar(e.getData());
+    });
+
+    var btn1 = new qx.ui.form.Button("Yes", "icon/16/actions/dialog-ok.png");
+    btn1.set({ top: 70, left : 0 });
+
+    var btn2 = new qx.ui.form.Button("No", "icon/16/actions/dialog-cancel.png");
+    btn2.set({ top: 70, right : 0 });
+
+    w1.add(chk1, btn1, btn2);
+
+    w1.open();
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+***
+*** SAMBA CHANGES:
+***
+***  All icon directories other than the default, Nuvola, have been removed
+***  to save space.
+***
+***  Derrell
+***
+*** The remainder of this file is qooxdoo-original...
+
+Information On Available Icon Themes
+====================================
+
+Please make sure you read and understand the LICENSE file that is included in 
+each icon theme's directory.
+
+********************************************************************************
+
+ * Vista-Inspirate
+ 
+   Directory: 
+     VistaInspirate
+   Author:
+     Alexandre Moore (alexandre DOT moore AT gmail DOT com)
+   License: 
+     GPL & LGPL/EPL
+   Home: 
+     http://www.kde-look.org/content/show.php?content=31585
+   Comment: 
+     Based on nuoveXT by the same author
+
+********************************************************************************
+
+ * nuoveXT
+ 
+   Directory:
+     NuoveXT
+   Author:
+     Alexandre Moore (alexandre DOT moore AT gmail DOT com)
+   License:
+     GPL & LGPL/EPL
+   Home:
+     http://www.kde-look.org/content/show.php?content=26449
+
+********************************************************************************
+
+ * Crystal Clear
+ 
+   Directory:
+     CrystalClear
+   Author:
+     Everaldo (everaldo AT everaldo DOT com)
+   License:
+     LGPL
+   Home:
+     http://www.kde-look.org/content/show.php?content=25668
+
+********************************************************************************
+
+ * Nuvola
+
+   Directory:
+     Nuvola
+   Author: 
+     David Vignoni (david AT icon-king DOT com)
+   License:
+     LGPL
+   Home:
+     http://www.kde-look.org/content/show.php?content=5358
+
+********************************************************************************
+     

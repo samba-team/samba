@@ -1,0 +1,63 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing qx.renderer.font.Font object for QxLabels inside QxAtoms.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var f1 = new qx.ui.layout.CanvasLayout;
+   
+    var a1 = new qx.ui.basic.Atom("Hello World");
+    
+    var b1 = new qx.ui.form.Button("Serif, 16px");
+    var b2 = new qx.ui.form.Button("Serif, 24px");
+    var b3 = new qx.ui.form.Button("Sans Serif, 16px");
+    var b4 = new qx.ui.form.Button("Sans Serif, 24px");
+    
+    b1.addEventListener("execute", function() {
+      a1.getLabelObject().setFont("16px serif");
+    });
+    
+    b2.addEventListener("execute", function() {
+      a1.getLabelObject().setFont("24px serif");
+    });
+
+    b3.addEventListener("execute", function() {
+      a1.getLabelObject().setFont("16px sans-serif");
+    });
+
+    b4.addEventListener("execute", function() {
+      a1.getLabelObject().setFont("24px sans-serif");
+    });
+
+    f1.setDimension("auto", "auto");
+    f1.setLocation(20, 48);
+    f1.setBorder("1px solid red");
+    
+    a1.setLocation(0, 0);
+    a1.getLabelObject().setFont("16px serif");
+    
+    b1.setLocation(200, 48);
+    b2.setLocation(200, 78);
+    b3.setLocation(200, 108);
+    b4.setLocation(200, 138);
+    
+    f1.add(a1);
+    qx.ui.core.ClientDocument.getInstance().add(f1, b1, b2, b3, b4);    
+  });
+  </script>
+</body>
+</html>

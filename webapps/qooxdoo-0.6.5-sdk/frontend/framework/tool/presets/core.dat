@@ -1,0 +1,12 @@
+###########################################################################
+#
+# Generates a compiled qooxdoo core JavaScript file
+#
+###########################################################################
+
+class-path = framework/source/class
+cache-directory = framework/.cache
+include = core
+generate-compiled-script
+compiled-script-file = core.js
+optimize-strings

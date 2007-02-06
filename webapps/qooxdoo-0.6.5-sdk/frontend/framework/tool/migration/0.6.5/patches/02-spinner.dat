@@ -1,0 +1,8 @@
+\bqx\.setComputedIncrementAmount\b=.setIncrementAmount
+\bqx\.getComputedIncrementAmount\b=.getIncrementAmount
+
+\bqx\.setWheelComputedIncrementAmount\b=.setWheelIncrementAmount
+\bqx\.getWheelComputedIncrementAmount\b=.getWheelIncrementAmount
+
+\bqx\.setPageComputedIncrementAmount\b=.setPageIncrementAmount
+\bqx\.getPageComputedIncrementAmount\b=.getPageIncrementAmount

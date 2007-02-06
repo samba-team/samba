@@ -1,0 +1,153 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for qx.ui.groupbox.CheckGroupBox</p>
+  </div>
+
+  <fieldset style="position:absolute; top:48px; left:400px; width:200px; height:100px"><legend>builtin</legend>content content content content content content content content content content content content content content content</fieldset>
+
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var fs = new qx.ui.groupbox.CheckGroupBox("CheckBox FieldSet");
+
+      with(fs)
+      {
+        setWidth("40%");
+        setBottom(48);
+        setTop(48);
+        setLeft(20);
+
+        setMaxWidth(350);
+        setMinWidth("auto");
+      };
+
+      d.add(fs);
+
+
+
+
+      var fsl = new qx.ui.layout.VerticalBoxLayout;
+      fsl.setLeft(0);
+      fsl.setRight(0);
+      fsl.setHeight("auto");
+      fsl.setSpacing(4);
+      fs.add(fsl);
+
+
+
+
+      var r1 = new qx.ui.layout.HorizontalBoxLayout;
+      r1.setLeft(0);
+      r1.setWidth("100%");
+      r1.setHeight("auto");
+      r1.setVerticalChildrenAlign("middle");
+      fsl.add(r1);
+
+      var a1 = new qx.ui.basic.Atom("TextField 1");
+      with(a1)
+      {
+        setLeft(0);
+        setWidth("40%");
+        setHorizontalChildrenAlign("left");
+      };
+
+      var i1 = new qx.ui.form.TextField;
+      with(i1)
+      {
+        setRight(0);
+        setWidth("60%");
+      };
+
+      r1.add(a1, i1);
+
+
+
+
+
+      var r2 = new qx.ui.layout.HorizontalBoxLayout;
+      r2.setLeft(0);
+      r2.setWidth("100%");
+      r2.setHeight("auto");
+      r2.setVerticalChildrenAlign("middle");
+      fsl.add(r2);
+
+      var a2 = new qx.ui.basic.Atom("TextField 2", "icon/16/apps/preferences-desktop-wallpaper.png");
+      with(a2)
+      {
+        setLeft(0);
+        setWidth("40%");
+        setHorizontalChildrenAlign("left");
+      };
+
+      var i2 = new qx.ui.form.TextField;
+      with(i2)
+      {
+        setRight(0);
+        setWidth("60%");
+      };
+
+      r2.add(a2, i2);
+
+
+
+
+
+
+      var r3 = new qx.ui.layout.HorizontalBoxLayout;
+      r3.setLeft(0);
+      r3.setWidth("100%");
+      r3.setHeight("auto");
+      r3.setVerticalChildrenAlign("middle");
+      fsl.add(r3);
+
+      var a3 = new qx.ui.basic.Atom("TextField 3");
+      with(a3)
+      {
+        setLeft(0);
+        setWidth("40%");
+        setHorizontalChildrenAlign("left");
+      };
+
+      var i3 = new qx.ui.form.TextField;
+      with(i3)
+      {
+        setRight(0);
+        setWidth("60%");
+      };
+
+      r3.add(a3, i3);
+
+
+
+
+
+      fs.getLegendObject().addEventListener("changeChecked", function(e) {
+        i1.setEnabled(e.getData());
+        i2.setEnabled(e.getData());
+        i3.setEnabled(e.getData());
+
+        a1.setEnabled(e.getData());
+        a2.setEnabled(e.getData());
+        a3.setEnabled(e.getData());
+      });
+
+
+    });
+  </script>
+</body>
+</html>

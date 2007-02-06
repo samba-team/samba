@@ -1,0 +1,91 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test widget cloning.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+  
+    var c1 = new qx.ui.layout.CanvasLayout;
+
+    with(c1)
+    {
+      setWidth(200);
+
+      setTop(48);
+      setLeft(20);
+
+      setHeight(100);
+      setBackgroundColor("orange");
+    };
+    
+    d.add(c1);    
+    
+
+    var c2 = c1.clone();
+    
+    with(c2)
+    {
+      setLeft(30);
+      setTop(58);
+
+    setBackgroundColor("green");
+    };
+    d.add(c2);
+    
+    var c3 = c2.clone(false, ["top","left","width","height"]);
+    
+    with(c3)
+    {
+    setLeft(40);
+    setTop(68);
+      
+    setBackgroundColor("blue");
+    };
+    d.add(c3);
+    
+    
+    
+    
+
+    var a1 = new qx.ui.basic.Atom("First Atom", "icon/48/apps/accessories-clock.png");
+    
+    with(a1)
+    {
+      setTop(200);
+      setLeft(20);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+      
+      setPadding(5);
+    };
+    
+    d.add(a1);
+    
+    
+    
+    var a2 = a1.clone(true);
+    
+    with(a2)
+    {
+      setLeft(200);      
+    };
+    
+    
+  });
+  </script>
+</body>
+</html>

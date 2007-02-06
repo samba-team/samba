@@ -1,0 +1,227 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Introduce qx.ui.menu.Menu which opens on qx.ui.toolbar.ToolBarMenuButtons.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var tb = new qx.ui.toolbar.ToolBar;
+      with(tb)
+      {
+        setTop(48);
+        setLeft(20);
+        setRight(335);
+      };
+
+      var m1 = new qx.ui.menu.Menu;
+
+      var mb1 = new qx.ui.menu.Button("Folder");
+      var ms1 = new qx.ui.menu.Separator;
+      var mb2 = new qx.ui.menu.Button("Word Document");
+      var mb3 = new qx.ui.menu.Button("Text File");
+      var mb4 = new qx.ui.menu.Button("Image");
+
+      m1.add(mb1, ms1, mb2, mb3, mb4);
+      d.add(m1);
+
+
+      var m2 = new qx.ui.menu.Menu;
+
+      var mb5 = new qx.ui.menu.Button("Copy", "icon/16/actions/edit-copy.png");
+      var mb6 = new qx.ui.menu.Button("Move", "icon/16/actions/edit-cut.png");
+      var mb7 = new qx.ui.menu.Button("Delete", "icon/16/actions/edit-delete.png");
+
+      m2.add(mb5, mb6, mb7);
+      d.add(m2);
+
+
+
+
+      var btns1 = [
+        { type : "menu", icon : "actions/document-new", label : "New", menu : m1 },
+        { type : "menu", icon : "apps/accessories-text-editor", label : "Edit", menu : m2 }
+      ];
+
+      var btns2 = [
+        { type : "button", icon : "actions/go-up", label : "Upload" },
+        { type : "button", icon : "actions/go-down", label : "Download" }
+      ];
+
+      var btns3 = [
+        { type : "button", icon : "apps/accessories-tip", label : "Tip" },
+        { type : "button", icon : "actions/help-faq", label : "Help" }
+      ];
+
+      var bars = [ btns1, btns2, btns3 ];
+
+      function changeLayout(e) {
+        this.setShow(e.getData());
+      };
+
+      var useParts = true;
+
+
+      for (var j=0; j<bars.length; j++)
+      {
+        var btns = bars[j];
+
+        if (useParts) {
+          var tbp = new qx.ui.toolbar.Part;
+        };
+
+        for (var i=0; i<btns.length; i++)
+        {
+          var btn = btns[i];
+
+          switch(btn.type)
+          {
+            case "separator":
+              var o = new qx.ui.toolbar.Separator;
+              break;
+
+            case "menu":
+              var o = new qx.ui.toolbar.MenuButton(btn.label, btn.menu, "icon/22/" + btn.icon + ".png", 22, 22);
+
+              // beautiful decoupling: toolbar buttons don't know about radio boxes
+
+              // uncomment this to omit changes on one button
+              // if (btn.icon != "upload")
+              d.addEventListener("changeLayout", changeLayout, o );
+              break;
+
+            case "button":
+              var o = new qx.ui.toolbar.Button(btn.label, "icon/22/" + btn.icon + ".png");
+
+              // beautiful decoupling: toolbar buttons don't know about radio boxes
+
+              // uncomment this to omit changes on one button
+              // if (btn.icon != "upload")
+              d.addEventListener("changeLayout", changeLayout, o );
+              break;
+          };
+
+          if (useParts)
+          {
+            tbp.add(o);
+          }
+          else
+          {
+            tb.add(o);
+          };
+        };
+
+        if (useParts) {
+          tb.add(tbp);
+        };
+      };
+
+      d.add(tb);
+
+
+      var rd1 = new qx.ui.form.RadioButton("Show Icons and Label", "both");
+      var rd2 = new qx.ui.form.RadioButton("Show Icons", "icon");
+      var rd3 = new qx.ui.form.RadioButton("Show Label", "label");
+
+      with(rd1)
+      {
+        setTop(140);
+        setLeft(20);
+        setChecked(true);
+      };
+
+      with(rd2)
+      {
+        setTop(160);
+        setLeft(20);
+      };
+
+      with(rd3)
+      {
+        setTop(180);
+        setLeft(20);
+      };
+
+
+      var rbm = new qx.manager.selection.RadioManager();
+
+      rbm.add(rd1);
+      rbm.add(rd2);
+      rbm.add(rd3);
+
+
+      // beautiful decoupling: radio boxes don't know about toolbar buttons
+      rbm.addEventListener("changeSelected", function(e) {
+        d.dispatchEvent( new qx.event.type.DataEvent("changeLayout", e.getData().getValue() ) );
+      });
+
+      d.add(rd1, rd2, rd3);
+
+
+
+
+
+      // Alignment
+      var ra1 = new qx.ui.form.RadioButton("Left Aligned", "left");
+      var ra2 = new qx.ui.form.RadioButton("Centered", "center");
+      var ra3 = new qx.ui.form.RadioButton("Right Aligned", "right");
+
+      with(ra1)
+      {
+        setTop(140);
+        setLeft(220);
+        setChecked(true);
+      };
+
+      with(ra2)
+      {
+        setTop(160);
+        setLeft(220);
+      };
+
+      with(ra3)
+      {
+        setTop(180);
+        setLeft(220);
+      };
+
+
+      var ram = new qx.manager.selection.RadioManager();
+
+      ram.add(ra1);
+      ram.add(ra2);
+      ram.add(ra3);
+
+      d.add(ra1, ra2, ra3);
+
+      ram.addEventListener("changeSelected", function(e) {
+        tb.setHorizontalChildrenAlign(e.getData().getValue());
+      });
+
+
+
+
+
+
+
+      // Icon & Color Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 20, 248);
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 220, 248);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Introducing qx.ui.groupbox.GroupBox.</p>
+  </div>
+
+  <fieldset style="position:absolute; top:48px; left:400px; width:200px; height:100px"><legend>builtin</legend>content content content content content content content content content content content content content content content</fieldset>
+
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var fs = new qx.ui.groupbox.GroupBox("My first Fieldset");
+
+      with(fs)
+      {
+        setWidth("40%");
+        setBottom(48);
+        setTop(48);
+        setLeft(20);
+
+        setMaxWidth(350);
+        setMinWidth(250);
+      };
+
+
+
+      var a1 = new qx.ui.basic.Atom("TextField 1");
+      with(a1)
+      {
+        setTop(3);
+        setLeft(0);
+        setWidth("35%");
+        setHorizontalChildrenAlign("left");
+      };
+
+      var i1 = new qx.ui.form.TextField();
+      with(i1)
+      {
+        setTop(0);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(a1, i1);
+
+
+
+      var a2 = new qx.ui.basic.Atom("TextField 2", "icon/16/apps/preferences-desktop-wallpaper.png");
+      with(a2)
+      {
+        setTop(33);
+        setLeft(0);
+        setWidth("35%");
+        setHorizontalChildrenAlign("left");
+      };
+      fs.add(a2);
+
+      var i2 = new qx.ui.form.TextField();
+      with(i2)
+      {
+        setTop(30);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(i2);
+
+
+
+      var a3 = new qx.ui.basic.Atom("TextField 3");
+      with(a3)
+      {
+        setTop(63);
+        setLeft(0);
+        setWidth("35%");
+        setHorizontalChildrenAlign("left");
+      };
+      fs.add(a3);
+
+      var i3 = new qx.ui.form.TextField();
+      with(i3)
+      {
+        setTop(60);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(i3);
+
+
+
+      d.add(fs);
+    });
+  </script>
+</body>
+</html>

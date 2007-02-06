@@ -1,0 +1,30 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for qx.ui.component.ColorSelector.</p>
+    <p>Adding a default/previous/old color value to compare it with the new selection.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var mycolor = new qx.ui.component.ColorSelector(130, 180, 100);
+
+    mycolor.setLocation(50, 50);
+
+    qx.ui.core.ClientDocument.getInstance().add(mycolor);
+  });
+  </script>
+</body>
+</html>

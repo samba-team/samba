@@ -1,0 +1,616 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var w1 = new qx.ui.layout.CanvasLayout;
+
+    w1.setWidth(100);
+    w1.setHeight(100);
+    w1.setLeft(100);
+    w1.setTop(100);
+    w1.setBackgroundColor(new qx.renderer.color.Color("red"));
+
+    d.add(w1);
+
+
+
+
+
+
+    var w2 = new qx.ui.layout.CanvasLayout;
+
+    w2.setWidth("25%");
+    w2.setHeight(100);
+    w2.setLeft(200);
+    w2.setTop(200);
+    w2.setBackgroundColor(new qx.renderer.color.Color("blue"));
+
+    d.add(w2);
+
+
+
+    var w3 = new qx.ui.layout.CanvasLayout;
+
+    w3.setRight(400);
+    w3.setHeight(100);
+    w3.setLeft(300);
+    w3.setTop(300);
+    w3.setBackgroundColor(new qx.renderer.color.Color("green"));
+
+    d.add(w3);
+
+
+
+
+
+    var w4 = new qx.ui.layout.CanvasLayout;
+
+    w4.setLeft(10);
+    w4.setRight(10);
+    w4.setTop(10);
+    w4.setBottom(10);
+    w4.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    w2.add(w4);
+
+
+
+
+
+    var w5 = new qx.ui.layout.CanvasLayout;
+
+    w5.setLeft(0);
+    w5.setTop(0);
+    w5.setWidth("50%");
+    w5.setHeight(50);
+    w5.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    w3.add(w5);
+
+
+
+
+    var w6 = new qx.ui.layout.CanvasLayout;
+
+    w6.setBottom(50);
+    w6.setLeft(350);
+    w6.setHeight("30%");
+    w6.setWidth(50);
+    w6.setBackgroundColor(new qx.renderer.color.Color("yellow"));
+    w6.setZIndex(100);
+    w6.setMinHeight(100);
+    w6.setMaxHeight(150);
+
+    d.add(w6);
+
+
+
+    var w7 = new qx.ui.layout.CanvasLayout;
+
+    w7.setTop(150);
+    w7.setLeft(20);
+    w7.setWidth(100);
+    w7.setHeight(100);
+    w7.setBackgroundColor(new qx.renderer.color.Color("aqua"));
+    w7.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+
+    d.add(w7);
+
+
+
+    var w8 = new qx.ui.layout.CanvasLayout;
+
+    w8.setTop(280);
+    w8.setLeft(20);
+    w8.setWidth("auto");
+    w8.setHeight("auto");
+    w8.setBackgroundColor(new qx.renderer.color.Color("fuchsia"));
+    w8.setBorder(new qx.renderer.border.Border(5, "solid", new qx.renderer.color.Color("black")));
+    w8.setPaddingTop(10);
+
+    //w8.getBorder().setLeftWidth(20);
+    //w8.getBorder().setLeftWidth(0);
+
+    // d.add(w8);
+
+
+    var w9 = new qx.ui.layout.CanvasLayout;
+
+    w9.setTop(0);
+    w9.getLeft(0);
+    w9.setWidth(40);
+    w9.setHeight(20);
+    w9.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    w8.add(w9);
+
+
+
+    var w10 = new qx.ui.layout.CanvasLayout;
+
+    w10.setTop(0);
+    w10.getLeft(0);
+    w10.setWidth(10);
+    w10.setHeight(50);
+    w10.setBackgroundColor(new qx.renderer.color.Color("red"));
+
+    w8.add(w10);
+
+    d.add(w8);
+
+
+
+
+
+
+    var w11 = new qx.ui.layout.CanvasLayout;
+
+    w11.setTop(200);
+    w11.setLeft(40);
+    w11.setWidth("auto");
+    w11.setHeight("auto");
+    w11.setBackgroundColor(new qx.renderer.color.Color("green"));
+    w11.setDisplay(false);
+    w11.setBorder(qx.renderer.border.BorderPresets.getInstance().white);
+    w11.setPaddingLeft(20);
+
+    d.add(w11);
+
+    w8.addEventListener("click", function(e) {
+      w11.toggleDisplay();
+    });
+
+
+    /*
+    w11.addEventListener("show", function(e) {
+      this.debug("Show W11");
+    });
+
+    w11.addEventListener("hide", function(e) {
+      this.debug("Hide W11");
+    });
+    */
+
+
+    var w12 = new qx.ui.basic.Image("icon/64/energy.png");
+    w11.add(w12);
+
+
+
+
+    var w12 = new qx.ui.basic.Image("icon/48/apps/accessories-clock.png");
+
+    w12.setTop(350);
+    w12.setLeft(20);
+
+    d.add(w12);
+
+
+    var w13 = new qx.ui.basic.Image("icon/48/apps/accessories-alarm.png");
+
+    w13.setTop(350);
+    w13.setLeft(80);
+
+    d.add(w13);
+
+
+
+
+
+    var w14 = new qx.ui.layout.CanvasLayout;
+
+    w14.setTop(400);
+    w14.setLeft(20);
+    w14.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    //w14.setWidth("auto");
+    w14.setMinWidth("auto");
+    w14.setWidth("30%");
+
+    w14.setHeight("auto");
+    w14.setPadding(10);
+    w14.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    d.add(w14);
+
+
+    var w15 = new qx.ui.basic.Image("icon/48/apps/accessories-clock.png");
+
+    w15.setTop(0);
+    w15.setLeft(20);
+
+    w14.add(w15);
+
+
+    var w16 = new qx.ui.basic.Image("icon/128/apps/accessories-date.png");
+
+    w16.setTop(20);
+    w16.setLeft(80);
+
+    w14.add(w16);
+
+
+    var w16a = new qx.ui.layout.CanvasLayout;
+
+    w16a.setMarginTop(160);
+    w16a.setBottom(20);
+    w16a.setRight(20);
+
+    w16a.setBackgroundColor(new qx.renderer.color.Color("yellow"));
+
+    w16a.setWidth(30);
+    w16a.setHeight(30);
+
+    w14.add(w16a);
+
+
+
+    w16a.addEventListener("click", function(e)
+    {
+      var v16Margin = w16a.getMarginTop() + 20;
+      if (v16Margin > 240) {
+        v16Margin = 100;
+      };
+
+      w16a.setMarginTop(v16Margin);
+    });
+
+
+
+
+    var w17_b1 = new qx.renderer.border.Border(5, "solid", new qx.renderer.color.Color("black"));
+    var w17_b2 = new qx.renderer.border.Border(10, "solid", new qx.renderer.color.Color("black"));
+
+    var w17_p1 = 10;
+    var w17_p2 = 5;
+
+    var w17 = new qx.ui.layout.CanvasLayout;
+
+    w17.setBackgroundColor(new qx.renderer.color.Color("orange"));
+    w17.setWidth(50);
+    w17.setHeight(50);
+    w17.setTop(50);
+    w17.setLeft(200);
+
+    w17.setBorder(w17_b1);
+    w17.setPadding(w17_p1);
+
+    d.add(w17);
+
+
+    w17.addEventListener("click", function(e)
+    {
+      if (w17.getBorder() == w17_b1)
+      {
+        w17.setBorder(w17_b2);
+        w17.setPadding(w17_p2);
+      }
+      else
+      {
+        w17.setBorder(w17_b1);
+        w17.setPadding(w17_p1);
+      };
+    });
+
+
+    var w18 = new qx.ui.layout.CanvasLayout;
+
+    w18.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w18.setWidth("100%");
+    w18.setHeight("100%");
+    w18.setLeft(0);
+    w18.setTop(0);
+
+    w17.add(w18);
+
+
+
+
+
+
+
+
+
+    var w19_b1 = new qx.renderer.border.Border(5, "solid", new qx.renderer.color.Color("black"));
+
+    var w19_p1 = 10;
+    var w19_p2 = 5;
+
+    var w19 = new qx.ui.layout.CanvasLayout;
+
+    w19.setBackgroundColor(new qx.renderer.color.Color("orange"));
+    w19.setWidth(50);
+    w19.setHeight(50);
+    w19.setTop(50);
+    w19.setLeft(270);
+
+    w19.setBorder(w19_b1);
+    w19.setPadding(w19_p1);
+
+    d.add(w19);
+
+
+    var _t22 = true;
+    w19.addEventListener("click", function(e)
+    {
+      if (_t22)
+      {
+        w19_b1.setWidth(10);
+        w19.setPadding(w19_p2);
+      }
+      else
+      {
+        w19_b1.setWidth(5);
+        w19.setPadding(w19_p1);
+      };
+
+      _t22 = !_t22;
+    });
+
+
+    var w20 = new qx.ui.layout.CanvasLayout;
+
+    w20.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w20.setWidth("100%");
+    w20.setHeight("100%");
+    w20.setLeft(0);
+    w20.setTop(0);
+
+    w19.add(w20);
+
+
+
+
+
+    var w21_b1 = new qx.renderer.border.Border(5, "solid", new qx.renderer.color.Color("black"));
+    var w21_b2 = new qx.renderer.border.Border(5, "solid", new qx.renderer.color.Color("blue"));
+
+    var w21 = new qx.ui.layout.CanvasLayout;
+
+    w21.setBackgroundColor(new qx.renderer.color.Color("orange"));
+    w21.setWidth(50);
+    w21.setHeight(50);
+    w21.setTop(50);
+    w21.setLeft(340);
+
+    w21.setBorder(w21_b1);
+    w21.setPadding(10);
+
+    d.add(w21);
+
+
+    w21.addEventListener("click", function(e)
+    {
+      if (w21.getBorder() == w21_b1)
+      {
+        w21.setBorder(w21_b2);
+      }
+      else
+      {
+        w21.setBorder(w21_b1);
+      };
+    });
+
+
+    var w22 = new qx.ui.layout.CanvasLayout;
+
+    w22.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w22.setWidth("100%");
+    w22.setHeight("100%");
+    w22.setLeft(0);
+    w22.setTop(0);
+
+    w21.add(w22);
+
+
+
+
+
+
+
+    var w23_b1 = new qx.renderer.border.BorderObject(5, "solid", new qx.renderer.color.Color("black"));
+
+    var w23 = new qx.ui.layout.CanvasLayout;
+
+    w23.setBackgroundColor(new qx.renderer.color.Color("orange"));
+    w23.setWidth(50);
+    w23.setHeight(50);
+    w23.setTop(50);
+    w23.setLeft(410);
+
+    w23.setBorder(w23_b1);
+    w23.setPadding(10);
+
+    d.add(w23);
+
+    w23.addEventListener("mouseover", function(e)
+    {
+      w23_b1.setColor(new qx.renderer.color.Color("blue"));
+      w23_b1.setStyle("dotted");
+    });
+
+    w23.addEventListener("mouseout", function(e)
+    {
+      w23_b1.setColor(new qx.renderer.color.Color("black"));
+      w23_b1.setStyle("solid");
+    });
+
+    var w24 = new qx.ui.layout.CanvasLayout;
+
+    w24.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w24.setWidth("100%");
+    w24.setHeight("100%");
+    w24.setLeft(0);
+    w24.setTop(0);
+    w24.setAnonymous(true);
+
+    w23.add(w24);
+
+
+
+
+
+
+    var w25_b1 = qx.renderer.border.BorderPresets.getInstance().outset;
+    var w25_b2 = qx.renderer.border.BorderPresets.getInstance().inset;
+
+    var w25_p1 = 10;
+    var w25_p2 = 5;
+
+    var w25 = new qx.ui.layout.CanvasLayout;
+
+    w25.setBackgroundColor(new qx.renderer.color.ColorObject("ThreeDFace"));
+    w25.setWidth(50);
+    w25.setHeight(50);
+    w25.setTop(50);
+    w25.setLeft(480);
+
+    w25.setBorder(w25_b1);
+    w25.setPadding(w25_p1);
+
+    d.add(w25);
+
+
+    w25.addEventListener("click", function(e)
+    {
+      if (w25.getBorder() == w25_b1)
+      {
+        w25.setBorder(w25_b2);
+        w25.setPadding(w25_p2);
+      }
+      else
+      {
+        w25.setBorder(w25_b1);
+        w25.setPadding(w25_p1);
+      };
+    });
+
+
+    var w26 = new qx.ui.layout.CanvasLayout;
+
+    w26.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w26.setWidth("100%");
+    w26.setHeight("100%");
+    w26.setLeft(0);
+    w26.setTop(0);
+
+    w25.add(w26);
+
+
+
+
+
+
+
+    var w27 = new qx.ui.layout.CanvasLayout;
+
+    w27.setBackgroundColor(new qx.renderer.color.ColorObject("ThreeDFace"));
+    w27.setWidth(50);
+    w27.setHeight(50);
+    w27.setTop(50);
+    w27.setLeft(550);
+
+    w27.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    w27.setPadding(10, 10, 10, 10);
+
+    d.add(w27);
+
+
+    w27.addEventListener("click", function(e)
+    {
+      if (w27.getBorder() == qx.renderer.border.BorderPresets.getInstance().outset)
+      {
+        w27.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+        w27.setPadding(12, 8, 8, 12);
+      }
+      else
+      {
+        w27.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+        w27.setPadding(10, 10, 10, 10);
+      };
+    });
+
+
+    var w28 = new qx.ui.layout.CanvasLayout;
+
+    w28.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w28.setWidth("100%");
+    w28.setHeight("100%");
+    w28.setLeft(0);
+    w28.setTop(0);
+
+    w27.add(w28);
+
+
+
+
+
+
+
+    var w29_b1 = qx.renderer.border.BorderPresets.getInstance().outset;
+    var w29_b2 = qx.renderer.border.BorderPresets.getInstance().inset;
+
+    var w29_p1 = 10;
+    var w29_p2 = 5;
+
+    var w29 = new qx.ui.layout.CanvasLayout;
+
+    w29.setBackgroundColor(new qx.renderer.color.ColorObject("ThreeDFace"));
+    w29.setWidth(50);
+    w29.setHeight(50);
+    w29.setTop(50);
+    w29.setLeft(620);
+
+    w29.setBorder(w29_b1);
+    w29.setPadding(w29_p1);
+
+    d.add(w29);
+
+
+    w29.addEventListener("click", function(e)
+    {
+      if (w29.getBorder() == w29_b1)
+      {
+        w29.setBorder(w29_b2);
+        w29.setPadding(w29_p2);
+      }
+      else
+      {
+        w29.setBorder(w29_b1);
+        w29.setPadding(w29_p1);
+      };
+    });
+
+
+    var w30 = new qx.ui.layout.CanvasLayout;
+
+    w30.setBackgroundColor(new qx.renderer.color.Color("white"));
+    w30.setLeft(0);
+    w30.setRight(0);
+    w30.setTop(0);
+    w30.setBottom(0);
+
+    w29.add(w30);
+
+
+  });
+  </script>
+</body>
+</html>
