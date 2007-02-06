@@ -1174,10 +1174,11 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	va_list ap2;
 	char c;
 	
-	va_copy(ap2, ap);
-
 	/* this call looks strange, but it makes it work on older solaris boxes */
-	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
+	va_copy(ap2, ap);
+	len = vsnprintf(&c, 1, fmt, ap2);
+	va_end(ap2);
+	if (len < 0) {
 		return NULL;
 	}
 
@@ -1185,6 +1186,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	if (ret) {
 		va_copy(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);
+		va_end(ap2);
 		_talloc_set_name_const(ret, ret);
 	}
 
@@ -1226,10 +1228,13 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 
 	tc = talloc_chunk_from_ptr(s);
 
-	va_copy(ap2, ap);
-
 	s_len = tc->size - 1;
-	if ((len = vsnprintf(&c, 1, fmt, ap2)) <= 0) {
+
+	va_copy(ap2, ap);
+	len = vsnprintf(&c, 1, fmt, ap2);
+	va_end(ap2);
+
+	if (len <= 0) {
 		/* Either the vsnprintf failed or the format resulted in
 		 * no characters being formatted. In the former case, we
 		 * ought to return NULL, in the latter we ought to return
@@ -1243,8 +1248,8 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	if (!s) return NULL;
 
 	va_copy(ap2, ap);
-
 	vsnprintf(s+s_len, len+1, fmt, ap2);
+	va_end(ap2);
 	_talloc_set_name_const(s, s);
 
 	return s;
