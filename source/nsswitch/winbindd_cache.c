@@ -1590,6 +1590,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->full_name = centry_string(centry, mem_ctx);
 	info->homedir = centry_string(centry, mem_ctx);
 	info->shell = centry_string(centry, mem_ctx);
+	info->primary_gid = centry_uint32(centry);
 	centry_sid(centry, mem_ctx, &info->user_sid);
 	centry_sid(centry, mem_ctx, &info->group_sid);
 	status = centry->status;
