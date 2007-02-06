@@ -20,6 +20,12 @@
 /* ************************************************************************
 
 #module(treevirtual)
+#embed(qx.icontheme/16/status/folder-open.png)
+#embed(qx.icontheme/16/places/folder.png)
+#embed(qx.icontheme/16/actions/document-open.png)
+#embed(qx.icontheme/16/actions/document-new.png)
+#embed(qx.widgettheme/tree/*)
+#embed(qx.static/blank.gif)
 
 ************************************************************************ */
 
@@ -49,22 +55,23 @@ qx.OO.addProperty({
                     getAlias     : "useTreeLines"
                   });
 
+/*
+ * When true, exclude only the first-level tree lines, creating, effectively,
+ * multiple unrelated root nodes.
+ */
+qx.OO.addProperty({
+                    name         : "excludeFirstLevelTreeLines",
+                    type         : "boolean",
+                    defaultValue : false
+                  });
+
+
 /**
  * Set whether the open/close button should be displayed on a branch, even if
  * the branch has no children.
  */
 qx.OO.addProperty({
                     name         : "alwaysShowOpenCloseSymbol",
-                    type         : "boolean",
-                    defaultValue : false
-                  });
-
-/**
- * When true, exclude only the first-level tree lines, creating, effectively,
- * multiple unrelated root nodes.
- */
-qx.OO.addProperty({
-                    name         : "jensLautenbacherMode",
                     type         : "boolean",
                     defaultValue : false
                   });
@@ -80,6 +87,7 @@ qx.Proto._getCellStyle = function(cellInfo)
   // Return the style for the div for the cell.  If there's cell-specific
   // style information provided, append it.
   var html =
+    cellInfo.style +
     qx.ui.treevirtual.SimpleTreeDataCellRenderer.MAIN_DIV_STYLE +
     (node.cellStyle ? node.cellStyle + ";" : "");
   return html;
@@ -135,7 +143,7 @@ qx.Proto._getContentHtml = function(cellInfo)
   // Generate the indentation.  Obtain icon determination values once rather
   // than each time through the loop.
   var bUseTreeLines = this.getUseTreeLines();
-  var bJensLautenbacherMode = this.getJensLautenbacherMode();
+  var bExcludeFirstLevelTreeLines = this.getExcludeFirstLevelTreeLines();
   var bAlwaysShowOpenCloseSymbol = this.getAlwaysShowOpenCloseSymbol();
 
   for (var i = 0; i < node.level; i++)
@@ -144,7 +152,7 @@ qx.Proto._getContentHtml = function(cellInfo)
                                      node,
                                      bUseTreeLines,
                                      bAlwaysShowOpenCloseSymbol,
-                                     bJensLautenbacherMode);
+                                     bExcludeFirstLevelTreeLines);
     html += addImage({
                        url         : imageUrl,
                        imageWidth  : 19,
@@ -188,15 +196,43 @@ qx.Proto._getContentHtml = function(cellInfo)
 };
 
 
+/**
+ * Determine the symbol to use for indentation of a tree row, at a particular
+ * column.  The indentation to use may be just white space or may be a tree
+ * line.  Tree lines come in numerous varieties, so the appropriate one is
+ * selected.
+ *
+ * @param column {Integer}
+ *   The column of indentation being requested, zero-relative
+ *
+ * @param node
+ *   The node being displayed in the row.  The properties of a node are
+ *   described in {@link qx.ui.treevirtual.SimpleTreeDataModel}
+ *
+ * @param bUseTreeLines {Boolean}
+ *   Whether to find an appropriate tree line icon, or simply provide white
+ *   space.
+ *
+ * @param bAlwaysShowOpenCloseSymbol {Boolean}
+ *   Whether to display the open/close icon for a node even if it has no
+ *   children.
+ *
+ * @param bExcludeFirstLevelTreeLines {Boolean}
+ *   If bUseTreeLines is enabled, then further filtering of the left-most tree
+ *   line may be specified here.  If <i>true</i> then the left-most tree line,
+ *   between top-level siblings, will not be displayed.  If <i>false</i>, then
+ *   the left-most tree line wiill be displayed just like all of the other
+ *   tree lines.
+ */
 qx.Proto._getIndentSymbol = function(column,
                                      node,
                                      bUseTreeLines,
                                      bAlwaysShowOpenCloseSymbol,
-                                     bJensLautenbacherMode)
+                                     bExcludeFirstLevelTreeLines)
 {
-  // If we're in column 0 and jensLautenbacherMode is enabled, then we treat
-  // this as if no tree lines were requested.
-  if (column == 0 && bJensLautenbacherMode)
+  // If we're in column 0 and excludeFirstLevelTreeLines is enabled, then
+  // we treat this as if no tree lines were requested.
+  if (column == 0 && bExcludeFirstLevelTreeLines)
   {
     bUseTreeLines = false;
   }
@@ -212,11 +248,11 @@ qx.Proto._getIndentSymbol = function(column,
 
   var bLastChild = node.lastChild[node.lastChild.length - 1];
 
-  // Is this a branch node?
+  // Is this a branch node that does not have the open/close button hidden?
   if (node.type == qx.ui.treevirtual.SimpleTreeDataModel.Type.BRANCH &&
-      (node.opened === true || node.opened === false))
+      ! node.bHideOpenClose)
   {
-    // Determine if this node has any children
+    // Yup.  Determine if this node has any children
     var child = null;
     for (child in node.children)
     {
@@ -232,7 +268,7 @@ qx.Proto._getIndentSymbol = function(column,
       if (! bUseTreeLines)
       {
         // ... then just use a plus or minus
-        return (node.opened
+        return (node.bOpened
                 ? this.WIDGET_TREE_URI + "minus.gif"
                 : this.WIDGET_TREE_URI + "plus.gif");
       }
@@ -244,14 +280,14 @@ qx.Proto._getIndentSymbol = function(column,
         if (bLastChild)
         {
           // ... then use no tree lines.
-          return (node.opened
+          return (node.bOpened
                   ? this.WIDGET_TREE_URI + "only_minus.gif"
                   : this.WIDGET_TREE_URI + "only_plus.gif");
         }
         else
         {
           // otherwise, use descender lines but no ascender.
-          return (node.opened
+          return (node.bOpened
                   ? this.WIDGET_TREE_URI + "start_minus.gif"
                   : this.WIDGET_TREE_URI + "start_plus.gif");
         }
@@ -261,16 +297,16 @@ qx.Proto._getIndentSymbol = function(column,
       // parent?
       if (bLastChild)
       {
-        // Yup.   Return an ending plus or minus, or blank if node.opened so
+        // Yup.   Return an ending plus or minus, or blank if node.bOpened so
         // indicates.
-        return (node.opened
+        return (node.bOpened
                 ? this.WIDGET_TREE_URI + "end_minus.gif"
                 : this.WIDGET_TREE_URI + "end_plus.gif");
       }
 
       // Otherwise, return a crossing plus or minus, or a blank if
-      // node.opened so indicates.
-      return (node.opened
+      // node.bOpened so indicates.
+      return (node.bOpened
               ? this.WIDGET_TREE_URI + "cross_minus.gif"
               : this.WIDGET_TREE_URI + "cross_plus.gif");
     }
@@ -287,21 +323,8 @@ qx.Proto._getIndentSymbol = function(column,
   }
 
   return this.STATIC_IMAGE_URI + "blank.gif";
-}
-
-
-// overridden
-qx.Proto._createCellStyle_array_join = function(cellInfo, htmlArr)
-{
-  throw new Error("USE_ARRAY_JOIN not supported");
 };
 
-
-
-qx.Proto._createContentHtml_array_join = function(cellInfo, htmlArr)
-{
-  throw new Error("USE_ARRAY_JOIN not supported");
-};
 
 qx.Class.MAIN_DIV_STYLE =
   ';overflow:hidden;white-space:nowrap;border-right:1px solid #eeeeee;' +

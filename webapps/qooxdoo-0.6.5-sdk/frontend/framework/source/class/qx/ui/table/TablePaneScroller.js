@@ -51,7 +51,7 @@ function(table) {
   this._verScrollBar.addEventListener("changeValue", this._onScrollY, this);
 
   // init header
-  this._header = new qx.ui.table.TablePaneHeader(this);
+  this._header = this.getTable().getNewTablePaneHeader()(this);
   this._header.set({ width:"auto", height:"auto" });
 
   this._headerClipper = new qx.ui.layout.CanvasLayout;
@@ -67,7 +67,7 @@ function(table) {
   this._top.add(this._headerClipper, this._spacer);
 
   // init pane
-  this._tablePane = new qx.ui.table.TablePane(this);
+  this._tablePane = this.getTable().getNewTablePane()(this);
   this._tablePane.set({ width:"auto", height:"auto" });
 
   this._focusIndicator = new qx.ui.layout.HorizontalBoxLayout;
@@ -415,8 +415,14 @@ qx.Proto._onScrollY = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onmousewheel = function(evt) {
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
   this._verScrollBar.setValue(this._verScrollBar.getValue()
-    - evt.getWheelDelta() * this.getTable().getRowHeight());
+    - evt.getWheelDelta() * table.getRowHeight());
 
   // Update the focus
   if (this._lastMousePageX && this.getFocusCellOnMouseMove()) {
@@ -431,8 +437,14 @@ qx.Proto._onmousewheel = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onmousemove = function(evt) {
-  var tableModel = this.getTable().getTableModel();
-  var columnModel = this.getTable().getTableColumnModel();
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
+  var tableModel = table.getTableModel();
+  var columnModel = table.getTableColumnModel();
 
   var useResizeCursor = false;
   var mouseOverColumn = null;
@@ -528,8 +540,14 @@ qx.Proto._onmousemove = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onmousedown = function(evt) {
-  var tableModel = this.getTable().getTableModel();
-  var columnModel = this.getTable().getTableColumnModel();
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
+  var tableModel = table.getTableModel();
+  var columnModel = table.getTableColumnModel();
 
   var pageX = evt.getPageX();
   var pageY = evt.getPageY();
@@ -558,7 +576,7 @@ qx.Proto._onmousedown = function(evt) {
     var selectBeforeFocus = this.getSelectBeforeFocus();
 
     if (selectBeforeFocus) {
-      this.getTable()._getSelectionManager().handleMouseDown(row, evt);
+      table._getSelectionManager().handleMouseDown(row, evt);
     }
 
     // The mouse is over the data -> update the focus
@@ -567,7 +585,7 @@ qx.Proto._onmousedown = function(evt) {
     }
 
     if (! selectBeforeFocus) {
-      this.getTable()._getSelectionManager().handleMouseDown(row, evt);
+      table._getSelectionManager().handleMouseDown(row, evt);
     }
   }
 }
@@ -579,7 +597,13 @@ qx.Proto._onmousedown = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onmouseup = function(evt) {
-  var columnModel = this.getTable().getTableColumnModel();
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
+  var columnModel = table.getTableColumnModel();
   var paneModel = this.getTablePaneModel();
 
   if (this._resizeColumn != null) {
@@ -630,7 +654,7 @@ qx.Proto._onmouseup = function(evt) {
     // This is a normal mouse up
     var row = this._getRowForPagePos(evt.getPageX(), evt.getPageY());
     if (row != -1 && row != null) {
-      this.getTable()._getSelectionManager().handleMouseUp(row, evt);
+      table._getSelectionManager().handleMouseUp(row, evt);
     }
   }
 }
@@ -642,7 +666,13 @@ qx.Proto._onmouseup = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onclick = function(evt) {
-  var tableModel = this.getTable().getTableModel();
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
+  var tableModel = table.getTableModel();
 
   var pageX = evt.getPageX();
   var pageY = evt.getPageY();
@@ -659,11 +689,11 @@ qx.Proto._onclick = function(evt) {
         var ascending = (col != sortCol) ? true : !tableModel.isSortAscending();
 
         tableModel.sortByColumn(col, ascending);
-        this.getTable().getSelectionModel().clearSelection();
+        table.getSelectionModel().clearSelection();
       }
     }
   } else if (row != null) {
-    this.getTable()._getSelectionManager().handleClick(row, evt);
+    table._getSelectionManager().handleClick(row, evt);
   }
 }
 
@@ -687,6 +717,12 @@ qx.Proto._ondblclick = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onmouseout = function(evt) {
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
   /*
   // Workaround: See _onmousemove
   this._lastMousePageX = null;
@@ -1248,6 +1284,12 @@ qx.Proto._updateContent = function() {
  * Updates the location and the visibility of the focus indicator.
  */
 qx.Proto._updateFocusIndicator = function() {
+  var table = this.getTable();
+
+  if (! table.getEnabled()) {
+    return;
+  }
+
   if (this._focusedCol == null) {
     this._focusIndicator.hide();
   } else {
@@ -1255,11 +1297,11 @@ qx.Proto._updateFocusIndicator = function() {
     if (xPos == -1) {
       this._focusIndicator.hide();
     } else {
-      var columnModel = this.getTable().getTableColumnModel();
+      var columnModel = table.getTableColumnModel();
       var paneModel = this.getTablePaneModel();
 
       var firstRow = this._tablePane.getFirstVisibleRow();
-      var rowHeight = this.getTable().getRowHeight();
+      var rowHeight = table.getRowHeight();
 
       this._focusIndicator.setHeight(rowHeight + 3);
       this._focusIndicator.setWidth(columnModel.getColumnWidth(this._focusedCol) + 3);
@@ -1267,6 +1309,11 @@ qx.Proto._updateFocusIndicator = function() {
       this._focusIndicator.setLeft(paneModel.getColumnLeft(this._focusedCol) - 2);
 
       this._focusIndicator.show();
+
+      // Force redisplay of the focus indicator right away.  Without this, it
+      // waits until the mouse stops moving for a while before updating, and
+      // appears as if it is slow to respond.
+      qx.ui.core.Widget.flushGlobalQueues();
     }
   }
 }

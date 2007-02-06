@@ -50,11 +50,13 @@ function(tableModel) {
   this._columnVisibilityBt.addEventListener("execute", this._onColumnVisibilityBtExecuted, this);
 
   // Create the models
-  this._selectionManager = new qx.ui.table.SelectionManager;
+  this._selectionManager = this.getNewSelectionManager()(this);
+  this.setSelectionModel(this.getNewSelectionModel()(this));
+  this.setTableColumnModel(this.getNewTableColumnModel()(this));
 
-  this.setSelectionModel(new qx.ui.table.SelectionModel);
-  this.setTableColumnModel(new qx.ui.table.TableColumnModel);
+  // If a table model was provided...
   if (tableModel != null) {
+    // ... then save it.
     this.setTableModel(tableModel);
   }
 
@@ -125,6 +127,145 @@ qx.OO.addProperty({ name:"headerCellHeight", type:"number", defaultValue:16, all
 /** The renderer to use for styling the rows. */
 qx.OO.addProperty({ name:"dataRowRenderer", type:"object", instance:"qx.ui.table.DataRowRenderer", defaultValue:qx.Class.DEFAULT_DATA_ROW_RENDERER, allowNull:false });
 
+/**
+ * A function to instantiate a selection manager.  this allows subclasses of
+ * Table to subclass this internal class.  To take effect, this property must
+ * be set before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newSelectionManager",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.SelectionManager(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a selection model.  this allows subclasses of
+ * Table to subclass this internal class.  To take effect, this property must
+ * be set before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newSelectionModel",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.SelectionModel(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a selection model.  this allows subclasses of
+ * Table to subclass this internal class.  To take effect, this property must
+ * be set before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newTableColumnModel",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.TableColumnModel(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a table pane.  this allows subclasses of Table to
+ * subclass this internal class.  To take effect, this property must be set
+ * before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newTablePane",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.TablePane(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a table pane.  this allows subclasses of Table to
+ * subclass this internal class.  To take effect, this property must be set
+ * before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newTablePaneHeader",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.TablePaneHeader(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a table pane scroller.  this allows subclasses of
+ * Table to subclass this internal class.  To take effect, this property must
+ * be set before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newTablePaneScroller",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(obj)
+      {
+        return new qx.ui.table.TablePaneScroller(obj);
+      }
+  });
+
+/**
+ * A function to instantiate a table pane model.  this allows subclasses of
+ * Table to subclass this internal class.  To take effect, this property must
+ * be set before calling the Table constructor.
+ */
+qx.OO.addProperty(
+  {
+    name :
+      "newTablePaneModel",
+    type :
+      "function",
+    setOnlyOnce :
+      true,
+    defaultValue:
+      function(columnModel)
+      {
+        return new qx.ui.table.TablePaneModel(columnModel);
+      }
+  });
 
 // property modifier
 qx.Proto._modifySelectionModel = function(propValue, propOldValue, propData) {
@@ -216,12 +357,12 @@ qx.Proto._modifyMetaColumnCounts = function(propValue, propOldValue, propData) {
     var columnModel = this.getTableColumnModel();
 
     for (var i = scrollerArr.length; i < metaColumnCounts.length; i++) {
-      var paneModel = new qx.ui.table.TablePaneModel(columnModel);
+      var paneModel = this.getNewTablePaneModel()(columnModel);
       paneModel.setFirstColumnX(leftX);
       paneModel.setMaxColumnCount(metaColumnCounts[i]);
       leftX += metaColumnCounts[i];
 
-      var paneScroller = new qx.ui.table.TablePaneScroller(this);
+      var paneScroller = this.getNewTablePaneScroller()(this);
       paneScroller.setTablePaneModel(paneModel);
 
       // Register event listener for vertical scrolling
@@ -278,7 +419,6 @@ qx.Proto._modifyHeaderCellHeight = function(propValue, propOldValue, propData) {
   }
   return true;
 };
-
 
 /**
  * Returns the selection manager.
@@ -408,6 +548,10 @@ qx.Proto._onScrollY = function(evt) {
  * @param evt {Map} the event.
  */
 qx.Proto._onkeydown = function(evt) {
+  if (! this.getEnabled()) {
+    return;
+  }
+
   var identifier = evt.getKeyIdentifier();
 
   var consumed = false;
@@ -494,6 +638,10 @@ qx.Proto._onkeydown = function(evt) {
 
 qx.Proto._onkeypress = function(evt)
 {
+  if (! this.getEnabled()) {
+    return;
+  }
+
   if (this.isEditing()) { return }
   // No editing mode
   var oldFocusedRow = this._focusedRow;
@@ -907,6 +1055,10 @@ qx.Proto._onColumnVisibilityBtExecuted = function() {
  */
 qx.Proto._toggleColumnVisibilityMenu = function() {
   if (this._columnVisibilityMenu == null || !this._columnVisibilityMenu.isSeeable()) {
+    if (! this.getEnabled()) {
+      return;
+    }
+
     // Show the menu
 
     // Create the new menu
