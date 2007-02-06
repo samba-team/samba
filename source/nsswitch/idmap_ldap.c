@@ -33,6 +33,15 @@
 
 #include "smbldap.h"
 
+struct idmap_ldap_context {
+	struct smbldap_state *smbldap_state;
+	char *url;
+	char *suffix;
+	char *user_dn;
+	uint32_t filter_low_id, filter_high_id;		/* Filter range */
+	BOOL anon;
+};
+
 struct idmap_ldap_alloc_context {
 	struct smbldap_state *smbldap_state;
 	char *url;
@@ -50,6 +59,57 @@ struct idmap_ldap_alloc_context {
 **********************************************************************/
  
 static struct idmap_ldap_alloc_context *idmap_alloc_ldap;
+
+/*********************************************************************
+ ********************************************************************/
+
+static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx, 
+				 struct smbldap_state *ldap_state,
+				 const char *config_option,
+				 struct idmap_domain *dom,
+				 char **dn )
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	char *user_dn = NULL;	
+	char *secret = NULL;
+	const char *tmp = NULL;
+	
+	/* assume anonymous if we don't have a specified user */
+
+	tmp = lp_parm_const_string(-1, config_option, "ldap_user_dn", NULL);
+
+	if ( tmp ) {
+		secret = idmap_fetch_secret("ldap", false, dom->name, tmp);
+		if (!secret) {
+			DEBUG(0, ("get_credentials: Unable to fetch "
+				  "auth credentials for %s in %s\n",
+				  tmp, dom->name));
+			ret = NT_STATUS_ACCESS_DENIED;
+			goto done;
+		} 		
+		*dn = talloc_strdup(mem_ctx, tmp);
+		CHECK_ALLOC_DONE(*dn);		
+	} else {
+		if ( !fetch_ldap_pw( &user_dn, &secret ) ) {
+			DEBUG(2, ("get_credentials: Failed to lookup ldap "
+				  "bind creds.  Using anonymous connection.\n"));
+			*dn = talloc_strdup( mem_ctx, "" );			
+		} else {
+			*dn = talloc_strdup(mem_ctx, user_dn);
+			SAFE_FREE( user_dn );		
+			CHECK_ALLOC_DONE(*dn);
+		}		
+	}
+
+	smbldap_set_creds(ldap_state, false, *dn, secret);
+	ret = NT_STATUS_OK;
+	
+ done:
+	SAFE_FREE( secret );
+
+	return ret;	
+}
+
 
 /**********************************************************************
  Verify the sambaUnixIdPool entry in the directory.  
@@ -141,8 +201,7 @@ done:
 
 static NTSTATUS idmap_ldap_alloc_init(const char *params)
 {
-	NTSTATUS nt_status;
-	const char *secret;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;	
 	const char *range;
 	const char *tmp;
 	uid_t low_uid = 0;
@@ -151,12 +210,10 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	gid_t high_gid = 0;
 
 	idmap_alloc_ldap = talloc_zero(NULL, struct idmap_ldap_alloc_context);
-	if (!idmap_alloc_ldap) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
+        CHECK_ALLOC_DONE( idmap_alloc_ldap );
+	
 	/* load ranges */
+
 	idmap_alloc_ldap->low_uid = 0;
 	idmap_alloc_ldap->high_uid = 0;
 	idmap_alloc_ldap->low_gid = 0;
@@ -191,15 +248,15 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	if (idmap_alloc_ldap->high_uid <= idmap_alloc_ldap->low_uid) {
 		DEBUG(1, ("idmap uid range missing or invalid\n"));
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		talloc_free(idmap_alloc_ldap);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (idmap_alloc_ldap->high_gid <= idmap_alloc_ldap->low_gid) {
 		DEBUG(1, ("idmap gid range missing or invalid\n"));
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		talloc_free(idmap_alloc_ldap);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	if (params && *params) {
@@ -210,17 +267,13 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 
 		if ( ! tmp) {
 			DEBUG(1, ("ERROR: missing idmap ldap url\n"));
-			talloc_free(idmap_alloc_ldap);
-			return NT_STATUS_UNSUCCESSFUL;
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		
 		idmap_alloc_ldap->url = talloc_strdup(idmap_alloc_ldap, tmp);
 	}
-	if ( ! idmap_alloc_ldap->url) {
-		talloc_free(idmap_alloc_ldap);
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	CHECK_ALLOC_DONE( idmap_alloc_ldap->url );
 
 	tmp = lp_ldap_idmap_suffix();
 	if ( ! tmp || ! *tmp) {
@@ -232,64 +285,43 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 			DEBUG(1, ("WARNING: Trying to use the global ldap suffix(%s)\n", tmp));
 			DEBUGADD(1, ("as suffix. This may not be what you want!\n"));
 		}
+		if ( ! tmp) {
+			DEBUG(1, ("ERROR: missing idmap ldap suffix\n"));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 	}
-	if ( ! tmp) {
-		DEBUG(1, ("ERROR: missing idmap ldap suffix\n"));
-		talloc_free(idmap_alloc_ldap);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+
 	idmap_alloc_ldap->suffix = talloc_strdup(idmap_alloc_ldap, tmp);
-	if ( ! idmap_alloc_ldap->suffix) {
-		talloc_free(idmap_alloc_ldap);
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	tmp = lp_parm_const_string(-1, "idmap alloc config", "ldap_user_dn", NULL);
-
-	if ( ! tmp) {
-		tmp = lp_ldap_admin_dn();
-	}
-	if (! tmp || ! *tmp) {
-		DEBUG(1, ("ERROR: missing idmap ldap user dn\n"));
-		talloc_free(idmap_alloc_ldap);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	idmap_alloc_ldap->user_dn = talloc_strdup(idmap_alloc_ldap, tmp);
-	if ( ! idmap_alloc_ldap->user_dn) {
-		talloc_free(idmap_alloc_ldap);
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	CHECK_ALLOC_DONE( idmap_alloc_ldap->suffix );
 	
-	if (!NT_STATUS_IS_OK(nt_status = 
-		     smbldap_init(idmap_alloc_ldap, idmap_alloc_ldap->url, 
-				  &idmap_alloc_ldap->smbldap_state))) {
-		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n",
-					idmap_alloc_ldap->url));
-		talloc_free(idmap_alloc_ldap);
-		return nt_status;
+	ret = smbldap_init(idmap_alloc_ldap, idmap_alloc_ldap->url,
+				 &idmap_alloc_ldap->smbldap_state);	
+	if (!NT_STATUS_IS_OK(ret)) { 
+		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n", 
+			  idmap_alloc_ldap->url));
+		goto done;		
 	}
 
-	/* fetch credentials from secrets.tdb */
-	secret = idmap_fecth_secret("ldap", true, NULL, idmap_alloc_ldap->user_dn);
-	if (!secret) {
-		DEBUG(1, ("ERROR: unable to fetch auth credentials\n"));
-		talloc_free(idmap_alloc_ldap);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	/* now set credentials */
-	smbldap_set_creds(idmap_alloc_ldap->smbldap_state, false, idmap_alloc_ldap->user_dn, secret);
+        ret = get_credentials( idmap_alloc_ldap, 
+			       idmap_alloc_ldap->smbldap_state, 
+			       "idmap alloc config", NULL,
+			       &idmap_alloc_ldap->user_dn );
+	if ( !NT_STATUS_IS_OK(ret) ) {
+		DEBUG(1,("idmap_ldap_alloc_init: Failed to get connection "
+			 "credentials (%s)\n", nt_errstr(ret)));
+		goto done;
+	}	
 
 	/* see if the idmap suffix and sub entries exists */
-	nt_status = verify_idpool();	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(idmap_alloc_ldap);
-		return nt_status;
-	}
 
-	return NT_STATUS_OK;
+	ret = verify_idpool();	
+
+ done:
+	if ( !NT_STATUS_IS_OK( ret ) )
+		TALLOC_FREE( idmap_alloc_ldap );
+	
+	return ret;
 }
 
 /********************************
@@ -655,15 +687,6 @@ static NTSTATUS idmap_ldap_alloc_close(void)
  IDMAP MAPPING LDAP BACKEND
 **********************************************************************/
  
-struct idmap_ldap_context {
-	struct smbldap_state *smbldap_state;
-	char *url;
-	char *suffix;
-	char *user_dn;
-	uint32_t filter_low_id, filter_high_id;		/* Filter range */
-	BOOL anon;
-};
-
 static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
 {
 	smbldap_free_struct(&ctx->smbldap_state);
@@ -680,12 +703,11 @@ static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
 static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom, const char *params)
 {
 	NTSTATUS ret;
-	struct idmap_ldap_context *ctx;
-	char *config_option;
-	const char *secret;
-	const char *range;
-	const char *tmp;
-
+	struct idmap_ldap_context *ctx = NULL;
+	char *config_option = NULL;
+	const char *range = NULL;
+	const char *tmp = NULL;
+	
 	ctx = talloc_zero(dom, struct idmap_ldap_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -735,17 +757,14 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom, const char *params)
 		if (tmp) {
 			DEBUG(1, ("WARNING: Trying to use the global ldap suffix(%s)\n", tmp));
 			DEBUGADD(1, ("as suffix. This may not be what you want!\n"));
-		}
-	}
-	if ( ! tmp) {
-		DEBUG(1, ("ERROR: missing idmap ldap suffix\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+		} else {
+			DEBUG(1, ("ERROR: missing idmap ldap suffix\n"));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}		
 	}
 	ctx->suffix = talloc_strdup(ctx, tmp);
 	CHECK_ALLOC_DONE(ctx->suffix);
-
-	ctx->anon = lp_parm_bool(-1, config_option, "ldap_anon", False);
 
 	ret = smbldap_init(ctx, ctx->url, &ctx->smbldap_state);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -753,36 +772,17 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom, const char *params)
 		goto done;
 	}
 
-	if ( ! ctx->anon) {
-		tmp = lp_parm_const_string(-1, config_option, "ldap_user_dn", NULL);
-
-		if ( ! tmp) {
-			tmp = lp_ldap_admin_dn();
-		}
-		if (! tmp || ! *tmp) {
-			DEBUG(1, ("ERROR: missing idmap ldap user dn\n"));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-
-		ctx->user_dn = talloc_strdup(ctx, tmp);
-		CHECK_ALLOC_DONE(ctx->user_dn);
-
-		/* fetch credentials */
-		secret = idmap_fecth_secret("ldap", false, dom->name, ctx->user_dn);
-		if (!secret) {
-			DEBUG(1, ("ERROR: unable to fetch auth credentials\n"));
-			ret = NT_STATUS_ACCESS_DENIED;
-			goto done;
-		}
-		/* now set credentials */
-		smbldap_set_creds(ctx->smbldap_state, false, ctx->user_dn, secret);
-	} else {
-		smbldap_set_creds(ctx->smbldap_state, true, NULL, NULL);
-	}
+        ret = get_credentials( ctx, ctx->smbldap_state, config_option, 
+			       dom, &ctx->user_dn );
+	if ( !NT_STATUS_IS_OK(ret) ) {
+		DEBUG(1,("idmap_ldap_db_init: Failed to get connection "
+			 "credentials (%s)\n", nt_errstr(ret)));
+		goto done;
+	}	
 	
 	/* set the destructor on the context, so that resource are properly
-	 * freed if the contexts is released */
+	   freed if the contexts is released */
+
 	talloc_set_destructor(ctx, idmap_ldap_close_destructor);
 
 	dom->private_data = ctx;

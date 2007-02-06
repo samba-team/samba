@@ -1283,8 +1283,8 @@ void idmap_dump_maps(char *logfile)
 	fclose(dump);
 }
 
-const char *idmap_fecth_secret(const char *backend, bool alloc,
-				const char *domain, const char *identity)
+char *idmap_fetch_secret(const char *backend, bool alloc,
+			       const char *domain, const char *identity)
 {
 	char *tmp, *ret;
 	int r;
@@ -1295,11 +1295,13 @@ const char *idmap_fecth_secret(const char *backend, bool alloc,
 		r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
 	}
 
-	if (r < 0) return NULL;
+	if (r < 0) 
+		return NULL;
 
 	strupper_m(tmp); /* make sure the key is case insensitive */
 	ret = secrets_fetch_generic(tmp, identity);
 
-	free(tmp);
+	SAFE_FREE( tmp );	
+
 	return ret;
 }
