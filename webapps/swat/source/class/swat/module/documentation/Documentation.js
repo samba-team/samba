@@ -7,6 +7,12 @@
  *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
  */
 
+/*
+#embed(apiviewer.css/*)
+#embed(apiviewer.image/*)
+*/
+
+
 /**
  * Swat statistics class
  */
@@ -30,21 +36,18 @@ function()
  */
 qx.Proto.initialAppear = function(module)
 {
-  qx.manager.object.AliasManager.getInstance().add("api", "./resource/image");
+  // Define alias for custom resource path
+  var am = qx.manager.object.AliasManager.getInstance();
+  am.add("api", qx.Settings.getValueOfClass("apiviewer", "resourceUri"));
 
-  // Include CSS file.
-  // (This is the hard way; I can't get qx.dom.StyleSheet.includeFile to load)
-  var el = document.createElement("link");
-  el.type = "text/css";
-  el.rel = "stylesheet";
-  el.href = "./resource/css/apiviewer.css";
-  var head = document.getElementsByTagName("head")[0];
-  head.appendChild(el);
+  // Include CSS file
+  qx.html.StyleSheet.includeFile(am.resolvePath("api/css/apiviewer.css"));
+  am.add("apiviewer", "./resource/image");
 
   // avoid redundant naming by api viewer
   qx.Settings.setCustomOfClass("apiviewer.Viewer", "title", ""); 
 
-  var viewer = new api.Viewer();
+  var viewer = new apiviewer.Viewer();
   module.canvas.add(viewer);
   viewer.load("script/data.js");
 
@@ -56,4 +59,4 @@ qx.Proto.initialAppear = function(module)
 /**
  * Singleton Instance Getter
  */
-qx.Class.getInstance = qx.util.Return.returnInstance;
+qx.Class.getInstance = qx.lang.Function.returnInstance;

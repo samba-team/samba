@@ -105,7 +105,7 @@ qx.Class.buildGui = function(moduleList)
   for (moduleName in moduleList)
   {
     // create a radio button menu item
-    o = new qx.ui.menu.RadioButton(moduleName, null, command);
+    o = new qx.ui.menu.RadioButton(moduleName, command, false);
 
     // Associate this button menu item with the module list
     o.moduleName = moduleName;

@@ -69,7 +69,7 @@ qx.OO.addProperty({ name : "basedn", type : "string" });
  * @param type {String}
  *   A string containing "new" or "modify"
  *
- * @param data {object}
+ * @param data {Object}
  *   An LDB object with the current object parameters
  *   Used only if type = "modify"
  *
@@ -84,7 +84,7 @@ qx.Proto.isActive = function() {
 /** 
  * Set the base of the object to add
  *
- * @param type {string}
+ * @param type {String}
  *   A string containing the base DN
  */
 
