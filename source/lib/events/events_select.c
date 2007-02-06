@@ -47,12 +47,8 @@ struct select_event_context {
 	/* information for exiting from the event loop */
 	int exit_code;
 
-	/* this is changed by the destructors for the fd event
-	   type. It is used to detect event destruction by event
-	   handlers, which means the code that is calling the event
-	   handler needs to assume that the linked list is no longer
-	   valid
-	*/
+	/* this is incremented when the loop over events causes something which
+	   could change the events yet to be processed */
 	uint32_t destruction_count;
 };
 
@@ -177,7 +173,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct fd_event *fde;
 	int selrtn;
-	uint32_t destruction_count = select_ev->destruction_count;
+	uint32_t destruction_count = ++select_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
