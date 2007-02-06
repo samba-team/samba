@@ -36,7 +36,7 @@ new swat.main.Module("LDB Browser",
                      swat.module.ldbbrowse.LdbBrowse);
 
 //#require(swat.module.documentation.Documentation)
-//#require(api.Viewer)
+//#require(apiviewer.Viewer)
 new swat.main.Module("API Documentation",
                      swat.module.documentation.Documentation);
 
