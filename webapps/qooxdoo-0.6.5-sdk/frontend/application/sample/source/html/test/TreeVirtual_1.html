@@ -22,47 +22,45 @@
   {
     var d = qx.ui.core.ClientDocument.getInstance();
 
-    // tree
-    var tree = new qx.ui.treevirtual.TreeVirtual("Tree");
-    with (tree)
-    {
-      set({
-            left   : 10,
-            top    : 30,
-            width  : 400,
-            bottom : 30,
-            border : qx.renderer.border.BorderPresets.getInstance().thinInset
-          });
-      setColumnWidth(0, 400);
+
+    var horiz =  new qx.ui.layout.HorizontalBoxLayout;
+    
+    horiz.setPadding(10);
+    horiz.set({
+        left:20, right:10, height:"100%", spacing:20
+    });
+
+    var tree = new qx.ui.treevirtual.TreeVirtual(["Objects", "Date", "ID"]);
+    with (tree){
+	setHeight ("100%");
+        setWidth(900);
+        setColumnWidth(0, 400)
+        setColumnWidth(1, 200);
+        setColumnWidth(2, 50);
     };
 
-    d.add(tree);
+    var data_model = tree.getDataModel ();
 
-    // tree data model
-    var dataModel = tree.getDataModel();
+    var object_folder =
+	data_model.addBranch (null, 
+			      "Test", 
+			      false);
 
-    var te;
+    data_model.addLeaf (object_folder, 
+			"Test") ;
+    
+    data_model.setData();	
 
-    var te1 = dataModel.addBranch(null, "Desktop", true);
+    if (false)
+    {
+	d.add (tree);
+    }
+    else
+    {
+	horiz.add (tree);
+	d.add (horiz);
+    }
 
-    dataModel.addBranch(te1, "Files", true);
-
-    te = dataModel.addBranch(te1, "Workspace", true);
-    dataModel.addLeaf(te, "Windows (C:)");
-    dataModel.addLeaf(te, "Documents (D:)");
-
-    dataModel.addBranch(te1, "Network", true);
-    dataModel.addBranch(te1, "Trash", true);
-
-    var te2 = dataModel.addBranch(null, "Inbox", true);
-
-    dataModel.addBranch(te2, "Presets", true);
-    dataModel.addBranch(te2, "Sent", true);
-    dataModel.addBranch(te2, "Trash", true);
-    dataModel.addBranch(te2, "Data", true);
-    dataModel.addBranch(te2, "Edit", true);
-
-    dataModel.setData();
   });
   </script>
 </body>

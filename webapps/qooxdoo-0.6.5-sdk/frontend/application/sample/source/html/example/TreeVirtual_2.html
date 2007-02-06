@@ -83,9 +83,7 @@
                           {
                             alert('treeOpenWithContent ');
                             var node = e.getData();
-                            dataModel.addLeaf(node.nodeId,
-                                              newItem.toString(),
-                                              false);
+                            dataModel.addLeaf(node.nodeId, newItem.toString());
                             newItem++;
                           });
 
@@ -107,7 +105,8 @@
                           {
                             alert('treeOpenWhileEmpty');
                             var node = e.getData();
-                            tree.setState(node.nodeId, { opened : null });
+                            tree.setState(node.nodeId,
+                                          { bHideOpenClose : true });
                           });
 
 
