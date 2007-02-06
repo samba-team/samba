@@ -357,6 +357,74 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
+/* Call winbindd to convert SID to uid */
+
+BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+	DOM_SID *sids;
+	int i;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_len = num_ids * sizeof(DOM_SID);
+
+	sids = (DOM_SID *)SMB_MALLOC(request.extra_len);
+	for (i = 0; i < num_ids; i++) {
+		sid_copy(&sids[i], ids[i].sid);
+	}
+
+	request.extra_data.data = (char *)sids;
+	
+	/* Make request */
+
+	result = winbindd_request_response(WINBINDD_SIDS_TO_XIDS, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		struct unixid *wid = (struct unixid *)response.extra_data.data;
+		
+		for (i = 0; i < num_ids; i++) {
+			if (wid[i].type == -1) {
+				ids[i].status = ID_UNMAPPED;
+			} else {
+				ids[i].status = ID_MAPPED;
+				ids[i].xid.type = wid[i].type;
+				ids[i].xid.id = wid[i].id;
+			}
+		}
+	}
+
+	SAFE_FREE(request.extra_data.data);
+	SAFE_FREE(response.extra_data.data);
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+BOOL winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_data.data = SMB_STRDUP(file);
+	request.extra_len = strlen(request.extra_data.data) + 1;
+
+	result = winbindd_request_response(WINBINDD_DUMP_MAPS, &request, &response);
+
+	SAFE_FREE(request.extra_data.data);
+	return (result == NSS_STATUS_SUCCESS);
+}
+
 BOOL winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;
@@ -405,6 +473,70 @@ BOOL winbind_allocate_gid(gid_t *gid)
 	*gid = response.data.gid;
 
 	return True;
+}
+
+BOOL winbind_set_mapping(const struct id_map *map)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = map->xid.id;
+	request.data.dual_idmapset.type = map->xid.type;
+	sid_to_string(request.data.dual_idmapset.sid, map->sid);
+
+	result = winbindd_request_response(WINBINDD_SET_MAPPING, &request, &response);
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+BOOL winbind_set_uid_hwm(unsigned long id)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = id;
+	request.data.dual_idmapset.type = ID_TYPE_UID;
+
+	result = winbindd_request_response(WINBINDD_SET_HWM, &request, &response);
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+BOOL winbind_set_gid_hwm(unsigned long id)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = id;
+	request.data.dual_idmapset.type = ID_TYPE_GID;
+
+	result = winbindd_request_response(WINBINDD_SET_HWM, &request, &response);
+
+	return (result == NSS_STATUS_SUCCESS);
 }
 
 /**********************************************************************

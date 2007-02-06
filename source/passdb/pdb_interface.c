@@ -961,6 +961,18 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 	return pdb->lookup_rids(pdb, domain_sid, num_rids, rids, names, attrs);
 }
 
+/* 
+ * NOTE: pdb_lookup_names is currently (2007-01-12) not used anywhere 
+ *       in the samba code.
+ *       Unlike _lsa_lookup_sids and _samr_lookup_rids, which eventually 
+ *       also ask pdb_lookup_rids, thus looking up a bunch of rids at a time, 
+ *       the pdb_ calls _lsa_lookup_names and _samr_lookup_names come
+ *       down to are pdb_getsampwnam and pdb_getgrnam instead of
+ *       pdb_lookup_names.
+ *       But in principle, it the call belongs to the API and might get
+ *       used in this context some day. 
+ */
+#if 0
 NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  int num_names,
 			  const char **names,
@@ -970,6 +982,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->lookup_names(pdb, domain_sid, num_names, names, rids, attrs);
 }
+#endif
 
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
@@ -993,6 +1006,12 @@ BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->uid_to_rid(pdb, uid, rid);
+}
+
+BOOL pdb_uid_to_sid(uid_t uid, DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->uid_to_sid(pdb, uid, sid);
 }
 
 BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
@@ -1161,8 +1180,8 @@ static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq
 	return NT_STATUS_OK;
 }
 
-static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
-				   uint32 *rid)
+static BOOL pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
+				   DOM_SID *sid)
 {
 	struct samu *sampw = NULL;
 	struct passwd *unix_pw;
@@ -1193,15 +1212,31 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 		return False;
 	}
 
-	ret = sid_peek_check_rid(get_global_sam_sid(),
-				 pdb_get_user_sid(sampw), rid);
+	sid_copy(sid, pdb_get_user_sid(sampw));
+
+	TALLOC_FREE(sampw);
+
+	return True;
+}
+
+static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
+				   uint32 *rid)
+{
+	DOM_SID sid;
+	BOOL ret;
+
+	ret = pdb_default_uid_to_sid(methods, uid, &sid);
+	if (!ret) {
+		return ret;
+	}
+	
+	ret = sid_peek_check_rid(get_global_sam_sid(), &sid, rid);
 
 	if (!ret) {
 		DEBUG(1, ("Could not peek rid out of sid %s\n",
-			  sid_string_static(pdb_get_user_sid(sampw))));
+			  sid_string_static(&sid)));
 	}
 
-	TALLOC_FREE(sampw);
 	return ret;
 }
 
@@ -1346,7 +1381,7 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	return ret;
 }
 
-NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
+static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 					TALLOC_CTX *mem_ctx,
 					const DOM_SID *group,
 					uint32 **pp_member_rids,
@@ -1388,7 +1423,7 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
+static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 					    TALLOC_CTX *mem_ctx,
 					    struct samu *user,
 					    DOM_SID **pp_sids,
@@ -1527,7 +1562,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	return False;
 }
 
-NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
+static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 				 const DOM_SID *domain_sid,
 				 int num_rids,
 				 uint32 *rids,
@@ -1590,7 +1625,8 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	return result;
 }
 
-NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
+#if 0
+static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 				  const DOM_SID *domain_sid,
 				  int num_names,
 				  const char **names,
@@ -1646,6 +1682,7 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 
 	return result;
 }
+#endif
 
 static struct pdb_search *pdb_search_init(enum pdb_search_type type)
 {
@@ -2015,6 +2052,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
 	(*methods)->uid_to_rid = pdb_default_uid_to_rid;
+	(*methods)->uid_to_sid = pdb_default_uid_to_sid;
 	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
 	(*methods)->sid_to_id = pdb_default_sid_to_id;
 

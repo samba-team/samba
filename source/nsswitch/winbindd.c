@@ -234,10 +234,15 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+	{ WINBINDD_SIDS_TO_XIDS, winbindd_sids_to_unixids, "SIDS_TO_XIDS" },
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
+	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
+	{ WINBINDD_SET_HWM, winbindd_set_hwm, "SET_HWMS" },
 
 	/* Miscellaneous */
+
+	{ WINBINDD_DUMP_MAPS, winbindd_dump_maps, "DUMP_MAPS" },
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
@@ -884,9 +889,7 @@ static void process_loop(void)
 
 /* Main function */
 
-struct winbindd_state server_state;   /* Server state information */
-
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
 	static BOOL Fork = True;
@@ -990,17 +993,15 @@ int main(int argc, char **argv)
 
 	namecache_enable();
 
-	/* Check winbindd parameters are valid */
-
-	ZERO_STRUCT(server_state);
-
 	/* Winbind daemon initialisation */
 
-	if ( (!winbindd_param_init()) || (!winbindd_upgrade_idmap()) ||
-	     (!idmap_init(lp_idmap_backend())) ) {
-		DEBUG(1, ("Could not init idmap -- netlogon proxy only\n"));
-		idmap_set_proxyonly();
+	if ( ! NT_STATUS_IS_OK(idmap_init()) ) {
+		DEBUG(1, ("Could not init idmap! - Sid/[UG]id mapping will not be available\n"));
 	}
+
+#ifdef WITH_ADS
+	nss_init( lp_winbind_nss_info() );
+#endif
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */

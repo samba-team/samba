@@ -113,11 +113,27 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx, 
 				     NET_USER_INFO_3 *info3,
 				     const char *group_sid) 
+/**
+ * Check whether a user belongs to a group or list of groups.
+ *
+ * @param mem_ctx talloc memory context.
+ * @param info3 user information, including group membership info.
+ * @param group_sid One or more groups , separated by commas.
+ *
+ * @return NT_STATUS_OK on success,
+ *    NT_STATUS_LOGON_FAILURE if the user does not belong,
+ *    or other NT_STATUS_IS_ERR(status) for other kinds of failure.
+ */
 {
-	DOM_SID require_membership_of_sid;
+	DOM_SID *require_membership_of_sid;
+	size_t num_require_membership_of_sid;
 	DOM_SID *all_sids;
 	size_t num_all_sids = (2 + info3->num_groups2 + info3->num_other_sids);
-	size_t i, j = 0;
+	size_t i, j = 0, k;
+	size_t group_sid_length;
+	const char *search_location;
+	char *single_group_sid;
+	const char *comma;
 
 	/* Parse the 'required group' SID */
 	
@@ -125,10 +141,48 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		/* NO sid supplied, all users may access */
 		return NT_STATUS_OK;
 	}
-	
-	if (!string_to_sid(&require_membership_of_sid, group_sid)) {
+
+	num_require_membership_of_sid = 1;
+	group_sid_length = strlen(group_sid);
+	for (i = 0; i < group_sid_length; i++) {
+		if (',' == group_sid[i]) {
+			num_require_membership_of_sid++;
+		}
+	}
+
+	require_membership_of_sid = TALLOC_ARRAY(mem_ctx, DOM_SID, num_require_membership_of_sid);
+	if (!require_membership_of_sid)
+		return NT_STATUS_NO_MEMORY;
+
+	i = 0;
+	search_location = group_sid;
+
+	if (num_require_membership_of_sid > 1) {
+
+		/* Allocate the maximum possible size */
+		single_group_sid = TALLOC(mem_ctx, group_sid_length);
+		if (!single_group_sid)
+			return NT_STATUS_NO_MEMORY;
+
+		while ( (comma = strstr(search_location, ",")) != NULL ) {
+
+			strncpy(single_group_sid, search_location, comma - search_location);
+			single_group_sid[comma - search_location] = 0;
+
+			if (!string_to_sid(&require_membership_of_sid[i++], single_group_sid)) {
+				DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
+					  single_group_sid));
+			
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			search_location = comma + 1;
+		}
+	}
+
+	if (!string_to_sid(&require_membership_of_sid[i++], search_location)) {
 		DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
-			  group_sid));
+			  search_location));
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -188,10 +242,12 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		fstring sid1, sid2;
 		DEBUG(10, ("User has SID: %s\n", 
 			   sid_to_string(sid1, &all_sids[i])));
-		if (sid_equal(&require_membership_of_sid, &all_sids[i])) {
-			DEBUG(10, ("SID %s matches %s - user permitted to authenticate!\n", 
-				   sid_to_string(sid1, &require_membership_of_sid), sid_to_string(sid2, &all_sids[i])));
-			return NT_STATUS_OK;
+		for (k = 0; k < num_require_membership_of_sid; k++) {
+			if (sid_equal(&require_membership_of_sid[k], &all_sids[i])) {
+				DEBUG(10, ("SID %s matches %s - user permitted to authenticate!\n", 
+					   sid_to_string(sid1, &require_membership_of_sid[k]), sid_to_string(sid2, &all_sids[i])));
+				return NT_STATUS_OK;
+			}
 		}
 	}
 	
@@ -608,7 +664,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    time(NULL),
 					    ticket_lifetime,
 					    renewal_until, 
-					    lp_winbind_refresh_tickets(),
 					    False);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -884,7 +939,6 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    time(NULL),
 							    time(NULL) + lp_winbind_cache_time(),
 							    time(NULL) + WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-							    lp_winbind_refresh_tickets(),
 							    True);
 
 				if (!NT_STATUS_IS_OK(result)) {

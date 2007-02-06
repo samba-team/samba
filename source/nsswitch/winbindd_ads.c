@@ -40,7 +40,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	enum wb_posix_mapping map_type;
 
 	DEBUG(10,("ads_cached_connection\n"));
 
@@ -126,18 +125,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	map_type = get_nss_info(domain->name);
-
-	if ((map_type == WB_POSIX_MAP_RFC2307)||
-	    (map_type == WB_POSIX_MAP_SFU)) {
-	
-		status = ads_check_posix_schema_mapping(ads, map_type);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(10,("ads_check_posix_schema_mapping failed "
-				  "with: %s\n", ads_errstr(status)));
-		} 
-	}
-
 	/* set the flag that says we don't own the memory even 
 	   though we do so that ads_destroy() won't destroy the 
 	   structure we pass back by reference */
@@ -156,17 +143,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       WINBIND_USERINFO **info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"userPrincipalName",
-			       "sAMAccountName",
-			       "name", "objectSid", "primaryGroupID", 
-			       "sAMAccountType", 
-			       ADS_ATTR_SFU_HOMEDIR_OID, 
-			       ADS_ATTR_SFU_SHELL_OID,
-			       ADS_ATTR_SFU_GECOS_OID,
-			       ADS_ATTR_RFC2307_HOMEDIR_OID,
-			       ADS_ATTR_RFC2307_SHELL_OID,
-			       ADS_ATTR_RFC2307_GECOS_OID,
-			       NULL};
+	const char *attrs[] = { "*", NULL };
 	int i, count;
 	ADS_STATUS rc;
 	LDAPMessage *res = NULL;
@@ -210,6 +187,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		char *shell = NULL;
 		uint32 group;
 		uint32 atype;
+		DOM_SID user_sid;
+		gid_t primary_gid = (gid_t)-1;
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
 		    ads_atype_map(atype) != SID_NAME_USER) {
@@ -219,17 +198,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 
-		if (get_nss_info(domain->name) && ads->schema.map_type) {
-
-			DEBUG(10,("pulling posix attributes (%s schema)\n", 
-				wb_posix_map_str(ads->schema.map_type)));
-
-			homedir = ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.posix_homedir_attr);
-			shell 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.posix_shell_attr);
-			gecos 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.posix_gecos_attr);
+		if ( ads_pull_sid( ads, msg, "objectSid", &user_sid ) ) {
+			status = nss_get_info( domain->name, &user_sid, mem_ctx, 
+					       ads, msg, &homedir, &shell, &gecos,
+					       &primary_gid );
 		}
 
 		if (gecos == NULL) {
@@ -250,6 +222,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		(*info)[i].full_name = gecos;
 		(*info)[i].homedir = homedir;
 		(*info)[i].shell = shell;
+		(*info)[i].primary_gid = primary_gid;
 		sid_compose(&(*info)[i].group_sid, &domain->sid, group);
 		i++;
 	}
@@ -454,17 +427,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"userPrincipalName", 
-			       "sAMAccountName",
-			       "name", 
-			       "primaryGroupID", 
-			       ADS_ATTR_SFU_HOMEDIR_OID, 
-			       ADS_ATTR_SFU_SHELL_OID,
-			       ADS_ATTR_SFU_GECOS_OID,
-			       ADS_ATTR_RFC2307_HOMEDIR_OID,
-			       ADS_ATTR_RFC2307_SHELL_OID,
-			       ADS_ATTR_RFC2307_GECOS_OID,
-			       NULL};
+	const char *attrs[] = { "*", NULL };
 	ADS_STATUS rc;
 	int count;
 	LDAPMessage *msg = NULL;
@@ -475,9 +438,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads: query_user\n"));
 
-	ads = ads_cached_connection(domain);
-	
-	if (!ads) {
+	if ( (ads = ads_cached_connection(domain)) == NULL ) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
@@ -502,18 +463,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
-	if (get_nss_info(domain->name) && ads->schema.map_type) {
-
-		DEBUG(10,("pulling posix attributes (%s schema)\n", 
-			wb_posix_map_str(ads->schema.map_type)));
-		
-		info->homedir 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.posix_homedir_attr);
-		info->shell 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.posix_shell_attr);
-		info->full_name	= ads_pull_string(ads, mem_ctx, msg,
-						  ads->schema.posix_gecos_attr);
-	}
+	info->primary_gid = (gid_t)-1;	
+	nss_get_info( domain->name, sid, mem_ctx, ads, msg, 
+		      &info->homedir, &info->shell, &info->full_name, &info->primary_gid );	
 
 	if (info->full_name == NULL) {
 		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");

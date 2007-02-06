@@ -285,6 +285,28 @@ typedef struct dom_sid {
 #define dom_sid2 dom_sid
 #define dom_sid28 dom_sid
 
+enum id_mapping {
+	ID_UNKNOWN,
+	ID_MAPPED,
+	ID_UNMAPPED
+};
+
+enum id_type {
+	ID_TYPE_UID,
+	ID_TYPE_GID
+};
+
+struct unixid {
+	uint32_t id;
+	enum id_type type;
+};
+
+struct id_map {
+	DOM_SID *sid;
+	struct unixid xid;
+	enum id_mapping status;
+};
+
 #include "librpc/ndr/misc.h"
 #include "librpc/ndr/security.h"
 #include "librpc/ndr/libndr.h"

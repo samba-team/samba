@@ -31,9 +31,150 @@ extern BOOL opt_nocache;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/***************************************************************
- Empty static struct for negative caching.
-****************************************************************/
+static void add_member(const char *domain, const char *user,
+	   char **pp_members, size_t *p_num_members)
+{
+	fstring name;
+
+	fill_domain_username(name, domain, user, True);
+	safe_strcat(name, ",", sizeof(name)-1);
+	string_append(pp_members, name);
+	*p_num_members += 1;
+}
+
+/**********************************************************************
+ Add member users resulting from sid. Expand if it is a domain group.
+**********************************************************************/
+
+static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_num_members)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+	struct winbindd_domain *domain;
+	size_t i;
+
+	char *domain_name = NULL;
+	char *name = NULL;
+	enum lsa_SidType type;
+
+	uint32 num_names;
+	DOM_SID *sid_mem;
+	char **names;
+	uint32 *types;
+
+	NTSTATUS result;
+
+	TALLOC_CTX *mem_ctx = talloc_init("add_expanded_sid");
+
+	if (mem_ctx == NULL) {
+		DEBUG(1, ("talloc_init failed\n"));
+		return;
+	}
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+
+	domain = find_lookup_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(3, ("Could not find domain for sid %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
+
+	result = domain->methods->sid_to_name(domain, mem_ctx, sid,
+					      &domain_name, &name, &type);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("sid_to_name failed for sid %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
+
+	DEBUG(10, ("Found name %s, type %d\n", name, type));
+
+	if (type == SID_NAME_USER) {
+		add_member(domain_name, name, pp_members, p_num_members);
+		goto done;
+	}
+
+	if (type != SID_NAME_DOM_GRP) {
+		DEBUG(10, ("Alias member %s neither user nor group, ignore\n",
+			   name));
+		goto done;
+	}
+
+	/* Expand the domain group, this must be done via the target domain */
+
+	domain = find_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(3, ("Could not find domain from SID %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
+
+	result = domain->methods->lookup_groupmem(domain, mem_ctx,
+						  sid, &num_names,
+						  &sid_mem, &names,
+						  &types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("Could not lookup group members for %s: %s\n",
+			   name, nt_errstr(result)));
+		goto done;
+	}
+
+	for (i=0; i<num_names; i++) {
+		DEBUG(10, ("Adding group member SID %s\n",
+			   sid_string_static(&sid_mem[i])));
+
+		if (types[i] != SID_NAME_USER) {
+			DEBUG(1, ("Hmmm. Member %s of group %s is no user. "
+				  "Ignoring.\n", names[i], name));
+			continue;
+		}
+
+		add_member(domain->name, names[i], pp_members, p_num_members);
+	}
+
+ done:
+	talloc_destroy(mem_ctx);
+	return;
+}
+
+static BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
+			     DOM_SID *group_sid, 
+			     size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
+{
+	DOM_SID *members;
+	size_t i, num_members;
+
+	*num_gr_mem = 0;
+	*gr_mem = NULL;
+	*gr_mem_len = 0;
+
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(group_sid, &members,
+					       &num_members)))
+		return True;
+
+	for (i=0; i<num_members; i++) {
+		add_expanded_sid(&members[i], gr_mem, num_gr_mem);
+	}
+
+	TALLOC_FREE(members);
+
+	if (*gr_mem != NULL) {
+		size_t len;
+
+		/* We have at least one member, strip off the last "," */
+		len = strlen(*gr_mem);
+		(*gr_mem)[len-1] = '\0';
+		*gr_mem_len = len;
+	}
+
+	return True;
+}
 
 /* Fill a grent structure from various other information */
 
@@ -125,9 +266,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			if (sys_getpeereid(state->sock, &ret_uid)==0) {
 				/* We know who's asking - look up their SID if
 				   it's one we've mapped before. */
-				status = idmap_uid_to_sid(&querying_user_sid,
-							ret_uid,
-							IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
+				status = idmap_uid_to_sid(&querying_user_sid, ret_uid);
 				if (NT_STATUS_IS_OK(status)) {
 					pquerying_user_sid = &querying_user_sid;
 					DEBUG(10,("fill_grent_mem: querying uid %u -> %s\n",
@@ -404,7 +543,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Try to get the GID */
 
-	status = idmap_sid_to_gid(&group_sid, &gid, 0);
+	status = idmap_sid_to_gid(&group_sid, &gid);
 
 	if (NT_STATUS_IS_OK(status)) {
 		goto got_gid;
@@ -449,18 +588,20 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 {
 	struct winbindd_domain *domain;
 	enum lsa_SidType name_type;
-	fstring dom_name;
-	fstring group_name;
+	char *dom_name;
+	char *group_name;
 	size_t gr_mem_len;
 	size_t num_gr_mem;
 	char *gr_mem;
 
 	/* Get name from sid */
 
-	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, dom_name,
-					 group_name, &name_type)) {
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, &dom_name,
+					 &group_name, &name_type)) {
 		DEBUG(1, ("could not lookup sid\n"));
 		request_error(state);
+		TALLOC_FREE(group_name);
+		TALLOC_FREE(dom_name);
 		return;
 	}
 
@@ -471,6 +612,8 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
 		request_error(state);
+		TALLOC_FREE(group_name);
+		TALLOC_FREE(dom_name);
 		return;
 	}
 
@@ -481,6 +624,8 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  group_name, name_type));
 		request_error(state);
+		TALLOC_FREE(group_name);
+		TALLOC_FREE(dom_name);
 		return;
 	}
 
@@ -490,6 +635,8 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 			    &num_gr_mem,
 			    &gr_mem, &gr_mem_len)) {
 		request_error(state);
+		TALLOC_FREE(group_name);
+		TALLOC_FREE(dom_name);
 		return;
 	}
 
@@ -501,6 +648,9 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 
 	state->response.length += gr_mem_len;
 	state->response.extra_data.data = gr_mem;
+
+	TALLOC_FREE(group_name);
+	TALLOC_FREE(dom_name);
 
 	request_ok(state);
 }
@@ -539,32 +689,10 @@ static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
 /* Return a group structure from a gid number */
 void winbindd_getgrgid(struct winbindd_cli_state *state)
 {
-	DOM_SID group_sid;
-	NTSTATUS status;
-
 	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
 
-	/* Bug out if the gid isn't in the winbind range */
-
-	if ((state->request.data.gid < server_state.gid_low) ||
-	    (state->request.data.gid > server_state.gid_high)) {
-		request_error(state);
-		return;
-	}
-
-	/* Get sid from gid */
-
-	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, IDMAP_FLAG_NONE);
-	if (NT_STATUS_IS_OK(status)) {
-		/* This is a remote one */
-		getgrgid_got_sid(state, group_sid);
-		return;
-	}
-
-	DEBUG(10,("winbindd_getgrgid: gid %lu not found in cache, try with the async interface\n",
-		  (unsigned long)state->request.data.gid));
-
+	/* always use the async interface */
 	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, getgrgid_recv, state);
 }
 
@@ -860,8 +988,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid,
-                                                    &group_gid, 0))) {
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &group_gid))) {
 			union unid_t id;
 			enum lsa_SidType type;
 

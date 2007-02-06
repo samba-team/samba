@@ -86,6 +86,7 @@ do {                             \
 #define WINBIND_CACHED_LOGIN (1<<9)
 #define WINBIND_CONFIG_FILE (1<<10)
 #define WINBIND_SILENT (1<<11)
+#define WINBIND_DEBUG_STATE (1<<12)
 
 /*
  * here is the string to inform the user that the new passwords they

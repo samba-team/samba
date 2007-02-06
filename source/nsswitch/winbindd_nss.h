@@ -35,7 +35,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 17
+#define WINBIND_INTERFACE_VERSION 18
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -95,13 +95,18 @@ enum winbindd_cmd {
 
 	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
+	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
 
 	WINBINDD_ALLOCATE_UID,
 	WINBINDD_ALLOCATE_GID,
+	WINBINDD_SET_MAPPING,
+	WINBINDD_SET_HWM,
 
 	/* Miscellaneous other stuff */
+
+	WINBINDD_DUMP_MAPS,
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
@@ -140,9 +145,12 @@ enum winbindd_cmd {
 	 * between parent and children */
 	WINBINDD_DUAL_SID2UID,
 	WINBINDD_DUAL_SID2GID,
+	WINBINDD_DUAL_SIDS2XIDS,
 	WINBINDD_DUAL_UID2SID,
 	WINBINDD_DUAL_GID2SID,
-	WINBINDD_DUAL_IDMAPSET,
+	WINBINDD_DUAL_SET_MAPPING,
+	WINBINDD_DUAL_SET_HWM,
+	WINBINDD_DUAL_DUMP_MAPS,
 
 	/* Wrapper around possibly blocking unix nss calls */
 	WINBINDD_DUAL_UID2NAME,
@@ -231,7 +239,7 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
-		        fstring require_membership_of_sid;
+			pstring require_membership_of_sid;
 			fstring krb5_cc_type;
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
@@ -286,13 +294,11 @@ struct winbindd_request {
 		struct {
 			fstring sid;
 			fstring name;
-			BOOL alloc;
 		} dual_sid2id;
 		struct {
-			int type;
-			uid_t uid;
-			gid_t gid;
 			fstring sid;
+			uint32 type;
+			uint32 id;
 		} dual_idmapset;
 		BOOL list_all_domains;
 
@@ -441,6 +447,7 @@ struct winbindd_response {
 			fstring full_name;
 			fstring homedir;
 			fstring shell;
+			uint32 primary_gid;			
 			uint32 group_rid;
 		} user_info;
 		struct {

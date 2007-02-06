@@ -107,21 +107,13 @@ struct getpwent_user {
 
 /* Server state structure */
 
-struct winbindd_state {
-
-	/* User and group id pool */
-
-	uid_t uid_low, uid_high;               /* Range of uids to allocate */
-	gid_t gid_low, gid_high;               /* Range of gids to allocate */
-};
-
-extern struct winbindd_state server_state;  /* Server information */
-
 typedef struct {
 	char *acct_name;
 	char *full_name;
 	char *homedir;
 	char *shell;
+	gid_t primary_gid;                   /* allow the nss_info
+						backend to set the primary group */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 } WINBIND_USERINFO;

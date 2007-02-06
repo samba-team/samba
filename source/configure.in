@@ -588,7 +588,7 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_shutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog rpc_echo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_shutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog rpc_echo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -5839,6 +5839,13 @@ dnl Always built these modules static
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
+MODULE_idmap_passdb=STATIC
+MODULE_idmap_nss=STATIC
+
+MODULE_idmap_passdb=STATIC
+MODULE_idmap_nss=STATIC
+
+MODULE_nss_info_template=STATIC
 
 AC_ARG_WITH(static-modules,
 [  --with-static-modules=MODULES  Comma-separated list of names of modules to statically link in],
@@ -5880,11 +5887,16 @@ SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
-SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_rid, sam/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_ad, sam/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
-SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
+SMB_MODULE(idmap_ldap, nsswitch/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_tdb, nsswitch/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_passdb, nsswitch/idmap_passdb.o, "bin/passdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_nss, nsswitch/idmap_nss.o, "bin/nss.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_rid, nsswitch/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_ad, nsswitch/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
+SMB_SUBSYSTEM(IDMAP, nsswitch/idmap.o)
+
+SMB_MODULE(nss_info_template, nsswitch/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)
+SMB_SUBSYSTEM(NSS_INFO, nsswitch/nss_info.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)

@@ -244,7 +244,7 @@ struct pdb_search {
  * enum lsa_SidType rather than uint32.
  */
 
-#define PASSDB_INTERFACE_VERSION 14
+#define PASSDB_INTERFACE_VERSION 15
 
 struct pdb_methods 
 {
@@ -393,6 +393,8 @@ struct pdb_methods
 
 	BOOL (*uid_to_rid)(struct pdb_methods *methods, uid_t uid,
 			   uint32 *rid);
+	BOOL (*uid_to_sid)(struct pdb_methods *methods, uid_t uid,
+			   DOM_SID *sid);
 	BOOL (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
 			   DOM_SID *sid);
 	BOOL (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,

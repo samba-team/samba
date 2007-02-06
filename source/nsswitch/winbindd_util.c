@@ -737,15 +737,15 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
  **/
 BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 				 DOM_SID *sid,
-				 fstring dom_name,
-				 fstring name,
+				 char **dom_name,
+				 char **name,
 				 enum lsa_SidType *type)
 {
-	char *names;
-	char *dom_names;
 	NTSTATUS result;
-	BOOL rv = False;
 	struct winbindd_domain *domain;
+
+	*dom_name = NULL;
+	*name = NULL;
 
 	domain = find_lookup_domain_from_sid(sid);
 
@@ -756,19 +756,17 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 
 	/* Lookup name */
 
-	result = domain->methods->sid_to_name(domain, mem_ctx, sid, &dom_names, &names, type);
+	result = domain->methods->sid_to_name(domain, mem_ctx, sid, dom_name, name, type);
 
 	/* Return name and type if successful */
         
-	if ((rv = NT_STATUS_IS_OK(result))) {
-		fstrcpy(dom_name, dom_names);
-		fstrcpy(name, names);
-	} else {
-		*type = SID_NAME_UNKNOWN;
-		fstrcpy(name, name_deadbeef);
+	if (NT_STATUS_IS_OK(result)) {
+		return True;
 	}
+
+	*type = SID_NAME_UNKNOWN;
         
-	return rv;
+	return False;
 }
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
@@ -793,39 +791,6 @@ void free_getent_state(struct getent_state *state)
 		SAFE_FREE(temp);
 		temp = next;
 	}
-}
-
-/* Parse winbindd related parameters */
-
-BOOL winbindd_param_init(void)
-{
-	/* Parse winbind uid and winbind_gid parameters */
-
-	if (!lp_idmap_uid(&server_state.uid_low, &server_state.uid_high)) {
-		DEBUG(0, ("winbindd: idmap uid range missing or invalid\n"));
-		DEBUG(0, ("winbindd: cannot continue, exiting.\n"));
-		return False;
-	}
-	
-	if (!lp_idmap_gid(&server_state.gid_low, &server_state.gid_high)) {
-		DEBUG(0, ("winbindd: idmap gid range missing or invalid\n"));
-		DEBUG(0, ("winbindd: cannot continue, exiting.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-BOOL is_in_uid_range(uid_t uid)
-{
-	return ((uid >= server_state.uid_low) &&
-		(uid <= server_state.uid_high));
-}
-
-BOOL is_in_gid_range(gid_t gid)
-{
-	return ((gid >= server_state.gid_low) &&
-		(gid <= server_state.gid_high));
 }
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
@@ -1051,209 +1016,6 @@ void winbindd_kill_all_clients(void)
 int winbindd_num_clients(void)
 {
 	return _num_clients;
-}
-
-/*****************************************************************************
- For idmap conversion: convert one record to new format
- Ancient versions (eg 2.2.3a) of winbindd_idmap.tdb mapped DOMAINNAME/rid
- instead of the SID.
-*****************************************************************************/
-static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state)
-{
-	struct winbindd_domain *domain;
-	char *p;
-	DOM_SID sid;
-	uint32 rid;
-	fstring keystr;
-	fstring dom_name;
-	TDB_DATA key2;
-	BOOL *failed = (BOOL *)state;
-
-	DEBUG(10,("Converting %s\n", key.dptr));
-
-	p = strchr(key.dptr, '/');
-	if (!p)
-		return 0;
-
-	*p = 0;
-	fstrcpy(dom_name, key.dptr);
-	*p++ = '/';
-
-	domain = find_domain_from_name(dom_name);
-	if (domain == NULL) {
-		/* We must delete the old record. */
-		DEBUG(0,("Unable to find domain %s\n", dom_name ));
-		DEBUG(0,("deleting record %s\n", key.dptr ));
-
-		if (tdb_delete(tdb, key) != 0) {
-			DEBUG(0, ("Unable to delete record %s\n", key.dptr));
-			*failed = True;
-			return -1;
-		}
-
-		return 0;
-	}
-
-	rid = atoi(p);
-
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-
-	sid_to_string(keystr, &sid);
-	key2.dptr = keystr;
-	key2.dsize = strlen(keystr) + 1;
-
-	if (tdb_store(tdb, key2, data, TDB_INSERT) != 0) {
-		DEBUG(0,("Unable to add record %s\n", key2.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	if (tdb_store(tdb, data, key2, TDB_REPLACE) != 0) {
-		DEBUG(0,("Unable to update record %s\n", data.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	if (tdb_delete(tdb, key) != 0) {
-		DEBUG(0,("Unable to delete record %s\n", key.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	return 0;
-}
-
-/* These definitions are from sam/idmap_tdb.c. Replicated here just
-   out of laziness.... :-( */
-
-/* High water mark keys */
-#define HWM_GROUP  "GROUP HWM"
-#define HWM_USER   "USER HWM"
-
-/*****************************************************************************
- Convert the idmap database from an older version.
-*****************************************************************************/
-
-static BOOL idmap_convert(const char *idmap_name)
-{
-	int32 vers;
-	BOOL bigendianheader;
-	BOOL failed = False;
-	TDB_CONTEXT *idmap_tdb;
-
-	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
-					TDB_DEFAULT, O_RDWR,
-					0600))) {
-		DEBUG(0, ("idmap_convert: Unable to open idmap database\n"));
-		return False;
-	}
-
-	bigendianheader = (tdb_get_flags(idmap_tdb) & TDB_BIGENDIAN) ? True : False;
-
-	vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
-
-	if (((vers == -1) && bigendianheader) || (IREV(vers) == IDMAP_VERSION)) {
-		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
-		/*
-		 * high and low records were created on a
-		 * big endian machine and will need byte-reversing.
-		 */
-
-		int32 wm;
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
-
-		if (wm != -1) {
-			wm = IREV(wm);
-		}  else {
-			wm = server_state.uid_low;
-		}
-
-		if (tdb_store_int32(idmap_tdb, HWM_USER, wm) == -1) {
-			DEBUG(0, ("idmap_convert: Unable to byteswap user hwm in idmap database\n"));
-			tdb_close(idmap_tdb);
-			return False;
-		}
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (wm != -1) {
-			wm = IREV(wm);
-		} else {
-			wm = server_state.gid_low;
-		}
-
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, wm) == -1) {
-			DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
-			tdb_close(idmap_tdb);
-			return False;
-		}
-	}
-
-	/* the old format stored as DOMAIN/rid - now we store the SID direct */
-	tdb_traverse(idmap_tdb, convert_fn, &failed);
-
-	if (failed) {
-		DEBUG(0, ("Problem during conversion\n"));
-		tdb_close(idmap_tdb);
-		return False;
-	}
-
-	if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
-		DEBUG(0, ("idmap_convert: Unable to dtore idmap version in databse\n"));
-		tdb_close(idmap_tdb);
-		return False;
-	}
-
-	tdb_close(idmap_tdb);
-	return True;
-}
-
-/*****************************************************************************
- Convert the idmap database from an older version if necessary
-*****************************************************************************/
-
-BOOL winbindd_upgrade_idmap(void)
-{
-	pstring idmap_name;
-	pstring backup_name;
-	SMB_STRUCT_STAT stbuf;
-	TDB_CONTEXT *idmap_tdb;
-
-	pstrcpy(idmap_name, lock_path("winbindd_idmap.tdb"));
-
-	if (!file_exist(idmap_name, &stbuf)) {
-		/* nothing to convert return */
-		return True;
-	}
-
-	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
-					TDB_DEFAULT, O_RDWR,
-					0600))) {
-		DEBUG(0, ("idmap_convert: Unable to open idmap database\n"));
-		return False;
-	}
-
-	if (tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION") == IDMAP_VERSION) {
-		/* nothing to convert return */
-		tdb_close(idmap_tdb);
-		return True;
-	}
-
-	/* backup_tdb expects the tdb not to be open */
-	tdb_close(idmap_tdb);
-
-	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
-
-	pstrcpy(backup_name, idmap_name);
-	pstrcat(backup_name, ".bak");
-
-	if (backup_tdb(idmap_name, backup_name, 0) != 0) {
-		DEBUG(0, ("Could not backup idmap database\n"));
-		return False;
-	}
-
-	return idmap_convert(idmap_name);
 }
 
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
