@@ -742,6 +742,8 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 	ret = currlen;
 
 done:
+	va_end(args);
+
 	while (chunks) {
 		cnk = chunks->next;
 		free(chunks);
@@ -1260,16 +1262,16 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 	va_list ap2;
 
 	VA_COPY(ap2, ap);
-	
 	ret = vsnprintf(NULL, 0, format, ap2);
+	va_end(ap2);
 	if (ret <= 0) return ret;
 
 	(*ptr) = (char *)malloc(ret+1);
 	if (!*ptr) return -1;
 
 	VA_COPY(ap2, ap);
-
 	ret = vsnprintf(*ptr, ret+1, format, ap2);
+	va_end(ap2);
 
 	return ret;
 }
