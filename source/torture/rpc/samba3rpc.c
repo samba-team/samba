@@ -2032,8 +2032,8 @@ BOOL try_tcon(TALLOC_CTX *mem_ctx,
 
 	status = smbcli_mkdir(tree, "sharesec_testdir");
 	if (!NT_STATUS_EQUAL(status, expected_mkdir)) {
-		d_printf("Expected %s, got %s\n", nt_errstr(expected_mkdir),
-			 nt_errstr(status));
+		d_printf("(%s) Expected %s, got %s\n", __location__,
+			 nt_errstr(expected_mkdir), nt_errstr(status));
 		ret = False;
 	}
 
@@ -2088,7 +2088,7 @@ BOOL torture_samba3_rpc_sharesec(struct torture_context *torture)
 	ret &= try_tcon(mem_ctx, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
-			NT_STATUS_NETWORK_ACCESS_DENIED);
+			NT_STATUS_MEDIA_WRITE_PROTECTED);
 
 	ret &= try_tcon(mem_ctx, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
