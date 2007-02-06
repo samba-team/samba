@@ -2529,7 +2529,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
-					CIFS_UNIX_FCNTL_LOCKS_CAP)));
+					CIFS_UNIX_FCNTL_LOCKS_CAP|
+					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2646,8 +2647,14 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					mangle_change_to_posix();
 				}
 
-				if (client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) {
-					lp_set_posix_cifsx_locktype(POSIX_LOCK);
+				if ((client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
+				    !(client_unix_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
+					/* Client that knows how to do posix locks,
+					 * but not posix open/mkdir operations. Set a
+					 * default type for read/write checks. */
+
+					lp_set_posix_default_cifsx_readwrite_locktype(POSIX_LOCK);
+
 				}
 				break;
 			}
@@ -4846,6 +4853,246 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 }
 
 /****************************************************************************
+ Create a directory with POSIX semantics.
+****************************************************************************/
+
+static NTSTATUS smb_posix_mkdir(connection_struct *conn,
+				const char *pdata,
+				int total_data,
+				const char *fname)
+{
+	NTSTATUS status;
+	SMB_STRUCT_STAT sbuf;
+	uint32 raw_unixmode;
+	uint32 mod_unixmode;
+	mode_t unixmode;
+	files_struct *fsp;
+
+	if (total_data < 10) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(sbuf);
+
+	raw_unixmode = IVAL(pdata,8);
+	status = unix_perms_from_wire(conn, &sbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+
+	status = open_directory(conn,
+				fname,
+				&sbuf,
+				FILE_READ_ATTRIBUTES, /* Just a stat open */
+				FILE_SHARE_NONE, /* Ignored for stat opens */
+				FILE_CREATE,
+				0,
+				mod_unixmode,
+				NULL,
+				&fsp);
+
+        if (NT_STATUS_IS_OK(status)) {
+                close_file(fsp, NORMAL_CLOSE);
+        }
+	return status;
+}
+
+/****************************************************************************
+ Open/Create a file with POSIX semantics.
+****************************************************************************/
+
+static NTSTATUS smb_posix_open(connection_struct *conn,
+				char **ppdata,
+				int total_data,
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf,
+				int *pdata_return_size)
+{
+	BOOL extended_oplock_granted = False;
+	const char *pdata = *ppdata;
+	uint32 flags = 0;
+	uint32 wire_open_mode = 0;
+	uint32 raw_unixmode = 0;
+	uint32 mod_unixmode = 0;
+	uint32 create_disp = 0;
+	uint32 access_mask = 0;
+	uint32 create_options = 0;
+	NTSTATUS status = NT_STATUS_OK;
+	mode_t unixmode = (mode_t)0;
+	files_struct *fsp = NULL;
+	int oplock_request = 0;
+	int info = 0;
+
+	if (total_data < 14) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	flags = IVAL(pdata,0);
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	}
+
+	wire_open_mode = IVAL(pdata,4);
+
+	if (wire_open_mode == (SMB_O_CREAT|SMB_O_DIRECTORY)) {
+		return smb_posix_mkdir(conn, pdata, total_data, fname);
+	}
+
+	switch (wire_open_mode & SMB_ACCMODE) {
+		case SMB_O_RDONLY:
+			access_mask = FILE_READ_DATA;
+			break;
+		case SMB_O_WRONLY:
+			access_mask = FILE_WRITE_DATA;
+			break;
+		case SMB_O_RDWR:
+			access_mask = FILE_READ_DATA|FILE_WRITE_DATA;
+			break;
+		default:
+			DEBUG(5,("smb_posix_open: invalid open mode 0x%x\n",
+				(unsigned int)wire_open_mode ));
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	wire_open_mode &= ~SMB_ACCMODE;
+
+	if((wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL)) == (SMB_O_CREAT | SMB_O_EXCL)) {
+		create_disp = FILE_CREATE;
+	} else if((wire_open_mode & (SMB_O_CREAT | SMB_O_TRUNC)) == (SMB_O_CREAT | SMB_O_TRUNC)) {
+		create_disp = FILE_OVERWRITE_IF;
+	} else if((wire_open_mode & SMB_O_CREAT) == SMB_O_CREAT) {
+		create_disp = FILE_OPEN_IF;
+	} else {
+		DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
+			(unsigned int)wire_open_mode ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	raw_unixmode = IVAL(pdata,8);
+	status = unix_perms_from_wire(conn,
+				psbuf,
+				raw_unixmode,
+				VALID_STAT(*psbuf) ? PERM_EXISTING_FILE : PERM_NEW_FILE,
+				&unixmode);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+
+	if (wire_open_mode & SMB_O_SYNC) {
+		create_options |= FILE_WRITE_THROUGH;
+	}
+	if (wire_open_mode & SMB_O_APPEND) {
+		access_mask |= FILE_APPEND_DATA;
+	}
+	if (wire_open_mode & SMB_O_DIRECT) {
+		mod_unixmode |= FILE_FLAG_NO_BUFFERING;
+	}
+
+	status = open_file_ntcreate(conn,
+				fname,
+				psbuf,
+				access_mask,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				create_disp,
+				0, 		/* no create options yet. */
+				mod_unixmode,
+				oplock_request,
+				&info,
+				&fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
+		extended_oplock_granted = True;
+	}
+
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		extended_oplock_granted = True;
+	}
+
+	*pdata_return_size = 6;
+	/* Realloc the data size */
+	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
+	if (*ppdata == NULL) {
+		close_file(fsp,ERROR_CLOSE);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (extended_oplock_granted) {
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			SSVAL(pdata,0, BATCH_OPLOCK_RETURN);
+		} else {
+			SSVAL(pdata,0, EXCLUSIVE_OPLOCK_RETURN);
+		}
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
+		SSVAL(pdata,0, LEVEL_II_OPLOCK_RETURN);
+	} else {
+		SSVAL(pdata,0,NO_OPLOCK_RETURN);
+	}
+
+	SSVAL(pdata,2,fsp->fnum);
+	SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Delete a file with POSIX semantics.
+****************************************************************************/
+
+static NTSTATUS smb_posix_unlink(connection_struct *conn,
+				const char *pdata,
+				int total_data,
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	files_struct *fsp = NULL;
+	int info = 0;
+
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (VALID_STAT_OF_DIR(*psbuf)) {
+		status = open_directory(conn,
+					fname,
+					psbuf,
+					DELETE_ACCESS,
+					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+					FILE_OPEN,
+					FILE_DELETE_ON_CLOSE,
+					FILE_FLAG_POSIX_SEMANTICS|0777,
+					&info,				
+					&fsp);
+	} else {
+		status = open_file_ntcreate(conn,
+				fname,
+				psbuf,
+				DELETE_ACCESS,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				FILE_OPEN,
+				FILE_DELETE_ON_CLOSE,
+				FILE_FLAG_POSIX_SEMANTICS|0777,
+				INTERNAL_OPEN_ONLY,
+				&info,
+				&fsp);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return close_file(fsp, NORMAL_CLOSE);
+}
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
@@ -4861,6 +5108,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	pstring fname;
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	int data_return_size = 0;
 
 	if (!params) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -5148,12 +5396,46 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_SET_POSIX_LOCK:
 		{
+			if (tran_call == TRANSACT2_SETFILEINFO) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
 			status = smb_set_posix_lock(conn,
 						inbuf,
 						length,
 						pdata,
 						total_data,
 						fsp);
+			break;
+		}
+
+		case SMB_POSIX_PATH_OPEN:
+		{
+			if (tran_call != TRANSACT2_SETPATHINFO) {
+				/* We must have a pathname for this. */
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
+
+			status = smb_posix_open(conn,
+						ppdata,
+						total_data,
+						fname,
+						&sbuf,
+						&data_return_size);
+			break;
+		}
+
+		case SMB_POSIX_PATH_UNLINK:
+		{
+			if (tran_call != TRANSACT2_SETPATHINFO) {
+				/* We must have a pathname for this. */
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
+
+			status = smb_posix_unlink(conn,
+						pdata,
+						total_data,
+						fname,
+						&sbuf);
 			break;
 		}
 
@@ -5178,7 +5460,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, data_return_size, max_data_bytes);
   
 	return -1;
 }

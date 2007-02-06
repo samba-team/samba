@@ -81,7 +81,7 @@ BOOL is_locked(files_struct *fsp,
 		enum brl_type lock_type)
 {
 	int strict_locking = lp_strict_locking(fsp->conn->params);
-	enum brl_flavour lock_flav = lp_posix_cifsu_locktype();
+	enum brl_flavour lock_flav = lp_posix_cifsu_locktype(fsp);
 	BOOL ret = True;
 	
 	if (count == 0) {
@@ -426,13 +426,14 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, file_id = %lu, "
-		 "uid = %u, dev = 0x%x, inode = %.0f",
+		 "uid = %u, flags = %u, dev = 0x%x, inode = %.0f",
 		 num,
 		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
-		 (unsigned int)e->uid, (unsigned int)e->dev, (double)e->inode );
+		 (unsigned int)e->uid, (unsigned int)e->flags,
+		 (unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
 }
@@ -912,6 +913,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->inode = fsp->inode;
 	e->share_file_id = fsp->fh->file_id;
 	e->uid = (uint32)uid;
+	e->flags = fsp->posix_open ? SHARE_MODE_FLAG_POSIX_OPEN : 0;
 }
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,
@@ -927,6 +929,7 @@ static void fill_deferred_open_entry(struct share_mode_entry *e,
 	e->dev = dev;
 	e->inode = ino;
 	e->uid = (uint32)-1;
+	e->flags = 0;
 }
 
 static void add_share_mode_entry(struct share_mode_lock *lck,
