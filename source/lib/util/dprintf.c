@@ -39,8 +39,8 @@ _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBU
 
 	/* do any message translations */
 	va_copy(ap2, ap);
-
 	ret = vasprintf(&p, format, ap2);
+	va_end(ap2);
 
 	if (ret <= 0) return ret;
 
