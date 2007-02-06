@@ -219,7 +219,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	int ret, i;
 #define MAXEVENTS 8
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = std_ev->destruction_count;
+	uint32_t destruction_count = ++std_ev->destruction_count;
 	int timeout = -1;
 
 	if (std_ev->epoll_fd == -1) return -1;
@@ -425,7 +425,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	fd_set r_fds, w_fds;
 	struct fd_event *fde;
 	int selrtn;
-	uint32_t destruction_count = std_ev->destruction_count;
+	uint32_t destruction_count = ++std_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (std_ev->maxfd == EVENT_INVALID_MAXFD) {
