@@ -319,34 +319,42 @@ qx.Proto._buildPageBrowse = function(module, page)
                spacing: 10
            });
 
-  // Create a tree row structure for the tree root
-  var trsInstance = qx.ui.treefullcontrol.TreeRowStructure.getInstance();
-  var trs = trsInstance.standard(module.dbFile);
-
   // Create the tree and set its characteristics
-  var tree = new qx.ui.treefullcontrol.Tree(trs);
+  var tree = new qx.ui.treevirtual.TreeVirtual(["Browse"]);
   tree.set({
-               backgroundColor: 255,
-               border: qx.renderer.border.BorderPresets.getInstance().inset,
-               overflow: "auto",
-               height: "1*",
-               open: false,
-               alwaysShowPlusMinusSymbol: true
+             backgroundColor: 255,
+             border : qx.renderer.border.BorderPresets.getInstance().thinInset,
+             overflow: "auto",
+             width: "100%",
+             height: "1*",
+             alwaysShowOpenCloseSymbol: true
            });
 
-  // All subtrees will use this root node's event listeners.  Create an event
-  // listener for an open while empty.
+  // We've only got one column, so we don't need cell focus indication.
+  tree.setCellFocusAttributes({ backgroundColor : "transparent" });
+
+  // This needs to become automatic!
+  tree.setColumnWidth(0, 200);
+
+  // We only have one column.  We don't need the column visibility button
+  tree.setColumnVisibilityButtonVisible(false);
+
+  // Get the data model
+  var dataModel = tree.getDataModel();
+
+  // Add the database file as the first node
+  dataModel.addBranch(null, module.dbFile, false);
+
+  // We're finished adding nodes.
+  dataModel.setData();
+
+  // Create event listeners
   tree.addEventListener("treeOpenWhileEmpty", fsm.eventListener, fsm);
+  tree.addEventListener("changeSelection", fsm.eventListener, fsm);
 
-  // All subtrees will use this root node's event listeners.  Create an event
-  // listener for selection changed, to populate attribute/value table
-  tree.getManager().addEventListener("changeSelection",
-                                     fsm.eventListener,
-                                     fsm);
-
-  // We'll be receiving events on the tree object, so save its friendly name
-  fsm.addObject("tree", tree);
-  fsm.addObject("tree:manager", tree.getManager());
+  // We'll be receiving events on the tree object, so save its friendly name,
+  // and cause the tree to be disabled during remote procedure calls.
+  fsm.addObject("tree", tree, "swat.main.fsmUtils.disable_during_rpc");
 
   // Add the tree to the vlayout.
   vlayout.add(tree);
@@ -492,62 +500,60 @@ qx.Proto._displaySearchResults = function(module, rpcRequest)
 qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
 {
   var t;
-  var trs;
   var child;
+  var fsm = module.fsm;
+
+  // Get the tree object
+  var tree = fsm.getObject("tree");
+  var dataModel = tree.getDataModel();
 
   // Obtain the result object
   var result = rpcRequest.getUserData("result").data;
 
   // We also need some of the original parameters passed to the request
-  var parent = rpcRequest.getUserData("parent");
+  var parentNode = rpcRequest.getUserData("parentNode");
   var attributes = rpcRequest.getUserData("attributes");
 
   // Any children?
   if (! result || result["length"] == 0)
   {
-    // Nope.  Allow parent's expand/contract button to be removed
-    parent.setAlwaysShowPlusMinusSymbol(false);
+    // Nope.  Remove parent's expand/contract button.
+    dataModel.setState(parentNode.nodeId, { bHideOpenClose : true });
+    dataModel.setData();
     return;
   }
 
   // base object, add naming contexts to the root
   if ((result.length == 1) &&
       ((result[0]["dn"] == "") ||
-       (result[0]["dn"].toLowerCase() == "cn=rootdse"))) {
-
+       (result[0]["dn"].toLowerCase() == "cn=rootdse")))
+  {
     defnc = result[0]["defaultNamingContext"];
 
     // Build a tree row for the defaultNamingContext
-    if (defnc) {
-      trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(defnc);
-      // This row is a "folder" (it can have children)
-      t = new qx.ui.treefullcontrol.TreeFolder(trs);
-      t.setAlwaysShowPlusMinusSymbol(true);
-
-      // Add this row to its parent
-      parent.add(t);
+    if (defnc)
+    {
+      dataModel.addBranch(parentNode.nodeId, defnc, false);
     }
 
     var ncs = result[0]["namingContexts"];
 
-    // If it's multi-valued (type is an array) we have other naming contexts to show
-    if (typeof(ncs) == "object") {
-      
-      for (var i = 0; i < ncs.length; i++) {
-        if (ncs[i] != defnc) { //skip default naming context
-          trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(ncs[i]);
-          // This row is a "folder" (it can have children)
-          t = new qx.ui.treefullcontrol.TreeFolder(trs);
-          t.setAlwaysShowPlusMinusSymbol(true);
-  
-          // Add this row to its parent
-          parent.add(t);
+    // If it's multi-valued (type is an array) we have other naming contexts
+    // to show
+    if (typeof(ncs) == "object")
+    {
+      for (var i = 0; i < ncs.length; i++)
+      {
+        if (ncs[i] != defnc)
+        {
+          //skip default naming context
+          dataModel.addBranch(parentNode.nodeId, ncs[i], false);
         }
       }
     }
   }
-  else {
-
+  else
+  {
     for (var i = 0; i < result.length; i++)
     {
       var name;
@@ -557,17 +563,12 @@ qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
       name = child["dn"].split(",")[0];
   
       // Build a standard tree row
-      trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(name);
-  
-      // This row is a "folder" (it can have children)
-      t = new qx.ui.treefullcontrol.TreeFolder(trs);
-      t.setAlwaysShowPlusMinusSymbol(true);
-  
-      // Add this row to its parent
-      parent.add(t);
+      dataModel.addBranch(parentNode.nodeId, name, false);
     }
-
   }
+
+  // Cause the tree changes to be rendered
+  dataModel.setData();
 };
 
 qx.Proto._displayLdbmodBaseChanged = function(module, rpcRequest)
@@ -594,11 +595,14 @@ qx.Proto._displayTreeSelectionChangedResults = function(module, rpcRequest)
   // Obtain the result object
   var result = rpcRequest.getUserData("result").data;
 
+  var tree = fsm.getObject("tree");
+  var dataModel = tree.getDataModel();
+
   // If we received an empty list, ...
   if (result == null)
   {
     // ... then just clear the attribute/value table.
-    tableModel.setData([ ]);
+    dataModel.setData([ ]);
     return;
   }
 

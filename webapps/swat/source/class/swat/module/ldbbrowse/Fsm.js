@@ -100,7 +100,7 @@ qx.Proto.buildFsm = function(module)
           // populate the attribute/value table.
           "changeSelection":
           {
-            "tree:manager" :
+            "tree" :
               "Transition_Idle_to_AwaitRpcResult_via_tree_selection_changed",
 
             "dbName":
@@ -224,16 +224,20 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          var parent = event.getData();
-          var hierarchy = parent.getHierarchy(new Array());
+          // Get the tree object
+          var tree = fsm.getObject("tree");
 
-          parent.debug("Requesting children...");
+          // Get the node on which the event occurred
+          var node = event.getData();
+
+          // Obtain the full hierarchy for this node
+          var hierarchy = tree.getHierarchy(node.nodeId);
+
+          tree.debug("Requesting children for node id " + node.nodeId + ": " +
+                     hierarchy.join("/") + "...");
 
           // Strip off the root node
           hierarchy.shift();
-
-          // Get the tree object
-          var tree = fsm.getObject("tree");
 
           // Determine the children.  Differs depending on root or otherwise
           var attributes;
@@ -241,7 +245,7 @@ qx.Proto.buildFsm = function(module)
           var baseDN;
             
           // If parent is the root...
-          if (parent == tree)
+          if (node.parentNodeId == 0)
           {
             // ... then we want the defaultNamingContext, ...
             attributes = [ "defaultNamingContext", "namingContexts" ];
@@ -290,7 +294,7 @@ qx.Proto.buildFsm = function(module)
           request.setUserData("requestType", "tree_open");
 
           // We'll also need some of our parameters
-          request.setUserData("parent", parent);
+          request.setUserData("parentNode", node);
           request.setUserData("attributes", attributes);
         }
     });
@@ -313,22 +317,26 @@ qx.Proto.buildFsm = function(module)
       "predicate" :
         function(fsm, event)
         {
-          var element = event.getData()[0];
-          var hierarchy = element.getHierarchy(new Array());
+          // Get the tree object
+          var tree = fsm.getObject("tree");
+
+          // Get the list of selected nodes.  We're in single-selection mode,
+          // so there will be only one of them.
+          var nodes = event.getData();
+          var node = nodes[0];
+
+          var hierarchy = tree.getHierarchy(node.nodeId);
 
           // Strip off the root node
           hierarchy.shift();
 
-          // Get the tree object
-          var tree = fsm.getObject("tree");
-
           // If element is the root...
-          if (element == tree)
+          if (node.parentNodeId == 0)
           {
             // ... then just clear out the attribute/value table.
             var tableModel = fsm.getObject("tableModel:browse");
             tableModel.setData([]);
-            return null;        // don't search additional transitionis
+            return null;        // don't search additional transitions
           }
 
           return true;
@@ -337,14 +345,18 @@ qx.Proto.buildFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
-          var element = event.getData()[0];
-          var hierarchy = element.getHierarchy(new Array());
+          // Get the tree object
+          var tree = fsm.getObject("tree");
+
+          // Get the list of selected nodes.  We're in single-selection mode,
+          // so there will be only one of them.
+          var nodes = event.getData();
+          var node = nodes[0];
+
+          var hierarchy = tree.getHierarchy(node.nodeId);
 
           // Strip off the root node
           hierarchy.shift();
-
-          // Get the tree object
-          var tree = fsm.getObject("tree");
 
           // Determine the children.  Differs depending on root or otherwise
           var attributes;
@@ -437,7 +449,7 @@ qx.Proto.buildFsm = function(module)
     // populate the attribute/value table.
     "changeSelection":
     {
-      "tree:manager" : 
+      "tree" : 
         qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED,
 
       "dbName":
