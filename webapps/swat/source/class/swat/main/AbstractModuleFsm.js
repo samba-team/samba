@@ -472,10 +472,10 @@ qx.Proto.addAwaitRpcResultState = function(module, blockedEvents)
  * @param fsm {qx.util.fsm.FiniteStateMachine}
  *   The finite state machine issuing this remote procedure call.
  *
- * @param service {string}
+ * @param service {String}
  *   The name of the remote service which provides the specified method.
  *
- * @param method {string}
+ * @param method {String}
  *   The name of the method within the specified service.
  *
  * @param params {Array}

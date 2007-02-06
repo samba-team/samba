@@ -26,7 +26,7 @@
  *   class -
  *     The class for this module
  *
- * @param moduleName {string}
+ * @param moduleName {String}
  *   The name of the module being registered.  This is the name that will
  *   appear in the Modules menu.
  *
