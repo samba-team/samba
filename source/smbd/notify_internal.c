@@ -171,6 +171,7 @@ static NTSTATUS notify_load(struct notify_context *notify)
 				      (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 
 	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("notify_load:\n"));
 		NDR_PRINT_DEBUG(notify_array, notify->array);
 	}
 
@@ -223,6 +224,11 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("notify_save:\n"));
+		NDR_PRINT_DEBUG(notify_array, notify->array);
 	}
 
 	dbuf.dptr = (char *)blob.data;
@@ -667,11 +673,12 @@ void notify_trigger(struct notify_context *notify,
 
 			if (NT_STATUS_EQUAL(
 				    status, NT_STATUS_INVALID_HANDLE)) {
+				struct server_id server = e->server;
 
 				DEBUG(10, ("Deleting notify entries for "
 					   "process %s because it's gone\n",
 					   procid_str_static(&e->server.id)));
-				notify_remove_all(notify, &e->server);
+				notify_remove_all(notify, &server);
 				goto again;
 			}
 		}
