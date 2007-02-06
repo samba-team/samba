@@ -215,7 +215,7 @@ START=`date`
 (
  # give time for nbt server to register its names
  echo "delaying for nbt name registration"
- sleep 4
+ sleep 10
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
  bin/nmblookup $CONFIGURATION -U $SERVER_IP __SAMBA__
  bin/nmblookup $CONFIGURATION __SAMBA__
