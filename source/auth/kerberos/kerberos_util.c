@@ -417,10 +417,9 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 		const struct samr_Password *mach_pwd;
 		mach_pwd = cli_credentials_get_nt_hash(machine_account, mem_ctx);
 		if (!mach_pwd) {
-			DEBUG(1, ("create_keytab: Domain trust informaton for account %s not available\n",
-				  cli_credentials_get_principal(machine_account, mem_ctx)));
+			/* OK, nothing to do here */
 			talloc_free(mem_ctx);
-			return EINVAL;
+			return 0;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
 					 ETYPE_ARCFOUR_HMAC_MD5,
