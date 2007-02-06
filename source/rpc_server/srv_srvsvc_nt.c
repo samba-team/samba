@@ -2081,6 +2081,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
 					0,
+					FILE_ATTRIBUTE_DIRECTORY,
 					NULL, &fsp);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2187,6 +2188,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
+						FILE_ATTRIBUTE_DIRECTORY,
 						NULL, &fsp);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {

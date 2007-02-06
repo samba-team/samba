@@ -160,8 +160,8 @@ void destroy_fake_file_handle(FAKE_FILE_HANDLE **fh)
 	(*fh) = NULL;
 }
 
-int close_fake_file(files_struct *fsp)
+NTSTATUS close_fake_file(files_struct *fsp)
 {
 	file_free(fsp);
-	return 0;
+	return NT_STATUS_OK;
 }

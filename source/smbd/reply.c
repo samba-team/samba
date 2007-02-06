@@ -3108,9 +3108,9 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	int outsize = 0;
 	time_t mtime;
-	int32 eclass = 0, err = 0;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
@@ -3138,12 +3138,11 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Special case - close NT SMB directory handle.
 		 */
 		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
-		close_file(fsp,NORMAL_CLOSE);
+		status = close_file(fsp,NORMAL_CLOSE);
 	} else {
 		/*
 		 * Close ordinary file.
 		 */
-		int close_err;
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
 			 fsp->fh->fd, fsp->fnum,
@@ -3162,17 +3161,12 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * a disk full error. If not then it was probably an I/O error.
 		 */
  
-		if((close_err = close_file(fsp,NORMAL_CLOSE)) != 0) {
-			errno = close_err;
-			END_PROFILE(SMBclose);
-			return (UNIXERROR(ERRHRD,ERRgeneral));
-		}
+		status = close_file(fsp,NORMAL_CLOSE);
 	}  
 
-	/* We have a cached error */
-	if(eclass || err) {
+	if(!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBclose);
-		return ERROR_DOS(eclass,err);
+		return ERROR_NT(status);
 	}
 
 	END_PROFILE(SMBclose);
@@ -3189,7 +3183,7 @@ int reply_writeclose(connection_struct *conn,
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	int outsize = 0;
-	int close_err = 0;
+	NTSTATUS close_status = NT_STATUS_OK;
 	SMB_OFF_T startpos;
 	char *data;
 	time_t mtime;
@@ -3223,7 +3217,7 @@ int reply_writeclose(connection_struct *conn,
 	if (numtowrite) {
 		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
 			fsp->fsp_name ));
-		close_err = close_file(fsp,NORMAL_CLOSE);
+		close_status = close_file(fsp,NORMAL_CLOSE);
 	}
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
@@ -3235,10 +3229,9 @@ int reply_writeclose(connection_struct *conn,
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
  
-	if(close_err != 0) {
-		errno = close_err;
+	if(!NT_STATUS_IS_OK(close_status)) {
 		END_PROFILE(SMBwriteclose);
-		return(UNIXERROR(ERRHRD,ERRgeneral));
+		return ERROR_NT(close_status);
 	}
  
 	outsize = set_message(outbuf,1,0,True);
@@ -3455,7 +3448,7 @@ int reply_printclose(connection_struct *conn,
 {
 	int outsize = set_message(outbuf,0,0,False);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-	int close_err = 0;
+	NTSTATUS status;
 	START_PROFILE(SMBsplclose);
 
 	CHECK_FSP(fsp,conn);
@@ -3468,12 +3461,11 @@ int reply_printclose(connection_struct *conn,
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
 		 fsp->fh->fd,fsp->fnum));
   
-	close_err = close_file(fsp,NORMAL_CLOSE);
+	status = close_file(fsp,NORMAL_CLOSE);
 
-	if(close_err != 0) {
-		errno = close_err;
+	if(!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsplclose);
-		return(UNIXERROR(ERRHRD,ERRgeneral));
+		return ERROR_NT(status);
 	}
 
 	END_PROFILE(SMBsplclose);
@@ -3707,7 +3699,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
 
-BOOL rmdir_internals(connection_struct *conn, const char *directory)
+NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
@@ -3717,7 +3709,7 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
 			     directory);
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
@@ -3791,14 +3783,14 @@ BOOL rmdir_internals(connection_struct *conn, const char *directory)
 	if (ret != 0) {
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
 			 "%s\n", directory,strerror(errno)));
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_REMOVED,
 		     FILE_NOTIFY_CHANGE_DIR_NAME,
 		     directory);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3834,9 +3826,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
 
 	dptr_closepath(directory,SVAL(inbuf,smb_pid));
-	if (!rmdir_internals(conn, directory)) {
+	status = rmdir_internals(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBrmdir);
-		return UNIXERROR(ERRDOS, ERRbadpath);
+		return ERROR_NT(status);
 	}
  
 	outsize = set_message(outbuf,0,0,False);
@@ -4585,7 +4578,6 @@ NTSTATUS copy_file(char *src, char *dest1,connection_struct *conn, int ofun,
  	uint32 dosattrs;
 	uint32 new_create_disposition;
 	NTSTATUS status;
-	int close_err;
  
 	pstrcpy(dest,dest1);
 	if (target_is_directory) {
@@ -4670,10 +4662,10 @@ NTSTATUS copy_file(char *src, char *dest1,connection_struct *conn, int ofun,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	close_err = close_file(fsp2,NORMAL_CLOSE);
+	status = close_file(fsp2,NORMAL_CLOSE);
 
-	if (close_err != 0) {
-		return map_nt_error_from_unix(close_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (ret != (SMB_OFF_T)src_sbuf.st_size) {

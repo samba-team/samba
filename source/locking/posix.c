@@ -636,7 +636,7 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
+NTSTATUS fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
@@ -651,7 +651,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		 */
 		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
 		fsp->fh->fd = -1;
-		return ret;
+		return map_nt_error_from_unix(errno);
 	}
 
 	if (get_windows_lock_ref_count(fsp)) {
@@ -663,7 +663,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 
 		add_fd_to_close_entry(fsp);
 		fsp->fh->fd = -1;
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -701,14 +701,18 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 
 	ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
 
-	if (saved_errno != 0) {
+	if (ret == 0 && saved_errno != 0) {
 		errno = saved_errno;
 		ret = -1;
 	} 
 
 	fsp->fh->fd = -1;
 
-	return ret;
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
