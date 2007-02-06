@@ -1,0 +1,94 @@
+# Spanish translation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: feedreader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-26 12:52+0100\n"
+"PO-Revision-Date: 2007-01-24 20:54+0100\n"
+"Last-Translator: Carsten Rammoser <carsten@rammoser.com>\n"
+"Language-Team:  <camilo.aguilar@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Spanish\n"
+"X-Poedit-Country: COLOMBIA\n"
+
+#: source/class/feedreader/Application.js:133
+msgid "reloading ..."
+msgstr "actualizando ..."
+
+#: source/class/feedreader/Application.js:138
+msgid "qooxdoo feed reader."
+msgstr "lector de feeds qooxdoo."
+
+#: source/class/feedreader/Application.js:143
+msgid "Add feed"
+msgid_plural "Add feeds"
+msgstr[0] "Agregar feed"
+msgstr[1] "Agregar feeds"
+
+#: source/class/feedreader/Application.js:144
+msgid "Remove feed"
+msgstr "Eliminar feed"
+
+#: source/class/feedreader/Application.js:147
+msgid "Reload"
+msgstr "Actualizar"
+
+#: source/class/feedreader/Application.js:149
+msgid "(%1) Reload the feeds."
+msgstr "(%1) Actualizar los feeds."
+
+#: source/class/feedreader/Application.js:156
+#: source/class/feedreader/Application.js:158
+msgid "English"
+msgstr "Inglés"
+
+#: source/class/feedreader/Application.js:157
+msgid "German"
+msgstr "Alemán"
+
+#: source/class/feedreader/Application.js:159
+msgid "Turkish"
+msgstr "Turco"
+
+#: source/class/feedreader/Application.js:160
+msgid "Italian"
+msgstr "Italiano"
+
+#: source/class/feedreader/Application.js:161
+msgid "Spanish"
+msgstr "Español"
+
+#: source/class/feedreader/Application.js:162
+msgid "Swedish"
+msgstr "Sueco"
+
+#: source/class/feedreader/Application.js:163
+msgid "Russian"
+msgstr "Ruso"
+
+#: source/class/feedreader/Application.js:186
+msgid "Help"
+msgstr "Ayuda"
+
+#: source/class/feedreader/Application.js:194
+msgid "News feeds"
+msgstr "Feeds de noticias"
+
+#: source/class/feedreader/Application.js:215
+msgid "Subject"
+msgstr "Asunto"
+
+#: source/class/feedreader/Application.js:216
+msgid "Sender"
+msgstr "Remitente"
+
+#: source/class/feedreader/Application.js:217
+msgid "Date"
+msgstr "Fecha"
+
+#: source/class/feedreader/ArticleView.js:79
+msgid "read more ..."
+msgstr "leer más ..."

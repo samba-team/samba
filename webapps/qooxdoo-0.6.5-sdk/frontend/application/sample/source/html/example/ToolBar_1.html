@@ -1,0 +1,252 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Introduce all classes needed for creating real qx.ui.toolbar.ToolBars. This includes qx.ui.toolbar.ToolBars,
+    qx.ui.toolbar.ToolBarParts, qx.ui.toolbar.Separator and qx.ui.toolbar.ToolBarButtons.</p>
+
+    <p>The qx.ui.toolbar.ToolBarButtons and QxRadioButtons in this example are beautifully
+    decoupled by "global" qx.event.type.DataEvent.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var tb = new qx.ui.toolbar.ToolBar;
+      with(tb)
+      {
+        setTop(48);
+        setLeft(20);
+        setRight(335);
+        
+        // setWidth("auto");
+      };
+
+      var btns1 = [
+        { type : "button", icon : "document-new", text : "New" },
+        { type : "separator" },
+        { type : "button", icon : "edit-copy", text : "Copy" },
+        { type : "button", icon : "edit-cut", text : "Cut" },
+        { type : "button", icon : "edit-paste", text : "Paste" }
+      ];
+
+      var btns2 = [
+        { type : "button", icon : "go-up", text : "Upload" },
+        { type : "button", icon : "go-down", text : "Download" }
+      ];
+
+      var btns3 = [
+        { type : "button", icon : "help-about", text : "Help" }
+      ];
+
+      var bars = [ btns1, btns2, btns3 ];
+
+      function changeLayout(e) {
+        this.setShow(e.getData());
+      };
+      
+      function changeSize(e) {
+        var v = e.getData();
+        var o = v == 22 ? 32 : 22;
+        
+        this.setIcon(this.getIcon().replace(o, v));
+      };      
+      
+      function buttonExecute() { this.debug("Executed: " + this.getLabel()); };
+
+      var useParts = true;
+
+
+      for (var j=0; j<bars.length; j++)
+      {
+        var btns = bars[j];
+
+        if (useParts) {
+          var tbp = new qx.ui.toolbar.Part;
+        };
+
+        for (var i=0; i<btns.length; i++)
+        {
+          var btn = btns[i];
+
+          switch(btn.type)
+          {
+            case "separator":
+              var o = new qx.ui.toolbar.Separator;
+              break;
+
+            case "button":
+              var o = new qx.ui.toolbar.Button(btn.text, "icon/22/actions/" + btn.icon + ".png");
+
+              // beautiful decoupling: toolbar buttons don't know about radio boxes
+
+              d.addEventListener("changeLayout", changeLayout, o);
+              d.addEventListener("changeSize", changeSize, o);
+              
+              o.addEventListener("execute", buttonExecute);
+              break;
+          };
+
+          if (useParts)
+          {
+            tbp.add(o);
+          }
+          else
+          {
+            tb.add(o);
+          };
+        };
+
+        if (useParts) {
+          tb.add(tbp);
+        };
+      };
+
+      d.add(tb);
+
+
+
+
+
+
+      var rd1 = new qx.ui.form.RadioButton("Show Icons and Label", "both");
+      var rd2 = new qx.ui.form.RadioButton("Show Icons", "icon");
+      var rd3 = new qx.ui.form.RadioButton("Show Label", "label");
+
+      with(rd1)
+      {
+        setTop(140);
+        setLeft(20);
+        setChecked(true);
+      };
+
+      with(rd2)
+      {
+        setTop(160);
+        setLeft(20);
+      };
+
+      with(rd3)
+      {
+        setTop(180);
+        setLeft(20);
+      };
+
+
+      var rbm = new qx.manager.selection.RadioManager();
+
+      rbm.add(rd1);
+      rbm.add(rd2);
+      rbm.add(rd3);
+
+
+      // beautiful decoupling: radio boxes don't know about toolbar buttons
+      rbm.addEventListener("changeSelected", function(e) {
+        d.dispatchEvent( new qx.event.type.DataEvent("changeLayout", e.getData().getValue() ) );
+      });
+
+      d.add(rd1, rd2, rd3);
+
+
+
+      // Alignment
+      var ra1 = new qx.ui.form.RadioButton("Left Aligned", "left");
+      var ra2 = new qx.ui.form.RadioButton("Centered", "center");
+      var ra3 = new qx.ui.form.RadioButton("Right Aligned", "right");
+
+      with(ra1)
+      {
+        setTop(140);
+        setLeft(220);
+        setChecked(true);
+      };
+
+      with(ra2)
+      {
+        setTop(160);
+        setLeft(220);
+      };
+
+      with(ra3)
+      {
+        setTop(180);
+        setLeft(220);
+      };
+
+
+      var ram = new qx.manager.selection.RadioManager();
+
+      ram.add(ra1);
+      ram.add(ra2);
+      ram.add(ra3);
+
+      d.add(ra1, ra2, ra3);
+
+      ram.addEventListener("changeSelected", function(e) {
+        tb.setHorizontalChildrenAlign(e.getData().getValue());
+      });
+
+
+
+
+      // Icon Sizes
+      var b3 = new qx.ui.form.Button("Icons: 22 Pixel", "icon/16/actions/format-color.png");
+
+      with(b3)
+      {
+        setTop(140);
+        setLeft(420);
+        setHorizontalAlign("center");
+      };
+
+      b3.addEventListener("execute", function(e) {
+        d.dispatchEvent(new qx.event.type.DataEvent("changeSize", 22));
+      });
+
+      var b4 = new qx.ui.form.Button("Icons: 32 Pixel", "icon/16/actions/format-color.png");
+
+      with(b4)
+      {
+        setTop(170);
+        setLeft(420);
+        setHorizontalAlign("center");
+      };
+
+      b4.addEventListener("execute", function(e) {
+        d.dispatchEvent(new qx.event.type.DataEvent("changeSize", 32));
+      });
+
+      d.add(b3, b4);
+      
+      
+      
+      
+
+      // Icon & Color Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 20, 248);
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 220, 248);
+       
+
+     
+      /*
+      Test for cloning support
+      
+      tb2 = tb.clone(true);
+      tb2.setTop(400);
+      */
+    });
+  </script>
+</body>
+</html>

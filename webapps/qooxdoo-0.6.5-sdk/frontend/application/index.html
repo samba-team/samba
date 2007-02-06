@@ -1,0 +1,183 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <style type="text/css">
+*{
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body{
+  font-size: 12px;
+  font-family: Arial, "Bitstream Vera Sans", Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+p{
+  margin: 6px 0;
+}
+
+.hide, .build {
+	display: none;
+}
+
+#demoHead,
+#demoFoot{
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  width: 100%;
+  background: #134275;
+  padding: 5px 8px;
+  color: #DEFF83;
+  font-weight: bold;
+  overflow: hidden;
+  z-index: 1000000000;
+}
+
+#demoHead{
+  top: 0px;
+}
+
+#demoHead span{
+  font-weight: normal;
+  color: white;
+}
+
+img{
+  box-sizing: content-box;
+  -moz-box-sizing: content-box;
+}
+
+#content{
+  margin: 40px 20px 0;
+  width: 400px;
+}
+
+h1{
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #134275;
+}
+
+h2{
+  font-size: 16px;
+  color: #134275;
+  margin-bottom: 10px;
+}
+
+h3{
+  font-size: 14px;
+  color: #1D65B3;
+}
+
+a{
+  color: #335EA8;
+}
+
+li{
+  margin-left: 16px;
+  list-style: square;
+  margin-bottom: 20px;
+}
+
+p{
+  font-size: 12px;
+}
+
+ul ul{
+  margin-top: 20px;
+}
+
+p.note{
+  padding: 10px;
+  background: #F3FFD1;
+  color: #444444;
+  margin: 20px 0;
+}
+  </style>
+  <script type="text/javascript">
+  	function launch(url, w, h) {
+		var w = w || 800;
+		var h = h || 600;
+		var sw = 100;
+		var sh = 100;
+		
+		sw = getCenteredCoord(w, screen.availWidth);
+		sh = getCenteredCoord(h, screen.availHeight);
+		
+		var win = window.open(url, "qx", "width=" + w + ",height=" + h + ",left=" + sw + ",top=" + sh + ",status=no,resizable=no");
+	}
+	
+	function getCenteredCoord(windowDim, screenDim) {
+		return (screenDim / 2) - (windowDim / 2);
+	}
+	</script>
+</head>
+<body>
+  <div id="demoHead">qooxdoo: <span>The new era of web interface development</span></div>
+
+  <div id="content" style="position:absolute;top:0px;left:0px">
+    
+    <h1>Demo</h1>
+   
+    <p class="note">The source version is only available in SVN and SDK archives.</p>
+
+    <h2>Applications</h2>
+    
+    <ul>
+      <li>
+        <h3>Showcase</h3>
+        <p>A good example for qooxdoo's versatility.</p>
+        <span class="source"><a href="showcase/build/index.html"><b>Build</b></a> | <a href="showcase/source/index.html">Source (Developer)</a></span>
+        <span class="build"><a href="showcase/index.html"><b>Start Showcase</b></a></span>
+      </li>
+      <li>
+        <h3>Feed Reader</h3>
+        <p>qooxdoo RSS feed reader using dummy RSS feed data.</p>
+      	<span class="source"><a href="feedreader/build/index.html"><b>Build</b></a> | <a href="feedreader/source/index.html">Source (Developer)</a></span>
+      	<span class="build"><a href="feedreader/index.html"><b>Open Feed Reader</b></a></span>
+      </li>
+      <li>
+        <h3>Web Mail</h3>
+        <p>Complex application-like interface using multiple qooxdoo widgets.</p>
+        <span class="source"><a href="#" onclick="launch('webmail/build/index.html')"><b>Build</b></a> | <a href="#" onclick="launch('webmail/source/index.html')">Source (Developer)</a></span>
+        <span class="build"><a href="#" onclick="launch('webmail/index.html')"><b>Open Web Mail</b></a></span>
+      </li>
+      <li>
+        <h3>API Viewer</h3>
+        <p>qooxdoo based API viewer.</p>
+        <span class="source"><a href="apiviewer/build/index.html"><b>Build</b></a> | <a href="apiviewer/source/index.html">Source (Developer)</a></span>
+        <span class="build"><a href="apiviewer/index.html"><b>Open API viewer</b></a></span>
+      </li>
+      <li>
+        <h3>Samples</h3>
+        <ul>
+          <li>
+            <h4>Example</h4>
+            <p>Easily to understand examples. The basic features of each qooxdoo widget is demonstrated in a separate example. This section is probably the one you are looking for!</p>
+            <span class="source"><a href="sample/build/html/example/index.html"><b>Build</b></a> | <a href="sample/source/html/example/index.html">Source (Developer)</a></span>
+            <span class="build"><a href="sample/html/example/index.html"><b>Show Example</b></a></span>
+          </li>
+          <li>
+            <h4>Test</h4>
+            <p>These tests demonstrate internal functionality of qooxdoo. Not really useful for the typical qooxdoo user, but needed for developers to test some complex layout stuff, performance related problems and more. The tests may not always be up-to-date and functioning!</p>
+            <span class="source"><a href="sample/build/html/test/index.html"><b>Build</b></a> | <a href="sample/source/html/test/index.html">Source (Developer)</a></span>
+            <span class="build"><a href="sample/html/test/index.html"><b>Show Test</b></a></span>
+          </li>
+          <li>
+            <h4>Performance</h4>
+            <p>These tests are used to test performance of different javascript/qooxdoo rountines and allows them to compare them with each other</p>
+            <span class="source"><a href="sample/build/html/performance/index.html"><b>Build</b></a> | <a href="sample/source/html/performance/index.html">Source (Developer)</a></span>
+            <span class="build"><a href="sample/html/performance/index.html"><b>Show Performance</b></a></span>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</body>
+</html>

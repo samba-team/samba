@@ -1,0 +1,191 @@
+#
+# Mapping of qooxdoo icon names to Tango icons
+#
+
+accessibility = apps/preferences-desktop-accessibility
+adobe-reader = apps/office-adobe-reader
+alarm = apps/accessories-alarm
+applications = categories/applications
+apply = actions/dialog-ok
+attach = actions/mail-message-attach
+back = actions/go-previous
+background = apps/preferences-desktop-wallpaper
+bell
+bitmapgraphics
+bookmark-add = actions/favorite-add
+bookmark-folder = actions/bookmark_folder
+bookmark-toolbar
+bookmark
+bug
+button-cancel = actions/dialog-cancel
+button-ok = actions/dialog-ok
+cache
+calculator = apps/accessories-calculator
+camera = devices/camera-photo
+cancel = actions/dialog-cancel
+cdrom = devices/media-optical
+char-device
+chart
+clipboard = apps/accessories-clipboard
+clock = apps/accessories-clock
+color-fill
+color-line
+colors = actions/format-color
+configure = apps/preferences
+connect-creating
+connect-established
+connect-no = status/network-offline
+control-center = apps/preferences-system
+cookie
+core
+date = apps/accessories-date
+decrypted = actions/decrypt
+desktop = places/user-desktop
+devices = devices/drive-harddisk
+dictionary = apps/accessories-dictionary
+display = devices/video-display
+down = actions/go-down
+edit-copy = actions/edit-copy
+edit-cut = actions/edit-cut
+edit-delete = actions/edit-delete
+edit-paste = actions/edit-paste
+edit = actions/edit
+editor = apps/accessories-text-editor
+email = apps/internet-mail
+encrypted = actions/encrypt
+energy
+error = status/dialog-error
+exec = actions/execute
+exit = actions/application-exit
+file-manager = apps/system-file-manager
+file-new = actions/document-new
+file-open = actions/document-open
+file-print = actions/document-print
+file-save-as = actions/document-save-as
+file-save = actions/document-save
+find = actions/edit-find
+floppy = devices/media-floppy
+flowchart
+folder-favorite = status/folder-favorite
+folder-important
+folder-locked = places/folder-locked
+folder-open = status/folder-open
+folder = places/folder
+fonts = apps/preferences-desktop-font
+forward = actions/go-next
+games = categories/applications-games
+graphics = categories/applications-graphics
+harddrive = devices/drive-harddisk
+hardware-info
+help-center = apps/help-browser
+help = actions/help-about
+history-clear = actions/history-clear
+history = actions/history
+home = actions/go-home
+icons = apps/preferences-desktop-theme-icon
+iconthemes = apps/preferences-desktop-theme-icon
+important = emblems/emblem-important
+info = status/dialog-information
+joystick = devices/input-gaming
+keyboard-layout = apps/preferences-desktop-keyboard
+locale = apps/preferences-desktop-locale
+look-and-feel = apps/preferences-desktop-theme
+magnifier = actions/zoom
+mail-delete = actions/mail-message-delete
+mail-find = actions/mail-find
+mail-forward = actions/mail-forward
+mail-get = actions/mail-receive
+mail-new = actions/mail-message-new
+mail-reply-all = actions/mail-reply-all
+mail-reply = actions/mail-reply-sender
+mail-send = actions/mail-send
+mail = apps/internet-email-client
+memory = devices/memory
+mime-archive = mimetypes/package-x-generic
+mime-binary = mimetypes/application-x-executable
+mime-calendar = mimetypes/x-office-calendar
+mime-card = mimetypes/x-office-address-book
+mime-color = actions/format-color
+mime-document = mimetypes/x-office-document
+mime-html = mimetypes/text-html
+mime-image = mimetypes/image-x-generic
+mime-manual
+mime-multimedia = mimetypes/audio-x-generic
+mime-pdf = mimetypes/application-pdf
+mime-quicktime = mimetypes/application-quicktime
+mime-rpm
+mime-script = mimetypes/text-x-script
+mime-shellscript = mimetypes/text-x-script
+mime-sourcecode = mimetypes/empty-x-generic
+mime-spreadsheet = mimetypes/x-office-spreadsheet
+mime-text = mimetypes/text-x-generic
+mime-video = mimetypes/video-x-generic
+misc = actions/execute
+mixer = apps/multimedia-volume-control
+modem = devices/modem
+mouse = devices/input-mouse
+movieplayer = apps/multimedia-movie-player
+multimedia = categories/applications-multimedia
+mycomputer = devices/computer
+netscape = mimetypes/text-html
+network = categories/applications-internet
+no
+notes = apps/accessories-notes
+notify
+ok = actions/dialog-ok
+opera = apps/internet-browser-opera
+organizer = apps/office-organizer
+paint
+partitions
+password = status/dialog-password
+pda
+pipe
+presentation
+printer = devices/printer
+queue
+redo = actions/edit-redo
+reload = actions/view-refresh
+rotate = actions/object-rotate-left
+run = actions/system-run
+scanner = devices/scanner
+services = places/services
+settings = categories/preferences
+signature
+spellcheck = actions/tools-check-spelling
+stop = actions/stop
+style
+system = categories/applications-system
+tab-duplicate
+tab-new-raised
+tab-new
+tab-remove
+tablet = devices/input-tablet
+terminal = apps/utilities-terminal
+themes = apps/preferences-desktop-theme
+toys = categories/applications-toys
+trashcan-empty = places/user-trash
+trashcan-full = places/user-trash-full
+tv = devices/video-display
+undo = actions/edit-undo
+up = actions/go-up
+user = apps/system-users
+utilities = categories/applications-utilities
+view-bottom
+view-choose
+view-detailed = actions/view-pane-detailed
+view-icon = actions/view-pane-icon
+view-left-right
+view-multicolumn = actions/view-pane-column
+view-remove = actions/view-pane-remove
+view-right
+view-sidetree
+view-text = actions/view-pane-text
+view-top-bottom
+view-tree = actions/view-pane-tree
+viewmag-fit = actions/zoom-best-fit
+viewmag-minus = actions/zoom-out
+viewmag-original = actions/zoom-original
+viewmag-plus = actions/zoom-in
+viewmag = actions/zoom
+wizard
+wordprocessor

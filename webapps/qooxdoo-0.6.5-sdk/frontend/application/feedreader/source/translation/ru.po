@@ -1,0 +1,94 @@
+# Russian translation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo feedreader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-23 17:57+0100\n"
+"PO-Revision-Date: 2006-12-20 23:22+0200\n"
+"Last-Translator:  <zindel@gammacenter.com>\n"
+"Language-Team:  <en@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: source/class/feedreader/Application.js:130
+msgid "reloading ..."
+msgstr "загрузка..."
+
+#: source/class/feedreader/Application.js:135
+msgid "qooxdoo feed reader."
+msgstr "qooxdoo RSS reader"
+
+#: source/class/feedreader/Application.js:140
+msgid "Add feed"
+msgid_plural "Add feeds"
+msgstr[0] "Добавить канал"
+msgstr[1] "Добавить каналы"
+
+#: source/class/feedreader/Application.js:141
+msgid "Remove feed"
+msgstr "Удалить канал"
+
+#: source/class/feedreader/Application.js:144
+msgid "Reload"
+msgstr "Перечитать"
+
+#: source/class/feedreader/Application.js:146
+msgid "(%1) Reload the feeds."
+msgstr "{%1) Перечитать все каналы."
+
+#: source/class/feedreader/Application.js:153
+#: source/class/feedreader/Application.js:155
+msgid "English"
+msgstr "Английский"
+
+#: source/class/feedreader/Application.js:154
+msgid "German"
+msgstr "Немецкий"
+
+#: source/class/feedreader/Application.js:156
+msgid "Turkish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:157
+msgid "Italian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:158
+msgid "Spanish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:159
+msgid "Swedish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:160
+msgid "Russian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:183
+msgid "Help"
+msgstr "Помощь"
+
+#: source/class/feedreader/Application.js:191
+msgid "News feeds"
+msgstr "Новостные каналы"
+
+#: source/class/feedreader/Application.js:212
+msgid "Subject"
+msgstr "Тема"
+
+#: source/class/feedreader/Application.js:213
+msgid "Sender"
+msgstr "Отправитель"
+
+#: source/class/feedreader/Application.js:214
+msgid "Date"
+msgstr "Дата"
+
+#: source/class/feedreader/ArticleView.js:77
+msgid "read more ..."
+msgstr "далее..."

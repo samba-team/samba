@@ -1,0 +1,198 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Native Windows. Could be understood as an enhanced window.open with some additional options like to create modal windows.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var w1 = new qx.client.NativeWindow("http://www.google.com");
+
+    w1.setDimension(600, 400);
+
+
+    w1.addEventListener("load", function(e) {
+      this.debug("Content loaded: " + this.isLoaded());
+    });
+
+    w1.addEventListener("close", function(e) {
+      this.debug("Window closed: " + this.isClosed());
+    });
+
+
+
+
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var btn1 = new qx.ui.form.Button("Open Native Window", "icon/16/apps/preferences-desktop-wallpaper.png");
+    with(btn1)
+    {
+      setTop(48);
+      setLeft(20);
+
+      addEventListener("click", function() { w1.open(); } );
+    };
+
+    d.add(btn1);
+
+
+
+
+
+    var l = new qx.ui.layout.VerticalBoxLayout;
+    l.setLocation(20, 96);
+    l.setWidth("auto");
+    l.setHeight("auto");
+    d.add(l);
+
+    var fs1 = new qx.ui.groupbox.GroupBox("Initial Settings");
+    fs1.setHeight("auto");
+    l.add(fs1);
+
+
+    var chk1 = new qx.ui.form.CheckBox("Resizeable");
+    chk1.setLocation(0, 0);
+    chk1.setChecked(true);
+    chk1.addEventListener("changeChecked", function(e) {
+      w1.setResizeable(e.getData());
+    });
+
+    var chk2 = new qx.ui.form.CheckBox("Show Statusbar");
+    chk2.setLocation(0, 20);
+    chk2.setChecked(false);
+    chk2.addEventListener("changeChecked", function(e) {
+      w1.setShowStatusbar(e.getData());
+    });
+
+    var chk3 = new qx.ui.form.CheckBox("Show Menubar");
+    chk3.setLocation(0, 40);
+    chk3.setChecked(false);
+    chk3.addEventListener("changeChecked", function(e) {
+      w1.setShowMenubar(e.getData());
+    });
+
+    var chk4 = new qx.ui.form.CheckBox("Show Location");
+    chk4.setLocation(0, 60);
+    chk4.setChecked(false);
+    chk4.addEventListener("changeChecked", function(e) {
+      w1.setShowLocation(e.getData());
+    });
+
+    var chk5 = new qx.ui.form.CheckBox("Show Toolbar");
+    chk5.setLocation(0, 80);
+    chk5.setChecked(false);
+    chk5.addEventListener("changeChecked", function(e) {
+      w1.setShowToolbar(e.getData());
+    });
+
+    var chk6 = new qx.ui.form.CheckBox("Allow Scrollbars");
+    chk6.setLocation(0, 100);
+    chk6.setChecked(true);
+    chk6.addEventListener("changeChecked", function(e) {
+      w1.setAllowScrollbars(e.getData());
+    });
+
+    var chk7 = new qx.ui.form.CheckBox("Modal");
+    chk7.setLocation(0, 120);
+    chk7.setChecked(false);
+    chk7.addEventListener("changeChecked", function(e) {
+      w1.setModal(e.getData());
+    });
+
+    var chk8 = new qx.ui.form.CheckBox("Dependent");
+    chk8.setLocation(0, 140);
+    chk8.setChecked(true);
+    chk8.addEventListener("changeChecked", function(e) {
+      w1.setDependent(e.getData());
+    });
+
+    fs1.add(chk1, chk2, chk3, chk4, chk5, chk6, chk7, chk8);
+
+
+
+
+
+
+
+
+    var fs2 = new qx.ui.groupbox.GroupBox("Runtime Settings");
+    fs2.setHeight("auto");
+    l.add(fs2);
+
+
+
+    var tf1 = new qx.ui.form.TextField("http://www.google.com");
+    tf1.setLocation(0, 2);
+    tf1.setWidth(150);
+
+    var btn1 = new qx.ui.form.Button("Set Url", "icon/16/actions/dialog-ok.png");
+    btn1.setLocation(155, 0);
+    btn1.addEventListener("click", function() {
+      w1.setUrl(tf1.getValue());
+    });
+
+
+
+
+    var tf2 = new qx.ui.form.TextField("600");
+    tf2.setLocation(0, 42);
+    tf2.setWidth(50);
+
+    var btn2 = new qx.ui.form.Button("Set Width", "icon/16/actions/dialog-ok.png");
+    btn2.setLocation(55, 40);
+    btn2.addEventListener("click", function() {
+      w1.setWidth(parseInt(tf2.getValue()));
+    });
+
+
+
+
+    var tf3 = new qx.ui.form.TextField("400");
+    tf3.setLocation(0, 72);
+    tf3.setWidth(50);
+
+    var btn3 = new qx.ui.form.Button("Set Height", "icon/16/actions/dialog-ok.png");
+    btn3.setLocation(55, 70);
+    btn3.addEventListener("click", function() {
+      w1.setHeight(parseInt(tf3.getValue()));
+    });
+
+
+
+    var btn4 = new qx.ui.form.Button("Center to screen", "icon/16/apps/graphics-image-viewer.png");
+    btn4.setLocation(0, 110);
+    btn4.addEventListener("click", function() {
+      w1.centerToScreen()
+    });
+
+    var btn5 = new qx.ui.form.Button("Center to screen area", "icon/16/apps/graphics-image-viewer.png");
+    btn5.setLocation(0, 140);
+    btn5.addEventListener("click", function() {
+      w1.centerToScreenArea()
+    });
+
+    var btn6 = new qx.ui.form.Button("Center to opener", "icon/16/apps/graphics-image-viewer.png");
+    btn6.setLocation(0, 170);
+    btn6.addEventListener("click", function() {
+      w1.centerToOpener()
+    });
+
+
+
+    fs2.add(tf1, btn1, tf2, btn2, tf3, btn3, btn4, btn5, btn6);
+  });
+  </script>
+</body>
+</html>

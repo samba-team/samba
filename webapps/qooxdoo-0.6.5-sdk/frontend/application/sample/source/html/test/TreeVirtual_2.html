@@ -1,0 +1,98 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>An example of using the Virtual Tree widget providing the array of tree
+    nodes en bulk instead of issuing a series of addBranch() and addLeaf()
+    calls.  This example also colors some nodes.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    // tree
+    var tree = new qx.ui.treevirtual.TreeVirtual("Tree");
+    with (tree)
+    {
+      set({
+            left   : 10,
+            top    : 30,
+            width  : 400,
+            bottom : 30,
+            border : qx.renderer.border.BorderPresets.getInstance().thinInset
+          });
+      setColumnWidth(0, 400);
+    };
+
+    d.add(tree);
+
+    // tree data model
+    var dataModel = tree.getDataModel();
+
+    var treeData = [];
+
+    var node =                  // the root node (not displayed)
+      {
+        opened        : true,
+        children      : [ 1 ]
+      };
+    treeData.push(node);
+
+    var node =
+      {
+        type          : qx.ui.treevirtual.SimpleTreeDataModel.Type.BRANCH,
+        parentNodeId  : 0,
+        label         : "My Root",
+        bSelected     : false,
+        opened        : true,
+        icon          : "icon/16/places/folder.png",
+        iconSelected  : "icon/16/folder_open.png",
+        labelStyle    : "background-color:red;color:white",
+        children      : [ 2 ]
+      };
+    treeData.push(node);
+
+    var node =
+      {
+        type          : qx.ui.treevirtual.SimpleTreeDataModel.Type.BRANCH,
+        parentNodeId  : 1,
+        label         : "A sub-folder",
+        bSelected     : false,
+        opened        : true,
+        icon          : "icon/16/places/folder.png",
+        iconSelected  : "icon/16/folder_open.png",
+        cellStyle     : "background-color:cyan",
+        children      : [ 3 ]
+      };
+    treeData.push(node);
+
+    var node =
+      {
+        type          : qx.ui.treevirtual.SimpleTreeDataModel.Type.LEAF,
+        parentNodeId  : 2,
+        label         : "Third-level leaf",
+        bSelected     : false,
+        opened        : false,
+        icon          : "icon/16/actions/document-new.png",
+        iconSelected  : "icon/16/actions/document-open.png",
+        children      : [ ]
+      };
+    treeData.push(node);
+
+    dataModel.setData(treeData);
+  });
+  </script>
+</body>
+</html>

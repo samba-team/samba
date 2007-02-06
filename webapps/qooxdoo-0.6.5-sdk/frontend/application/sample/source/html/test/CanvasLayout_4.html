@@ -1,0 +1,50 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>This test is using multiple div-Elements</p>
+  <p>Created with "createElement" and added via "appendChild" to the document.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    var w;
+    var v;
+
+    for (var i=1; i<=20; i++)
+    {
+      for (var j=1; j<=20; j++)
+      {
+        var w = document.createElement("div");
+
+        w.className = "qx_ui_core_Widget_QxWidgetCore";
+        w.id = "Auto" + i + "|" + j;
+
+        w.style.width = "12px";
+        w.style.height = "12px";
+      w.style.position = "absolute";
+        w.style.left = (20+(12*i)) + "px";
+        w.style.top = (48+(12*j)) + "px";
+
+        v = Math.round(20+(i*j)/2);
+        w.style.backgroundColor = "rgb(" + v + "," + v + "," + v + ")";
+
+        document.body.appendChild(w);
+      };
+    };
+  });
+  </script>
+</body>
+</html>

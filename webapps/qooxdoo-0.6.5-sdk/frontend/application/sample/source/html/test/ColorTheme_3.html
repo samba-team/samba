@@ -1,0 +1,176 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Color Theme Test for qx.renderer.border.BorderObject's</p>
+    <ul>
+      <li>First Col: qooxdoo solution for borders</li>
+      <li>Second Col: html solution without color value</li>
+      <li>Third Col: html solution with color value: white</li>
+    </ul>
+    <p>The default color Theme is: <em>OS Default</em></p>
+  </div>
+  
+  <div style="position: absolute; left: 120px; top: 48px; width: 50px">    
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px outset">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px inset">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px ridge">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px groove">&#160;</div>
+    
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 1px outset">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 1px inset">&#160;</div>
+  </div>
+
+  <div style="position: absolute; left: 180px; top: 48px; width: 50px">    
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px outset white">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px inset white">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px ridge white">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 2px groove white">&#160;</div>
+        
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 1px outset white">&#160;</div>
+    <div style="width:50px; height: 50px; margin-bottom: 10px; border: 1px inset white">&#160;</div>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+
+
+    var w1 = new qx.ui.basic.Terminator;
+    w1.setDimension(50, 50);
+    w1.setLocation(20, 48);
+    w1.setBorder(new qx.renderer.border.BorderObject(2, "outset"));
+    d.add(w1);
+
+    var w2 = new qx.ui.basic.Terminator;
+    w2.setDimension(50, 50);
+    w2.setLocation(20, 108);
+    w2.setBorder(new qx.renderer.border.BorderObject(2, "inset"));
+    d.add(w2);
+
+    var w3 = new qx.ui.basic.Terminator;
+    w3.setDimension(50, 50);
+    w3.setLocation(20, 168);
+    w3.setBorder(new qx.renderer.border.BorderObject(2, "ridge"));
+    d.add(w3);
+
+    var w4 = new qx.ui.basic.Terminator;
+    w4.setDimension(50, 50);
+    w4.setLocation(20, 228);
+    w4.setBorder(new qx.renderer.border.BorderObject(2, "groove"));
+    d.add(w4);
+
+    var w5 = new qx.ui.basic.Terminator;
+    w5.setDimension(50, 50);
+    w5.setLocation(20, 288);
+    w5.setBorder(new qx.renderer.border.BorderObject(1, "outset"));
+    d.add(w5);
+
+    var w6 = new qx.ui.basic.Terminator;
+    w6.setDimension(50, 50);
+    w6.setLocation(20, 348);
+    w6.setBorder(new qx.renderer.border.BorderObject(1, "inset"));
+    d.add(w6);
+    
+    
+    
+    var border1 = new qx.renderer.border.BorderObject(2, "outset");
+    var border2 = new qx.renderer.border.BorderObject(1, "outset");
+    
+    var w7 = new qx.ui.layout.CanvasLayout;
+    w7.setDimension(50, 50);
+    w7.setLocation(20, 408);
+    w7.setBorder(border1);
+    d.add(w7);
+    
+    var w7c = new qx.ui.basic.Terminator;
+    w7c.setDimension("100%", "100%");
+    w7c.setBackgroundColor(new qx.renderer.color.Color("red"));
+    w7.add(w7c);    
+
+
+
+    var w8 = new qx.ui.layout.CanvasLayout;
+    w8.setDimension(50, 50);
+    w8.setLocation(20, 468);
+    w8.setBorder(border2);
+    d.add(w8);
+    
+    var w8c = new qx.ui.basic.Terminator;
+    w8c.setDimension("100%", "100%");
+    w8c.setBackgroundColor(new qx.renderer.color.Color("red"));
+    w8.add(w8c);  
+    
+    
+    
+    
+    w7.addEventListener("click", function(e) {
+      this.setBorder(this.getBorder() == null ? border1 : this.getBorder() == border1 ? border2 : null)
+    });
+
+    w8.addEventListener("click", function(e) {
+      this.setBorder(this.getBorder() == null ? border1 : this.getBorder() == border1 ? border2 : null)
+    });
+    
+    
+    
+    
+    
+    
+    var w9 = new qx.ui.layout.CanvasLayout;
+    
+    w9.setDimension(100, 100);
+    w9.setLocation(400, 400);
+    w9.setBorder(border1);
+    w9.setOverflow("scroll");
+    
+    d.add(w9);
+    
+    var w9c = new qx.ui.basic.Image("icon/32/actions/format-color.png");
+    
+    w9c.setTop(150);
+    w9c.setLeft(300);
+    
+    w9.add(w9c);
+    
+    
+    
+    w9.addEventListener("click", function(e) {
+      this.setOverflow(this.getOverflow() == "scroll" ? "scrollX" : this.getOverflow() == "scrollX" ? "scrollY" : this.getOverflow() == "scrollY" ? "" : "scroll");
+    });
+
+
+
+    // Color Themes
+    qx.manager.object.ColorManager.getInstance().createThemeList(d, 400, 128);
+    
+    
+    
+    
+    
+    
+    /*
+    var c1 = new qx.renderer.color.Color("gray");
+    this.debug("RGB-Transform I: " + c1.getRed() + "," + c1.getGreen() + "," + c1.getBlue());
+
+    // This could not work with the default theme "OS Default", as this does not define any rgb colors
+    var c2 = new qx.renderer.color.ColorObject("threedface");
+    this.debug("RGB-Transform II: " + c2.getRed() + "," + c2.getGreen() + "," + c2.getBlue());
+    */
+  });
+  </script>
+
+</body>
+</html>

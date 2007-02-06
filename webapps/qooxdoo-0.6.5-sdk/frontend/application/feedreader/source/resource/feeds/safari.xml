@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- generator="wordpress/1.5.1.2" -->
+<rss version="2.0" 
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+>
+
+<channel>
+	<title>Surfin' Safari</title>
+	<link>http://webkit.org/blog</link>
+	<description>All about WebKit development</description>
+	<pubDate>Sat, 18 Nov 2006 22:18:02 +0000</pubDate>
+	<generator>http://wordpress.org/?v=1.5.1.2</generator>
+	<language>en</language>
+
+		<item>
+		<title>Rob Buis is a WebKit Reviewer</title>
+		<link>http://webkit.org/blog/?p=82</link>
+		<comments>http://webkit.org/blog/?p=82#comments</comments>
+		<pubDate>Sat, 18 Nov 2006 22:17:52 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=82</guid>
+		<description><![CDATA[	Rob Buis is now a qualified WebKit reviewer. Rob was one of the main driving forces behind ksvg2 and kcanvas, along with Nikolas Zimmerman. The code from these libraries has been integrated into WebKit to provide fully integrated HTML/SVG support. Since then, Rob has submitted many WebKit patches for SVG and in many other areas, [...]]]></description>
+			<content:encoded><![CDATA[	<p>Rob Buis is now a qualified WebKit reviewer. Rob was one of the main driving forces behind ksvg2 and kcanvas, along with Nikolas Zimmerman. The code from these libraries has been integrated into WebKit to provide fully integrated HTML/SVG support. Since then, Rob has submitted many WebKit patches for SVG and in many other areas, including DOM, CSS, graphics support and general refactoring.</p>
+	<p>Please join me in congratulating Rob.
+</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=82</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Google Web Toolkit 1.2 Uses WebKit</title>
+		<link>http://webkit.org/blog/?p=81</link>
+		<comments>http://webkit.org/blog/?p=81#comments</comments>
+		<pubDate>Sat, 18 Nov 2006 08:59:10 +0000</pubDate>
+		<dc:creator>aroben</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=81</guid>
+		<description><![CDATA[	Google has just released version 1.2 of the Google Web Toolkit (GWT) with full Mac OS X support provided by WebKit. GWT allows web developers to create shiny AJAX web applications entirely in Java, which GWT compiles to JavaScript. While Mac users were able to use the GWT compiler in previous versions, they couldn&#8217;t use [...]]]></description>
+			<content:encoded><![CDATA[	<p>Google has just <a href="http://googlewebtoolkit.blogspot.com/2006/11/its-official-gwt-12-released.html" title="It's official: GWT 1.2 released">released version 1.2</a> of the <a href="http://code.google.com/webtoolkit/" title="Google Web Toolkit">Google Web Toolkit</a> (GWT) with full Mac OS X support provided by WebKit. GWT allows web developers to create shiny AJAX web applications entirely in Java, which GWT compiles to JavaScript. While Mac users were able to use the GWT compiler in previous versions, they couldn&#8217;t use GWT&#8217;s hosted browser to debug their web apps. WebKit has made it possible for Google to bring these development tools to the Mac, and, as a surprise Mac-only bonus, web developers using GWT get to use the <a href="http://webkit.org/blog/?p=41" title="Introducing the Web Inspector">Web Inspector</a>, too!
+</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=81</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Zack Rusin is a WebKit Reviewer for the Qt Port</title>
+		<link>http://webkit.org/blog/?p=79</link>
+		<comments>http://webkit.org/blog/?p=79#comments</comments>
+		<pubDate>Thu, 16 Nov 2006 02:32:07 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=79</guid>
+		<description><![CDATA[	Zack Rusin is now a qualified reviewer for Qt platform code in WebKit. Although he has not yet submitted many patches to WebKit as such, he has a long history working with KHTML and did much of the Unity porting work originally. As such, he is likely one of the best reviewers for Qt platform [...]]]></description>
+			<content:encoded><![CDATA[	<p>Zack Rusin is now a qualified reviewer for Qt platform code in WebKit. Although he has not yet submitted many patches to WebKit as such, he has a long history working with KHTML and did much of the Unity porting work originally. As such, he is likely one of the best reviewers for Qt platform code. Congrats, Zack, and thank you.
+</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=79</wfw:commentRSS>
+	</item>
+		<item>
+		<title>The Safari Team&#8217;s Favorite Websites</title>
+		<link>http://webkit.org/blog/?p=77</link>
+		<comments>http://webkit.org/blog/?p=77#comments</comments>
+		<pubDate>Tue, 07 Nov 2006 03:00:46 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=77</guid>
+		<description><![CDATA[	Usually this blog has serious content about WebKit. But one of the great things about the web is that it&#8217;s actually lots of fun.
+To give you a bit of the flavor of the Safari/WebKit Team&#8217;s personality, here are a few of our favorite websites.
+Please post some of your favorite websites in the comments.
+	Apple Stuff
+	
+	Daring Fireball [...]]]></description>
+			<content:encoded><![CDATA[	<p>Usually this blog has serious content about WebKit. But one of the great things about the web is that it&#8217;s actually lots of fun.<br />
+To give you a bit of the flavor of the Safari/WebKit Team&#8217;s personality, here are a few of our favorite websites.<br />
+Please post some of <em>your</em> favorite websites in the comments.</p>
+	<h4>Apple Stuff</h4>
+	<ul>
+	<li><a href="http://daringfireball.net/">Daring Fireball &lt;http://daringfireball.net/&gt;</a></li>
+	<li><a href="http://crazyapplerumors.com/">Crazy Apple Rumors &lt;http://crazyapplerumors.com/&gt;</a></li>
+	</ul>
+	<h4>News &#038; Information</h4>
+	<ul>
+	<li><a href="http://digg.com/">Digg &lt;http://digg.com/&gt;</a></li>
+	<li><a href="http://wikipedia.org/">Wikipedia &lt;http://wikipedia.org/&gt;</a></li>
+	<li><a href="http://valleywag.com/">Valleywag &lt;http://www.valleywag.com/&gt;</a></li>
+	<li><a href="http://slate.com/">Slate &lt;http://slate.com/&gt;</a></li>
+	</ul>
+	<h4>Media &#038; Celebrities</h4>
+	<ul>
+	<li><a href="http://televisionwithoutpity.com/">Television Without Pity &lt;http://televisionwithoutpity.com/&gt;</a></li>
+	<li><a href="http://aintitcool.com/">Ain&#8217;t it Cool News &lt;http://aintitcool.com/&gt;</a></li>
+	<li><a href="http://imdb.com/">The Internet Movie Database &lt;http://imdb.com/&gt;</a></li>
+	<li><a href="http://thesuperficial.com/">The Superficial &lt;http://thesuperficial.com/&gt;</a></li>
+	<li><a href="http://www.apple.com/trailers/">Apple Movie Trailers &lt;http://www.apple.com/trailers/&gt;</a></li>
+	</ul>
+	<h4>Amusement</h4>
+	<ul>
+	<li><a href="http://cuteoverload.com/">Cute Overload! &lt;http://cuteoverload.com/&gt;</a></li>
+	<li><a href="http://www.theonion.com/">The Onion &lt;http://www.theonion.com/&gt;</a></li>
+	<li><a href="http://youtube.com/">YouTube &lt;http://youtube.com/&gt;</a></li>
+	<li><a href="http://xfm.co.uk/article.asp?id=3673">Ricky Gervais Podcast &lt;http://xfm.co.uk/article.asp?id=3673&gt;</a></li>
+	<li><a href="http://homestarrunner.com/">Homestar Runner &lt;http://homestarrunner.com/&gt;</a></li>
+	<li><a href="http://spamusement.com/">Spamusement &lt;http://spamusement.com/&gt;</a></li>
+	</ul>
+	<h4>Communication</h4>
+	<ul>
+	<li><a href="http://www.facebook.com/">The Facebook &lt;http://www.facebook.com/&gt;</a></li>
+	<li><a href="http://mail.google.com/">GMail &lt;http://mail.google.com/&gt;</a></li>
+	</ul>
+	<h4>Shameless Nerdery</h4>
+	<ul>
+	<li><a href="http://xkcd.com/">xkcd &lt;http://xkcd.com/&gt;</a></li>
+	<li><a href="http://worldofwarcraft.com/">World of Warcraft Community Site &lt;http://worldofwarcraft.com/&gt;</a></li>
+	<li><a href="http://build.webkit.org/">WebKit Buildbot &lt;http://build.webkit.org/&gt;</a> - but only when it&#8217;s green </li>
+	</ul>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=77</wfw:commentRSS>
+	</item>
+		<item>
+		<title>ADC Article about Apple Nightly Builds</title>
+		<link>http://webkit.org/blog/?p=78</link>
+		<comments>http://webkit.org/blog/?p=78#comments</comments>
+		<pubDate>Sat, 04 Nov 2006 02:33:23 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=78</guid>
+		<description><![CDATA[	Apple Developer Connection has posted an article on using nightly builds. Most of this content won&#8217;t be news to people who are already using nightlies. But it might be of interest to web developers and application developers who have not tried nightlies yet. There is also some interesting info about canvas changes.
+
+]]></description>
+			<content:encoded><![CDATA[	<p>Apple Developer Connection has posted an article on <a href="http://developer.apple.com/opensource/internet/nightlywebkit.html">using nightly builds</a>. Most of this content won&#8217;t be news to people who are already using <a href="http://nightly.webkit.org">nightlies</a>. But it might be of interest to web developers and application developers who have not tried nightlies yet. There is also some interesting info about canvas changes.
+</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=78</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Sam Weinig is a WebKit Reviewer</title>
+		<link>http://webkit.org/blog/?p=76</link>
+		<comments>http://webkit.org/blog/?p=76#comments</comments>
+		<pubDate>Wed, 01 Nov 2006 01:00:05 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=76</guid>
+		<description><![CDATA[	Sam Weinig is now a qualified WebKit reviewer. Sam has done a lot of coding in different areas of WebKit, including large refactoring changes and coding style cleanup, as well as large projects like autogenerating the Objective-C DOM bindings. At this point, he probably knows the coding style guidelines better than most of the existing [...]]]></description>
+			<content:encoded><![CDATA[	<p>Sam Weinig is now a qualified WebKit reviewer. Sam has done a lot of coding in different areas of WebKit, including large refactoring changes and coding style cleanup, as well as large projects like autogenerating the Objective-C DOM bindings. At this point, he probably knows the coding style guidelines better than most of the existing reviewers. And now you get to bug him to review your patches.</p>
+	<p>Please join me in congratulating Sam.</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=76</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Optimizing Page Load Time (and a little about the Debug menu)</title>
+		<link>http://webkit.org/blog/?p=75</link>
+		<comments>http://webkit.org/blog/?p=75#comments</comments>
+		<pubDate>Tue, 31 Oct 2006 06:28:04 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=75</guid>
+		<description><![CDATA[	We don&#8217;t usually just repost content from other blogs here. But a lot of web developers seem to read this site, and those of us who work on WebKit are totally into loading web pages as fast as possible. With that in mind, here&#8217;s a great article on Optimizing Page Load Time. I recommend reading [...]]]></description>
+			<content:encoded><![CDATA[	<p>We don&#8217;t usually just repost content from other blogs here. But a lot of web developers seem to read this site, and those of us who work on WebKit are totally into loading web pages as fast as possible. With that in mind, here&#8217;s a great article on <a href="http://www.die.net/musings/page_load_time/">Optimizing Page Load Time</a>. I recommend reading and applying much of the advice here. However, I&#8217;ll note that we have experimented with using HTTP pipelining for Safari in the past, too many major servers gave garbage results in the face of it. While we may periodically re-evaluate this, we are not holding back on it out of spite or anything.</p>
+	<p>Another tip you might find handy as a web developer is the &#8220;Show Page Load Test Window&#8221; option in the Safari Debug menu. You can turn on the Debug menu by typing <code>defaults write com.apple.Safari IncludeDebugMenu YES</code> at a shell prompt, and then restarting Safari. This menu includes a number of rough debugging tools that we created mainly for browser testing, but you may find some of them handy for web development. The page load test in particular is interesting because it measures page load time in a more precise way than either onload timing or just using a stopwatch. If you change the &#8220;Suite&#8221; pop-up menu to &#8220;URL&#8221;, you can type the URL of your choice and get a fairly precise time for loading it. If you empty the cache first, you can get an uncached time.</p>
+	<p>I recommend trying this a couple of times as you test your site. We&#8217;ve found that it&#8217;s a lot easier to improve performance when you have a precise way to measure it.</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=75</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Adobe Apollo Uses WebKit</title>
+		<link>http://webkit.org/blog/?p=74</link>
+		<comments>http://webkit.org/blog/?p=74#comments</comments>
+		<pubDate>Mon, 30 Oct 2006 10:11:55 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=74</guid>
+		<description><![CDATA[	A few months ago, Adobe announced Apollo, a tool that lets you build desktop applications based on Flash and web technologies like HTML and JavaScript. A bunch of blog posts have features whizzy screenshots. This is pretty cool stuff, you can use all your web development skills to make slick looking desktop apps.
+	Even more exciting, [...]]]></description>
+			<content:encoded><![CDATA[	<p>A few months ago, Adobe announced <a href="http://labs.adobe.com/wiki/index.php/Apollo">Apollo</a>, a tool that lets you build desktop applications based on Flash and web technologies like HTML and JavaScript. A bunch of blog posts have features <a href="http://blog.digitalbackcountry.com/?p=75">whizzy screenshots</a>. This is pretty cool stuff, you can use all your web development skills to make slick looking desktop apps.</p>
+	<p>Even more exciting, Adobe has announced that Apollo <a href="http://casario.blogs.com/mmworld/2006/10/apollo_will_use.html">will use WebKit</a> as its HTML layout engine. Welcome to the world of WebKit, Adobe.</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=74</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Color Spaces</title>
+		<link>http://webkit.org/blog/?p=73</link>
+		<comments>http://webkit.org/blog/?p=73#comments</comments>
+		<pubDate>Sun, 22 Oct 2006 11:37:48 +0000</pubDate>
+		<dc:creator>hyatt</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=73</guid>
+		<description><![CDATA[	I was pointed to this article about color spaces in Web browsers.  The ultimate point of the article, that it would be good for a Web browser to be &#8220;Color Smart&#8221;, i.e., to support not only embedded color profiles in images but also to correct unprofiled images to sRGB is a sound one.  [...]]]></description>
+			<content:encoded><![CDATA[	<p>I was pointed to this article about <a href="http://regex.info/blog/photo-tech/color-spaces-page3">color spaces in Web browsers</a>.  The ultimate point of the article, that it would be good for a Web browser to be &#8220;Color Smart&#8221;, i.e., to support not only embedded color profiles in images but also to correct unprofiled images to sRGB is a sound one.  However, the author takes a few potshots at Web browsers on the Mac, and I thought I&#8217;d respond to make it clear what the technical hurdles are with this problem.</p>
+	<p>First of all, if you correct unprofiled images to sRGB, you have to correct all drawing to sRGB.  This includes everything drawn by CSS (borders, backgrounds, text).  This is not difficult to do under the hood, although it is difficult to do it with no performance regression in our benchmarks at all.  In fact we even tried this during the Tiger development cycle (just correcting everything drawn to sRGB), but it slowed us down.</p>
+	<p>The big hurdle that we ran into, though, was with the drawing we did not control, namely the Flash plug-in.  The problem is that designers specify colors in Flash and colors in CSS in the Web page, and they expect those colors to match.  Because Flash&#8217;s drawing isn&#8217;t correcting to sRGB, if we did it in Safari, there would be color mismatches all over the place.  These mismatches look far worse than if we just don&#8217;t correct at all.</p>
+	<p>(This mismatch with plug-ins is presumably the reason that this feature was not enabled by default in Mac IE.)</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=73</wfw:commentRSS>
+	</item>
+		<item>
+		<title>Safari Market Share Continues to Increase</title>
+		<link>http://webkit.org/blog/?p=71</link>
+		<comments>http://webkit.org/blog/?p=71#comments</comments>
+		<pubDate>Tue, 10 Oct 2006 20:23:16 +0000</pubDate>
+		<dc:creator>maciej</dc:creator>
+		
+	<category>Uncategorized</category>
+		<guid>http://webkit.org/blog/?p=71</guid>
+		<description><![CDATA[	According to recent reports, Safari market share is still increasing. According to one survey, it&#8217;s up to 3.56%. The total including other WebKit-based browsers could be even higher, it&#8217;s hard to tell from the somewhat thin stats. It&#8217;s cool to see WebKit getting more and more users in any case.
+
+]]></description>
+			<content:encoded><![CDATA[	<p>According to recent reports, <a href="http://www.macnewsworld.com/rsstory/53528.html">Safari market share is still increasing.</a> According to one survey, it&#8217;s up to 3.56%. The total including other WebKit-based browsers could be even higher, it&#8217;s hard to tell from the somewhat thin stats. It&#8217;s cool to see WebKit getting more and more users in any case.
+</p>
+]]></content:encoded>
+			<wfw:commentRSS>http://webkit.org/blog/?feed=rss2&amp;p=71</wfw:commentRSS>
+	</item>
+	</channel>
+</rss>

@@ -1,0 +1,55 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>qx.ui.form.List Item Sorting demo</p>
+  </div>
+
+  <script type="text/javascript">
+   
+    qx.core.Init.getInstance().defineMain(function() {
+        var list = new qx.ui.form.List(); list.set({top:50,left:50,height:150,width:100});
+        
+        list.add(new qx.ui.form.ListItem('Will',null,'1'));
+        list.add(new qx.ui.form.ListItem('Anna',null,'2'));
+        list.add(new qx.ui.form.ListItem('Tom',null,'3'));
+        list.add(new qx.ui.form.ListItem('Diana',null,'4'));
+        list.add(new qx.ui.form.ListItem('Pete',null,'5'));
+        list.add(new qx.ui.form.ListItem('Carol',null,'6'));
+        
+        var btn1 = new qx.ui.form.Button('Sort By Label'); btn1.set({top:50,left:200});
+        btn1.addEventListener('click',function(e){
+            list.sortItemsByString();
+        });
+
+        var btn2 = new qx.ui.form.Button('Sort By Label Reverse'); btn2.set({top:80,left:200});
+        btn2.addEventListener('click',function(e){
+            list.sortItemsByString(true);
+        });
+
+        var btn3 = new qx.ui.form.Button('Sort By Value'); btn3.set({top:140,left:200});
+        btn3.addEventListener('click',function(e){
+            list.sortItemsByValue();
+        });
+
+        var btn4 = new qx.ui.form.Button('Sort By Value Reverse'); btn4.set({top:170,left:200});
+        btn4.addEventListener('click',function(e){
+            list.sortItemsByValue(true);
+        });
+
+        qx.ui.core.ClientDocument.getInstance().add(btn1,btn2,btn3,btn4);
+        qx.ui.core.ClientDocument.getInstance().add(list);
+    });
+  </script>
+</body>
+</html>

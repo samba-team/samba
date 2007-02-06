@@ -1,0 +1,69 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+  <p>
+    An example of using the Virtual Tree widget with addBranch() and addLeaf()
+  </p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    // tree
+    var tree = new qx.ui.treevirtual.TreeVirtual("Tree");
+    with (tree)
+    {
+      set({
+            left   : 10,
+            top    : 30,
+            width  : 400,
+            bottom : 30,
+            border : qx.renderer.border.BorderPresets.getInstance().thinInset
+          });
+      setColumnWidth(0, 400);
+    };
+
+    d.add(tree);
+
+    // tree data model
+    var dataModel = tree.getDataModel();
+
+    var te;
+
+    var te1 = dataModel.addBranch(null, "Desktop", true);
+
+    dataModel.addBranch(te1, "Files", true);
+
+    te = dataModel.addBranch(te1, "Workspace", true);
+    dataModel.addLeaf(te, "Windows (C:)");
+    dataModel.addLeaf(te, "Documents (D:)");
+
+    dataModel.addBranch(te1, "Network", true);
+    dataModel.addBranch(te1, "Trash", true);
+
+    var te2 = dataModel.addBranch(null, "Inbox", true);
+
+    dataModel.addBranch(te2, "Presets", true);
+    dataModel.addBranch(te2, "Sent", true);
+    dataModel.addBranch(te2, "Trash", true);
+    dataModel.addBranch(te2, "Data", true);
+    dataModel.addBranch(te2, "Edit", true);
+
+    dataModel.setData();
+  });
+  </script>
+</body>
+</html>

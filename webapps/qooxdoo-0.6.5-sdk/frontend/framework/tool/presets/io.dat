@@ -1,0 +1,12 @@
+###########################################################################
+#
+# Generates a compiled qooxdoo io JavaScript file
+#
+###########################################################################
+
+class-path = framework/source/class
+cache-directory = framework/.cache
+include = qx.io.remote.*
+generate-compiled-script
+compiled-script-file = io.js
+optimize-strings

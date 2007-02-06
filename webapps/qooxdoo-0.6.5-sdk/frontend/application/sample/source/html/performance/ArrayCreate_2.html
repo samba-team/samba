@@ -1,0 +1,47 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tests for filled Array creation performance</p>
+    <ol>
+      <li>Using "[ values ]"</li>
+      <li>Using "new Array(values)"</li>
+    </ol>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    function ArrayCreate1(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = [ 1, 2, 3, 4, 5 ];
+      };
+    };
+
+    function ArrayCreate2(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Array(1, 2, 3, 4, 5);
+      };
+    };
+
+    new qx.dev.TimeTracker(ArrayCreate1, ArrayCreate2);
+  });
+  </script>
+</body>
+</html>

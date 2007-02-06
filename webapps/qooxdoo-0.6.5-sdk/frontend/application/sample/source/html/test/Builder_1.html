@@ -1,0 +1,73 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function() {
+      new qx.util.GuiBuilder().build(qx.ui.core.ClientDocument.getInstance(), document.getElementById('widgets'));
+    });
+
+    // test delegate object
+    var d = {
+      hello : 'world',
+      click : function(e) {
+        alert(e + '\n\nclick received at delegate object\n\n' + this.hello);
+      }
+    }
+
+    // test delegate function
+    var f = function(e) {
+        alert(e + '\n\nclick received at delegate function\n\n');
+    }
+  </script>
+  <div id="demoDescription">
+    <p>qx.util.GuiBuilder demo.</p>
+    <p>Build your web apps using qooxdooml.</p>
+    <p>Textarea example</p>
+  </div>
+  <textarea id='widgets' style='display:none'>
+    <qx.client.builder.Container>
+      <qx.ui.form.Button id='btn' label='Click Me!!!' location='20,50'>
+
+        <!-- function body event listener -->
+        <qx.client.builder.EventListener type='click' args='event'>
+          btn.setLabel(btn.getLabel() + ".");
+          alert(event + "\n\nClicked on: " + this.getLabel());
+        </qx.client.builder.EventListener>
+
+        <!--
+    global object.method delegation
+    when the button is clicked, d.click(event) will be called
+    -->
+        <qx.client.builder.EventListener type='click' delegate='d.click'/>
+
+        <!--
+    global function delegation
+    when the button is clicked, f(event) will be called
+    -->
+        <qx.client.builder.EventListener type='click' delegate='f'/>
+
+      </qx.ui.form.Button>
+      <qx.ui.basic.Atom id='atom1' label='Test No #1' icon='icon/16/apps/graphics-snapshot.png' border='qx.renderer.border.BorderPresets.getInstance().black' location='20,90'/>
+
+      <qx.ui.form.Button label='Test No #2' icon='icon/16/apps/graphics-snapshot.png' location='20,120'>
+          <qx.client.builder.EventListener type='click'>
+            atom1.setLabel(atom1.getLabel() + ".");
+          </qx.client.builder.EventListener>
+      </qx.ui.form.Button>
+      <qx.ui.basic.Atom label='Test No #3' icon='icon/16/apps/graphics-snapshot.png' location='20,160'/>
+      <qx.ui.basic.Atom label='a' icon='icon/16/apps/graphics-snapshot.png' location='20,200'/>
+      <qx.ui.basic.Atom label='b' icon='icon/16/apps/graphics-snapshot.png' location='20,240'/>
+    </qx.client.builder.Container>
+  </textarea>
+</body>
+</html>

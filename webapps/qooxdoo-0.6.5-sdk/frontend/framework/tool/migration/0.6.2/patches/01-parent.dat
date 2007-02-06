@@ -1,0 +1,2 @@
+\.getFocusManager\s*\(=.getFocusHandler(
+\.setFocusManager\s*\(=.setFocusHandler(

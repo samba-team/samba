@@ -1,0 +1,71 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Iframe implementation. Elastic.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      //----------
+      // qx.ui.embed.Iframe
+      //----------
+
+      w1 = new qx.ui.embed.Iframe();
+
+      w1.addEventListener("load", function(e) {
+        this.debug("Loaded: " + this.getSource());
+      });
+
+      // elastic
+      w1.set( { left: 20, top: 96, right: 335, bottom: 48 } );
+      w1.setSource("http://www.google.com");
+
+      d.add(w1);
+
+
+      function changeURL(e) {
+
+        this.setSource(e.getData());
+      };
+
+      // make qx.ui.embed.Iframe react to event "surfTo" via function changeURL()
+      d.addEventListener("surfTo", changeURL, w1);
+
+
+      //-------------
+      // radio group
+      //-------------
+
+      var rd1 = new qx.ui.form.RadioButton("Google", "http://www.google.com");
+      var rd2 = new qx.ui.form.RadioButton("Yahoo", "http://www.yahoo.com");
+
+      rd1.set( { left: 20, top: 48, checked: true } );
+      rd2.set( { left: 120, top: 48 } );
+
+      var rbm = new qx.manager.selection.RadioManager( name, [rd1, rd2]);
+
+      // elements of radio group fire event "surfTo"
+      rbm.addEventListener("changeSelected", function(e)
+      {
+        d.dispatchEvent( new qx.event.type.DataEvent("surfTo", e.getData().getValue() ) );
+      });
+
+      d.add(rd1, rd2);
+    });
+  </script>
+</body>
+</html>

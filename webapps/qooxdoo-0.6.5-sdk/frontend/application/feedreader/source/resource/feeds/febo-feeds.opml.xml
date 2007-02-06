@@ -1,0 +1,29 @@
+<opml version="1.0">
+  <head>
+    <title>Thunderbird OPML-Export</title>
+    <dateCreated>Fri, 08 Dec 2006 12:00:29 GMT</dateCreated>
+  </head>
+  <body>
+    <outline title="AJAX Matters Blog" text="AJAX Matters Blog" type="rss" version="RSS" xmlUrl="http://www.ajaxmatters.com/blog/feed/atom/" htmlUrl="http://www.ajaxmatters.com/blog"/>
+    <outline title="Ajaxian" text="Ajaxian" type="rss" version="RSS" xmlUrl="http://feeds.feedburner.com/ajaxian" htmlUrl="http://ajaxian.com"/>
+    <outline title="Coding In Paradise" text="Coding In Paradise" type="rss" version="RSS" xmlUrl="http://www.codinginparadise.org/weblog/atom.xml" htmlUrl="http://codinginparadise.org/weblog/"/>
+    <outline title="dojo.foo" text="dojo.foo" type="rss" version="RSS" xmlUrl="http://blog.dojotoolkit.org/feed" htmlUrl="http://blog.dojotoolkit.org"/>
+    <outline title="Firebug" text="Firebug" type="rss" version="RSS" xmlUrl="http://www.getfirebug.com/blog/?feed=rss2" htmlUrl="http://www.getfirebug.com/blog"/>
+    <outline title="from __future__ import *" text="from __future__ import *" type="rss" version="RSS" xmlUrl="http://bob.pythonmac.org/feed/atom/" htmlUrl="http://bob.pythonmac.org"/>
+    <outline title="Google Web Toolkit Blog" text="Google Web Toolkit Blog" type="rss" version="RSS" xmlUrl="http://googlewebtoolkit.blogspot.com/atom.xml" htmlUrl="http://googlewebtoolkit.blogspot.com"/>
+    <outline title="Jack Slocum's Blog" text="Jack Slocum's Blog" type="rss" version="RSS" xmlUrl="http://www.jackslocum.com/blog/feed/" htmlUrl="http://www.jackslocum.com/blog"/>
+    <outline title="JSR 168, WSRP, Portlets &amp; Enterprise Portal" text="JSR 168, WSRP, Portlets &amp; Enterprise Portal" type="rss" version="RSS" xmlUrl="http://portlets.blogspot.com/atom.xml" htmlUrl="http://portlets.blogspot.com"/>
+    <outline title="Monologue" text="Monologue" type="rss" version="RSS" xmlUrl="http://www.go-mono.com/monologue/index.rss" htmlUrl="http://www.go-mono.com/monologue/"/>
+    <outline title="OSNews" text="OSNews" type="rss" version="RSS" xmlUrl="http://osnews.com/files/recent.rdf" htmlUrl="http://www.osnews.com/"/>
+    <outline title="qooxdoo" text="qooxdoo" type="rss" version="RSS" xmlUrl="http://feeds.feedburner.com/qooxdoo/blog/content" htmlUrl="http://blog.qooxdoo.org"/>
+    <outline title="qooxdoo" text="qooxdoo" type="rss" version="RSS" xmlUrl="http://feeds.feedburner.com/qooxdoo/news/content" htmlUrl="http://news.qooxdoo.org"/>
+    <outline title="subbu.org" text="subbu.org" type="rss" version="RSS" xmlUrl="http://feeds.feedburner.com/SubbuDotOrg" htmlUrl="http://www.subbu.org/"/>
+    <outline title="Surfin' Safari" text="Surfin' Safari" type="rss" version="RSS" xmlUrl="http://webkit.org/blog/?feed=rss2" htmlUrl="http://webkit.org/blog"/>
+    <outline title="Thomas Much's Weblog" text="Thomas Much's Weblog" type="rss" version="RSS" xmlUrl="http://www.snailshell.de/blog/rss.xml" htmlUrl="http://www.snailshell.de/blog/index.html"/>
+    <outline title="UXmatters" text="UXmatters" type="rss" version="RSS" xmlUrl="http://www.uxmatters.com/atom.xml" htmlUrl="http://dev.uxmatters.com/"/>
+    <outline title="WebKit" text="WebKit" type="rss" version="RSS" xmlUrl="http://cia.navi.cx/stats/project/WebKit/.rss" htmlUrl="http://webkit.org"/>
+    <outline title="webmagics" text="webmagics" type="rss" version="RSS" xmlUrl="http://feeds.feedburner.com/webmagics" htmlUrl="http://journal.webmagics.net/"/>
+    <outline title="Yahoo! User Interface Blog" text="Yahoo! User Interface Blog" type="rss" version="RSS" xmlUrl="http://feeds.yuiblog.com/YahooUserInterfaceBlog" htmlUrl="http://yuiblog.com/blog"/>
+    <outline title="Zimbra - Blog" text="Zimbra - Blog" type="rss" version="RSS" xmlUrl="http://www.zimbra.com/blog/atom.xml" htmlUrl="http://www.zimbra.com/blog/"/>
+  </body>
+</opml>

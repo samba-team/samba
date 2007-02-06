@@ -1,0 +1,128 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>List implementation. Now testing auto dimensions.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var l1 = new qx.ui.form.List;
+      
+      l1.set({ top : 48, left: 20, height: 200, width: "auto", overflow : "scrollY" });
+      
+      var item;
+      for( var i=1; i<=35; i++ ) 
+      {
+        // item = new qx.ui.form.ListItem("Item No " + i);
+        item = new qx.ui.form.ListItem("Item No " + i, "icon/" + ((i % 4) ? "16" : "48") + "/places/folder.png");
+        
+        !(i % 9) && (item.setEnabled(false));
+        
+        l1.add(item);
+      };
+      
+      d.add(l1);
+      
+      var l2 = new qx.ui.form.List;
+      
+      l2.set({ top : 48, left: 400, height: 200, width: "auto" });
+      l2.getManager().setMultiSelection(false);
+      //l2.setOverflow("scrollY");
+      l2.setHeight("auto");
+      
+      var l2l = [ "red", "violett", "rose", "blue", "green", "cyan", "magenta", "yellow", "brown", "orange", "black", "white", "grey", "gray", "brown" ];
+      
+      for (var i=0; i<l2l.length; i++) {
+        l2.add(new qx.ui.form.ListItem(l2l[i]));
+      };      
+      
+      d.add(l2);
+      
+
+      
+
+      var c1 = new qx.ui.form.CheckBox("Enable Multi-Selection");
+      var c2 = new qx.ui.form.CheckBox("Enable Drag-Selection");
+      var c3 = new qx.ui.form.CheckBox("Allow Deselection");
+      var c4 = new qx.ui.form.CheckBox("Enable Inline Find");
+
+      c1.setLocation(180, 48);
+      c2.setLocation(180, 68);
+      c3.setLocation(180, 88);
+      c4.setLocation(180, 108);
+      
+      d.add(c1, c2, c3, c4);
+      
+      c1.setChecked(true);
+      c2.setChecked(true);
+      c3.setChecked(true);
+      c4.setChecked(true);
+      
+      c1.addEventListener("changeChecked", function(e) {
+        l1.getManager().setMultiSelection(e.getData());
+      });
+      
+      c2.addEventListener("changeChecked", function(e) {
+        l1.getManager().setDragSelection(e.getData());
+      });
+
+      c3.addEventListener("changeChecked", function(e) {
+        l1.getManager().setCanDeselect(e.getData());
+      });
+      
+      c4.addEventListener("changeChecked", function(e) {
+        l1.setEnableInlineFind(e.getData());
+      });
+      
+      
+      
+      
+
+      var rd1 = new qx.ui.form.RadioButton("Show Label", "label");
+      var rd2 = new qx.ui.form.RadioButton("Show Icon", "icon");
+      var rd3 = new qx.ui.form.RadioButton("Show Both", "both");
+
+      rd1.set( { left: 180, top: 128 } );
+      rd2.set( { left: 180, top: 148 } );
+      rd3.set( { left: 180, top: 168 } );
+      
+      d.add(rd1, rd2, rd3);
+      
+      rd3.setChecked(true);
+
+      var rbm = new qx.manager.selection.RadioManager( name, [rd1, rd2, rd3]);
+
+      rbm.addEventListener("changeSelected", function(e)
+      {
+        for( var i=0; i<l1.getChildrenLength(); i++ ) {
+          l1.getChildren()[i].setShow(e.getData().getValue());
+        };
+      });
+      
+      
+
+      
+      
+      // Icon Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 20, 348);
+    
+      // Color Themes
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 200, 348);      
+    });
+  </script>
+</body>
+</html>

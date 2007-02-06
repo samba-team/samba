@@ -1,0 +1,320 @@
+#header {
+  margin: 0px;
+  padding: 0px;
+  background-color: #134275;
+  font-family: "Trebuchet MS", "Lucida Grande", Verdana, sans-serif;
+}
+
+#header h1 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #DEFF83;
+  position: absolute;
+  top: 30px;
+  left: 20px;
+  margin: 0;
+  padding: 0;
+}
+
+#qxversion {
+  font-size: 11px;
+  text-transform: lowercase;
+  color: #F3FFD1;
+  margin-top: -14px;
+  letter-spacing: 1px;
+  word-spacing: 4px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  margin: 0;
+  padding: 0;
+}
+
+#DetailFrame,
+#DetailFrame td,
+#DetailFrame th{
+  font-family: Verdana, "Lucida Grande", "Bitstream Vera Sans", Tahoma, "Lucida Sans Unicode", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 150%;
+}
+
+#DetailFrame h1,
+#DetailFrame h2,
+#DetailFrame h3,
+#DetailFrame h4,
+#DetailFrame h5,
+#DetailFrame h6{
+  font-family: "Trebuchet MS", "Lucida Grande", Verdana, sans-serif;
+  color: #134275;
+}
+
+#DetailFrame *{
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+#DetailFrame #ControlFrame{
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 10px;
+  background: #FBFFEF;
+  padding: 4px 6px;
+  border: 1px solid #ECECEC;
+}
+
+#DetailFrame h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+#DetailFrame h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+#DetailFrame h3 {
+  font-size: 14px;
+}
+
+#DetailFrame img {
+  border: 0 none;
+  vertical-align: middle;
+}
+
+#DetailFrame a:link,
+#DetailFrame a:visited{
+  color: #134275;
+}
+
+#DetailFrame a:hover,
+#DetailFrame a:active{
+  color: #134275;
+  text-decoration: underline;
+}
+
+#DetailFrame td{
+  vertical-align: top;
+  padding: 2px;
+}
+
+
+
+
+
+#DetailLoader div.please{
+  font-size: 14px;
+  font-weight: normal;
+  margin-bottom: 4px;
+}
+
+
+
+
+
+
+#InfoViewer div.pkgtitle{
+  font-size: 14px;
+  font-weight: normal;
+  margin-bottom: 4px;
+}
+
+
+
+
+
+
+
+
+#ClassViewer div.classDescription{
+  font-size: 12px;
+
+  background: #F3FFD1;
+  border: 1px solid #F3FFD1;
+
+  -moz-border-radius: 5px;
+  padding: 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+
+  width: 650px;
+	overflow: auto;
+}
+
+#ClassViewer div.classDescription p{
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#ClassViewer div.packageName{
+  font-size: 14px;
+  font-weight: normal;
+  margin-bottom: 4px;
+}
+
+#ClassViewer span.typeInfo{
+  color: #83B300;
+  font-weight: normal;
+}
+
+
+
+
+
+
+#ClassViewer div.infoPanel {
+  margin-top: 30px;
+}
+
+#ClassViewer div.infoPanel h2{
+  cursor: default;
+}
+
+
+
+
+
+
+
+
+#ClassViewer table.info {
+  table-layout: fixed;
+}
+
+#ClassViewer table.info tr {
+  background: #FBFFEF;
+}
+
+#ClassViewer table.info tr.marked {
+  background: #DEFF83;
+}
+
+#ClassViewer table.info tr td,
+#ClassViewer div.empty-info-body {
+  border-top: 1px solid #ECECEC;
+}
+
+#ClassViewer table.info tr td{
+  overflow: hidden;
+}
+
+#ClassViewer table.info tr td td{
+  border-top: 0 none;
+  padding: 0;
+}
+
+#ClassViewer table.info td.icon{
+  text-align: center;
+  width: 20px;
+}
+
+#ClassViewer table.info td.type{
+  width: 100px;
+  font-size: 12px;
+  color: #83B300;
+  font-weight: bold;
+}
+
+#ClassViewer table.info td.toggle{
+  text-align: center;
+  width: 16px;
+  padding: 1px;
+}
+
+#ClassViewer table.info td.toggle img{
+  cursor: default;
+}
+
+#ClassViewer table.info td.text{
+  padding-right: 10px;
+}
+
+#ClassViewer table.info td.text h3{
+  cursor: default;
+}
+
+#ClassViewer table.info td.text table{
+	padding: 0;
+}
+
+#ClassViewer table.info td.text table td {
+	padding: 1px 3px;
+}
+
+#ClassViewer table.info td.text table th {
+	text-align: left;
+	color: #134275;
+	font-weight: normal;
+	padding: 1px 3px;
+}
+
+#ClassViewer span.methodSignature{
+  font-size: 12px;
+  color: #83B300;
+}
+
+#ClassViewer table.info td.type a,
+#ClassViewer span.methodSignature a{
+  color: #83B300 !important;
+}
+
+#ClassViewer span.methodSignature span.parameterType{
+  font-style: italic;
+}
+
+#ClassViewer span.methodSignature span.separator{
+  color: #134275;
+  font-weight: bold;
+}
+
+#ClassViewer span.methodSignature span.parenthesis{
+  color: #134275;
+  font-weight: bold;
+}
+
+
+
+
+
+#ClassViewer div.item-detail-headline {
+  font-weight: bold;
+  color: #1D65B3;
+}
+
+#ClassViewer div.item-detail-text {
+  padding-left: 12px;
+}
+
+#ClassViewer div.item-detail-text p{
+  display: inline;
+}
+
+#ClassViewer div.item-detail-error {
+  font-weight: bold;
+  color: #D61F1C;
+}
+
+#ClassViewer span.item-detail-optional {
+  font-style: italic;
+}
+
+#ClassViewer code,
+#ClassViewer pre,
+#ClassViewer span.item-detail-param-name {
+  font-family: Consolas, "Bitstream Vera Sans Mono", "Courier New", monospace;
+  background: #FFF;
+  padding: 1px;
+}
+
+#ClassViewer pre{
+  overflow: auto;
+  padding: 4px 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+#ClassViewer span.caps{
+  color: #134275;
+}

@@ -1,0 +1,84 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test the back button functionality of qooxdoo.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    function callback(e) {
+			d.debug(e.getData());
+			a1.setLabel("History event: " + e.getData());
+		}
+
+    var history = qx.client.History.getInstance();
+  	
+		history.init();
+		history.addEventListener("request", callback);
+		
+		qx.client.Timer.once(function() {
+			history.addToHistory("Juhu1", "Juhu1");
+		}, this, 300);
+		
+    qx.client.Timer.once(function() {
+			history.addToHistory("Juhu2", "Juhu2");
+		}, this, 600);
+		
+		qx.client.Timer.once(function() {
+			history.addToHistory("Juhu3", "Juhu3");
+		}, this, 900);
+
+    var t1 = new qx.ui.form.TextField();
+    t1.set({
+			left: 20,
+			top:48,
+			height: 20,
+			value: ""
+		});
+		
+		var a1 = new qx.ui.basic.Atom("");
+		a1.set({
+			left: 20,
+			top: 78,
+			width: 230,
+			height: 120,
+			backgroundColor: "orange",
+			border: qx.renderer.border.BorderPresets.getInstance().thinInset
+		});
+		
+		var b1 = new qx.ui.form.Button("add to history");
+		b1.set({
+			top: 48,
+			left: 150,
+			height: 20,
+			width: 100
+		});
+		b1.addEventListener("execute", function() {
+			var data = t1.getValue();
+			if (!data) return;
+			t1.setValue("");
+			qx.client.Timer.once(function() {
+			  history.addToHistory(data, data);
+		  }, this, 100);
+		});
+		
+		d.add(t1, a1, b1);
+		
+  });
+  </script>
+</body>
+</html>

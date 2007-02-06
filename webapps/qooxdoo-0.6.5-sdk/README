@@ -1,0 +1,72 @@
+Welcome!  :-)
+
+qooxdoo is one of the most comprehensive and innovative Open Source AJAX 
+frameworks. It is a multipurpose framework that includes support for 
+professional JavaScript development, a state-of-the-art GUI toolkit and 
+high-level client-server communication.
+
+
+License
+
+qooxdoo may be used under the terms of either the GNU Lesser General Public 
+License (LGPL) or the Eclipse Public License (EPL). As a recipient of qooxdoo, 
+you may choose which license to receive the code under.
+
+Please make sure you understand the dual license of qooxdoo and the rights and 
+obligations that come with it. See the top-level LICENSE file for more details.
+
+
+Framework
+
+qooxdoo is entirely class-based and tries to leverage the features of 
+object-oriented JavaScript. It is fully based on namespaces and does not 
+modify or extend native JavaScript types. Most modern browsers are 
+supported (e.g. Firefox, Internet Explorer and Opera; Safari soon) and it 
+is free of memory leaks. It comes with a comprehensive API reference, that 
+is auto-generated from Javadoc-like comments and from the syntax tree 
+representing the code. The fast and complete JavaScript parser not only 
+allows for doc generation, but is an integral part of the automatic build 
+process that makes optimizing, compressing, linking and deployment of 
+custom applications very user-friendly.
+
+
+GUI Toolkit
+
+Despite being a pure JavaScript framework, qooxdoo is quite on par with 
+GUI toolkits like Qt or SWT when it comes to advanced yet easy to implement 
+user interfaces. It offers a full-blown set of widgets that are hardly 
+distinguishable from elements of native desktop applications. Full built-in 
+support for keyboard navigation, focus and tab handling and drag & drop is 
+provided. Dimensions can be specified as static, auto-sizing, stretching, 
+percentage, weighted flex or min/max or even as combinations of those. 
+All widgets are based on powerful and flexible layout managers which are a 
+key to many of the advanced layout capabilities. Interface description is 
+done programmatically in JavaScript for maximum performance.
+
+No HTML has to be used and augmented to define the interface. The qooxdoo 
+user does not even have to know CSS to style the interface. Clean and 
+easy-to-configure themes for appearance, colors or icons allow for a 
+full-fledged styling that even supports runtime switching.
+
+
+AJAX
+
+While being a client-side and server-agnostic solution, the qooxdoo project 
+does include complete implementations of RPC servers (currently Java and PHP) 
+to demonstrate some of its advanced client-server communcation. An abstract 
+transport layer supports queues, timeouts and implementations via 
+XMLHttpRequest, Iframes and Scripts. Like the rest of qooxdoo it fully 
+supports event-based programming which greatly simplifies asynchronous 
+communication.
+
+
+Learn more
+
+For further information about qooxdoo, please point your browser to
+http://qooxdoo.org/about
+
+For a step-by-step introduction to qooxdoo application development, please 
+see the instructions in the user manual at
+http://qooxdoo.org/documentation/user_manual
+
+Have fun!  ;-)

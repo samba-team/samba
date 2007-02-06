@@ -1,0 +1,95 @@
+# German translation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo feedreader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-26 12:52+0100\n"
+"PO-Revision-Date: 2006-12-22 09:59+0100\n"
+"Last-Translator: Fabian Jakobs <fabian dot jakobs at 1und1 dot de>\n"
+"Language-Team:  <en@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: source/class/feedreader/Application.js:133
+#, fuzzy
+msgid "reloading ..."
+msgstr "aktualisieren ..."
+
+#: source/class/feedreader/Application.js:138
+msgid "qooxdoo feed reader."
+msgstr "\"qooxdoo\" feed reader"
+
+#: source/class/feedreader/Application.js:143
+msgid "Add feed"
+msgid_plural "Add feeds"
+msgstr[0] "Feed hinzufügen"
+msgstr[1] "Feeds hinzufügen"
+
+#: source/class/feedreader/Application.js:144
+msgid "Remove feed"
+msgstr "Feed löschen"
+
+#: source/class/feedreader/Application.js:147
+msgid "Reload"
+msgstr "Aktualisieren"
+
+#: source/class/feedreader/Application.js:149
+msgid "(%1) Reload the feeds."
+msgstr "(%1) Feeds aktualisieren."
+
+#: source/class/feedreader/Application.js:156
+#: source/class/feedreader/Application.js:158
+msgid "English"
+msgstr "Englisch"
+
+#: source/class/feedreader/Application.js:157
+msgid "German"
+msgstr "Deutsch"
+
+#: source/class/feedreader/Application.js:159
+msgid "Turkish"
+msgstr "Türkisch"
+
+#: source/class/feedreader/Application.js:160
+msgid "Italian"
+msgstr "Italienisch"
+
+#: source/class/feedreader/Application.js:161
+msgid "Spanish"
+msgstr "Spanisch"
+
+#: source/class/feedreader/Application.js:162
+msgid "Swedish"
+msgstr "Schwedisch"
+
+#: source/class/feedreader/Application.js:163
+msgid "Russian"
+msgstr "Russisch"
+
+#: source/class/feedreader/Application.js:186
+msgid "Help"
+msgstr "Hilfe"
+
+#: source/class/feedreader/Application.js:194
+msgid "News feeds"
+msgstr "Nachrichtenkanäle"
+
+#: source/class/feedreader/Application.js:215
+msgid "Subject"
+msgstr "Betreff"
+
+#: source/class/feedreader/Application.js:216
+msgid "Sender"
+msgstr "Absender"
+
+#: source/class/feedreader/Application.js:217
+msgid "Date"
+msgstr "Datum"
+
+#: source/class/feedreader/ArticleView.js:79
+msgid "read more ..."
+msgstr "weitere Informationen ..."

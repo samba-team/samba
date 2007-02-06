@@ -1,0 +1,43 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>JS Object Storage Performance</p>
+
+    <h1>Test Description</h1>
+    <p>Create 10.000 new (non stored) objects inside a loop. Identical to GlobalObject_1.html.</p>
+
+    <h1>Result</h1>
+    <p>The performance in IE is quite good (~330ms for each loop), compared to the same stuff executed without the precreated stuff.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    function test()
+    {
+      var _s = (new Date).valueOf();
+
+      for (var i=0; i<10000; i++) {
+        new Object()
+      };
+
+      window.status = "time: " + (new Date).valueOf() + " | measured: " + ((new Date).valueOf() - _s) + "ms";
+      window.setTimeout(test, 1000);
+    }
+
+    test();
+  });
+  </script>
+</body>
+</html>

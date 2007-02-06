@@ -1,0 +1,57 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Show one way to drag a widget around the screen.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    
+    var a1 = new qx.ui.basic.Atom("Drag Me");
+    a1.set({ backgroundColor: "white", border: qx.renderer.border.BorderPresets.getInstance().groove });
+    a1.setPadding(10);
+    a1.setLocation(20, 48); 
+    d.add(a1);
+
+    
+    a1.addEventListener("mousedown", handleMouseDown);
+    a1.addEventListener("mousemove", handleMouseMove);
+    a1.addEventListener("mouseup", handleMouseUp);
+    
+    function handleMouseDown(e)
+    {
+      this.setCapture(true);
+      a1._offsetX = e.getPageX() - a1.getLeft();
+      a1._offsetY = e.getPageY() - a1.getTop();
+    }
+    
+    function handleMouseMove(e)
+    {
+      if (this.getCapture())
+      {
+        a1.setLeft(e.getPageX() - a1._offsetX);
+        a1.setTop(e.getPageY() - a1._offsetY);
+      }
+    }
+          
+    function handleMouseUp(e)
+    {
+      this.setCapture(false);
+    }
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>This test is using multiple div-Elements</p>
+  <p>Added to the document using the "innerHTML" property.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    var w;
+    var v;
+    var h = [];
+
+    for (var i=1; i<=20; i++)
+    {
+      for (var j=1; j<=20; j++)
+      {
+        h.push("<div style='width:12px;height:12px;position:absolute;");
+        h.push("left:" + (20+(12*i)) + "px;");
+        h.push("top:" + (48+(12*j)) + "px;");
+
+        v = Math.round(20+(i*j)/2);
+        h.push("background-color:" + "rgb(" + v + "," + v + "," + v + ")");
+        h.push("' class='qx_ui_core_Widget_QxWidgetCore' id='Auto" + i + "|" + j + "'></div>");
+      };
+    };
+
+    document.body.innerHTML += h.join("");
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+# German
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo showcase\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-26 12:54+0100\n"
+"PO-Revision-Date: 2007-01-23 17:46+0100\n"
+"Last-Translator: Fabian Jakobs <fabian DOT jakobs AT 1und1 DOT de>\n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+
+#: source/class/showcase/Application.js:871
+msgid "Choose a locale: "
+msgstr "Lokalisierung wählen"
+
+#: source/class/showcase/Application.js:890
+msgid "A date: "
+msgstr "Ein Datum:"
+
+#: source/class/showcase/Application.js:917
+msgid "Undo"
+msgstr "Rückgängig"
+
+#: source/class/showcase/Application.js:918
+msgid "Redo"
+msgstr "Wiederholen"
+
+#: source/class/showcase/Application.js:920
+msgid "Cut"
+msgstr "Aussschneiden"
+
+#: source/class/showcase/Application.js:921
+msgid "Copy"
+msgstr "Kopieren"
+
+#: source/class/showcase/Application.js:922
+msgid "Paste"
+msgstr "Einfügen"
+
+#: source/class/showcase/Application.js:923
+msgid "Delete"
+msgstr "Löschen"
+
+#: source/class/showcase/Application.js:924
+msgid "Select All"
+msgstr "Alles auswählen"
+
+#: source/class/showcase/Application.js:926
+msgid "Search"
+msgstr "Suchen"
+
+#: source/class/showcase/Application.js:927
+msgid "Search Again"
+msgstr "Weiter suchen"
+
+#: source/class/showcase/Application.js:930
+msgid "Command Menu (keyboard shortcuts)"
+msgstr "Command-Menü (Tastenkürzel)"
+
+#: source/class/showcase/Application.js:948
+msgid "Open Color Popup"
+msgstr "Öffne Farbauswahl"
+
+#: source/class/showcase/Application.js:958
+msgid "Basic Colors"
+msgstr "Grundfarben"
+
+#: source/class/showcase/Application.js:962
+msgid "Template Colors"
+msgstr "Beispielfarben"
+
+#: source/class/showcase/Application.js:966
+msgid "Recent Colors"
+msgstr "Vorherige Farben"
+
+#: source/class/showcase/Application.js:984
+msgid "Locale information"
+msgstr "Lokalisierungsinformationen:"
+
+#: source/class/showcase/Application.js:1005
+msgid "Locale:"
+msgstr "Sprachkennung:"
+
+#: source/class/showcase/Application.js:1008
+msgid "Territory code:"
+msgstr "Landeskennung:"
+
+#: source/class/showcase/Application.js:1011
+msgid "Date format medium:"
+msgstr "Mittellanges Datumsformat:"
+
+#: source/class/showcase/Application.js:1013
+msgid "Date medium:"
+msgstr "Mittellanges Datum:"
+
+#: source/class/showcase/Application.js:1016
+msgid "Date format long:"
+msgstr "Langes Datumsformat:"
+
+#: source/class/showcase/Application.js:1018
+msgid "Date long:"
+msgstr "Langes Datum:"
+
+#: source/class/showcase/Application.js:1021
+msgid "Date format full:"
+msgstr "Vollständiges Datumsformat:"
+
+#: source/class/showcase/Application.js:1023
+msgid "Date full:"
+msgstr "Vollständiges Datum:"
+
+#: source/class/showcase/Application.js:1026
+msgid "Time format short:"
+msgstr "kurzes Zeitformat:"
+
+#: source/class/showcase/Application.js:1028
+msgid "Time short:"
+msgstr "Zeit (kurz):"
+
+#: source/class/showcase/Application.js:1031
+msgid "Time format long:"
+msgstr "Langes Zeitformat:"
+
+#: source/class/showcase/Application.js:1033
+msgid "Time long:"
+msgstr "Zeit (lang):"
+
+#: source/class/showcase/Application.js:1036
+msgid "Week start:"
+msgstr "Wochenanfang:"
+
+#: source/class/showcase/Application.js:1039
+msgid "Format of %1:"
+msgstr "Format von %1:"

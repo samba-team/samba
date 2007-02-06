@@ -1,0 +1,51 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing qx.ui.listview.ListView with iconHtml cells.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var ld = [];
+      var lt = [ "Image", "Text", "PDF", "Illustration", "Document" ];
+      
+      for (var i=0, t; i<1000; i++) 
+      {
+        t=Math.round(Math.random()*4);
+        ld.push({ name : { html : "E-Mail " + i, icon : "icon/16/apps/internet-email-client.png", iconWidth : 16, iconHeight : 16 }, size : { text : Math.round(Math.random()*100) + "kb" }, type : { text : lt[t] }, modified : { text : "Nov " + Math.round(Math.random() * 30 + 1) + " 2005" }, rights: { text : "-rw-r--r--" }, open : { uri : "http://www.google.com/search?q=" + i, html : "Open " + i }});
+      };
+      
+      var lc = 
+      {
+        name : { label : "Name", width : 120, type : "iconHtml" },
+        size: { label : "Size", width : 50, type : "text", align : "right" },
+        type : { label : "Type", width : 80, type : "text" },
+        modified : { label : "Last Modified", width : 150, type : "text" },
+        rights : { label : "Rights", width: 80, type : "text" }     
+      };
+      
+      var lv = new qx.ui.listview.ListView(ld, lc);
+
+      lv.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
+      lv.setBackgroundColor("white");
+      lv.setWidth(600);
+      lv.setHeight(350);
+      lv.setLocation(20, 48);
+
+      qx.ui.core.ClientDocument.getInstance().add(lv);
+    });
+  </script>
+</body>
+</html>

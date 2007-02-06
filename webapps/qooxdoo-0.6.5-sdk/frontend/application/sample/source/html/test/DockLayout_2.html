@@ -1,0 +1,224 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    The next generation of table-less layouts ;)
+  </div>
+
+  <script type="text/javascript">
+  function selfRemove() {
+    this.getParent().remove(this);
+  };  
+  
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var dl1 = new qx.ui.layout.DockLayout;
+    
+    dl1.setTop(48);
+    dl1.setLeft(20);
+    dl1.setRight(335);
+    dl1.setBottom(120);
+    dl1.setMinWidth(400);
+    dl1.setMinHeight(300);
+    
+    dl1.setBorder(2, "outset");
+    dl1.setBackgroundColor("white");
+    
+    d.add(dl1);
+    
+    
+    
+    var t1 = new qx.ui.basic.Terminator;
+    t1.setHeight(50);
+    t1.setBackgroundColor("red");
+    t1.setVerticalAlign("top");
+    t1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t1.addEventListener("click", selfRemove);
+
+    var t2 = new qx.ui.basic.Terminator;
+    // t2.setWidth(150);
+    t2.setWidth("20%");
+    t2.setBackgroundColor("gray");
+    t2.setHorizontalAlign("left");
+    t2.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t2.addEventListener("click", selfRemove);
+
+    var t3 = new qx.ui.basic.Terminator;
+    t3.setHeight(100);
+    t3.setBackgroundColor("yellow");
+    t3.setVerticalAlign("top");
+    t3.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t3.addEventListener("click", selfRemove);
+
+    var t4 = new qx.ui.basic.Terminator;
+    t4.setWidth(40);
+    t4.setBackgroundColor("orange");
+    t4.setHorizontalAlign("right");
+    t4.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t4.addEventListener("click", selfRemove);
+
+    var t5 = new qx.ui.basic.Terminator;
+    t5.setHeight(80);
+    t5.setBackgroundColor("blue");
+    t5.setVerticalAlign("bottom");
+    t5.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t5.addEventListener("click", selfRemove);
+   
+    var t6 = new qx.ui.basic.Terminator;
+    t6.setBackgroundColor("green");
+    t6.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    t6.addEventListener("click", selfRemove);
+
+    dl1.add(t1, t2, t3, t4, t5, t6);
+    
+    
+    
+    
+    
+   
+    
+    
+    
+    var l1 = new qx.ui.basic.Label("Mode:");
+    l1.setWidth(50);
+    
+    var btn1_1 = new qx.ui.form.Button("Vertical", "icon/16/actions/dialog-ok.png");
+    var btn1_2 = new qx.ui.form.Button("Horizontal", "icon/16/actions/dialog-ok.png");
+    var btn1_3 = new qx.ui.form.Button("Ordered", "icon/16/actions/dialog-ok.png");
+    
+    btn1_1.addEventListener("click", function(e) {
+      dl1.setMode("vertical");
+    });
+
+    btn1_2.addEventListener("click", function(e) {
+      dl1.setMode("horizontal");
+    });
+
+    btn1_3.addEventListener("click", function(e) {
+      dl1.setMode("ordered");
+    });
+    
+    var h1 = new qx.ui.layout.HorizontalBoxLayout;
+    h1.setVerticalChildrenAlign("middle");
+    h1.add(l1, btn1_1, btn1_2, btn1_3);
+    h1.setBottom(78);
+    h1.setLeft(20);
+    d.add(h1);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    var l2 = new qx.ui.basic.Label("Children:");
+    l2.setWidth(50);
+    
+    var btn2_1 = new qx.ui.form.Button("Remove First", "icon/16/actions/dialog-ok.png");
+    var btn2_2 = new qx.ui.form.Button("Remove Last", "icon/16/actions/dialog-ok.png");
+    var btn2_3 = new qx.ui.form.Button("Add Top", "icon/16/actions/dialog-ok.png");
+    var btn2_4 = new qx.ui.form.Button("Add Right", "icon/16/actions/dialog-ok.png");
+    var btn2_5 = new qx.ui.form.Button("Add Bottom", "icon/16/actions/dialog-ok.png");
+    var btn2_6 = new qx.ui.form.Button("Add Left", "icon/16/actions/dialog-ok.png");
+    var btn2_7 = new qx.ui.form.Button("Add Auto", "icon/16/actions/dialog-ok.png");
+
+    btn2_1.addEventListener("execute", function(e) 
+    {
+      var c = dl1.getFirstChild();
+      if (c) {
+        dl1.remove(c);
+      };      
+    });
+
+    btn2_2.addEventListener("execute", function(e) 
+    {
+      var c = dl1.getLastChild();
+      if (c) {
+        dl1.remove(c);
+      };      
+    });
+    
+    btn2_3.addEventListener("execute", function(e) 
+    {
+      var t = new qx.ui.basic.Terminator();
+      
+      t.setBackgroundColor(qx.renderer.color.Color.fromRandom());
+      t.setHeight(2+Math.round(Math.random()*50));
+      t.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      t.addEventListener("click", selfRemove);
+      
+      dl1.addTop(t);
+    });
+    
+    btn2_4.addEventListener("execute", function(e) 
+    {
+      var t = new qx.ui.basic.Terminator();
+      
+      t.setBackgroundColor(qx.renderer.color.Color.fromRandom());
+      t.setWidth(2+Math.round(Math.random()*50));
+      t.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      t.addEventListener("click", selfRemove);
+      
+      dl1.addRight(t);
+    });
+    
+    btn2_5.addEventListener("execute", function(e) 
+    {
+      var t = new qx.ui.basic.Terminator();
+      
+      t.setBackgroundColor(qx.renderer.color.Color.fromRandom());
+      t.setHeight(2+Math.round(Math.random()*50));
+      t.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      t.addEventListener("click", selfRemove);
+      
+      dl1.addBottom(t);
+    });
+    
+    btn2_6.addEventListener("execute", function(e) 
+    {
+      var t = new qx.ui.basic.Terminator();
+      
+      t.setBackgroundColor(qx.renderer.color.Color.fromRandom());
+      t.setWidth(2+Math.round(Math.random()*50));
+      t.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      t.addEventListener("click", selfRemove);
+      
+      dl1.addLeft(t);
+    });
+    
+    btn2_7.addEventListener("execute", function(e) 
+    {
+      var t = new qx.ui.basic.Terminator();
+      
+      t.setBackgroundColor(qx.renderer.color.Color.fromRandom());
+      t.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      t.addEventListener("click", selfRemove);
+      
+      dl1.add(t);
+    });    
+
+    
+    var h2 = new qx.ui.layout.HorizontalBoxLayout;
+    h2.setVerticalChildrenAlign("middle");
+    h2.add(l2, btn2_1, btn2_2, btn2_3, btn2_4, btn2_5, btn2_6, btn2_7);
+    h2.setBottom(48);
+    h2.setLeft(20);
+    d.add(h2);    
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+.header {
+	margin: 0px;
+	padding: 0px;
+	background-color: #134275;
+}
+
+.header h1 {
+  font-family: "Trebuchet MS", "Lucida Grande", Verdana, sans-serif;
+	font-size: 18px;
+	font-weight: bold;
+	color: #DEFF83;
+	padding: 12px 20px;
+	margin: 0px;
+}
+
+.blogEntry {
+  font-family: Verdana, "Lucida Grande", "Bitstream Vera Sans", Tahoma, "Lucida Sans Unicode", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 150%;
+  padding: 5px;
+  background: #FBFFEF;
+}
+
+.blogEntry h1.blog {
+  font-family: "Trebuchet MS", "Lucida Grande", Verdana, sans-serif;
+  color: #134275;
+  line-height: 120%;
+}
+
+.blogEntry {
+	overflow: auto;
+}
+
+.blogEntry div.date {
+  font-weight: bold;
+  color: #1D65B3;
+  padding: 5px;
+}
+
+.blogEntry a:link,
+.blogEntry a:visited{
+  color: #134275;
+}
+
+.blogEntry a:hover,
+.blogEntry a:active{
+  color: #134275;
+  text-decoration: underline;
+}
+
+.blogEntry .description {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
