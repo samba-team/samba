@@ -462,6 +462,7 @@ struct netr_DELTA_SECRET {
 	uint32_t unknown8;
 };
 
+#ifndef USE_UINT_ENUMS
 enum netr_DeltaEnum {
 	NETR_DELTA_DOMAIN=1,
 	NETR_DELTA_GROUP=2,
@@ -486,6 +487,31 @@ enum netr_DeltaEnum {
 	NETR_DELTA_DELETE_USER2=21,
 	NETR_DELTA_MODIFY_COUNT=22
 };
+#else
+enum netr_DeltaEnum { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF};
+#define NETR_DELTA_DOMAIN ( 1 )
+#define NETR_DELTA_GROUP ( 2 )
+#define NETR_DELTA_DELETE_GROUP ( 3 )
+#define NETR_DELTA_RENAME_GROUP ( 4 )
+#define NETR_DELTA_USER ( 5 )
+#define NETR_DELTA_DELETE_USER ( 6 )
+#define NETR_DELTA_RENAME_USER ( 7 )
+#define NETR_DELTA_GROUP_MEMBER ( 8 )
+#define NETR_DELTA_ALIAS ( 9 )
+#define NETR_DELTA_DELETE_ALIAS ( 10 )
+#define NETR_DELTA_RENAME_ALIAS ( 11 )
+#define NETR_DELTA_ALIAS_MEMBER ( 12 )
+#define NETR_DELTA_POLICY ( 13 )
+#define NETR_DELTA_TRUSTED_DOMAIN ( 14 )
+#define NETR_DELTA_DELETE_TRUST ( 15 )
+#define NETR_DELTA_ACCOUNT ( 16 )
+#define NETR_DELTA_DELETE_ACCOUNT ( 17 )
+#define NETR_DELTA_SECRET ( 18 )
+#define NETR_DELTA_DELETE_SECRET ( 19 )
+#define NETR_DELTA_DELETE_GROUP2 ( 20 )
+#define NETR_DELTA_DELETE_USER2 ( 21 )
+#define NETR_DELTA_MODIFY_COUNT ( 22 )
+#endif
 
 union netr_DELTA_UNION {
 	struct netr_DELTA_DOMAIN *domain;/* [unique,case(NETR_DELTA_DOMAIN)] */
@@ -564,12 +590,20 @@ union netr_CONTROL_QUERY_INFORMATION {
 	struct netr_NETLOGON_INFO_3 *info3;/* [unique,case(3)] */
 };
 
+#ifndef USE_UINT_ENUMS
 enum netr_LogonControlCode {
 	NETLOGON_CONTROL_REDISCOVER=5,
 	NETLOGON_CONTROL_TC_QUERY=6,
 	NETLOGON_CONTROL_TRANSPORT_NOTIFY=7,
 	NETLOGON_CONTROL_SET_DBFLAG=65534
 };
+#else
+enum netr_LogonControlCode { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF};
+#define NETLOGON_CONTROL_REDISCOVER ( 5 )
+#define NETLOGON_CONTROL_TC_QUERY ( 6 )
+#define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 7 )
+#define NETLOGON_CONTROL_SET_DBFLAG ( 65534 )
+#endif
 
 union netr_CONTROL_DATA_INFORMATION {
 	const char *domain;/* [unique,charset(UTF16),case(NETLOGON_CONTROL_REDISCOVER)] */
@@ -652,12 +686,20 @@ struct netr_CryptPassword {
 #define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
 #define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
 
+#ifndef USE_UINT_ENUMS
 enum netr_TrustType {
 	NETR_TRUST_TYPE_DOWNLEVEL=1,
 	NETR_TRUST_TYPE_UPLEVEL=2,
 	NETR_TRUST_TYPE_MIT=3,
 	NETR_TRUST_TYPE_DCE=4
 };
+#else
+enum netr_TrustType { __donnot_use_enum_netr_TrustType=0x7FFFFFFF};
+#define NETR_TRUST_TYPE_DOWNLEVEL ( 1 )
+#define NETR_TRUST_TYPE_UPLEVEL ( 2 )
+#define NETR_TRUST_TYPE_MIT ( 3 )
+#define NETR_TRUST_TYPE_DCE ( 4 )
+#endif
 
 /* bitmap netr_TrustAttributes */
 #define NETR_TRUST_ATTRIBUTE_NON_TRANSITIVE ( 0x00000001 )

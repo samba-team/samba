@@ -44,15 +44,27 @@ union echo_Info {
 	struct echo_info7 info7;/* [case(7)] */
 }/* [switch_type(uint16)] */;
 
+#ifndef USE_UINT_ENUMS
 enum echo_Enum1 {
 	ECHO_ENUM1=1,
 	ECHO_ENUM2=2
 };
+#else
+enum echo_Enum1 { __donnot_use_enum_echo_Enum1=0x7FFFFFFF};
+#define ECHO_ENUM1 ( 1 )
+#define ECHO_ENUM2 ( 2 )
+#endif
 
+#ifndef USE_UINT_ENUMS
 enum echo_Enum1_32 {
 	ECHO_ENUM1_32=1,
 	ECHO_ENUM2_32=2
 };
+#else
+enum echo_Enum1_32 { __donnot_use_enum_echo_Enum1_32=0x7FFFFFFF};
+#define ECHO_ENUM1_32 ( 1 )
+#define ECHO_ENUM2_32 ( 2 )
+#endif
 
 struct echo_Enum2 {
 	enum echo_Enum1 e1;
