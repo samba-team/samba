@@ -555,7 +555,6 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 {
 	struct smbcli_request *req; 
 	uint8_t *outdata, *outparam;
-	int i;
 	int align = 0;
 
 	/* only align if there are parameters or data */
@@ -592,9 +591,8 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	SIVAL(req->out.vwv, 31, PTR_DIFF(outdata,req->out.hdr));
 	SCVAL(req->out.vwv, 35, parms->in.setup_count);
 	SSVAL(req->out.vwv, 36, parms->in.function);
-	for (i=0;i<parms->in.setup_count;i++) {
-		SSVAL(req->out.vwv,VWV(19+i),parms->in.setup[i]);
-	}
+	memcpy(req->out.vwv + VWV(19), parms->in.setup,
+	       sizeof(uint16_t) * parms->in.setup_count);
 	if (parms->in.params.length) {
 		memcpy(outparam, parms->in.params.data, parms->in.params.length);
 	}
