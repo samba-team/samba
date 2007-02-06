@@ -72,7 +72,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union WKS_USER_ENUM_UNION *users, uint32_t prefmaxlen, uint32_t **entriesread, uint32_t **totalentries, uint32_t *resumehandle)
+NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t level, union WKS_USER_ENUM_UNION *users, uint32_t prefmaxlen, uint32_t *entriesread, uint32_t *totalentries, uint32_t *resumehandle)
 {
 	struct wkssvc_NetWkstaEnumUsers r;
 	NTSTATUS status;
@@ -102,8 +102,12 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	/* Return variables */
 	*users = *r.out.users;
-	*entriesread = r.out.entriesread;
-	*totalentries = r.out.totalentries;
+	if ( entriesread ) {
+		*entriesread = *r.out.entriesread;
+	}
+	if ( totalentries ) {
+		*totalentries = *r.out.totalentries;
+	}
 	*resumehandle = *r.out.resumehandle;
 	
 	/* Return result */
@@ -168,7 +172,7 @@ NTSTATUS rpccli_WKSSVC_NETRWKSTAUSERSETINFO(struct rpc_pipe_client *cli, TALLOC_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t *level, union wkssvc_NetWkstaTransportCtr *ctr, uint32_t max_buffer, uint32_t **totalentries, uint32_t *resume_handle)
+NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t *level, union wkssvc_NetWkstaTransportCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle)
 {
 	struct wkssvc_NetWkstaTransportEnum r;
 	NTSTATUS status;
@@ -199,7 +203,9 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC
 	/* Return variables */
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
-	*totalentries = r.out.totalentries;
+	if ( totalentries ) {
+		*totalentries = *r.out.totalentries;
+	}
 	*resume_handle = *r.out.resume_handle;
 	
 	/* Return result */
