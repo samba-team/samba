@@ -827,6 +827,7 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 	centry_put_string(centry, info->full_name);
 	centry_put_string(centry, info->homedir);
 	centry_put_string(centry, info->shell);
+	centry_put_uint32(centry, info->primary_gid);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
 	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
