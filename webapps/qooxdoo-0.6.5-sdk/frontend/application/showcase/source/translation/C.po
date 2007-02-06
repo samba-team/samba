@@ -1,0 +1,138 @@
+# (Default)
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo showcase\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-26 12:54+0100\n"
+"PO-Revision-Date: 2006-12-20 10:58+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: source/class/showcase/Application.js:871
+msgid "Choose a locale: "
+msgstr ""
+
+#: source/class/showcase/Application.js:890
+msgid "A date: "
+msgstr ""
+
+#: source/class/showcase/Application.js:917
+msgid "Undo"
+msgstr ""
+
+#: source/class/showcase/Application.js:918
+msgid "Redo"
+msgstr ""
+
+#: source/class/showcase/Application.js:920
+msgid "Cut"
+msgstr ""
+
+#: source/class/showcase/Application.js:921
+msgid "Copy"
+msgstr ""
+
+#: source/class/showcase/Application.js:922
+msgid "Paste"
+msgstr ""
+
+#: source/class/showcase/Application.js:923
+msgid "Delete"
+msgstr ""
+
+#: source/class/showcase/Application.js:924
+msgid "Select All"
+msgstr ""
+
+#: source/class/showcase/Application.js:926
+msgid "Search"
+msgstr ""
+
+#: source/class/showcase/Application.js:927
+msgid "Search Again"
+msgstr ""
+
+#: source/class/showcase/Application.js:930
+msgid "Command Menu (keyboard shortcuts)"
+msgstr ""
+
+#: source/class/showcase/Application.js:948
+msgid "Open Color Popup"
+msgstr ""
+
+#: source/class/showcase/Application.js:958
+msgid "Basic Colors"
+msgstr ""
+
+#: source/class/showcase/Application.js:962
+msgid "Template Colors"
+msgstr ""
+
+#: source/class/showcase/Application.js:966
+msgid "Recent Colors"
+msgstr ""
+
+#: source/class/showcase/Application.js:984
+msgid "Locale information"
+msgstr ""
+
+#: source/class/showcase/Application.js:1005
+msgid "Locale:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1008
+msgid "Territory code:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1011
+msgid "Date format medium:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1013
+msgid "Date medium:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1016
+msgid "Date format long:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1018
+msgid "Date long:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1021
+msgid "Date format full:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1023
+msgid "Date full:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1026
+msgid "Time format short:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1028
+msgid "Time short:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1031
+msgid "Time format long:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1033
+msgid "Time long:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1036
+msgid "Week start:"
+msgstr ""
+
+#: source/class/showcase/Application.js:1039
+msgid "Format of %1:"
+msgstr ""

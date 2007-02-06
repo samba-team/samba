@@ -1,0 +1,11 @@
+\b\.getKeyCode\b=The use of the keyCode property of qx.client.Command and qx.event.type.KeyEvent is deprecated. Use keyIdentifier instead!
+\b\.setKeyCode\b=The use of the keyCode property of qx.client.Command and qx.event.type.KeyEvent is deprecated. Use keyIdentifier instead!
+
+\b\.getCtrlKey\b=The use of the getCtrlKey method of qx.event.type.DomEvent is deprecated. Use isCtrlPressed instead!
+\b\.getAltKey\b=The use of the getAltKey method of qx.event.type.DomEvent is deprecated. Use isAltPressed instead!
+\b\.getShiftKey\b=The use of the getShiftKey method of qx.event.type.DomEvent is deprecated. Use isShiftPressed instead!
+
+\bqx\.event\.type\.KeyEvent\.keys\b=Deprecated. Convert Your code to use keyIdentifier if possible.
+\b\.getMaxTotalRequests\b=The use of the maxTotalRequests property of qx.io.remote.RequestQueue is deprecated. It will be removed in release 0.7!
+
+\bqx\.util\.Textile"\b=Deprecated module. Will be removed with qooxdoo 0.7.

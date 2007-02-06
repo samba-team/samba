@@ -1,0 +1,95 @@
+# Turkish translation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo feedreader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-23 17:57+0100\n"
+"PO-Revision-Date: 2006-12-18 21:51+0200\n"
+"Last-Translator: Fatih Tolga Ata <fatih@diyezon.com>\n"
+"Language-Team:  <fatih@tullab.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Turkish\n"
+"X-Poedit-Country: Turkey\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#: source/class/feedreader/Application.js:130
+msgid "reloading ..."
+msgstr "yenileniyor ..."
+
+#: source/class/feedreader/Application.js:135
+msgid "qooxdoo feed reader."
+msgstr "qooxdoo besleme okuyucu."
+
+#: source/class/feedreader/Application.js:140
+msgid "Add feed"
+msgid_plural "Add feeds"
+msgstr[0] "Besleme ekle"
+msgstr[1] "Beslemeler ekle"
+
+#: source/class/feedreader/Application.js:141
+msgid "Remove feed"
+msgstr "Besleme sil"
+
+#: source/class/feedreader/Application.js:144
+msgid "Reload"
+msgstr "Yenile"
+
+#: source/class/feedreader/Application.js:146
+msgid "(%1) Reload the feeds."
+msgstr "(%1) Beslemesini yenile."
+
+#: source/class/feedreader/Application.js:153
+#: source/class/feedreader/Application.js:155
+msgid "English"
+msgstr "İngilizce"
+
+#: source/class/feedreader/Application.js:154
+msgid "German"
+msgstr "Almanca"
+
+#: source/class/feedreader/Application.js:156
+msgid "Turkish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:157
+msgid "Italian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:158
+msgid "Spanish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:159
+msgid "Swedish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:160
+msgid "Russian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:183
+msgid "Help"
+msgstr "Yardım"
+
+#: source/class/feedreader/Application.js:191
+msgid "News feeds"
+msgstr "Haber beslemeleri"
+
+#: source/class/feedreader/Application.js:212
+msgid "Subject"
+msgstr "Konu"
+
+#: source/class/feedreader/Application.js:213
+msgid "Sender"
+msgstr "Gönderen"
+
+#: source/class/feedreader/Application.js:214
+msgid "Date"
+msgstr "Tarih"
+
+#: source/class/feedreader/ArticleView.js:77
+msgid "read more ..."
+msgstr "daha fazla ..."

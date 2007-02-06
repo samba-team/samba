@@ -1,0 +1,64 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test the date chooser button component.</p>
+    <p>This widget can be associated to another widget (in this case a textfield) which then
+    is synchronized with the selected date from the date chooser</p>
+  </div>
+
+  <script type="text/javascript">
+
+  qx.locale.Manager.getInstance().setLocale("C");
+
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    function changeValue(e) {
+      this.debug("Text changed: " + e.getData());
+    }
+
+		var l1 = new qx.ui.basic.Label("A date field: "); l1.set({top:51, left:20});
+		d.add(l1);
+		
+    var tf1 = new qx.ui.form.TextField; tf1.set({top:48,left:80,width:70});
+    tf1.addEventListener("changeValue", changeValue);
+    d.add(tf1);
+
+
+    var dcb1 = new qx.ui.component.DateChooserButton(); 
+    dcb1.set({top:47,left:152});
+    // associate the date chooser button to the textfield tf1:
+    dcb1.setTargetWidget(tf1);
+    // change the button text
+    dcb1.setLabel("Please choose a date");
+    // change the chooser window title
+    dcb1.setChooserTitle("Date choosing made simple");
+    
+    d.add(dcb1);
+    
+    var l2 = new qx.ui.basic.Label("Date field 2: "); l2.set({top:91, left:20});
+		d.add(l2);
+		
+    var tf2 = new qx.ui.form.TextField; tf2.set({top:88,left:80,width:70});
+    tf2.addEventListener("changeValue", changeValue);
+    d.add(tf2);
+
+    var dcb2 = new qx.ui.component.DateChooserButton(tf2); 
+    dcb2.set({top:87,left:152});
+		d.add(dcb2);    
+  });
+  </script>
+</body>
+</html>

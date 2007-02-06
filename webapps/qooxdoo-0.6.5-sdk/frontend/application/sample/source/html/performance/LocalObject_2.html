@@ -1,0 +1,51 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>JS Object Storage Performance</p>
+
+    <h1>Test Description</h1>
+    <p>Precreate 50.000 objects (locally stored). After this create 10.000 new (not stored) objects inside a loop.</p>
+    <p>As the loop will be executed inside the scope of "store", the browser must keep the information about "store" with each execution of "test", even if called from the timeout.</p>
+
+    <h1>Result</h1>
+    <p>The performance in IE is poor (~1150ms for each loop), compared to the same stuff executed without so much precreated objects (previous example).</p>
+    <p>It makes no difference if we use a global or a local variable here. It's identical to GlobalObject_2.html.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var store = [];
+
+    for (var i=0; i<50000; i++) {
+      store.push({});
+    };
+
+    function test()
+    {
+      var _s = (new Date).valueOf();
+
+      for (var i=0; i<10000; i++) {
+        new Object()
+      };
+
+      window.status = "time: " + (new Date).valueOf() + " | measured: " + ((new Date).valueOf() - _s) + "ms";
+      window.setTimeout(test, 1000);
+    }
+
+    test();
+  });
+  </script>
+</body>
+</html>

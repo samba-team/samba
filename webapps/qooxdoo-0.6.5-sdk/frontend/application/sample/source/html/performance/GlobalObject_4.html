@@ -1,0 +1,52 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>JS Object Storage Performance</p>
+
+    <h1>Test Description</h1>
+    <p>Precreate 50.000 objects (globally stored). After this create 10.000 new (non stored) objects inside a loop.</p>
+    <p>Overwrite global storage to clean up after first loop.</p>
+
+    <h1>Result</h1>
+    <p>The additional cleanup (overwrite with null) of the global storage optimizes performance after the first loop. First loop is done after ~1150ms. The following loop needs ~350ms. Quite good. The same value as in the first example, where the data have never exist.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    window.store = [];
+
+    for (var i=0; i<50000; i++) {
+      window.store.push({});
+    };
+
+    function test()
+    {
+      var _s = (new Date).valueOf();
+
+      for (var i=0; i<10000; i++) {
+        new Object()
+      };
+
+      window.status = "time: " + (new Date).valueOf() + " | measured: " + ((new Date).valueOf() - _s) + "ms";
+      window.setTimeout(test, 1000);
+    }
+
+    test();
+
+    window.store = null;
+  });
+  </script>
+</body>
+</html>

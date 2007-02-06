@@ -1,0 +1,114 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing qx.ui.listview.ListView with text cells.</p>
+    <p>Added some buttons to fill/clear the list dynamically.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var ld = [];
+      var lt = [ "Image", "Text", "PDF", "Illustration", "Document" ];
+
+      var lc =
+      {
+        name : { label : "Name", width : 100, type : "text", sortable : true, sortProp : "text" },
+        size: { label : "Size", width : 50, type : "text", sortable : true, sortProp : "text", sortMethod : qx.util.Compare.byIntegerString },
+        type : { label : "Type", width : 80, type : "text", sortable : true, sortProp : "text" },
+        modified : { label : "Last Modified", width : 150, type : "text" },
+        rights : { label : "Rights", width: 80, type : "text" }
+      };
+
+      var lv = new qx.ui.listview.ListView(ld, lc);
+
+      lv.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
+      lv.setBackgroundColor("white");
+      lv.setWidth(500);
+      lv.setHeight(350);
+      lv.setLocation(20, 48);
+
+      qx.ui.core.ClientDocument.getInstance().add(lv);
+
+      function add(nu)
+      {
+        nu = nu||10;
+
+        for (var i=0, t; i<nu; i++)
+        {
+          t=Math.round(Math.random()*4);
+          ld.push({ name : { text : "File " + ld.length }, size : { text : Math.round(Math.random()*100) + "kb" }, type : { text : lt[t] }, modified : { text : "Nov " + Math.round(Math.random() * 30 + 1) + " 2005" }, rights: { text : "-rw-r--r--" }});
+        };
+
+        lv.updateSort();
+        lv.update();
+      };
+
+      function remove(nu)
+      {
+        nu = Math.min(ld.length, nu || 10);
+
+        ld.splice(ld.length-nu, nu);
+
+        lv.updateSort();
+        lv.update();
+      };
+
+      function clear()
+      {
+        ld.removeAll();
+        lv.update();
+      };
+
+      var btnAdd10 = new qx.ui.form.Button("Add 10", "icon/16/actions/dialog-ok.png");
+      var btnAdd50 = new qx.ui.form.Button("Add 50", "icon/16/actions/dialog-ok.png");
+      var btnAdd100 = new qx.ui.form.Button("Add 100", "icon/16/actions/dialog-ok.png");
+      var btnAdd1000 = new qx.ui.form.Button("Add 1000", "icon/16/actions/dialog-ok.png");
+
+      var btnRemove10 = new qx.ui.form.Button("Remove 10", "icon/16/actions/dialog-ok.png");
+      var btnRemove50 = new qx.ui.form.Button("Remove 50", "icon/16/actions/dialog-ok.png");
+      var btnRemove100 = new qx.ui.form.Button("Remove 100", "icon/16/actions/dialog-ok.png");
+      var btnRemove1000 = new qx.ui.form.Button("Remove 1000", "icon/16/actions/dialog-ok.png");
+
+      var btnClear = new qx.ui.form.Button("Clear", "icon/16/actions/dialog-ok.png");
+
+      btnAdd10.setLocation(550, 48);
+      btnAdd50.setLocation(550, 78);
+      btnAdd100.setLocation(550, 108);
+      btnAdd1000.setLocation(550, 138);
+
+      btnRemove10.setLocation(550, 188);
+      btnRemove50.setLocation(550, 218);
+      btnRemove100.setLocation(550, 248);
+      btnRemove1000.setLocation(550, 278);
+
+      btnClear.setLocation(550, 328);
+
+      btnAdd10.addEventListener("execute", function(e) { add(10); });
+      btnAdd50.addEventListener("execute", function(e) { add(50); });
+      btnAdd100.addEventListener("execute", function(e) { add(100); });
+      btnAdd1000.addEventListener("execute", function(e) { add(1000); });
+
+      btnRemove10.addEventListener("execute", function(e) { remove(10); });
+      btnRemove50.addEventListener("execute", function(e) { remove(50); });
+      btnRemove100.addEventListener("execute", function(e) { remove(100); });
+      btnRemove1000.addEventListener("execute", function(e) { remove(1000); });
+
+      btnClear.addEventListener("execute", function(e) { clear(); });
+
+      qx.ui.core.ClientDocument.getInstance().add(btnAdd10, btnAdd50, btnAdd100, btnAdd1000, btnRemove10, btnRemove50, btnRemove100, btnRemove1000, btnClear);
+    });
+  </script>
+</body>
+</html>

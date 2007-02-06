@@ -1,0 +1,39 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing the new flash support for qx.ui.basic.Atom</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+      var a;
+
+      for (var i=1; i<11; i++)
+      {
+        var a = new qx.ui.basic.Atom("Flash Atom #" + i, "icon/16/actions/view-refresh.png", 16, 16, "./image/flash/color/file" + i + ".swf");
+
+        a.setTop(48 + ((i-1)*30));
+        a.setLeft(20);
+        a.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+        a.setBackgroundColor(new qx.renderer.color.Color("white"));
+        a.setPadding(4);
+
+        d.add(a);
+      };
+    });
+  </script>
+</body>
+</html>

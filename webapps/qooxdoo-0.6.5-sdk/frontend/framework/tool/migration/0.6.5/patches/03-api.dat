@@ -1,0 +1,22 @@
+@param\s+([a-zA-Z0-9_\$]+)\s*\((.*?)\)=@param \1 {\2}
+@return\s+\((.*?)\)=@return {\1}
+
+@return\s+{string=@return {String
+@return\s+{float=@return {Float
+@return\s+{int=@return {Integer
+@return\s+{integer=@return {Integer
+@return\s+{boolean=@return {Boolean
+@return\s+{float=@return {Float
+@return\s+{double=@return {Double
+@return\s+{object=@return {Object
+@return\s+{map=@return {Map
+
+@param\s+([a-zA-Z0-9_$]+)\s+{string=@param \1 {String
+@param\s+([a-zA-Z0-9_$]+)\s+{float=@param \1 {Float
+@param\s+([a-zA-Z0-9_$]+)\s+{int=@param \1 {Integer
+@param\s+([a-zA-Z0-9_$]+)\s+{integer=@param \1 {Integer
+@param\s+([a-zA-Z0-9_$]+)\s+{boolean=@param \1 {Boolean
+@param\s+([a-zA-Z0-9_$]+)\s+{float=@param \1 {Float
+@param\s+([a-zA-Z0-9_$]+)\s+{double=@param \1 {Double
+@param\s+([a-zA-Z0-9_$]+)\s+{object=@param \1 {Object
+@param\s+([a-zA-Z0-9_$]+)\s+{map=@param \1 {Map

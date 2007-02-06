@@ -1,0 +1,84 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tests for typical value checks and their performance.</p>
+    <ol>
+      <li>Typeof with Strings</li>
+      <li>Typeof with Constants</li>
+      <li>Instanceof</li>
+    </ol>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var STR = "string";
+    var NR = "number";
+    var OBJ = "object";
+
+    var str = "Hello World"
+    var nr1 = 1000;
+    var nr2 = Infinity;
+    var nr3 = NaN;
+    var nr4 = 0.432;
+    var obj1 = {};
+    var obj2 = { key1 : "hello world", key2 : "hello world", key3 : "hello world" }
+
+    function typeCheckTypeof1(vLoops)
+    {
+      for (var i=0; i<vLoops; i++)
+      {
+        typeof str === "string";
+        typeof nr1 === "number";
+        typeof nr2 === "number";
+        typeof nr3 === "number";
+        typeof nr4 === "number";
+        typeof obj1 === "object";
+        typeof obj2 === "object";
+      }
+    }
+
+    function typeCheckTypeof2(vLoops)
+    {
+      for (var i=0; i<vLoops; i++)
+      {
+        typeof str === STR;
+        typeof nr1 === NR;
+        typeof nr2 === NR;
+        typeof nr3 === NR;
+        typeof nr4 === NR;
+        typeof obj1 === OBJ;
+        typeof obj2 === OBJ;
+      }
+    }
+
+    function typeCheckInstanceOf(vLoops)
+    {
+      for (var i=0; i<vLoops; i++)
+      {
+        str instanceof String
+        nr1 instanceof Number
+        nr2 instanceof Number
+        nr3 instanceof Number
+        nr4 instanceof Number
+        obj1 instanceof Object
+        obj2 instanceof Object
+      }
+    }
+
+    new qx.dev.TimeTracker(typeCheckTypeof1, typeCheckTypeof2, typeCheckInstanceOf);
+  });
+  </script>
+</body>
+</html>

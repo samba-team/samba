@@ -1,0 +1,83 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tests for qooxdoo object performance</p>
+    <ol>
+      <li>qx.core.Object</li>
+      <li>qx.core.Target</li>
+      <li>qx.event.type.Event</li>
+      <li>qx.event.type.MouseEvent</li>
+      <li>qx.ui.basic.Terminator</li>
+      <li>qx.ui.layout.CanvasLayout</li>
+      <li>qx.ui.layout.BoxLayout</li>
+    </ol>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    function TestObject(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.core.Object;
+      };
+    };
+
+    function TestTarget(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.core.Target;
+      };
+    };
+
+    function TestEvent(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.event.type.Event;
+      };
+    };
+
+    function TestMouseEvent(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.event.type.MouseEvent;
+      };
+    };
+
+    function TestTerminator(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.ui.basic.Terminator;
+      };
+    };
+
+    function TestCanvasLayout(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.ui.layout.CanvasLayout;
+      };
+    };
+
+    function TestBoxLayout(vLoops)
+    {
+      for (var i=0; i<vLoops; i++) {
+        new qx.ui.layout.BoxLayout;
+      };
+    };
+
+    new qx.dev.TimeTracker(TestObject, TestTarget, TestEvent, TestMouseEvent, TestTerminator, TestCanvasLayout, TestBoxLayout);
+  });
+  </script>
+</body>
+</html>

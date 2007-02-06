@@ -1,0 +1,93 @@
+# Default translation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qooxdoo feedreader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-26 12:52+0100\n"
+"PO-Revision-Date: 2006-12-19 16:54+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: source/class/feedreader/Application.js:133
+msgid "reloading ..."
+msgstr ""
+
+#: source/class/feedreader/Application.js:138
+msgid "qooxdoo feed reader."
+msgstr ""
+
+#: source/class/feedreader/Application.js:143
+msgid "Add feed"
+msgid_plural "Add feeds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: source/class/feedreader/Application.js:144
+msgid "Remove feed"
+msgstr ""
+
+#: source/class/feedreader/Application.js:147
+msgid "Reload"
+msgstr ""
+
+#: source/class/feedreader/Application.js:149
+msgid "(%1) Reload the feeds."
+msgstr ""
+
+#: source/class/feedreader/Application.js:156
+#: source/class/feedreader/Application.js:158
+msgid "English"
+msgstr ""
+
+#: source/class/feedreader/Application.js:157
+msgid "German"
+msgstr ""
+
+#: source/class/feedreader/Application.js:159
+msgid "Turkish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:160
+msgid "Italian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:161
+msgid "Spanish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:162
+msgid "Swedish"
+msgstr ""
+
+#: source/class/feedreader/Application.js:163
+msgid "Russian"
+msgstr ""
+
+#: source/class/feedreader/Application.js:186
+msgid "Help"
+msgstr ""
+
+#: source/class/feedreader/Application.js:194
+msgid "News feeds"
+msgstr ""
+
+#: source/class/feedreader/Application.js:215
+msgid "Subject"
+msgstr ""
+
+#: source/class/feedreader/Application.js:216
+msgid "Sender"
+msgstr ""
+
+#: source/class/feedreader/Application.js:217
+msgid "Date"
+msgstr ""
+
+#: source/class/feedreader/ArticleView.js:79
+msgid "read more ..."
+msgstr ""

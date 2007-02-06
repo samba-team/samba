@@ -1,0 +1,71 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo &raquo; Sample</title>
+  <link type="text/css" rel="stylesheet" href="../../css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/sample.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    Simple Test for qx.ui.layout.DockLayout. But with a dynamic child. Simple click on "Hello World" to see the effect.
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var dl1 = new qx.ui.layout.DockLayout;
+
+    dl1.setTop(48);
+    dl1.setLeft(20);
+    dl1.setRight(335);
+    dl1.setBottom(48);
+
+    dl1.setBorder(2, "outset");
+    dl1.setBackgroundColor("white");
+
+    d.add(dl1);
+
+
+
+    var t1 = new qx.ui.basic.Terminator;
+    t1.setHeight(50);
+    t1.setBackgroundColor("white");
+    t1.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+    dl1.addTop(t1);
+
+    var t2 = new qx.ui.basic.Label("Hello World");
+    t2.setHeight(null);
+    t2.setBackgroundColor("white");
+    t2.setPadding(10);
+    t2.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+    dl1.addLeft(t2);
+
+    var t3 = new qx.ui.layout.HorizontalBoxLayout;
+
+    t3.setWidth(null);
+    t3.setHeight(null);
+    t3.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+    t3.setBackgroundColor("white");
+    t3.setHorizontalChildrenAlign("center");
+    t3.setVerticalChildrenAlign("middle");
+
+    dl1.add(t3);
+
+    t3.add(new qx.ui.basic.Image("icon/128/categories/applications-games.png"));
+
+
+
+    t2.addEventListener("click", function(e) {
+      this.setHtml(this.getHtml() == "Hello World" ? "Real long text, especially to test this cool behaviour" : "Hello World");
+    });
+  });
+  </script>
+</body>
+</html>
