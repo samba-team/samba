@@ -229,8 +229,8 @@ NTSTATUS idmap_init(void)
 {	
 	NTSTATUS ret;
 	struct idmap_domain *dom;
-	const char *compat_backend = NULL;
-	const char *compat_params = NULL;
+	char *compat_backend = NULL;
+	char *compat_params = NULL;
 	const char **dom_list = NULL;
 	char *alloc_backend;
 	BOOL default_already_defined = False;
@@ -260,22 +260,30 @@ NTSTATUS idmap_init(void)
 		DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
 	} else if ( lp_idmap_backend() ) {
 		const char **compat_list = lp_idmap_backend();
-		const char *p;
+		char *p;
+		const char *q;		
 
 		DEBUG(0, ("WARNING: idmap backend is deprecated!\n"));
 		compat = 1;
 
+		if ( (compat_backend = talloc_strdup( idmap_ctx, *compat_list )) == NULL ) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;			
+		}
+		
 		/* strip any leading idmap_ prefix of */
 		if (strncmp(*compat_list, "idmap_", 6) == 0 ) {
-			p = *compat_list += 6;
+			q = *compat_list += 6;
 			DEBUG(0, ("WARNING: idmap backend uses obsolete and deprecated 'idmap_' prefix.\n"));
 		       	DEBUGADD(0, ("        Please replace 'idmap_%s' by '%s' in %s\n", p, p, dyn_CONFIGFILE));
-			compat_backend = p;
+			compat_backend = talloc_strdup( idmap_ctx, q);
 		} else {
-			compat_backend = *compat_list;
+			compat_backend = talloc_strdup( idmap_ctx, *compat_list);
 		}
 			
+		/* separate the backend and module arguements */
 		if ((p = strchr(compat_backend, ':')) != NULL) {
+			*p = '\0';			
 			compat_params = p + 1;
 		}
 	}
@@ -545,6 +553,9 @@ NTSTATUS idmap_init(void)
 		goto done;
 	}
 
+	/* cleanpu temporary strings */
+	TALLOC_FREE( compat_backend );
+	
 	return NT_STATUS_OK;
 
 done:
