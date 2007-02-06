@@ -570,7 +570,6 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 {
 	struct nttrans_op *op;
 	struct smb_nttrans *trans;
-	int i;
 	uint16_t param_ofs, data_ofs;
 	uint16_t param_count, data_count;
 	uint16_t param_total, data_total;
@@ -617,9 +616,9 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
-	for (i=0;i<trans->in.setup_count;i++) {
-		trans->in.setup[i] = SVAL(req->in.vwv, VWV(19+i));
-	}
+
+	memcpy(trans->in.setup, (char *)(req->in.vwv) + VWV(19),
+	       sizeof(uint16_t) * trans->in.setup_count);
 
 	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
 	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
