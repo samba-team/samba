@@ -38,13 +38,6 @@ static void ctdb_tcp_node_dead(struct event_context *ev, struct timed_event *te,
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 
-	/* flush the queue */
-	while (tnode->queue) {
-		struct ctdb_tcp_packet *pkt = tnode->queue;
-		DLIST_REMOVE(tnode->queue, pkt);
-		talloc_free(pkt);
-	}
-
 	/* start a new connect cycle to try to re-establish the
 	   link */
 	talloc_free(tnode->fde);
@@ -68,6 +61,7 @@ void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde,
 		   always an error, as we have separate read and write
 		   sockets. In future we may combine them, but for now it must
 		   mean that the socket is dead, so we try to reconnect */
+		node->ctdb->upcalls->node_dead(node);
 		talloc_free(tnode->fde);
 		close(tnode->fd);
 		tnode->fd = -1;
@@ -170,10 +164,9 @@ void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde,
 		in->ctdb->upcalls->recv_pkt(in->ctdb, d2, len);
 		data += len;
 		nread -= len;		
-		return;
 	}
 
-	if (nread < 4 || *(uint32_t *)data > nread) {
+	if (nread > 0) {
 		/* we have only part of a packet */
 		if (data_base == data) {
 			in->partial.data = data;
