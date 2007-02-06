@@ -12,14 +12,23 @@
   <script type="text/javascript" src="../../script/layout.js"></script>
 
   <div id="demoDescription">
-    <p>Demonstrate use of multiple columns in a tree.</p>
+    <p>
+      Demonstrate use of multiple columns in a tree, and the use of the
+      getHierarchy() method to retrieve the entire tree path of a node.
+      Allows various options to be manipulated.
+    </p>
   </div>
 
   <script type="text/javascript">
   qx.core.Init.getInstance().defineMain(function()
   {
     // tree
-    var tree = new qx.ui.treevirtual.TreeVirtual([ "Tree", "Permissions" ]);
+    var tree = new qx.ui.treevirtual.TreeVirtual(
+        [
+          "Tree",
+          "Permissions",
+          "Last Accessed"
+        ]);
     with (tree)
     {
       set({
@@ -30,8 +39,9 @@
             border : qx.renderer.border.BorderPresets.getInstance().thinInset
           });
       setAlwaysShowOpenCloseSymbol(true);
-      setColumnWidth(0, 400);
-      setColumnWidth(1, 100);
+      setColumnWidth(0, 200);
+      setColumnWidth(1, 80);
+      setColumnWidth(2, 200);
     };
 
     tree.addToDocument();
@@ -55,8 +65,10 @@
     te1_1 = dataModel.addBranch(te1, "Workspace", true);
     te = dataModel.addLeaf(te1_1, "Windows (C:)");
     dataModel.setColumnData(te, 1, "-rwxr-xr-x");
+    dataModel.setColumnData(te, 2, "2007-01-30 22:54:03");
     te = dataModel.addLeaf(te1_1, "Documents (D:)");
     dataModel.setColumnData(te, 1, "-rwxr-xr-x");
+    dataModel.setColumnData(te, 2, "2007-01-30 22:54:03");
 
     dataModel.addBranch(te1, "Network", true);
 
@@ -130,13 +142,13 @@
                          tree.setUseTreeLines(e.getData());
                        });
 
-    o = new qx.ui.form.CheckBox("Jens Lautenbacher mode?");
+    o = new qx.ui.form.CheckBox("Exclude first-level tree lines?");
     o.set({ top: 100, left: 0, checked: false });
     commandFrame.add(o);
     o.addEventListener("changeChecked",
                        function(e)
                        {
-                         tree.setJensLautenbacherMode(e.getData());
+                         tree.setExcludeFirstLevelTreeLines(e.getData());
                        });
 
     o = new qx.ui.form.CheckBox("Always show open/close symbol?");
@@ -157,7 +169,8 @@
                             if (this.getChecked())
                             {
                               var node = e.getData();
-                              tree.setState(node.nodeId, { opened : null });
+                              tree.setState(node.nodeId,
+                                            { bHideOpenClose : true });
                             }
                           },
                           o);
@@ -170,6 +183,39 @@
                        {
                          tree.setOpenCloseClickSelectsRow(e.getData());
                        });
+
+    o = new qx.ui.form.CheckBox("Disable the tree?");
+    o.set({ top: 180, left: 0, checked: false });
+    commandFrame.add(o);
+    o.addEventListener("changeChecked",
+                       function(e)
+                       {
+                         tree.setEnabled(! e.getData());
+                       });
+
+    o = new qx.ui.form.CheckBox("Display a cell focus indicator?");
+    o.set({ top: 200, left: 0, checked: true });
+    commandFrame.add(o);
+    o.addEventListener("changeChecked",
+                       function(e)
+                       {
+                         if (e.getData())
+                         {
+                           tree.setCellFocusAttributes(
+                             {
+                               backgroundColor : "lightblue"
+                             });
+                         }
+                         else
+                         {
+                           tree.setCellFocusAttributes(
+                             {
+                               backgroundColor : "transparent"
+                             });
+                         }
+                       });
+
+
   });
   </script>
 </body>

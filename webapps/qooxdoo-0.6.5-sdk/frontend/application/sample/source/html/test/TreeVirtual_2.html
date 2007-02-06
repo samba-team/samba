@@ -45,7 +45,7 @@
 
     var node =                  // the root node (not displayed)
       {
-        opened        : true,
+        bOpened       : true,
         children      : [ 1 ]
       };
     treeData.push(node);
@@ -56,7 +56,7 @@
         parentNodeId  : 0,
         label         : "My Root",
         bSelected     : false,
-        opened        : true,
+        bOpened       : true,
         icon          : "icon/16/places/folder.png",
         iconSelected  : "icon/16/folder_open.png",
         labelStyle    : "background-color:red;color:white",
@@ -70,7 +70,8 @@
         parentNodeId  : 1,
         label         : "A sub-folder",
         bSelected     : false,
-        opened        : true,
+        bOpened       : true,
+        bHideOpenClose: true,
         icon          : "icon/16/places/folder.png",
         iconSelected  : "icon/16/folder_open.png",
         cellStyle     : "background-color:cyan",
@@ -84,7 +85,7 @@
         parentNodeId  : 2,
         label         : "Third-level leaf",
         bSelected     : false,
-        opened        : false,
+        bOpened       : false,
         icon          : "icon/16/actions/document-new.png",
         iconSelected  : "icon/16/actions/document-open.png",
         children      : [ ]
