@@ -115,7 +115,9 @@ qx.Proto._getContentHtml = function(cellInfo)
         this.STATIC_IMAGE_URI + "blank.gif" +
         '" style="filter:' +
         "progid:DXImageTransform.Microsoft.AlphaImageLoader(" +
-        "  src='" + urlAndToolTip.url + "',sizingMethod='scale')";
+        "  src='" +
+        Am.getInstance().resolvePath(urlAndToolTip.url) +
+        "',sizingMethod='scale')";
     }
     else
     {
@@ -177,7 +179,11 @@ qx.Proto._getContentHtml = function(cellInfo)
                   : "icon/16/places/folder.png");
     }
   }
-  html += addImage({ url:imageUrl });
+  html += addImage({
+                     url         : imageUrl,
+                     imageWidth  : 16,
+                     imageHeight : 16
+                   });
 
   // Add the node's label.  We calculate the "left" property with: each tree
   // line (indentation) icon is 19 pixels wide; the folder icon is 16 pixels
