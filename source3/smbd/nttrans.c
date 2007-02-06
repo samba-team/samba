@@ -281,10 +281,10 @@ static BOOL saved_short_case_preserve;
  Save case semantics.
 ****************************************************************************/
 
-static void set_posix_case_semantics(connection_struct *conn, uint32 file_attributes)
+static uint32 set_posix_case_semantics(connection_struct *conn, uint32 file_attributes)
 {
 	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
-		return;
+		return file_attributes;
 	}
 
 	saved_case_sensitive = conn->case_sensitive;
@@ -295,6 +295,8 @@ static void set_posix_case_semantics(connection_struct *conn, uint32 file_attrib
 	conn->case_sensitive = True;
 	conn->case_preserve = True;
 	conn->short_case_preserve = True;
+
+	return (file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 }
 
 /****************************************************************************
@@ -455,6 +457,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
+	uint32 new_file_attributes;
 	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
@@ -625,7 +628,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Check if POSIX semantics are wanted.
 	 */
 		
-	set_posix_case_semantics(conn, file_attributes);
+	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
 		
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -679,6 +682,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					share_access,
 					create_disposition,
 					create_options,
+					new_file_attributes,
 					&info, &fsp);
 
 		restore_case_semantics(conn, file_attributes);
@@ -714,7 +718,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					share_access,
 					create_disposition,
 					create_options,
-					file_attributes,
+					new_file_attributes,
 					oplock_request,
 					&info, &fsp);
 		if (!NT_STATUS_IS_OK(status)) { 
@@ -756,6 +760,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 							share_access,
 							create_disposition,
 							create_options,
+							new_file_attributes,
 							&info, &fsp);
 
 				if(!NT_STATUS_IS_OK(status)) {
@@ -1096,6 +1101,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 flags;
 	uint32 access_mask;
 	uint32 file_attributes;
+	uint32 new_file_attributes;
 	uint32 share_access;
 	uint32 create_disposition;
 	uint32 create_options;
@@ -1252,7 +1258,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Check if POSIX semantics are wanted.
 	 */
 
-	set_posix_case_semantics(conn, file_attributes);
+	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1324,6 +1330,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					share_access,
 					create_disposition,
 					create_options,
+					new_file_attributes,
 					&info, &fsp);
 		if(!NT_STATUS_IS_OK(status)) {
 			restore_case_semantics(conn, file_attributes);
@@ -1341,7 +1348,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					share_access,
 					create_disposition,
 					create_options,
-					file_attributes,
+					new_file_attributes,
 					oplock_request,
 					&info, &fsp);
 
@@ -1364,6 +1371,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							share_access,
 							create_disposition,
 							create_options,
+							new_file_attributes,
 							&info, &fsp);
 				if(!NT_STATUS_IS_OK(status)) {
 					restore_case_semantics(conn, file_attributes);
@@ -1570,7 +1578,6 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	uint32 fattr;
 	int info;
 	SMB_OFF_T ret=-1;
-	int close_ret;
 	NTSTATUS status = NT_STATUS_OK;
 
 	ZERO_STRUCT(sbuf1);
@@ -1670,7 +1677,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	/* Ensure the modtime is set correctly on the destination file. */
 	fsp_set_pending_modtime(fsp2, sbuf1.st_mtime);
 
-	close_ret = close_file(fsp2,NORMAL_CLOSE);
+	status = close_file(fsp2,NORMAL_CLOSE);
 
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy
@@ -1682,8 +1689,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return NT_STATUS_DISK_FULL;
 	}
 
-	if (close_ret != 0) {
-		status = map_nt_error_from_unix(close_ret);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
 			nt_errstr(status), oldname, newname));
 	}

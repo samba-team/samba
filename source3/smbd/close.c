@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    file closing
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 1992-2004.
+   Copyright (C) Jeremy Allison 1992-2007.
    Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
@@ -90,22 +90,21 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
   Common code to close a file or a directory.
 ****************************************************************************/
 
-static int close_filestruct(files_struct *fsp)
+static NTSTATUS close_filestruct(files_struct *fsp)
 {   
+	NTSTATUS status = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
-	int ret = 0;
     
 	if (fsp->fh->fd != -1) {
-		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
-			ret = -1;
-
+		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1) {
+			status = map_nt_error_from_unix(errno);
+		}
 		delete_write_cache(fsp);
 	}
 
 	conn->num_files_open--;
 	SAFE_FREE(fsp->wbmpx_ptr);
-
-	return ret;
+	return status;
 }    
 
 /****************************************************************************
@@ -195,9 +194,13 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	if (delete_file) {
 		int i;
 		/* See if others still have the file open. If this is the
-		 * case, then don't delete */
+		 * case, then don't delete. If all opens are POSIX delete now. */
 		for (i=0; i<lck->num_share_modes; i++) {
-			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+			struct share_mode_entry *e = &lck->share_modes[i];
+			if (is_valid_share_mode_entry(e)) {
+				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+					continue;
+				}
 				delete_file = False;
 				break;
 			}
@@ -282,12 +285,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			 fsp->fsp_name, strerror(errno) ));
 
 		status = map_nt_error_from_unix(errno);
-		goto done;
 	}
 
-	status = NT_STATUS_FILE_DELETED;
-
  done:
+
 	/* unbecome user. */
 	pop_sec_ctx();
 	
@@ -303,12 +304,13 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  delete on close is done on normal and shutdown close.
 ****************************************************************************/
 
-static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
+static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_type)
 {
+	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS saved_status1 = NT_STATUS_OK;
+	NTSTATUS saved_status2 = NT_STATUS_OK;
+	NTSTATUS saved_status3 = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
-	int saved_errno = 0;
-	int err = 0;
-	int err1 = 0;
 
 	if (fsp->aio_write_behind) {
 		/*
@@ -317,8 +319,7 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 		 */
 		int ret = wait_for_aio_completion(fsp);
 		if (ret) {
-			saved_errno = ret;
-			err1 = -1;
+			saved_status1 = map_nt_error_from_unix(ret);
 		}
 	} else {
 		cancel_aio_by_fsp(fsp);
@@ -329,15 +330,12 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 	 * error here, we must remember this.
 	 */
 
-	if (close_filestruct(fsp) == -1) {
-		saved_errno = errno;
-		err1 = -1;
-	}
+	saved_status2 = close_filestruct(fsp);
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, close_type);
 		file_free(fsp);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	/* If this is an old DOS or FCB open and we have multiple opens on
@@ -346,7 +344,7 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 
 	if (fsp->fh->ref_count == 1) {
 		/* Should we return on error here... ? */
-		close_remove_share_mode(fsp, close_type);
+		saved_status3 = close_remove_share_mode(fsp, close_type);
 	}
 
 	if(fsp->oplock_type) {
@@ -355,13 +353,7 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 
 	locking_close_file(fsp);
 
-	err = fd_close(conn, fsp);
-
-	/* Only save errno if fd_close failed and we don't already
-	   have an errno saved from a flush call. */
-	if ((err1 != -1) && (err == -1)) {
-		saved_errno = errno;
-	}
+	status = fd_close(conn, fsp);
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
@@ -378,29 +370,34 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 		set_filetime(conn, fsp->fsp_name, fsp->last_write_time);
 	}
 
+	if (NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(saved_status1)) {
+			status = saved_status1;
+		} else if (!NT_STATUS_IS_OK(saved_status2)) {
+			status = saved_status2;
+		} else if (!NT_STATUS_IS_OK(saved_status3)) {
+			status = saved_status3;
+		}
+	}
+
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		conn->user,fsp->fsp_name,
 		conn->num_files_open,
-		(err == -1 || err1 == -1) ? strerror(saved_errno) : ""));
+		nt_errstr(status) ));
 
 	file_free(fsp);
-
-	if (err == -1 || err1 == -1) {
-		errno = saved_errno;
-		return saved_errno;
-	} else {
-		return 0;
-	}
+	return status;
 }
 
 /****************************************************************************
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-static int close_directory(files_struct *fsp, enum file_close_type close_type)
+static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_type)
 {
 	struct share_mode_lock *lck = 0;
 	BOOL delete_dir = False;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -411,7 +408,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));
-		return EINVAL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!del_share_mode(lck, fsp)) {
@@ -441,9 +438,13 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 	if (delete_dir) {
 		int i;
 		/* See if others still have the dir open. If this is the
-		 * case, then don't delete */
+		 * case, then don't delete. If all opens are POSIX delete now. */
 		for (i=0; i<lck->num_share_modes; i++) {
-			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+			struct share_mode_entry *e = &lck->share_modes[i];
+			if (is_valid_share_mode_entry(e)) {
+				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+					continue;
+				}
 				delete_dir = False;
 				break;
 			}
@@ -469,7 +470,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 		TALLOC_FREE(lck);
 
-		ok = rmdir_internals(fsp->conn, fsp->fsp_name);
+		status = rmdir_internals(fsp->conn, fsp->fsp_name);
 
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));
@@ -482,7 +483,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 		 * now fail as the directory has been deleted.
 		 */
 
-		if(ok) {
+		if(NT_STATUS_IS_OK(status)) {
 			remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_DELETE_PENDING);
 		}
 	} else {
@@ -496,35 +497,35 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 	 */
 	close_filestruct(fsp);
 	file_free(fsp);
-	return 0;
+	return status;
 }
 
 /****************************************************************************
  Close a 'stat file' opened internally.
 ****************************************************************************/
   
-static int close_stat(files_struct *fsp)
+NTSTATUS close_stat(files_struct *fsp)
 {
 	/*
 	 * Do the code common to files and directories.
 	 */
 	close_filestruct(fsp);
 	file_free(fsp);
-	return 0;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Close a files_struct.
 ****************************************************************************/
   
-int close_file(files_struct *fsp, enum file_close_type close_type)
+NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 {
-	if(fsp->is_directory)
+	if(fsp->is_directory) {
 		return close_directory(fsp, close_type);
-	else if (fsp->is_stat)
+	} else if (fsp->is_stat) {
 		return close_stat(fsp);
-	else if (fsp->fake_file_handle != NULL)
+	} else if (fsp->fake_file_handle != NULL) {
 		return close_fake_file(fsp);
-	else
-		return close_normal_file(fsp, close_type);
+	}
+	return close_normal_file(fsp, close_type);
 }
