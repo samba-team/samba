@@ -309,7 +309,8 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static BOOL is_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
+static BOOL is_privilege_assigned( const SE_PRIV *privileges,
+				   const SE_PRIV *check )
 {
 	SE_PRIV p1, p2;
 
@@ -742,7 +743,7 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
  at a time here.
 *****************************************************************************/
 
-BOOL user_has_privileges(NT_USER_TOKEN *token, const SE_PRIV *privilege)
+BOOL user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
 {
 	if ( !token )
 		return False;
