@@ -61,7 +61,8 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, BOOL delet
 	}
 
 	cli_credentials_set_conf(item->creds);
-	filter = talloc_asprintf(item, "(&(&(objectClass=kerberosSecret)(&(privateKeytab=*)(|(secret=*)(ntPwdHash=*))))(dn=%s))", 
+/*	filter = talloc_asprintf(item, "(&(&(&(objectClass=kerberosSecret)(privateKeytab=*))(|(secret=*)(ntPwdHash=*)))(distinguishedName=%s))", */ 
+	filter = talloc_asprintf(item, "dn=%s",
 				 ldb_dn_get_linearized(dn));
 	status = cli_credentials_set_secrets(item->creds, module->ldb, NULL, filter);
 	talloc_free(filter);
