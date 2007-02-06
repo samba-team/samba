@@ -207,6 +207,7 @@ union srvsvc_NetSessCtr {
 	struct srvsvc_NetSessCtr502 *ctr502;/* [unique,case(502)] */
 };
 
+#ifndef USE_UINT_ENUMS
 enum srvsvc_ShareType {
 	STYPE_DISKTREE=0,
 	STYPE_DISKTREE_TEMPORARY=STYPE_DISKTREE|STYPE_TEMPORARY,
@@ -221,6 +222,21 @@ enum srvsvc_ShareType {
 	STYPE_IPC_TEMPORARY=STYPE_IPC|STYPE_TEMPORARY,
 	STYPE_IPC_HIDDEN=STYPE_IPC|STYPE_HIDDEN
 };
+#else
+enum srvsvc_ShareType { __donnot_use_enum_srvsvc_ShareType=0x7FFFFFFF};
+#define STYPE_DISKTREE ( 0 )
+#define STYPE_DISKTREE_TEMPORARY ( STYPE_DISKTREE|STYPE_TEMPORARY )
+#define STYPE_DISKTREE_HIDDEN ( STYPE_DISKTREE|STYPE_HIDDEN )
+#define STYPE_PRINTQ ( 1 )
+#define STYPE_PRINTQ_TEMPORARY ( STYPE_PRINTQ|STYPE_TEMPORARY )
+#define STYPE_PRINTQ_HIDDEN ( STYPE_PRINTQ|STYPE_HIDDEN )
+#define STYPE_DEVICE ( 2 )
+#define STYPE_DEVICE_TEMPORARY ( STYPE_DEVICE|STYPE_TEMPORARY )
+#define STYPE_DEVICE_HIDDEN ( STYPE_DEVICE|STYPE_HIDDEN )
+#define STYPE_IPC ( 3 )
+#define STYPE_IPC_TEMPORARY ( STYPE_IPC|STYPE_TEMPORARY )
+#define STYPE_IPC_HIDDEN ( STYPE_IPC|STYPE_HIDDEN )
+#endif
 
 struct srvsvc_NetShareInfo0 {
 	const char *name;/* [unique,charset(UTF16)] */
@@ -360,6 +376,7 @@ union srvsvc_NetShareCtr {
 	struct srvsvc_NetShareCtr1501 *ctr1501;/* [unique,case(1501)] */
 };
 
+#ifndef USE_UINT_ENUMS
 enum srvsvc_PlatformId {
 	PLATFORM_ID_DOS=300,
 	PLATFORM_ID_OS2=400,
@@ -367,6 +384,14 @@ enum srvsvc_PlatformId {
 	PLATFORM_ID_OSF=600,
 	PLATFORM_ID_VMS=700
 };
+#else
+enum srvsvc_PlatformId { __donnot_use_enum_srvsvc_PlatformId=0x7FFFFFFF};
+#define PLATFORM_ID_DOS ( 300 )
+#define PLATFORM_ID_OS2 ( 400 )
+#define PLATFORM_ID_NT ( 500 )
+#define PLATFORM_ID_OSF ( 600 )
+#define PLATFORM_ID_VMS ( 700 )
+#endif
 
 struct srvsvc_NetSrvInfo100 {
 	enum srvsvc_PlatformId platform_id;

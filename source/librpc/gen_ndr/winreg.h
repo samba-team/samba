@@ -8,6 +8,7 @@
 
 /* bitmap winreg_AccessMask */
 
+#ifndef USE_UINT_ENUMS
 enum winreg_Type {
 	REG_NONE=0,
 	REG_SZ=1,
@@ -22,6 +23,21 @@ enum winreg_Type {
 	REG_RESOURCE_REQUIREMENTS_LIST=10,
 	REG_QWORD=11
 };
+#else
+enum winreg_Type { __donnot_use_enum_winreg_Type=0x7FFFFFFF};
+#define REG_NONE ( 0 )
+#define REG_SZ ( 1 )
+#define REG_EXPAND_SZ ( 2 )
+#define REG_BINARY ( 3 )
+#define REG_DWORD ( 4 )
+#define REG_DWORD_BIG_ENDIAN ( 5 )
+#define REG_LINK ( 6 )
+#define REG_MULTI_SZ ( 7 )
+#define REG_RESOURCE_LIST ( 8 )
+#define REG_FULL_RESOURCE_DESCRIPTOR ( 9 )
+#define REG_RESOURCE_REQUIREMENTS_LIST ( 10 )
+#define REG_QWORD ( 11 )
+#endif
 
 struct winreg_String {
 	uint16_t name_len;/* [value(strlen_m_term(name)*2)] */
@@ -41,11 +57,18 @@ struct winreg_SecBuf {
 	uint8_t inherit;
 };
 
+#ifndef USE_UINT_ENUMS
 enum winreg_CreateAction {
 	REG_ACTION_NONE=0,
 	REG_CREATED_NEW_KEY=1,
 	REG_OPENED_EXISTING_KEY=2
 };
+#else
+enum winreg_CreateAction { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF};
+#define REG_ACTION_NONE ( 0 )
+#define REG_CREATED_NEW_KEY ( 1 )
+#define REG_OPENED_EXISTING_KEY ( 2 )
+#endif
 
 struct winreg_StringBuf {
 	uint16_t length;/* [value(strlen_m_term_null(name)*2)] */
