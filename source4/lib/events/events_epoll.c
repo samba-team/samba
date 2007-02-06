@@ -204,7 +204,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	int ret, i;
 #define MAXEVENTS 8
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = epoll_ev->destruction_count;
+	uint32_t destruction_count = ++epoll_ev->destruction_count;
 	int timeout = -1;
 
 	if (epoll_ev->epoll_fd == -1) return -1;

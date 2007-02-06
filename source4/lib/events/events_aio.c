@@ -219,7 +219,7 @@ static int setup_epoll_wait(struct aio_event_context *aio_ev)
 static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tvalp)
 {
 	int ret, i;
-	uint32_t destruction_count = aio_ev->destruction_count;
+	uint32_t destruction_count = ++aio_ev->destruction_count;
 	struct timespec timeout;
 	struct io_event events[8];
 
