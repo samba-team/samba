@@ -75,6 +75,28 @@ char *ads_build_dn(const char *realm)
 	return ads_build_path(realm, ".", "dc=", 0);
 }
 
+/* return a DNS name in the for aa.bb.cc from the DN  
+   "dc=AA,dc=BB,dc=CC".  caller must free
+*/
+char *ads_build_domain(const char *dn)
+{
+	char *dnsdomain = NULL;
+	
+	/* result should always be shorter than the DN */
+
+	if ( (dnsdomain = SMB_STRDUP( dn )) == NULL ) {
+		DEBUG(0,("ads_build_domain: malloc() failed!\n"));		
+		return NULL;		
+	}	
+
+	strlower_m( dnsdomain );	
+	all_string_sub( dnsdomain, "dc=", "", 0);
+	all_string_sub( dnsdomain, ",", ".", 0 );
+
+	return dnsdomain;	
+}
+
+
 
 #ifndef LDAP_PORT
 #define LDAP_PORT 389

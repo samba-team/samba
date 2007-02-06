@@ -280,6 +280,8 @@ typedef int BOOL;
 #endif
 
 
+enum dns_ServerType { DNS_SRV_ANY, DNS_SRV_WIN2000, DNS_SRV_WIN2003 };
+
 struct dns_domain_label {
 	struct dns_domain_label *next;
 	char *label;
@@ -405,9 +407,6 @@ DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
 					const in_addr_t *ip,
 					struct dns_rrec **prec);
-DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
-					const char *name, uint32 type,
-					struct dns_rrec **prec);
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
 				   uint16 type, uint16 r_class,
 				   struct dns_rrec **prec);
@@ -484,7 +483,8 @@ void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat );
 DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 				 const char *servername,
 				 const char *keyname,
-				 gss_ctx_id_t *gss_ctx );
+				 gss_ctx_id_t *gss_ctx,
+				 enum dns_ServerType srv_type );
 DNS_ERROR dns_sign_update(struct dns_update_request *req,
 			  gss_ctx_id_t gss_ctx,
 			  const char *keyname,
@@ -493,7 +493,8 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    in_addr_t ip_addr,
+				    const struct in_addr *ip_addr,
+				    size_t num_adds,
 				    struct dns_update_request **preq);
 
 #endif	/* HAVE_GSSAPI_SUPPORT */
