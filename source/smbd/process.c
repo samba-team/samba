@@ -66,8 +66,8 @@ uint16 get_current_mid(void)
 static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
- Function to push a message onto the tail of a linked list of smb messages ready
- for processing.
+ Function to push a message onto the tail of a linked list of smb messages
+ ready for processing.
 ****************************************************************************/
 
 static BOOL push_queued_message(char *buf, int msg_len,
