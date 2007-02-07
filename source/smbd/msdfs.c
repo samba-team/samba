@@ -261,7 +261,7 @@ static BOOL parse_symlink(TALLOC_CTX *ctx, char *buf, struct referral **preflist
  talloc CTX can be NULL here if reflistp and refcnt pointers are null.
  **********************************************************************/
 
-BOOL is_msdfs_link(TALLOC_CTX *ctx, connection_struct *conn, char *path,
+BOOL is_msdfs_link(TALLOC_CTX *ctx, connection_struct *conn, const char *path,
 		   struct referral **reflistp, int *refcnt,
 		   SMB_STRUCT_STAT *sbufp)
 {
@@ -317,11 +317,15 @@ TALLOC_CTX can be NULL here if struct referral **reflistpp, int *refcntp
 are also NULL.
 *****************************************************************/
 
-static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath, 
-							 struct dfs_path *dp, 
-		      connection_struct *conn, BOOL search_flag, 
-		      struct referral **reflistpp, int *refcntp,
-		      BOOL *self_referralp, int *consumedcntp)
+static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
+			const char *dfspath, 
+			struct dfs_path *dp, 
+			connection_struct *conn,
+			BOOL search_flag, 
+			struct referral **reflistpp,
+			int *refcntp,
+			BOOL *self_referralp,
+			int *consumedcntp)
 {
 	pstring localpath;
 	int consumed_level = 1;
@@ -349,11 +353,24 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath,
 
 	DEBUG(10,("resolve_dfs_path: Conn path = %s req_path = %s\n", conn->connectpath, dp->reqpath));
 
-	status = unix_convert(conn, dp->reqpath, False, NULL, &sbuf);
-	/* Should we terminate on status != NT_STATUS_OK ???? */
+	/* 
+ 	 * Note the unix path conversion here we're doing we can
+	 * throw away. We're looking for a symlink for a dfs
+	 * resolution, if we don't find it we'll do another
+	 * unix_convert later in the codepath.
+	 * If we needed to remember what we'd resolved in
+	 * dp->reqpath (as the original code did) we'd
+	 * pstrcpy(localhost, dp->reqpath) on any code
+	 * path below that returns True - but I don't
+	 * think this is needed. JRA.
+	 */
 
-	/* JRA... should we strlower the last component here.... ? */
 	pstrcpy(localpath, dp->reqpath);
+
+	status = unix_convert(conn, localpath, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	/* check if need to redirect */
 	if (is_msdfs_link(ctx, conn, localpath, reflistpp, refcntp, NULL)) {
@@ -371,7 +388,7 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath,
 	}
 
 	/* redirect if any component in the path is a link */
-	pstrcpy(reqpath, dp->reqpath);
+	pstrcpy(reqpath, localpath);
 	p = strrchr_m(reqpath, '/');
 	while (p) {
 		*p = '\0';
@@ -448,9 +465,10 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
 		return True;
 	} else {
 		DEBUG(3,("dfs_redirect: Not redirecting %s.\n", pathname));
-		
+
 		/* Form non-dfs tcon-relative path */
 		pstrcpy(pathname, dp.reqpath);
+
 		DEBUG(3,("dfs_redirect: Path converted to non-dfs path %s\n", pathname));
 		return False;
 	}
