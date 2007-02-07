@@ -156,7 +156,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 
 	token = req->session_info->security_token;
 
-	*sec = save_unix_security(req);
+	*sec = save_unix_security(ntvfs);
 	if (*sec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -166,6 +166,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	} else {
 		status = nt_token_to_unix_security(ntvfs, req, token, &newsec);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(*sec);
 			return status;
 		}
 		if (private->last_sec_ctx) {
@@ -178,6 +179,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 
 	status = set_unix_security(newsec);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(*sec);
 		return status;
 	}
 
@@ -194,6 +196,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_NOT_OK_RETURN(status); \
 	status = ntvfs_next_##op args; \
 	status2 = set_unix_security(sec); \
+	talloc_free(sec); \
 	if (!NT_STATUS_IS_OK(status2)) smb_panic("Unable to reset security context"); \
 } while (0)
 
