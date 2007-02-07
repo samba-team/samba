@@ -324,15 +324,25 @@ static int aio_event_context_init(struct event_context *ev)
 	aio_ev->epoll_iocb = talloc(aio_ev, struct iocb);
 
 	if (io_queue_init(MAX_AIO_QUEUE_DEPTH, &aio_ev->ioctx) != 0) {
+		talloc_free(aio_ev);
 		return -1;
 	}
 
 	aio_ev->epoll_fd = epoll_create(MAX_AIO_QUEUE_DEPTH);
-	if (aio_ev->epoll_fd == -1) return -1;
+	if (aio_ev->epoll_fd == -1) {
+		talloc_free(aio_ev);
+		return -1;
+	}
 
 	talloc_set_destructor(aio_ev, aio_ctx_destructor);
 
 	ev->additional_data = aio_ev;
+
+	if (setup_epoll_wait(aio_ev) < 0) {
+		talloc_free(aio_ev);
+		return -1;
+	}
+
 	return 0;
 }
 
