@@ -290,9 +290,12 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* cancel the blocking lock */
 	smb_raw_ntcancel(req);
 
+	printf("sending 2nd cancel\n");
 	/* the 2nd cancel is totally harmless, but tests the server trying to 
 	   cancel an already cancelled request */
 	smb_raw_ntcancel(req);
+
+	printf("sent 2nd cancel\n");
 
 	lock[0].pid = 1;
 	io.lockx.in.ulock_cnt = 1;
@@ -304,7 +307,32 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);	
 
-	smbcli_close(cli->tree, fnum);
+	printf("cancel a lock using exit to close file\n");
+	lock[0].pid = 1;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.timeout = 1000;
+
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	t = timeval_current();
+	lock[0].pid = 2;
+	req = smb_raw_lock_send(cli->tree, &io);
+
+	smb_raw_exit(cli->session);
+	smb_raw_exit(cli->session);
+	smb_raw_exit(cli->session);
+	smb_raw_exit(cli->session);
+
+	printf("recv the async reply\n");
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	printf("async lock exit took %.2f msec\n", timeval_elapsed(&t) * 1000);
+	if (timeval_elapsed(&t) > 0.1) {
+		printf("failed to trigger early lock failure\n");
+		return False;		
+	}
 
 done:
 	return ret;
