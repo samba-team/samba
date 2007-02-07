@@ -175,6 +175,7 @@ int ctdb_start(struct ctdb_context *ctdb)
 static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
 	struct ctdb_req_header *hdr;
+
 	if (length < sizeof(*hdr)) {
 		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
 		return;
@@ -229,7 +230,7 @@ static void ctdb_node_dead(struct ctdb_node *node)
 }
 
 /*
-  called by the transport layer when a node is dead
+  called by the transport layer when a node is connected
 */
 static void ctdb_node_connected(struct ctdb_node *node)
 {
