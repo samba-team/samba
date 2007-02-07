@@ -4857,25 +4857,25 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 ****************************************************************************/
 
 static NTSTATUS smb_posix_mkdir(connection_struct *conn,
-				const char *pdata,
+				char **ppdata,
 				int total_data,
-				const char *fname)
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf,
+				int *pdata_return_size)
 {
 	NTSTATUS status;
-	SMB_STRUCT_STAT sbuf;
 	uint32 raw_unixmode;
 	uint32 mod_unixmode;
 	mode_t unixmode;
 	files_struct *fsp;
+	const char *pdata = *ppdata;
 
 	if (total_data < 10) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ZERO_STRUCT(sbuf);
-
 	raw_unixmode = IVAL(pdata,8);
-	status = unix_perms_from_wire(conn, &sbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
+	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4884,7 +4884,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 
 	status = open_directory(conn,
 				fname,
-				&sbuf,
+				psbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,
@@ -4896,6 +4896,18 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
         if (NT_STATUS_IS_OK(status)) {
                 close_file(fsp, NORMAL_CLOSE);
         }
+
+	*pdata_return_size = 6;
+	/* Realloc the data size */
+	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
+	if (*ppdata == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	SSVAL(pdata,0,NO_OPLOCK_RETURN);
+	SSVAL(pdata,2,0);
+	SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+
 	return status;
 }
 
@@ -4938,7 +4950,12 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	wire_open_mode = IVAL(pdata,4);
 
 	if (wire_open_mode == (SMB_O_CREAT|SMB_O_DIRECTORY)) {
-		return smb_posix_mkdir(conn, pdata, total_data, fname);
+		return smb_posix_mkdir(conn,
+					ppdata,
+					total_data,
+					fname,
+					psbuf,
+					pdata_return_size);
 	}
 
 	switch (wire_open_mode & SMB_ACCMODE) {
