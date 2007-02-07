@@ -2865,6 +2865,61 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 #endif
 
 /****************************************************************************
+ Store the FILE_UNIX_BASIC info.
+****************************************************************************/
+
+static char *store_file_unix_basic(char *pdata,
+				files_struct *fsp,
+				SMB_STRUCT_STAT *psbuf)
+{
+	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
+	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_mode));
+
+	SOFF_T(pdata,0,get_file_size(*psbuf));             /* File size 64 Bit */
+	pdata += 8;
+
+	SOFF_T(pdata,0,get_allocation_size(fsp->conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
+	pdata += 8;
+
+	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Creation Time 64 Bit */
+	put_long_date_timespec(pdata+8,get_atimespec(psbuf));     /* Last access time 64 Bit */
+	put_long_date_timespec(pdata+16,get_mtimespec(psbuf));    /* Last modification time 64 Bit */
+	pdata += 24;
+
+	SIVAL(pdata,0,psbuf->st_uid);               /* user id for the owner */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	SIVAL(pdata,0,psbuf->st_gid);               /* group id of owner */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	SIVAL(pdata,0,unix_filetype(psbuf->st_mode));
+	pdata += 4;
+
+	SIVAL(pdata,0,unix_dev_major(psbuf->st_rdev));   /* Major device number if type is device */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	SIVAL(pdata,0,unix_dev_minor(psbuf->st_rdev));   /* Minor device number if type is device */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	SINO_T_VAL(pdata,0,(SMB_INO_T)psbuf->st_ino);   /* inode number */
+	pdata += 8;
+				
+	SIVAL(pdata,0, unix_perms_to_wire(psbuf->st_mode));     /* Standard UNIX file permissions */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	SIVAL(pdata,0,psbuf->st_nlink);             /* number of hard links */
+	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	return pdata;
+}
+
+/****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
  file name or file id).
 ****************************************************************************/
@@ -3469,49 +3524,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_FILE_UNIX_BASIC:
 
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC\n"));
-			DEBUG(4,("call_trans2qfilepathinfo: st_mode=%o\n",(int)sbuf.st_mode));
-
-			SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
-			pdata += 8;
-
-			SOFF_T(pdata,0,get_allocation_size(conn,fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
-			pdata += 8;
-
-			put_long_date_timespec(pdata,get_ctimespec(&sbuf));       /* Creation Time 64 Bit */
-			put_long_date_timespec(pdata+8,get_atimespec(&sbuf));     /* Last access time 64 Bit */
-			put_long_date_timespec(pdata+16,get_mtimespec(&sbuf));    /* Last modification time 64 Bit */
-			pdata += 24;
-
-			SIVAL(pdata,0,sbuf.st_uid);               /* user id for the owner */
-			SIVAL(pdata,4,0);
-			pdata += 8;
-
-			SIVAL(pdata,0,sbuf.st_gid);               /* group id of owner */
-			SIVAL(pdata,4,0);
-			pdata += 8;
-
-			SIVAL(pdata,0,unix_filetype(sbuf.st_mode));
-			pdata += 4;
-
-			SIVAL(pdata,0,unix_dev_major(sbuf.st_rdev));   /* Major device number if type is device */
-			SIVAL(pdata,4,0);
-			pdata += 8;
-
-			SIVAL(pdata,0,unix_dev_minor(sbuf.st_rdev));   /* Minor device number if type is device */
-			SIVAL(pdata,4,0);
-			pdata += 8;
-
-			SINO_T_VAL(pdata,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
-			pdata += 8;
-				
-			SIVAL(pdata,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
-			SIVAL(pdata,4,0);
-			pdata += 8;
-
-			SIVAL(pdata,0,sbuf.st_nlink);             /* number of hard links */
-			SIVAL(pdata,4,0);
-			pdata += 8;
+			pdata = store_file_unix_basic(pdata, fsp, &sbuf);
 			data_size = PTR_DIFF(pdata,(*ppdata));
 
 			{
@@ -4857,12 +4870,13 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				SMB_STRUCT_STAT *psbuf,
 				int *pdata_return_size)
 {
-	NTSTATUS status;
-	uint32 raw_unixmode;
-	uint32 mod_unixmode;
-	mode_t unixmode;
-	files_struct *fsp;
-	const char *pdata = *ppdata;
+	NTSTATUS status = NT_STATUS_OK;
+	uint32 raw_unixmode = 0;
+	uint32 mod_unixmode = 0;
+	mode_t unixmode = (mode_t)0;
+	files_struct *fsp = NULL;
+	uint16 info_level_return = 0;
+	char *pdata = *ppdata;
 
 	if (total_data < 10) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4891,16 +4905,30 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
                 close_file(fsp, NORMAL_CLOSE);
         }
 
-	*pdata_return_size = 6;
+	info_level_return = SVAL(pdata,12);
+ 
+	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+		*pdata_return_size = 6;
+	} else {
+		*pdata_return_size = 6;
+	}
+
 	/* Realloc the data size */
 	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
 	if (*ppdata == NULL) {
+		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
 	SSVAL(pdata,2,0);
-	SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+
+	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
+		store_file_unix_basic(pdata + 6, fsp, psbuf);
+	} else {
+		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+	}
 
 	return status;
 }
@@ -4917,7 +4945,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 				int *pdata_return_size)
 {
 	BOOL extended_oplock_granted = False;
-	const char *pdata = *ppdata;
+	char *pdata = *ppdata;
 	uint32 flags = 0;
 	uint32 wire_open_mode = 0;
 	uint32 raw_unixmode = 0;
@@ -4930,6 +4958,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	files_struct *fsp = NULL;
 	int oplock_request = 0;
 	int info = 0;
+	uint16 info_level_return = 0;
 
 	if (total_data < 14) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5029,11 +5058,19 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		extended_oplock_granted = True;
 	}
 
-	*pdata_return_size = 6;
+	info_level_return = SVAL(pdata,12);
+ 
+	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+		*pdata_return_size = 6;
+	} else {
+		*pdata_return_size = 6;
+	}
+
 	/* Realloc the data size */
 	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
 	if (*ppdata == NULL) {
 		close_file(fsp,ERROR_CLOSE);
+		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -5050,7 +5087,12 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	SSVAL(pdata,2,fsp->fnum);
-	SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
+		store_file_unix_basic(pdata + 6, fsp, psbuf);
+	} else {
+		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
+	}
 	return NT_STATUS_OK;
 }
 
