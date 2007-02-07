@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -151,6 +151,8 @@ krb5_rd_cred(krb5_context context,
 				      enc_krb_cred_part_data.length,
 				      &enc_krb_cred_part,
 				      &len);
+    if (enc_krb_cred_part_data.data != cred.enc_part.cipher.data)
+	krb5_data_free(&enc_krb_cred_part_data);
     if (ret)
 	goto out;
 
