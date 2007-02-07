@@ -852,6 +852,8 @@ extern void build_options(BOOL screen);
 
 	load_case_tables();
 
+	TimeInit();
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -1101,9 +1103,6 @@ extern void build_options(BOOL screen);
 	
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
-
-	/* re-initialise the timezone */
-	TimeInit();
 
 	/* register our message handlers */
 	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis, NULL);
