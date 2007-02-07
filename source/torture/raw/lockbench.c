@@ -105,7 +105,7 @@ BOOL torture_bench_lock(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchlock_state *state;
-	int total = 0, loops=0;
+	int total = 0, loops=0, minops=0;
 	NTSTATUS status;
 	
 	nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
@@ -176,6 +176,15 @@ BOOL torture_bench_lock(struct torture_context *torture)
 	}
 
 	printf("%.2f ops/second\n", total/timeval_elapsed(&tv));
+	minops = state[0].count;
+	for (i=0;i<nprocs;i++) {
+		printf("[%d] %u ops\n", i, state[i].count);
+		if (state[i].count < minops) minops = state[i].count;
+	}
+	if (minops < 0.5*total/nprocs) {
+		printf("Failed: unbalanced locking\n");
+		goto failed;
+	}
 
 	for (i=0;i<nprocs;i++) {
 		talloc_free(state[i].req);
