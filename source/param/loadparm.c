@@ -5584,17 +5584,23 @@ void lp_set_posix_pathnames(void)
  Global state for POSIX lock processing - CIFS unix extensions.
 ********************************************************************/
 
+BOOL posix_default_lock_was_set;
 static enum brl_flavour posix_cifsx_locktype; /* By default 0 == WINDOWS_LOCK */
 
-enum brl_flavour lp_posix_cifsu_locktype(void)
+enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp)
 {
-	return posix_cifsx_locktype;
+	if (posix_default_lock_was_set) {
+		return posix_cifsx_locktype;
+	} else {
+		return fsp->posix_open ? POSIX_LOCK : WINDOWS_LOCK;
+	}
 }
 
 /*******************************************************************
 ********************************************************************/
 
-void lp_set_posix_cifsx_locktype(enum brl_flavour val)
+void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val)
 {
+	posix_default_lock_was_set = True;
 	posix_cifsx_locktype = val;
 }

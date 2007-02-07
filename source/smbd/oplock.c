@@ -826,6 +826,7 @@ void share_mode_entry_to_message(char *msg, struct share_mode_entry *e)
 	SINO_T_VAL(msg,36,e->inode);
 	SIVAL(msg,44,e->share_file_id);
 	SIVAL(msg,48,e->uid);
+	SSVAL(msg,52,e->flags);
 }
 
 /****************************************************************************
@@ -846,6 +847,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 	e->inode = INO_T_VAL(msg,36);
 	e->share_file_id = (unsigned long)IVAL(msg,44);
 	e->uid = (uint32)IVAL(msg,48);
+	e->flags = (uint16)SVAL(msg,52);
 }
 
 /****************************************************************************

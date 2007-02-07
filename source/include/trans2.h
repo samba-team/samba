@@ -446,6 +446,13 @@ Offset Size         Name
 /* Only valid for setfileinfo */
 #define SMB_SET_POSIX_LOCK	       0x208
 
+/* The set info levels for POSIX path operations. */
+#define SMB_POSIX_PATH_OPEN	       0x209
+#define SMB_POSIX_PATH_UNLINK	       0x20A
+
+#define SMB_QUERY_FILE_UNIX_INFO2      0x20B   /* UNIX File Info2 */
+#define SMB_SET_FILE_UNIX_INFO2        0x20B
+
 /* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
 
@@ -477,6 +484,7 @@ Offset Size         Name
 #define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
 						(chflags) and lsattr */
 #define CIFS_UNIX_POSIX_PATHNAMES_CAP	   0x10 /* Use POSIX pathnames on the wire. */
+#define CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP	   0x20 /* We can cope with POSIX open/mkdir/unlink etc. */
 
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
@@ -579,7 +587,7 @@ number of entries sent will be zero.
 
 #define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
 
-/* Definition of SMB_SET_POSIX_LOCK */
+/* Definition of parameter block of SMB_SET_POSIX_LOCK */
 /*
   [2 bytes] lock_type - 0 = Read, 1 = Write, 2 = Unlock
   [2 bytes] lock_flags - 1 = Wait (only valid for setlock)
@@ -601,5 +609,38 @@ number of entries sent will be zero.
 #define POSIX_LOCK_TYPE_READ 0
 #define POSIX_LOCK_TYPE_WRITE 1
 #define POSIX_LOCK_TYPE_UNLOCK 2
+
+/* SMB_POSIX_PATH_OPEN "open_mode" definitions. */
+#define SMB_O_RDONLY			  0x1
+#define SMB_O_WRONLY			  0x2
+#define SMB_O_RDWR			  0x4
+
+#define SMB_ACCMODE			  0x7
+
+#define SMB_O_CREAT			 0x10
+#define SMB_O_EXCL			 0x20
+#define SMB_O_TRUNC			 0x40
+#define SMB_O_APPEND			 0x80
+#define SMB_O_SYNC			0x100
+#define SMB_O_DIRECTORY			0x200
+#define SMB_O_NOFOLLOW			0x400
+#define SMB_O_DIRECT			0x800
+
+/* Definition of request parameter block for SMB_POSIX_PATH_OPEN */
+/*
+  [4 bytes] flags (as smb_ntcreate_Flags).
+  [4 bytes] open_mode
+  [4 bytes] mode_t		- same encoding as "Standard UNIX permissions" above.
+  [2 bytes] ret_info_level	- optimization. Info level to be returned.
+*/
+
+/* Definition of reply data block for SMB_POSIX_PATH_OPEN */
+
+#define SMB_NO_INFO_LEVEL_RETURNED 0xFFFF
+
+/*
+  [2 bytes] reply info level    - as requested or 0xFFFF if not available.
+  [n bytes] - info level reply  - if available.
+*/
 
 #endif

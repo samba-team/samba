@@ -67,14 +67,13 @@ static BOOL fd_open(struct connection_struct *conn,
  Close the file associated with a fsp.
 ****************************************************************************/
 
-int fd_close(struct connection_struct *conn,
-	     files_struct *fsp)
+NTSTATUS fd_close(struct connection_struct *conn, files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
-		return 0; /* What we used to call a stat open. */
+		return NT_STATUS_OK; /* What we used to call a stat open. */
 	}
 	if (fsp->fh->ref_count > 1) {
-		return 0; /* Shared handle. Only close last reference. */
+		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
 	}
 	return fd_close_posix(conn, fsp);
 }
@@ -1112,6 +1111,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	int flags2=0;
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL def_acl = False;
+	BOOL posix_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
@@ -1150,10 +1150,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* We add aARCH to this as this mode is only used if the file is
-	 * created new. */
-	unx_mode = unix_mode(conn, new_dos_attributes | aARCH, fname,
-			     parent_dir);
+	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		posix_open = True;
+		unx_mode = (mode_t)(new_dos_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
+		new_dos_attributes = 0;
+	} else {
+		/* We add aARCH to this as this mode is only used if the file is
+		 * created new. */
+		unx_mode = unix_mode(conn, new_dos_attributes | aARCH, fname,
+				     parent_dir);
+	}
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
 		   "access_mask=0x%x share_access=0x%x "
@@ -1191,9 +1197,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	} 
 
-	new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
-	if (file_existed) {
-		existing_dos_attributes = dos_mode(conn, fname, psbuf);
+	if (!posix_open) {
+		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
+		if (file_existed) {
+			existing_dos_attributes = dos_mode(conn, fname, psbuf);
+		}
 	}
 
 	/* ignore any oplock requests if oplocks are disabled */
@@ -1288,7 +1296,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* We only care about matching attributes on file exists and
 	 * overwrite. */
 
-	if (file_existed && ((create_disposition == FILE_OVERWRITE) ||
+	if (!posix_open && file_existed && ((create_disposition == FILE_OVERWRITE) ||
 			     (create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, fname,
 					   existing_dos_attributes,
@@ -1353,7 +1361,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 #endif /* O_SYNC */
   
-	if (!CAN_WRITE(conn)) {
+	if (posix_open & (access_mask & FILE_APPEND_DATA)) {
+		flags2 |= O_APPEND;
+	}
+
+	if (!posix_open && !CAN_WRITE(conn)) {
 		/*
 		 * We should really return a permission denied error if either
 		 * O_CREAT or O_TRUNC are set, but for compatibility with
@@ -1387,6 +1399,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
 					      * the open is done. */
+	fsp->posix_open = posix_open;
+
 	/* Ensure no SAMBA_PRIVATE bits can be set. */
 	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
@@ -1762,9 +1776,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
-			file_set_dosmode(conn, fname,
+			if (!posix_open) {
+				file_set_dosmode(conn, fname,
 					 new_dos_attributes | aARCH, NULL,
 					 parent_dir);
+			}
 		}
 	}
 
@@ -1773,7 +1789,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * selected.
 	 */
 
-	if (!file_existed && !def_acl) {
+	if (!posix_open && !file_existed && !def_acl) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
@@ -1866,15 +1882,17 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
  Close the fchmod file fd - ensure no locks are lost.
 ****************************************************************************/
 
-int close_file_fchmod(files_struct *fsp)
+NTSTATUS close_file_fchmod(files_struct *fsp)
 {
-	int ret = fd_close(fsp->conn, fsp);
+	NTSTATUS status = fd_close(fsp->conn, fsp);
 	file_free(fsp);
-	return ret;
+	return status;
 }
 
-static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
-			       SMB_STRUCT_STAT *psbuf)
+static NTSTATUS mkdir_internal(connection_struct *conn,
+				const char *name,
+				uint32 file_attributes,
+				SMB_STRUCT_STAT *psbuf)
 {
 	int ret= -1;
 	mode_t mode;
@@ -1898,7 +1916,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	mode = unix_mode(conn, aDIR, name, parent_dir);
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
+	} else {
+		mode = unix_mode(conn, aDIR, name, parent_dir);
+	}
 
 	if ((ret=SMB_VFS_MKDIR(conn, name, mode)) != 0) {
 		return map_nt_error_from_unix(errno);
@@ -1923,15 +1945,17 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 		inherit_access_acl(conn, parent_dir, name, mode);
 	}
 
-	/*
-	 * Check if high bits should have been set,
-	 * then (if bits are missing): add them.
-	 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
-	 * dir.
-	 */
-	if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_mode)) {
-		SMB_VFS_CHMOD(conn, name,
-			      psbuf->st_mode | (mode & ~psbuf->st_mode));
+	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
+		/*
+		 * Check if high bits should have been set,
+		 * then (if bits are missing): add them.
+		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
+		 * dir.
+		 */
+		if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_mode)) {
+			SMB_VFS_CHMOD(conn, name,
+				      psbuf->st_mode | (mode & ~psbuf->st_mode));
+		}
 	}
 
 	/* Change the owner if required. */
@@ -1953,6 +1977,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			uint32 share_access,
 			uint32 create_disposition,
 			uint32 create_options,
+			uint32 file_attributes,
 			int *pinfo,
 			files_struct **result)
 {
@@ -1964,12 +1989,13 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
 		 "share_access = 0x%x create_options = 0x%x, "
-		 "create_disposition = 0x%x\n",
+		 "create_disposition = 0x%x, file_attributes = 0x%x\n",
 		 fname,
 		 (unsigned int)access_mask,
 		 (unsigned int)share_access,
 		 (unsigned int)create_options,
-		 (unsigned int)create_disposition));
+		 (unsigned int)create_disposition,
+		 (unsigned int)file_attributes));
 
 	if (is_ntfs_stream_name(fname)) {
 		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
@@ -1996,7 +2022,11 @@ NTSTATUS open_directory(connection_struct *conn,
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
 
-			status = mkdir_internal(conn, fname, psbuf);
+			status = mkdir_internal(conn,
+						fname,
+						file_attributes,
+						psbuf);
+
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("open_directory: unable to create "
 					  "%s. Error was %s\n", fname,
@@ -2013,7 +2043,10 @@ NTSTATUS open_directory(connection_struct *conn,
 			 * exist create.
 			 */
 
-			status = mkdir_internal(conn, fname, psbuf);
+			status = mkdir_internal(conn,
+						fname,
+						file_attributes,
+						psbuf);
 
 			if (NT_STATUS_IS_OK(status)) {
 				info = FILE_WAS_CREATED;
@@ -2071,6 +2104,8 @@ NTSTATUS open_directory(connection_struct *conn,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
 	fsp->is_stat = False;
+	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
+
 	string_set(&fsp->fsp_name,fname);
 
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode,
@@ -2135,7 +2170,11 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 	status = open_directory(conn, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
-				FILE_CREATE, 0, NULL, &fsp);
+				FILE_CREATE,
+				0,
+				FILE_ATTRIBUTE_DIRECTORY,
+				NULL,
+				&fsp);
 
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(fsp, NORMAL_CLOSE);

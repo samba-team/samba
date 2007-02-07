@@ -1848,6 +1848,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
 					0,
+					FILE_ATTRIBUTE_DIRECTORY,
 					NULL, &fsp);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1965,6 +1966,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
+						FILE_ATTRIBUTE_DIRECTORY,
 						NULL, &fsp);
 
 		if ( !NT_STATUS_IS_OK(nt_status) ) {

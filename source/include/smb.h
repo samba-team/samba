@@ -478,6 +478,7 @@ typedef struct files_struct {
 	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
+	BOOL posix_open;
 	char *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;
@@ -698,6 +699,8 @@ struct pending_message_list {
 	DATA_BLOB private_data;
 };
 
+#define SHARE_MODE_FLAG_POSIX_OPEN	0x1
+
 /* struct returned by get_share_modes */
 struct share_mode_entry {
 	struct process_id pid;
@@ -714,6 +717,7 @@ struct share_mode_entry {
 	SMB_INO_T inode;
 	unsigned long share_file_id;
 	uint32 uid;		/* uid of file opener. */
+	uint16 flags;		/* POSIX_OPEN only defined so far... */
 };
 
 /* oplock break message definition - linearization of share_mode_entry.
@@ -731,10 +735,11 @@ Offset  Data			length.
 36	SMB_INO_T inode		8 bytes
 44	unsigned long file_id	4 bytes
 48	uint32 uid		4 bytes
-52
+52	uint16 flags		2 bytes
+54
 
 */
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 52
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 54
 
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
@@ -1532,19 +1537,19 @@ extern int chain_size;
  * Note these must fit into 16-bits.
  */
 
-#define NO_OPLOCK 0
-#define EXCLUSIVE_OPLOCK 1
-#define BATCH_OPLOCK 2
-#define LEVEL_II_OPLOCK 4
+#define NO_OPLOCK 			0x0
+#define EXCLUSIVE_OPLOCK 		0x1
+#define BATCH_OPLOCK 			0x2
+#define LEVEL_II_OPLOCK 		0x4
 
 /* The following are Samba-private. */
-#define INTERNAL_OPEN_ONLY 8
-#define FAKE_LEVEL_II_OPLOCK 16	/* Client requested no_oplock, but we have to
+#define INTERNAL_OPEN_ONLY 		0x8
+#define FAKE_LEVEL_II_OPLOCK 		0x10	/* Client requested no_oplock, but we have to
 				 * inform potential level2 holders on
 				 * write. */
-#define DEFERRED_OPEN_ENTRY 32
-#define UNUSED_SHARE_MODE_ENTRY 64
-#define FORCE_OPLOCK_BREAK_TO_NONE 128
+#define DEFERRED_OPEN_ENTRY 		0x20
+#define UNUSED_SHARE_MODE_ENTRY 	0x40
+#define FORCE_OPLOCK_BREAK_TO_NONE 	0x80
 
 /* None of the following should ever appear in fsp->oplock_request. */
 #define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|DEFERRED_OPEN_ENTRY|UNUSED_SHARE_MODE_ENTRY|FORCE_OPLOCK_BREAK_TO_NONE)

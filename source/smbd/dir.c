@@ -884,6 +884,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0, /* no create options. */
+			FILE_ATTRIBUTE_DIRECTORY,
 			NULL, &fsp);
 	} else {
 		status = open_file_stat(conn, name, pst, &fsp);
