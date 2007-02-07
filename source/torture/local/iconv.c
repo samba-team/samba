@@ -184,7 +184,9 @@ static bool test_buffer(struct torture_context *test,
 		show_buf(" rem1:", inbuf+(size-size_in1), size_in1);
 		show_buf(" rem2:", inbuf+(size-size_in2), size_in2);
 		torture_fail(test, talloc_asprintf(test, 
-					"e1=%s e2=%s", strerror(errno1), strerror(errno2)));
+						   "e1=%d/%s e2=%d/%s", 
+						   errno1, strerror(errno1), 
+						   errno2, strerror(errno2)));
 	}
 	
 	torture_assert_int_equal(test, outsize1, outsize2, "outsize mismatch");
