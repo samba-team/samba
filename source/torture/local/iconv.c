@@ -135,8 +135,6 @@ static bool test_buffer(struct torture_context *test,
 				     talloc_asprintf(test, 
 						     "failed to open %s to UTF-16LE",
 						     charset));
-			cd = NULL;
-			return false;
 		}
 		cd2 = smb_iconv_open(charset, "UTF-16LE");
 		cd3 = smb_iconv_open("UTF-16LE", charset);
@@ -246,11 +244,11 @@ static bool test_buffer(struct torture_context *test,
 		torture_comment(test, "pull bytes mismatch:");
 		show_buf("inbuf", inbuf, size);
 		show_buf(" buf3", buf3, sizeof(buf3) - outsize3);
-		torture_fail(test, "");
 		torture_comment(test, "next codepoint is %u\n", 
 		       get_codepoint((char *)(inbuf+sizeof(buf3) - outsize3), 
 				     size - (sizeof(buf3) - outsize3),
 				     "UTF-16LE"));
+		torture_fail(test, "");
 	}
 
 	return true;
