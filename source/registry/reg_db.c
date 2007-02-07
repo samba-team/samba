@@ -98,6 +98,20 @@ static BOOL init_registry_data( void )
 	int i;
 	const char *p, *p2;
 	UNISTR2 data;
+
+	/*
+	 * There are potentially quite a few store operations which are all
+	 * indiviually wrapped in tdb transactions. Wrapping them in a single
+	 * transaction gives just a single transaction_commit() to actually do
+	 * its fsync()s. See tdb/common/transaction.c for info about nested
+	 * transaction behaviour.
+	 */
+
+	if ( tdb_transaction_start( tdb_reg ) == -1 ) {
+		DEBUG(0, ("init_registry_data: tdb_transaction_start "
+			  "failed\n"));
+		return False;
+	}
 	
 	/* loop over all of the predefined paths and add each component */
 	
@@ -137,14 +151,14 @@ static BOOL init_registry_data( void )
 			
 			if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
 				DEBUG(0,("talloc() failure!\n"));
-				return False;
+				goto fail;
 			}
 
 			regdb_fetch_keys( base, subkeys );
 			if ( *subkeyname ) 
 				regsubkey_ctr_addkey( subkeys, subkeyname );
 			if ( !regdb_store_keys( base, subkeys ))
-				return False;
+				goto fail;
 			
 			TALLOC_FREE( subkeys );
 		}
@@ -155,7 +169,7 @@ static BOOL init_registry_data( void )
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
 		if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
 			DEBUG(0,("talloc() failure!\n"));
-			return False;
+			goto fail;
 		}
 
 		regdb_fetch_values( builtin_registry_values[i].path, values );
@@ -192,7 +206,22 @@ static BOOL init_registry_data( void )
 		TALLOC_FREE( values );
 	}
 	
+	if (tdb_transaction_commit( tdb_reg ) == -1) {
+		DEBUG(0, ("init_registry_data: Could not commit "
+			  "transaction\n"));
+		return False;
+	}
+
 	return True;
+
+ fail:
+
+	if (tdb_transaction_cancel( tdb_reg ) == -1) {
+		smb_panic("init_registry_data: tdb_transaction_cancel "
+			  "failed\n");
+	}
+
+	return False;
 }
 
 /***********************************************************************
