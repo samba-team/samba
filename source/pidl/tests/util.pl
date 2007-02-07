@@ -4,10 +4,11 @@
 use strict;
 use warnings;
 
-use Test::More tests => 56;
+use Test::More tests => 70;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
+use Parse::Pidl qw(error);
 use Parse::Pidl::Util;
 
 # has_property()
@@ -89,3 +90,23 @@ is("b.a.a", ParseExpr("a.a.a", {"a" => "b"}, undef));
 
 test_errors("nofile:0: Parse error in `~' near `~'\n", sub {
 	is(undef, ParseExpr("~", {}, {FILE => "nofile", LINE => 0})); });
+
+test_errors("nofile:0: Got pointer, expected integer\n", sub {
+		is(undef, ParseExprExt("foo", {}, {FILE => "nofile", LINE => 0},
+				         undef, sub { my $x = shift; 
+							 error({FILE => "nofile", LINE => 0}, 
+									 "Got pointer, expected integer");
+							 return undef; }))});
+
+is("b.a.a", ParseExpr("b.a.a", {"a" => "b"}, undef));
+is("((rr_type) == NBT_QTYPE_NETBIOS)", ParseExpr("((rr_type)==NBT_QTYPE_NETBIOS)", {}, undef));
+is("talloc_check_name", ParseExpr("talloc_check_name", {}, undef));
+is("talloc_check_name()", ParseExpr("talloc_check_name()", {}, undef));
+is("talloc_check_name(ndr)", ParseExpr("talloc_check_name(ndr)", {}, undef));
+is("talloc_check_name(ndr, 1)", ParseExpr("talloc_check_name(ndr,1)", {}, undef));
+is("talloc_check_name(ndr, \"struct ndr_push\")", ParseExpr("talloc_check_name(ndr,\"struct ndr_push\")", {}, undef));
+is("((rr_type) == NBT_QTYPE_NETBIOS) && talloc_check_name(ndr, \"struct ndr_push\")", ParseExpr("((rr_type)==NBT_QTYPE_NETBIOS)&&talloc_check_name(ndr,\"struct ndr_push\")", {}, undef));
+is("(rdata).data.length", ParseExpr("(rdata).data.length", {}, undef));
+is("((rdata).data.length == 2)", ParseExpr("((rdata).data.length==2)", {}, undef));
+is("((rdata).data.length == 2)?0:rr_type", ParseExpr("((rdata).data.length==2)?0:rr_type", {}, undef));
+is("((((rr_type) == NBT_QTYPE_NETBIOS) && talloc_check_name(ndr, \"struct ndr_push\") && ((rdata).data.length == 2))?0:rr_type)", ParseExpr("((((rr_type)==NBT_QTYPE_NETBIOS)&&talloc_check_name(ndr,\"struct ndr_push\")&&((rdata).data.length==2))?0:rr_type)", {}, undef));

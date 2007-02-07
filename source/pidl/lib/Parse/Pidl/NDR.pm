@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -902,7 +902,6 @@ sub ValidElement($)
 		}
 	}
 
-
 	if (has_property($e, "subcontext") and has_property($e, "represent_as")) {
 		fatal($e, el_name($e) . " : subcontext() and represent_as() can not be used on the same element");
 	}
@@ -917,6 +916,10 @@ sub ValidElement($)
 
 	if (has_property($e, "represent_as") and has_property($e, "value")) {
 		fatal($e, el_name($e) . " : represent_as() and value() can not be used on the same element");
+	}
+
+	if (has_property($e, "subcontext")) {
+		warning($e, "subcontext() is deprecated. Use represent_as() or transmit_as() instead");
 	}
 
 	if (defined (has_property($e, "subcontext_size")) and not defined(has_property($e, "subcontext"))) {

@@ -304,6 +304,51 @@ sub ParseArrayPushHeader($$$$$)
 	return $length;
 }
 
+sub check_fully_dereferenced($$)
+{
+	my ($element, $env) = @_;
+
+	return sub ($) {
+		my $origvar = shift;
+		my $check = 0;
+
+		# Figure out the number of pointers in $ptr
+		my $expandedvar = $origvar;
+		$expandedvar =~ s/^(\**)//;
+		my $ptr = $1;
+
+		my $var = undef;
+		foreach (keys %$env) {
+			if ($env->{$_} eq $expandedvar) {
+				$var = $_;
+				last;
+			}
+		}
+		
+		return($origvar) unless (defined($var));
+		my $e;
+		foreach (@{$element->{PARENT}->{ELEMENTS}}) {
+			if ($_->{NAME} eq $var) {
+				$e = $_;
+				last;
+			}
+		}
+
+		$e or die("Environment doesn't match siblings");
+
+		# See if pointer at pointer level $level
+		# needs to be checked.
+		my $nump = 0;
+		foreach (@{$e->{LEVELS}}) {
+			if ($_->{TYPE} eq "POINTER") {
+				$nump = $_->{POINTER_INDEX}+1;
+			}
+		}
+		warning($element->{ORIGINAL}, "Got pointer for `$e->{NAME}', expected fully derefenced variable") if ($nump > length($ptr));
+		return ($origvar);
+	}
+}	
+
 sub check_null_pointer($$$$)
 {
 	my ($element, $env, $print_fn, $return) = @_;
@@ -373,8 +418,8 @@ sub ParseArrayPullHeader($$$$$)
 	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
 		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
 	} else {
-		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e, 
-		    check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL}, 
+		    check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
@@ -397,7 +442,7 @@ sub ParseArrayPullHeader($$$$$)
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		defer "if ($var_name) {";
 		defer_indent;
-		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e, check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 		defer "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 		defer_deindent;
 		defer "}";
@@ -406,7 +451,7 @@ sub ParseArrayPullHeader($$$$$)
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		defer "if ($var_name) {";
 		defer_indent;
-		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e, check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 		defer_deindent;
 		defer "}"
@@ -432,7 +477,7 @@ sub compression_clen($$$)
 	my ($e, $l, $env) = @_;
 	my ($alg, $clen, $dlen) = split(/ /, $l->{COMPRESSION});
 
-	return ParseExpr($clen, $env, $e);
+	return ParseExpr($clen, $env, $e->{ORIGINAL});
 }
 
 sub compression_dlen($$$)
@@ -440,7 +485,7 @@ sub compression_dlen($$$)
 	my ($e,$l,$env) = @_;
 	my ($alg, $clen, $dlen) = split(/ /, $l->{COMPRESSION});
 
-	return ParseExpr($dlen, $env, $e);
+	return ParseExpr($dlen, $env, $e->{ORIGINAL});
 }
 
 sub ParseCompressionPushStart($$$$)
@@ -501,7 +546,7 @@ sub ParseSubcontextPushStart($$$$)
 {
 	my ($e,$l,$ndr,$env) = @_;
 	my $subndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e->{ORIGINAL});
 
 	pidl "{";
 	indent;
@@ -519,7 +564,7 @@ sub ParseSubcontextPushEnd($$$$)
 {
 	my ($e,$l,$ndr,$env) = @_;
 	my $subndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e->{ORIGINAL});
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPushEnd($e, $l, $subndr, $env);
@@ -534,7 +579,7 @@ sub ParseSubcontextPullStart($$$$)
 {
 	my ($e,$l,$ndr,$env) = @_;
 	my $subndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e->{ORIGINAL});
 
 	pidl "{";
 	indent;
@@ -552,7 +597,7 @@ sub ParseSubcontextPullEnd($$$$)
 {
 	my ($e,$l,$ndr,$env) = @_;
 	my $subndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE}, $env, $e->{ORIGINAL});
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPullEnd($e, $l, $subndr, $env);
@@ -617,7 +662,7 @@ sub ParseElementPushLevel
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and not has_fast_array($e,$l) and
 		not is_charset_array($e, $l)) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
@@ -668,7 +713,7 @@ sub ParseElementPush($$$$$$)
 	start_flags($e);
 
 	if (my $value = has_property($e, "value")) {
-		$var_name = ParseExpr($value, $env, $e);
+		$var_name = ParseExpr($value, $env, $e->{ORIGINAL});
 	}
 
 	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
@@ -719,7 +764,7 @@ sub ParseElementPrint($$$)
 	$var_name = append_prefix($e, $var_name);
 
 	if (my $value = has_property($e, "value")) {
-		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env, $e) . ":$var_name";
+		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env, $e->{ORIGINAL}) . ":$var_name";
 	}
 
 	foreach my $l (@{$e->{LEVELS}}) {
@@ -741,8 +786,8 @@ sub ParseElementPrint($$$)
 			if ($l->{IS_ZERO_TERMINATED}) {
 				$length = "ndr_string_length($var_name, sizeof(*$var_name))";
 			} else {
-				$length = ParseExprExt($l->{LENGTH_IS}, $env, $e, 
-							check_null_pointer($e, $env, \&pidl, "return;"));
+				$length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
+							check_null_pointer($e, $env, \&pidl, "return;"), check_fully_dereferenced($e, $env));
 			}
 
 			if (is_charset_array($e,$l)) {
@@ -772,8 +817,8 @@ sub ParseElementPrint($$$)
 			}
 			pidl "ndr_print_$l->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name);";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e, 
-						check_null_pointer($e, $env, \&pidl, "return;"));
+			my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
+						check_null_pointer($e, $env, \&pidl, "return;"), check_fully_dereferenced($e, $env));
 			pidl "ndr_print_set_switch_value(ndr, " . get_pointer_to($var_name) . ", $switch_var);";
 		} 
 	}
@@ -803,8 +848,8 @@ sub ParseElementPrint($$$)
 sub ParseSwitchPull($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e, 
-		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
+		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
 	pidl "NDR_CHECK(ndr_pull_set_switch_value($ndr, $var_name, $switch_var));";
@@ -815,8 +860,8 @@ sub ParseSwitchPull($$$$$$)
 sub ParseSwitchPush($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e, 
-		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
+		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
 	pidl "NDR_CHECK(ndr_push_set_switch_value($ndr, $var_name, $switch_var));";
@@ -1012,7 +1057,7 @@ sub ParseElementPullLevel
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and 
 			not has_fast_array($e,$l) and not is_charset_array($e, $l)) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
 
@@ -1181,7 +1226,7 @@ sub ParseStructPush($$)
 					$size = "ndr_string_length(r->$e->{NAME}, sizeof(*r->$e->{NAME}))";
 				}
 			} else {
-				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e);
+				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
 			}
 
 			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
@@ -2038,7 +2083,7 @@ sub AllocateArrayLevel($$$$$)
 {
 	my ($e,$l,$ndr,$env,$size) = @_;
 
-	my $var = ParseExpr($e->{NAME}, $env, $e);
+	my $var = ParseExpr($e->{NAME}, $env, $e->{ORIGINAL});
 
 	my $pl = GetPrevLevel($e, $l);
 	if (defined($pl) and 
@@ -2118,7 +2163,8 @@ sub ParseFunctionPull($)
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
-			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e, check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"));
+			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), 
+				check_fully_dereferenced($e, $env));
 			
 			pidl "NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";
 
