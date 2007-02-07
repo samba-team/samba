@@ -85,14 +85,19 @@ APPLICATION_ADDITIONAL_RESOURCE = \
 APPLICATION_RESOURCE_FILTER = true
 APPLICATION_COMPLETE_SOURCE = false
 
+# Typically, we just need a "build"
+.PHONY: default
+
+default:	build
+
 
 ################################################################################
 # INCLUDE CORE
 ################################################################################
 
 ifneq ($(QOOXDOO_PATH),PLEASE_DEFINE_QOOXDOO_PATH)
-	include $(QOOXDOO_PATH)/frontend/framework/tool/make/targets.mk
-	include $(QOOXDOO_PATH)/frontend/framework/tool/make/application.mk
+include $(QOOXDOO_PATH)/frontend/framework/tool/make/targets.mk
+include $(QOOXDOO_PATH)/frontend/framework/tool/make/application.mk
 endif
 
 error:
