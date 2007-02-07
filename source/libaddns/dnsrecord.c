@@ -121,19 +121,19 @@ DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, in_addr_t ip,
+			      uint32 ttl, struct in_addr ip,
 			      struct dns_rrec **prec)
 {
 	uint8 *data;
 	DNS_ERROR err;
 
-	if (!(data = (uint8 *)TALLOC_MEMDUP(mem_ctx, (const void *)&ip,
-					    sizeof(ip)))) {
+	if (!(data = (uint8 *)TALLOC_MEMDUP(mem_ctx, (const void *)&ip.s_addr,
+					    sizeof(ip.s_addr)))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
 
 	err = dns_create_rrec(mem_ctx, host, QTYPE_A, DNS_CLASS_IN, ttl,
-			      sizeof(ip), data, prec);
+			      sizeof(ip.s_addr), data, prec);
 
 	if (!ERR_DNS_IS_OK(err)) {
 		TALLOC_FREE(data);
@@ -144,7 +144,7 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
-					const in_addr_t *ip,
+					const struct in_addr *ip,
 					struct dns_rrec **prec)
 {
 	if (ip != NULL) {
@@ -338,7 +338,7 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 
 	for (i=0; i<num_ips; i++) {
 		err = dns_create_name_in_use_record(req, host,
-						    &iplist[i].s_addr, &rec);
+						    &iplist[i], &rec);
 		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		err = dns_add_rrec(req, rec, &req->num_preqs, &req->preqs);
@@ -395,7 +395,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	 */
 
 	for ( i=0; i<num_addrs; i++ ) {		
-		err = dns_create_a_record(req, hostname, 3600, ip_addrs[i].s_addr, &rec);
+		err = dns_create_a_record(req, hostname, 3600, ip_addrs[i], &rec);
 		if (!ERR_DNS_IS_OK(err)) 
 			goto error;
 

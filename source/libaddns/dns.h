@@ -405,13 +405,16 @@ DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
-					const in_addr_t *ip,
+					const struct in_addr *ip,
 					struct dns_rrec **prec);
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
 				   uint16 type, uint16 r_class,
 				   struct dns_rrec **prec);
+DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
+					    const char *name, uint32 type,
+					    struct dns_rrec **prec);
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, in_addr_t ip,
+			      uint32 ttl, struct in_addr ip,
 			      struct dns_rrec **prec);
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 				     struct dns_tkey_record **ptkey);
