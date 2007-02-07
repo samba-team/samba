@@ -101,12 +101,12 @@ sub ParseExpr($$$)
 			  return($varlist->{$x}) if (defined($varlist->{$x})); 
 			  return $x;
 		  },
-		undef);
+		undef, undef);
 }
 
-sub ParseExprExt($$$$)
+sub ParseExprExt($$$$$)
 {
-	my($expr, $varlist, $e, $deref) = @_;
+	my($expr, $varlist, $e, $deref, $use) = @_;
 
 	die("Undefined value in ParseExpr") if not defined($expr);
 
@@ -118,7 +118,7 @@ sub ParseExprExt($$$$)
 			  return($varlist->{$x}) if (defined($varlist->{$x})); 
 			  return $x;
 		  },
-		$deref);
+		$deref, $use);
 }
 
 1;

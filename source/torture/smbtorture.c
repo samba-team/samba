@@ -583,10 +583,8 @@ int main(int argc,char *argv[])
 
 	if (strcmp(target, "samba3") == 0) {
 		lp_set_cmdline("torture:samba3", "true");
-		lp_set_cmdline("torture:knownfail", "samba3-knownfail");
 	} else if (strcmp(target, "samba4") == 0) {
 		lp_set_cmdline("torture:samba4", "true");
-		lp_set_cmdline("torture:knownfail", "samba4-knownfail");
 	}
 
 	if (max_runtime) {
@@ -662,8 +660,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	torture = torture_context_init(talloc_autofree_context(), 
-				lp_parm_string(-1, "torture", "knownfail"), ui_ops);
+	torture = torture_context_init(talloc_autofree_context(), ui_ops);
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");

@@ -4,7 +4,7 @@
 # package to parse IDL files and generate code for
 # rpc functions in Samba
 # Copyright tridge@samba.org 2000-2003
-# Copyright jelmer@samba.org 2005
+# Copyright jelmer@samba.org 2005-2007
 # released under the GNU GPL
 
 =pod
@@ -318,6 +318,9 @@ complex structures.
 Specifies that a size of I<length>
 bytes should be read, followed by a blob of that size, 
 which will be parsed as NDR.
+
+subcontext() is deprecated now, and should not be used in new code. 
+Instead, use represent_as() or transmit_as().
 
 =item flag
 
