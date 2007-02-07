@@ -449,15 +449,14 @@ NTSTATUS smb_raw_nttrans_recv(struct smbcli_request *req,
 	SMBCLI_CHECK_WCT(req, 18 + parms->out.setup_count);
 
 	if (parms->out.setup_count > 0) {
-		int i;
-		parms->out.setup = talloc_array(mem_ctx, uint16_t, parms->out.setup_count);
+		parms->out.setup = talloc_array(mem_ctx, uint8_t, 
+						parms->out.setup_count*2);
 		if (!parms->out.setup) {
 			req->status = NT_STATUS_NO_MEMORY;
 			return smbcli_request_destroy(req);
 		}
-		for (i=0;i<parms->out.setup_count;i++) {
-			parms->out.setup[i] = SVAL(req->in.vwv, VWV(18+i));
-		}
+		memcpy(parms->out.setup, VWV(18) + (uint8_t *)req->out.vwv,
+		       sizeof(uint16_t) * parms->out.setup_count);
 	}
 	
 	while (recvd_data < total_data || 

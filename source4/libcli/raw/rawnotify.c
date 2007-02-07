@@ -28,7 +28,7 @@ change notify (async send)
 struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union smb_notify *parms)
 {
 	struct smb_nttrans nt;
-	uint16_t setup[4];
+	uint8_t setup[8];
 
 	if (parms->nttrans.level != RAW_NOTIFY_NTTRANS) {
 		return NULL;
