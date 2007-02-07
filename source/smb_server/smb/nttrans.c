@@ -47,7 +47,7 @@ static NTSTATUS nttrans_setup_reply(struct nttrans_op *op,
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero_array(op, uint16_t, setup_count);
+		trans->out.setup = talloc_zero_array(op, uint8_t, setup_count*2);
 		NT_STATUS_HAVE_NO_MEMORY(trans->out.setup);
 	}
 	trans->out.params = data_blob_talloc(op, NULL, param_size);
@@ -499,7 +499,6 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 		uint16_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 		struct smbsrv_request *this_req;
-		int i;
 
 		max_bytes = req_max_data(req) - (align1 + align2);
 
@@ -539,10 +538,8 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 		SIVAL(this_req->out.vwv, 31, PTR_DIFF(data, trans->out.data.data));
 
 		SCVAL(this_req->out.vwv, 35, trans->out.setup_count);
-		for (i=0;i<trans->out.setup_count;i++) {
-			SSVAL(this_req->out.vwv, VWV(18+i), trans->out.setup[i]);
-		}
-
+		memcpy((char *)(this_req->out.vwv) + VWV(18), trans->out.setup,
+		       sizeof(uint16_t) * trans->out.setup_count);
 		memset(this_req->out.data, 0, align1);
 		if (this_param != 0) {
 			memcpy(this_req->out.data + align1, params, this_param);
@@ -611,12 +608,11 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	}
 
 	/* parse out the setup words */
-	trans->in.setup = talloc_array(req, uint16_t, trans->in.setup_count);
+	trans->in.setup = talloc_array(req, uint8_t, trans->in.setup_count*2);
 	if (!trans->in.setup) {
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
-
 	memcpy(trans->in.setup, (char *)(req->in.vwv) + VWV(19),
 	       sizeof(uint16_t) * trans->in.setup_count);
 

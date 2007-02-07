@@ -2115,14 +2115,14 @@ struct smb_nttrans {
 		uint32_t max_data;
 		uint32_t setup_count;
 		uint16_t function;
-		uint16_t *setup;
+		uint8_t  *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} in;
 
 	struct {
-		uint8_t  setup_count;
-		uint16_t *setup;
+		uint8_t  setup_count; /* in units of 16 bit words */
+		uint8_t  *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
 	} out;
