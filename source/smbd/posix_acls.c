@@ -658,6 +658,7 @@ static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_AC
 	}
 	return 0;
 }
+
 /****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
@@ -666,6 +667,27 @@ static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SI
 {
 	uid_to_sid( powner_sid, psbuf->st_uid );
 	gid_to_sid( pgroup_sid, psbuf->st_gid );
+}
+
+/****************************************************************************
+ Is the identity in two ACEs equal ? Check both SID and uid/gid.
+****************************************************************************/
+
+static BOOL identity_in_ace_equal(canon_ace *ace1, canon_ace *ace2)
+{
+	if (sid_equal(&ace1->trustee, &ace2->trustee)) {
+		return True;
+	}
+	if (ace1->owner_type == ace2->owner_type) {
+		if (ace1->owner_type == UID_ACE &&
+				ace1->unix_ug.uid == ace2->unix_ug.uid) {
+			return True;
+		} else if (ace1->owner_type == GID_ACE &&
+				ace1->unix_ug.gid == ace2->unix_ug.gid) {
+			return True;
+		}
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -695,7 +717,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 			curr_ace_next = curr_ace->next; /* Save the link in case of delete. */
 
-			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+			if (identity_in_ace_equal(curr_ace, curr_ace_outer) &&
 				(curr_ace->attr == curr_ace_outer->attr)) {
 
 				if( DEBUGLVL( 10 )) {
@@ -735,7 +757,7 @@ static void merge_aces( canon_ace **pp_list_head )
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+			if (identity_in_ace_equal(curr_ace, curr_ace_outer) &&
 				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
