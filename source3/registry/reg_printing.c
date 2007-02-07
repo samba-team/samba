@@ -555,7 +555,7 @@ struct {
 	{ "UntilTime",	 	REG_IDX_UNTILTIME },
 	{ "Name", 		REG_IDX_NAME },
 	{ "Location", 		REG_IDX_LOCATION },
-	{ "Descrioption", 	REG_IDX_DESCRIPTION },
+	{ "Description", 	REG_IDX_DESCRIPTION },
 	{ "Parameters", 	REG_IDX_PARAMETERS },
 	{ "Port", 		REG_IDX_PORT },
 	{ "Share Name", 	REG_IDX_SHARENAME },
