@@ -117,7 +117,7 @@ _PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_
 
 	tcase->setup = torture_rpc_setup;
 	tcase->teardown = torture_rpc_teardown;
-	tcase->data = (void *)&table;
+	tcase->data = discard_const(table);
 
 	return tcase;
 }
