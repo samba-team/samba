@@ -39,7 +39,7 @@
     by the header. This removes the need for extra journal files as
     used by some other databases
 
-  - dymacially allocated the transaction recover record, re-using it
+  - dynamically allocated the transaction recover record, re-using it
     for subsequent transactions. If a larger record is needed then
     tdb_free() the old record to place it on the normal tdb freelist
     before allocating the new record
