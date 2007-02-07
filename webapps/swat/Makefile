@@ -76,7 +76,8 @@ APPLICATION_LINEBREAKS_SOURCE = true
 APPLICATION_OPTIMIZE_STRINGS = false
 APPLICATION_OPTIMIZE_VARIABLES = false
 APPLICATION_ADDITIONAL_CLASS_PATH = \
-  --class-path $(APIVIEWER_PATH)/source/class
+  --class-path $(APIVIEWER_PATH)/source/class \
+  --class-uri $(APIVIEWER_PATH)/source/class
 APPLICATION_ADDITIONAL_RESOURCE = \
   --resource-input $(APIVIEWER_PATH)/source/resource \
   --resource-output $(APPLICATION_BUILD_PATH)/resource/apiviewer \
