@@ -63,8 +63,9 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 	tdbw = tdb_wrap_open(tmp_ctx, "test.tdb", 
 			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	if (!tdbw) {
+		unlink("test.tdb");
+		talloc_free(tmp_ctx);
 		torture_fail(torture, "Failed to open test.tdb");
-		goto failed;
 	}
 
 	torture_comment(torture, "Adding %d SID records\n", torture_entries);
@@ -171,8 +172,9 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 	ldb = ldb_wrap_connect(tmp_ctx, "tdb://test.ldb", 
 				NULL, NULL, LDB_FLG_NOSYNC, NULL);
 	if (!ldb) {
+		unlink("./test.ldb");
+		talloc_free(tmp_ctx);
 		torture_fail(torture, "Failed to open test.ldb");
-		goto failed;
 	}
 
 	/* add an index */
@@ -220,8 +222,9 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
+		unlink("./test.ldb");
+		talloc_free(tmp_ctx);
 		torture_fail(torture, "memory leak in ldb search");
-		goto failed;
 	}
 
 	torture_comment(torture, "ldb speed %.2f ops/sec\n", count/timeval_elapsed(&tv));

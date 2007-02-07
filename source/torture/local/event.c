@@ -99,9 +99,8 @@ static bool test_event_context(struct torture_context *test,
 	t = timeval_current();
 	while (!finished) {
 		if (event_loop_once(ev_ctx) == -1) {
-			torture_fail(test, "Failed event loop\n");
 			talloc_free(ev_ctx);
-			return False;
+			torture_fail(test, "Failed event loop\n");
 		}
 	}
 
