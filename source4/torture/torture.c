@@ -42,7 +42,6 @@ bool torture_register_suite(struct torture_suite *suite)
 }
 
 struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
-											 const char *known_failures_file, 
 											 const struct torture_ui_ops *ui_ops)
 {
 	struct torture_context *torture = talloc_zero(mem_ctx, 
