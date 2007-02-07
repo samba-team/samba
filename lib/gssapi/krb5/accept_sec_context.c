@@ -187,6 +187,7 @@ gsskrb5_accept_delegated_token
 
 out:
     if (ccache) {
+	/* Don't destroy the default cred cache */
 	if (delegated_cred_handle == NULL)
 	    krb5_cc_close(context, ccache);
 	else
