@@ -2868,7 +2868,8 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
  Store the FILE_UNIX_BASIC info.
 ****************************************************************************/
 
-static char *store_file_unix_basic(char *pdata,
+static char *store_file_unix_basic(connection_struct *conn,
+				char *pdata,
 				files_struct *fsp,
 				SMB_STRUCT_STAT *psbuf)
 {
@@ -2878,7 +2879,7 @@ static char *store_file_unix_basic(char *pdata,
 	SOFF_T(pdata,0,get_file_size(*psbuf));             /* File size 64 Bit */
 	pdata += 8;
 
-	SOFF_T(pdata,0,get_allocation_size(fsp->conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
+	SOFF_T(pdata,0,get_allocation_size(conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
 	pdata += 8;
 
 	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Creation Time 64 Bit */
@@ -3524,7 +3525,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_FILE_UNIX_BASIC:
 
-			pdata = store_file_unix_basic(pdata, fsp, &sbuf);
+			pdata = store_file_unix_basic(conn, pdata, fsp, &sbuf);
 			data_size = PTR_DIFF(pdata,(*ppdata));
 
 			{
@@ -4932,7 +4933,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
 		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
 		SSVAL(pdata,6,0); /* Padding. */
-		store_file_unix_basic(pdata + 8, fsp, psbuf);
+		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
 	} else {
 		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
 		SSVAL(pdata,6,0); /* Padding. */
@@ -5098,7 +5099,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
 		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
 		SSVAL(pdata,6,0); /* padding. */
-		store_file_unix_basic(pdata + 8, fsp, psbuf);
+		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
 	} else {
 		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
 		SSVAL(pdata,6,0); /* padding. */
