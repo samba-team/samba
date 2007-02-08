@@ -2173,6 +2173,9 @@ void set_remote_arch(enum remote_arch_types type)
 	case RA_WIN2K3:
 		fstrcpy(remote_arch, "Win2K3");
 		break;
+	case RA_VISTA:
+		fstrcpy(remote_arch, "Vista");
+		break;
 	case RA_SAMBA:
 		fstrcpy(remote_arch,"Samba");
 		break;
