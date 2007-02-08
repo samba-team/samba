@@ -64,16 +64,23 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 	struct in_addr dc_ip;	
 
 	if (ad_idmap_ads != NULL) {
+
+		time_t expire;
+		time_t now = time(NULL);
+
 		ads = ad_idmap_ads;
 
-		/* check for a valid structure */
+		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
 
-		DEBUG(7, ("Current tickets expire at %d, time is now %d\n",
-			  (uint32) ads->auth.expire, (uint32) time(NULL)));
-		if ( ads->config.realm && (ads->auth.expire > time(NULL))) {
+		/* check for a valid structure */
+		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time is now %d)\n",
+			  (uint32)expire-(uint32)now, (uint32) expire, (uint32) now));
+
+		if ( ads->config.realm && (expire > time(NULL))) {
 			return ads;
 		} else {
 			/* we own this ADS_STRUCT so make sure it goes away */
+			DEBUG(7,("Deleting expired krb5 credential cache\n"));
 			ads->is_mine = True;
 			ads_destroy( &ads );
 			ads_kdestroy(WINBIND_CCACHE_NAME);

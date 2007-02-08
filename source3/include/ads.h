@@ -42,7 +42,8 @@ typedef struct {
 		char *kdc_server;
 		unsigned flags;
 		int time_offset;
-		time_t expire;
+		time_t tgt_expire;
+		time_t tgs_expire;
 		time_t renewable;
 	} auth;
 

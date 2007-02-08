@@ -147,7 +147,8 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	int rc;
 
-	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0);
+	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0,
+				     &ads->auth.tgs_expire);
 
 	if (rc) {
 		return ADS_ERROR_KRB5(rc);
@@ -218,7 +219,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #endif
 		free(OIDs[i]);
 	}
-	DEBUG(3,("ads_sasl_spnego_bind: got server principal name =%s\n", principal));
+	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", principal));
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
@@ -228,6 +229,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 			SAFE_FREE(principal);
 			return status;
 		}
+
+		DEBUG(10,("ads_sasl_spnego_krb5_bind failed with: %s, "
+			  "calling kinit\n", ads_errstr(status)));
 
 		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
 

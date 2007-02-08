@@ -44,17 +44,23 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	DEBUG(10,("ads_cached_connection\n"));
 
 	if (domain->private_data) {
-		ads = (ADS_STRUCT *)domain->private_data;
+
+		time_t expire;
+		time_t now = time(NULL);
 
 		/* check for a valid structure */
+		ads = (ADS_STRUCT *)domain->private_data;
 
-		DEBUG(7, ("Current tickets expire at %d, time is now %d\n",
-			  (uint32) ads->auth.expire, (uint32) time(NULL)));
-		if ( ads->config.realm && (ads->auth.expire > time(NULL))) {
+		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
+
+		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time is now %d)\n",
+			  (uint32)expire-(uint32)now, (uint32) expire, (uint32) now));
+
+		if ( ads->config.realm && (expire > now)) {
 			return ads;
-		}
-		else {
+		} else {
 			/* we own this ADS_STRUCT so make sure it goes away */
+			DEBUG(7,("Deleting expired krb5 credential cache\n"));
 			ads->is_mine = True;
 			ads_destroy( &ads );
 			ads_kdestroy("MEMORY:winbind_ccache");
@@ -998,11 +1004,15 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	
 	if (!ADS_ERR_OK(rc)) {
 	
-		/* its a dead connection ; don't destroy it 
-		   through since ads_USN() has already done 
-		   that indirectly */
-		   
-		domain->private_data = NULL;
+		/* its a dead connection, destroy it */
+
+		if (domain->private_data) {
+			ads = (ADS_STRUCT *)domain->private_data;
+			ads->is_mine = True;
+			ads_destroy(&ads);
+			ads_kdestroy("MEMORY:winbind_ccache");
+			domain->private_data = NULL;
+		}
 	}
 	return ads_ntstatus(rc);
 }

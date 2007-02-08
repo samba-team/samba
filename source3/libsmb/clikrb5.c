@@ -551,7 +551,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				       const krb5_flags ap_req_options,
 				       const char *principal,
 				       krb5_ccache ccache, 
-				       krb5_data *outbuf)
+				       krb5_data *outbuf, 
+				       time_t *expire_time)
 {
 	krb5_error_code 	  retval;
 	krb5_principal	  server;
@@ -584,6 +585,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 
 	while (!creds_ready && (i < maxtries)) {
+
 		if ((retval = krb5_get_credentials(context, 0, ccache, 
 						   &creds, &credsp))) {
 			DEBUG(1,("ads_krb5_mk_req: krb5_get_credentials failed for %s (%s)\n",
@@ -599,8 +601,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			krb5_set_real_time(context, t + time_offset + 1, 0);
 		}
 
-		if (!ads_cleanup_expired_creds(context, ccache, credsp))
+		if (!ads_cleanup_expired_creds(context, ccache, credsp)) {
 			creds_ready = True;
+		}
 
 		i++;
 	}
@@ -609,6 +612,10 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		  principal, krb5_cc_get_type(context, ccache), krb5_cc_get_name(context, ccache),
 		  http_timestring((unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
+
+	if (expire_time) {
+		*expire_time = (time_t)credsp->times.endtime;
+	}
 
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
@@ -634,7 +641,9 @@ cleanup_princ:
 */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, 
-			uint32 extra_ap_opts, const char *ccname)
+			uint32 extra_ap_opts, const char *ccname, 
+			time_t *tgs_expire)
+
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -678,7 +687,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 					&auth_context, 
 					AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
 					principal,
-					ccdef, &packet))) {
+					ccdef, &packet,
+					tgs_expire))) {
 		goto failed;
 	}
 
@@ -1409,7 +1419,7 @@ done:
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
-			const char *ccname) 
+			const char *ccname, time_t *tgs_expire) 
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;
