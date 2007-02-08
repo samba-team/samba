@@ -42,9 +42,6 @@ struct DsSyncBindInfo {
 	struct drsuapi_DsBindInfo28 our_bind_info28;
 	struct drsuapi_DsBindInfo28 peer_bind_info28;
 	struct policy_handle bind_handle;
-	DATA_BLOB dce_key;
-	DATA_BLOB gen_key;
-	struct samr_Password nthash;
 };
 
 struct DsSyncLDAPInfo {
@@ -181,11 +178,10 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	NTSTATUS status;
 	BOOL ret = True;
 	struct event_context *event = NULL;
-	const struct samr_Password *nthash;
 
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
-					   &dcerpc_table_drsuapi,
+				       &dcerpc_table_drsuapi,
 				       credentials, event);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -222,20 +218,6 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
 		}
-	}
-
-	dcerpc_fetch_session_key(b->pipe, &b->dce_key);
-	gensec_session_key(b->pipe->conn->security_state.generic_state, &b->gen_key);
-	nthash = cli_credentials_get_nt_hash(credentials, NULL);
-	if (nthash) b->nthash = *nthash;
-
-	if (lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
-		DEBUG(0,("DCERPC session key:\n"));
-		dump_data(0, b->dce_key.data, b->dce_key.length);
-		DEBUG(0,("GENSEC session key:\n"));
-		dump_data(0, b->gen_key.data, b->gen_key.length);
-		DEBUG(0,("CREDENTIALS nthash:\n"));
-		dump_data(0, b->nthash.hash, sizeof(b->nthash.hash));
 	}
 
 	return ret;
@@ -318,263 +300,81 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
-static void choose_confounder_v01(TALLOC_CTX *mem_ctx,
-				  struct DsSyncBindInfo *b,
-				  struct drsuapi_DsReplicaObjectIdentifier *id,
-				  uint32_t rid,
-				  const DATA_BLOB *buffer,
-				  uint32_t confounder_len,
-				  DATA_BLOB *confounder,
-				  DATA_BLOB *enc_buffer)
-{
-	*confounder = data_blob_talloc(mem_ctx, buffer->data, confounder_len);
-	*enc_buffer = data_blob_talloc(mem_ctx, buffer->data+confounder_len, buffer->length - confounder_len);
-}
-
-static void choose_confounder_v02(TALLOC_CTX *mem_ctx,
-				  struct DsSyncBindInfo *b,
-				  struct drsuapi_DsReplicaObjectIdentifier *id,
-				  uint32_t rid,
-				  const DATA_BLOB *buffer,
-				  uint32_t confounder_len,
-				  DATA_BLOB *confounder,
-				  DATA_BLOB *enc_buffer)
-{
-	*confounder = data_blob_talloc(mem_ctx, buffer->data + buffer->length - confounder_len, confounder_len);
-	*enc_buffer = data_blob_talloc(mem_ctx, buffer->data, buffer->length - confounder_len);
-}
-
-static const struct {
-	uint32_t len;
-	void (*fn)(TALLOC_CTX *mem_ctx,
-		   struct DsSyncBindInfo *b,
-		   struct drsuapi_DsReplicaObjectIdentifier *id,
-		   uint32_t rid,
-		   const DATA_BLOB *buffer,
-		   uint32_t confounder_len,
-		   DATA_BLOB *confounder,
-		   DATA_BLOB *enc_buffer);
-} choose_confounder_fns[] = {
-	{
-		.len	= 4,
-		.fn	= choose_confounder_v01,
-	},
-	{
-		.len	= 8,
-		.fn	= choose_confounder_v01,
-	},
-	{
-		.len	= 12,
-		.fn	= choose_confounder_v01,
-	},
-	{
-		.len	= 16,
-		.fn	= choose_confounder_v01,
-	},
-	{
-		.len	= 4,
-		.fn	= choose_confounder_v02,
-	},
-	{
-		.len	= 8,
-		.fn	= choose_confounder_v02,
-	},
-	{
-		.len	= 12,
-		.fn	= choose_confounder_v02,
-	},
-	{
-		.len	= 16,
-		.fn	= choose_confounder_v02,
-	},
-};
-
-static void choose_session_key_v01(TALLOC_CTX *mem_ctx,
-				   struct DsSyncBindInfo *b,
-				   struct drsuapi_DsReplicaObjectIdentifier *id,
-				   uint32_t rid,
-				   const DATA_BLOB *buffer,
-				   DATA_BLOB *session_key)
-{
-	*session_key = data_blob_talloc(mem_ctx, b->dce_key.data, b->dce_key.length);
-}
-
-static void choose_session_key_v02(TALLOC_CTX *mem_ctx,
-				   struct DsSyncBindInfo *b,
-				   struct drsuapi_DsReplicaObjectIdentifier *id,
-				   uint32_t rid,
-				   const DATA_BLOB *buffer,
-				   DATA_BLOB *session_key)
-{
-	*session_key = data_blob_talloc(mem_ctx, b->gen_key.data, b->gen_key.length);
-}
-
-static const struct {
-	void (*fn)(TALLOC_CTX *mem_ctx,
-		   struct DsSyncBindInfo *b,
-		   struct drsuapi_DsReplicaObjectIdentifier *id,
-		   uint32_t rid,
-		   const DATA_BLOB *buffer,
-		   DATA_BLOB *session_key);
-} choose_session_key_fns[] = {
-	{
-		.fn	= choose_session_key_v01,
-	},
-	{
-		.fn	= choose_session_key_v02,
-	},
-};
-
-static void create_enc_key_v01(TALLOC_CTX *mem_ctx,
-			       struct DsSyncBindInfo *b,
-			       struct drsuapi_DsReplicaObjectIdentifier *id,
-			       uint32_t rid,
-			       const DATA_BLOB *buffer,
-			       const DATA_BLOB *confounder,
-			       const DATA_BLOB *session_key,
-			       DATA_BLOB *_enc_key)
-{
-	struct MD5Context md5;
-	DATA_BLOB enc_key;
-
-	enc_key = data_blob_talloc(mem_ctx, NULL, 16);
-	MD5Init(&md5);
-	MD5Update(&md5, confounder->data, confounder->length);
-	MD5Update(&md5, session_key->data, session_key->length);
-	MD5Final(enc_key.data, &md5);
-
-	*_enc_key = enc_key;
-}
-
-static void create_enc_key_v02(TALLOC_CTX *mem_ctx,
-			       struct DsSyncBindInfo *b,
-			       struct drsuapi_DsReplicaObjectIdentifier *id,
-			       uint32_t rid,
-			       const DATA_BLOB *buffer,
-			       const DATA_BLOB *confounder,
-			       const DATA_BLOB *session_key,
-			       DATA_BLOB *_enc_key)
-{
-	struct MD5Context md5;
-	DATA_BLOB enc_key;
-
-	enc_key = data_blob_talloc(mem_ctx, NULL, 16);
-	MD5Init(&md5);
-	MD5Update(&md5, session_key->data, session_key->length);
-	MD5Update(&md5, confounder->data, confounder->length);
-	MD5Final(enc_key.data, &md5);
-
-	*_enc_key = enc_key;
-}
-
-static const struct {
-	void (*fn)(TALLOC_CTX *mem_ctx,
-		   struct DsSyncBindInfo *b,
-		   struct drsuapi_DsReplicaObjectIdentifier *id,
-		   uint32_t rid,
-		   const DATA_BLOB *buffer,
-		   const DATA_BLOB *confounder,
-		   const DATA_BLOB *session_key,
-		   DATA_BLOB *_enc_key);
-} create_enc_key_fns[] = {
-	{
-		.fn	= create_enc_key_v01,
-	},
-	{
-		.fn	= create_enc_key_v02,
-	},
-};
-
-static void do_decryption_v01(TALLOC_CTX *mem_ctx,
-			      struct DsSyncBindInfo *b,
-			      struct drsuapi_DsReplicaObjectIdentifier *id,
-			      uint32_t rid,
-			      const DATA_BLOB *buffer,
-			      const DATA_BLOB *enc_key,
-			      const DATA_BLOB *enc_buffer,
-			      DATA_BLOB *_plain_buffer)
-{
-	DATA_BLOB plain_buffer;
-
-	plain_buffer = data_blob_talloc(mem_ctx, enc_buffer->data, enc_buffer->length);
-
-	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, enc_key);
-
-	*_plain_buffer = plain_buffer;
-}
-
-static const struct {
-	void (*fn)(TALLOC_CTX *mem_ctx,
-		   struct DsSyncBindInfo *b,
-		   struct drsuapi_DsReplicaObjectIdentifier *id,
-		   uint32_t rid,
-		   const DATA_BLOB *buffer,
-		   const DATA_BLOB *enc_key,
-		   const DATA_BLOB *enc_buffer,
-		   DATA_BLOB *plain_buffer);
-} do_decryption_fns[] = {
-	{
-		.fn	= do_decryption_v01,
-	},
-};
-
 static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
-			      struct DsSyncBindInfo *b,
+			      const DATA_BLOB *gensec_skey,
 			      struct drsuapi_DsReplicaObjectIdentifier *id,
 			      uint32_t rid,
 			      const DATA_BLOB *buffer)
 {
-	uint32_t conf_i;
-	uint32_t skey_i;
-	uint32_t ekey_i;
-	uint32_t crypt_i;
+	DATA_BLOB confounder;
+	DATA_BLOB enc_buffer;
 
+	struct MD5Context md5;
+	uint8_t _enc_key[16];
+	DATA_BLOB enc_key;
 
-	for (conf_i = 0; conf_i < ARRAY_SIZE(choose_confounder_fns); conf_i++) {
-		DATA_BLOB confounder;
-		DATA_BLOB enc_buffer;
+	DATA_BLOB plain_buffer;
 
-		choose_confounder_fns[conf_i].fn(mem_ctx, b, id, rid, buffer,
-						 choose_confounder_fns[conf_i].len,
-						 &confounder, &enc_buffer);
+	/*
+	 * the combination "c[3] s[1] e[1] d[0]..."
+	 * was successful!!!!!!!!!!!!!!!!!!!!!!!!!!
+	 */
 
-		for (skey_i = 0; skey_i < ARRAY_SIZE(choose_session_key_fns); skey_i++) {
-			DATA_BLOB session_key;
-
-			choose_session_key_fns[skey_i].fn(mem_ctx, b, id, rid, buffer,
-							  &session_key);
-
-			for (ekey_i = 0; ekey_i < ARRAY_SIZE(create_enc_key_fns); ekey_i++) {
-				DATA_BLOB enc_key;
-
-				create_enc_key_fns[ekey_i].fn(mem_ctx, b, id, rid, buffer,
-							      &confounder, &session_key,
-							      &enc_key);
-
-				for (crypt_i = 0; crypt_i < ARRAY_SIZE(do_decryption_fns); crypt_i++) {
-					DATA_BLOB plain_buffer;
-
-					do_decryption_fns[crypt_i].fn(mem_ctx, b, id, rid, buffer,
-								      &enc_key, &enc_buffer,
-								      &plain_buffer);
-
-					DEBUGADD(0,("c[%u] s[%u] e[%u] d[%u] len[%u]:\n",
-						 conf_i, skey_i, ekey_i, crypt_i,
-						 plain_buffer.length));
-					dump_data(0, confounder.data, confounder.length);
-					dump_data(0, session_key.data, session_key.length);
-					dump_data(0, enc_key.data, enc_key.length);
-					dump_data(0, enc_buffer.data, enc_buffer.length);
-					dump_data(0, plain_buffer.data, plain_buffer.length);
-				}
-			}
-		}
+	/* the first 16 bytes at the beginning are the confounder */
+	if (buffer->length <= 16) {
+		return data_blob_const(NULL, 0);
 	}
+	confounder = data_blob_const(buffer->data, 16);
+	enc_buffer = data_blob_const(buffer->data + 16, buffer->length - 16);
 
-	return data_blob(NULL, 0);
+	/* 
+	 * build the encryption key md5 over the session key followed
+	 * by the confounder
+	 * 
+	 * here the gensec session key is used and
+	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
+	 */
+	enc_key = data_blob_const(_enc_key, sizeof(_enc_key));
+	MD5Init(&md5);
+	MD5Update(&md5, gensec_skey->data, gensec_skey->length);
+	MD5Update(&md5, confounder.data, confounder.length);
+	MD5Final(enc_key.data, &md5);
+
+	/*
+	 * copy the encrypted buffer part and 
+	 * decrypt it using the created encryption key using arcfour
+	 */
+	plain_buffer = data_blob_talloc(mem_ctx, enc_buffer.data, enc_buffer.length);
+	if (!plain_buffer.data) {
+		return data_blob_const(NULL, 0);
+	}
+	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, &enc_key);
+
+	/*
+	 * some attributes seem to be in a usable form after this decryption
+	 * (supplementalCredentials, priorValue, currentValue, trustAuthOutgoing,
+	 *  trustAuthIncoming, initialAuthOutgoing, initialAuthIncoming)
+	 * At least supplementalCredentials contains plaintext
+	 * like "Primary:Kerberos" (in unicode form)
+	 *
+	 * some attributes seem to have some additional encryption
+	 * dBCSPwd, unicodePwd, ntPwdHistory, lmPwdHistory
+	 *
+	 * it's assumed it's something like this sam_rid_crypt()
+	 * function, as the value is constant, so it doesn't depend
+	 * on sessionkeys. But for the unicodePwd attribute which contains
+	 * the nthash be have 20 bytes at this point, but the ntnash only
+	 * is 16 bytes long, so using the current sam_rid_crypt() function
+	 * doesn't work.
+	 *
+	 * sam_rid_crypt(rid, crypt_nt_hash.hash, plain_nt_hash.hash, 0);
+	 */
+
+	return plain_buffer;
 }
 
 static void test_analyse_objects(struct DsSyncTest *ctx,
+				 const DATA_BLOB *gensec_skey,
 				 struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
 	if (!lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
@@ -648,7 +448,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			enc_data = attr->value_ctr.values[0].blob;
 			ZERO_STRUCT(plain_data);
 
-			plain_data = decrypt_blob(ctx, &ctx->new_dc.drsuapi,
+			plain_data = decrypt_blob(ctx, gensec_skey,
 						  cur->object.identifier, rid,
 						  enc_data);
 			if (!dn_printed) {
@@ -657,9 +457,10 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			}
 			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
 				    name, (long)enc_data->length, (long)plain_data.length));
-			dump_data(0, enc_data->data, enc_data->length);
 			if (plain_data.length) {
 				dump_data(0, plain_data.data, plain_data.length);
+			} else {
+				dump_data(0, enc_data->data, enc_data->length);
 			}
 		}
 	}
@@ -679,6 +480,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	int32_t out_level = 0;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
+	DATA_BLOB gensec_skey;
 	struct {
 		int32_t level;
 	} array[] = {
@@ -700,6 +502,13 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	}
 
 	highest_usn = lp_parm_int(-1, "dssync", "highest_usn", 0);
+
+	status = gensec_session_key(ctx->new_dc.drsuapi.pipe->conn->security_state.generic_state,
+				    &gensec_skey);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to get gensec session key: %s\n", nt_errstr(status));
+		return False;
+	}
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		printf("testing DsGetNCChanges level %d\n",
@@ -821,7 +630,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 					(long long)ctr1->new_highwatermark.tmp_highest_usn,
 					(long long)ctr1->new_highwatermark.highest_usn));
 
-				test_analyse_objects(ctx, ctr1->first_object);
+				test_analyse_objects(ctx, &gensec_skey, ctr1->first_object);
 
 				if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
 					r.in.req.req5.highwatermark = ctr1->new_highwatermark;
@@ -844,7 +653,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 					(long long)ctr6->new_highwatermark.tmp_highest_usn,
 					(long long)ctr6->new_highwatermark.highest_usn));
 
-				test_analyse_objects(ctx, ctr6->first_object);
+				test_analyse_objects(ctx, &gensec_skey, ctr6->first_object);
 
 				if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
 					r.in.req.req8.highwatermark = ctr6->new_highwatermark;
