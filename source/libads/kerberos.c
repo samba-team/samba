@@ -617,7 +617,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		
 	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n\n"
 				"[realms]\n\t%s = {\n"
-				"\t\t%s\t}\n",
+				"\t%s\t}\n",
 				realm_upper, realm_upper, kdc_ip_string);
 
 	if (!file_contents) {
