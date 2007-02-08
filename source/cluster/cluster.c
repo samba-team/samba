@@ -33,11 +33,11 @@ void cluster_set_ops(struct cluster_ops *new_ops)
 }
 
 /*
-  not a nice abstraction :(
+  an ugly way of getting at the backend handle (eg. ctdb context) via the cluster API
 */
-void *cluster_private(void)
+void *cluster_backend_handle(void)
 {
-	return ops->private;
+	return ops->backend_handle(ops);
 }
 
 /* by default use the local ops */
@@ -45,8 +45,6 @@ static void cluster_init(void)
 {
 	if (ops == NULL) cluster_local_init();
 }
-
-
 
 /*
   server a server_id for the local node
@@ -75,4 +73,25 @@ struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, i
 {
 	cluster_init();
 	return ops->cluster_tdb_tmp_open(ops, mem_ctx, dbname, flags);
+}
+
+
+/*
+  register a callback function for a messaging endpoint
+*/
+NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
+			      void (*handler)(struct messaging_context *, 
+					      struct server_id, uint32_t, DATA_BLOB))
+{
+	cluster_init();
+	return ops->message_init(ops, msg, server, handler);
+}
+
+/*
+  send a message to another node in the cluster
+*/
+NTSTATUS cluster_message_send(struct server_id server, uint32_t msg_type, DATA_BLOB *data)
+{
+	cluster_init();
+	return ops->message_send(ops, server, msg_type, data);
 }
