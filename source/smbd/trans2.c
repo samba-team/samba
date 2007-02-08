@@ -4168,6 +4168,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				char *inbuf,
+				char *outbuf,
 				const char *pdata,
 				int total_data,
 				pstring fname)
@@ -4184,6 +4185,8 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	RESOLVE_DFSPATH_STATUS(oldname, conn, inbuf, outbuf);
 
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
@@ -4228,12 +4231,12 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
+	RESOLVE_DFSPATH_STATUS(newname, conn, inbuf, outbuf);
+
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-
-	RESOLVE_DFSPATH_STATUS(newname, conn, inbuf, outbuf);
 
 	/* Create the base directory. */
 	pstrcpy(base_name, fname);
@@ -5237,6 +5240,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
+
+		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
@@ -5423,6 +5429,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 			status = smb_set_file_unix_hlink(conn,
 						inbuf,
+						outbuf,
 						pdata,
 						total_data,
 						fname);
