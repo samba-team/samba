@@ -865,8 +865,12 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
 
 	/* create the referral depeding on version */
 	DEBUG(10,("max_referral_level :%d\n",max_referral_level));
-	if(max_referral_level<2 || max_referral_level>3) {
+
+	if (max_referral_level < 2) {
 		max_referral_level = 2;
+	}
+	if (max_referral_level > 3) {
+		max_referral_level = 3;
 	}
 
 	switch(max_referral_level) {
