@@ -8,3 +8,5 @@ ctdb_test
 config.cache
 configure
 configure
+config.h
+config.h.in
