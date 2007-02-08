@@ -318,6 +318,15 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
+static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
+			      struct DsSyncBindInfo *b,
+			      struct drsuapi_DsReplicaObjectIdentifier *id,
+			      uint32_t rid,
+			      const DATA_BLOB *buffer)
+{
+	return data_blob(NULL,0);
+}
+
 static void test_analyse_objects(struct DsSyncTest *ctx,
 				 struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
@@ -327,16 +336,23 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 
 	for (; cur; cur = cur->next_object) {
 		const char *dn;
+		struct dom_sid *sid = NULL;
+		uint32_t rid = 0;
 		BOOL dn_printed = False;
 		uint32_t i;
 
 		if (!cur->object.identifier) continue;
 
 		dn = cur->object.identifier->dn;
+		if (cur->object.identifier->sid.num_auths > 0) {
+			sid = &cur->object.identifier->sid;
+			rid = sid->sub_auths[sid->num_auths - 1];
+		}
 
 		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 			const char *name = NULL;
-			DATA_BLOB *data = NULL;
+			DATA_BLOB *enc_data = NULL;
+			DATA_BLOB plain_data;
 			struct drsuapi_DsReplicaAttribute *attr;
 			attr = &cur->object.attribute_ctr.attributes[i];
 
@@ -382,15 +398,22 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 
 			if (!attr->value_ctr.values[0].blob) continue;
 
-			data = attr->value_ctr.values[0].blob;
+			enc_data = attr->value_ctr.values[0].blob;
+			ZERO_STRUCT(plain_data);
 
+			plain_data = decrypt_blob(ctx, &ctx->new_dc.drsuapi,
+						  cur->object.identifier, rid,
+						  enc_data);
 			if (!dn_printed) {
 				DEBUG(0,("DN: %s\n", dn));
 				dn_printed = True;
 			}
-			DEBUGADD(0,("ATTR: %s data_blob.length=%lu\n",
-				    name, (long)data->length));
-			dump_data(0,data->data, data->length);
+			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
+				    name, (long)enc_data->length, (long)plain_data.length));
+			dump_data(0, enc_data->data, enc_data->length);
+			if (plain_data.length) {
+				dump_data(0, plain_data.data, plain_data.length);
+			}
 		}
 	}
 }
