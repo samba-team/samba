@@ -42,7 +42,7 @@ objdir="@objdir@"
 
 R=TEST.H5L.SE
 
-port=8888
+port=@port@
 
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
