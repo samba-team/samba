@@ -339,14 +339,15 @@ smbc_parse_path(SMBCCTX *context,
 	    goto decoding;
 
 	if (*p == '/') {
+		int wl = strlen(context->workgroup);
 
-		strncpy(server, context->workgroup, 
-			((strlen(context->workgroup) < 16)
-                         ? strlen(context->workgroup)
-                         : 16));
-                server[server_len - 1] = '\0';
+		if (wl > 16) {
+			wl = 16;
+		}
+
+		strncpy(server, context->workgroup, wl);
+                server[wl] = '\0';
 		return 0;
-		
 	}
 
 	/*
