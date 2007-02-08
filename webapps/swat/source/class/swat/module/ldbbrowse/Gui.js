@@ -137,7 +137,11 @@ qx.Proto.displayData = function(module, rpcRequest)
   case "search":
     this._displaySearchResults(module, rpcRequest);
     break;
-    
+
+  case "add":
+    this._displayCommitResults(module, rpcRequest, "add");
+    break;
+ 
   case "tree_open":
     this._displayTreeOpenResults(module, rpcRequest);
     break;
@@ -380,6 +384,15 @@ qx.Proto._buildPageBrowse = function(module, page)
 
   // Add the button to the hlayout
   hlayout.add(this._modb);
+
+  hlayout.add(new qx.ui.basic.HorizontalSpacer());
+
+  // Add the "Delete" button
+  this._delb = new qx.ui.form.Button("Delete");
+  this._delb.addEventListener("execute", this._confirmDeleteRecord, this);
+
+  // Add the button to the hlayout
+  hlayout.add(this._delb);
   
   // Add the hlayout to the vlayout.
   vlayout.add(hlayout);
@@ -440,7 +453,8 @@ qx.Proto._switchToNormal = function()
   this._ldbmod.setDisplay(false);
   this._newb.setEnabled(true);
   this._modb.setEnabled(true);
-}
+  this._delb.setEnabled(true);
+};
 
 qx.Proto._switchToNewrecord = function()
 {
@@ -448,8 +462,9 @@ qx.Proto._switchToNewrecord = function()
   this._ldbmod.setDisplay(true);
   this._newb.setEnabled(false);
   this._modb.setEnabled(false);
+  this._delb.setEnabled(false);
   this._ldbmod.initNew(this._switchToNormal, this);
-}
+};
 
 qx.Proto._switchToModrecord = function()
 {
@@ -457,8 +472,83 @@ qx.Proto._switchToModrecord = function()
   this._ldbmod.setDisplay(true);
   this._newb.setEnabled(false);
   this._modb.setEnabled(false);
+  this._delb.setEnabled(false);
   this._ldbmod.initMod(this._table.getTableModel(), this._switchToNormal, this);
-}
+};
+
+qx.Proto._confirmDeleteRecord = function()
+{
+
+  var main = qx.ui.core.ClientDocument.getInstance();
+
+  if (this._dmw == null) {
+
+    this._dmw = new qx.ui.window.Window("New Attribute Name");
+    this._dmw.set({
+      width: 200,
+      height: 100,
+      modal: true,
+      centered: true,
+      restrictToPageOnOpen: true,
+      showMinimize: false,
+      showMaximize: false,
+      showClose: false,
+      resizeable: false
+    });
+
+    var warningLabel = new qx.ui.basic.Label("Are you sure you want to delete <record name here> ?");
+    this._dmw.add(warningLabel);
+
+    var cancelButton = new qx.ui.form.Button("Cancel");
+    cancelButton.addEventListener("execute", function() {
+      this._dmw.close();
+    }, this);
+    cancelButton.set({ top: 45, left: 32 }); 
+    this._dmw.add(cancelButton);
+
+    this._dmw.addEventListener("appear",function() { 
+      cancelButton.focus();
+    }, this._dmw);
+
+    main.add(this._dmw);
+    var okButton = new qx.ui.form.Button("OK");
+    okButton.addEventListener("execute", function() {
+      //TODO: call search.addEventListener("execute", fsm.eventListener, fsm);
+      
+      this._dmw.close();
+    }, this);
+    okButton.set({ top: 45, right: 32 });
+    this._dmw.add(okButton);
+
+    main.add(this._dmw);
+  }
+
+  this._dmw.open();
+};
+
+qx.Proto._displayCommitResults = function(module, rpcRequest, type)
+{
+  var result = rpcRequest.getUserData("result");
+
+  switch (type) {
+  case "add":
+    alert("Object successfully added!");
+    break;
+
+  case "modify":
+    alert("Object successfully modified!");
+    break;
+
+  case "delete":
+    alert("Object Successfully deleted!");
+    break;
+  }
+
+  this._switchToNormal();
+
+  //TODO: reload tree after add or delete
+
+};
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
 {

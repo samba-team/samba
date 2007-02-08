@@ -158,6 +158,8 @@ qx.Proto.initMod = function(tablemodel, callback, obj) {
     var row = tablemodel.getRowData(i);
     this._addNewAttribute(row[0], row[1]);
   }
+
+  this._modBaseTableModel = tablemodel;
 }
 
 qx.Proto._setExitCallback = function(vFunction, vObject) {
@@ -215,11 +217,6 @@ qx.Proto._okOp = function() {
 
 qx.Proto._addNewAttribute = function(name, value, before) {
 
-  // do not add a new attribute if the name is null
-  if (name == null || name == "") {
-    return;
-  }
-
   var hlayout = new qx.ui.layout.HorizontalBoxLayout();
   hlayout.set({ width: "auto", height: "auto", spacing: 10 });
 
@@ -229,11 +226,11 @@ qx.Proto._addNewAttribute = function(name, value, before) {
     this._addNewAttribute(name, null, hlayout);
   }, this);
 
-  var aLabel = new qx.ui.basic.Label(name);
-  aLabel.setWidth(150);
+  var aNameTextField = new qx.ui.form.TextField(name);
+  aNameTextField.setWidth(150);
 
-  var aTextField = new qx.ui.form.TextField(value);
-  aTextField.setWidth(250);
+  var aValTextField = new qx.ui.form.TextField(value);
+  aValTextField.setWidth(250);
 
   var rButton = new qx.ui.form.Button("-");
   rButton.set({ left: 5, width: 15, height: 15});
@@ -241,9 +238,9 @@ qx.Proto._addNewAttribute = function(name, value, before) {
     hlayout.setParent(null);
   }, this);
 
-  hlayout.add(aButton, aLabel, aTextField, rButton);
-  hlayout.setUserData("attrName", name);
-  hlayout.setUserData("attrVal", aTextField);
+  hlayout.add(aButton, aNameTextField, aValTextField, rButton);
+  hlayout.setUserData("attrName", aNameTextField);
+  hlayout.setUserData("attrVal", aValTextField);
 
   if (before) {
     this._attrArea.addAfter(hlayout, before);
@@ -253,64 +250,13 @@ qx.Proto._addNewAttribute = function(name, value, before) {
   }
 }
 
-qx.Proto._createNewAttribute = function() {
-
-  var main = qx.ui.core.ClientDocument.getInstance();
-
-  if (this._amw == null) {
-
-    this._amw = new qx.ui.window.Window("New Attribute Name");
-    this._amw.set({
-      width: 200,
-      height: 70,
-      modal: true,
-      centered: true,
-      restrictToPageOnOpen: true,
-      showMinimize: false,
-      showMaximize: false,
-      showClose: false,
-      resizeable: false
-    });
-
-    attrName = new qx.ui.form.TextField();
-    var enterCommand = new qx.client.Command("Enter");
-    enterCommand.addEventListener("execute", function() { 
-      this._addNewAttribute(attrName.getComputedValue());
-      this._amw.close();
-    }, this);
-    attrName.set({ top: 15, left: 10, command: enterCommand });
-    this._amw.add(attrName);
-
-    this._amw.setUserData("textfield", attrName);
- 
-    var okButton = new qx.ui.form.Button("OK");
-    okButton.addEventListener("execute", function() {
-      this._addNewAttribute(attrName.getValue());
-      this._amw.close();
-    }, this);
-    okButton.set({ top: 12, left: 155 });
-    this._amw.add(okButton);
-
-    this._amw.addEventListener("appear",function() {
-      attrName.focus();
-    }, this._amw);
-  
-    main.add(this._amw);
-  }
-  else {
-    this._amw.getUserData("textfield").setValue("");
-  }
-
-  this._amw.open();
-}
-
 qx.Proto._createAttributesArea = function() {
 
   this._attrArea = new qx.ui.layout.VerticalBoxLayout();
 
   this._attrAddButton = new qx.ui.form.Button("+");
   this._attrAddButton.set({ width: 15, height: 15});
-  this._attrAddButton.addEventListener("execute", this._createNewAttribute, this);
+  this._attrAddButton.addEventListener("execute", this._addNewAttribute, this);
 
   this._attrArea.add(this._attrAddButton);
 
@@ -334,7 +280,7 @@ qx.Proto.getLdif = function() {
 
   for (var i = 0; i < c.length; i++) {
     if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
-      ldif = ldif + c[i].getUserData("attrName") + ": " + c[i].getUserData("attrVal").getComputedValue() + "\n";
+      ldif = ldif + c[i].getUserData("attrName").getComputedValue() + ": " + c[i].getUserData("attrVal").getComputedValue() + "\n";
     }
   }
   // terminate ldif record

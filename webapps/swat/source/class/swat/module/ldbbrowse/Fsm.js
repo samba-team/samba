@@ -198,7 +198,7 @@ qx.Proto.buildFsm = function(module)
           var request = _this.callRpc(fsm,
                                       "samba.ldb",
                                       ldbmod.getOpType(),
-				      [ ldif ]);
+				      [ dbHandle, ldif ]);
 
           // When we get the result, we'll need to know what type of request
           // we made.
