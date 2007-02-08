@@ -21,3 +21,10 @@
 - mem_ctx in the interface rather than as struct ndr member.
 
 - real typelibs
+
+- fix [in,out] handling and allocation for samba3:
+ - add inout
+ - make NULL to mean "allocate me"
+ - remove NDR_AUTO_REF_ALLOC flag
+
+- automatic test generator based on IDL pointer types
