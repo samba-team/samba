@@ -185,7 +185,7 @@ int ibw_disconnect(struct ibw_conn *conn);
  *
  * Returns 0 on success.
  */
-int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, int n);
+int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, uint32_t len);
 
 /*
  * Send the message in one
@@ -195,7 +195,14 @@ int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, int n);
  *
  * You mustn't use (buf, key) any more for sending.
  */
-int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n);
+int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len);
+
+/*
+ * Call this after ibw_alloc_send_buf
+ * when you won't call ibw_send for (buf, key)
+ * You mustn't use (buf, key) any more.
+ */
+int ibw_cancel_send_buf(struct ibw_conn *conn, void *buf, void *key);
 
 /*
  * Retrieves the last error

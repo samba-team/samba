@@ -12,7 +12,9 @@ typedef bool BOOL;
 #define True 1
 #define False 0
 
-#define DEBUG(lvl, x) printf x
+#define LogLevel 0
+
+#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (printf x)
 
 #define _PUBLIC_
 

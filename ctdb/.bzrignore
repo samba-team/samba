@@ -1,12 +1,10 @@
 config.status
 Makefile
 bin
-common
 config.log
 push.sh
 ctdb_test
 config.cache
-configure
 configure
 config.h
 config.h.in
