@@ -377,6 +377,7 @@ qx.Proto.toggleOpened = function(node)
     // Clear the old selections in the tree
     this.getSelectionModel()._clearSelection();
 
+/*
     // Clear the old selections in the data model
     dm._clearSelections();
 
@@ -385,6 +386,7 @@ qx.Proto.toggleOpened = function(node)
     {
       this.setState(node.nodeId, { bSelected : true });
     }
+*/
   }
 
   // Re-render the row data since formerly visible rows may now be invisible,
