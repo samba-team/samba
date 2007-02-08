@@ -1421,6 +1421,7 @@ char *strdup(char *s);
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002
 #define FLAGS2_SMB_SECURITY_SIGNATURES 0x0004
+#define FLAGS2_UNKNOWN_BIT4            0x0010
 #define FLAGS2_IS_LONG_NAME            0x0040
 #define FLAGS2_EXTENDED_SECURITY       0x0800 
 #define FLAGS2_DFS_PATHNAMES           0x1000
@@ -1484,7 +1485,8 @@ enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PAS
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
-			RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_SAMBA, RA_CIFSFS};
+			RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_VISTA,
+			RA_SAMBA, RA_CIFSFS};
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
