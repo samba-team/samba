@@ -34,8 +34,7 @@
 #define cluster_node_equal(id1, id2) ((id1)->node == (id2)->node)
 
 struct messaging_context;
-typedef void (*cluster_message_fn_t)(struct messaging_context *, 
-				     struct server_id, uint32_t, DATA_BLOB);
+typedef void (*cluster_message_fn_t)(struct messaging_context *, DATA_BLOB);
 
 /* prototypes */
 struct server_id cluster_id(uint32_t id);

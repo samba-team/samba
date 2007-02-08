@@ -80,8 +80,7 @@ struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, i
   register a callback function for a messaging endpoint
 */
 NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
-			      void (*handler)(struct messaging_context *, 
-					      struct server_id, uint32_t, DATA_BLOB))
+			      cluster_message_fn_t handler)
 {
 	cluster_init();
 	return ops->message_init(ops, msg, server, handler);
