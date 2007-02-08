@@ -598,7 +598,8 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 				       &tkt, 
 				       &session_key_krb5, 
 				       0, 
-				       cc);
+				       cc,
+				       NULL);
 	if (krb5_ret) {
 		DEBUG(1,("winbindd_raw_kerberos_login: failed to get ticket for %s: %s\n", 
 			local_service, error_message(krb5_ret)));
