@@ -328,11 +328,13 @@ qx.Proto.getLdif = function() {
   }
 
   var ldif = "# Add operation\n";
-  ldif = ldif + "dn: " + this._rdn + "," + this._basedn + "\n";
+  ldif = ldif + "dn: " + this._rdn.getValue() + "," + this._basedn.getValue() + "\n";
 
-  for (var c in this._attrArea.getChildren()) {
-    if (c instanceof qx.ui.layout.HorizontalBoxLayout) {
-      ldif = ldif + c.getUserData("attrName") + ": " + c.getUserData("attrVal").getValue() + "\n";
+  c = this._attrArea.getChildren();
+
+  for (var i = 0; i < c.length; i++) {
+    if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
+      ldif = ldif + c[i].getUserData("attrName") + ": " + c[i].getUserData("attrVal").getComputedValue() + "\n";
     }
   }
   // terminate ldif record
