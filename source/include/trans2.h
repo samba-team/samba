@@ -394,6 +394,8 @@ Offset Size         Name
 100 - end.
 */
 
+#define SMB_FILE_UNIX_BASIC_SIZE 100
+
 /* UNIX filetype mappings. */
 
 #define UNIX_TYPE_FILE 0
