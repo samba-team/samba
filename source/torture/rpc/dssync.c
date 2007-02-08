@@ -28,6 +28,11 @@
 #include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
+#include "libcli/auth/libcli_auth.h"
+#include "lib/crypto/crypto.h"
+#include "auth/credentials/credentials.h"
+#include "libcli/auth/libcli_auth.h"
+#include "auth/gensec/gensec.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;
@@ -37,6 +42,9 @@ struct DsSyncBindInfo {
 	struct drsuapi_DsBindInfo28 our_bind_info28;
 	struct drsuapi_DsBindInfo28 peer_bind_info28;
 	struct policy_handle bind_handle;
+	DATA_BLOB dce_key;
+	DATA_BLOB gen_key;
+	struct samr_Password nthash;
 };
 
 struct DsSyncLDAPInfo {
@@ -113,6 +121,7 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	ctx->admin.drsuapi.req.out.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 
 	/* ctx->new_dc ...*/
+	ctx->new_dc.credentials			= cmdline_credentials;
 
 	our_bind_info28				= &ctx->new_dc.drsuapi.our_bind_info28;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
@@ -172,6 +181,7 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	NTSTATUS status;
 	BOOL ret = True;
 	struct event_context *event = NULL;
+	const struct samr_Password *nthash;
 
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
@@ -212,6 +222,20 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
 		}
+	}
+
+	dcerpc_fetch_session_key(b->pipe, &b->dce_key);
+	gensec_session_key(b->pipe->conn->security_state.generic_state, &b->gen_key);
+	nthash = cli_credentials_get_nt_hash(credentials, NULL);
+	if (nthash) b->nthash = *nthash;
+
+	if (lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
+		DEBUG(0,("DCERPC session key:\n"));
+		dump_data(0, b->dce_key.data, b->dce_key.length);
+		DEBUG(0,("GENSEC session key:\n"));
+		dump_data(0, b->gen_key.data, b->gen_key.length);
+		DEBUG(0,("CREDENTIALS nthash:\n"));
+		dump_data(0, b->nthash.hash, sizeof(b->nthash.hash));
 	}
 
 	return ret;
@@ -635,7 +659,7 @@ BOOL torture_rpc_dssync(struct torture_context *torture)
 	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
 	ret &= test_LDAPBind(ctx, ctx->admin.credentials, &ctx->admin.ldap);
 	ret &= test_GetInfo(ctx);
-	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->new_dc.drsuapi);
+	ret &= _test_DsBind(ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
 	ret &= test_FetchData(ctx);
 	ret &= test_FetchNT4Data(ctx);
 
