@@ -3921,7 +3921,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
+	DEBUG(10,("smb_set_file_size: file %s : setting new size to %.0f\n",
 		fname, (double)size ));
 
 	if (fsp && fsp->fh->fd != -1) {
@@ -5392,10 +5392,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_SET_FILE_UNIX_BASIC:
 		{
-			if (tran_call == TRANSACT2_SETFILEINFO) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
-			}
-
 			status = smb_set_file_unix_basic(conn,
 							pdata,
 							total_data,
@@ -5460,7 +5456,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_SET_POSIX_LOCK:
 		{
-			if (tran_call == TRANSACT2_SETFILEINFO) {
+			if (tran_call != TRANSACT2_SETFILEINFO) {
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
 			status = smb_set_posix_lock(conn,
