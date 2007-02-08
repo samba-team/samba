@@ -29,19 +29,6 @@
 #include "../include/ctdb_private.h"
 
 /*
-  queue a packet or die
-*/
-static void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_node *node;
-	node = ctdb->nodes[hdr->destnode];
-	if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
-		ctdb_fatal(ctdb, "Unable to queue packet\n");
-	}
-}
-
-
-/*
   local version of ctdb_call
 */
 static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
