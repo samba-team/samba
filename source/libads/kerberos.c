@@ -110,6 +110,10 @@ int kerberos_kinit_password_ext(const char *principal,
 
 	krb5_get_init_creds_opt_set_renew_life(opt, renewable_time);
 	krb5_get_init_creds_opt_set_forwardable(opt, True);
+#if 0
+	/* insane testing */
+	krb5_get_init_creds_opt_set_tkt_life(opt, 60);
+#endif
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
 	if (request_pac) {
@@ -216,7 +220,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	
 	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.expire, NULL, NULL, False, False, ads->auth.renewable);
+			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 

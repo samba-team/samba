@@ -110,10 +110,10 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	}
         SAFE_FREE(bp);
 
-	if (!ADS_ERR_OK(status))
+	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads reopen failed after error %s\n", 
 			 ads_errstr(status)));
-
+	}
 	return status;
 }
 
