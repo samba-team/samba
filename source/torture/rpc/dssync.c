@@ -318,13 +318,260 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
+static void choose_confounder_v01(TALLOC_CTX *mem_ctx,
+				  struct DsSyncBindInfo *b,
+				  struct drsuapi_DsReplicaObjectIdentifier *id,
+				  uint32_t rid,
+				  const DATA_BLOB *buffer,
+				  uint32_t confounder_len,
+				  DATA_BLOB *confounder,
+				  DATA_BLOB *enc_buffer)
+{
+	*confounder = data_blob_talloc(mem_ctx, buffer->data, confounder_len);
+	*enc_buffer = data_blob_talloc(mem_ctx, buffer->data+confounder_len, buffer->length - confounder_len);
+}
+
+static void choose_confounder_v02(TALLOC_CTX *mem_ctx,
+				  struct DsSyncBindInfo *b,
+				  struct drsuapi_DsReplicaObjectIdentifier *id,
+				  uint32_t rid,
+				  const DATA_BLOB *buffer,
+				  uint32_t confounder_len,
+				  DATA_BLOB *confounder,
+				  DATA_BLOB *enc_buffer)
+{
+	*confounder = data_blob_talloc(mem_ctx, buffer->data + buffer->length - confounder_len, confounder_len);
+	*enc_buffer = data_blob_talloc(mem_ctx, buffer->data, buffer->length - confounder_len);
+}
+
+static const struct {
+	uint32_t len;
+	void (*fn)(TALLOC_CTX *mem_ctx,
+		   struct DsSyncBindInfo *b,
+		   struct drsuapi_DsReplicaObjectIdentifier *id,
+		   uint32_t rid,
+		   const DATA_BLOB *buffer,
+		   uint32_t confounder_len,
+		   DATA_BLOB *confounder,
+		   DATA_BLOB *enc_buffer);
+} choose_confounder_fns[] = {
+	{
+		.len	= 4,
+		.fn	= choose_confounder_v01,
+	},
+	{
+		.len	= 8,
+		.fn	= choose_confounder_v01,
+	},
+	{
+		.len	= 12,
+		.fn	= choose_confounder_v01,
+	},
+	{
+		.len	= 16,
+		.fn	= choose_confounder_v01,
+	},
+	{
+		.len	= 4,
+		.fn	= choose_confounder_v02,
+	},
+	{
+		.len	= 8,
+		.fn	= choose_confounder_v02,
+	},
+	{
+		.len	= 12,
+		.fn	= choose_confounder_v02,
+	},
+	{
+		.len	= 16,
+		.fn	= choose_confounder_v02,
+	},
+};
+
+static void choose_session_key_v01(TALLOC_CTX *mem_ctx,
+				   struct DsSyncBindInfo *b,
+				   struct drsuapi_DsReplicaObjectIdentifier *id,
+				   uint32_t rid,
+				   const DATA_BLOB *buffer,
+				   DATA_BLOB *session_key)
+{
+	*session_key = data_blob_talloc(mem_ctx, b->dce_key.data, b->dce_key.length);
+}
+
+static void choose_session_key_v02(TALLOC_CTX *mem_ctx,
+				   struct DsSyncBindInfo *b,
+				   struct drsuapi_DsReplicaObjectIdentifier *id,
+				   uint32_t rid,
+				   const DATA_BLOB *buffer,
+				   DATA_BLOB *session_key)
+{
+	*session_key = data_blob_talloc(mem_ctx, b->gen_key.data, b->gen_key.length);
+}
+
+static const struct {
+	void (*fn)(TALLOC_CTX *mem_ctx,
+		   struct DsSyncBindInfo *b,
+		   struct drsuapi_DsReplicaObjectIdentifier *id,
+		   uint32_t rid,
+		   const DATA_BLOB *buffer,
+		   DATA_BLOB *session_key);
+} choose_session_key_fns[] = {
+	{
+		.fn	= choose_session_key_v01,
+	},
+	{
+		.fn	= choose_session_key_v02,
+	},
+};
+
+static void create_enc_key_v01(TALLOC_CTX *mem_ctx,
+			       struct DsSyncBindInfo *b,
+			       struct drsuapi_DsReplicaObjectIdentifier *id,
+			       uint32_t rid,
+			       const DATA_BLOB *buffer,
+			       const DATA_BLOB *confounder,
+			       const DATA_BLOB *session_key,
+			       DATA_BLOB *_enc_key)
+{
+	struct MD5Context md5;
+	DATA_BLOB enc_key;
+
+	enc_key = data_blob_talloc(mem_ctx, NULL, 16);
+	MD5Init(&md5);
+	MD5Update(&md5, confounder->data, confounder->length);
+	MD5Update(&md5, session_key->data, session_key->length);
+	MD5Final(enc_key.data, &md5);
+
+	*_enc_key = enc_key;
+}
+
+static void create_enc_key_v02(TALLOC_CTX *mem_ctx,
+			       struct DsSyncBindInfo *b,
+			       struct drsuapi_DsReplicaObjectIdentifier *id,
+			       uint32_t rid,
+			       const DATA_BLOB *buffer,
+			       const DATA_BLOB *confounder,
+			       const DATA_BLOB *session_key,
+			       DATA_BLOB *_enc_key)
+{
+	struct MD5Context md5;
+	DATA_BLOB enc_key;
+
+	enc_key = data_blob_talloc(mem_ctx, NULL, 16);
+	MD5Init(&md5);
+	MD5Update(&md5, session_key->data, session_key->length);
+	MD5Update(&md5, confounder->data, confounder->length);
+	MD5Final(enc_key.data, &md5);
+
+	*_enc_key = enc_key;
+}
+
+static const struct {
+	void (*fn)(TALLOC_CTX *mem_ctx,
+		   struct DsSyncBindInfo *b,
+		   struct drsuapi_DsReplicaObjectIdentifier *id,
+		   uint32_t rid,
+		   const DATA_BLOB *buffer,
+		   const DATA_BLOB *confounder,
+		   const DATA_BLOB *session_key,
+		   DATA_BLOB *_enc_key);
+} create_enc_key_fns[] = {
+	{
+		.fn	= create_enc_key_v01,
+	},
+	{
+		.fn	= create_enc_key_v02,
+	},
+};
+
+static void do_decryption_v01(TALLOC_CTX *mem_ctx,
+			      struct DsSyncBindInfo *b,
+			      struct drsuapi_DsReplicaObjectIdentifier *id,
+			      uint32_t rid,
+			      const DATA_BLOB *buffer,
+			      const DATA_BLOB *enc_key,
+			      const DATA_BLOB *enc_buffer,
+			      DATA_BLOB *_plain_buffer)
+{
+	DATA_BLOB plain_buffer;
+
+	plain_buffer = data_blob_talloc(mem_ctx, enc_buffer->data, enc_buffer->length);
+
+	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, enc_buffer);
+
+	*_plain_buffer = plain_buffer;
+}
+
+static const struct {
+	void (*fn)(TALLOC_CTX *mem_ctx,
+		   struct DsSyncBindInfo *b,
+		   struct drsuapi_DsReplicaObjectIdentifier *id,
+		   uint32_t rid,
+		   const DATA_BLOB *buffer,
+		   const DATA_BLOB *enc_key,
+		   const DATA_BLOB *enc_buffer,
+		   DATA_BLOB *plain_buffer);
+} do_decryption_fns[] = {
+	{
+		.fn	= do_decryption_v01,
+	},
+};
+
 static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 			      struct DsSyncBindInfo *b,
 			      struct drsuapi_DsReplicaObjectIdentifier *id,
 			      uint32_t rid,
 			      const DATA_BLOB *buffer)
 {
-	return data_blob(NULL,0);
+	uint32_t conf_i;
+	uint32_t skey_i;
+	uint32_t ekey_i;
+	uint32_t crypt_i;
+
+
+	for (conf_i = 0; conf_i < ARRAY_SIZE(choose_confounder_fns); conf_i++) {
+		DATA_BLOB confounder;
+		DATA_BLOB enc_buffer;
+
+		choose_confounder_fns[conf_i].fn(mem_ctx, b, id, rid, buffer,
+						 choose_confounder_fns[conf_i].len,
+						 &confounder, &enc_buffer);
+
+		for (skey_i = 0; skey_i < ARRAY_SIZE(choose_session_key_fns); skey_i++) {
+			DATA_BLOB session_key;
+
+			choose_session_key_fns[skey_i].fn(mem_ctx, b, id, rid, buffer,
+							  &session_key);
+
+			for (ekey_i = 0; ekey_i < ARRAY_SIZE(create_enc_key_fns); ekey_i++) {
+				DATA_BLOB enc_key;
+
+				create_enc_key_fns[ekey_i].fn(mem_ctx, b, id, rid, buffer,
+							      &confounder, &session_key,
+							      &enc_key);
+
+				for (crypt_i = 0; crypt_i < ARRAY_SIZE(do_decryption_fns); crypt_i++) {
+					DATA_BLOB plain_buffer;
+
+					do_decryption_fns[crypt_i].fn(mem_ctx, b, id, rid, buffer,
+								      &enc_key, &enc_buffer,
+								      &plain_buffer);
+
+					DEBUGADD(0,("c[%u] s[%u] e[%u] d[%u] len[%u]:\n",
+						 conf_i, skey_i, ekey_i, crypt_i,
+						 plain_buffer.length));
+					dump_data(0, confounder.data, confounder.length);
+					dump_data(0, session_key.data, session_key.length);
+					dump_data(0, enc_key.data, enc_key.length);
+					dump_data(0, enc_buffer.data, enc_buffer.length);
+					dump_data(0, plain_buffer.data, plain_buffer.length);
+				}
+			}
+		}
+	}
+
+	return data_blob(NULL, 0);
 }
 
 static void test_analyse_objects(struct DsSyncTest *ctx,
