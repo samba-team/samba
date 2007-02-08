@@ -127,4 +127,14 @@ void ctdb_wait_loop(struct ctdb_context *ctdb);
 /* return vnn of this node */
 uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
 
+/* setup a handler for ctdb messages */
+typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid, 
+				  TDB_DATA data, void *);
+int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
+			     void *private);
+
+/* send a ctdb message */
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+		      uint32_t srvid, uint32_t msg_type, TDB_DATA data);
+
 #endif
