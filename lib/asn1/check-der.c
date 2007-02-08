@@ -65,12 +65,11 @@ test_integer (void)
 	{NULL, 1, "\xff"},
 	{NULL, 2, "\xff\x01"},
 	{NULL, 2, "\x00\xff"},
-	{NULL, 4, "\x80\x00\x00\x00"},
 	{NULL, 4, "\x7f\xff\xff\xff"}
     };
 
     int values[] = {0, 127, 128, 256, -128, -129, -1, -255, 255,
-		    0x80000000, 0x7fffffff};
+		    0x7fffffff};
     int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
