@@ -485,7 +485,9 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 		
 		printf("Dumping AD partition: %s\n", nc.dn);
 		for (y=0; ;y++) {
+			int32_t _level = 0;
 			ZERO_STRUCT(r.out);
+			r.out.level = &_level;
 
 			if (*r.in.level == 5) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
