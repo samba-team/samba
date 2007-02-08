@@ -1,5 +1,9 @@
-2007-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Drop one over INT_MAX test-case.
+	
+2007-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* pkinit.asn1: add id-pkinit-ms-eku
 	
 	* pkinit.asn1: fill in more bits of id-pkinit-ms-san
