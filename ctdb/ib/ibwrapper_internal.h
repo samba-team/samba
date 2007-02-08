@@ -24,21 +24,25 @@
 struct ibw_opts {
 	uint32_t	max_send_wr;
 	uint32_t	max_recv_wr;
-	uint32_t	avg_send_size;
 	uint32_t	recv_bufsize;
 	uint32_t	recv_threshold;
 };
 
 struct ibw_wr {
-	char	*msg; /* initialized in ibw_init_memory once per connection */
+	char	*buf; /* initialized in ibw_init_memory once per connection */
 	int	wr_id; /* position in wr_index list; also used as wr id */
 
-	char	*msg_large; /* allocated specially for "large" message */
+	char	*buf_large; /* allocated specially for "large" message */
 	struct ibv_mr *mr_large;
+	int	ref_cnt; /* reference count for ibw_wc_send to know when to release */
 
 	char	*queued_msg; /* set at ibw_send - can be different than above */
+	int	queued_ref_cnt; /* instead of adding the same to the queue again */
+	uint32_t	queued_rlen; /* last wins when queued_ref_cnt>0; or simple msg size */
 
 	struct ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
+				/* or extra_sent or extra_avail */
+	struct ibw_wr *qnext, *qprev; /* in queue */
 };
 
 struct ibw_ctx_priv {
@@ -81,10 +85,11 @@ struct ibw_conn_priv {
 	struct ibw_wr **wr_index; /* array[0..(qsize-1)] of (ibw_wr *) */
 	int	wr_sent; /* # of send wrs in the CQ */
 
-	struct ibw_wr *queue;
 	struct ibw_wr *extra_sent;
 	struct ibw_wr *extra_avail;
 	int	extra_max; /* max wr_id in the queue */
+
+	struct ibw_wr *queue;
 
 	/* buf_recv is a ring buffer */
 	char *buf_recv; /* max_recv_wr * avg_recv_size */
@@ -93,3 +98,30 @@ struct ibw_conn_priv {
 	struct ibw_part part;
 };
 
+/* remove an element from a list - element doesn't have to be in list. */
+#define DLIST_REMOVE2(list, p, prev, next) \
+do { \
+	if ((p) == (list)) { \
+		(list) = (p)->next; \
+		if (list) (list)->prev = NULL; \
+	} else { \
+		if ((p)->prev) (p)->prev->next = (p)->next; \
+		if ((p)->next) (p)->next->prev = (p)->prev; \
+	} \
+	if ((p) != (list)) (p)->next = (p)->prev = NULL; \
+} while (0)
+
+/* hook into the end of the list - needs a tmp pointer */
+#define DLIST_ADD_END2(list, p, type, prev, next) \
+do { \
+		if (!(list)) { \
+			(list) = (p); \
+			(p)->next = (p)->prev = NULL; \
+		} else { \
+			type tmp; \
+			for (tmp = (list); tmp->next; tmp = tmp->next) ; \
+			tmp->next = (p); \
+			(p)->next = NULL; \
+			(p)->prev = tmp; \
+		} \
+} while (0)

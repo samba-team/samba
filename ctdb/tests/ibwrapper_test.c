@@ -223,7 +223,7 @@ int ibwtest_do_varsize_scenario_conn(struct ibwtest_ctx *tcx, struct ibw_conn *c
 	for(i=0; i<tcx->nmsg; i++)
 	{
 		//size = (uint32_t)((float)(tcx->maxsize) * (rand() / (RAND_MAX + 1.0)));
-		size = (uint32_t)((float)(tcx->maxsize) * ((float)i/(float)tcx->nmsg));
+		size = (uint32_t)((float)(tcx->maxsize) * ((float)(i+1)/(float)tcx->nmsg));
 		if (ibwtest_do_varsize_scenario_conn_size(tcx, conn, size))
 			return -1;
 	}
