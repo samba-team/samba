@@ -65,10 +65,42 @@ static struct tdb_wrap *local_tdb_tmp_open(struct cluster_ops *ops,
 	return w;
 }
 
+/*
+  dummy backend handle function
+*/
+static void *local_backend_handle(struct cluster_ops *ops)
+{
+	return NULL;
+}
+
+/*
+  dummy message init function - not needed as all messages are local
+*/
+static NTSTATUS local_message_init(struct cluster_ops *ops,
+				   struct messaging_context *msg, 
+				   struct server_id server,
+				   cluster_message_fn_t handler)
+{
+	return NT_STATUS_OK;
+}
+
+/*
+  dummy message send
+*/
+static NTSTATUS local_message_send(struct cluster_ops *ops,
+				   struct server_id server, uint32_t msg_type, 
+				   DATA_BLOB *data)
+{
+	return NT_STATUS_INVALID_DEVICE_REQUEST;
+}
+
 static struct cluster_ops cluster_local_ops = {
 	.cluster_id           = local_id,
 	.cluster_id_string    = local_id_string,
 	.cluster_tdb_tmp_open = local_tdb_tmp_open,
+	.backend_handle       = local_backend_handle,
+	.message_init         = local_message_init,
+	.message_send         = local_message_send,
 	.private              = NULL
 };
 

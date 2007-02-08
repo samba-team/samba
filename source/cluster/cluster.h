@@ -28,10 +28,23 @@
 */
 #define cluster_id_equal(id1, id2) ((id1)->id == (id2)->id && (id1)->node == (id2)->node)
 
+/*
+  test for same cluster node
+*/
+#define cluster_node_equal(id1, id2) ((id1)->node == (id2)->node)
+
+struct messaging_context;
+typedef void (*cluster_message_fn_t)(struct messaging_context *, 
+				     struct server_id, uint32_t, DATA_BLOB);
+
 /* prototypes */
 struct server_id cluster_id(uint32_t id);
 const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
 struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, int flags);
-void *cluster_private(void);
+void *cluster_backend_handle(void);
+
+NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
+			      cluster_message_fn_t handler);
+NTSTATUS cluster_message_send(struct server_id server, uint32_t msg_type, DATA_BLOB *data);
 
 #endif

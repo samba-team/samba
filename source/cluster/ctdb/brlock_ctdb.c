@@ -105,7 +105,8 @@ static void show_locks(const char *op, struct lock_struct *locks, int count)
 static struct brl_context *brl_ctdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				    struct messaging_context *messaging_ctx)
 {
-	struct ctdb_context *ctdb = talloc_get_type(cluster_private(), struct ctdb_context);
+	struct ctdb_context *ctdb = talloc_get_type(cluster_backend_handle(), 
+						    struct ctdb_context);
 	struct brl_context *brl;
 
 	brl = talloc(mem_ctx, struct brl_context);
@@ -911,7 +912,8 @@ static const struct brlock_ops brlock_tdb_ops = {
 
 void brl_ctdb_init_ops(void)
 {
-	struct ctdb_context *ctdb = talloc_get_type(cluster_private(), struct ctdb_context);
+	struct ctdb_context *ctdb = talloc_get_type(cluster_backend_handle(), 
+						    struct ctdb_context);
 
 	brl_set_ops(&brlock_tdb_ops);
 
