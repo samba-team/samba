@@ -498,7 +498,7 @@ static void do_decryption_v01(TALLOC_CTX *mem_ctx,
 
 	plain_buffer = data_blob_talloc(mem_ctx, enc_buffer->data, enc_buffer->length);
 
-	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, enc_buffer);
+	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, enc_key);
 
 	*_plain_buffer = plain_buffer;
 }
