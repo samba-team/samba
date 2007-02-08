@@ -39,7 +39,8 @@ struct cluster_state {
 */
 static struct server_id ctdb_id(struct cluster_ops *ops, uint32_t id)
 {
-	struct ctdb_context *ctdb = ops->private;
+	struct cluster_state *state = ops->private;
+	struct ctdb_context *ctdb = state->ctdb;
 	struct server_id server_id;
 	server_id.node = ctdb_get_vnn(ctdb);
 	server_id.id = id;
@@ -81,10 +82,43 @@ static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
 	return w;
 }
 
+/*
+  get at the ctdb handle
+*/
+static void *ctdb_backend_handle(struct cluster_ops *ops)
+{
+	struct cluster_state *state = ops->private;
+	return (void *)state->ctdb;
+}
+
+/*
+  setup a handler for ctdb messages
+*/
+static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
+				  struct messaging_context *msg, 
+				  struct server_id server,
+				  cluster_message_fn_t handler)
+{
+	return NT_STATUS_OK;
+}
+
+/*
+  send a ctdb message to another node
+*/
+static NTSTATUS ctdb_message_send(struct cluster_ops *ops,
+				  struct server_id server, uint32_t msg_type, 
+				  DATA_BLOB *data)
+{
+	return NT_STATUS_INVALID_DEVICE_REQUEST;
+}
+
 static struct cluster_ops cluster_ctdb_ops = {
 	.cluster_id           = ctdb_id,
 	.cluster_id_string    = ctdb_id_string,
 	.cluster_tdb_tmp_open = ctdb_tdb_tmp_open,
+	.backend_handle       = ctdb_backend_handle,
+	.message_init         = ctdb_message_init,
+	.message_send         = ctdb_message_send,
 	.private           = NULL
 };
 
@@ -114,7 +148,7 @@ void cluster_ctdb_init(struct event_context *ev)
 	state->ctdb = ctdb_init(ev);
 	if (state->ctdb == NULL) goto failed;
 
-	cluster_ctdb_ops.private = state->ctdb;
+	cluster_ctdb_ops.private = state;
 
 	ret = ctdb_set_transport(state->ctdb, transport);
 	if (ret == -1) {

@@ -152,6 +152,37 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 	rec->header->length = 0;
 }
 
+/*
+  handler for messages that arrive from other nodes in the cluster
+*/
+static void cluster_message_handler(struct messaging_context *msg, struct server_id from,
+				    uint32_t msg_type, DATA_BLOB packet)
+{
+	struct messaging_rec *rec;
+
+	rec = talloc(msg, struct messaging_rec);
+	if (rec == NULL) {
+		smb_panic("Unable to allocate messaging_rec");
+	}
+
+	talloc_steal(rec, packet.data);
+	rec->msg           = msg;
+	rec->path          = msg->path;
+	rec->header        = (struct messaging_header *)packet.data;
+	rec->packet        = packet;
+
+	if (packet.length != sizeof(*rec->header) + rec->header->length) {
+		DEBUG(0,("messaging: bad message header size %d should be %d\n", 
+			 rec->header->length, (int)(packet.length - sizeof(*rec->header))));
+		talloc_free(rec);
+		return;
+	}
+
+	messaging_dispatch(msg, rec);
+	talloc_free(rec);
+}
+
+
 
 /*
   try to send the message
@@ -375,6 +406,12 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 	NTSTATUS status;
 	size_t dlength = data?data->length:0;
 
+	if (!cluster_node_equal(&msg->server_id, &server)) {
+		/* the destination is on another node - dispatch via
+		   the cluster layer */
+		return cluster_message_send(server, msg_type, data);
+	}
+
 	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -461,6 +498,13 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	msg = talloc_zero(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
+		return NULL;
+	}
+
+	/* setup a handler for messages from other cluster nodes, if appropriate */
+	status = cluster_message_init(msg, server_id, cluster_message_handler);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(msg);
 		return NULL;
 	}
 
