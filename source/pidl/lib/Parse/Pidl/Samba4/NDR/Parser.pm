@@ -10,7 +10,7 @@ package Parse::Pidl::Samba4::NDR::Parser;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(is_charset_array);
-@EXPORT_OK = qw(check_null_pointer);
+@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
@@ -451,7 +451,9 @@ sub ParseArrayPullHeader($$$$$)
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		defer "if ($var_name) {";
 		defer_indent;
-		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
+		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
+			check_null_pointer($e, $env, \&defer, "return NT_STATUS_INVALID_PARAMETER_MIX;"), 
+			check_fully_dereferenced($e, $env));
 		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 		defer_deindent;
 		defer "}"
@@ -689,12 +691,12 @@ sub ParseElementPushLevel
 
 #####################################################################
 # parse scalars in a structure element
-sub ParseElementPush($$$$$$)
+sub ParseElementPush($$$$$)
 {
-	my ($e,$ndr,$var_prefix,$env,$primitives,$deferred) = @_;
+	my ($e,$ndr,$env,$primitives,$deferred) = @_;
 	my $subndr = undef;
 
-	my $var_name = $var_prefix.$e->{NAME};
+	my $var_name = $env->{$e->{NAME}};
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
@@ -1096,11 +1098,11 @@ sub ParseElementPullLevel
 
 #####################################################################
 # parse scalars in a structure element - pull size
-sub ParseElementPull($$$$$$)
+sub ParseElementPull($$$$$)
 {
-	my($e,$ndr,$var_prefix,$env,$primitives,$deferred) = @_;
+	my($e,$ndr,$env,$primitives,$deferred) = @_;
 
-	my $var_name = $var_prefix.$e->{NAME};
+	my $var_name = $env->{$e->{NAME}};
 	my $represent_name;
 	my $transmit_name;
 
@@ -1247,7 +1249,7 @@ sub ParseStructPush($$)
 	}
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPush($e, "ndr", "r->", $env, 1, 0);
+		ParseElementPush($e, "ndr", $env, 1, 0);
 	}	
 
 	deindent;
@@ -1261,7 +1263,7 @@ sub ParseStructPush($$)
 		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));";
 	}
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPush($e, "ndr", "r->", $env, 0, 1);
+		ParseElementPush($e, "ndr", $env, 0, 1);
 	}
 
 	deindent;
@@ -1547,7 +1549,7 @@ sub ParseStructPull($$)
 	}
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPull($e, "ndr", "r->", $env, 1, 0);
+		ParseElementPull($e, "ndr", $env, 1, 0);
 	}	
 
 	add_deferred();
@@ -1562,7 +1564,7 @@ sub ParseStructPull($$)
 		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));";
 	}
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
+		ParseElementPull($e, "ndr", $env, 0, 1);
 	}
 
 	add_deferred();
@@ -1662,7 +1664,7 @@ sub ParseUnionPush($$)
 				pidl "NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));";
 			}
 			DeclareArrayVariables($el);
-			ParseElementPush($el, "ndr", "r->", {}, 1, 0);
+			ParseElementPush($el, "ndr", {$el->{NAME} => "r->$el->{NAME}"}, 1, 0);
 			deindent;
 		}
 		pidl "break;";
@@ -1689,7 +1691,7 @@ sub ParseUnionPush($$)
 		pidl "$el->{CASE}:";
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElementPush($el, "ndr", "r->", {}, 0, 1);
+			ParseElementPush($el, "ndr", {$el->{NAME} => "r->$el->{NAME}"}, 0, 1);
 			deindent;
 		}
 		pidl "break;";
@@ -1810,7 +1812,7 @@ sub ParseUnionPull($$)
 				# and store it based on the toplevel struct/union
 				pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));";
 			}
-			ParseElementPull($el, "ndr", "r->", {}, 1, 0);
+			ParseElementPull($el, "ndr", {$el->{NAME} => "r->$el->{NAME}"}, 1, 0);
 			deindent;
 		}
 		pidl "break; }";
@@ -1837,7 +1839,7 @@ sub ParseUnionPull($$)
 		pidl "$el->{CASE}:";
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElementPull($el, "ndr", "r->", {}, 0, 1);
+			ParseElementPull($el, "ndr", {$el->{NAME} => "r->$el->{NAME}"}, 0, 1);
 			deindent;
 		}
 		pidl "break;";
@@ -1993,7 +1995,7 @@ sub ParseFunctionPrint($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			ParseElementPrint($e, "r->in.$e->{NAME}", $env);
+			ParseElementPrint($e, $env->{$e->{NAME}}, $env);
 		}
 	}
 	pidl "ndr->depth--;";
@@ -2008,7 +2010,7 @@ sub ParseFunctionPrint($)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			ParseElementPrint($e, "r->out.$e->{NAME}", $env);
+			ParseElementPrint($e, $env->{$e->{NAME}}, $env);
 		}
 	}
 	if ($fn->{RETURN_TYPE}) {
@@ -2050,7 +2052,7 @@ sub ParseFunctionPush($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			ParseElementPush($e, "ndr", "r->in.", $env, 1, 1);
+			ParseElementPush($e, "ndr", $env, 1, 1);
 		}
 	}
 
@@ -2063,7 +2065,7 @@ sub ParseFunctionPush($)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			ParseElementPush($e, "ndr", "r->out.", $env, 1, 1);
+			ParseElementPush($e, "ndr", $env, 1, 1);
 		}
 	}
 
@@ -2147,7 +2149,7 @@ sub ParseFunctionPull($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
-		ParseElementPull($e, "ndr", "r->in.", $env, 1, 1);
+		ParseElementPull($e, "ndr", $env, 1, 1);
 	}
 
 	# allocate the "simple" out ref variables. FIXME: Shouldn't this have it's
@@ -2194,7 +2196,7 @@ sub ParseFunctionPull($)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
-		ParseElementPull($e, "ndr", "r->out.", $env, 1, 1);
+		ParseElementPull($e, "ndr", $env, 1, 1);
 	}
 
 	if ($fn->{RETURN_TYPE}) {

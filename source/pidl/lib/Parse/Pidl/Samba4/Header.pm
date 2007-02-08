@@ -9,7 +9,6 @@ package Parse::Pidl::Samba4::Header;
 use strict;
 use Parse::Pidl::Typelist qw(mapType);
 use Parse::Pidl::Util qw(has_property is_constant);
-use Parse::Pidl::NDR qw(GetNextLevel GetPrevLevel);
 use Parse::Pidl::Samba4 qw(is_intree);
 
 use vars qw($VERSION);
@@ -236,15 +235,25 @@ sub HeaderConst($)
     }
 }
 
+sub ElementDirection($)
+{
+	my ($e) = @_;
+
+	return "inout" if (has_property($e, "in") and has_property($e, "out"));
+	return "in" if (has_property($e, "in"));
+	return "out" if (has_property($e, "out"));
+	return "inout";
+}
+
 #####################################################################
 # parse a function
 sub HeaderFunctionInOut($$)
 {
     my($fn,$prop) = @_;
 
-    foreach (@{$fn->{ELEMENTS}}) {
-		HeaderElement($_) if (has_property($_, $prop));
-    }
+	foreach (@{$fn->{ELEMENTS}}) {
+		HeaderElement($_) if (ElementDirection($_) eq $prop);
+	}
 }
 
 #####################################################################
@@ -255,8 +264,8 @@ sub HeaderFunctionInOut_needed($$)
 
     return 1 if ($prop eq "out" && $fn->{RETURN_TYPE} ne "void");
 
-    foreach (@{$fn->{ELEMENTS}}) {
-	    return 1 if (has_property($_, $prop));
+	foreach (@{$fn->{ELEMENTS}}) {
+		return 1 if (ElementDirection($_) eq $prop);
     }
 
     return undef;
@@ -278,19 +287,23 @@ sub HeaderFunction($)
     $tab_depth++;
     my $needed = 0;
 
-    if (HeaderFunctionInOut_needed($fn, "in")) {
+    if (HeaderFunctionInOut_needed($fn, "in") or
+	    HeaderFunctionInOut_needed($fn, "inout")) {
 	    pidl tabs()."struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "in");
+	    HeaderFunctionInOut($fn, "inout");
 	    $tab_depth--;
 	    pidl tabs()."} in;\n\n";
 	    $needed++;
     }
 
-    if (HeaderFunctionInOut_needed($fn, "out")) {
+    if (HeaderFunctionInOut_needed($fn, "out") or
+	    HeaderFunctionInOut_needed($fn, "inout")) {
 	    pidl tabs()."struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "out");
+	    HeaderFunctionInOut($fn, "inout");
 	    if ($fn->{RETURN_TYPE} ne "void") {
 		    pidl tabs().mapType($fn->{RETURN_TYPE}) . " result;\n";
 	    }
@@ -299,7 +312,7 @@ sub HeaderFunction($)
 	    $needed++;
     }
 
-    if (! $needed) {
+    if (!$needed) {
 	    # sigh - some compilers don't like empty structures
 	    pidl tabs()."int _dummy_element;\n";
     }

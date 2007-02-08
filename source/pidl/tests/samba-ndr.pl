@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 16;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer);
+use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -133,3 +133,22 @@ test_warnings("nofile:2: unknown dereferenced expression `r->in.bla'\n",
 	          sub { $fn->("r->in.bla"); });
 
 is($output, "if (r->in.bla == NULL) return;");
+
+# Make sure GenerateFunctionInEnv and GenerateFunctionOutEnv work
+$fn = { ELEMENTS => [ { DIRECTION => ["in"], NAME => "foo" } ] };
+is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionInEnv($fn));
+
+$fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
+is_deeply({ "foo" => "r->out.foo" }, GenerateFunctionOutEnv($fn));
+
+$fn = { ELEMENTS => [ { DIRECTION => ["out", "in"], NAME => "foo" } ] };
+is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionInEnv($fn));
+
+$fn = { ELEMENTS => [ { DIRECTION => ["out", "in"], NAME => "foo" } ] };
+is_deeply({ "foo" => "r->out.foo" }, GenerateFunctionOutEnv($fn));
+
+$fn = { ELEMENTS => [ { DIRECTION => ["in"], NAME => "foo" } ] };
+is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionOutEnv($fn));
+
+$fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
+is_deeply({ }, GenerateFunctionInEnv($fn));
