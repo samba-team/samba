@@ -76,9 +76,9 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 	   structure is not destroyed when the async request reply is
 	   sent, which would cause problems with the other ntvfs
 	   modules above us */
-	talloc_increase_ref_count(req);
+	talloc_reference(msg, req);
 	ntvfs_async_setup(pwait->req, pwait);
-	talloc_free(req);
+	talloc_unlink(msg, req);
 }
 
 
