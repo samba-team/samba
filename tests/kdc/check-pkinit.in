@@ -45,7 +45,7 @@ testfailed="echo test failed; cat messages.log; exit 1"
 
 R=TEST.H5L.SE
 
-port=8888
+port=@port@
 
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"

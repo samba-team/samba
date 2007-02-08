@@ -11,7 +11,7 @@
 
 [realms]
 	TEST.H5L.SE = {
-		kdc = localhost:8888
+		kdc = localhost:@port@
 	}
 
 [kdc]

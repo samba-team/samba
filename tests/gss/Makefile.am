@@ -10,7 +10,10 @@ TESTS = $(SCRIPT_TESTS)
 
 check_SCRIPTS = $(SCRIPT_TESTS)
 
+port = 49188
+
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
+	-e 's,[@]port[@],$(port),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/gss,g'
 
 check-gss: check-gss.in Makefile

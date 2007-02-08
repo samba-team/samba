@@ -47,7 +47,7 @@ R=TEST.H5L.SE
 
 uuspid=
 
-port=8888
+port=@port@
 
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"

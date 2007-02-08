@@ -10,7 +10,10 @@ check_SCRIPTS = $(SCRIPT_TESTS)
 SCRIPT_TESTS = check-kdc check-digest check-pkinit check-uu
 TESTS = $(SCRIPT_TESTS)
 
+port = 49188
+
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
+	-e 's,[@]port[@],$(port),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \
 	-e 's,[@]EGREP[@],$(EGREP),g' 
 
