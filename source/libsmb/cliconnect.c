@@ -554,7 +554,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5, 0);
+	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5, 0, NULL);
 
 	if (rc) {
 		DEBUG(1, ("spnego_gen_negTokenTarg failed: %s\n", error_message(rc)));

@@ -343,7 +343,8 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 */
 int spnego_gen_negTokenTarg(const char *principal, int time_offset, 
 			    DATA_BLOB *targ, 
-			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts)
+			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
+			    time_t *expire_time)
 {
 	int retval;
 	DATA_BLOB tkt, tkt_wrapped;
@@ -351,7 +352,8 @@ int spnego_gen_negTokenTarg(const char *principal, int time_offset,
 
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(principal, time_offset,
-					&tkt, session_key_krb5, extra_ap_opts, NULL);
+					&tkt, session_key_krb5, extra_ap_opts, NULL, 
+					expire_time);
 
 	if (retval)
 		return retval;
