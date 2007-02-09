@@ -1235,7 +1235,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 			int ld_errno;
 
 			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_RESULT_CODE, &ld_errno);
+					LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
 			ldap_get_option(ldap_state->ldap_struct,
 					LDAP_OPT_ERROR_STRING, &ld_error);
@@ -1386,7 +1386,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 			int ld_errno;
 
 			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_RESULT_CODE, &ld_errno);
+					LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
 			ldap_get_option(ldap_state->ldap_struct,
 					LDAP_OPT_ERROR_STRING, &ld_error);
@@ -1429,7 +1429,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 			int ld_errno;
 
 			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_RESULT_CODE, &ld_errno);
+					LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
 			ldap_get_option(ldap_state->ldap_struct,
 					LDAP_OPT_ERROR_STRING, &ld_error);
@@ -1472,7 +1472,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 			int ld_errno;
 
 			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_RESULT_CODE, &ld_errno);
+					LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
 			ldap_get_option(ldap_state->ldap_struct,
 					LDAP_OPT_ERROR_STRING, &ld_error);
@@ -1514,7 +1514,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 			int ld_errno;
 
 			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_RESULT_CODE, &ld_errno);
+					LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
 			ldap_get_option(ldap_state->ldap_struct,
 					LDAP_OPT_ERROR_STRING, &ld_error);
