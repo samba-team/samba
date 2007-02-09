@@ -88,8 +88,7 @@ static NTSTATUS local_message_init(struct cluster_ops *ops,
   dummy message send
 */
 static NTSTATUS local_message_send(struct cluster_ops *ops,
-				   struct server_id server, uint32_t msg_type, 
-				   DATA_BLOB *data)
+				   struct server_id server, DATA_BLOB *data)
 {
 	return NT_STATUS_INVALID_DEVICE_REQUEST;
 }

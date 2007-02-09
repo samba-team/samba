@@ -44,6 +44,6 @@ void *cluster_backend_handle(void);
 
 NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
 			      cluster_message_fn_t handler);
-NTSTATUS cluster_message_send(struct server_id server, uint32_t msg_type, DATA_BLOB *data);
+NTSTATUS cluster_message_send(struct server_id server, DATA_BLOB *data);
 
 #endif

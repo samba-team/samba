@@ -162,6 +162,15 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 }
 
 /*
+  return the number of nodes
+*/
+uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
+{
+	return ctdb->num_nodes;
+}
+
+
+/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
