@@ -54,7 +54,7 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
   send a ctdb message
 */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, uint32_t msg_type, TDB_DATA data)
+		      uint32_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
 	int len;

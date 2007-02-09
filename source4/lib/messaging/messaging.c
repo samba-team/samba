@@ -430,7 +430,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 	if (!cluster_node_equal(&msg->server_id, &server)) {
 		/* the destination is on another node - dispatch via
 		   the cluster layer */
-		status = cluster_message_send(server, msg_type, &rec->packet);
+		status = cluster_message_send(server, &rec->packet);
 		talloc_free(rec);
 		return status;
 	}
