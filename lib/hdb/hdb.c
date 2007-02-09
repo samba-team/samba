@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,11 +78,15 @@ hdb_next_enctype2key(krb5_context context,
     
     for (k = *key ? (*key) + 1 : e->keys.val;
 	 k < e->keys.val + e->keys.len; 
-	 k++)
+	 k++) 
+    {
 	if(k->key.keytype == enctype){
 	    *key = k;
 	    return 0;
 	}
+    }
+    krb5_set_error_string(context, "No next enctype %d for hdb-entry", 
+			  (int)enctype);
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
@@ -161,6 +165,8 @@ hdb_foreach(krb5_context context,
     krb5_error_code ret;
     hdb_entry_ex entry;
     ret = db->hdb_firstkey(context, db, flags, &entry);
+    if (ret == 0)
+	krb5_clear_error_string(context);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
 	hdb_free_entry(context, &entry);
@@ -225,8 +231,11 @@ hdb_init_db(krb5_context context, HDB *db)
     version.length = strlen(version.data) + 1; /* zero terminated */
     ret = (*db->hdb__put)(context, db, 0, tag, version);
     ret2 = db->hdb_unlock(context, db);
-    if (ret)
+    if (ret) {
+	if (ret2)
+	    krb5_clear_error_string(context);
 	return ret;
+    }
     return ret2;
 }
 
