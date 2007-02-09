@@ -2999,11 +2999,15 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	return True;
 }
 
+/*****************************************************************
+ ****************************************************************/
+
 static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, 
 			       struct GUID guid)
 {
 	int i;
 	REGVAL_CTR *ctr=NULL;
+	UNISTR2 unistr_guid;
 
 	/* find the DsSpooler key */
 	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
@@ -3011,8 +3015,18 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 	ctr = info2->data->keys[i].values;
 
 	regval_ctr_delvalue(ctr, "objectGUID");
-	regval_ctr_addvalue(ctr, "objectGUID", REG_BINARY, 
-			    (char *) &guid, sizeof(struct GUID));	
+
+	/* We used to store this as a REG_BINARY but that causes
+	   Vista to whine */
+
+	ZERO_STRUCT( unistr_guid );	
+	init_unistr2( &unistr_guid, smb_uuid_string_static(guid),
+		      UNI_STR_TERMINATE );
+
+	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ, 
+			    (char *)unistr_guid.buffer, 
+			    unistr_guid.uni_max_len*2);
+	
 }
 
 static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
@@ -3269,6 +3283,7 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 	REGISTRY_VALUE *guid_val;
 	WERROR win_rc;
 	int i;
+	BOOL ret = False;
 
 	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
 
@@ -3282,12 +3297,36 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 		return False;
 	}
 
-	/* fetching printer guids really ought to be a separate function.. */
-	if (guid && regval_size(guid_val) == sizeof(struct GUID))
-		memcpy(guid, regval_data_p(guid_val), sizeof(struct GUID));
+	/* fetching printer guids really ought to be a separate function. */
+
+	if ( guid ) {	
+		fstring guid_str;
+		
+		/* We used to store the guid as REG_BINARY, then swapped 
+		   to REG_SZ for Vista compatibility so check for both */
+
+		switch ( regval_type(guid_val) ){
+		case REG_SZ:		
+			rpcstr_pull( guid_str, regval_data_p(guid_val), 
+				     sizeof(guid_str)-1, -1, STR_TERMINATE );
+			ret = smb_string_to_uuid( guid_str, guid );
+			break;			
+		case REG_BINARY:
+			if ( regval_size(guid_val) != sizeof(struct GUID) ) {
+				ret = False;
+				break;
+			}
+			memcpy(guid, regval_data_p(guid_val), sizeof(struct GUID));
+			break;
+		default:
+			DEBUG(0,("is_printer_published: GUID value stored as "
+				 "invaluid type (%d)\n", regval_type(guid_val) ));			
+			break;
+		}
+	}
 
 	free_a_printer(&printer, 2);
-	return True;
+	return ret;
 }
 #else
 WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
@@ -3554,13 +3593,43 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 			break;
 		}
 		
-		/* add the new value */
+		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname, valuename, size));
+
+		/* Vista doesn't like unknown REG_BINARY values in DsSpooler.  
+		   Thanks to Martin Zielinski for the hint. */
+
+		if ( type == REG_BINARY && 
+		     strequal( keyname, SPOOL_DSSPOOLER_KEY ) && 
+		     strequal( valuename, "objectGUID" ) ) 
+		{
+			struct GUID guid;
+			UNISTR2 unistr_guid;
+
+			ZERO_STRUCT( unistr_guid );
+			
+			/* convert the GUID to a UNICODE string */
+			
+			memcpy( &guid, data_p, sizeof(struct GUID) );
+			
+			init_unistr2( &unistr_guid, smb_uuid_string_static(guid), 
+				      UNI_STR_TERMINATE );
+			
+			regval_ctr_addvalue( printer_data->keys[key_index].values, 
+					     valuename, REG_SZ, 
+					     (const char *)unistr_guid.buffer, 
+					     unistr_guid.uni_str_len*2 );
+
+		} else {
+			/* add the value */
+
+			regval_ctr_addvalue( printer_data->keys[key_index].values, 
+					     valuename, type, (const char *)data_p, 
+					     size );
+		}
 		
-		regval_ctr_addvalue( printer_data->keys[key_index].values, valuename, type, (const char *)data_p, size );
 
 		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
 
-		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname, valuename, size));
 	}
 
 	return len;
