@@ -300,8 +300,39 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
+static void sam_rid_crypt_len(uint_t rid, uint32_t len, const uint8_t *in, uint8_t *out, int forw)
+{
+	uint8_t s[14];
+	uint8_t in_pad[8], out_pad[8];
+	uint32_t b_off, s_off = 0;
+
+	s[0] = s[4] = s[8] = s[12] = (uint8_t)(rid & 0xFF);
+	s[1] = s[5] = s[9] = s[13] = (uint8_t)((rid >> 8) & 0xFF);
+	s[2] = s[6] = s[10]        = (uint8_t)((rid >> 16) & 0xFF);
+	s[3] = s[7] = s[11]        = (uint8_t)((rid >> 24) & 0xFF);
+
+	for (b_off=0; b_off < len; b_off += 8) {
+		uint32_t left = len - b_off;
+		if (left >= 8) {
+			des_crypt56(out + b_off, in + b_off, s + s_off, forw);
+		} else {
+			ZERO_STRUCT(in_pad);
+			memcpy(in_pad, in + b_off, left);
+			des_crypt56(out_pad, in + b_off, s + s_off, forw);
+			memcpy(out + b_off, out_pad, left);
+			ZERO_STRUCT(out_pad);
+		}
+		if (s_off == 0) {
+			s_off = 7;
+		} else {
+			s_off--;
+		}
+	}
+}
+
 static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 			      const DATA_BLOB *gensec_skey,
+			      bool rcrypt,
 			      struct drsuapi_DsReplicaObjectIdentifier *id,
 			      uint32_t rid,
 			      const DATA_BLOB *buffer)
@@ -313,6 +344,7 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	uint8_t _enc_key[16];
 	DATA_BLOB enc_key;
 
+	DATA_BLOB dec_buffer;
 	DATA_BLOB plain_buffer;
 
 	/*
@@ -344,11 +376,11 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * copy the encrypted buffer part and 
 	 * decrypt it using the created encryption key using arcfour
 	 */
-	plain_buffer = data_blob_talloc(mem_ctx, enc_buffer.data, enc_buffer.length);
-	if (!plain_buffer.data) {
+	dec_buffer = data_blob_talloc(mem_ctx, enc_buffer.data, enc_buffer.length);
+	if (!dec_buffer.data) {
 		return data_blob_const(NULL, 0);
 	}
-	arcfour_crypt_blob(plain_buffer.data, plain_buffer.length, &enc_key);
+	arcfour_crypt_blob(dec_buffer.data, dec_buffer.length, &enc_key);
 
 	/*
 	 * some attributes seem to be in a usable form after this decryption
@@ -360,15 +392,32 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * some attributes seem to have some additional encryption
 	 * dBCSPwd, unicodePwd, ntPwdHistory, lmPwdHistory
 	 *
-	 * it's assumed it's something like this sam_rid_crypt()
-	 * function, as the value is constant, so it doesn't depend
-	 * on sessionkeys. But for the unicodePwd attribute which contains
-	 * the nthash be have 20 bytes at this point, but the ntnash only
-	 * is 16 bytes long, so using the current sam_rid_crypt() function
-	 * doesn't work.
-	 *
-	 * sam_rid_crypt(rid, crypt_nt_hash.hash, plain_nt_hash.hash, 0);
+	 * it's the sam_rid_crypt() function, as the value is constant,
+	 * so it doesn't depend on sessionkeys. But for the unicodePwd attribute
+	 * which contains the nthash has 20 bytes at this point.
+	 * 
+	 * the first 4 byte are unknown yet, but the last 16 byte are the
+	 * rid crypted hash.
 	 */
+	if (rcrypt) {
+		plain_buffer = data_blob_talloc(mem_ctx, dec_buffer.data, dec_buffer.length);
+		if (!plain_buffer.data) {
+			return data_blob_const(NULL, 0);
+		}
+		if (plain_buffer.length < 20) {
+			return data_blob_const(NULL, 0);
+		}
+		/*
+		 * TODO: check if that's correct for the history fields,
+		 *       which can be larger than 16 bytes (but in 16 byte steps)
+		 *       maybe we need to call the 16 byte sam_rid_crypt() function
+		 *       for each hash, but here we assume the rid des key is shifted
+		 *	 by one for each 8 byte block.
+		 */
+		sam_rid_crypt_len(rid, dec_buffer.length - 4, dec_buffer.data + 4, plain_buffer.data + 4, 0);
+	} else {
+		plain_buffer = dec_buffer;
+	}
 
 	return plain_buffer;
 }
@@ -398,6 +447,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 
 		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 			const char *name = NULL;
+			bool rcrypt = false;
 			DATA_BLOB *enc_data = NULL;
 			DATA_BLOB plain_data;
 			struct drsuapi_DsReplicaAttribute *attr;
@@ -406,15 +456,19 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			switch (attr->attid) {
 			case DRSUAPI_ATTRIBUTE_dBCSPwd:
 				name	= "dBCSPwd";
+				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTRIBUTE_unicodePwd:
 				name	= "unicodePwd";
+				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTRIBUTE_ntPwdHistory:
 				name	= "ntPwdHistory";
+				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTRIBUTE_lmPwdHistory:
 				name	= "lmPwdHistory";
+				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
 				name	= "supplementalCredentials";
@@ -448,7 +502,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			enc_data = attr->value_ctr.values[0].blob;
 			ZERO_STRUCT(plain_data);
 
-			plain_data = decrypt_blob(ctx, gensec_skey,
+			plain_data = decrypt_blob(ctx, gensec_skey, rcrypt,
 						  cur->object.identifier, rid,
 						  enc_data);
 			if (!dn_printed) {
@@ -503,6 +557,14 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 
 	highest_usn = lp_parm_int(-1, "dssync", "highest_usn", 0);
 
+	if (lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
+		const struct samr_Password *nthash;
+		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
+		if (nthash) {
+			DEBUG(0,("CREDENTIALS nthash:\n"));
+			dump_data(0, nthash->hash, sizeof(nthash->hash));
+		}
+	}
 	status = gensec_session_key(ctx->new_dc.drsuapi.pipe->conn->security_state.generic_state,
 				    &gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
