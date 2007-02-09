@@ -80,8 +80,16 @@ static int pipe_enum_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, voi
 		fenum->info[i].fid = (uint32)((procid_to_pid(&prec.pid)<<16) & prec.pnum);
 		fenum->info[i].permissions = (FILE_READ_DATA|FILE_WRITE_DATA);
 		fenum->info[i].num_locks = 0;
-		fenum->info[i].user = uidtoname( prec.uid );
-		fenum->info[i].path = fullpath;
+		if (!(fenum->info[i].user = talloc_strdup(
+			      fenum->ctx, uidtoname(prec.uid)))) {
+			/* There's not much we can do here. */
+			fenum->info[i].user = "";
+		}
+		if (!(fenum->info[i].path = talloc_strdup(
+			      fenum->ctx, fullpath))) {
+			/* There's not much we can do here. */
+			fenum->info[i].path = "";
+		}
 			
 		fenum->count++;
 	}
@@ -172,8 +180,16 @@ static void enum_file_fn( const struct share_mode_entry *e,
 		fenum->info[i].fid = e->share_file_id;
 		fenum->info[i].permissions = permissions;
 		fenum->info[i].num_locks = num_locks;
-		fenum->info[i].user = uidtoname(e->uid);
-		fenum->info[i].path = fullpath;
+		if (!(fenum->info[i].user = talloc_strdup(
+			      fenum->ctx, uidtoname(e->uid)))) {
+			/* There's not much we can do here. */
+			fenum->info[i].user = "";
+		}
+		if (!(fenum->info[i].path = talloc_strdup(
+			      fenum->ctx, fullpath))) {
+			/* There's not much we can do here. */
+			fenum->info[i].path = "";
+		}
 			
 		fenum->count++;
 	}
@@ -863,8 +879,14 @@ static void init_srv_sess_info_1(pipes_struct *p, struct srvsvc_NetSessCtr1 *ss1
 		num_files = net_count_files(pw->pw_uid, session_list[*snum].pid);
 		guest = strequal( session_list[*snum].username, lp_guestaccount() );
 					
-		ss1->array[num_entries].client = session_list[*snum].remote_machine;
-		ss1->array[num_entries].user = session_list[*snum].username; 
+		if (!(ss1->array[num_entries].client = talloc_strdup(
+			      ss1->array, session_list[*snum].remote_machine))) {
+			ss1->array[num_entries].client = "";
+		}
+		if (!(ss1->array[num_entries].user = talloc_strdup(
+			      ss1->array, session_list[*snum].username))) {
+			ss1->array[num_entries].user = "";
+		}
 		ss1->array[num_entries].num_open = num_files;
 		ss1->array[num_entries].time = connect_time;
 		ss1->array[num_entries].idle_time = 0;
