@@ -139,7 +139,9 @@ qx.Proto.displayData = function(module, rpcRequest)
     break;
 
   case "add":
-    this._displayCommitResults(module, rpcRequest, "add");
+  case "modify":
+  case "delete":
+    this._displayCommitResults(module, rpcRequest, requestType);
     break;
  
   case "tree_open":
@@ -478,52 +480,11 @@ qx.Proto._switchToModrecord = function()
 
 qx.Proto._confirmDeleteRecord = function()
 {
-
-  var main = qx.ui.core.ClientDocument.getInstance();
-
-  if (this._dmw == null) {
-
-    this._dmw = new qx.ui.window.Window("New Attribute Name");
-    this._dmw.set({
-      width: 200,
-      height: 100,
-      modal: true,
-      centered: true,
-      restrictToPageOnOpen: true,
-      showMinimize: false,
-      showMaximize: false,
-      showClose: false,
-      resizeable: false
-    });
-
-    var warningLabel = new qx.ui.basic.Label("Are you sure you want to delete <record name here> ?");
-    this._dmw.add(warningLabel);
-
-    var cancelButton = new qx.ui.form.Button("Cancel");
-    cancelButton.addEventListener("execute", function() {
-      this._dmw.close();
-    }, this);
-    cancelButton.set({ top: 45, left: 32 }); 
-    this._dmw.add(cancelButton);
-
-    this._dmw.addEventListener("appear",function() { 
-      cancelButton.focus();
-    }, this._dmw);
-
-    main.add(this._dmw);
-    var okButton = new qx.ui.form.Button("OK");
-    okButton.addEventListener("execute", function() {
-      //TODO: call search.addEventListener("execute", fsm.eventListener, fsm);
-      
-      this._dmw.close();
-    }, this);
-    okButton.set({ top: 45, right: 32 });
-    this._dmw.add(okButton);
-
-    main.add(this._dmw);
-  }
-
-  this._dmw.open();
+  
+  //this._newb.setEnabled(false);
+  //this._modb.setEnabled(false);
+  //this._delb.setEnabled(false);
+  this._ldbmod.showConfirmDelete();
 };
 
 qx.Proto._displayCommitResults = function(module, rpcRequest, type)

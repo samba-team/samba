@@ -15,6 +15,8 @@ function(fsm)
 {
   qx.ui.layout.VerticalBoxLayout.call(this);
 
+  this._fsm = fsm;
+
   this._mainArea = new qx.ui.layout.VerticalBoxLayout();
   this._mainArea.set({
                      overflow: "auto",
@@ -39,10 +41,10 @@ function(fsm)
 
   // Add the "OK" button
   this._okbtn = new qx.ui.form.Button("OK");
-  this._okbtn.addEventListener("execute", fsm.eventListener, fsm);
+  this._okbtn.addEventListener("execute", this._fsm.eventListener, this._fsm);
 
   // We'll be receiving events on the object, so save its friendly name
-  fsm.addObject("commit", this._okbtn, "swat.main.fsmUtils.disable_during_rpc");
+  this._fsm.addObject("commit", this._okbtn, "swat.main.fsmUtils.disable_during_rpc");
 
   // Add the buttons to the hlayout
   this._hlayout.add(this._leftSpacer, this._cancelbtn, this._okbtn);
@@ -58,7 +60,7 @@ function(fsm)
 
   this.basedn = "";
 
-  this._amw = null;
+  this._dmw = null;
 });
 
 qx.OO.addProperty({ name : "basedn", type : "string" });
@@ -99,6 +101,12 @@ qx.Proto.setBase = function(base) {
       this._basedn.setWidth(8 * this.basedn.length);
     }
   }
+}
+
+qx.Proto.getBase = function() {
+
+  return this.basedn;
+
 }
 
 qx.Proto.initNew = function(callback, obj) {
@@ -152,14 +160,18 @@ qx.Proto.initMod = function(tablemodel, callback, obj) {
 
   this._createAttributesArea();
 
+  this._modBaseHash = new Array();
+
   // for each entry in the table, add new entries in the object
   var count = tablemodel.getRowCount();
   for (var i = 0; i < count; i++) {
     var row = tablemodel.getRowData(i);
     this._addNewAttribute(row[0], row[1]);
+    if (this._modBaseHash[row[0]] == null) {
+      this._modBaseHash[row[0]] = new Array();
+    }
+    this._modBaseHash[row[0]].push(row[1]);
   }
-
-  this._modBaseTableModel = tablemodel;
 }
 
 qx.Proto._setExitCallback = function(vFunction, vObject) {
@@ -268,23 +280,215 @@ qx.Proto.getOpType = function() {
 }
 
 qx.Proto.getLdif = function() {
-  //TODO: modify
-  if (this._type != "add") {
+
+  if (this._active != true) {
     return null;
   }
 
-  var ldif = "# Add operation\n";
-  ldif = ldif + "dn: " + this._rdn.getValue() + "," + this._basedn.getValue() + "\n";
-
   c = this._attrArea.getChildren();
 
-  for (var i = 0; i < c.length; i++) {
-    if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
-      ldif = ldif + c[i].getUserData("attrName").getComputedValue() + ": " + c[i].getUserData("attrVal").getComputedValue() + "\n";
+  switch (this._type) {
+
+  case "add":
+
+    var ldif = "dn: " + this._rdn.getValue() + "," + this._basedn.getValue() + "\n";
+
+    for (var i = 0; i < c.length; i++) {
+      if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
+        ldif = ldif + c[i].getUserData("attrName").getComputedValue() + ": " + c[i].getUserData("attrVal").getComputedValue() + "\n";
+      }
     }
+    break;
+
+  case "modify":
+
+    var ldif = "dn: " + this.basedn + "\n";
+
+    ldif = ldif + "changetype: modify\n";
+
+    var submAttrs = new Array();
+
+    // Build an array of the submitted data
+    for (var i = 0; i < c.length; i++) {
+      if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
+
+        var attrName = c[i].getUserData("attrName").getComputedValue();
+        var attrVal = c[i].getUserData("attrVal").getComputedValue();
+        
+        if (submAttrs[attrName] == null) {
+          submAttrs[attrName] = new Array();
+        }
+        submAttrs[attrName].push(attrVal);
+      }
+    }
+
+    // compare arrays and find out what changed, built an hash of the modifications
+    var modAttrs = new Array();
+
+    for (var i in this._modBaseHash) {
+      modAttrs[i] = new Array();
+      modAttrs[i][0] = "skip";
+
+      if (submAttrs[i] == null) {
+        modAttrs[i][0] = "delete";
+      } else {
+        // check if the arrays are identical
+        if (this._modBaseHash[i].length <= submAttrs[i].length) {
+          for (var j = 0; j < this._modBaseHash[i].length; j++) {
+            for (var k = 0; k < submAttrs[i].length; k++) {
+              if (this._modBaseHash[i][j] == submAttrs[i][k]) {
+                break;
+              }
+            }
+            if (k >= submAttrs[i].length) {
+              modAttrs[i][0] = "replace";
+              break;
+            }
+          }
+          // if all the attributes in base hash are contained in sumbAttr
+          // it means only additions were done, sort out what was addedd
+          if (modAttrs[i][0] != "replace") {
+            for (var j = 0; j < submAttrs[i].length; j++) {
+              for (var k = 0; k < this._modBaseHash[i].length; k++) {
+                if (submAttrs[i][j] == this._modBaseHash[i][k]) break;
+              }
+              // this element was not found in original array
+              if (k >= this._modBaseHash[i].length) {
+                if (modAttrs[i][0] != "add") {
+                  modAttrs[i][0] = "add";
+                }
+                modAttrs[i].push(submAttrs[i][j]);
+              }
+            }
+          }
+        } else {
+          modAttrs[i] = [ "replace" ];
+        }
+      }
+      // if they differ replace the whole content
+      if (modAttrs[i][0] == "replace") {
+        for (var j = 0; j < submAttrs[i].length; j++) {
+          modAttrs[i].push(submAttrs[i][j]);
+        }
+      }
+
+      // wipe out attr from sumbAttr, so that we can later found truly new attrs addedd to the array
+      submAttrs[i] = null;
+    }
+
+    for (var i in submAttrs) {
+      if (submAttrs[i] != null) {
+        modAttrs[i] = new Array();
+        modAttrs[i][0] = "add";
+
+        for (var j = 0; j < submAttrs[i].length; j++) {
+          modAttrs[i].push(submAttrs[i][j]);
+        }
+      }
+    }
+
+    //track if we did any mod at all
+    var nmods = 0;
+
+    for (var i in modAttrs) {
+      switch (modAttrs[i][0]) {
+
+      case "delete":
+        nmods++;
+        ldif = ldif + "delete: " + i + "\n";
+        break;
+
+      case "add":
+        nmods++;
+        ldif = ldif + "add: " + i + "\n";
+        for (var j = 1; j < modAttrs[i].length; j++) {
+          ldif = ldif + i + ": " + modAttrs[i][j] + "\n";
+        }
+        break;
+
+      case "replace":
+        nmods++;
+        ldif = ldif + "replace: " + i + "\n";
+        for (var j = 1; j < modAttrs[i].length; j++) {
+          ldif = ldif + i + ": " + modAttrs[i][j] + "\n";
+        }
+        break;
+
+      default:
+        //skip
+        break;
+      }
+    }
+
+    if (nmods == 0) {
+      alert("No modifications?");
+    }
+
+    break;
+
+  default:
+
+    return null;
+
   }
+
   // terminate ldif record
   ldif = ldif + "\n";
 
   return ldif;
-}
+};
+
+qx.Proto.showConfirmDelete = function() {
+
+  var main = qx.ui.core.ClientDocument.getInstance();
+
+  if (this._dmw == null) {
+    this._dmw = new qx.ui.window.Window("-- DELETE Object --");
+    this._dmw.set({
+      width: 300,
+      height: 125,
+      modal: true,
+      centered: true,
+      restrictToPageOnOpen: true,
+      showMinimize: false,
+      showMaximize: false,
+      showClose: false,
+      resizeable: false
+    });
+
+    var warningLabel = new qx.ui.basic.Label("Error Dialog not initialized!");
+    this._dmw.add(warningLabel);
+    this._dmw.setUserData("label", warningLabel);
+
+    var cancelButton = new qx.ui.form.Button("Cancel");
+    cancelButton.addEventListener("execute", function() {
+      this._dmw.close();
+    }, this);
+    cancelButton.set({ top: 45, left: 32 }); 
+    this._dmw.add(cancelButton);
+
+    this._dmw.addEventListener("appear",function() { 
+      cancelButton.focus();
+    }, this._dmw);
+
+    main.add(this._dmw);
+    var okButton = new qx.ui.form.Button("OK");
+    okButton.addEventListener("execute", function() {
+      this._dmw.close();
+    }, this);
+    // We'll be receiving events on the object, so save its friendly name
+    this._fsm.addObject("delete", okButton, "swat.main.fsmUtils.disable_during_rpc");
+    okButton.addEventListener("execute", this._fsm.eventListener, this._fsm);
+      
+    okButton.set({ top: 45, right: 32 });
+    this._dmw.add(okButton);
+
+    main.add(this._dmw);
+  }
+
+  var label = this._dmw.getUserData("label");
+
+  label.setHtml("<pre>Do you really want to delete\n" + this.basedn + " ?</pre>");
+
+  this._dmw.open();
+};
