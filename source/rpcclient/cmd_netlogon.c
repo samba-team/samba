@@ -342,7 +342,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	/* Check arguments */
 
-	if (argc < 3 || argc > 6) {
+	if (argc < 3 || argc > 7) {
 		fprintf(stderr, "Usage: samlogon <username> <password> [workstation]"
 			"[logon_type (1 or 2)] [auth level (2 or 3)] [logon_parameter]\n");
 		return NT_STATUS_OK;
