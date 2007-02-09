@@ -2129,6 +2129,7 @@ BOOL is_myworkgroup(const char *s)
 /*******************************************************************
  we distinguish between 2K and XP by the "Native Lan Manager" string
    WinXP => "Windows 2002 5.1"
+   WinXP 64bit => "Windows XP 5.2"
    Win2k => "Windows 2000 5.0"
    NT4   => "Windows NT 4.0" 
    Win9x => "Windows 4.0"
@@ -2137,8 +2138,10 @@ BOOL is_myworkgroup(const char *s)
 ********************************************************************/
 
 void ra_lanman_string( const char *native_lanman )
-{		 
+{	
 	if ( strcmp( native_lanman, "Windows 2002 5.1" ) == 0 )
+		set_remote_arch( RA_WINXP );
+	else if ( strcmp( native_lanman, "Windows XP 5.2" ) == 0 )
 		set_remote_arch( RA_WINXP );
 	else if ( strcmp( native_lanman, "Windows Server 2003 5.2" ) == 0 )
 		set_remote_arch( RA_WIN2K3 );
