@@ -364,11 +364,11 @@ krb5_kt_get_entry(krb5_context context,
     if (entry->vno) {
 	return 0;
     } else {
-	char princ[256], kt_name[256], kvno_str[25];
+	char princ[256], kvno_str[25], *kt_name;
 	char *enctype_str = NULL;
 
 	krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
-	krb5_kt_get_name (context, id, kt_name, sizeof(kt_name));
+	krb5_kt_get_full_name (context, id, &kt_name);
 	krb5_enctype_to_string(context, enctype, &enctype_str);
 
 	if (kvno)
@@ -380,8 +380,9 @@ krb5_kt_get_entry(krb5_context context,
  			       "Failed to find %s%s in keytab %s (%s)",
 			       princ,
 			       kvno_str,
-			       kt_name,
+			       kt_name ? kt_name : "unknown keytab",
 			       enctype_str ? enctype_str : "unknown enctype");
+	free(kt_name);
 	free(enctype_str);
 	return KRB5_KT_NOTFOUND;
     }
