@@ -53,10 +53,11 @@ struct ibwtest_ctx {
 	int	naddrs;
 
 	unsigned int	nsec; /* delta times between messages in nanosec */
-	unsigned int	sleep_nsec; /* nanosleep in the main loop to emulate overloading */
+	unsigned int	sleep_usec; /* microsecs to sleep in the main loop to emulate overloading */
 	uint32_t	maxsize; /* maximum variable message size */
 
 	int	cnt;
+	int	nsent;
 
 	int	nmsg; /* number of messages to send (client) */
 
@@ -77,26 +78,6 @@ enum testopcode {
 	TESTOP_SEND_TEXT = 2,
 	TESTOP_SEND_RND = 3
 };
-
-int ibwtest_nanosleep(unsigned int sleep_nsec)
-{
-//	int nanosleep(const struct timespec *req, struct timespec *rem);
-	struct timespec req, rem;
-
-	memset(&req, 0, sizeof(struct timespec));
-	memset(&rem, 0, sizeof(struct timespec));
-	req.tv_sec = 0;
-	req.tv_nsec = sleep_nsec;
-
-	while (nanosleep(&req, &rem) < 0) {
-		if (errno != EINTR) {
-			DEBUG(0, ("nanosleep ERROR: %d\n", errno));
-			return -1;
-		}
-		memcpy(&req, &rem, sizeof(struct timespec));
-	}
-	return 0;
-}
 
 int ibwtest_connect_everybody(struct ibwtest_ctx *tcx)
 {
@@ -136,6 +117,8 @@ int ibwtest_send_id(struct ibw_conn *conn)
 		DEBUG(0, ("send_id: ibw_send error\n"));
 		return -1;
 	}
+	tcx->nsent++;
+
 	return 0;
 }
 
@@ -164,6 +147,8 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 		DEBUG(0, ("send_test_msg: ibw_send error\n"));
 		return -1;
 	}
+	tcx->nsent++;
+
 	return 0;
 }
 
@@ -212,6 +197,8 @@ int ibwtest_do_varsize_scenario_conn_size(struct ibwtest_ctx *tcx, struct ibw_co
 		DEBUG(0, ("varsize/ibw_send failed\n"));
 		return -1;
 	}
+	tcx->nsent++;
+
 	return 0;
 }
 
@@ -358,6 +345,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				fprintf(stderr, "ibw_send error #2\n");
 				return -2;
 			}
+			tcx->nsent++;
 		}
 	} else { /* client: */
 		if (op==TESTOP_SEND_ID && tcx->maxsize) {
@@ -527,7 +515,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t\t send message periodically and endless when nsec is non-zero\n");
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
-	printf("\t-l nsec time to sleep in the main loop [default %d]\n", tcx->sleep_nsec);
+	printf("\t-l usec time to sleep in the main loop [default %d]\n", tcx->sleep_usec);
 	printf("\t-v max variable msg size in bytes [default %d], 0=don't send var. size\n", tcx->maxsize);
 	printf("Press ctrl+C to stop the program.\n");
 }
@@ -535,7 +523,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 int main(int argc, char *argv[])
 {
 	int	rc, op;
-	int	result = 1, nmsg;
+	int	result = 1;
 	struct event_context *ev = NULL;
 	struct ibwtest_ctx *tcx = NULL;
 	float	usec;
@@ -575,7 +563,7 @@ int main(int argc, char *argv[])
 			tcx->nmsg = atoi(optarg);
 			break;
 		case 'l':
-			tcx->sleep_nsec = (unsigned int)atoi(optarg);
+			tcx->sleep_usec = (unsigned int)atoi(optarg);
 			break;
 		case 'v':
 			tcx->maxsize = (unsigned int)atoi(optarg);
@@ -590,7 +578,6 @@ int main(int argc, char *argv[])
 		ibwtest_usage(tcx, argv[0]);
 		goto cleanup;
 	}
-	nmsg = tcx->nmsg;
 
 	ev = event_context_init(NULL);
 	assert(ev);
@@ -619,13 +606,11 @@ int main(int argc, char *argv[])
 
 		event_loop_once(ev);
 
-		if (tcx->sleep_nsec) {
-			if (ibwtest_nanosleep(tcx->sleep_nsec))
-				goto cleanup;
-		}
+		if (tcx->sleep_usec)
+			usleep(tcx->sleep_usec);
 	}
 
-	if (!tcx->is_server && nmsg!=0 && !tcx->error) {
+	if (!tcx->is_server && tcx->nsent!=0 && !tcx->error) {
 		if (gettimeofday(&tcx->end_time, NULL)) {
 			DEBUG(0, ("gettimeofday error %d\n", errno));
 			goto cleanup;
@@ -633,7 +618,7 @@ int main(int argc, char *argv[])
 		usec = (tcx->end_time.tv_sec - tcx->start_time.tv_sec) * 1000000 +
 				(tcx->end_time.tv_usec - tcx->start_time.tv_usec);
 		printf("usec: %f, nmsg: %d, usec/nmsg: %f\n",
-			usec, nmsg, usec/(float)nmsg);
+			usec, tcx->nsent, usec/(float)tcx->nsent);
 	}
 
 	if (!tcx->error)
