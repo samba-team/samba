@@ -38,22 +38,13 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 {
 }
 
-NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		                const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
+void send_stat_cache_delete_message(const char *name)
+{
+}
+
+NTSTATUS can_delete_directory(struct connection_struct *conn,
+				const char *dirname)
 {
 	return NT_STATUS_OK;
 }
 
-int dptr_CloseDir(struct dptr_struct *dptr)
-{
-	return 0;
-}
-
-const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
-{
-	return NULL;
-}
-
-void send_stat_cache_delete_message(const char *name)
-{
-}
