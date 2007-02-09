@@ -89,8 +89,8 @@ NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id se
 /*
   send a message to another node in the cluster
 */
-NTSTATUS cluster_message_send(struct server_id server, uint32_t msg_type, DATA_BLOB *data)
+NTSTATUS cluster_message_send(struct server_id server, DATA_BLOB *data)
 {
 	cluster_init();
-	return ops->message_send(ops, server, msg_type, data);
+	return ops->message_send(ops, server, data);
 }

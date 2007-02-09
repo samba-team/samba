@@ -159,8 +159,7 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
   send a ctdb message to another node
 */
 static NTSTATUS ctdb_message_send(struct cluster_ops *ops,
-				  struct server_id server, uint32_t msg_type, 
-				  DATA_BLOB *data)
+				  struct server_id server, DATA_BLOB *data)
 {
 	struct cluster_state *state = ops->private;
 	struct ctdb_context *ctdb = state->ctdb;
@@ -170,7 +169,7 @@ static NTSTATUS ctdb_message_send(struct cluster_ops *ops,
 	tdata.dptr = data->data;
 	tdata.dsize = data->length;
 
-	ret = ctdb_send_message(ctdb, server.node, server.id, msg_type, tdata);
+	ret = ctdb_send_message(ctdb, server.node, server.id, tdata);
 	if (ret != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
