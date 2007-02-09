@@ -1151,42 +1151,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
 
 	/* Don't allow delete on close for non-empty directories. */
 	if (fsp->is_directory) {
-		long offset = 0;
-		NTSTATUS status;
-		SMB_STRUCT_STAT st;
-		struct dptr_struct *dirptr;
-		const char *name;
-
-		status = dptr_create(fsp->conn,
-					fsp->fsp_name,
-					False,
-					True,
-					0,
-					"*",
-					True,
-					0,
-					&dirptr);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* Read 3 entries. Ignore first 2 (they're . and .. ) */
-		name = dptr_ReadDirName(dirptr, &offset, &st);
-		if (!name) {
-			dptr_CloseDir(dirptr);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		name = dptr_ReadDirName(dirptr, &offset, &st);
-		if (!name) {
-			dptr_CloseDir(dirptr);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		name = dptr_ReadDirName(dirptr, &offset, &st);
-		dptr_CloseDir(dirptr);
-		if (name) {
-			DEBUG(10,("can_set_delete_on_close: got name %s - can't delete\n", name ));
-			return NT_STATUS_DIRECTORY_NOT_EMPTY;
-		}
+		return can_delete_directory(fsp->conn, fsp->fsp_name);
 	}
 
 	return NT_STATUS_OK;
