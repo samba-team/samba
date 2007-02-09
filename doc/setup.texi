@@ -12,23 +12,23 @@ as your Internet domain name if you do not have strong reasons for not
 doing so.  It will make life easier for you and everyone else.
 
 @menu
-* Configuration file::          
-* Creating the database::       
-* Modifying the database::      
+* Configuration file::
+* Creating the database::
+* Modifying the database::
 * Checking the setup::
-* keytabs::                     
-* Serving Kerberos 4/524/kaserver::  
-* Remote administration::       
-* Password changing::           
-* Testing clients and servers::  
-* Slave Servers::               
-* Incremental propagation::     
-* Salting::                     
-* Cross realm::                 
-* Transit policy::              
-* Setting up DNS::              
-* Using LDAP to store the database::  
-* Providing Kerberos credentials to servers and programs::  
+* keytabs::
+* Serving Kerberos 4/524/kaserver::
+* Remote administration::
+* Password changing::
+* Testing clients and servers::
+* Slave Servers::
+* Incremental propagation::
+* Salting::
+* Cross realm::
+* Transit policy::
+* Setting up DNS::
+* Using LDAP to store the database::
+* Providing Kerberos credentials to servers and programs::
 * Setting up PK-INIT::
 @end menu
 
@@ -56,7 +56,7 @@ variable extends to the end of the line.
         a-subsection = @{
                 var = value1
                 other-var = value with @{@}
-                sub-sub-section = @{ 
+                sub-sub-section = @{
                         var = 123
                 @}
         @}
@@ -122,8 +122,8 @@ master key, run @samp{kstash} to create this master key:
 
 @example
 # kstash
-Master key: 
-Verifying password - Master key: 
+Master key:
+Verifying password - Master key:
 @end example
 
 If you want to generate a random master key you can use the
@@ -152,12 +152,12 @@ a default realm, you will need to explicitly include the realm.
 kadmin> init MY.REALM
 Realm max ticket life [unlimited]:
 Realm max renewable ticket life [unlimited]:
-kadmin> add me  
+kadmin> add me
 Max ticket life [unlimited]:
 Max renewable life [unlimited]:
 Attributes []:
-Password: 
-Verifying password - Password: 
+Password:
+Verifying password - Password:
 @end example
 
 Now start the KDC and try getting a ticket.
@@ -199,7 +199,7 @@ commands @samp{add}, @samp{rename}, @samp{modify}, @samp{delete}.
 Both interactive editing and command line flags can be used (use --help
 to list the available options).
 
-There are different kinds of types for the fields in the database; 
+There are different kinds of types for the fields in the database;
 attributes, absolute time times and relative times.
 
 @subsection Attributes
@@ -434,7 +434,7 @@ The built-in polices are
 
 @item external-check
 
-Executes the program specified by @samp{[password_quality]external_program}. 
+Executes the program specified by @samp{[password_quality]external_program}.
 
 A number of key/value pairs are passed as input to the program, one per
 line, ending with the string @samp{end}.  The key/value lines are of
@@ -704,8 +704,8 @@ vr$ klist
 Credentials cache: FILE:/tmp/krb5cc_913.console
         Principal: lha@@E.KTH.SE
 
-  Issued           Expires          Principal                   
-May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE      
+  Issued           Expires          Principal
+May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE
 
 vr$ telnet -l lha hummel.it.su.se
 Trying 2001:6b0:5:1095:250:fcff:fe24:dbf...
@@ -722,10 +722,10 @@ vr$ klist
 Credentials cache: FILE:/tmp/krb5cc_913.console
         Principal: lha@@E.KTH.SE
 
-  Issued           Expires          Principal                   
-May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE      
-May  3 13:55:56  May  3 23:55:54  krbtgt/SU.SE@@E.KTH.SE         
-May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE    
+  Issued           Expires          Principal
+May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE
+May  3 13:55:56  May  3 23:55:54  krbtgt/SU.SE@@E.KTH.SE
+May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE
 
 @end example
 
@@ -980,7 +980,7 @@ directory with the following command:
 @example
 kdc# ldapsearch -L -h localhost -D cn=manager \
  -w secret -b ou=KerberosPrincipals,dc=example,dc=com \
- 'objectclass=krb5KDCEntry' 
+ 'objectclass=krb5KDCEntry'
 @end example
 
 @item
@@ -1037,7 +1037,7 @@ that need it.
 @example
 host# ktutil -k /etc/krb5-service.keytab \
       get -p lha/admin@@EXAMPLE.ORG service-principal@@EXAMPLE.ORG
-lha/admin@@EXAMPLE.ORG's Password: 
+lha/admin@@EXAMPLE.ORG's Password:
 @end example
 
 To get a Kerberos credential file for the service, use kinit in the
@@ -1225,12 +1225,12 @@ get yourself tickets. One example how that can look like is:
 
 @example
 $ kinit -C FILE:$HOME/.certs/lha.crt,$HOME/.certs/lha.key lha@@EXAMPLE.ORG
-Enter your private key passphrase: 
+Enter your private key passphrase:
 : lha@@nutcracker ; klist
 Credentials cache: FILE:/tmp/krb5cc_19100a
         Principal: lha@@EXAMPLE.ORG
 
-  Issued           Expires          Principal                 
+  Issued           Expires          Principal
 Apr 20 02:08:08  Apr 20 12:08:08  krbtgt/EXAMPLE.ORG@@EXAMPLE.ORG
 @end example
 
@@ -1238,7 +1238,7 @@ Using PKCS11 it can look like this instead:
 
 @example
 $ kinit -C PKCS11:/tmp/pkcs11/lib/soft-pkcs11.so lha@@EXAMPLE.ORG
-PIN code for SoftToken (slot): 
+PIN code for SoftToken (slot):
 $ klist
 Credentials cache: API:4
         Principal: lha@@EXAMPLE.ORG
@@ -1371,18 +1371,18 @@ To use this example you have to use OpenSSL 0.9.8a or later.
 
 @example
 
-[user_certificate] 
-subjectAltName=otherName:1.3.6.1.5.2.2;SEQUENCE:princ_name 
+[user_certificate]
+subjectAltName=otherName:1.3.6.1.5.2.2;SEQUENCE:princ_name
 
-[princ_name] 
-realm = EXP:0, GeneralString:MY.REALM 
+[princ_name]
+realm = EXP:0, GeneralString:MY.REALM
 principal_name = EXP:1, SEQUENCE:principal_seq
 
-[principal_seq] 
-name_type = EXP:0, INTEGER:1 
+[principal_seq]
+name_type = EXP:0, INTEGER:1
 name_string = EXP:1, SEQUENCE:principals
 
-[principals] 
+[principals]
 princ1 = GeneralString:userid
 
 @end example
@@ -1390,17 +1390,17 @@ princ1 = GeneralString:userid
 Command usage
 
 @example
-openssl x509 -extensions user_certificate 
-openssl ca -extensions user_certificate 
+openssl x509 -extensions user_certificate
+openssl ca -extensions user_certificate
 @end example
 
 
 @c --- ms certificate
-@c 
+@c
 @c [ new_oids ]
 @c msCertificateTemplateName       = 1.3.6.1.4.1.311.20.2
-@c 
-@c 
+@c
+@c
 @c [ req_smartcard ]
 @c keyUsage                = digitalSignature, keyEncipherment
 @c extendedKeyUsage        = msSmartcardLogin, clientAuth
