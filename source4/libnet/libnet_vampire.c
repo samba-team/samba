@@ -50,14 +50,16 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	const char *username = user->account_name.string;
 	NTSTATUS nt_status;
 
-	if (user->lm_password_present) {
-		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
-		user->lmpassword = lm_hash;
-	}
-
-	if (user->nt_password_present) {
-		sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
-		user->ntpassword = nt_hash;
+	if (lp_parm_bool(-1, "vampire", "rid_decrypt", True)) {
+		if (user->lm_password_present) {
+			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
+			user->lmpassword = lm_hash;
+		}
+		
+		if (user->nt_password_present) {
+			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
+			user->ntpassword = nt_hash;
+		}
 	}
 
 	if (user->user_private_info.SensitiveData) {
@@ -72,13 +74,21 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
-				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
-				user->lmpassword = lm_hash;
+				if (lp_parm_bool(-1, "vampire", "rid decrypt", True)) {
+					sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
+					user->lmpassword = lm_hash;
+				} else {
+					user->lmpassword = keys.keys.keys2.lmpassword.pwd;
+				}
 				user->lm_password_present = True;
 			}
 			if (keys.keys.keys2.ntpassword.length == 16) {
-				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
-				user->ntpassword = nt_hash;
+				if (lp_parm_bool(-1, "vampire", "rid decrypt", True)) {
+					sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
+					user->ntpassword = nt_hash;
+				} else {
+					user->ntpassword = keys.keys.keys2.ntpassword.pwd;
+				}
 				user->nt_password_present = True;
 			}
 		} else {
