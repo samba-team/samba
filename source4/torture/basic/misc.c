@@ -495,6 +495,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,struct smbcli_req
 	union smb_write	wr;
 	
 	NT_STATUS_NOT_OK_RETURN(req->status);
+	talloc_free(req);
 	
 	state->completed++;
 	/*rotate between writes and reads*/
