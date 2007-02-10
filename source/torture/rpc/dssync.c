@@ -345,6 +345,11 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	DATA_BLOB enc_key;
 
 	DATA_BLOB dec_buffer;
+
+	uint32_t crc32_given;
+	uint32_t crc32_calc;
+	DATA_BLOB checked_buffer;
+
 	DATA_BLOB plain_buffer;
 
 	/*
@@ -382,6 +387,26 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	}
 	arcfour_crypt_blob(dec_buffer.data, dec_buffer.length, &enc_key);
 
+	/* 
+	 * the first 4 byte are the crc32 checksum
+	 * of the remaining bytes
+	 */
+	if (dec_buffer.length < 4) {
+		return data_blob_const(NULL, 0);
+	}
+
+	crc32_given = IVAL(dec_buffer.data, 0);
+	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
+	if (crc32_given != crc32_calc) {
+		DEBUG(0,("CRC32: given[0x%08X] calc[0x%08X]\n",
+		      crc32_given, crc32_calc));
+		return data_blob_const(NULL, 0);
+	}
+	checked_buffer = data_blob_talloc(mem_ctx, dec_buffer.data + 4, dec_buffer.length - 4);
+	if (!checked_buffer.data) {
+		return data_blob_const(NULL, 0);
+	}
+
 	/*
 	 * some attributes seem to be in a usable form after this decryption
 	 * (supplementalCredentials, priorValue, currentValue, trustAuthOutgoing,
@@ -393,18 +418,14 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * dBCSPwd, unicodePwd, ntPwdHistory, lmPwdHistory
 	 *
 	 * it's the sam_rid_crypt() function, as the value is constant,
-	 * so it doesn't depend on sessionkeys. But for the unicodePwd attribute
-	 * which contains the nthash has 20 bytes at this point.
-	 * 
-	 * the first 4 byte are unknown yet, but the last 16 byte are the
-	 * rid crypted hash.
+	 * so it doesn't depend on sessionkeys.
 	 */
 	if (rcrypt) {
-		plain_buffer = data_blob_talloc(mem_ctx, dec_buffer.data, dec_buffer.length);
+		plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
 		if (!plain_buffer.data) {
 			return data_blob_const(NULL, 0);
 		}
-		if (plain_buffer.length < 20) {
+		if (plain_buffer.length < 16) {
 			return data_blob_const(NULL, 0);
 		}
 		/*
@@ -414,9 +435,9 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 		 *       for each hash, but here we assume the rid des key is shifted
 		 *	 by one for each 8 byte block.
 		 */
-		sam_rid_crypt_len(rid, dec_buffer.length - 4, dec_buffer.data + 4, plain_buffer.data + 4, 0);
+		sam_rid_crypt_len(rid, checked_buffer.length, checked_buffer.data, plain_buffer.data, 0);
 	} else {
-		plain_buffer = dec_buffer;
+		plain_buffer = checked_buffer;
 	}
 
 	return plain_buffer;
