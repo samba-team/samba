@@ -300,36 +300,6 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
-static void sam_rid_crypt_len(uint_t rid, uint32_t len, const uint8_t *in, uint8_t *out, int forw)
-{
-	uint8_t s[14];
-	uint8_t in_pad[8], out_pad[8];
-	uint32_t b_off, s_off = 0;
-
-	s[0] = s[4] = s[8] = s[12] = (uint8_t)(rid & 0xFF);
-	s[1] = s[5] = s[9] = s[13] = (uint8_t)((rid >> 8) & 0xFF);
-	s[2] = s[6] = s[10]        = (uint8_t)((rid >> 16) & 0xFF);
-	s[3] = s[7] = s[11]        = (uint8_t)((rid >> 24) & 0xFF);
-
-	for (b_off=0; b_off < len; b_off += 8) {
-		uint32_t left = len - b_off;
-		if (left >= 8) {
-			des_crypt56(out + b_off, in + b_off, s + s_off, forw);
-		} else {
-			ZERO_STRUCT(in_pad);
-			memcpy(in_pad, in + b_off, left);
-			des_crypt56(out_pad, in + b_off, s + s_off, forw);
-			memcpy(out + b_off, out_pad, left);
-			ZERO_STRUCT(out_pad);
-		}
-		if (s_off == 0) {
-			s_off = 7;
-		} else {
-			s_off--;
-		}
-	}
-}
-
 static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 			      const DATA_BLOB *gensec_skey,
 			      bool rcrypt,
@@ -357,8 +327,11 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * was successful!!!!!!!!!!!!!!!!!!!!!!!!!!
 	 */
 
-	/* the first 16 bytes at the beginning are the confounder */
-	if (buffer->length <= 16) {
+	/* 
+	 * the first 16 bytes at the beginning are the confounder
+	 * followed by the 4 byte crc32 checksum
+	 */
+	if (buffer->length < 20) {
 		return data_blob_const(NULL, 0);
 	}
 	confounder = data_blob_const(buffer->data, 16);
@@ -391,10 +364,6 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * the first 4 byte are the crc32 checksum
 	 * of the remaining bytes
 	 */
-	if (dec_buffer.length < 4) {
-		return data_blob_const(NULL, 0);
-	}
-
 	crc32_given = IVAL(dec_buffer.data, 0);
 	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
 	if (crc32_given != crc32_calc) {
@@ -421,21 +390,22 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	 * so it doesn't depend on sessionkeys.
 	 */
 	if (rcrypt) {
+		uint32_t i, num_hashes;
+
+		if ((checked_buffer.length % 16) != 0) {
+			return data_blob_const(NULL, 0);
+		}
+
 		plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
 		if (!plain_buffer.data) {
 			return data_blob_const(NULL, 0);
 		}
-		if (plain_buffer.length < 16) {
-			return data_blob_const(NULL, 0);
+			
+		num_hashes = plain_buffer.length / 16;
+		for (i = 0; i < num_hashes; i++) {
+			uint32_t offset = i * 16;
+			sam_rid_crypt(rid, checked_buffer.data + offset, plain_buffer.data + offset, 0);
 		}
-		/*
-		 * TODO: check if that's correct for the history fields,
-		 *       which can be larger than 16 bytes (but in 16 byte steps)
-		 *       maybe we need to call the 16 byte sam_rid_crypt() function
-		 *       for each hash, but here we assume the rid des key is shifted
-		 *	 by one for each 8 byte block.
-		 */
-		sam_rid_crypt_len(rid, checked_buffer.length, checked_buffer.data, plain_buffer.data, 0);
 	} else {
 		plain_buffer = checked_buffer;
 	}
