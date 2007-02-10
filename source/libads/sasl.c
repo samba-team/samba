@@ -223,7 +223,35 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
-	    got_kerberos_mechanism) {
+	    got_kerberos_mechanism) 
+	{
+		/* I've seen a child Windows 2000 domain not send 
+		   the principal name back in the first round of 
+		   the SASL bind reply.  So we guess based on server
+		   name and realm.  --jerry  */
+		if ( !principal ) {
+			if ( ads->server.realm && ads->server.ldap_server ) {
+				char *server, *server_realm;
+				
+				server = SMB_STRDUP( ads->server.ldap_server );
+				server_realm = SMB_STRDUP( ads->server.realm );
+				
+				if ( !server || !server_realm )
+					return ADS_ERROR(LDAP_NO_MEMORY);
+
+				strlower_m( server );
+				strupper_m( server_realm );				
+				asprintf( &principal, "ldap/%s@%s", server, server_realm );
+
+				SAFE_FREE( server );
+				SAFE_FREE( server_realm );
+
+				if ( !principal )
+					return ADS_ERROR(LDAP_NO_MEMORY);				
+			}
+			
+		}
+		
 		status = ads_sasl_spnego_krb5_bind(ads, principal);
 		if (ADS_ERR_OK(status)) {
 			SAFE_FREE(principal);
