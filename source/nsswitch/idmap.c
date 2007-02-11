@@ -260,8 +260,8 @@ NTSTATUS idmap_init(void)
 		DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
 	} else if ( lp_idmap_backend() ) {
 		const char **compat_list = lp_idmap_backend();
-		char *p;
-		const char *q;		
+		char *p = NULL;
+		const char *q = NULL;		
 
 		DEBUG(0, ("WARNING: idmap backend is deprecated!\n"));
 		compat = 1;
@@ -274,8 +274,10 @@ NTSTATUS idmap_init(void)
 		/* strip any leading idmap_ prefix of */
 		if (strncmp(*compat_list, "idmap_", 6) == 0 ) {
 			q = *compat_list += 6;
-			DEBUG(0, ("WARNING: idmap backend uses obsolete and deprecated 'idmap_' prefix.\n"));
-		       	DEBUGADD(0, ("        Please replace 'idmap_%s' by '%s' in %s\n", p, p, dyn_CONFIGFILE));
+			DEBUG(0, ("WARNING: idmap backend uses obsolete and "
+				  "deprecated 'idmap_' prefix.\n"
+				  "Please replace 'idmap_%s' by '%s' in %s\n", 
+				  q, q, dyn_CONFIGFILE));
 			compat_backend = talloc_strdup( idmap_ctx, q);
 		} else {
 			compat_backend = talloc_strdup( idmap_ctx, *compat_list);
