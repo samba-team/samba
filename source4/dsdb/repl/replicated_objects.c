@@ -88,13 +88,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 					       msg->num_elements);
 	W_ERROR_HAVE_NO_MEMORY(msg->elements);
 
-	for (i=0; i < msg->num_elements; i++) {
-		status = dsdb_attribute_drsuapi_to_ldb(schema,
-						       &in->object.attribute_ctr.attributes[i],
-						       msg->elements, &msg->elements[i]);
-		W_ERROR_NOT_OK_RETURN(status);
-	}
-
 	md = talloc(mem_ctx, struct replPropertyMetaDataBlob);
 	W_ERROR_HAVE_NO_MEMORY(md);
 
@@ -111,10 +104,15 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		struct drsuapi_DsReplicaAttribute *a;
 		struct drsuapi_DsReplicaMetaData *d;
 		struct replPropertyMetaData1 *m;
+		struct ldb_message_element *e;
 
 		a = &in->object.attribute_ctr.attributes[i];
 		d = &in->meta_data_ctr->meta_data[i];
 		m = &md->ctr.ctr1.array[i];
+		e = &msg->elements[i];
+
+		status = dsdb_attribute_drsuapi_to_ldb(schema, a, msg->elements, e);
+		W_ERROR_NOT_OK_RETURN(status);
 
 		m->attid			= a->attid;
 		m->version			= d->version;
