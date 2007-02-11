@@ -61,6 +61,14 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
+	if (in->object.attribute_ctr.num_attributes != 0 && !in->meta_data_ctr) {
+		return WERR_FOOBAR;
+	}
+
+	if (in->object.attribute_ctr.num_attributes != in->meta_data_ctr->count) {
+		return WERR_FOOBAR;
+	}
+
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
@@ -85,14 +93,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 						       &in->object.attribute_ctr.attributes[i],
 						       msg->elements, &msg->elements[i]);
 		W_ERROR_NOT_OK_RETURN(status);
-	}
-
-	if (in->object.attribute_ctr.num_attributes != 0 && !in->meta_data_ctr) {
-		return WERR_FOOBAR;
-	}
-
-	if (in->object.attribute_ctr.num_attributes != in->meta_data_ctr->count) {
-		return WERR_FOOBAR;
 	}
 
 	md = talloc(mem_ctx, struct replPropertyMetaDataBlob);
