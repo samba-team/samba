@@ -21,6 +21,7 @@
 
 #module(table)
 #require(qx.ui.table.DefaultResizeBehavior)
+#embed(qx.icontheme/16/actions/view-refresh.png)
 
 ************************************************************************ */
 
@@ -50,7 +51,7 @@ function()
  * The behavior to use.
  *
  * The provided behavior must extend {link @AbstractResizeBehavior} and
- * implement the <i>onAppear</i>, <i>onWindowResize</i>,
+ * implement the <i>onAppear</i>, <i>onTableWidthChanged</i>,
  * <i>onColumnWidthChanged</i> and <i>onVisibilityChanged</i>methods.
  */
 qx.OO.addProperty(
@@ -90,9 +91,8 @@ qx.Proto.init = function(numColumns, table)
   // We'll do our column resizing when the table appears, ...
   table.addEventListener("appear", this._onappear, this);
 
-  // ... when the window is resized, ...
-  var d = qx.ui.core.ClientDocument.getInstance();
-  d.addEventListener("windowresize", this._onwindowresize, this);
+  // ... when the inner width of the table changes, ...
+  table.addEventListener("tableWidthChanged", this._ontablewidthchanged, this);
 
   // ... when columns are resized, ...
   this.addEventListener("widthChanged", this._oncolumnwidthchanged, this);
@@ -138,7 +138,7 @@ qx.Proto._addResetColumnWidthButton = function(event)
 };
 
 /**
- * Event handler for the "onappear" event.
+ * Event handler for the "appear" event.
  *
  * @param event {qx.event.type.Event}
  *   The "onappear" event object.
@@ -162,12 +162,12 @@ qx.Proto._onappear = function(event)
 
 
 /**
- * Event handler for the "onwindowresize" event.
+ * Event handler for the "tableWidthChanged" event.
  *
  * @param event {qx.event.type.Event}
  *   The "onwidowresize" event object.
  */
-qx.Proto._onwindowresize = function(event)
+qx.Proto._ontablewidthchanged = function(event)
 {
   // Is this a recursive call or has the table not yet been rendered?
   if (this._bInProgress || ! this._bAppeared)
@@ -177,17 +177,17 @@ qx.Proto._onwindowresize = function(event)
   }
 
   this._bInProgress = true;
-  this.debug("onwindowresize");
-  this.getBehavior().onWindowResize(this, event);
+  this.debug("ontablewidthchanged");
+  this.getBehavior().onTableWidthChanged(this, event);
   this._bInProgress = false;
 };
 
 
 /**
- * Event handler for the "oncolumnwidthchanged" event.
+ * Event handler for the "widthChanged" event.
  *
  * @param event {qx.event.type.DataEvent}
- *   The "oncolumnwidthchanged" event object.
+ *   The "widthChanged" event object.
  */
 qx.Proto._oncolumnwidthchanged = function(event)
 {
@@ -206,10 +206,10 @@ qx.Proto._oncolumnwidthchanged = function(event)
 
 
 /**
- * Event handler for the "onvisibilitychangned" event.
+ * Event handler for the "visibilityChanged" event.
  *
  * @param event {qx.event.type.DataEvent}
- *   The "onvisibilitychanged" event object.
+ *   The "visibilityChanged" event object.
  */
 qx.Proto._onvisibilitychanged = function(event)
 {
