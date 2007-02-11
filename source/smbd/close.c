@@ -287,6 +287,15 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		status = map_nt_error_from_unix(errno);
 	}
 
+	/* As we now have POSIX opens which can unlink
+ 	 * with other open files we may have taken
+ 	 * this code path with more than one share mode
+ 	 * entry - ensure we only delete once by resetting
+ 	 * the delete on close flag. JRA.
+ 	 */
+
+	set_delete_on_close_lck(lck, False, NULL);
+
  done:
 
 	/* unbecome user. */
