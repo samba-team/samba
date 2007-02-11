@@ -178,7 +178,7 @@ qx.Proto.addState = function(state)
   // Ensure that the state name doesn't already exist
   if (stateName in this._states)
   {
-    throw new Error("State " + state + " already exists");
+    throw new Error("State " + stateName + " already exists");
   }
 
   // Add the new state object to the finite state machine

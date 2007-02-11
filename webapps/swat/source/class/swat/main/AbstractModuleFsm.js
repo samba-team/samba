@@ -113,6 +113,10 @@ qx.Proto.addAwaitRpcResultState = function(module, blockedEvents)
       {
         var bAuthCompleted = false;
 
+        // Change the cursor to indicate RPC in progress
+        var canvas = fsm.getObject("swat.main.canvas");
+        canvas.getTopLevelWidget().setGlobalCursor("progress");
+        
         // See if we just completed an authentication
         if (fsm.getPreviousState() == "State_Authenticate" &&
             event.getType() == "complete")
@@ -127,6 +131,21 @@ qx.Proto.addAwaitRpcResultState = function(module, blockedEvents)
         {
           // ... then push the previous state onto the state stack
           fsm.pushState(false);
+        }
+      },
+
+    "onexit" :
+      function(fsm, event)
+      {
+        // If we're returning to the calling state (not going to the
+        // Authenticate state)...
+        var nextState = fsm.getNextState();
+        if (nextState != "State_Authenticate" &&
+            nextState != "State_AwaitRpcResult")
+        {
+          // ... then set the cursor back to normal
+          var canvas = fsm.getObject("swat.main.canvas");
+          canvas.getTopLevelWidget().setGlobalCursor(null);
         }
       },
 
