@@ -75,6 +75,7 @@ qx.Proto.buildInitialFsm = function(module)
    *  Load module's finite state machine and graphical user interface
    */
   var thisModule = this;
+  var newModule = module;
   var trans = new qx.util.fsm.Transition(
     "Transition_Idle_to_Idle_Load_Gui",
     {
@@ -87,7 +88,26 @@ qx.Proto.buildInitialFsm = function(module)
           // Call the module's initialAppear function to build FSM and GUI.
           // That function should *replace* this state, State_Idle, to which
           // we'll transition.
-          thisModule.initialAppear(module);
+          var canvas = fsm.getObject("swat.main.canvas");
+          canvas.getTopLevelWidget().setGlobalCursor("progress");
+          if (! newModule.bLoaded)
+          {
+            window.setTimeout(
+              function()
+              {
+                // Call the module's initial appear handler
+                thisModule.initialAppear(newModule);
+
+                // Regenerate the appear event, since the original one got
+                // lost by doing this code inside of the timeout.
+                canvas.createDispatchEvent("appear");
+
+                // Reset the cursor to the default
+                canvas.getTopLevelWidget().setGlobalCursor(null);
+
+              }, 0);
+            newModule.bLoaded = true;
+          }
         }
     });
   state.addTransition(trans);
