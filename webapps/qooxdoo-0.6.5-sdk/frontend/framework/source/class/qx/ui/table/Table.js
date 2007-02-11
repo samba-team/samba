@@ -28,8 +28,20 @@
 /**
  * A table.
  *
- * @param tableModel {qx.ui.table.TableModel, null} The table model to read the
- *        data from.
+ * @param tableModel {qx.ui.table.TableModel, null}
+ *   The table model to read the data from.
+ *
+ * @event columnVisibilityMenuCreateStart {qx.event.type.DataEvent}
+ *   Dispatched before adding the column list to the column visibility menu.
+ *   The event data is a map with two properties: table and menu.  Listeners
+ *   may add additional items to the menu, which appear at the top of the
+ *   menu.
+ *
+ * @event columnVisibilityMenuCreateEnd {qx.event.type.DataEvent}
+ *   Dispatched after adding the column list to the column visibility menu.
+ *   The event data is a map with two properties: table and menu.  Listeners
+ *   may add additional items to the menu, which appear at the bottom of the
+ *   menu.
  */
 qx.OO.defineClass("qx.ui.table.Table", qx.ui.layout.VerticalBoxLayout,
 function(tableModel) {
@@ -282,7 +294,7 @@ qx.Proto._modifySelectionModel = function(propValue, propOldValue, propData) {
 
 // property modifier
 qx.Proto._modifyTableModel = function(propValue, propOldValue, propData) {
-  this.getTableColumnModel().init(propValue.getColumnCount());
+  this.getTableColumnModel().init(propValue.getColumnCount(), this);
 
   if (propOldValue != null) {
     propOldValue.removeEventListener(qx.ui.table.TableModel.EVENT_TYPE_META_DATA_CHANGED, this._onTableModelMetaDataChanged, this);
@@ -308,6 +320,25 @@ qx.Proto._modifyTableColumnModel = function(propValue, propOldValue, propData) {
   propValue.addEventListener("visibilityChanged", this._onColVisibilityChanged, this);
   propValue.addEventListener("widthChanged", this._onColWidthChanged, this);
   propValue.addEventListener("orderChanged", this._onColOrderChanged, this);
+
+  // Get the current table model
+  var tm = this.getTableModel();
+
+  // If one is already in effect...
+  if (tm)
+  {
+    // ... then initialize this new table column model now.
+    propValue.init(tm.getColumnCount(), this);
+  }
+
+  // Reset the table column model in each table pane model
+  var scrollerArr = this._getPaneScrollerArr();
+  for (var i = 0; i < scrollerArr.length; i++)
+  {
+    var paneScroller = scrollerArr[i];
+    var paneModel = paneScroller.getTablePaneModel();
+    paneModel._tableColumnModel = propValue;
+  }
 
   return true;
 };
@@ -1070,6 +1101,20 @@ qx.Proto._toggleColumnVisibilityMenu = function() {
 
     var tableModel = this.getTableModel();
     var columnModel = this.getTableColumnModel();
+
+    // Inform listeners who may want to insert menu items at the beginning
+    if (this.hasEventListeners("columnVisibilityMenuCreateStart"))
+    {
+      var data =
+        {
+          table : this,
+          menu  : menu
+        };
+      var event =
+        new qx.event.type.DataEvent("columnVisibilityMenuCreateStart", data);
+      this.dispatchEvent(event, true);
+    }
+
     for (var x = 0; x < columnModel.getOverallColumnCount(); x++) {
       var col = columnModel.getOverallColumnAtX(x);
       var visible = columnModel.isColumnVisible(col);
@@ -1081,6 +1126,19 @@ qx.Proto._toggleColumnVisibilityMenu = function() {
       bt.addEventListener("execute", handler, this);
 
       menu.add(bt);
+    }
+
+    // Inform listeners who may want to insert menu items at the end
+    if (this.hasEventListeners("columnVisibilityMenuCreateEnd"))
+    {
+      var data =
+        {
+          table : this,
+          menu  : menu
+        };
+      var event =
+        new qx.event.type.DataEvent("columnVisibilityMenuCreateEnd", data);
+      this.dispatchEvent(event, true);
     }
 
     menu.setParent(this.getTopLevelWidget());
