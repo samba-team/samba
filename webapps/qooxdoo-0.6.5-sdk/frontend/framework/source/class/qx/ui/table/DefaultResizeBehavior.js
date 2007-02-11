@@ -198,7 +198,7 @@ qx.Proto.onAppear = function(tableColumnModel, event)
 
 
 // overloaded
-qx.Proto.onWindowResize = function(tableColumnModel, event)
+qx.Proto.onTableWidthChanged = function(tableColumnModel, event)
 {
   // Calculate column widths
   this._computeColumnsFlexWidth(tableColumnModel, event);

@@ -42,6 +42,9 @@
  *   The event data is a map with two properties: table and menu.  Listeners
  *   may add additional items to the menu, which appear at the bottom of the
  *   menu.
+ *
+ * @event tableWidthChanged {qx.event.type.Event}
+ *   Dispatched when the inner width of the table has changed.
  */
 qx.OO.defineClass("qx.ui.table.Table", qx.ui.layout.VerticalBoxLayout,
 function(tableModel) {
@@ -1207,6 +1210,8 @@ qx.Proto.setColumnWidth = function(col, width) {
 qx.Proto._changeInnerWidth = function(newValue, oldValue) {
   var self = this;
   window.setTimeout(function() {
+    self.createDispatchEvent("tableWidthChanged");
+    self._updateScrollerWidths();
     self._updateScrollBarVisibility();
     qx.ui.core.Widget.flushGlobalQueues();
   }, 0);
