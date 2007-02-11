@@ -158,7 +158,7 @@ static uint16 aio_pending_array[AIO_PENDING_SIZE];
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	if (signals_received < AIO_PENDING_SIZE - 1) {
+	if (signals_received < AIO_PENDING_SIZE) {
 		aio_pending_array[signals_received] = info->si_value.sival_int;
 		signals_received++;
 	} /* Else signal is lost. */
