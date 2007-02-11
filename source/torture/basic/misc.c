@@ -395,6 +395,7 @@ struct benchrw_state {
 	int writecnt;
 	int readcnt;
 	int completed;
+	int num_parallel_requests;
 	void *req_params;
 	enum benchrw_stage mode;
 	struct params{
@@ -407,6 +408,7 @@ struct benchrw_state {
 		unsigned int writeblocks;
 		unsigned int blocksize;
 		unsigned int writeratio;
+		int num_parallel_requests;
 	} *lp_params;
 };
 
@@ -424,6 +426,8 @@ static int init_benchrw_params(struct torture_context *tctx,
 	lpar->blocksize = torture_setting_int(tctx, "blocksize",65535);
 	lpar->writeblocks = torture_setting_int(tctx, "writeblocks",15);
 	lpar->writeratio = torture_setting_int(tctx, "writeratio",5);
+	lpar->num_parallel_requests = torture_setting_int(
+		tctx, "parallel_requests", 5);
 	lpar->workgroup = lp_workgroup();
 	
 	p = torture_setting_string(tctx, "unclist", NULL);
@@ -496,22 +500,50 @@ static NTSTATUS benchrw_close(struct torture_context *tctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
+				  struct benchrw_state *state);
+static void benchrw_callback(struct smbcli_request *req);
+
+static void benchrw_rw_callback(struct smbcli_request *req)
+{
+	struct benchrw_state *state = req->async.private;
+	struct torture_context *tctx = state->tctx;
+
+	if (!NT_STATUS_IS_OK(req->status)) {
+		state->mode = ERROR;
+		return;
+	}
+
+	state->completed++;
+	state->num_parallel_requests--;
+
+	if ((state->completed >= torture_numops)
+	    && (state->num_parallel_requests == 0)) {
+		benchrw_callback(req);
+		talloc_free(req);
+		return;
+	}
+
+	talloc_free(req);
+
+	if (state->completed + state->num_parallel_requests
+	    < torture_numops) {
+		benchrw_readwrite(tctx, state);
+	}
+}
+
 /*
  Called when the initial write is completed is done. write or read a file.
 */
 static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
-				  struct smbcli_request *req,
 				  struct benchrw_state *state)
 {
+	struct smbcli_request *req;
 	union smb_read	rd;
 	union smb_write	wr;
 	
-	NT_STATUS_NOT_OK_RETURN(req->status);
-	talloc_free(req);
-	
-	state->completed++;
-	/*rotate between writes and reads*/
-	if( state->completed % state->lp_params->writeratio == 0){
+	/* randomize between writes and reads*/
+	if ( random() % state->lp_params->writeratio == 0) {
 		torture_comment(tctx, "Callback WRITE file:%d (%d/%d)\n",
 				state->nr,state->completed,torture_numops);
 		wr.generic.level = RAW_WRITE_WRITEX  ;
@@ -523,7 +555,8 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 		wr.writex.in.data       = state->buffer;
 		state->readcnt=0;
 		req = smb_raw_write_send(state->cli,&wr);
-	}else{
+	}
+	else {
 		torture_comment(tctx,
 				"Callback READ file:%d (%d/%d) Offset:%d\n",
 				state->nr,state->completed,torture_numops,
@@ -543,9 +576,10 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 		}
 		req = smb_raw_read_send(state->cli,&rd);
 	}
+	state->num_parallel_requests += 1;
 	NT_STATUS_HAVE_NO_MEMORY(req);
 	/*register the callback function!*/
-	req->async.fn = benchrw_callback;
+	req->async.fn = benchrw_rw_callback;
 	req->async.private = state;
 	
 	return NT_STATUS_OK;
@@ -655,8 +689,8 @@ static void benchrw_callback(struct smbcli_request *req)
 	struct torture_context *tctx = state->tctx;
 	
 	/*dont send new requests when torture_numops is reached*/
-	if(state->completed >= torture_numops){
-		state->completed=0;
+	if ((state->mode == READ_WRITE_DATA)
+	    && (state->completed >= torture_numops)) {
 		state->mode=MAX_OPS_REACHED;
 	}
 	
@@ -682,12 +716,17 @@ static void benchrw_callback(struct smbcli_request *req)
 		}
 		break;
 	case READ_WRITE_DATA:
-		if (!NT_STATUS_IS_OK(benchrw_readwrite(tctx,req,state))){
-			torture_comment(tctx, "Failed to read/write the "
-					"file - %s\n", 
-					nt_errstr(req->status));
-			state->mode=ERROR;
-			return;
+		while (state->num_parallel_requests
+		       < state->lp_params->num_parallel_requests) {
+			NTSTATUS status;
+			status = benchrw_readwrite(tctx,state);
+			if (!NT_STATUS_IS_OK(status)){
+				torture_comment(tctx, "Failed to read/write "
+						"the file - %s\n", 
+						nt_errstr(req->status));
+				state->mode=ERROR;
+				return;
+			}
 		}
 		break;
 	case MAX_OPS_REACHED:
@@ -801,6 +840,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 		state[i]=talloc(tctx,struct benchrw_state);
 		state[i]->tctx = tctx;
 		state[i]->completed=0;
+		state[i]->num_parallel_requests=0;
 		state[i]->lp_params=&lpparams;
 		state[i]->nr=i;
 		state[i]->dname=talloc_asprintf(tctx,"benchrw%d",i);
