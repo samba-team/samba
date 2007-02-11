@@ -71,7 +71,8 @@ qx.Proto.onAppear = function(tableColumnModel, event)
 
 
 /**
- * Called when the window is resized.
+ * Called when the table width changes due to either a window size change
+ * or a parent object changing size causing the table to change size.
  *
  * @param tableColumnModel {qx.ui.table.ResizeTableColumnModel}
  *   The table column model in use.  Of particular interest is the property
@@ -80,11 +81,11 @@ qx.Proto.onAppear = function(tableColumnModel, event)
  *   of columns.
  *
  * @param event
- *   The <i>onwindowresize</i> event object.
+ *   The <i>ontablewidthchanged</i> event object.
  */
-qx.Proto.onWindowResize = function(tableColumnModel, event)
+qx.Proto.onTableWidthChanged = function(tableColumnModel, event)
 {
-  throw new Error("onWindowResize is abstract");
+  throw new Error("onTableWidthChanged is abstract");
 };
 
 
