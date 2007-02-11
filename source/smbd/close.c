@@ -465,7 +465,6 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir &&
 				lck->delete_token) {
-		BOOL ok;
 	
 		/* Become the user who requested the delete. */
 
@@ -483,8 +482,9 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 
 		status = rmdir_internals(fsp->conn, fsp->fsp_name);
 
-		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
-			fsp->fsp_name, ok ? "succeeded" : "failed" ));
+		DEBUG(5,("close_directory: %s. Delete on close was set - "
+			 "deleting directory returned %s.\n",
+			 fsp->fsp_name, nt_errstr(status)));
 
 		/* unbecome user. */
 		pop_sec_ctx();
