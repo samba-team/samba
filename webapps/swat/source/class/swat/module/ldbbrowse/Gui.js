@@ -339,12 +339,6 @@ qx.Proto._buildPageBrowse = function(module, page)
   // We've only got one column, so we don't need cell focus indication.
   tree.setCellFocusAttributes({ backgroundColor : "transparent" });
 
-  // This needs to become automatic!
-  tree.setColumnWidth(0, 200);
-
-  // We only have one column.  We don't need the column visibility button
-  tree.setColumnVisibilityButtonVisible(false);
-
   // Get the data model
   var dataModel = tree.getDataModel();
 
