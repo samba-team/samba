@@ -279,7 +279,6 @@ void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
-	free_namearray(conn->aio_write_behind_list);
 	
 	string_free(&conn->user);
 	string_free(&conn->dirpath);

@@ -772,7 +772,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
-	conn->aio_write_behind_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 
