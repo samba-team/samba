@@ -46,6 +46,6 @@ status=0
 	    echo "cifs_resolver: resolved: $2 to $DATAA"
 	    keyctl instantiate $1 "$DATAA" $3 || exit 1
     fi
-
-} >&/dev/ttyS0
-exit $status
+# if you want to debug the upcall, replace /dev/null (below) with ttyS0 or file
+} >&/dev/null
+exit 0 
