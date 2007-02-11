@@ -512,7 +512,6 @@ typedef struct files_struct {
 	BOOL modified;
 	BOOL is_directory;
 	BOOL is_stat;
-	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	BOOL posix_open;
@@ -661,7 +660,6 @@ typedef struct connection_struct {
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
-	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
 	struct notify_context *notify_ctx;

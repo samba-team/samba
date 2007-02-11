@@ -610,7 +610,6 @@ NTSTATUS dup_file_fsp(files_struct *fsp,
 	dup_fsp->modified = fsp->modified;
 	dup_fsp->is_directory = fsp->is_directory;
 	dup_fsp->is_stat = fsp->is_stat;
-	dup_fsp->aio_write_behind = fsp->aio_write_behind;
         string_set(&dup_fsp->fsp_name,fsp->fsp_name);
 
 	*result = dup_fsp;
