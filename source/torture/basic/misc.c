@@ -36,47 +36,6 @@
 #include "libcli/composite/composite.h"
 
 extern struct cli_credentials *cmdline_credentials;
-static void benchrw_callback(struct smbcli_request *req);
-enum benchrw_stage {
-	START,
-	OPEN_CONNECTION,
-	CLEANUP_TESTDIR,
-	MK_TESTDIR,
-	OPEN_FILE,
-	INITIAL_WRITE,
-	READ_WRITE_DATA,
-	MAX_OPS_REACHED,
-	ERROR,
-	CLOSE_FILE,
-	CLEANUP,
-	FINISHED
-};
-
-struct benchrw_state{
-		struct torture_context *tctx;
-		char *dname;
-		char *fname;
-		uint16_t fnum;
-		int nr;
-		struct smbcli_tree	*cli;		
-		uint8_t *buffer;
-		int writecnt;
-		int readcnt;
-		int completed;
-		void *req_params;
-		enum benchrw_stage mode;
-		struct params{
-			struct unclist{
-				const char *host;
-				const char *share;
-			} **unc;
-			const char *workgroup;
-			int retry;
-			unsigned int writeblocks;
-			unsigned int blocksize;
-			unsigned int writeratio;
-		} *lp_params;
-	};
 	
 static BOOL wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_t len)
 {
@@ -409,11 +368,54 @@ BOOL torture_ioctl_test(struct torture_context *tctx,
 	return True;
 }
 
+static void benchrw_callback(struct smbcli_request *req);
+enum benchrw_stage {
+	START,
+	OPEN_CONNECTION,
+	CLEANUP_TESTDIR,
+	MK_TESTDIR,
+	OPEN_FILE,
+	INITIAL_WRITE,
+	READ_WRITE_DATA,
+	MAX_OPS_REACHED,
+	ERROR,
+	CLOSE_FILE,
+	CLEANUP,
+	FINISHED
+};
+
+struct benchrw_state {
+	struct torture_context *tctx;
+	char *dname;
+	char *fname;
+	uint16_t fnum;
+	int nr;
+	struct smbcli_tree	*cli;		
+	uint8_t *buffer;
+	int writecnt;
+	int readcnt;
+	int completed;
+	void *req_params;
+	enum benchrw_stage mode;
+	struct params{
+		struct unclist{
+			const char *host;
+			const char *share;
+		} **unc;
+		const char *workgroup;
+		int retry;
+		unsigned int writeblocks;
+		unsigned int blocksize;
+		unsigned int writeratio;
+	} *lp_params;
+};
+
 /* 
  	init params using lp_parm_xxx 
  	return number of unclist entries
 */
-static int init_benchrw_params(struct torture_context *tctx, struct params *lpar)
+static int init_benchrw_params(struct torture_context *tctx,
+			       struct params *lpar)
 {
 	char **unc_list = NULL;
 	int num_unc_names = 0, conn_index=0, empty_lines=0;
@@ -429,33 +431,41 @@ static int init_benchrw_params(struct torture_context *tctx, struct params *lpar
 		char *h, *s;
 		unc_list = file_lines_load(p, &num_unc_names, NULL);
 		if (!unc_list || num_unc_names <= 0) {
-			torture_comment(tctx, "Failed to load unc names list from '%s'\n", p);
+			torture_comment(tctx, "Failed to load unc names list "
+					"from '%s'\n", p);
 			exit(1);
 		}
 		
-		lpar->unc = talloc_array(tctx, struct unclist *, (num_unc_names-empty_lines));
+		lpar->unc = talloc_array(tctx, struct unclist *,
+					 (num_unc_names-empty_lines));
 		for(conn_index = 0; conn_index < num_unc_names; conn_index++) {
 			/* ignore empty lines */
 			if(strlen(unc_list[conn_index % num_unc_names])==0){
 				empty_lines++;
 				continue;
 			}
-			if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
-					      NULL, &h, &s)) {
-				torture_comment(tctx, "Failed to parse UNC name %s\n",
-			       unc_list[conn_index % num_unc_names]);
+			if (!smbcli_parse_unc(
+				    unc_list[conn_index % num_unc_names],
+				    NULL, &h, &s)) {
+				torture_comment(
+					tctx, "Failed to parse UNC "
+					"name %s\n",
+					unc_list[conn_index % num_unc_names]);
 				exit(1);
 			}
-		lpar->unc[conn_index-empty_lines] = talloc(tctx,struct unclist);
-		lpar->unc[conn_index-empty_lines]->host = h;
-		lpar->unc[conn_index-empty_lines]->share = s;	
+			lpar->unc[conn_index-empty_lines] =
+				talloc(tctx, struct unclist);
+			lpar->unc[conn_index-empty_lines]->host = h;
+			lpar->unc[conn_index-empty_lines]->share = s;	
 		}
 		return num_unc_names-empty_lines;
 	}else{
 		lpar->unc = talloc_array(tctx, struct unclist *, 1);
 		lpar->unc[0] = talloc(tctx,struct unclist);
-		lpar->unc[0]->host  = torture_setting_string(tctx, "host", NULL);
-		lpar->unc[0]->share = torture_setting_string(tctx, "share", NULL);
+		lpar->unc[0]->host  = torture_setting_string(tctx, "host",
+							     NULL);
+		lpar->unc[0]->share = torture_setting_string(tctx, "share",
+							     NULL);
 		return 1;
 	}
 }
@@ -463,8 +473,9 @@ static int init_benchrw_params(struct torture_context *tctx, struct params *lpar
 /*
  Called when the reads & writes are finished. closes the file.
 */
-static NTSTATUS benchrw_close(struct torture_context *tctx,struct smbcli_request *req,
-				struct benchrw_state *state)
+static NTSTATUS benchrw_close(struct torture_context *tctx,
+			      struct smbcli_request *req,
+			      struct benchrw_state *state)
 {
 	union smb_close close_parms;
 	
@@ -488,8 +499,9 @@ static NTSTATUS benchrw_close(struct torture_context *tctx,struct smbcli_request
 /*
  Called when the initial write is completed is done. write or read a file.
 */
-static NTSTATUS benchrw_readwrite(struct torture_context *tctx,struct smbcli_request *req,
-					struct benchrw_state *state)
+static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
+				  struct smbcli_request *req,
+				  struct benchrw_state *state)
 {
 	union smb_read	rd;
 	union smb_write	wr;
@@ -512,7 +524,8 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,struct smbcli_req
 		state->readcnt=0;
 		req = smb_raw_write_send(state->cli,&wr);
 	}else{
-		torture_comment(tctx, "Callback READ file:%d (%d/%d) Offset:%d\n",
+		torture_comment(tctx,
+				"Callback READ file:%d (%d/%d) Offset:%d\n",
 				state->nr,state->completed,torture_numops,
 				(state->readcnt*state->lp_params->blocksize));
 		rd.generic.level = RAW_READ_READ    ;
@@ -541,8 +554,9 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,struct smbcli_req
 /*
  Called when the open is done. writes to the file.
 */
-static NTSTATUS benchrw_open(struct torture_context *tctx,struct smbcli_request *req,
-				struct benchrw_state *state)
+static NTSTATUS benchrw_open(struct torture_context *tctx,
+			     struct smbcli_request *req,
+			     struct benchrw_state *state)
 {
 	union smb_write	wr;
 	if(state->mode == OPEN_FILE){
@@ -587,8 +601,9 @@ static NTSTATUS benchrw_open(struct torture_context *tctx,struct smbcli_request 
 /*
  Called when the mkdir is done. Opens a file.
 */
-static NTSTATUS benchrw_mkdir(struct torture_context *tctx,struct smbcli_request *req,
-				struct benchrw_state *state)
+static NTSTATUS benchrw_mkdir(struct torture_context *tctx,
+			      struct smbcli_request *req,
+			      struct benchrw_state *state)
 {
 	union smb_open *open_parms;	
 	uint8_t *writedata;	
@@ -597,7 +612,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,struct smbcli_request
 	
 	/* open/create the files */
 	torture_comment(tctx, "Open File %d/%d\n",state->nr+1,
-					lp_parm_int(-1, "torture", "nprocs", 4));
+			lp_parm_int(-1, "torture", "nprocs", 4));
 	open_parms=talloc_zero(tctx, union smb_open);
 	NT_STATUS_HAVE_NO_MEMORY(open_parms);
 	open_parms->openx.level = RAW_OPEN_OPENX;
@@ -648,9 +663,10 @@ static void benchrw_callback(struct smbcli_request *req)
 	switch (state->mode) {
 	
 	case MK_TESTDIR:
-		if (!NT_STATUS_IS_OK(benchrw_mkdir(tctx, req,state))) {			
-			torture_comment(tctx, "Failed to create the test directory - %s\n", 
-							nt_errstr(req->status));
+		if (!NT_STATUS_IS_OK(benchrw_mkdir(tctx, req,state))) {
+			torture_comment(tctx, "Failed to create the test "
+					"directory - %s\n", 
+					nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
@@ -658,24 +674,27 @@ static void benchrw_callback(struct smbcli_request *req)
 	case OPEN_FILE:
 	case INITIAL_WRITE:
 		if (!NT_STATUS_IS_OK(benchrw_open(tctx, req,state))){
-			torture_comment(tctx, "Failed to open/write the file - %s\n", 
-							nt_errstr(req->status));
+			torture_comment(tctx, "Failed to open/write the "
+					"file - %s\n", 
+					nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
 		break;
 	case READ_WRITE_DATA:
 		if (!NT_STATUS_IS_OK(benchrw_readwrite(tctx,req,state))){
-			torture_comment(tctx, "Failed to read/write the file - %s\n", 
-							nt_errstr(req->status));
+			torture_comment(tctx, "Failed to read/write the "
+					"file - %s\n", 
+					nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
 		break;
 	case MAX_OPS_REACHED:
 		if (!NT_STATUS_IS_OK(benchrw_close(tctx,req,state))){
-			torture_comment(tctx, "Failed to read/write/close the file - %s\n", 
-							nt_errstr(req->status));
+			torture_comment(tctx, "Failed to read/write/close "
+					"the file - %s\n", 
+					nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
@@ -683,8 +702,9 @@ static void benchrw_callback(struct smbcli_request *req)
 	case CLOSE_FILE:
 		torture_comment(tctx, "File %d closed\n",state->nr);
 		if (!NT_STATUS_IS_OK(req->status)) {
-			torture_comment(tctx, "Failed to close the file - %s\n",
-							nt_errstr(req->status));
+			torture_comment(tctx, "Failed to close the "
+					"file - %s\n",
+					nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
@@ -709,13 +729,15 @@ static void async_open_callback(struct composite_context *con)
 		state->mode=CLEANUP_TESTDIR;
 	}else{
 		if(state->writecnt < retry){
-			torture_comment(tctx, "Failed to open connection:%d, Retry (%d/%d)\n",
+			torture_comment(tctx, "Failed to open connection: "
+					"%d, Retry (%d/%d)\n",
 					state->nr,state->writecnt,retry);
 			state->writecnt++;
 			state->mode=START;
 			usleep(1000);	
 		}else{
-			torture_comment(tctx, "Failed to open connection (%d) - %s\n",
+			torture_comment(tctx, "Failed to open connection "
+					"(%d) - %s\n",
 					state->nr, nt_errstr(con->status));
 			state->mode=ERROR;
 		}
@@ -763,8 +785,9 @@ BOOL run_benchrw(struct torture_context *tctx)
 	BOOL success=True;
 	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 	
-	torture_comment(tctx, "Start BENCH-READWRITE num_ops=%d num_nprocs=%d\n",
-		torture_numops, torture_nprocs);
+	torture_comment(tctx, "Start BENCH-READWRITE num_ops=%d "
+			"num_nprocs=%d\n",
+			torture_numops, torture_nprocs);
 
 	/*init talloc context*/
 	ev = event_context_init(tctx);
@@ -782,7 +805,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 		state[i]->nr=i;
 		state[i]->dname=talloc_asprintf(tctx,"benchrw%d",i);
 		state[i]->fname=talloc_asprintf(tctx,"%s%s",
-								state[i]->dname,fname);	
+						state[i]->dname,fname);	
 		state[i]->mode=START;
 		state[i]->writecnt=0;
 	}
@@ -794,14 +817,15 @@ BOOL run_benchrw(struct torture_context *tctx)
 			switch (state[i]->mode){
 			/*open multiple connections with the same userid */
 			case START:
-				smb_con = talloc(tctx,struct smb_composite_connect) ;
+				smb_con = talloc(
+					tctx,struct smb_composite_connect) ;
 				state[i]->req_params=smb_con; 
 				state[i]->mode=OPEN_CONNECTION;
-				req1 = torture_connect_async(tctx, smb_con,
-									tctx,ev,
-									lpparams.unc[i % num_unc_names]->host,
-									lpparams.unc[i % num_unc_names]->share,
-									lpparams.workgroup);
+				req1 = torture_connect_async(
+					tctx, smb_con, tctx,ev,
+					lpparams.unc[i % num_unc_names]->host,
+					lpparams.unc[i % num_unc_names]->share,
+					lpparams.workgroup);
 				/* register callback fn + private data */
 				req1->async.fn = async_open_callback;
 				req1->async.private_data=state[i];
@@ -812,7 +836,9 @@ BOOL run_benchrw(struct torture_context *tctx)
 				smb_raw_exit(state[i]->cli->session);
 				if (smbcli_deltree(state[i]->cli, 
 						state[i]->dname) == -1) {
-					torture_comment(tctx, "Unable to delete %s - %s\n", 
+					torture_comment(
+						tctx,
+						"Unable to delete %s - %s\n", 
 						state[i]->dname,
 						smbcli_errstr(state[i]->cli));
 					state[i]->mode=ERROR;
@@ -833,12 +859,14 @@ BOOL run_benchrw(struct torture_context *tctx)
 				break;
 			/* cleanup , close connection */
 			case CLEANUP:
-				torture_comment(tctx, "Deleting test dir %s %d/%d\n",state[i]->dname,
+				torture_comment(tctx, "Deleting test dir %s "
+						"%d/%d\n",state[i]->dname,
 						i+1,torture_nprocs);
 				smbcli_deltree(state[i]->cli,state[i]->dname);
 				if (NT_STATUS_IS_ERR(smb_tree_disconnect(
-										state[i]->cli))) {
-					torture_comment(tctx, "ERROR: Tree disconnect failed");
+							     state[i]->cli))) {
+					torture_comment(tctx, "ERROR: Tree "
+							"disconnect failed");
 					state[i]->mode=ERROR;
 					break;
 				}
