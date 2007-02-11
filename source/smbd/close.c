@@ -321,18 +321,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	NTSTATUS saved_status3 = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
 
-	if (fsp->aio_write_behind) {
-		/*
-	 	 * If we're finishing write behind on a close we can get a write
-		 * error here, we must remember this.
-		 */
-		int ret = wait_for_aio_completion(fsp);
-		if (ret) {
-			saved_status1 = map_nt_error_from_unix(ret);
-		}
-	} else {
-		cancel_aio_by_fsp(fsp);
-	}
+	cancel_aio_by_fsp(fsp);
  
 	/*
 	 * If we're flushing on a close we can get a write

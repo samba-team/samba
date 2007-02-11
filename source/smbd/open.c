@@ -368,11 +368,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->is_stat = False;
-	if (conn->aio_write_behind_list
-	    && is_in_path(path, conn->aio_write_behind_list,
-			  conn->case_sensitive)) {
-		fsp->aio_write_behind = True;
-	}
 
 	string_set(&fsp->fsp_name, path);
 	fsp->wcp = NULL; /* Write cache pointer. */
