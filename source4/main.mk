@@ -5,7 +5,6 @@ include dynconfig.mk
 include heimdal_build/config.mk
 include config.mk
 include dsdb/config.mk
-include gtk/config.mk
 include smbd/config.mk
 include cluster/config.mk
 include smbd/process_model.mk

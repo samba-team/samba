@@ -162,3 +162,10 @@ source/coverage
 source/st
 source/samba.info
 source/pidl/cover_db
+source/dsdb/repl/drepl_service_proto.h
+webapps/qooxdoo-0.6.5-sdk/frontend/framework/.cache
+webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/data
+webapps/swat/source/translation
+webapps/swat/source/class/swat/translation
+webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/translation
+webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/translation/messages.pot

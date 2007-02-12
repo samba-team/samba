@@ -22,6 +22,8 @@
 #ifndef _NT_STATUS_H
 #define _NT_STATUS_H
 
+#include <stdint.h>
+
 /* the following rather strange looking definitions of NTSTATUS and WERROR
    and there in order to catch common coding errors where different error types
    are mixed up. This is especially important as we slowly convert Samba
