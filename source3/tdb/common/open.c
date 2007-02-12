@@ -263,15 +263,6 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
-	tdb->locked = (struct tdb_lock_type *)calloc(tdb->header.hash_size+1,
-						     sizeof(tdb->locked[0]));
-	if (!tdb->locked) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
-			 "failed to allocate lock structure for %s\n",
-			 name));
-		errno = ENOMEM;
-		goto fail;
-	}
 	tdb_mmap(tdb);
 	if (locked) {
 		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0, 1) == -1) {
@@ -324,7 +315,6 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	if (tdb->fd != -1)
 		if (close(tdb->fd) != 0)
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to close tdb->fd on error!\n"));
-	SAFE_FREE(tdb->locked);
 	SAFE_FREE(tdb);
 	errno = save_errno;
 	return NULL;
@@ -354,7 +344,7 @@ int tdb_close(struct tdb_context *tdb)
 	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1)
 		ret = close(tdb->fd);
-	SAFE_FREE(tdb->locked);
+	SAFE_FREE(tdb->lockrecs);
 
 	/* Remove from contexts list */
 	for (i = &tdbs; *i; i = &(*i)->next) {
