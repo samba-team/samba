@@ -122,6 +122,65 @@ static void bench_incr(struct ctdb_context *ctdb)
 	       num_repeats*loops/end_timer(), loops, *(uint32_t *)call.reply_data.dptr);
 }
 
+static int msg_count;
+static int msg_plus, msg_minus;
+
+/*
+  handler for messages in bench_ring()
+*/
+static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+				 TDB_DATA data, void *private)
+{
+	int incr = *(int *)data.dptr;
+	int *count = (int *)private;
+	int dest;
+	(*count)++;
+	dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+	ctdb_send_message(ctdb, dest, srvid, data);
+	if (incr == 1) {
+		msg_plus++;
+	} else {
+		msg_minus++;
+	}
+}
+
+/*
+  benchmark sending messages in a ring around the nodes
+*/
+static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
+{
+	TDB_DATA data;
+	int incr, vnn=ctdb_get_vnn(ctdb);
+
+	data.dptr = (uint8_t *)&incr;
+	data.dsize = sizeof(incr);
+
+	if (vnn == 0) {
+		/* two messages are injected into the ring, moving
+		   in opposite directions */
+		int dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+		incr = 1;
+		ctdb_send_message(ctdb, dest, 0, data);
+		incr = -1;
+		ctdb_send_message(ctdb, dest, 0, data);
+	}
+	
+	start_timer();
+
+	while (end_timer() < timelimit) {
+		if (vnn == 0 && msg_count % 1000 == 0) {
+			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
+			       msg_count/end_timer(), msg_plus, msg_minus);
+			fflush(stdout);
+		}
+		event_loop_once(ev);
+	}
+
+	printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\n", 
+	       msg_count/end_timer(), msg_plus, msg_minus);
+}
+
+
 /*
   main program
 */
@@ -217,6 +276,8 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
+
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
@@ -224,11 +285,8 @@ int main(int argc, const char *argv[])
 	   outside of test code) */
 	ctdb_connect_wait(ctdb);
 
-	bench_incr(ctdb);
+	bench_ring(ctdb, ev);
        
-	/* go into a wait loop to allow other nodes to complete */
-	ctdb_wait_loop(ctdb);
-
 	/* shut it down */
 	talloc_free(ctdb);
 	return 0;

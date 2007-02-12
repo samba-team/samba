@@ -162,6 +162,15 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 }
 
 /*
+  return the number of nodes
+*/
+uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
+{
+	return ctdb->num_nodes;
+}
+
+
+/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
@@ -210,6 +219,10 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 
 	case CTDB_REPLY_DMASTER:
 		ctdb_reply_dmaster(ctdb, hdr);
+		break;
+
+	case CTDB_REQ_MESSAGE:
+		ctdb_request_message(ctdb, hdr);
 		break;
 
 	default:
@@ -266,6 +279,20 @@ void ctdb_wait_loop(struct ctdb_context *ctdb)
 		event_loop_once(ctdb->ev);
 	}
 }
+
+
+/*
+  queue a packet or die
+*/
+void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_node *node;
+	node = ctdb->nodes[hdr->destnode];
+	if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
+		ctdb_fatal(ctdb, "Unable to queue packet\n");
+	}
+}
+
 
 static const struct ctdb_upcalls ctdb_upcalls = {
 	.recv_pkt       = ctdb_recv_pkt,

@@ -6,3 +6,5 @@ push.sh
 ctdb_test
 config.cache
 configure
+config.h
+config.h.in

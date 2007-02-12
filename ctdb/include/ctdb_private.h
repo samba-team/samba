@@ -94,6 +94,8 @@ struct ctdb_context {
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
 	unsigned max_lacount;
+	ctdb_message_fn_t message_handler;
+	void *message_private;
 };
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
@@ -138,7 +140,8 @@ enum ctdb_operation {
 	CTDB_REPLY_REDIRECT = 2,
 	CTDB_REQ_DMASTER    = 3,
 	CTDB_REPLY_DMASTER  = 4,
-	CTDB_REPLY_ERROR    = 5
+	CTDB_REPLY_ERROR    = 5,
+	CTDB_REQ_MESSAGE    = 6
 };
 
 /*
@@ -193,6 +196,13 @@ struct ctdb_reply_dmaster {
 	uint8_t  data[1];
 };
 
+struct ctdb_req_message {
+	struct ctdb_req_header hdr;
+	uint32_t srvid;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
@@ -203,6 +213,7 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 uint32_t ctdb_hash(const TDB_DATA *key);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -213,6 +224,7 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb,
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
+void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 
 #endif
