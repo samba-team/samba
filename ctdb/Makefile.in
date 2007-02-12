@@ -57,9 +57,9 @@ bin/ctdb_bench: $(OBJS) ctdb_bench.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ctdb_bench.o $(OBJS) $(LIB_FLAGS)
 
-bin/ibwrapper_test: $(OBJS) tests/ibwrapper_test.o
+bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
 
 clean:
 	rm -f *.o */*.o */*/*.o
