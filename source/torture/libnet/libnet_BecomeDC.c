@@ -419,6 +419,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 							 linked_attributes,
 							 s_dsa,
 							 uptodateness_vector,
+							 c->gensec_skey,
 							 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
@@ -646,6 +647,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 							 linked_attributes,
 							 s_dsa,
 							 uptodateness_vector,
+							 c->gensec_skey,
 							 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
