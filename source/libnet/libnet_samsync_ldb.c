@@ -1215,6 +1215,7 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 
 	r2.out.error_string    = NULL;
 	r2.in.binding_string   = r->in.binding_string;
+	r2.in.rid_crypt	       = true;
 	r2.in.init_fn          = libnet_samsync_ldb_init;
 	r2.in.delta_fn         = libnet_samsync_ldb_fn;
 	r2.in.fn_ctx           = state;
