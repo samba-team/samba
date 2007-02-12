@@ -107,6 +107,9 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 /* lock a list in the database. list -1 is the alloc list */
 int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 {
+	struct tdb_lock_type *new_lck;
+	int i;
+
 	/* a global lock allows us to avoid per chain locks */
 	if (tdb->global_lock.count && 
 	    (ltype == tdb->global_lock.ltype || ltype == F_RDLCK)) {
@@ -125,18 +128,50 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 	if (tdb->flags & TDB_NOLOCK)
 		return 0;
 
+	for (i=0; i<tdb->num_lockrecs; i++) {
+		if (tdb->lockrecs[i].list == list) {
+			if (tdb->lockrecs[i].count == 0) {
+				/*
+				 * Can't happen, see tdb_unlock(). It should
+				 * be an assert.
+				 */
+				TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock: "
+					 "lck->count == 0 for list %d", list));
+			}
+			/*
+			 * Just increment the in-memory struct, posix locks
+			 * don't stack.
+			 */
+			tdb->lockrecs[i].count++;
+			return 0;
+		}
+	}
+
+	new_lck = (struct tdb_lock_type *)realloc(
+		tdb->lockrecs,
+		sizeof(*tdb->lockrecs) * (tdb->num_lockrecs+1));
+	if (new_lck == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	tdb->lockrecs = new_lck;
+
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
-	if (tdb->locked[list+1].count == 0) {
-		if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW, 0, 1)) {
-			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d ltype=%d (%s)\n", 
-				 list, ltype, strerror(errno)));
-			return -1;
-		}
-		tdb->locked[list+1].ltype = ltype;
-		tdb->num_locks++;
+	if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW,
+				     0, 1)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d "
+			 "ltype=%d (%s)\n",  list, ltype, strerror(errno)));
+		return -1;
 	}
-	tdb->locked[list+1].count++;
+
+	tdb->num_locks++;
+
+	tdb->lockrecs[tdb->num_lockrecs].list = list;
+	tdb->lockrecs[tdb->num_lockrecs].count = 1;
+	tdb->lockrecs[tdb->num_lockrecs].ltype = ltype;
+	tdb->num_lockrecs += 1;
+
 	return 0;
 }
 
@@ -146,6 +181,8 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 {
 	int ret = -1;
+	int i;
+	struct tdb_lock_type *lck = NULL;
 
 	/* a global lock allows us to avoid per chain locks */
 	if (tdb->global_lock.count && 
@@ -166,19 +203,52 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 		return ret;
 	}
 
-	if (tdb->locked[list+1].count==0) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: count is 0\n"));
-		return ret;
+	for (i=0; i<tdb->num_lockrecs; i++) {
+		if (tdb->lockrecs[i].list == list) {
+			lck = &tdb->lockrecs[i];
+			break;
+		}
 	}
 
-	if (tdb->locked[list+1].count == 1) {
-		/* Down to last nested lock: unlock underneath */
-		ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK, F_SETLKW, 0, 1);
-		tdb->num_locks--;
-	} else {
-		ret = 0;
+	if ((lck == NULL) || (lck->count == 0)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: count is 0\n"));
+		return -1;
 	}
-	tdb->locked[list+1].count--;
+
+	if (lck->count > 1) {
+		lck->count--;
+		return 0;
+	}
+
+	/*
+	 * This lock has count==1 left, so we need to unlock it in the
+	 * kernel. We don't bother with decrementing the in-memory array
+	 * element, we're about to overwrite it with the last array element
+	 * anyway.
+	 */
+
+	ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK,
+				       F_SETLKW, 0, 1);
+	tdb->num_locks--;
+
+	/*
+	 * Shrink the array by overwriting the element just unlocked with the
+	 * last array element.
+	 */
+
+	if (tdb->num_lockrecs > 1) {
+		*lck = tdb->lockrecs[tdb->num_lockrecs-1];
+	}
+	tdb->num_lockrecs -= 1;
+
+	/*
+	 * We don't bother with realloc when the array shrinks, but if we have
+	 * a completely idle tdb we should get rid of the locked array.
+	 */
+
+	if (tdb->num_lockrecs == 0) {
+		SAFE_FREE(tdb->lockrecs);
+	}
 
 	if (ret)
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: An error occurred unlocking!\n")); 

@@ -516,12 +516,10 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 
 	/* remove any locks created during the transaction */
 	if (tdb->num_locks != 0) {
-		int h;
-		for (h=0;h<tdb->header.hash_size+1;h++) {
-			if (tdb->locked[h].count != 0) {
-				tdb_brlock(tdb,FREELIST_TOP+4*h,F_UNLCK,F_SETLKW, 0, 1);
-				tdb->locked[h].count = 0;
-			}
+		int i;
+		for (i=0;i<tdb->num_lockrecs;i++) {
+			tdb_brlock(tdb,FREELIST_TOP+4*tdb->lockrecs[i].list,
+				   F_UNLCK,F_SETLKW, 0, 1);
 		}
 		tdb->num_locks = 0;
 	}

@@ -123,6 +123,7 @@ struct tdb_header {
 };
 
 struct tdb_lock_type {
+	int list;
 	u32 count;
 	u32 ltype;
 };
@@ -152,7 +153,8 @@ struct tdb_context {
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
 	struct tdb_lock_type global_lock;
-	struct tdb_lock_type *locked; /* array of chain locks */
+	int num_lockrecs;
+	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
 	u32 flags; /* the flags passed to tdb_open */
