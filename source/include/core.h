@@ -26,6 +26,8 @@
 
 #include "libcli/util/nt_status.h"
 
+#include <stdbool.h>
+#include <stdlib.h>
 typedef bool BOOL;
 
 #define False false

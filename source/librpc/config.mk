@@ -110,7 +110,7 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
 [SUBSYSTEM::NDR_SAMR]
 OBJ_FILES = gen_ndr/ndr_samr.o
-PUBLIC_HEADERS = gen_ndr/samr.h
+PUBLIC_HEADERS = gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/ndr_samr_c.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_LSA NDR_SECURITY
 
 [SUBSYSTEM::NDR_NFS4ACL]
@@ -135,10 +135,12 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SVCCTL NDR_SECURITY
 
 [SUBSYSTEM::NDR_SVCCTL]
 OBJ_FILES = gen_ndr/ndr_svcctl.o
+PUBLIC_HEADERS = gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC
 
 [SUBSYSTEM::NDR_ATSVC]
 OBJ_FILES = gen_ndr/ndr_atsvc.o
+PUBLIC_HEADERS = gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h
 PUBLIC_DEPENDENCIES = LIBNDR
 
 [SUBSYSTEM::NDR_EVENTLOG]
@@ -175,7 +177,7 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 [SUBSYSTEM::NDR_MGMT]
 OBJ_FILES = gen_ndr/ndr_mgmt.o
-PUBLIC_DEPENDENCIES = LIBNDR NDR_DCERPC
+PUBLIC_DEPENDENCIES = LIBNDR 
 
 [SUBSYSTEM::NDR_PROTECTED_STORAGE]
 OBJ_FILES = gen_ndr/ndr_protected_storage.o
@@ -344,10 +346,12 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SRVSVC
 
 [SUBSYSTEM::RPC_NDR_SVCCTL]
 OBJ_FILES = gen_ndr/ndr_svcctl_c.o
+PUBLIC_HEADERS = gen_ndr/ndr_svcctl_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
 
 [SUBSYSTEM::RPC_NDR_ATSVC]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
+PUBLIC_HEADERS = gen_ndr/ndr_atsvc_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
@@ -441,7 +445,9 @@ PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = DCE/RPC client library
-PUBLIC_HEADERS = rpc/dcerpc.h
+PUBLIC_HEADERS = rpc/dcerpc.h \
+			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
+			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h
 PUBLIC_PROTO_HEADER = rpc/dcerpc_proto.h
 OBJ_FILES = \
 		rpc/dcerpc.o \
@@ -455,8 +461,7 @@ OBJ_FILES = \
 		rpc/dcerpc_connect.o
 PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
-		LIBNDR NDR_DCERPC \
-		RPC_NDR_EPMAPPER \
+		LIBNDR NDR_DCERPC RPC_NDR_EPMAPPER \
 		NDR_SCHANNEL RPC_NDR_NETLOGON \
 		gensec LIBCLI_AUTH LIBCLI_RAW CREDENTIALS
 # End SUBSYSTEM dcerpc

@@ -33,6 +33,8 @@ gtk/common/gtk-smb.h: gtk-smb.h
 gtk/common/select.h: gtk/select.h
 librpc/ndr/libndr.h: ndr.h
 lib/registry/registry.h: registry.h
+lib/registry/reg_backend_rpc.h: registry_rpc.h
+lib/registry/registry_proto.h: registry/proto.h
 libcli/util/nterr.h: core/nterr.h
 libcli/util/doserr.h: core/doserr.h
 libcli/util/nt_status.h: core/ntstatus.h
@@ -43,9 +45,20 @@ librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h
 librpc/gen_ndr/netlogon.h: gen_ndr/netlogon.h
 librpc/gen_ndr/ndr_misc.h: gen_ndr/ndr_misc.h
 librpc/gen_ndr/ndr_dcerpc.h: gen_ndr/ndr_dcerpc.h
+librpc/gen_ndr/mgmt.h: dcerpc/mgmt.h
+librpc/gen_ndr/ndr_mgmt.h: dcerpc/ndr_mgmt.h
+librpc/gen_ndr/ndr_mgmt_c.h: dcerpc/ndr_mgmt_c.h
+librpc/gen_ndr/epmapper.h: dcerpc/epmapper.h
+librpc/gen_ndr/ndr_epmapper.h: dcerpc/ndr_epmapper.h
+librpc/gen_ndr/ndr_epmapper_c.h: dcerpc/ndr_epmapper_c.h
+librpc/gen_ndr/ndr_atsvc.h: dcerpc/ndr_atsvc.h
+librpc/gen_ndr/atsvc.h: dcerpc/atsvc.h
+librpc/gen_ndr/ndr_atsvc_c.h: dcerpc/ndr_atsvc_c.h
 librpc/gen_ndr/misc.h: gen_ndr/misc.h
 librpc/gen_ndr/lsa.h: gen_ndr/lsa.h
-librpc/gen_ndr/samr.h: gen_ndr/samr.h
+librpc/gen_ndr/samr.h: dcerpc/samr.h
+librpc/gen_ndr/ndr_samr.h: dcerpc/ndr_samr.h
+librpc/gen_ndr/ndr_samr_c.h: dcerpc/ndr_samr_c.h
 librpc/gen_ndr/security.h: gen_ndr/security.h
 librpc/ndr/libndr_proto.h: ndr/proto.h
 librpc/rpc/dcerpc_proto.h: dcerpc/proto.h
@@ -73,7 +86,9 @@ torture/util.h: torture/util.h
 libcli/libcli.h: client.h
 libcli/libcli_proto.h: client/proto.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
-librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
+librpc/gen_ndr/svcctl.h: dcerpc/svcctl.h
+librpc/gen_ndr/ndr_svcctl.h: dcerpc/ndr_svcctl.h
+librpc/gen_ndr/ndr_svcctl_c.h: dcerpc/ndr_svcctl_c.h
 lib/cmdline/popt_common.h: samba/popt.h
 lib/util/dlinklist.h: dlinklist.h
 version.h: samba/version.h
@@ -94,3 +109,5 @@ param/share.h: param/share.h
 param/share_proto.h: param/share_proto.h
 lib/util/util_tdb.h: util_tdb.h
 lib/util/wrap_xattr.h: wrap_xattr.h
+lib/events/events.h: events/events.h
+lib/events/events_internal.h: events/events_internal.h
