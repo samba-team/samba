@@ -52,7 +52,7 @@ PUBLIC_DEPENDENCIES = LIBTALLOC
 # Start MODULE registry_rpc
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
-PRIVATE_PROTO_HEADER = reg_backend_rpc.h
+PUBLIC_PROTO_HEADER = reg_backend_rpc.h
 OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = registry
 OBJ_FILES = \
@@ -99,7 +99,7 @@ OBJ_FILES = \
 		patchfile.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET
-PRIVATE_PROTO_HEADER = registry_proto.h
+PUBLIC_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
 ################################################

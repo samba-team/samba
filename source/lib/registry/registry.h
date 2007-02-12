@@ -22,6 +22,8 @@
 #ifndef _REGISTRY_H /* _REGISTRY_H */
 #define _REGISTRY_H 
 
+#include "core.h"
+#include "talloc.h"
 #include "librpc/gen_ndr/security.h"
 
 /* Handles for the predefined keys */
