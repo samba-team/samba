@@ -27,11 +27,138 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "lib/crypto/crypto.h"
+
+static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
+					   const DATA_BLOB *gensec_skey,
+					   DATA_BLOB *in,
+					   DATA_BLOB *out)
+{
+	DATA_BLOB confounder;
+	DATA_BLOB enc_buffer;
+
+	struct MD5Context md5;
+	uint8_t _enc_key[16];
+	DATA_BLOB enc_key;
+
+	DATA_BLOB dec_buffer;
+
+	uint32_t crc32_given;
+	uint32_t crc32_calc;
+	DATA_BLOB checked_buffer;
+
+	DATA_BLOB plain_buffer;
+
+	/* 
+	 * the first 16 bytes at the beginning are the confounder
+	 * followed by the 4 byte crc32 checksum
+	 */
+	if (in->length < 20) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+	confounder = data_blob_const(in->data, 16);
+	enc_buffer = data_blob_const(in->data + 16, in->length - 16);
+
+	/* 
+	 * build the encryption key md5 over the session key followed
+	 * by the confounder
+	 * 
+	 * here the gensec session key is used and
+	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
+	 */
+	enc_key = data_blob_const(_enc_key, sizeof(_enc_key));
+	MD5Init(&md5);
+	MD5Update(&md5, gensec_skey->data, gensec_skey->length);
+	MD5Update(&md5, confounder.data, confounder.length);
+	MD5Final(enc_key.data, &md5);
+
+	/*
+	 * copy the encrypted buffer part and 
+	 * decrypt it using the created encryption key using arcfour
+	 */
+	dec_buffer = data_blob_const(enc_buffer.data, enc_buffer.length);
+	arcfour_crypt_blob(dec_buffer.data, dec_buffer.length, &enc_key);
+
+	/* 
+	 * the first 4 byte are the crc32 checksum
+	 * of the remaining bytes
+	 */
+	crc32_given = IVAL(dec_buffer.data, 0);
+	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
+	if (crc32_given != crc32_calc) {
+		return WERR_SEC_E_DECRYPT_FAILURE;
+	}
+	checked_buffer = data_blob_const(dec_buffer.data + 4, dec_buffer.length - 4);
+
+	if (checked_buffer.length) {
+		plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
+		memset(checked_buffer.data, 0x00, checked_buffer.length);
+		W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
+	} else {
+		plain_buffer = data_blob_const(NULL, 0);
+	}
+
+	*out = plain_buffer;
+	return WERR_OK;
+}
+
+static WERROR dsdb_decrypt_attribute(const DATA_BLOB *gensec_skey,
+				     struct drsuapi_DsReplicaAttribute *attr)
+{
+	WERROR status;
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB *enc_data;
+	DATA_BLOB plain_data;
+
+	if (attr->value_ctr.num_values == 0) {
+		return WERR_OK;
+	}
+
+	switch (attr->attid) {
+	case DRSUAPI_ATTRIBUTE_dBCSPwd:
+	case DRSUAPI_ATTRIBUTE_unicodePwd:
+	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+	case DRSUAPI_ATTRIBUTE_priorValue:
+	case DRSUAPI_ATTRIBUTE_currentValue:
+	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+		break;
+	default:
+		return WERR_OK;
+	}
+
+	if (attr->value_ctr.num_values > 1) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	if (!attr->value_ctr.values[0].blob) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	mem_ctx		= attr->value_ctr.values[0].blob;
+	enc_data	= attr->value_ctr.values[0].blob;
+
+	status = dsdb_decrypt_attribute_value(mem_ctx,
+					      gensec_skey,
+					      enc_data,
+					      &plain_data);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	talloc_free(attr->value_ctr.values[0].blob->data);
+	*attr->value_ctr.values[0].blob = plain_data;
+
+	return WERR_OK;
+}
 
 static WERROR dsdb_convert_object(struct ldb_context *ldb,
 				  const struct dsdb_schema *schema,
 				  struct dsdb_extended_replicated_objects *ctr,
 				  const struct drsuapi_DsReplicaObjectListItemEx *in,
+				  const DATA_BLOB *gensec_skey,
 				  TALLOC_CTX *mem_ctx,
 				  struct dsdb_extended_replicated_object *out)
 {
@@ -111,6 +238,9 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		m = &md->ctr.ctr1.array[i];
 		e = &msg->elements[i];
 
+		status = dsdb_decrypt_attribute(gensec_skey, a);
+		W_ERROR_NOT_OK_RETURN(status);
+
 		status = dsdb_attribute_drsuapi_to_ldb(schema, a, msg->elements, e);
 		W_ERROR_NOT_OK_RETURN(status);
 
@@ -174,6 +304,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
 					       const struct repsFromTo1 *source_dsa,
 					       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
+					       const DATA_BLOB *gensec_skey,
 					       TALLOC_CTX *mem_ctx,
 					       struct dsdb_extended_replicated_objects **_out)
 {
@@ -214,7 +345,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 			return WERR_FOOBAR;
 		}
 
-		status = dsdb_convert_object(ldb, schema, out, cur, out->objects, &out->objects[i]);
+		status = dsdb_convert_object(ldb, schema, out, cur, gensec_skey, out->objects, &out->objects[i]);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 	if (i != out->num_objects) {
