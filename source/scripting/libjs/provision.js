@@ -492,13 +492,6 @@ function provision_become_dc(subobj, message, paths, session_info)
 
 	setup_ldb("secrets.ldif", info, paths.secrets, false);
 
-	tmp = lp.get("secrets database");
-	ok = lp.set("secrets database", paths.secrets);
-	assert(ok);
-
-	ok = lp.set("secrets database", tmp);
-	assert(ok);
-
 	return true;
 }
 
