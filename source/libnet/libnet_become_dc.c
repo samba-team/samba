@@ -1716,6 +1716,8 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 }
 
 static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state *s,
+						   struct becomeDC_drsuapi *drsuapi_h,
+						   struct becomeDC_drsuapi *drsuapi_p,
 						   struct libnet_BecomeDC_Partition *partition,
 						   struct drsuapi_DsGetNCChanges *r)
 {
@@ -1776,6 +1778,11 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	s->_sc.ctr_level	= ctr_level;
 	s->_sc.ctr1		= ctr1;
 	s->_sc.ctr6		= ctr6;
+	/* 
+	 * we need to use the drsuapi_p->gensec_skey here,
+	 * when we use drsuapi_p->pipe in the for this request
+	 */
+	s->_sc.gensec_skey	= &drsuapi_h->gensec_skey;
 
 	nt_status = partition->store_chunk(s->callbacks.private_data, &s->_sc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1832,7 +1839,7 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
 	}
 
-	status = becomeDC_drsuapi_pull_partition_recv(s, &s->schema_part, r);
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part, r);
 	if (!W_ERROR_IS_OK(status)) {
 		composite_error(c, werror_to_ntstatus(status));
 		return;
@@ -1894,7 +1901,7 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
 	}
 
-	status = becomeDC_drsuapi_pull_partition_recv(s, &s->config_part, r);
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->config_part, r);
 	if (!W_ERROR_IS_OK(status)) {
 		composite_error(c, werror_to_ntstatus(status));
 		return;
@@ -1961,7 +1968,7 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
 	}
 
-	status = becomeDC_drsuapi_pull_partition_recv(s, &s->domain_part, r);
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part, r);
 	if (!W_ERROR_IS_OK(status)) {
 		composite_error(c, werror_to_ntstatus(status));
 		return;

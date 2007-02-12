@@ -110,6 +110,7 @@ struct libnet_BecomeDC_StoreChunk {
 	uint32_t ctr_level;
 	const struct drsuapi_DsGetNCChangesCtr1 *ctr1;
 	const struct drsuapi_DsGetNCChangesCtr6 *ctr6;
+	const DATA_BLOB *gensec_skey;
 };
 
 struct libnet_BecomeDC_Callbacks {
