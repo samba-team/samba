@@ -23,7 +23,7 @@
 #define _REGISTRY_H 
 
 #include "core.h"
-#include "talloc.h"
+#include "talloc/talloc.h"
 #include "librpc/gen_ndr/security.h"
 
 /* Handles for the predefined keys */

@@ -23,7 +23,7 @@
 #ifndef __EVENTS_H__
 #define __EVENTS_H__
 
-#include "talloc.h"
+#include "talloc/talloc.h"
 #include <stdlib.h>
 
 struct event_context;
