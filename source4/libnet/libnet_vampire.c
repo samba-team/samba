@@ -38,6 +38,7 @@
  */
 static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 			 struct creds_CredentialState *creds,
+			 bool rid_crypt,
 			 enum netr_SamDatabaseID database,
 			 struct netr_DELTA_ENUM *delta,
 			 char **error_string) 
@@ -50,7 +51,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	const char *username = user->account_name.string;
 	NTSTATUS nt_status;
 
-	if (lp_parm_bool(-1, "vampire", "rid_decrypt", True)) {
+	if (rid_crypt) {
 		if (user->lm_password_present) {
 			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
 			user->lmpassword = lm_hash;
@@ -74,7 +75,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
-				if (lp_parm_bool(-1, "vampire", "rid decrypt", True)) {
+				if (rid_crypt) {
 					sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
 					user->lmpassword = lm_hash;
 				} else {
@@ -83,7 +84,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 				user->lm_password_present = True;
 			}
 			if (keys.keys.keys2.ntpassword.length == 16) {
-				if (lp_parm_bool(-1, "vampire", "rid decrypt", True)) {
+				if (rid_crypt) {
 					sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
 					user->ntpassword = nt_hash;
 				} else {
@@ -91,6 +92,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 				}
 				user->nt_password_present = True;
 			}
+			/* TODO: rid decrypt history fields */
 		} else {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
 			dump_data(10, data.data, data.length);
@@ -128,6 +130,7 @@ static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx, 		
 			  struct creds_CredentialState *creds,
+			  bool rid_crypt,
 			  enum netr_SamDatabaseID database,
 			  struct netr_DELTA_ENUM *delta,
 			  char **error_string)
@@ -139,6 +142,7 @@ static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = fix_user(mem_ctx, 
 				     creds,
+				     rid_crypt,
 				     database,
 				     delta,
 				     error_string);
@@ -354,6 +358,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 				 * de-obfuscating the data */
 				nt_status = fix_delta(delta_ctx, 
 						      creds, 
+						      r->in.rid_crypt,
 						      dbsync.in.database_id,
 						      &dbsync.out.delta_enum_array->delta_enum[d], 
 						      &error_string);
