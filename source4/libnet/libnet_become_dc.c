@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "auth/gensec/gensec.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -55,6 +56,7 @@ struct libnet_BecomeDC_state {
 		struct libnet_BecomeDC_state *s;
 		struct dcerpc_binding *binding;
 		struct dcerpc_pipe *pipe;
+		DATA_BLOB gensec_skey;
 		struct drsuapi_DsBind bind_r;
 		struct GUID bind_guid;
 		struct drsuapi_DsBindInfoCtr bind_info_ctr;
@@ -895,6 +897,10 @@ static void becomeDC_drsuapi1_connect_recv(struct composite_context *req)
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi1.pipe);
 	if (!composite_is_ok(c)) return;
 
+	c->status = gensec_session_key(s->drsuapi1.pipe->conn->security_state.generic_state,
+				       &s->drsuapi1.gensec_skey);
+	if (!composite_is_ok(c)) return;
+
 	becomeDC_drsuapi_bind_send(s, &s->drsuapi1, becomeDC_drsuapi1_bind_recv);
 }
 
@@ -1585,6 +1591,10 @@ static void becomeDC_drsuapi2_connect_recv(struct composite_context *req)
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi2.pipe);
 	if (!composite_is_ok(c)) return;
 
+	c->status = gensec_session_key(s->drsuapi2.pipe->conn->security_state.generic_state,
+				       &s->drsuapi2.gensec_skey);
+	if (!composite_is_ok(c)) return;
+
 	becomeDC_drsuapi_bind_send(s, &s->drsuapi2, becomeDC_drsuapi2_bind_recv);
 }
 
@@ -1637,6 +1647,10 @@ static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
 	struct composite_context *c = s->creq;
 
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi3.pipe);
+	if (!composite_is_ok(c)) return;
+
+	c->status = gensec_session_key(s->drsuapi3.pipe->conn->security_state.generic_state,
+				       &s->drsuapi3.gensec_skey);
 	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi3_pull_schema_send(s);
