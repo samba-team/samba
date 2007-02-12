@@ -306,3 +306,12 @@ AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
 )
 AS_IF([test $AS_TR_SH([ac_cv_c_prototype_$1]) = yes],[$3],[$4])
 ])
+
+AC_DEFUN(LIBREPLACE_PROVIDE_HEADER, 
+[AC_CHECK_HEADER([$1], 
+		[ AC_CONFIG_COMMANDS(rm-$1, [rm -f $libreplacedir/$1], [libreplacedir=$libreplacedir]) ],
+		[ AC_CONFIG_COMMANDS(mk-$1, [echo "#include \"replace.h\"" > $libreplacedir/$1], [libreplacedir=$libreplacedir]) ]
+	)
+])
+
+
