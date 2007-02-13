@@ -217,7 +217,7 @@ static void wins_wack_allow(struct wack_state *s)
 	if (!NT_STATUS_IS_OK(status) ||
 	    rec2->version != rec->version ||
 	    strcmp(rec2->wins_owner, rec->wins_owner) != 0) {
-		DEBUG(1,("WINS: record %s changed during WACK - failing registration\n",
+		DEBUG(5,("WINS: record %s changed during WACK - failing registration\n",
 			 nbt_name_string(s, rec->name)));
 		wins_wack_deny(s);
 		return;
