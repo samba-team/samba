@@ -330,7 +330,7 @@ qx.Proto._buildPageBrowse = function(module, page)
   tree.set({
              backgroundColor: 255,
              border : qx.renderer.border.BorderPresets.getInstance().thinInset,
-             overflow: "auto",
+             overflow: "hidden",
              width: "100%",
              height: "1*",
              alwaysShowOpenCloseSymbol: true
