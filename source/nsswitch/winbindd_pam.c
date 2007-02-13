@@ -866,15 +866,12 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 		}
 
-		/* The info3 acct_flags in NT4's samlogon reply don't have
-		 * ACB_NORMAL set. */
-#if 0
 		if (!(my_info3->acct_flags & ACB_NORMAL)) {
-			DEBUG(10,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n", 
+			DEBUG(0,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n", 
 				my_info3->acct_flags));
 			return NT_STATUS_LOGON_FAILURE;
 		}
-#endif
+
 		kickoff_time = nt_time_to_unix(my_info3->kickoff_time);
 		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
 			return NT_STATUS_ACCOUNT_EXPIRED;
@@ -1241,6 +1238,65 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		} 
 		
 	} while ( (attempts < 2) && retry );
+
+	/* handle the case where a NT4 DC does not fill in the acct_flags in
+	 * the samlogon reply info3. When accurate info3 is required by the
+	 * caller, we look up the account flags ourselve - gd */
+
+	if ((state->request.flags & WBFLAG_PAM_INFO3_TEXT) && 
+	    (my_info3->acct_flags == 0) && NT_STATUS_IS_OK(result)) {
+
+		struct rpc_pipe_client *samr_pipe;
+		POLICY_HND samr_domain_handle, user_pol;
+		SAM_USERINFO_CTR *user_ctr;
+		NTSTATUS status_tmp;
+		uint32 acct_flags;
+
+		ZERO_STRUCT(user_ctr);
+
+		status_tmp = cm_connect_sam(contact_domain, state->mem_ctx, 
+					    &samr_pipe, &samr_domain_handle);
+
+		if (!NT_STATUS_IS_OK(status_tmp)) {
+			DEBUG(3, ("could not open handle to SAMR pipe: %s\n", 
+				nt_errstr(status_tmp)));
+			goto done;
+		}
+
+		status_tmp = rpccli_samr_open_user(samr_pipe, state->mem_ctx, 
+						   &samr_domain_handle,
+						   MAXIMUM_ALLOWED_ACCESS,
+						   my_info3->user_rid, &user_pol);
+
+		if (!NT_STATUS_IS_OK(status_tmp)) {
+			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",
+				nt_errstr(status_tmp)));
+			goto done;
+		}
+
+		status_tmp = rpccli_samr_query_userinfo(samr_pipe, state->mem_ctx, 
+							&user_pol, 16, &user_ctr);
+
+		if (!NT_STATUS_IS_OK(status_tmp)) {
+			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
+				nt_errstr(status_tmp)));
+			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			goto done;
+		}
+
+		acct_flags = user_ctr->info.id16->acb_info;
+
+		if (acct_flags == 0) {
+			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			goto done;
+		}
+
+		my_info3->acct_flags = acct_flags;
+
+		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
+
+		rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+	}
 
 	*info3 = my_info3;
 done:
