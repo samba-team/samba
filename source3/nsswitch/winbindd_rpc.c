@@ -262,7 +262,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ws_name_return( full_name, '_' );	
+	ws_name_return( full_name, '_' );
 
 	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", full_name?full_name:"", domain_name ));
 
