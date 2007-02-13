@@ -47,6 +47,14 @@ static void display_sam_user_info_9(SAM_USER_INFO_9 *usr)
 }
 
 /****************************************************************************
+ display sam_user_info_16 structure
+ ****************************************************************************/
+static void display_sam_user_info_16(SAM_USER_INFO_16 *usr)
+{
+	printf("\tAcct Flags   :\tox%x\n", usr->acb_info);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -411,14 +419,17 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		goto done;
 
 	switch (user_ctr->switch_value) {
-	case 21:
-		display_sam_user_info_21(user_ctr->info.id21);
-		break;
 	case 7:
 		display_sam_user_info_7(user_ctr->info.id7);
 		break;
 	case 9:
 		display_sam_user_info_9(user_ctr->info.id9);
+		break;
+	case 16:
+		display_sam_user_info_16(user_ctr->info.id16);
+		break;
+	case 21:
+		display_sam_user_info_21(user_ctr->info.id21);
 		break;
 	default:
 		printf("Unsupported infolevel: %d\n", info_level);
