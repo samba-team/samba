@@ -215,7 +215,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		if (nbtsock->unexpected.handler) {
 			nbtsock->unexpected.handler(nbtsock, packet, src);
 		} else {
-			DEBUG(2,("Failed to match request for incoming name packet id 0x%04x on %p\n",
+			DEBUG(10,("Failed to match request for incoming name packet id 0x%04x on %p\n",
 				 packet->name_trn_id, nbtsock));
 		}
 		talloc_free(tmp_ctx);
