@@ -837,7 +837,7 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		char *name_domain, *name_account;
 		
 		if ( !root_domain ) {
-			DEBUG(5,("lookupname_recv: unable determine forest root\n"));
+			DEBUG(5,("lookupname_recv: unable to determine forest root\n"));
 			cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 			return;
 		}
@@ -907,10 +907,10 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	char *p;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+	state->request.data.name.dom_name[sizeof(state->request.data.name.dom_name)-1]='\0';
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+	state->request.data.name.name[sizeof(state->request.data.name.name)-1]='\0';
 
 	/* cope with the name being a fully qualified name */
 	p = strstr(state->request.data.name.name, lp_winbind_separator());
@@ -926,7 +926,7 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
 
-	/* Lookup name from PDC using lsa_lookup_names() */
+	/* Lookup name from DC using lsa_lookup_names() */
 	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
 					 name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
