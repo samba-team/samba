@@ -716,7 +716,7 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 	/* Lookup name */
 	result = domain->methods->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
-	/* Return rid and type if lookup successful */
+	/* Return sid and type if lookup successful */
 	if (!NT_STATUS_IS_OK(result)) {
 		*type = SID_NAME_UNKNOWN;
 	}
