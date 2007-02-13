@@ -71,7 +71,7 @@ function(headings)
 
   // Set sizes
   this.setRowHeight(16);
-  this.setMetaColumnCounts([1, -1]);
+  this.setMetaColumnCounts(headings.length > 1 ? [ 1, -1 ] : [ 1 ]);
 
   // Set the data cell render.  We use the SimpleTreeDataCellRenderer for the
   // tree column, and our DefaultDataCellRenderer for all other columns.

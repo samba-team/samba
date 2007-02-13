@@ -405,35 +405,42 @@ qx.Proto.addLeaf = function(parentNodeId,
 
 
 /**
- * Prune the tree by removing the specified node, and, if the node has
- * children, recursively all of its children.
+ * Prune the tree by removing, recursively, all of a node's children.  If
+ * requested, also remove the node itself.
  *
  * @param nodeId {Integer}
  *   The node id, previously returned by {@link #addLeaf} or {@link
  *   #addBranch}, of the node (and its children) to be pruned from the tree.
+ *
+ * @param bSelfAlso {Boolean}
+ *   If <i>true</i> then remove the node identified by <i>nodeId</i> as well
+ *   as all of the children.
  */
-qx.Proto.prune = function(nodeId)
+qx.Proto.prune = function(nodeId, bSelfAlso)
 {
   // First, recursively remove all children
   for (var i = 0; i < this._nodeArr[nodeId].children.length; i++)
   {
-    this.prune(this._nodeArr[nodeId].children[i]);
+    this.prune(this._nodeArr[nodeId].children[i], true);
   }
 
-  // Delete ourself from our parent's children list
-  var node = this._nodeArr[nodeId];
-  qx.lang.Array.remove(this._nodeArr[node.parentNodeId].children, nodeId);
-
-  // Delete ourself from the selections list, if we're in it.
-  if (this._selections[nodeId])
+  if (bSelfAlso)
   {
-    delete this._selections[nodeId];
-  }
+    // Delete ourself from our parent's children list
+    var node = this._nodeArr[nodeId];
+    qx.lang.Array.remove(this._nodeArr[node.parentNodeId].children, nodeId);
 
-  // We can't splice the node itself out, because that would muck up the
-  // nodeId == index correspondence.  Instead, just replace the node with
-  // null so its index just becomes unused.
-  this._nodeArr[nodeId] = null;
+    // Delete ourself from the selections list, if we're in it.
+    if (this._selections[nodeId])
+    {
+      delete this._selections[nodeId];
+    }
+
+    // We can't splice the node itself out, because that would muck up the
+    // nodeId == index correspondence.  Instead, just replace the node with
+    // null so its index just becomes unused.
+    this._nodeArr[nodeId] = null;
+  }
 };
 
 
