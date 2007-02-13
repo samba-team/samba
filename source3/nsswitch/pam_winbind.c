@@ -1029,19 +1029,21 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	
 	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_CONTACT_TRUSTDOM;
 
-	if (ctrl & WINBIND_KRB5_AUTH) {
-
+	if (ctrl & (WINBIND_KRB5_AUTH|WINBIND_CACHED_LOGIN)) {
 		struct passwd *pwd = NULL;
-
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "enabling krb5 login flag\n"); 
-
-		request.flags |= WBFLAG_PAM_KRB5 | WBFLAG_PAM_FALLBACK_AFTER_KRB5;
 
 		pwd = getpwnam(user);
 		if (pwd == NULL) {
 			return PAM_USER_UNKNOWN;
 		}
 		request.data.auth.uid = pwd->pw_uid;
+	}
+
+	if (ctrl & WINBIND_KRB5_AUTH) {
+
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "enabling krb5 login flag\n"); 
+
+		request.flags |= WBFLAG_PAM_KRB5 | WBFLAG_PAM_FALLBACK_AFTER_KRB5;
 	}
 
 	if (ctrl & WINBIND_CACHED_LOGIN) {
