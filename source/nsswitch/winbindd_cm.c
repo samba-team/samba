@@ -82,7 +82,8 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
  Child failed to find DC's. Reschedule check.
 ****************************************************************/
 
-static void msg_failed_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_failed_to_go_online(int msg_type, struct process_id src,
+				    void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -117,7 +118,8 @@ static void msg_failed_to_go_online(int msg_type, struct process_id src, void *b
  Actually cause a reconnect from a message.
 ****************************************************************/
 
-static void msg_try_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_try_to_go_online(int msg_type, struct process_id src,
+				 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -182,8 +184,10 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (child_pid != 0) {
 		/* Parent */
-		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,msg_try_to_go_online);
-		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,msg_failed_to_go_online);
+		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,
+				 msg_try_to_go_online, NULL);
+		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				 msg_failed_to_go_online, NULL);
 		message_unblock();
 		return True;
 	}
@@ -234,7 +238,8 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
  Handler triggered if we're offline to try and detect a DC.
 ****************************************************************/
 
-static void check_domain_online_handler(struct timed_event *te,
+static void check_domain_online_handler(struct event_context *ctx,
+					struct timed_event *te,
 					const struct timeval *now,
 					void *private_data)
 {
@@ -330,7 +335,8 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	calc_new_online_timeout_check(domain);
 
-	domain->check_online_event = add_timed_event( NULL,
+	domain->check_online_event = event_add_timed(winbind_event_context(),
+						NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
 						"check_domain_online_handler",
 						check_domain_online_handler,
@@ -370,7 +376,8 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
 	GetTimeOfDay(&now);
-	set_event_dispatch_time("krb5_ticket_gain_handler", now);
+	set_event_dispatch_time(winbind_event_context(),
+				"krb5_ticket_gain_handler", now);
 
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
@@ -435,11 +442,12 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
 			domain->name ));
 
-		domain->check_online_event = add_timed_event( NULL,
-						timeval_current_ofs(5, 0),
-						"check_domain_online_handler",
-						check_domain_online_handler,
-						domain);
+		domain->check_online_event = event_add_timed(winbind_event_context(),
+								NULL,
+								timeval_current_ofs(5, 0),
+								"check_domain_online_handler",
+								check_domain_online_handler,
+								domain);
 
 		/* The above *has* to succeed for winbindd to work. */
 		if (!domain->check_online_event) {
@@ -454,7 +462,8 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	domain->startup = True;
 
 	tev.tv_sec += 5;
-	set_event_dispatch_time("check_domain_online_handler", tev);
+
+	set_event_dispatch_time(winbind_event_context(), "check_domain_online_handler", tev);
 }
 
 /****************************************************************

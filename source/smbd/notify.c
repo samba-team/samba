@@ -3,6 +3,7 @@
    change notify handling
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Volker Lendecke 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,36 +22,95 @@
 
 #include "includes.h"
 
-static struct cnotify_fns *cnotify;
-
-/****************************************************************************
- This is the structure to queue to implement NT change
- notify. It consists of smb_size bytes stored from the
- transact command (to keep the mid, tid etc around).
- Plus the fid to examine and notify private data.
-*****************************************************************************/
-
-struct change_notify {
-	struct change_notify *next, *prev;
-	files_struct *fsp;
-	connection_struct *conn;
-	uint32 flags;
+struct notify_change_request {
+	struct notify_change_request *prev, *next;
+	struct files_struct *fsp;	/* backpointer for cancel by mid */
 	char request_buf[smb_size];
-	void *change_data;
+	uint32 filter;
+	uint32 max_param_count;
+	uint32 current_bufsize;
+	struct notify_mid_map *mid_map;
+	void *backend_data;
 };
 
-static struct change_notify *change_notify_list;
+static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
+
+static struct notify_mid_map *notify_changes_by_mid;
+
+/*
+ * For NTCancel, we need to find the notify_change_request indexed by
+ * mid. Separate list here.
+ */
+
+struct notify_mid_map {
+	struct notify_mid_map *prev, *next;
+	struct notify_change_request *req;
+	uint16 mid;
+};
+
+static BOOL notify_marshall_changes(int num_changes,
+				    struct notify_change *changes,
+				    prs_struct *ps)
+{
+	int i;
+	UNISTR uni_name;
+
+	for (i=0; i<num_changes; i++) {
+		struct notify_change *c = &changes[i];
+		size_t namelen;
+		uint32 u32_tmp;	/* Temp arg to prs_uint32 to avoid
+				 * signed/unsigned issues */
+
+		namelen = convert_string_allocate(
+			NULL, CH_UNIX, CH_UTF16LE, c->name, strlen(c->name)+1,
+			&uni_name.buffer, True);
+		if ((namelen == -1) || (uni_name.buffer == NULL)) {
+			goto fail;
+		}
+
+		namelen -= 2;	/* Dump NULL termination */
+
+		/*
+		 * Offset to next entry, only if there is one
+		 */
+
+		u32_tmp = (i == num_changes-1) ? 0 : namelen + 12;
+		if (!prs_uint32("offset", ps, 1, &u32_tmp)) goto fail;
+
+		u32_tmp = c->action;
+		if (!prs_uint32("action", ps, 1, &u32_tmp)) goto fail;
+
+		u32_tmp = namelen;
+		if (!prs_uint32("namelen", ps, 1, &u32_tmp)) goto fail;
+
+		if (!prs_unistr("name", ps, 1, &uni_name)) goto fail;
+
+		/*
+		 * Not NULL terminated, decrease by the 2 UCS2 \0 chars
+		 */
+		prs_set_offset(ps, prs_offset(ps)-2);
+
+		SAFE_FREE(uni_name.buffer);
+	}
+
+	return True;
+
+ fail:
+	SAFE_FREE(uni_name.buffer);
+	return False;
+}
 
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
+static void change_notify_reply_packet(const char *request_buf,
+				       NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common(inbuf, outbuf);
+	construct_reply_common(request_buf, outbuf);
 
 	ERROR_NT(error_code);
 
@@ -62,193 +122,363 @@ static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server_cleanly("change_notify_reply_packet: send_smb failed.");
+		exit_server_cleanly("change_notify_reply_packet: send_smb "
+				    "failed.");
 }
 
-/****************************************************************************
- Remove an entry from the list and free it, also closing any
- directory handle if necessary.
-*****************************************************************************/
-
-static void change_notify_remove(struct change_notify *cnbp)
+void change_notify_reply(const char *request_buf, uint32 max_param_count,
+			 struct notify_change_buf *notify_buf)
 {
-	cnotify->remove_notify(cnbp->change_data);
-	DLIST_REMOVE(change_notify_list, cnbp);
-	ZERO_STRUCTP(cnbp);
-	SAFE_FREE(cnbp);
+	char *outbuf = NULL;
+	prs_struct ps;
+	size_t buflen = smb_size+38+max_param_count;
+
+	if (notify_buf->num_changes == -1) {
+		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		return;
+	}
+
+	if (!prs_init(&ps, 0, NULL, False)
+	    || !notify_marshall_changes(notify_buf->num_changes,
+					notify_buf->changes, &ps)) {
+		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	if (prs_offset(&ps) > max_param_count) {
+		/*
+		 * We exceed what the client is willing to accept. Send
+		 * nothing.
+		 */
+		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		goto done;
+	}
+
+	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
+		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	construct_reply_common(request_buf, outbuf);
+
+	if (send_nt_replies(outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
+			    prs_offset(&ps), NULL, 0) == -1) {
+		exit_server("change_notify_reply_packet: send_smb failed.");
+	}
+
+ done:
+	SAFE_FREE(outbuf);
+	prs_mem_free(&ps);
+
+	TALLOC_FREE(notify_buf->changes);
+	notify_buf->num_changes = 0;
 }
 
-/****************************************************************************
- Delete entries by fnum from the change notify pending queue.
-*****************************************************************************/
-
-void remove_pending_change_notify_requests_by_fid(files_struct *fsp, NTSTATUS status)
+static void notify_callback(void *private_data, const struct notify_event *e)
 {
-	struct change_notify *cnbp, *next;
+	files_struct *fsp = (files_struct *)private_data;
+	DEBUG(10, ("notify_callback called for %s\n", fsp->fsp_name));
+	notify_fsp(fsp, e->action, e->path);
+}
 
-	for (cnbp=change_notify_list; cnbp; cnbp=next) {
-		next=cnbp->next;
-		if (cnbp->fsp->fnum == fsp->fnum) {
-			change_notify_reply_packet(cnbp->request_buf,status);
-			change_notify_remove(cnbp);
+NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
+			      BOOL recursive)
+{
+	char *fullpath;
+	struct notify_entry e;
+	NTSTATUS status;
+
+	SMB_ASSERT(fsp->notify == NULL);
+
+	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_change_buf))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
+		     fsp->fsp_name) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	e.path = fullpath;
+	e.filter = filter;
+	e.subdir_filter = 0;
+	if (recursive) {
+		e.subdir_filter = filter;
+	}
+
+	status = notify_add(fsp->conn->notify_ctx, &e, notify_callback, fsp);
+	SAFE_FREE(fullpath);
+
+	return status;
+}
+
+NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
+				   uint32 filter, BOOL recursive,
+				   struct files_struct *fsp)
+{
+	struct notify_change_request *request = NULL;
+	struct notify_mid_map *map = NULL;
+
+	if (!(request = SMB_MALLOC_P(struct notify_change_request))
+	    || !(map = SMB_MALLOC_P(struct notify_mid_map))) {
+		SAFE_FREE(request);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	request->mid_map = map;
+	map->req = request;
+
+	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
+	request->max_param_count = max_param_count;
+	request->current_bufsize = 0;
+	request->filter = filter;
+	request->fsp = fsp;
+	request->backend_data = NULL;
+	
+	DLIST_ADD_END(fsp->notify->requests, request,
+		      struct notify_change_request *);
+
+	map->mid = SVAL(inbuf, smb_mid);
+	DLIST_ADD(notify_changes_by_mid, map);
+
+	/* Push the MID of this packet on the signing queue. */
+	srv_defer_sign_response(SVAL(inbuf,smb_mid));
+
+	return NT_STATUS_OK;
+}
+
+static void change_notify_remove_request(struct notify_change_request *remove_req)
+{
+	files_struct *fsp;
+	struct notify_change_request *req;
+
+	/*
+	 * Paranoia checks, the fsp referenced must must have the request in
+	 * its list of pending requests
+	 */
+
+	fsp = remove_req->fsp;
+	SMB_ASSERT(fsp->notify != NULL);
+
+	for (req = fsp->notify->requests; req; req = req->next) {
+		if (req == remove_req) {
+			break;
 		}
 	}
+
+	if (req == NULL) {
+		smb_panic("notify_req not found in fsp's requests\n");
+	}
+
+	DLIST_REMOVE(fsp->notify->requests, req);
+	DLIST_REMOVE(notify_changes_by_mid, req->mid_map);
+	SAFE_FREE(req->mid_map);
+	TALLOC_FREE(req->backend_data);
+	SAFE_FREE(req);
 }
 
 /****************************************************************************
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_mid(int mid)
+void remove_pending_change_notify_requests_by_mid(uint16 mid)
 {
-	struct change_notify *cnbp, *next;
+	struct notify_mid_map *map;
 
-	for (cnbp=change_notify_list; cnbp; cnbp=next) {
-		next=cnbp->next;
-		if(SVAL(cnbp->request_buf,smb_mid) == mid) {
-			change_notify_reply_packet(cnbp->request_buf,NT_STATUS_CANCELLED);
-			change_notify_remove(cnbp);
+	for (map = notify_changes_by_mid; map; map = map->next) {
+		if (map->mid == mid) {
+			break;
 		}
 	}
+
+	if (map == NULL) {
+		return;
+	}
+
+	change_notify_reply_packet(map->req->request_buf, NT_STATUS_CANCELLED);
+	change_notify_remove_request(map->req);
 }
 
 /****************************************************************************
- Delete entries by filename and cnum from the change notify pending queue.
- Always send reply.
+ Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_filename(files_struct *fsp, NTSTATUS status)
+void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
+						  NTSTATUS status)
 {
-	struct change_notify *cnbp, *next;
+	if (fsp->notify == NULL) {
+		return;
+	}
 
-	for (cnbp=change_notify_list; cnbp; cnbp=next) {
-		next=cnbp->next;
+	while (fsp->notify->requests != NULL) {
+		change_notify_reply_packet(
+			fsp->notify->requests->request_buf, status);
+		change_notify_remove_request(fsp->notify->requests);
+	}
+}
+
+void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
+		  const char *path)
+{
+	char *fullpath;
+
+	if (asprintf(&fullpath, "%s/%s", conn->connectpath, path) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
+		return;
+	}
+
+	notify_trigger(conn->notify_ctx, action, filter, fullpath);
+	SAFE_FREE(fullpath);
+}
+
+static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
+{
+	struct notify_change *change, *changes;
+	char *name2;
+
+	if (fsp->notify == NULL) {
 		/*
-		 * We know it refers to the same directory if the connection number and
-		 * the filename are identical.
+		 * Nobody is waiting, don't queue
 		 */
-		if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
-			change_notify_reply_packet(cnbp->request_buf,status);
-			change_notify_remove(cnbp);
-		}
+		return;
 	}
+
+	if (!(name2 = talloc_strdup(fsp->notify, name))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+			return;
+	}
+
+	string_replace(name2, '/', '\\');
+
+	/*
+	 * Someone has triggered a notify previously, queue the change for
+	 * later.
+	 */
+
+	if ((fsp->notify->num_changes > 1000) || (name == NULL)) {
+		/*
+		 * The real number depends on the client buf, just provide a
+		 * guard against a DoS here.
+		 */
+		TALLOC_FREE(fsp->notify->changes);
+		TALLOC_FREE(name2);
+		fsp->notify->num_changes = -1;
+		return;
+	}
+
+	if (fsp->notify->num_changes == -1) {
+		return;
+	}
+
+	if (!(changes = TALLOC_REALLOC_ARRAY(
+		      fsp->notify, fsp->notify->changes,
+		      struct notify_change, fsp->notify->num_changes+1))) {
+		DEBUG(0, ("talloc_realloc failed\n"));
+		TALLOC_FREE(name2);
+		return;
+	}
+
+	fsp->notify->changes = changes;
+
+	change = &(fsp->notify->changes[fsp->notify->num_changes]);
+
+	change->name = talloc_move(changes, &name2);
+	change->action = action;
+	fsp->notify->num_changes += 1;
+
+	if (fsp->notify->requests == NULL) {
+		/*
+		 * Nobody is waiting, so don't send anything. The ot
+		 */
+		return;
+	}
+
+	if (action == NOTIFY_ACTION_OLD_NAME) {
+		/*
+		 * We have to send the two rename events in one reply. So hold
+		 * the first part back.
+		 */
+	return;
+	}
+
+	/*
+	 * Someone is waiting for the change, trigger the reply immediately.
+	 *
+	 * TODO: do we have to walk the lists of requests pending?
+	 */
+
+	change_notify_reply(fsp->notify->requests->request_buf,
+			    fsp->notify->requests->max_param_count,
+			    fsp->notify);
+
+	change_notify_remove_request(fsp->notify->requests);
 }
 
-/****************************************************************************
- Set the current change notify timeout to the lowest value across all service
- values.
-****************************************************************************/
-
-void set_change_notify_timeout(int val)
+char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
 {
-	if (val > 0) {
-		cnotify->select_time = MIN(cnotify->select_time, val);
-	}
+	char *result = NULL;
+
+	result = talloc_strdup(mem_ctx, "");
+
+	if (filter & FILE_NOTIFY_CHANGE_FILE_NAME)
+		result = talloc_asprintf_append(result, "FILE_NAME|");
+	if (filter & FILE_NOTIFY_CHANGE_DIR_NAME)
+		result = talloc_asprintf_append(result, "DIR_NAME|");
+	if (filter & FILE_NOTIFY_CHANGE_ATTRIBUTES)
+		result = talloc_asprintf_append(result, "ATTRIBUTES|");
+	if (filter & FILE_NOTIFY_CHANGE_SIZE)
+		result = talloc_asprintf_append(result, "SIZE|");
+	if (filter & FILE_NOTIFY_CHANGE_LAST_WRITE)
+		result = talloc_asprintf_append(result, "LAST_WRITE|");
+	if (filter & FILE_NOTIFY_CHANGE_LAST_ACCESS)
+		result = talloc_asprintf_append(result, "LAST_ACCESS|");
+	if (filter & FILE_NOTIFY_CHANGE_CREATION)
+		result = talloc_asprintf_append(result, "CREATION|");
+	if (filter & FILE_NOTIFY_CHANGE_EA)
+		result = talloc_asprintf_append(result, "EA|");
+	if (filter & FILE_NOTIFY_CHANGE_SECURITY)
+		result = talloc_asprintf_append(result, "SECURITY|");
+	if (filter & FILE_NOTIFY_CHANGE_STREAM_NAME)
+		result = talloc_asprintf_append(result, "STREAM_NAME|");
+	if (filter & FILE_NOTIFY_CHANGE_STREAM_SIZE)
+		result = talloc_asprintf_append(result, "STREAM_SIZE|");
+	if (filter & FILE_NOTIFY_CHANGE_STREAM_WRITE)
+		result = talloc_asprintf_append(result, "STREAM_WRITE|");
+
+	if (result == NULL) return NULL;
+	if (*result == '\0') return result;
+
+	result[strlen(result)-1] = '\0';
+	return result;
 }
 
-/****************************************************************************
- Longest time to sleep for before doing a change notify scan.
-****************************************************************************/
-
-int change_notify_timeout(void)
+struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
+						     TALLOC_CTX *mem_ctx, 
+						     struct event_context *ev)
 {
-	return cnotify->select_time;
+	struct sys_notify_context *ctx;
+
+	if (!(ctx = TALLOC_P(mem_ctx, struct sys_notify_context))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	ctx->ev = ev;
+	ctx->conn = conn;
+	ctx->private_data = NULL;
+	return ctx;
 }
 
-/****************************************************************************
- Process the change notify queue. Note that this is only called as root.
- Returns True if there are still outstanding change notify requests on the
- queue.
-*****************************************************************************/
-
-BOOL process_pending_change_notify_queue(time_t t)
+NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
+			  struct notify_entry *e,
+			  void (*callback)(struct sys_notify_context *ctx, 
+					   void *private_data,
+					   struct notify_event *ev),
+			  void *private_data, void *handle)
 {
-	struct change_notify *cnbp, *next;
-	uint16 vuid;
-
-	for (cnbp=change_notify_list; cnbp; cnbp=next) {
-		next=cnbp->next;
-
-		vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(cnbp->request_buf,smb_uid);
-
-		if (cnotify->check_notify(cnbp->conn, vuid, cnbp->fsp->fsp_name, cnbp->flags, cnbp->change_data, t)) {
-			DEBUG(10,("process_pending_change_notify_queue: dir %s changed !\n", cnbp->fsp->fsp_name ));
-			change_notify_reply_packet(cnbp->request_buf,STATUS_NOTIFY_ENUM_DIR);
-			change_notify_remove(cnbp);
-		}
-	}
-
-	return (change_notify_list != NULL);
+	return SMB_VFS_NOTIFY_WATCH(ctx->conn, ctx, e, callback, private_data,
+				    handle);
 }
 
-/****************************************************************************
- Now queue an entry on the notify change list.
- We only need to save smb_size bytes from this incoming packet
- as we will always by returning a 'read the directory yourself'
- error.
-****************************************************************************/
-
-BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags)
-{
-	struct change_notify *cnbp;
-
-	if((cnbp = SMB_MALLOC_P(struct change_notify)) == NULL) {
-		DEBUG(0,("change_notify_set: malloc fail !\n" ));
-		return -1;
-	}
-
-	ZERO_STRUCTP(cnbp);
-
-	memcpy(cnbp->request_buf, inbuf, smb_size);
-	cnbp->fsp = fsp;
-	cnbp->conn = conn;
-	cnbp->flags = flags;
-	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name, flags);
-	
-	if (!cnbp->change_data) {
-		SAFE_FREE(cnbp);
-		return False;
-	}
-
-	DLIST_ADD(change_notify_list, cnbp);
-
-	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(inbuf,smb_mid));
-
-	return True;
-}
-
-int change_notify_fd(void)
-{
-	if (cnotify) {
-		return cnotify->notification_fd;
-	}
-
-	return -1;
-}
-
-/****************************************************************************
- Initialise the change notify subsystem.
-****************************************************************************/
-
-BOOL init_change_notify(void)
-{
-	cnotify = NULL;
-
-#if HAVE_KERNEL_CHANGE_NOTIFY
-	if (cnotify == NULL && lp_kernel_change_notify())
-		cnotify = kernel_notify_init();
-#endif
-#if HAVE_FAM_CHANGE_NOTIFY
-	if (cnotify == NULL && lp_fam_change_notify())
-		cnotify = fam_notify_init();
-#endif
-	if (!cnotify) cnotify = hash_notify_init();
-	
-	if (!cnotify) {
-		DEBUG(0,("Failed to init change notify system\n"));
-		return False;
-	}
-
-	return True;
-}

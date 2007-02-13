@@ -426,6 +426,9 @@ struct fd_handle {
 	unsigned long file_id;
 };
 
+struct messaging_context;
+struct event_context;
+struct fd_event;
 struct timed_event;
 struct idle_event;
 struct share_mode_entry;
@@ -437,6 +440,45 @@ struct vfs_fsp_data {
     /* NOTE: This structure contains two pointers so that we can guarantee
      * that the end of the structure is always both 4-byte and 8-byte aligned.
      */
+};
+
+/* the basic packet size, assuming no words or bytes */
+#define smb_size 39
+
+struct notify_change {
+	uint32_t action;
+	const char *name;
+};
+
+struct notify_mid_map;
+struct notify_entry;
+struct notify_event;
+struct notify_change_request;
+struct sys_notify_backend;
+struct sys_notify_context {
+	struct event_context *ev;
+	struct connection_struct *conn;
+	void *private_data; 	/* For use by the system backend */
+};
+
+struct notify_change_buf {
+	/*
+	 * If no requests are pending, changes are queued here. Simple array,
+	 * we only append.
+	 */
+
+	/*
+	 * num_changes == -1 means that we have got a catch-all change, when
+	 * asked we just return NT_STATUS_OK without specific changes.
+	 */
+	int num_changes;
+	struct notify_change *changes;
+
+	/*
+	 * If no changes are around requests are queued here. Using a linked
+	 * list, because we have to append at the end and delete from the top.
+	 */
+	struct notify_change_request *requests;
 };
 
 typedef struct files_struct {
@@ -483,6 +525,8 @@ typedef struct files_struct {
 
 	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
+
+	struct notify_change_buf *notify;
 } files_struct;
 
 #include "ntquotas.h"
@@ -627,6 +671,7 @@ typedef struct connection_struct {
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
+	struct notify_context *notify_ctx;
 } connection_struct;
 
 struct current_user {
@@ -895,9 +940,6 @@ struct bitmap {
 	uint32 *b;
 	unsigned int n;
 };
-
-/* the basic packet size, assuming no words or bytes */
-#define smb_size 39
 
 /* offsets into message for common items */
 #define smb_com 8
@@ -1259,22 +1301,19 @@ struct bitmap {
 #define FILE_SHARE_DELETE 4
 
 /* FileAttributesField */
-#define FILE_ATTRIBUTE_READONLY         0x0001
-#define FILE_ATTRIBUTE_HIDDEN           0x0002
-#define FILE_ATTRIBUTE_SYSTEM           0x0004
-#define FILE_ATTRIBUTE_VOLUME           0x0008
-#define FILE_ATTRIBUTE_DIRECTORY        0x0010
-#define FILE_ATTRIBUTE_ARCHIVE          0x0020
-#define FILE_ATTRIBUTE_DEVICE           0x0040
-#define FILE_ATTRIBUTE_NORMAL           0x0080
-#define FILE_ATTRIBUTE_TEMPORARY        0x0100
-#define FILE_ATTRIBUTE_SPARSE           0x0200
-#define FILE_ATTRIBUTE_REPARSE_POINT    0x0400
-#define FILE_ATTRIBUTE_COMPRESSED       0x0800
-#define FILE_ATTRIBUTE_OFFLINE          0x1000
-#define FILE_ATTRIBUTE_NONINDEXED       0x2000
-#define FILE_ATTRIBUTE_ENCRYPTED        0x4000
-
+#define FILE_ATTRIBUTE_READONLY		0x001L
+#define FILE_ATTRIBUTE_HIDDEN		0x002L
+#define FILE_ATTRIBUTE_SYSTEM		0x004L
+#define FILE_ATTRIBUTE_DIRECTORY	0x010L
+#define FILE_ATTRIBUTE_ARCHIVE		0x020L
+#define FILE_ATTRIBUTE_NORMAL		0x080L
+#define FILE_ATTRIBUTE_TEMPORARY	0x100L
+#define FILE_ATTRIBUTE_SPARSE		0x200L
+#define FILE_ATTRIBUTE_REPARSE_POINT    0x400L
+#define FILE_ATTRIBUTE_COMPRESSED	0x800L
+#define FILE_ATTRIBUTE_OFFLINE          0x1000L
+#define FILE_ATTRIBUTE_NONINDEXED	0x2000L
+#define FILE_ATTRIBUTE_ENCRYPTED        0x4000L
 #define SAMBA_ATTRIBUTES_MASK		0x7F
 
 /* Flags - combined with attributes. */
@@ -1352,7 +1391,7 @@ struct bitmap {
 #define FILE_READ_ONLY_VOLUME           0x00080000
 
 /* ChangeNotify flags. */
-#define FILE_NOTIFY_CHANGE_FILE        0x001
+#define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
 #define FILE_NOTIFY_CHANGE_DIR_NAME    0x002
 #define FILE_NOTIFY_CHANGE_ATTRIBUTES  0x004
 #define FILE_NOTIFY_CHANGE_SIZE        0x008
@@ -1361,7 +1400,23 @@ struct bitmap {
 #define FILE_NOTIFY_CHANGE_CREATION    0x040
 #define FILE_NOTIFY_CHANGE_EA          0x080
 #define FILE_NOTIFY_CHANGE_SECURITY    0x100
-#define FILE_NOTIFY_CHANGE_FILE_NAME   0x200
+#define FILE_NOTIFY_CHANGE_STREAM_NAME	0x00000200
+#define FILE_NOTIFY_CHANGE_STREAM_SIZE	0x00000400
+#define FILE_NOTIFY_CHANGE_STREAM_WRITE	0x00000800
+
+#define FILE_NOTIFY_CHANGE_NAME \
+	(FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME)
+
+/* change notify action results */
+#define NOTIFY_ACTION_ADDED 1
+#define NOTIFY_ACTION_REMOVED 2
+#define NOTIFY_ACTION_MODIFIED 3
+#define NOTIFY_ACTION_OLD_NAME 4
+#define NOTIFY_ACTION_NEW_NAME 5
+#define NOTIFY_ACTION_ADDED_STREAM 6
+#define NOTIFY_ACTION_REMOVED_STREAM 7
+#define NOTIFY_ACTION_MODIFIED_STREAM 8
+
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
@@ -1635,17 +1690,6 @@ struct kernel_oplocks {
 	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
 	void (*release_oplock)(files_struct *fsp);
 	BOOL (*msg_waiting)(fd_set *fds);
-	int notification_fd;
-};
-
-
-/* this structure defines the functions for doing change notify in
-   various implementations */
-struct cnotify_fns {
-	void * (*register_notify)(connection_struct *conn, char *path, uint32 flags);
-	BOOL (*check_notify)(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *data, time_t t);
-	void (*remove_notify)(void *data);
-	int select_time;
 	int notification_fd;
 };
 

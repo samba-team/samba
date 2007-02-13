@@ -514,8 +514,13 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, len)) != -1)
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, len)) != -1) {
 		set_filelen_write_cache(fsp, len);
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_SIZE
+			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name);
+	}
 
 	return ret;
 }
@@ -790,31 +795,6 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
 
 	return (path);
-}
-
-BOOL canonicalize_path(connection_struct *conn, pstring path)
-{
-#ifdef REALPATH_TAKES_NULL
-	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
-	if (!resolved_name) {
-		return False;
-	}
-	pstrcpy(path, resolved_name);
-	SAFE_FREE(resolved_name);
-	return True;
-#else
-#ifdef PATH_MAX
-        char resolved_name_buf[PATH_MAX+1];
-#else
-        pstring resolved_name_buf;
-#endif
-	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
-	if (!resolved_name) {
-		return False;
-	}
-	pstrcpy(path, resolved_name);
-	return True;
-#endif /* REALPATH_TAKES_NULL */
 }
 
 /*******************************************************************

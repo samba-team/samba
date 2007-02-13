@@ -65,7 +65,8 @@
 /* Changed to version 17 as we removed redundant connection_struct parameters. --jpeach */
 /* Changed to version 18 to add fsp parameter to the open call -- jpeach 
    Also include kernel_flock call - jmcd */
-#define SMB_VFS_INTERFACE_VERSION 18
+/* Changed to version 19, kernel change notify has been merged */
+#define SMB_VFS_INTERFACE_VERSION 19
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -152,6 +153,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LINK,
 	SMB_VFS_OP_MKNOD,
 	SMB_VFS_OP_REALPATH,
+	SMB_VFS_OP_NOTIFY_WATCH,
 
 	/* NT ACL operations. */
 
@@ -275,6 +277,13 @@ struct vfs_ops {
 		int (*link)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 		int (*mknod)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
 		char *(*realpath)(struct vfs_handle_struct *handle, const char *path, char *resolved_path);
+		NTSTATUS (*notify_watch)(struct vfs_handle_struct *handle,
+					 struct sys_notify_context *ctx,
+					 struct notify_entry *e,
+					 void (*callback)(struct sys_notify_context *ctx, 
+							  void *private_data,
+							  struct notify_event *ev),
+					 void *private_data, void *handle_p);
 		
 		/* NT ACL operations. */
 		
@@ -390,6 +399,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *link;
 		struct vfs_handle_struct *mknod;
 		struct vfs_handle_struct *realpath;
+		struct vfs_handle_struct *notify_watch;
 
 		/* NT ACL operations. */
 

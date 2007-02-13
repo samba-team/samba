@@ -439,6 +439,11 @@ void file_free(files_struct *fsp)
 		fsp->fh->ref_count--;
 	}
 
+	if (fsp->notify) {
+		notify_remove(fsp->conn->notify_ctx, fsp);
+		TALLOC_FREE(fsp->notify);
+	}
+
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 

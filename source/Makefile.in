@@ -215,7 +215,7 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
 	     rpc_client/ndr.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -398,7 +398,7 @@ PROFILES_OBJ = utils/profiles.o \
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
-NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o smbd/notify_fam.o
+NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o
 
 VFS_DEFAULT_OBJ = modules/vfs_default.o
 VFS_AUDIT_OBJ = modules/vfs_audit.o
@@ -425,6 +425,7 @@ VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
+VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1533,6 +1534,10 @@ bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_GPFS_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
+bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
 #########################################################
 ## IdMap NSS plugins

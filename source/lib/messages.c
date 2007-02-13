@@ -66,7 +66,9 @@ struct message_rec {
 static struct dispatch_fns {
 	struct dispatch_fns *next, *prev;
 	int msg_type;
-	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len);
+	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len,
+		   void *private_data);
+	void *private_data;
 } *dispatch_fns;
 
 /****************************************************************************
@@ -102,7 +104,7 @@ static void sig_usr1(void)
 ****************************************************************************/
 
 static void ping_message(int msg_type, struct process_id src,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
 	const char *msg = buf ? (const char *)buf : "none";
 
@@ -133,7 +135,7 @@ BOOL message_init(void)
 
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
-	message_register(MSG_PING, ping_message);
+	message_register(MSG_PING, ping_message, NULL);
 
 	/* Register some debugging related messages */
 
@@ -164,7 +166,7 @@ static TDB_DATA message_key_pid(struct process_id pid)
  then delete its record in the database.
 ****************************************************************************/
 
-static BOOL message_notify(struct process_id procid)
+static NTSTATUS message_notify(struct process_id procid)
 {
 	pid_t pid = procid.pid;
 	int ret;
@@ -189,25 +191,40 @@ static BOOL message_notify(struct process_id procid)
 
 	if (ret == -1) {
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
+			DEBUG(2,("pid %d doesn't exist - deleting messages record\n",
+				 (int)pid));
 			tdb_delete(tdb, message_key_pid(procid));
-		} else {
-			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
+
+			/*
+			 * INVALID_HANDLE is the closest I can think of -- vl
+			 */
+			return NT_STATUS_INVALID_HANDLE;
 		}
-		return False;
+
+		DEBUG(2,("message to process %d failed - %s\n", (int)pid,
+			 strerror(errno)));
+
+		/*
+		 * No call to map_nt_error_from_unix -- don't want to link in
+		 * errormap.o into lots of utils.
+		 */
+
+		if (errno == EINVAL) return NT_STATUS_INVALID_PARAMETER;
+		if (errno == EPERM)  return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Send a message to a particular pid.
 ****************************************************************************/
 
-static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
-				      const void *buf, size_t len,
-				      BOOL duplicates_allowed,
-				      unsigned int timeout)
+static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
+					  const void *buf, size_t len,
+					  BOOL duplicates_allowed,
+					  unsigned int timeout)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -237,8 +254,9 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	kbuf = message_key_pid(pid);
 
 	dbuf.dptr = (char *)SMB_MALLOC(len + sizeof(rec));
-	if (!dbuf.dptr)
-		return False;
+	if (!dbuf.dptr) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	memcpy(dbuf.dptr, &rec, sizeof(rec));
 	if (len > 0 && buf)
@@ -253,13 +271,15 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		/* lock the record for the destination */
 		if (timeout) {
 			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-				return False;
+				DEBUG(0,("message_send_pid_internal: failed to get "
+					 "chainlock with timeout %ul.\n", timeout));
+				return NT_STATUS_IO_TIMEOUT;
 			}
 		} else {
 			if (tdb_chainlock(tdb, kbuf) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-				return False;
+				DEBUG(0,("message_send_pid_internal: failed to get "
+					 "chainlock.\n"));
+				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 		}	
 		tdb_append(tdb, kbuf, dbuf);
@@ -273,13 +293,15 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	/* lock the record for the destination */
 	if (timeout) {
 		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-			return False;
+			DEBUG(0,("message_send_pid_internal: failed to get chainlock "
+				 "with timeout %ul.\n", timeout));
+			return NT_STATUS_IO_TIMEOUT;
 		}
 	} else {
 		if (tdb_chainlock(tdb, kbuf) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-			return False;
+			DEBUG(0,("message_send_pid_internal: failed to get "
+				 "chainlock.\n"));
+			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 	}	
 
@@ -308,10 +330,11 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		if (!memcmp(ptr, &rec, sizeof(rec))) {
 			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 				tdb_chainunlock(tdb, kbuf);
-				DEBUG(10,("message_send_pid_internal: discarding duplicate message.\n"));
+				DEBUG(10,("message_send_pid_internal: discarding "
+					  "duplicate message.\n"));
 				SAFE_FREE(dbuf.dptr);
 				SAFE_FREE(old_dbuf.dptr);
-				return True;
+				return NT_STATUS_OK;
 			}
 		}
 		memcpy(&prec, ptr, sizeof(prec));
@@ -334,19 +357,23 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
  Send a message to a particular pid - no timeout.
 ****************************************************************************/
 
-BOOL message_send_pid(struct process_id pid, int msg_type, const void *buf, size_t len, BOOL duplicates_allowed)
+NTSTATUS message_send_pid(struct process_id pid, int msg_type, const void *buf,
+			  size_t len, BOOL duplicates_allowed)
 {
-	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, 0);
+	return message_send_pid_internal(pid, msg_type, buf, len,
+					 duplicates_allowed, 0);
 }
 
 /****************************************************************************
  Send a message to a particular pid, with timeout in seconds.
 ****************************************************************************/
 
-BOOL message_send_pid_with_timeout(struct process_id pid, int msg_type, const void *buf, size_t len,
-		BOOL duplicates_allowed, unsigned int timeout)
+NTSTATUS message_send_pid_with_timeout(struct process_id pid, int msg_type,
+				       const void *buf, size_t len,
+				       BOOL duplicates_allowed, unsigned int timeout)
 {
-	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, timeout);
+	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed,
+					 timeout);
 }
 
 /****************************************************************************
@@ -493,7 +520,9 @@ void message_dispatch(void)
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
 				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
-				dfn->fn(msg_type, src, len ? (void *)buf : NULL, len);
+				dfn->fn(msg_type, src,
+					len ? (void *)buf : NULL, len,
+					dfn->private_data);
 				n_handled++;
 				break;
 			}
@@ -516,7 +545,9 @@ void message_dispatch(void)
 
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, struct process_id pid,
-				 void *buf, size_t len))
+				 void *buf, size_t len,
+				 void *private_data),
+		      void *private_data)
 {
 	struct dispatch_fns *dfn;
 
@@ -535,6 +566,7 @@ void message_register(int msg_type,
 
 		dfn->msg_type = msg_type;
 		dfn->fn = fn;
+		dfn->private_data = private_data;
 
 		DLIST_ADD(dispatch_fns, dfn);
 	}
@@ -579,6 +611,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 {
 	struct connections_data crec;
 	struct msg_all *msg_all = (struct msg_all *)state;
+	NTSTATUS status;
 
 	if (dbuf.dsize != sizeof(crec))
 		return 0;
@@ -596,18 +629,17 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	/* If the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
 
-	if (!message_send_pid(crec.pid, msg_all->msg_type,
-			      msg_all->buf, msg_all->len,
-			      msg_all->duplicates)) {
+	status = message_send_pid(crec.pid, msg_all->msg_type,
+				  msg_all->buf, msg_all->len,
+				  msg_all->duplicates);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
 		/* If the pid was not found delete the entry from connections.tdb */
 
-		if (errno == ESRCH) {
-			DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-				 procid_str_static(&crec.pid),
-				 crec.cnum, crec.name));
-			tdb_delete(the_tdb, kbuf);
-		}
+		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+			 procid_str_static(&crec.pid), crec.cnum, crec.name));
+		tdb_delete(the_tdb, kbuf);
 	}
 	msg_all->n_sent++;
 	return 0;
@@ -671,4 +703,135 @@ void message_unblock(void)
 {
 	BlockSignals(False, SIGUSR1);
 }
+
+/*
+ * Samba4 API wrapper around the Samba3 implementation. Yes, I know, we could
+ * import the whole Samba4 thing, but I want notify.c from Samba4 in first.
+ */
+
+struct messaging_callback {
+	struct messaging_callback *prev, *next;
+	uint32 msg_type;
+	void (*fn)(struct messaging_context *msg, void *private_data, 
+		   uint32_t msg_type, 
+		   struct server_id server_id, DATA_BLOB *data);
+	void *private_data;
+};
+
+struct messaging_context {
+	struct server_id id;
+	struct messaging_callback *callbacks;
+};
+
+static int messaging_context_destructor(struct messaging_context *ctx)
+{
+	struct messaging_callback *cb;
+
+	for (cb = ctx->callbacks; cb; cb = cb->next) {
+		/*
+		 * We unconditionally remove all instances of our callback
+		 * from the tdb basis.
+		 */
+		message_deregister(cb->msg_type);
+	}
+	return 0;
+}
+
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
+					 struct server_id server_id, 
+					 struct event_context *ev)
+{
+	struct messaging_context *ctx;
+
+	if (!(ctx = TALLOC_ZERO_P(mem_ctx, struct messaging_context))) {
+		return NULL;
+	}
+
+	ctx->id = server_id;
+	talloc_set_destructor(ctx, messaging_context_destructor);
+	return ctx;
+}
+
+static void messaging_callback(int msg_type, struct process_id pid,
+			       void *buf, size_t len, void *private_data)
+{
+	struct messaging_context *ctx =	talloc_get_type_abort(
+		private_data, struct messaging_context);
+	struct messaging_callback *cb, *next;
+
+	for (cb = ctx->callbacks; cb; cb = next) {
+		/*
+		 * Allow a callback to remove itself
+		 */
+		next = cb->next;
+
+		if (msg_type == cb->msg_type) {
+			DATA_BLOB blob;
+			struct server_id id;
+
+			blob.data = (uint8 *)buf;
+			blob.length = len;
+			id.id = pid;
+
+			cb->fn(ctx, cb->private_data, msg_type, id, &blob);
+		}
+	}
+}
+
+/*
+ * Register a dispatch function for a particular message type. Allow multiple
+ * registrants
+*/
+NTSTATUS messaging_register(struct messaging_context *ctx, void *private_data,
+			    uint32_t msg_type,
+			    void (*fn)(struct messaging_context *msg,
+				       void *private_data, 
+				       uint32_t msg_type, 
+				       struct server_id server_id,
+				       DATA_BLOB *data))
+{
+	struct messaging_callback *cb;
+
+	if (!(cb = talloc(ctx, struct messaging_callback))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cb->msg_type = msg_type;
+	cb->fn = fn;
+	cb->private_data = private_data;
+
+	DLIST_ADD(ctx->callbacks, cb);
+	message_register(msg_type, messaging_callback, ctx);
+	return NT_STATUS_OK;
+}
+
+/*
+  De-register the function for a particular message type.
+*/
+void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
+			  void *private_data)
+{
+	struct messaging_callback *cb, *next;
+
+	for (cb = ctx->callbacks; cb; cb = next) {
+		next = cb->next;
+		if ((cb->msg_type == msg_type)
+		    && (cb->private_data == private_data)) {
+			DLIST_REMOVE(ctx->callbacks, cb);
+			TALLOC_FREE(cb);
+		}
+	}
+}
+
+/*
+  Send a message to a particular server
+*/
+NTSTATUS messaging_send(struct messaging_context *msg,
+			struct server_id server, 
+			uint32_t msg_type, DATA_BLOB *data)
+{
+	return message_send_pid_internal(server.id, msg_type, data->data,
+					 data->length, True, 0);
+}
+
 /** @} **/

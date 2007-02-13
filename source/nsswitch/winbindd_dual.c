@@ -476,7 +476,8 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 
 /* Set our domains as offline and forward the offline message to our children. */
 
-void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_offline(int msg_type, struct process_id src,
+			 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -527,7 +528,8 @@ void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t 
 
 /* Set our domains as online and forward the online message to our children. */
 
-void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_online(int msg_type, struct process_id src,
+			void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -579,7 +581,8 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 }
 
 /* Forward the online/offline messages to our children. */
-void winbind_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+void winbind_msg_onlinestatus(int msg_type, struct process_id src,
+			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
 
@@ -598,7 +601,8 @@ void winbind_msg_onlinestatus(int msg_type, struct process_id src, void *buf, si
 }
 
 
-static void account_lockout_policy_handler(struct timed_event *te,
+static void account_lockout_policy_handler(struct event_context *ctx,
+					   struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
 {
@@ -631,7 +635,7 @@ static void account_lockout_policy_handler(struct timed_event *te,
 			 nt_errstr(result)));
 	}
 
-	child->lockout_policy_event = add_timed_event(NULL,
+	child->lockout_policy_event = event_add_timed(winbind_event_context(), NULL,
 						      timeval_current_ofs(3600, 0),
 						      "account_lockout_policy_handler",
 						      account_lockout_policy_handler,
@@ -640,7 +644,8 @@ static void account_lockout_policy_handler(struct timed_event *te,
 
 /* Deal with a request to go offline. */
 
-static void child_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_offline(int msg_type, struct process_id src,
+			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -677,7 +682,8 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 /* Deal with a request to go online. */
 
-static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_online(int msg_type, struct process_id src,
+			     void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
 	const char *domainname = (const char *)buf;
@@ -738,7 +744,8 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	return buf;
 }
 
-static void child_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+static void child_msg_onlinestatus(int msg_type, struct process_id src,
+				   void *buf, size_t len, void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message;
@@ -842,9 +849,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_unblock();
 
 	/* Handle online/offline messages. */
-	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
-	message_register(MSG_WINBIND_ONLINE,child_msg_online);
-	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
+	message_register(MSG_WINBIND_OFFLINE, child_msg_offline, NULL);
+	message_register(MSG_WINBIND_ONLINE, child_msg_online, NULL);
+	message_register(MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus,
+			 NULL);
 
 	if ( child->domain ) {
 		child->domain->startup = True;
@@ -865,7 +873,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* Ensure we're not handling an event inherited from
 	   our parent. */
 
-	cancel_named_event("krb5_ticket_refresh_handler");
+	cancel_named_event(winbind_event_context(),
+			   "krb5_ticket_refresh_handler");
 
 	/* We might be in the idmap child...*/
 	if (child->domain && !(child->domain->internal) &&
@@ -873,8 +882,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		set_domain_online_request(child->domain);
 
-		child->lockout_policy_event = add_timed_event(
-			NULL, timeval_zero(),
+		child->lockout_policy_event = event_add_timed(
+			winbind_event_context(), NULL, timeval_zero(),
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
@@ -892,7 +901,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_TALLOC_FREE();
 		main_loop_TALLOC_FREE();
 
-		run_events();
+		run_events(winbind_event_context(), 0, NULL, NULL);
 
 		GetTimeOfDay(&now);
 
@@ -904,7 +913,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		tp = get_timed_events_timeout(&t);
+		tp = get_timed_events_timeout(winbind_event_context(), &t);
 		if (tp) {
 			DEBUG(11,("select will use timeout of %u.%u seconds\n",
 				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));

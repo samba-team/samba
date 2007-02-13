@@ -73,6 +73,10 @@
 #define MSG_SMB_BLOCKING_LOCK_CANCEL 3013
 #define MSG_SMB_NOTIFY       3014
 #define MSG_SMB_STAT_CACHE_DELETE 3015
+/*
+ * Samba4 compatibility
+ */
+#define MSG_PVFS_NOTIFY       3016
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001

@@ -1865,6 +1865,9 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
+			notify_fname(conn, NOTIFY_ACTION_REMOVED,
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
+				     directory);
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
@@ -1921,9 +1924,15 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			if (SMB_VFS_UNLINK(conn,fname) == 0)
+			if (SMB_VFS_UNLINK(conn,fname) == 0) {
 				count++;
-			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
+				DEBUG(3,("unlink_internals: succesful unlink "
+					 "[%s]\n",fname));
+				notify_fname(conn, NOTIFY_ACTION_REMOVED,
+					     FILE_NOTIFY_CHANGE_FILE_NAME,
+					     fname);
+			}
+				
 		}
 		CloseDir(dir_hnd);
 	}
@@ -1972,12 +1981,6 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */
-	process_pending_change_notify_queue((time_t)0);
-	
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBunlink);
@@ -3702,6 +3705,9 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 
 	ret = SMB_VFS_RMDIR(conn,directory);
 	if (ret == 0) {
+		notify_fname(conn, NOTIFY_ACTION_REMOVED,
+			     FILE_NOTIFY_CHANGE_DIR_NAME,
+			     directory);
 		return NT_STATUS_OK;
 	}
 
@@ -3778,6 +3784,10 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 			 "%s\n", directory,strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
+
+	notify_fname(conn, NOTIFY_ACTION_REMOVED,
+		     FILE_NOTIFY_CHANGE_DIR_NAME,
+		     directory);
 
 	return NT_STATUS_OK;
 }
@@ -4095,6 +4105,48 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 	return status;
 }
 
+/*
+ * Do the notify calls from a rename
+ */
+
+static void notify_rename(connection_struct *conn, BOOL is_dir,
+			  const char *oldpath, const char *newpath)
+{
+	char *olddir, *newdir;
+	const char *oldname, *newname;
+	uint32 mask;
+
+	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
+		: FILE_NOTIFY_CHANGE_FILE_NAME;
+
+	if (!parent_dirname_talloc(NULL, oldpath, &olddir, &oldname)
+	    || !parent_dirname_talloc(NULL, newpath, &newdir, &newname)) {
+		TALLOC_FREE(olddir);
+		return;
+	}
+
+	if (strcmp(olddir, newdir) == 0) {
+		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, oldpath);
+		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, newpath);
+	}
+	else {
+		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, oldpath);
+		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, newpath);
+	}
+	TALLOC_FREE(olddir);
+	TALLOC_FREE(newdir);
+
+	/* this is a strange one. w2k3 gives an additional event for
+	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
+	   files, but not directories */
+	if (!is_dir) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES
+			     |FILE_NOTIFY_CHANGE_CREATION,
+			     newpath);
+	}
+}
+
 /****************************************************************************
  The guts of the rename command, split out so it may be called by the NT SMB
  code. 
@@ -4301,6 +4353,8 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 			rename_open_files(conn, lck, sbuf1.st_dev,
 					  sbuf1.st_ino, newname);
 			TALLOC_FREE(lck);
+			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
+				      directory, newname);
 			return NT_STATUS_OK;	
 		}
 
@@ -4499,11 +4553,6 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */	
-	process_pending_change_notify_queue((time_t)0);
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBmv);

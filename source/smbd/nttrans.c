@@ -1782,11 +1782,6 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */	
-	process_pending_change_notify_queue((time_t)0);
 	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBntrename);
@@ -1810,14 +1805,17 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
-	uint32 flags;
+	uint32 filter;
+	NTSTATUS status;
+	BOOL recursive;
 
 	if(setup_count < 6) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
 	fsp = file_fsp((char *)setup,4);
-	flags = IVAL(setup, 0);
+	filter = IVAL(setup, 0);
+	recursive = (SVAL(setup, 6) != 0) ? True : False;
 
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
@@ -1825,16 +1823,65 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
+	{
+		char *filter_string;
+
+		if (!(filter_string = notify_filter_string(NULL, filter))) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		DEBUG(3,("call_nt_transact_notify_change: notify change "
+			 "called on %s, filter = %s, recursive = %d\n",
+			 fsp->fsp_name, filter_string, recursive));
+
+		TALLOC_FREE(filter_string);
+	}
+
 	if((!fsp->is_directory) || (conn != fsp->conn)) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (!change_notify_set(inbuf, fsp, conn, flags)) {
-		return(UNIXERROR(ERRDOS,ERRbadfid));
+	if (fsp->notify == NULL) {
+
+		status = change_notify_create(fsp, filter, recursive);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("change_notify_create returned %s\n",
+				   nt_errstr(status)));
+			return ERROR_NT(status);
+		}
 	}
 
-	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
-name = %s\n", fsp->fsp_name ));
+	if (fsp->notify->num_changes != 0) {
+
+		/*
+		 * We've got changes pending, respond immediately
+		 */
+
+		/*
+		 * TODO: write a torture test to check the filtering behaviour
+		 * here.
+		 */
+
+		change_notify_reply(inbuf, max_param_count,
+				    fsp->notify);
+
+		/*
+		 * change_notify_reply() above has independently sent its
+		 * results
+		 */
+		return -1;
+	}
+
+	/*
+	 * No changes pending, queue the request
+	 */
+
+	status = change_notify_add_request(inbuf, max_param_count, filter,
+					   recursive, fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
 
 	return -1;
 }
@@ -1886,13 +1933,6 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
 	
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */
-	
-	process_pending_change_notify_queue((time_t)0);
-
 	return -1;
 }
 

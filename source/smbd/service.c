@@ -22,6 +22,31 @@
 
 extern userdom_struct current_user_info;
 
+static BOOL canonicalize_path(connection_struct *conn, pstring path)
+{
+#ifdef REALPATH_TAKES_NULL
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	SAFE_FREE(resolved_name);
+	return True;
+#else
+#ifdef PATH_MAX
+        char resolved_name_buf[PATH_MAX+1];
+#else
+        pstring resolved_name_buf;
+#endif
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	return True;
+#endif /* REALPATH_TAKES_NULL */
+}
+
 /****************************************************************************
  Ensure when setting connectpath it is a canonicalized (no ./ // or ../)
  absolute path stating in / and not ending in /.
@@ -827,6 +852,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		set_conn_connectpath(conn,s);
 	}
 
+	if ((!conn->printer) && (!conn->ipc)) {
+		conn->notify_ctx = notify_init(conn->mem_ctx, server_id_self(),
+					       smbd_messaging_context(),
+					       smbd_event_context(),
+					       conn);
+	}
+
 /* ROOT Activities: */	
 	/* check number of connections */
 	if (!claim_connection(conn,
@@ -980,9 +1012,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
 	
-	/* Setup the minimum value for a change notify wait time (seconds). */
-	set_change_notify_timeout(lp_change_notify_timeout(snum));
-
 	/* we've finished with the user stuff - go back to root */
 	change_to_root_user();
 	return(conn);

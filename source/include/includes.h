@@ -684,6 +684,7 @@ typedef int BOOL;
 #include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
+#include "librpc/gen_ndr/notify.h"
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"

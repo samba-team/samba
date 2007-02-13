@@ -101,8 +101,9 @@ BOOL cli_send_mailslot(BOOL unique, const char *mailslot,
 	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name),
 		    inet_ntoa(dest_ip)));
 
-	return message_send_pid(pid_to_procid(nmbd_pid), MSG_SEND_PACKET, &p, sizeof(p),
-				False);
+	return NT_STATUS_IS_OK(message_send_pid(pid_to_procid(nmbd_pid),
+						MSG_SEND_PACKET, &p, sizeof(p),
+						False));
 }
 
 /*

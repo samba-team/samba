@@ -35,8 +35,10 @@ static unsigned long our_dm_mark = 0;
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-static void msg_req_dmalloc_mark(int UNUSED(msg_type), struct process_id UNUSED(src_pid),
-			  void *UNUSED(buf), size_t UNUSED(len))
+static void msg_req_dmalloc_mark(int UNUSED(msg_type),
+				 struct process_id UNUSED(src_pid),
+				 void *UNUSED(buf), size_t UNUSED(len),
+				 void *private_data)
 {
 #ifdef ENABLE_DMALLOC
 	our_dm_mark = dmalloc_mark();
@@ -50,7 +52,8 @@ static void msg_req_dmalloc_mark(int UNUSED(msg_type), struct process_id UNUSED(
 
 static void msg_req_dmalloc_log_changed(int UNUSED(msg_type),
 					struct process_id UNUSED(src_pid),
-					void *UNUSED(buf), size_t UNUSED(len))
+					void *UNUSED(buf), size_t UNUSED(len),
+					void *private_data)
 {
 #ifdef ENABLE_DMALLOC
 	dmalloc_log_changed(our_dm_mark, True, True, True);
@@ -66,7 +69,8 @@ static void msg_req_dmalloc_log_changed(int UNUSED(msg_type),
  **/
 void register_dmalloc_msgs(void)
 {
-	message_register(MSG_REQ_DMALLOC_MARK, msg_req_dmalloc_mark);
-	message_register(MSG_REQ_DMALLOC_LOG_CHANGED, msg_req_dmalloc_log_changed);
+	message_register(MSG_REQ_DMALLOC_MARK, msg_req_dmalloc_mark, NULL);
+	message_register(MSG_REQ_DMALLOC_LOG_CHANGED,
+			 msg_req_dmalloc_log_changed, NULL);
 	DEBUG(2, ("Registered MSG_REQ_DMALLOC_MARK and LOG_CHANGED\n"));
 }	

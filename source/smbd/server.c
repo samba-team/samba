@@ -61,12 +61,33 @@ static void smbd_set_server_fd(int fd)
 	client_setfd(fd);
 }
 
+struct event_context *smbd_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init smbd event context\n");
+	}
+	return ctx;
+}
+
+struct messaging_context *smbd_messaging_context(void)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
+					   smbd_event_context()))) {
+		smb_panic("Could not init smbd messaging context\n");
+	}
+	return ctx;
+}
+
 /*******************************************************************
  What to do when smb.conf is updated.
  ********************************************************************/
 
 static void smb_conf_updated(int msg_type, struct process_id src,
-			     void *buf, size_t len)
+			     void *buf, size_t len, void *private_data)
 {
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
 	reload_services(False);
@@ -78,7 +99,7 @@ static void smb_conf_updated(int msg_type, struct process_id src,
  ********************************************************************/
 
 static void smb_stat_cache_delete(int msg_type, struct process_id src,
-			     void *buf, size_t len)
+				  void *buf, size_t len, void *private_data)
 {
 	const char *name = (const char *)buf;
 	DEBUG(10,("smb_stat_cache_delete: delete name %s\n", name));
@@ -129,7 +150,8 @@ static void  killkids(void)
 ****************************************************************************/
 
 static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
-			 void *UNUSED(buf), size_t UNUSED(len))
+			 void *UNUSED(buf), size_t UNUSED(len),
+			 void *private_data)
 {
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
@@ -140,7 +162,7 @@ static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
 ****************************************************************************/
 
 static void msg_sam_repl(int msg_type, struct process_id pid,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
         uint32 low_serial;
 
@@ -174,7 +196,7 @@ static BOOL open_sockets_inetd(void)
 }
 
 static void msg_exit_server(int msg_type, struct process_id src,
-			    void *buf, size_t len)
+			    void *buf, size_t len, void *private_data)
 {
 	DEBUG(3, ("got a SHUTDOWN message\n"));
 	exit_server_cleanly(NULL);
@@ -182,7 +204,7 @@ static void msg_exit_server(int msg_type, struct process_id src,
 
 #ifdef DEVELOPER
 static void msg_inject_fault(int msg_type, struct process_id src,
-			    void *buf, size_t len)
+			    void *buf, size_t len, void *private_data)
 {
 	int sig;
 
@@ -419,15 +441,16 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
         /* Listen to messages */
 
-        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
-        message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
-        message_register(MSG_SHUTDOWN, msg_exit_server);
-        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
-	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
-	message_register(MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
+        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync, NULL);
+        message_register(MSG_SMB_SAM_REPL, msg_sam_repl, NULL);
+        message_register(MSG_SHUTDOWN, msg_exit_server, NULL);
+        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed, NULL);
+	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated, NULL); 
+	message_register(MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete,
+			 NULL);
 
 #ifdef DEVELOPER
-	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault); 
+	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault, NULL); 
 #endif
 
 	/* now accept incoming connections - forking a new process
@@ -1078,15 +1101,11 @@ extern void build_options(BOOL screen);
 	if (!init_oplocks())
 		exit(1);
 	
-	/* Setup change notify */
-	if (!init_change_notify())
-		exit(1);
-
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
 
 	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis, NULL);
 
 	smbd_process();
 

@@ -1190,7 +1190,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 				become_root();
 			}
 
-			if (message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False))
+			if (NT_STATUS_IS_OK(message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False)))
 				r_u->status = WERR_OK;
 
 			if (not_root) 
