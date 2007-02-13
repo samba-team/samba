@@ -337,7 +337,7 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 			ldb_oom(module->ldb);
 			return -1;
 		}
-		list->dn[0] = talloc_strdup(list, (char *)tree->u.equality.value.data);
+		list->dn[0] = talloc_strdup(list->dn, (char *)tree->u.equality.value.data);
 		if (list->dn[0] == NULL) {
 			ldb_oom(module->ldb);
 			return -1;
