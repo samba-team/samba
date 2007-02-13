@@ -45,10 +45,38 @@ struct update_kt_private {
 
 static int add_modified(struct ldb_module *module, struct ldb_dn *dn, BOOL delete) {
 	struct update_kt_private *data = talloc_get_type(module->private_data, struct update_kt_private);
-	struct dn_list *item = talloc(data->changed_dns? (void *)data->changed_dns: (void *)data, struct dn_list);
+	struct dn_list *item;
 	char *filter;
+	struct ldb_result *res;
+	const char *attrs[] = { NULL };
+	int ret;
 	NTSTATUS status;
+
+	filter = talloc_asprintf(data, "(&(dn=%s)(&(objectClass=kerberosSecret)(privateKeytab=*)))",
+				 ldb_dn_get_linearized(dn));
+	if (!filter) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE,
+			 filter, attrs, &res);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(filter);
+		return ret;
+	}
+
+	if (res->count != 1) {
+		/* if it's not a kerberosSecret then we don't have anything to update */
+		talloc_free(res);
+		talloc_free(filter);
+		return LDB_SUCCESS;
+	}
+	talloc_free(res);
+
+	item = talloc(data->changed_dns? (void *)data->changed_dns: (void *)data, struct dn_list);
 	if (!item) {
+		talloc_free(filter);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -56,14 +84,12 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, BOOL delet
 	item->creds = cli_credentials_init(item);
 	if (!item->creds) {
 		DEBUG(1, ("cli_credentials_init failed!"));
+		talloc_free(filter);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	cli_credentials_set_conf(item->creds);
-/*	filter = talloc_asprintf(item, "(&(&(&(objectClass=kerberosSecret)(privateKeytab=*))(|(secret=*)(ntPwdHash=*)))(distinguishedName=%s))", */ 
-	filter = talloc_asprintf(item, "dn=%s",
-				 ldb_dn_get_linearized(dn));
 	status = cli_credentials_set_secrets(item->creds, module->ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
