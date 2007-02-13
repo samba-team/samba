@@ -225,12 +225,18 @@ NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!(*domain = dom_sid_dup(mem_ctx, sid))) {
-		return NT_STATUS_NO_MEMORY;
+	if (domain) {
+		if (!(*domain = dom_sid_dup(mem_ctx, sid))) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		(*domain)->num_auths -= 1;
 	}
 
-	(*domain)->num_auths -= 1;
-	*rid = (*domain)->sub_auths[(*domain)->num_auths];
+	if (rid) {
+		*rid = sid->sub_auths[sid->num_auths - 1];
+	}
+
 	return NT_STATUS_OK;
 }
 
