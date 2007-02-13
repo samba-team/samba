@@ -100,21 +100,22 @@ static int skel_request(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-static int skel_init(struct ldb_module *ctx)
+static int skel_init(struct ldb_module *module)
 {
 	struct private_data *data;
 
-	data = talloc(ctx, struct private_data);
+	data = talloc(module, struct private_data);
 	if (data == NULL) {
-		return 1;
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	data->some_private_data = NULL;
-	ctx->private_data = data;
+	module->private_data = data;
 
-	talloc_set_destructor (ctx, skel_destructor);
+	talloc_set_destructor (module, skel_destructor);
 
-	return ldb_next_init(ctx);
+	return ldb_next_init(module);
 }
 
 static const struct ldb_module_ops skel_ops = {
