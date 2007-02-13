@@ -78,6 +78,7 @@ static BOOL _pam_log_is_silent(int ctrl)
 	return on(ctrl, WINBIND_SILENT);
 }
 
+static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...) PRINTF_ATTRIBUTE(4,5);
 static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
 {
 	va_list args;
@@ -117,6 +118,7 @@ static BOOL _pam_log_is_debug_state_enabled(int ctrl)
 	return _pam_log_is_debug_enabled(ctrl);
 }
 
+static void _pam_log_debug(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...) PRINTF_ATTRIBUTE(4,5);
 static void _pam_log_debug(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
 {
 	va_list args;
@@ -413,6 +415,7 @@ static int _make_remark_v(pam_handle_t * pamh, int flags, int type, const char *
 	return ret;
 }
 
+static int _make_remark_format(pam_handle_t * pamh, int flags, int type, const char *format, ...) PRINTF_ATTRIBUTE(4,5);
 static int _make_remark_format(pam_handle_t * pamh, int flags, int type, const char *format, ...)
 {
 	int ret;
