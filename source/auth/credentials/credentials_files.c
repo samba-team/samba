@@ -226,15 +226,15 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 			       &msgs, attrs,
 			       "%s", filter);
 	if (ldb_ret == 0) {
-		DEBUG(1, ("Could not find entry to match filter: %s\n",
-			  filter));
+		DEBUG(1, ("Could not find entry to match filter: '%s' base: '%s'\n",
+			  filter, base));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else if (ldb_ret != 1) {
-		DEBUG(1, ("Found more than one (%d) entry to match filter: %s\n",
-			  ldb_ret, filter));
+		DEBUG(1, ("Found more than one (%d) entry to match filter: '%s' base: '%s'\n",
+			  ldb_ret, filter, base));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
@@ -247,8 +247,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	machine_account = ldb_msg_find_attr_as_string(msgs[0], "samAccountName", NULL);
 
 	if (!machine_account) {
-		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
-			  cli_credentials_get_domain(cred)));
+		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s: filter: '%s' base: '%s'\n",
+			  cli_credentials_get_domain(cred), filter, base));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
