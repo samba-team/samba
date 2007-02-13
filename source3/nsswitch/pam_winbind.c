@@ -461,8 +461,12 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 
 		case WINBINDD_GETPWNAM:
 		case WINBINDD_LOOKUPNAME:
-			_pam_log(pamh, ctrl, LOG_ERR, "request failed: %s, NT error was %s", 
+			if (strlen(response->data.auth.nt_status_string) > 0) {
+				_pam_log(pamh, ctrl, LOG_ERR, "request failed, NT error was %s", 
 				response->data.auth.nt_status_string);
+			} else {
+				_pam_log(pamh, ctrl, LOG_ERR, "request failed");
+			}
 			return PAM_USER_UNKNOWN;
 		default:
 			break;
@@ -518,15 +522,19 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 		}	 
 		return retval;
 	case PAM_SUCCESS:
-		if (req_type == WINBINDD_PAM_AUTH) {
-			/* Otherwise, the authentication looked good */
-			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", user);
-		} else if (req_type == WINBINDD_PAM_CHAUTHTOK) {
-			/* Otherwise, the authentication looked good */
-			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' password changed", user);
-		} else { 
-			/* Otherwise, the authentication looked good */
-			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' OK", user);
+		/* Otherwise, the authentication looked good */
+		switch (req_type) {
+			case WINBINDD_INFO:
+				break;
+			case WINBINDD_PAM_AUTH:
+				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", user);
+				break;
+			case WINBINDD_PAM_CHAUTHTOK:
+				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' password changed", user);
+				break;
+			default:
+				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' OK", user);
+				break;
 		}
 	
 		return retval;
@@ -1101,8 +1109,8 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		if (already_expired == True) {
 			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Password has expired "
-				       "(Password was last set: %d, the policy says "
-				       "it should expire here %d (now it's: %d))\n",
+				       "(Password was last set: %lld, the policy says "
+				       "it should expire here %lld (now it's: %lu))\n",
 				       response.data.auth.info3.pass_last_set_time, 
 				       response.data.auth.info3.pass_last_set_time +
 				       response.data.auth.policy.expire,
