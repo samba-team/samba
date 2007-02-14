@@ -96,6 +96,13 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL
 
 include smb2/config.mk
 
+[MODULE::torture_ndr]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_ndr_init
+PRIVATE_PROTO_HEADER = ndr/proto.h
+OBJ_FILES = ndr/ndr.o \
+			ndr/winreg.o
+
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
 #OUTPUT_TYPE = INTEGRATED
