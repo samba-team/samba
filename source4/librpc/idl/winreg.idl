@@ -89,7 +89,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	WERROR winreg_CloseKey(
+	[public] WERROR winreg_CloseKey(
 		[in,out,ref] policy_handle *handle
 	);
 
