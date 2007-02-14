@@ -254,6 +254,72 @@ interface drsblobs {
 		[in] supplementalCredentialsBlob blob
 		);
 
+
+	typedef struct {
+		NTTIME time1;
+		uint32 unknown1;
+		/* 
+		 * the secret value is encoded as UTF16 if it's a string
+		 * but krb5 trusts have random bytes here, so converting to UTF16
+		 * mayfail...
+		 *
+		 * TODO: We should try handle the case of a random buffer in all places
+		 *       we deal with cleartext passwords from windows
+		 *
+		 * so we don't use this:
+		 *
+		 * uint32 value_len;
+		 * [charset(UTF16)] uint8 value[value_len];
+		 */
+		DATA_BLOB value;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
+	} trustAuthInOutSecret1;
+
+	typedef struct {
+		[relative] trustAuthInOutSecret1 *value1;
+		[relative] trustAuthInOutSecret1 *value2;
+	} trustAuthInOutCtr1;
+
+	typedef struct {
+		NTTIME time1;
+		uint32 unknown1;
+		DATA_BLOB value;
+		NTTIME time2;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
+	} trustAuthInOutSecret2V1;
+
+	typedef struct {
+		NTTIME time1;
+		uint32 unknown1;
+		DATA_BLOB value;
+		NTTIME time2;
+		uint32 unknown2;
+		uint32 unknown3;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
+	} trustAuthInOutSecret2V2;
+
+	typedef struct {
+		[relative] trustAuthInOutSecret2V1 *value1;
+		[relative] trustAuthInOutSecret2V2 *value2;
+	} trustAuthInOutCtr2;
+
+	typedef [nodiscriminant] union {
+		[case(1)] trustAuthInOutCtr1 ctr1;
+		[case(2)] trustAuthInOutCtr2 ctr2;
+	} trustAuthInOutCtr;
+
+	typedef [public] struct {
+		uint32 version;
+		[switch_is(version)] trustAuthInOutCtr ctr;
+	} trustAuthInOutBlob;
+
+	void decode_trustAuthInOut(
+		[in] trustAuthInOutBlob blob
+		);
+
 	typedef [public] struct {
 		uint32 marker;
 		DATA_BLOB data;
