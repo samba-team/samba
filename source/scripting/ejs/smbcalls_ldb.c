@@ -108,9 +108,9 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	ret = ldb_search(ldb, basedn, scope, expression, attrs, &res);
 	if (ret != LDB_SUCCESS) {
 		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
-		mpr_Return(eid, mprCreateUndefinedVar());
+		mpr_Return(eid, mprLdbResult(ldb, ret, NULL));
 	} else {
-		mpr_Return(eid, mprLdbArray(ldb, res->msgs, res->count, "ldb_message"));
+		mpr_Return(eid, mprLdbResult(ldb, ret, res));
 		talloc_free(res);
 	}
 	talloc_free(tmp_ctx);
@@ -161,7 +161,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 		return -1;
 	}
 
-	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	mpr_Return(eid, mprLdbResult(ldb, ret, NULL));
 	return 0;
 }
 
@@ -197,7 +197,7 @@ static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	talloc_free(dn);
 
-	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	mpr_Return(eid, mprLdbResult(ldb, ret, NULL));
 	return 0;
 }
 
@@ -234,7 +234,7 @@ static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 	talloc_free(dn1);
 	talloc_free(dn2);
 
-	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	mpr_Return(eid, mprLdbResult(ldb, ret, NULL));
 	return 0;
 }
 

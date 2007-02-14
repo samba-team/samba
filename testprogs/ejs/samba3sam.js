@@ -29,7 +29,7 @@ function setup_data(obj, ldif)
 	ldif = substitute_var(ldif, obj);
 	assert(ldif != undefined);
 	var ok = obj.db.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 }
 
 function setup_modules(ldb, s3, s4, ldif)
@@ -38,7 +38,7 @@ function setup_modules(ldb, s3, s4, ldif)
 	ldif = substitute_var(ldif, s4);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 
 	var ldif = "
 dn: @MAP=samba3sam
@@ -56,34 +56,37 @@ replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
 ";
 	var ok = ldb.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 }
 
 function test_s3sam_search(ldb)
 {
 	println("Looking up by non-mapped attribute");
 	var msg = ldb.search("(cn=Administrator)");
-	assert(msg.length == 1);
-	assert(msg[0].cn == "Administrator");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	assert(msg.msgs[0].cn == "Administrator");
 
 	println("Looking up by mapped attribute");
 	var msg = ldb.search("(name=Backup Operators)");
-	assert(msg.length == 1);
-	assert(msg[0].name == "Backup Operators");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	assert(msg.msgs[0].name == "Backup Operators");
 
 	println("Looking up by old name of renamed attribute");
 	var msg = ldb.search("(displayName=Backup Operators)");
-	assert(msg.length == 0);
+	assert(msg.msgs.length == 0);
 
 	println("Looking up mapped entry containing SID");
 	var msg = ldb.search("(cn=Replicator)");
-	assert(msg.length == 1);
-	println(msg[0].dn);
-	assert(msg[0].dn == "cn=Replicator,ou=Groups,dc=vernstok,dc=nl");
-	assert(msg[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	println(msg.msgs[0].dn);
+	assert(msg.msgs[0].dn == "cn=Replicator,ou=Groups,dc=vernstok,dc=nl");
+	assert(msg.msgs[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 
 	println("Checking mapping of objectClass");
-	var oc = msg[0].objectClass;
+	var oc = msg.msgs[0].objectClass;
 	assert(oc != undefined);
 	for (var i in oc) {
 		assert(oc[i] == "posixGroup" || oc[i] == "group");
@@ -91,11 +94,11 @@ function test_s3sam_search(ldb)
 
 	println("Looking up by objectClass");
 	var msg = ldb.search("(|(objectClass=user)(cn=Administrator))");
-	assert(msg != undefined);
-	assert(msg.length == 2);
-	for (var i = 0; i < msg.length; i++) {
-		assert((msg[i].dn == "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") ||
-		       (msg[i].dn == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"));
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 2);
+	for (var i = 0; i < msg.msgs.length; i++) {
+		assert((msg.msgs[i].dn == "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") ||
+		       (msg.msgs[i].dn == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"));
 	}
 }
 
@@ -110,9 +113,9 @@ blah: Blie
 cn: Foo
 showInAdvancedViewOnly: TRUE
 ");
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	println("Checking for existence of record (local)");
@@ -123,10 +126,11 @@ showInAdvancedViewOnly: TRUE
 	 */
 	var attrs =  new Array('foo','blah','cn','showInAdvancedViewOnly');
 	msg = ldb.search("(cn=Foo)", "cn=Foo", ldb.LDB_SCOPE_BASE, attrs);
-	assert(msg.length == 1);
-	assert(msg[0].showInAdvancedViewOnly == "TRUE");
-	assert(msg[0].foo == "bar");
-	assert(msg[0].blah == "Blie");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	assert(msg.msgs[0].showInAdvancedViewOnly == "TRUE");
+	assert(msg.msgs[0].foo == "bar");
+	assert(msg.msgs[0].blah == "Blie");
 
 	println("Adding record that will be mapped");
 	ok = ldb.add("
@@ -136,37 +140,41 @@ unixName: bin
 unicodePwd: geheim
 cn: Niemand
 ");
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Checking for existence of record (remote)");
 	msg = ldb.search("(unixName=bin)", new Array('unixName','cn','dn', 'unicodePwd'));
-	assert(msg.length == 1);
-	assert(msg[0].cn == "Niemand"); 
-	assert(msg[0].unicodePwd == "geheim");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	assert(msg.msgs[0].cn == "Niemand"); 
+	assert(msg.msgs[0].unicodePwd == "geheim");
 
 	println("Checking for existence of record (local && remote)");
 	msg = ldb.search("(&(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
-	assert(msg.length == 1);		// TODO: should check with more records
-	assert(msg[0].cn == "Niemand");
-	assert(msg[0].unixName == "bin");
-	assert(msg[0].unicodePwd == "geheim");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);		// TODO: should check with more records
+	assert(msg.msgs[0].cn == "Niemand");
+	assert(msg.msgs[0].unixName == "bin");
+	assert(msg.msgs[0].unicodePwd == "geheim");
 
 	println("Checking for existence of record (local || remote)");
 	msg = ldb.search("(|(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
-	println("got " + msg.length + " replies");
-	assert(msg.length == 1);		// TODO: should check with more records
-	assert(msg[0].cn == "Niemand");
-	assert(msg[0].unixName == "bin" || msg[0].unicodePwd == "geheim");
+	println("got " + msg.msgs.length + " replies");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);		// TODO: should check with more records
+	assert(msg.msgs[0].cn == "Niemand");
+	assert(msg.msgs[0].unixName == "bin" || msg.msgs[0].unicodePwd == "geheim");
 
 	println("Checking for data in destination database");
 	msg = s3.db.search("(cn=Niemand)");
-	assert(msg.length >= 1);
-	assert(msg[0].sambaSID == "S-1-5-21-4231626423-2410014848-2360679739-2001");
-	assert(msg[0].displayName == "Niemand");
+	assert(msg.error == 0);
+	assert(msg.msgs.length >= 1);
+	assert(msg.msgs[0].sambaSID == "S-1-5-21-4231626423-2410014848-2360679739-2001");
+	assert(msg.msgs[0].displayName == "Niemand");
 
 	println("Adding attribute...");
 	ok = ldb.modify("
@@ -175,17 +183,18 @@ changetype: modify
 add: description
 description: Blah
 ");
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Checking whether changes are still there...");
 	msg = ldb.search("(cn=Niemand)");
-	assert(msg.length >= 1);
-	assert(msg[0].cn == "Niemand");
-	assert(msg[0].description == "Blah");
+	assert(msg.error == 0);
+	assert(msg.msgs.length >= 1);
+	assert(msg.msgs[0].cn == "Niemand");
+	assert(msg.msgs[0].description == "Blah");
 
 	println("Modifying attribute...");
 	ok = ldb.modify("
@@ -194,16 +203,17 @@ changetype: modify
 replace: description
 description: Blie
 ");
-		if (!ok) {
-			println(ldb.errstring());
-			assert(ok);
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
 		}
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Checking whether changes are still there...");
 	msg = ldb.search("(cn=Niemand)");
-	assert(msg.length >= 1);
-	assert(msg[0].description == "Blie");
+	assert(msg.error == 0);
+	assert(msg.msgs.length >= 1);
+	assert(msg.msgs[0].description == "Blie");
 
 	println("Deleting attribute...");
 	ok = ldb.modify("
@@ -211,36 +221,39 @@ dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
 delete: description
 ");
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Checking whether changes are no longer there...");
 	msg = ldb.search("(cn=Niemand)");
-	assert(msg.length >= 1);
-	assert(msg[0].description == undefined);
+	assert(msg.error == 0);
+	assert(msg.msgs.length >= 1);
+	assert(msg.msgs[0].description == undefined);
 
 	println("Renaming record...");
 	ok = ldb.rename("cn=Niemand,cn=Users,dc=vernstok,dc=nl", "cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Checking whether DN has changed...");
 	msg = ldb.search("(cn=Niemand2)");
-	assert(msg.length == 1);
-	assert(msg[0].dn == "cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 1);
+	assert(msg.msgs[0].dn == "cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
 
 	println("Deleting record...");
 	ok = ldb.del("cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	println("Checking whether record is gone...");
 	msg = ldb.search("(cn=Niemand2)");
-	assert(msg.length == 0);
+	assert(msg.error == 0);
+	assert(msg.msgs.length == 0);
 }
 
 function test_map_search(ldb, s3, s4)
@@ -287,9 +300,9 @@ description: y
 	ldif = substitute_var(ldif, s4);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
-	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	/* Add a set of remote records */
@@ -323,7 +336,7 @@ description: y
 	ldif = substitute_var(ldif, s3);
 	assert(ldif != undefined);
 	var ok = s3.db.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Testing search by DN");
 
@@ -331,81 +344,81 @@ description: y
 	dn = s4.dn("cn=A");
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "x");
 
 	/* Search remote record by remote DN */
 	dn = s3.dn("cn=A");
 	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == undefined);
-	assert(res[0].sambaLogonTime == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == undefined);
+	assert(res.msgs[0].sambaLogonTime == "x");
 
 	/* Search split record by local DN */
 	dn = s4.dn("cn=X");
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].objectCategory == "x");
-	assert(res[0].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].lastLogon == "x");
 
 	/* Search split record by remote DN */
 	dn = s3.dn("cn=X");
 	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == undefined);
-	assert(res[0].sambaLogonTime == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == undefined);
+	assert(res.msgs[0].sambaLogonTime == "x");
 
 	println("Testing search by attribute");
 
 	/* Search by ignored attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(revision=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by kept attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(description=y)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Z"));
-	assert(res[0].objectCategory == "z");
-	assert(res[0].lastLogon == "z");
-	assert(res[1].dn == s4.dn("cn=C"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Z"));
+	assert(res.msgs[0].objectCategory == "z");
+	assert(res.msgs[0].lastLogon == "z");
+	assert(res.msgs[1].dn == s4.dn("cn=C"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "z");
 
 	/* Search by renamed attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(badPwdCount=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by converted attribute */
 	attrs = new Array("objectCategory", "lastLogon", "objectSid");
@@ -415,28 +428,28 @@ description: y
 	res = ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-552)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	*/
 	res = ldb.search("(objectSid=*)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=X"));
-	assert(res[0].objectCategory == "x");
-	assert(res[0].lastLogon == "x");
-	assert(res[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[1].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=X"));
+	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].lastLogon == "x");
+	assert(res.msgs[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[1].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 
 	/* Search by generated attribute */
 	/* In most cases, this even works when the mapping is missing
 	 * a `convert_operator' by enumerating the remote db. */
 	attrs = new Array("objectCategory", "lastLogon", "primaryGroupID");
 	res = ldb.search("(primaryGroupID=512)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == s4.dn("cn=A"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "x");
-	assert(res[0].primaryGroupID == "512");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == s4.dn("cn=A"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "x");
+	assert(res.msgs[0].primaryGroupID == "512");
 
 	/* TODO: There should actually be two results, A and X.  The
 	 * primaryGroupID of X seems to get corrupted somewhere, and the
@@ -445,10 +458,10 @@ description: y
 	 * objectSid seems to be fine in the previous search for objectSid... */
 	/*
 	res = ldb.search("(primaryGroupID=*)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	println(res.length + " results found");
-	for (i=0;i<res.length;i++) {
-		for (obj in res[i]) {
-			println(obj + ": " + res[i][obj]);
+	println(res.msgs.length + " results found");
+	for (i=0;i<res.msgs.length;i++) {
+		for (obj in res.msgs[i]) {
+			println(obj + ": " + res.msgs[i][obj]);
 		}
 		println("---");
 	}
@@ -457,293 +470,293 @@ description: y
 	/* Search by remote name of renamed attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(sambaBadPasswordCount=*)", "", ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Search by objectClass */
 	attrs = new Array("objectCategory", "lastLogon", "objectClass");
 	res = ldb.search("(objectClass=user)", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=X"));
-	assert(res[0].objectCategory == "x");
-	assert(res[0].lastLogon == "x");
-	assert(res[0].objectClass != undefined);
-	assert(res[0].objectClass[3] == "user");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[1].objectClass != undefined);
-	assert(res[1].objectClass[0] == "user");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=X"));
+	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].lastLogon == "x");
+	assert(res.msgs[0].objectClass != undefined);
+	assert(res.msgs[0].objectClass[3] == "user");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[1].objectClass != undefined);
+	assert(res.msgs[1].objectClass[0] == "user");
 
 	/* Prove that the objectClass is actually used for the search */
 	res = ldb.search("(|(objectClass=user)(badPwdCount=x))", NULL, ldb. SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 3);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[0].objectClass != undefined);
-	for (i=0;i<res[0].objectClass.length;i++) {
-		assert(res[0].objectClass[i] != "user");
+	assert(res.error == 0);
+	assert(res.msgs.length == 3);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[0].objectClass != undefined);
+	for (i=0;i<res.msgs[0].objectClass.length;i++) {
+		assert(res.msgs[0].objectClass[i] != "user");
 	}
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
-	assert(res[1].objectClass != undefined);
-	assert(res[1].objectClass[3] == "user");
-	assert(res[2].dn == s4.dn("cn=A"));
-	assert(res[2].objectCategory == undefined);
-	assert(res[2].lastLogon == "x");
-	assert(res[2].objectClass != undefined);
-	assert(res[2].objectClass[0] == "user");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[1].objectClass != undefined);
+	assert(res.msgs[1].objectClass[3] == "user");
+	assert(res.msgs[2].dn == s4.dn("cn=A"));
+	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].lastLogon == "x");
+	assert(res.msgs[2].objectClass != undefined);
+	assert(res.msgs[2].objectClass[0] == "user");
 
 	println("Testing search by parse tree");
 
 	/* Search by conjunction of local attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(&(codePage=x)(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by conjunction of remote attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(&(lastLogon=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=X"));
-	assert(res[0].objectCategory == "x");
-	assert(res[0].lastLogon == "x");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=X"));
+	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].lastLogon == "x");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
 	
 	/* Search by conjunction of local and remote attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(&(codePage=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by conjunction of local and remote attribute w/o match */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(&(codePage=x)(nextRid=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 	res = ldb.search("(&(revision=x)(lastLogon=z))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Search by disjunction of local attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(|(revision=x)(objectCategory=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by disjunction of remote attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(|(badPwdCount=x)(lastLogon=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 3);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=A"));
-	assert(res[2].objectCategory == undefined);
-	assert(res[2].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 3);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=A"));
+	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].lastLogon == "x");
 
 	/* Search by disjunction of local and remote attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(|(revision=x)(lastLogon=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 3);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=B"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "y");
-	assert(res[2].dn == s4.dn("cn=X"));
-	assert(res[2].objectCategory == "x");
-	assert(res[2].lastLogon == "x");
+	assert(res.error == 0);
+	assert(res.msgs.length == 3);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=B"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "y");
+	assert(res.msgs[2].dn == s4.dn("cn=X"));
+	assert(res.msgs[2].objectCategory == "x");
+	assert(res.msgs[2].lastLogon == "x");
 
 	/* Search by disjunction of local and remote attribute w/o match */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(|(codePage=y)(nextRid=z))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Search by negated local attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 4);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=Z"));
-	assert(res[2].objectCategory == "z");
-	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == s4.dn("cn=C"));
-	assert(res[3].objectCategory == undefined);
-	assert(res[3].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 4);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=Z"));
+	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].lastLogon == "z");
+	assert(res.msgs[3].dn == s4.dn("cn=C"));
+	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated remote attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 2);
-	assert(res[0].dn == s4.dn("cn=Z"));
-	assert(res[0].objectCategory == "z");
-	assert(res[0].lastLogon == "z");
-	assert(res[1].dn == s4.dn("cn=C"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 2);
+	assert(res.msgs[0].dn == s4.dn("cn=Z"));
+	assert(res.msgs[0].objectCategory == "z");
+	assert(res.msgs[0].lastLogon == "z");
+	assert(res.msgs[1].dn == s4.dn("cn=C"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "z");
 
 	/* Search by negated conjunction of local attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(revision=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 4);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=Z"));
-	assert(res[2].objectCategory == "z");
-	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == s4.dn("cn=C"));
-	assert(res[3].objectCategory == undefined);
-	assert(res[3].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 4);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=Z"));
+	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].lastLogon == "z");
+	assert(res.msgs[3].dn == s4.dn("cn=C"));
+	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated conjunction of remote attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(&(lastLogon=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 4);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=B"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "y");
-	assert(res[2].dn == s4.dn("cn=Z"));
-	assert(res[2].objectCategory == "z");
-	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == s4.dn("cn=C"));
-	assert(res[3].objectCategory == undefined);
-	assert(res[3].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 4);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=B"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "y");
+	assert(res.msgs[2].dn == s4.dn("cn=Z"));
+	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].lastLogon == "z");
+	assert(res.msgs[3].dn == s4.dn("cn=C"));
+	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated conjunction of local and remote attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 4);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=Z"));
-	assert(res[2].objectCategory == "z");
-	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == s4.dn("cn=C"));
-	assert(res[3].objectCategory == undefined);
-	assert(res[3].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 4);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=Z"));
+	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].lastLogon == "z");
+	assert(res.msgs[3].dn == s4.dn("cn=C"));
+	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated disjunction of local attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(|(revision=x)(objectCategory=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=A"));
-	assert(res[1].objectCategory == undefined);
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=Z"));
-	assert(res[2].objectCategory == "z");
-	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == s4.dn("cn=C"));
-	assert(res[3].objectCategory == undefined);
-	assert(res[3].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=A"));
+	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=Z"));
+	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].lastLogon == "z");
+	assert(res.msgs[3].dn == s4.dn("cn=C"));
+	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated disjunction of remote attributes */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(|(badPwdCount=x)(lastLogon=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 3);
-	assert(res[0].dn == s4.dn("cn=Y"));
-	assert(res[0].objectCategory == "y");
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=Z"));
-	assert(res[1].objectCategory == "z");
-	assert(res[1].lastLogon == "z");
-	assert(res[2].dn == s4.dn("cn=C"));
-	assert(res[2].objectCategory == undefined);
-	assert(res[2].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 3);
+	assert(res.msgs[0].dn == s4.dn("cn=Y"));
+	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=Z"));
+	assert(res.msgs[1].objectCategory == "z");
+	assert(res.msgs[1].lastLogon == "z");
+	assert(res.msgs[2].dn == s4.dn("cn=C"));
+	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].lastLogon == "z");
 
 	/* Search by negated disjunction of local and remote attribute */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(|(revision=x)(lastLogon=y)))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 3);
-	assert(res[0].dn == s4.dn("cn=A"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "x");
-	assert(res[1].dn == s4.dn("cn=Z"));
-	assert(res[1].objectCategory == "z");
-	assert(res[1].lastLogon == "z");
-	assert(res[2].dn == s4.dn("cn=C"));
-	assert(res[2].objectCategory == undefined);
-	assert(res[2].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 3);
+	assert(res.msgs[0].dn == s4.dn("cn=A"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "x");
+	assert(res.msgs[1].dn == s4.dn("cn=Z"));
+	assert(res.msgs[1].objectCategory == "z");
+	assert(res.msgs[1].lastLogon == "z");
+	assert(res.msgs[2].dn == s4.dn("cn=C"));
+	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].lastLogon == "z");
 
 	/* Search by complex parse tree */
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(|(&(revision=x)(objectCategory=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 5);
-	assert(res[0].dn == s4.dn("cn=B"));
-	assert(res[0].objectCategory == undefined);
-	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == s4.dn("cn=X"));
-	assert(res[1].objectCategory == "x");
-	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == s4.dn("cn=A"));
-	assert(res[2].objectCategory == undefined);
-	assert(res[2].lastLogon == "x");
-	assert(res[3].dn == s4.dn("cn=Z"));
-	assert(res[3].objectCategory == "z");
-	assert(res[3].lastLogon == "z");
-	assert(res[4].dn == s4.dn("cn=C"));
-	assert(res[4].objectCategory == undefined);
-	assert(res[4].lastLogon == "z");
+	assert(res.error == 0);
+	assert(res.msgs.length == 5);
+	assert(res.msgs[0].dn == s4.dn("cn=B"));
+	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].lastLogon == "y");
+	assert(res.msgs[1].dn == s4.dn("cn=X"));
+	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].lastLogon == "x");
+	assert(res.msgs[2].dn == s4.dn("cn=A"));
+	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].lastLogon == "x");
+	assert(res.msgs[3].dn == s4.dn("cn=Z"));
+	assert(res.msgs[3].objectCategory == "z");
+	assert(res.msgs[3].lastLogon == "z");
+	assert(res.msgs[4].dn == s4.dn("cn=C"));
+	assert(res.msgs[4].objectCategory == undefined);
+	assert(res.msgs[4].lastLogon == "z");
 
 	/* Clean up */
 	var dns = new Array();
@@ -755,7 +768,7 @@ description: y
 	dns[5] = s4.dn("cn=Z");
 	for (i=0;i<dns.length;i++) {
 		var ok = ldb.del(dns[i]);
-		assert(ok);
+		assert(ok.error == 0);
 	}
 }
 
@@ -781,24 +794,24 @@ revision: 1
 description: test
 ";
 	ok = ldb.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check it's there */
 	attrs = new Array("foo", "revision", "description");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].foo == "bar");
-	assert(res[0].revision == "1");
-	assert(res[0].description == "test");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].foo == "bar");
+	assert(res.msgs[0].revision == "1");
+	assert(res.msgs[0].description == "test");
 	/* Check it's not in the local db */
 	res = s4.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 	/* Check it's not in the remote db */
 	res = s3.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Modify local record */
 	ldif = "
@@ -809,36 +822,36 @@ replace: description
 description: foo
 ";
 	ok = ldb.modify(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in local db */
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].foo == "baz");
-	assert(res[0].revision == "1");
-	assert(res[0].description == "foo");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].foo == "baz");
+	assert(res.msgs[0].revision == "1");
+	assert(res.msgs[0].description == "foo");
 
 	/* Rename local record */
 	dn2 = "cn=toast,dc=idealx,dc=org";
 	ok = ldb.rename(dn, dn2);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in local db */
 	res = ldb.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].foo == "baz");
-	assert(res[0].revision == "1");
-	assert(res[0].description == "foo");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].foo == "baz");
+	assert(res.msgs[0].revision == "1");
+	assert(res.msgs[0].description == "foo");
 
 	/* Delete local record */
 	ok = ldb.del(dn2);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check it's gone */
 	res = ldb.search("", dn2, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	println("Testing modification of remote records");
 
@@ -853,29 +866,29 @@ sambaBadPasswordCount: 3
 sambaNextRid: 1001
 ";
 	ok = s3.db.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check it's there */
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "foo");
-	assert(res[0].sambaBadPasswordCount == "3");
-	assert(res[0].sambaNextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "foo");
+	assert(res.msgs[0].sambaBadPasswordCount == "3");
+	assert(res.msgs[0].sambaNextRid == "1001");
 	/* Check in mapped db */
 	attrs = new Array("description", "badPwdCount", "nextRid");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "foo");
-	assert(res[0].badPwdCount == "3");
-	assert(res[0].nextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "foo");
+	assert(res.msgs[0].badPwdCount == "3");
+	assert(res.msgs[0].nextRid == "1001");
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Modify remote data of remote record */
 	ldif = "
@@ -889,58 +902,58 @@ badPwdCount: 4
 	/* Check in mapped db */
 	attrs = new Array("description", "badPwdCount", "nextRid");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "test");
-	assert(res[0].badPwdCount == "4");
-	assert(res[0].nextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].badPwdCount == "4");
+	assert(res.msgs[0].nextRid == "1001");
 	/* Check in remote db */
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "test");
-	assert(res[0].sambaBadPasswordCount == "4");
-	assert(res[0].sambaNextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].sambaBadPasswordCount == "4");
+	assert(res.msgs[0].sambaNextRid == "1001");
 
 	/* Rename remote record */
 	dn2 = s4.dn("cn=toast");
 	ok = ldb.rename(dn, dn2);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in mapped db */
 	dn = dn2;
 	attrs = new Array("description", "badPwdCount", "nextRid");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "test");
-	assert(res[0].badPwdCount == "4");
-	assert(res[0].nextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].badPwdCount == "4");
+	assert(res.msgs[0].nextRid == "1001");
 	/* Check in remote db */
 	dn2 = s3.dn("cn=toast");
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "test");
-	assert(res[0].sambaBadPasswordCount == "4");
-	assert(res[0].sambaNextRid == "1001");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].sambaBadPasswordCount == "4");
+	assert(res.msgs[0].sambaNextRid == "1001");
 
 	/* Delete remote record */
 	ok = ldb.del(dn);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in mapped db */
 	res = ldb.search("", dn, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 	/* Check in remote db */
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 
 	/* Add remote record (same as before) */
 	dn = s4.dn("cn=test");
@@ -953,7 +966,7 @@ sambaBadPasswordCount: 3
 sambaNextRid: 1001
 ";
 	ok = s3.db.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 
 	/* Modify local data of remote record */
 	ldif = "
@@ -967,29 +980,29 @@ description: test
 	/* Check in mapped db */
 	attrs = new Array("revision", "description");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "test");
-	assert(res[0].revision == "1");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].revision == "1");
 	/* Check in remote db */
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "test");
-	assert(res[0].revision == undefined);
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].revision == undefined);
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == undefined);
-	assert(res[0].revision == "1");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == undefined);
+	assert(res.msgs[0].revision == "1");
 
 	/* Delete (newly) split record */
 	ok = ldb.del(dn);
-	assert(ok);
+	assert(ok.error == 0);
 
 	println("Testing modification of split records");
 
@@ -1005,36 +1018,36 @@ nextRid: 1001
 revision: 1
 ";
 	ok = ldb.add(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check it's there */
 	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "foo");
-	assert(res[0].badPwdCount == "3");
-	assert(res[0].nextRid == "1001");
-	assert(res[0].revision == "1");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "foo");
+	assert(res.msgs[0].badPwdCount == "3");
+	assert(res.msgs[0].nextRid == "1001");
+	assert(res.msgs[0].revision == "1");
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == undefined);
-	assert(res[0].badPwdCount == undefined);
-	assert(res[0].nextRid == undefined);
-	assert(res[0].revision == "1");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == undefined);
+	assert(res.msgs[0].badPwdCount == undefined);
+	assert(res.msgs[0].nextRid == undefined);
+	assert(res.msgs[0].revision == "1");
 	/* Check in remote db */
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "foo");
-	assert(res[0].sambaBadPasswordCount == "3");
-	assert(res[0].sambaNextRid == "1001");
-	assert(res[0].revision == undefined);
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "foo");
+	assert(res.msgs[0].sambaBadPasswordCount == "3");
+	assert(res.msgs[0].sambaNextRid == "1001");
+	assert(res.msgs[0].revision == undefined);
 
 	/* Modify of split record */
 	ldif = "
@@ -1047,88 +1060,88 @@ replace: revision
 revision: 2
 ";
 	ok = ldb.modify(ldif);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in mapped db */
 	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "test");
-	assert(res[0].badPwdCount == "4");
-	assert(res[0].nextRid == "1001");
-	assert(res[0].revision == "2");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].badPwdCount == "4");
+	assert(res.msgs[0].nextRid == "1001");
+	assert(res.msgs[0].revision == "2");
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == undefined);
-	assert(res[0].badPwdCount == undefined);
-	assert(res[0].nextRid == undefined);
-	assert(res[0].revision == "2");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == undefined);
+	assert(res.msgs[0].badPwdCount == undefined);
+	assert(res.msgs[0].nextRid == undefined);
+	assert(res.msgs[0].revision == "2");
 	/* Check in remote db */
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "test");
-	assert(res[0].sambaBadPasswordCount == "4");
-	assert(res[0].sambaNextRid == "1001");
-	assert(res[0].revision == undefined);
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].sambaBadPasswordCount == "4");
+	assert(res.msgs[0].sambaNextRid == "1001");
+	assert(res.msgs[0].revision == undefined);
 
 	/* Rename split record */
 	dn2 = s4.dn("cn=toast");
 	ok = ldb.rename(dn, dn2);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in mapped db */
 	dn = dn2;
 	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == "test");
-	assert(res[0].badPwdCount == "4");
-	assert(res[0].nextRid == "1001");
-	assert(res[0].revision == "2");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].badPwdCount == "4");
+	assert(res.msgs[0].nextRid == "1001");
+	assert(res.msgs[0].revision == "2");
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn);
-	assert(res[0].description == undefined);
-	assert(res[0].badPwdCount == undefined);
-	assert(res[0].nextRid == undefined);
-	assert(res[0].revision == "2");
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn);
+	assert(res.msgs[0].description == undefined);
+	assert(res.msgs[0].badPwdCount == undefined);
+	assert(res.msgs[0].nextRid == undefined);
+	assert(res.msgs[0].revision == "2");
 	/* Check in remote db */
 	dn2 = s3.dn("cn=toast");
 	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
-	assert(res != undefined);
-	assert(res.length == 1);
-	assert(res[0].dn == dn2);
-	assert(res[0].description == "test");
-	assert(res[0].sambaBadPasswordCount == "4");
-	assert(res[0].sambaNextRid == "1001");
-	assert(res[0].revision == undefined);
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].dn == dn2);
+	assert(res.msgs[0].description == "test");
+	assert(res.msgs[0].sambaBadPasswordCount == "4");
+	assert(res.msgs[0].sambaNextRid == "1001");
+	assert(res.msgs[0].revision == undefined);
 
 	/* Delete split record */
 	ok = ldb.del(dn);
-	assert(ok);
+	assert(ok.error == 0);
 	/* Check in mapped db */
 	res = ldb.search("", dn, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 	/* Check in local db */
 	res = s4.db.search("", dn, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 	/* Check in remote db */
 	res = s3.db.search("", dn2, ldb.SCOPE_BASE);
-	assert(res != undefined);
-	assert(res.length == 0);
+	assert(res.error == 0);
+	assert(res.msgs.length == 0);
 }
 
 function make_dn(rdn)
