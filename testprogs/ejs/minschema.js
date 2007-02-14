@@ -157,9 +157,9 @@ function get_object_cn(ldb, name) {
 
 	var res = ldb.search(sprintf("(ldapDisplayName=%s)", name), rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs);
 	assert(res != undefined);
-	assert(res.length == 1);
+	assert(res.msgs.length == 1);
 
-        var cn = res[0]["cn"];
+        var cn = res.msgs[0]["cn"];
 	assert(cn != undefined);
 	if (typeof(cn) == "string") {
 		return cn;
@@ -287,8 +287,8 @@ function find_objectclass_properties(ldb, o) {
 		sprintf("(ldapDisplayName=%s)", o.name),
 		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, class_attrs);
 	assert(res != undefined);
-	assert(res.length == 1);
-	var msg = res[0];
+	assert(res.msgs.length == 1);
+	var msg = res.msgs[0];
 	var a;
 	for (a in msg) {
 		o[a] = msg[a];
@@ -303,8 +303,8 @@ function find_attribute_properties(ldb, o) {
 		sprintf("(ldapDisplayName=%s)", o.name),
 		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrib_attrs);
 	assert(res != undefined);
-	assert(res.length == 1);
-	var msg = res[0];
+	assert(res.msgs.length == 1);
+	var msg = res.msgs[0];
 	var a;
 	for (a in msg) {
 		/* special case for oMObjectClass, which is a binary object */
@@ -332,18 +332,18 @@ function find_objectclass_auto(ldb, o) {
 	var ldif = "dn: " + testdn;
 	ldif = ldif + "\nobjectClass: " + o.name;
 	ok = ldb.add(ldif);
-	if (!ok) {
-		dprintf("error adding %s: %s\n", o.name, ldb.errstring());
+	if (ok.error != 0) {
+		dprintf("error adding %s: %s\n", o.name, ok.errstr);
 		dprintf("%s\n", ldif);
 		return;
 	}
 
 	var res = ldb.search("", testdn, ldb.SCOPE_BASE);
 	ok = ldb.del(testdn);
-	assert(ok);
+	assert(ok.error == 0);
 
 	var a;
-	for (a in res[0]) {
+	for (a in res.msgs[0]) {
 		attributes[a].autocreate = true;
 	}
 }
@@ -363,8 +363,8 @@ function expand_objectclass(ldb, o) {
 	var a;
 	dprintf("Expanding class %s\n", o.name);
 	assert(res != undefined);
-	assert(res.length == 1);
-	var msg = res[0];
+	assert(res.msgs.length == 1);
+	var msg = res.msgs[0];
 	for (a=0;a<attrs.length;a++) {
 		var aname = attrs[a];
 		if (msg[aname] == undefined) {
@@ -422,20 +422,20 @@ function walk_dn(ldb, dn) {
 	/* get a list of all possible attributes for this object */
 	var attrs = new Array("allowedAttributes");
 	var res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, attrs);
-	if (res == undefined) {
+	if (res.error != 0) {
 		dprintf("Unable to fetch allowedAttributes for '%s' - %s\n", 
-		       dn, ldb.errstring());
+		       dn, res.errstr);
 		return;
 	}
-	var allattrs = res[0].allowedAttributes;
+	var allattrs = res.msgs[0].allowedAttributes;
 	res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, allattrs);
-	if (res == undefined) {
+	if (res.error != 0) {
 		dprintf("Unable to fetch all attributes for '%s' - %s\n", 
-		       dn, ldb.errstring());
+		       dn, res.errstr);
 		return;
 	}
 	var a;
-	var msg = res[0];
+	var msg = res.msgs[0];
 	for (a in msg) {
 		if (attributes[a] == undefined) {
 			attributes[a] = obj_attribute(ldb, a);
@@ -449,23 +449,23 @@ function walk_dn(ldb, dn) {
 function walk_naming_context(ldb, namingContext) {
 	var attrs = new Array("objectClass");
 	var res = ldb.search("objectClass=*", namingContext, ldb.SCOPE_DEFAULT, attrs);
-	if (res == undefined) {
+	if (res.error != 0) {
 		dprintf("Unable to fetch objectClasses for '%s' - %s\n", 
-		       namingContext, ldb.errstring());
+		       namingContext, res.errstr);
 		return;
 	}
 	var r;
-	for (r=0;r<res.length;r++) {
-		var msg = res[r].objectClass;
+	for (r=0;r<res.msgs.length;r++) {
+		var msg = res.msgs[r].objectClass;
 		var c;
 		for (c=0;c<msg.length;c++) {
 			var objectClass = msg[c];
 			if (objectclasses[objectClass] == undefined) {
 				objectclasses[objectClass] = obj_objectClass(ldb, objectClass);
-				objectclasses[objectClass].exampleDN = res[r].dn;
+				objectclasses[objectClass].exampleDN = res.msgs[r].dn;
 			}
 		}
-		walk_dn(ldb, res[r].dn);
+		walk_dn(ldb, res.msgs[r].dn);
 	}
 }
 
@@ -557,11 +557,11 @@ function build_objectclass(ldb, name) {
 	var res = ldb.search(
 		sprintf("(&(objectClass=classSchema)(ldapDisplayName=%s))", name),
 		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs);
-	if (res == undefined) {
+	if (res.error != 0) {
 		dprintf("unknown class '%s'\n", name);
 		return undefined;
 	}
-	if (res.length == 0) {
+	if (res.msgs.length == 0) {
 		dprintf("unknown class '%s'\n", name);
 		return undefined;
 	}
@@ -734,7 +734,7 @@ function load_list(file) {
 
 /* get the rootDSE */
 var res = ldb.search("", "", ldb.SCOPE_BASE);
-rootDse = res[0];
+rootDse = res.msgs[0];
 
 /* load the list of classes we are interested in */
 var classes = load_list(classfile);
