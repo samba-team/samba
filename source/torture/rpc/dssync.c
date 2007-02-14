@@ -417,9 +417,14 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 				 const DATA_BLOB *gensec_skey,
 				 struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
-	if (!lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
+	static uint32_t object_id;
+	const char *save_values_dir;
+
+	if (!lp_parm_bool(-1,"dssync","print_pwd_blobs", false)) {
 		return;	
 	}
+
+	save_values_dir = lp_parm_string(-1,"dssync","save_pwd_blobs_dir");
 
 	for (; cur; cur = cur->next_object) {
 		const char *dn;
@@ -497,13 +502,28 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 						  cur->object.identifier, rid,
 						  enc_data);
 			if (!dn_printed) {
-				DEBUG(0,("DN: %s\n", dn));
+				object_id++;
+				DEBUG(0,("DN[%u] %s\n", object_id, dn));
 				dn_printed = True;
 			}
 			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
 				    name, (long)enc_data->length, (long)plain_data.length));
 			if (plain_data.length) {
 				dump_data(0, plain_data.data, plain_data.length);
+				if (save_values_dir) {
+					char *fname;
+					fname = talloc_asprintf(ctx, "%s/%s%02d",
+								save_values_dir,
+								name, object_id);
+					if (fname) {
+						bool ok;
+						ok = file_save(fname, plain_data.data, plain_data.length);
+						if (!ok) {
+							DEBUGADD(0,("Failed to save '%s'\n", fname));
+						}
+					}
+					talloc_free(fname);
+				}
 			} else {
 				dump_data(0, enc_data->data, enc_data->length);
 			}
