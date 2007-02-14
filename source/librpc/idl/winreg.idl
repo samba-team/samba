@@ -65,7 +65,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x02 */
-	WERROR winreg_OpenHKLM(
+	[public] WERROR winreg_OpenHKLM(
 		[in]      uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
@@ -114,7 +114,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		REG_OPENED_EXISTING_KEY = 2
 	} winreg_CreateAction;
 
-	WERROR winreg_CreateKey(
+	[public] WERROR winreg_CreateKey(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
 		[in] winreg_String keyclass,
@@ -159,7 +159,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x0a */
 
-	WERROR winreg_EnumValue(
+	[public] WERROR winreg_EnumValue(
 		[in,ref]        policy_handle *handle,
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
@@ -230,7 +230,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x11 */
-	WERROR winreg_QueryValue(
+	[public] WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
 		[in,out] winreg_Type *type,
@@ -325,7 +325,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	
 	/******************/
 	/* Function: 0x1d */
-	WERROR winreg_QueryMultipleValues(
+	[public] WERROR winreg_QueryMultipleValues(
 		[in,ref] policy_handle *key_handle, 
 		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
 		[in] uint32 num_values,
