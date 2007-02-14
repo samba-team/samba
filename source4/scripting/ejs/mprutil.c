@@ -223,19 +223,32 @@ failed:
 
 
 /*
-  turn an array of ldb_messages into a ejs object variable
+  build a MprVar result object for ldb operations with lots of funky properties
 */
-struct MprVar mprLdbArray(struct ldb_context *ldb, 
-			  struct ldb_message **msg, int count, const char *name)
+struct MprVar mprLdbResult(struct ldb_context *ldb, int err, struct ldb_result *result)
 {
-	struct MprVar res;
-	int i;
+	struct MprVar ret;
+	struct MprVar ary;
 
-	res = mprArray(name);
-	for (i=0;i<count;i++) {
-		mprAddArray(&res, i, mprLdbMessage(ldb, msg[i]));
+	ret = mprObject("ldbret");
+
+	mprSetVar(&ret, "error", mprCreateIntegerVar(err));
+	mprSetVar(&ret, "errstr", mprString(ldb_errstring(ldb)));
+
+	ary = mprArray("ldb_message");
+	if (result) {
+		int i;
+
+		for (i = 0; i < result->count; i++) {
+			mprAddArray(&ary, i, mprLdbMessage(ldb, result->msgs[i]));
+		}
 	}
-	return res;
+
+	mprSetVar(&ret, "msgs", ary);
+
+	/* TODO: add referrals, exteded ops, and controls */
+
+	return ret;
 }
 
 

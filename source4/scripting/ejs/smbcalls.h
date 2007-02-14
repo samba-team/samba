@@ -21,6 +21,7 @@
 */
 
 #include "lib/appweb/ejs/ejs.h"
+#include "lib/ldb/include/ldb.h"
 
 void mpr_Return(int eid, struct MprVar);
 NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val);

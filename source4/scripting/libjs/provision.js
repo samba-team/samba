@@ -23,7 +23,7 @@ function install_ok(session_info, credentials)
 		return false;
 	}
 	var res = ldb.search("(cn=Administrator)");
-	if (res.length != 1) {
+	if (res.error != 0 || res.msgs.length != 1) {
 		return false;
 	}
 	return true;
@@ -72,7 +72,7 @@ function setup_name_mapping(info, ldb, sid, unixname)
 	var attrs = new Array("dn");
 	var res = ldb.search(sprintf("objectSid=%s", sid), 
 			     info.subobj.DOMAINDN, ldb.SCOPE_SUBTREE, attrs);
-	if (res.length != 1) {
+	if (res.error != 0 || res.msgs.length != 1) {
 		info.message("Failed to find record for objectSid %s\n", sid);
 		return false;
 	}
@@ -82,9 +82,9 @@ changetype: modify
 replace: unixName
 unixName: %s
 ",
-			  res[0].dn, unixname);
+			  res.msgs[0].dn, unixname);
 	var ok = ldb.modify(mod);
-	if (!ok) {
+	if (ok.error != 0) {
 		info.message("name mapping for %s failed - %s\n",
 			     sid, ldb.errstring());
 		return false;
@@ -172,20 +172,20 @@ function ldb_erase(ldb)
      	var basedn = "";
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
-	if (typeof(res) == "undefined") {
+	if (res.error != 0) {
 		ldb_delete(ldb);
 		return;
 	}
-	for (i=0;i<res.length;i++) {
+	for (i=0;i<res.msgs.length;i++) {
 		ldb.del(res[i].dn);
 	}
 
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
-	if (res.length != 0) {
+	if (res.error != 0 || res.msgs.length != 0) {
 		ldb_delete(ldb);
 		return;
 	}
-	assert(res.length == 0);
+	assert(res.msgs.length == 0);
 }
 
 /*
@@ -198,15 +198,15 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 	var j;
 
 	var res = ldb.search("(objectClass=*)", "", ldb.SCOPE_BASE, rootDSE_attrs);
-	assert(typeof(res) != "undefined");
-	assert(res.length == 1);
-	if (typeof(res[0].namingContexts) == "undefined") {
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	if (typeof(res.msgs[0].namingContexts) == "undefined") {
 		return;
 	}	
-	for (j=0; j<res[0].namingContexts.length; j++) {
+	for (j=0; j<res.msgs[0].namingContexts.length; j++) {
 		var anything = "(|(objectclass=*)(dn=*))";
 		var attrs = new Array("dn");
-		var basedn = res[0].namingContexts[j];
+		var basedn = res.msgs[0].namingContexts[j];
 		var k;
 		var previous_remaining = 1;
 		var current_remaining = 0;
@@ -220,23 +220,23 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 			/* and the rest */
 			var res2 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
 			var i;
-			if (typeof(res2) == "undefined") {
-				info.message("ldb search failed: " + ldb.errstring() + "\n");
+			if (res2.error != 0) {
+				info.message("ldb search failed: " + res.errstr + "\n");
 				continue;
 			}
 			previous_remaining = current_remaining;
-			current_remaining = res2.length;
-			for (i=0;i<res2.length;i++) {
-				ldb.del(res2[i].dn);
+			current_remaining = res2.msgs.length;
+			for (i=0;i<res2.msgs.length;i++) {
+				ldb.del(res2.msgs[i].dn);
 			}
 			
 			var res3 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
-			if (typeof(res3) == "undefined") {
-				info.message("ldb search failed: " + ldb.errstring() + "\n");
+			if (res3.error != 0) {
+				info.message("ldb search failed: " + res.errstr + "\n");
 				continue;
 			}
-			if (res3.length != 0) {
-				info.message("Failed to delete all records under " + basedn + ", " + res3.length + " records remaining\n");
+			if (res3.msgs.length != 0) {
+				info.message("Failed to delete all records under " + basedn + ", " + res3.msgs.length + " records remaining\n");
 			}
 		}
 	}
@@ -277,14 +277,14 @@ function setup_add_ldif(ldif, info, ldb, failok)
 	var data = sys.file_load(src);
 	data = substitute_var(data, info.subobj);
 
-	var add_ok = ldb.add(data);
-	if (!add_ok) {
-		info.message("ldb load failed: " + ldb.errstring() + "\n");
+	var add_res = ldb.add(data);
+	if (add_res.error != 0) {
+		info.message("ldb load failed: " + add_res.errstr + "\n");
 		if (!failok) {
-			assert(add_ok);
+			assert(add_res.error == 0);
 	        }
 	}
-	return add_ok;
+	return (add_res.error == 0);
 }
 
 function setup_modify_ldif(ldif, info, ldb, failok)
@@ -295,14 +295,14 @@ function setup_modify_ldif(ldif, info, ldb, failok)
 	var data = sys.file_load(src);
 	data = substitute_var(data, info.subobj);
 
-	var mod_ok = ldb.modify(data);
-	if (!mod_ok) {
-		info.message("ldb load failed: " + ldb.errstring() + "\n");
+	var mod_res = ldb.modify(data);
+	if (mod_res.error != 0) {
+		info.message("ldb load failed: " + mod_res.errstr + "\n");
 		if (!failok) {
-			assert(mod_ok);
+			assert(mod_res.error == 0);
 	        }
 	}
-	return mod_ok;
+	return (mod_res.error == 0);
 }
 
 
@@ -339,12 +339,12 @@ function setup_ldb_modify(ldif, info, ldb)
 	var data = sys.file_load(src);
 	data = substitute_var(data, info.subobj);
 
-	var mod_ok = ldb.modify(data);
-	if (!mod_ok) {
-		info.message("ldb load failed: " + ldb.errstring() + "\n");
-		return mod_ok;
+	var mod_res = ldb.modify(data);
+	if (mod_res.error != 0) {
+		info.message("ldb load failed: " + mod_res.errstr + "\n");
+		return (mod_res.error == 0);
 	}
-	return mod_ok;
+	return (mod_res.error == 0);
 }
 
 /*
@@ -400,8 +400,9 @@ function setup_name_mappings(info, ldb)
 	var subobj = info.subobj;
 
 	res = ldb.search("objectSid=*", subobj.DOMAINDN, ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1 && res[0].objectSid != undefined);
-	var sid = res[0].objectSid;
+	assert(res.error == 0);
+	assert(res.msgs.length == 1 && res.msgs[0].objectSid != undefined);
+	var sid = res.msgs[0].objectSid;
 
 	/* add some foreign sids if they are not present already */
 	add_foreign(ldb, subobj, "S-1-5-7",  "Anonymous");
@@ -687,9 +688,10 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 
 	var attrs = new Array("objectGUID");
 	res = ldb.search("objectGUID=*", subobj.DOMAINDN, ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1);
-	assert(res[0].objectGUID != undefined);
-	subobj.DOMAINGUID = res[0].objectGUID;
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	assert(res.msgs[0].objectGUID != undefined);
+	subobj.DOMAINGUID = res.msgs[0].objectGUID;
 
 	subobj.HOSTGUID = searchone(ldb, subobj.DOMAINDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
 	assert(subobj.HOSTGUID != undefined);
@@ -808,11 +810,12 @@ function searchone(ldb, basedn, expression, attribute)
 {
 	var attrs = new Array(attribute);
 	res = ldb.search(expression, basedn, ldb.SCOPE_SUBTREE, attrs);
-	if (res.length != 1 ||
-	    res[0][attribute] == undefined) {
+	if (res.error != 0 ||
+	    res.msgs.length != 1 ||
+	    res.msgs[0][attribute] == undefined) {
 		return undefined;
 	}
-	return res[0][attribute];
+	return res.msgs[0][attribute];
 }
 
 /*
@@ -822,8 +825,9 @@ function enable_account(ldb, user_dn)
 {
 	var attrs = new Array("userAccountControl");
 	var res = ldb.search(NULL, user_dn, ldb.SCOPE_ONELEVEL, attrs);
-	assert(res.length == 1);
-	var userAccountControl = res[0].userAccountControl;
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+	var userAccountControl = res.msgs[0].userAccountControl;
 	userAccountControl = userAccountControl - 2; /* remove disabled bit */
 	var mod = sprintf("
 dn: %s
@@ -833,7 +837,7 @@ userAccountControl: %u
 ", 
 			  user_dn, userAccountControl);
 	var ok = ldb.modify(mod);
-	return ok;	
+	return (ok.error == 0);	
 }
 
 
@@ -858,8 +862,9 @@ function newuser(username, unixname, password, message, session_info, credential
 	/* find the DNs for the domain and the domain users group */
 	var attrs = new Array("defaultNamingContext");
 	res = ldb.search("defaultNamingContext=*", "", ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1 && res[0].defaultNamingContext != undefined);
-	var domain_dn = res[0].defaultNamingContext;
+	assert(res.error == 0);
+	assert(res.msgs.length == 1 && res.msgs[0].defaultNamingContext != undefined);
+	var domain_dn = res.msgs[0].defaultNamingContext;
 	assert(domain_dn != undefined);
 	var dom_users = searchone(ldb, domain_dn, "name=Domain Users", "dn");
 	assert(dom_users != undefined);
@@ -898,15 +903,15 @@ member: %s
 	*/
 	message("Adding user %s\n", user_dn);
 	ok = ldb.add(ldif);
-	if (ok != true) {
-		message("Failed to add %s - %s\n", user_dn, ldb.errstring());
+	if (ok.error != 0) {
+		message("Failed to add %s - %s\n", user_dn, ok.errstr);
 		return false;
 	}
 
 	message("Modifying group %s\n", dom_users);
 	ok = ldb.modify(modgroup);
-	if (ok != true) {
-		message("Failed to modify %s - %s\n", dom_users, ldb.errstring());
+	if (ok.error != 0) {
+		message("Failed to modify %s - %s\n", dom_users, ok.errstr);
 		return false;
 	}
 
