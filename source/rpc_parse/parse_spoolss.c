@@ -3917,7 +3917,16 @@ BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 		}
 		case 3:
 		{
-			ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			/* FIXME ! Our parsing here is wrong I think,
+			 * but for a level3 it makes no sense for
+			 * ptr_sec_desc to be NULL. JRA. Based on
+			 * a Vista sniff from Martin Zielinski <mz@seh.de>.
+			 */
+			if (UNMARSHALLING(ps)) {
+				ptr_sec_desc = 1;
+			} else {
+				ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			}
 			break;
 		}
 	}
