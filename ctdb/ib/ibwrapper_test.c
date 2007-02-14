@@ -477,7 +477,7 @@ int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 		p = tcx->addrs + i;
 		p->sin_family = AF_INET;
 		p->sin_addr.s_addr = inet_addr(attrs[i].name);
-		p->sin_port = atoi(attrs[i].value);
+		p->sin_port = htons(atoi(attrs[i].value));
 	}
 
 	return 0;

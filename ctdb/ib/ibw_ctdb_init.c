@@ -29,9 +29,6 @@
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 
-/* not nice; temporary workaround for the current implementation... */
-static void *last_key = NULL;
-
 static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 {
 	struct ibw_ctx *ictx = talloc_get_type(ctdb->private, struct ibw_ctx);
@@ -60,6 +57,7 @@ int ctdb_ibw_node_connect(struct ibw_ctx *ictx, struct ctdb_node *node)
 {
         struct sockaddr_in sock_out;
 
+	memset(&sock_out, 0, sizeof(struct sockaddr_in));
 	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
@@ -112,37 +110,36 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 {
 	struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
 	int	rc;
+	void	*buf, *key;
 
-	rc = ibw_send(conn, data, last_key, length);
-	last_key = NULL;
+	assert(length>=sizeof(uint32_t));
+
+	if (conn==NULL) {
+		DEBUG(0, ("ctdb_ibw_queue_pkt: conn is NULL\n"));
+		return -1;
+	}
+
+	if (ibw_alloc_send_buf(conn, &buf, &key, length)) {
+		DEBUG(0, ("queue_pkt/ibw_alloc_send_buf failed\n"));
+		return -1;
+	}
+
+	memcpy(buf, data, length);
+	rc = ibw_send(conn, buf, key, length);
 
 	return rc;
 }
 
-#ifdef __NOTDEF__
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
-static void *ctdb_ibw_allocate_pkt(struct ctdb_node *node, size_t size)
+static void *ctdb_ibw_allocate_pkt(struct ctdb_context *ctdb, size_t size)
 {
-	struct ibw_conn *conn = NULL;
-	void *buf = NULL;
-
-	if (ibw_alloc_send_buf(conn, &buf, &last_key, size))
-		return NULL;
-
-	return buf;
+	/* TODO: use ibw_alloc_send_buf instead... */
+	return talloc_size(ctdb, size);
 }
 
-static void ctdb_ibw_dealloc_pkt(struct ctdb_node *node, void *data)
-{
-	if (last_key) {
-		struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
-	
-		assert(conn!=NULL);
-		ibw_cancel_send_buf(conn, data, last_key);
-	} /* else ibw_send is already using it and will free it after completion */
-}
+#ifdef __NOTDEF__
 
 static int ctdb_ibw_stop(struct ctdb_context *cctx)
 {
@@ -158,9 +155,8 @@ static const struct ctdb_methods ctdb_ibw_methods = {
 	.start     = ctdb_ibw_start,
 	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
-//	.allocate_pkt = ctdb_ibw_allocate_pkt,
+	.allocate_pkt = ctdb_ibw_allocate_pkt,
 
-//	.dealloc_pkt = ctdb_ibw_dealloc_pkt,
 //	.stop = ctdb_ibw_stop
 };
 
@@ -171,6 +167,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 {
 	struct ibw_ctx *ictx;
 
+	DEBUG(10, ("ctdb_ibw_init invoked...\n"));
 	ictx = ibw_init(
 		NULL, //struct ibw_initattr *attr, /* TODO */
 		0, //int nattr, /* TODO */
@@ -186,5 +183,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 
 	ctdb->methods = &ctdb_ibw_methods;
 	ctdb->private = ictx;
+	
+	DEBUG(10, ("ctdb_ibw_init succeeded.\n"));
 	return 0;
 }

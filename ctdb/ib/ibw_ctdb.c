@@ -63,19 +63,24 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			break;
 		case IBWC_CONNECTED: { /* after ibw_accept or ibw_connect */
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
-			if (node!=NULL) /* after ibw_connect */
+			if (node!=NULL) { /* after ibw_connect */
+				node->private = (void *)conn;
 				node->ctdb->upcalls->node_connected(node);
-			else { /* after ibw_accept */
+			} else { /* after ibw_accept */
 				/* NOP in CTDB case */
 			}
 		} break;
-		case IBWC_DISCONNECTED: /* after ibw_disconnect */
+		case IBWC_DISCONNECTED: { /* after ibw_disconnect */
 			/* TODO: have a CTDB upcall */
-			break;
-		case IBWC_ERROR: {
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
 			if (node!=NULL)
-				node->ctdb->upcalls->node_connected(node);
+				node->ctdb->upcalls->node_dead(node);
+			talloc_free(conn);
+		} break;
+		case IBWC_ERROR: {
+/*			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
+			if (node!=NULL)
+				node->ctdb->upcalls->node_dead(node);*/
 		} break;
 		default:
 			assert(0);
