@@ -419,7 +419,7 @@ qx.Proto.addLeaf = function(parentNodeId,
 qx.Proto.prune = function(nodeId, bSelfAlso)
 {
   // First, recursively remove all children
-  for (var i = 0; i < this._nodeArr[nodeId].children.length; i++)
+  for (var i = this._nodeArr[nodeId].children.length - 1; i >= 0; i--)
   {
     this.prune(this._nodeArr[nodeId].children[i], true);
   }
