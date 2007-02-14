@@ -217,7 +217,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x10 */
 	WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
-		[in,out,ref] winreg_String *class,
+		[in,out,ref] winreg_String *class_in,
 		[out,ref] uint32 *num_subkeys,
 		[out,ref] uint32 *max_subkeylen,
 		[out,ref] uint32 *max_subkeysize,
