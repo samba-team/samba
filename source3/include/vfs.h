@@ -65,7 +65,8 @@
 /* Changed to version 17 as we removed redundant connection_struct parameters. --jpeach */
 /* Changed to version 18 to add fsp parameter to the open call -- jpeach 
    Also include kernel_flock call - jmcd */
-/* Changed to version 19, kernel change notify has been merged */
+/* Changed to version 19, kernel change notify has been merged 
+   Also included linux setlease call - jmcd */
 #define SMB_VFS_INTERFACE_VERSION 19
 
 
@@ -147,6 +148,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FTRUNCATE,
 	SMB_VFS_OP_LOCK,
 	SMB_VFS_OP_KERNEL_FLOCK,
+	SMB_VFS_OP_LINUX_SETLEASE,
 	SMB_VFS_OP_GETLOCK,
 	SMB_VFS_OP_SYMLINK,
 	SMB_VFS_OP_READLINK,
@@ -271,6 +273,7 @@ struct vfs_ops {
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset);
 		BOOL (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 share_mode);
+		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int leasetype);
 		BOOL (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 		int (*readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
@@ -393,6 +396,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *ftruncate;
 		struct vfs_handle_struct *lock;
 		struct vfs_handle_struct *kernel_flock;
+		struct vfs_handle_struct *linux_setlease;
 		struct vfs_handle_struct *getlock;
 		struct vfs_handle_struct *symlink;
 		struct vfs_handle_struct *readlink;

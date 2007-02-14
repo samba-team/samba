@@ -52,6 +52,31 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
+static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
+				 int fd, int leasetype)
+{
+	int ret;
+	
+	START_PROFILE(syscall_linux_setlease);
+	
+	if ( linux_set_lease_sighandler(fd) == -1)
+		return -1;
+
+	ret = set_gpfs_lease(fd,leasetype);
+	
+	if ( ret < 0 ) {
+		/* This must have come from GPFS not being available */
+		/* or some other error, hence call the default */
+		ret = linux_setlease(fd, leasetype);
+	}
+
+	END_PROFILE(syscall_linux_setlease);
+
+	return ret;
+}
+
+
+
 static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 {
 	int	i;
@@ -590,6 +615,10 @@ static vfs_op_tuple gpfs_op_tuples[] = {
 
 	{SMB_VFS_OP(vfs_gpfs_kernel_flock),
 	 SMB_VFS_OP_KERNEL_FLOCK,
+	 SMB_VFS_LAYER_OPAQUE},
+
+	{SMB_VFS_OP(vfs_gpfs_setlease),
+	 SMB_VFS_OP_LINUX_SETLEASE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	{SMB_VFS_OP(gpfsacl_fget_nt_acl),

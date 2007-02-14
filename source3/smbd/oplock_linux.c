@@ -102,19 +102,28 @@ static void set_capability(unsigned capability)
 	}
 }
 
+/*
+ Call to set the kernel lease signal handler
+*/
+int linux_set_lease_sighandler(int fd)
+{
+        if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
+                DEBUG(3,("Failed to set signal handler for kernel lease\n"));
+                return -1;
+        }
+
+	return 0;
+}
+
 /****************************************************************************
  Call SETLEASE. If we get EACCES then we try setting up the right capability and
- try again
+ try again.
+ Use the SMB_VFS_LINUX_SETLEASE instead of this call directly.
 ****************************************************************************/
 
-static int linux_setlease(int fd, int leasetype)
+int linux_setlease(int fd, int leasetype)
 {
 	int ret;
-
-	if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
-		DEBUG(3,("Failed to set signal handler for kernel lease\n"));
-		return -1;
-	}
 
 	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
@@ -156,7 +165,7 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if (linux_setlease(fsp->fh->fd, F_WRLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
 			 "fd = %d, dev = %x, inode = %.0f. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
@@ -194,7 +203,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if (linux_setlease(fsp->fh->fd, F_UNLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );
