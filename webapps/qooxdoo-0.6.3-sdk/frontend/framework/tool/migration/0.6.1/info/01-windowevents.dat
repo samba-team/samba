@@ -1,6 +1,0 @@
-\.addEventListener\(\s*"resize"=Possible use of old resize event. When used to detect a window resize it must be renamed to "windowresize".
-\.addEventListener\(\s*"focus"=Possible use of old focus event. When used to detect a window resize it must be renamed to "windowfocus".
-\.addEventListener\(\s*"blur"=Possible use of old blur event. When used to detect a window resize it must be renamed to "windowblur".
-\.removeEventListener\(\s*"resize"=Possible use of old resize event. When used to detect a window resize it must be renamed to "windowresize".
-\.removeEventListener\(\s*"focus"=Possible use of old focus event. When used to detect a window resize it must be renamed to "windowfocus".
-\.removeEventListener\(\s*"blur"=Possible use of old blur event. When used to detect a window resize it must be renamed to "windowblur".
