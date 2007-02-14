@@ -143,16 +143,18 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 	void *v_st;
 	const char *ctx_filename = NULL;
 	const char *plugin = NULL;
-	BOOL validate = False;
-	BOOL dumpdata = False;
+	bool validate = false;
+	bool dumpdata = false;
 	int opt;
+	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO};
 	struct poptOption long_options[] = {
-		{"context-file", 'c', POPT_ARG_STRING, &ctx_filename, 0, "In-filename to parse first", "CTX-FILE" },
-		{"validate", 0, POPT_ARG_NONE, &validate, 0, "try to validate the data", NULL },	
-		{"dump-data", 0, POPT_ARG_NONE, &dumpdata, 0, "dump the hex data", NULL },	
-		{"load-dso", 'l', POPT_ARG_STRING, &plugin, 0, "load from shared object file", NULL },
-		POPT_COMMON_SAMBA
 		POPT_AUTOHELP
+		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
+		{"validate", 0, POPT_ARG_NONE, NULL, OPT_VALIDATE, "try to validate the data", NULL },	
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },	
+		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
+		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		{ NULL }
 	};
 
@@ -164,6 +166,20 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		pc, "<pipe|uuid> <function> <inout> [<filename>]");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case OPT_CONTEXT_FILE:
+			ctx_filename = poptGetOptArg(pc);
+			break;
+		case OPT_VALIDATE:
+			validate = true;
+			break;
+		case OPT_DUMP_DATA:
+			dumpdata = true;
+			break;
+		case OPT_LOAD_DSO:
+			plugin = poptGetOptArg(pc);
+			break;
+		}
 	}
 
 	pipe_name = poptGetArg(pc);
