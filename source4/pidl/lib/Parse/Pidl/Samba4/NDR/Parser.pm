@@ -10,7 +10,8 @@ package Parse::Pidl::Samba4::NDR::Parser;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(is_charset_array);
-@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv);
+@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv 
+   GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
@@ -234,7 +235,7 @@ sub EnvSubstituteValue($$)
 
 	# Substitute the value() values in the env
 	foreach my $e (@{$s->{ELEMENTS}}) {
-		next unless (my $v = has_property($e, "value"));
+		next unless (defined(my $v = has_property($e, "value")));
 		
 		$env->{$e->{NAME}} = ParseExpr($v, $env, $e);
 	}
@@ -714,7 +715,7 @@ sub ParseElementPush($$$$$)
 
 	start_flags($e);
 
-	if (my $value = has_property($e, "value")) {
+	if (defined(my $value = has_property($e, "value"))) {
 		$var_name = ParseExpr($value, $env, $e->{ORIGINAL});
 	}
 
@@ -765,7 +766,7 @@ sub ParseElementPrint($$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	if (my $value = has_property($e, "value")) {
+	if (defined(my $value = has_property($e, "value"))) {
 		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env, $e->{ORIGINAL}) . ":$var_name";
 	}
 
