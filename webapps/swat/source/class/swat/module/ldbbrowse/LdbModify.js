@@ -97,8 +97,7 @@ qx.Proto.setBase = function(base) {
   if (this._active) {
     if (this._type == "add") {
 
-      this._basedn.setValue(this.basedn);
-      this._basedn.setWidth(8 * this.basedn.length);
+      this._basedn.setHtml(this.basedn);
     }
   }
 }
@@ -112,6 +111,12 @@ qx.Proto.getBase = function() {
 qx.Proto.initNew = function(callback, obj) {
 
   this._setExitCallback(callback, obj);
+
+  if (this.basedn == "") {
+    alert("Please select the parent node in the tree first!");
+    this._callExitCallback();
+    return;
+  }
 
   this._active = true;
   this._type = "add";
@@ -130,8 +135,7 @@ qx.Proto.initNew = function(callback, obj) {
 
   // The basedn of the object
   // TODO: add validator
-  this._basedn = new qx.ui.form.TextField(this.basedn);
-  this._basedn.setWidth(8 * this.basedn.length);
+  this._basedn = new qx.ui.basic.Label(this.basedn);
 
   hlayout.add(dnlabel, this._rdn, dnsep, this._basedn);
 
@@ -211,18 +215,14 @@ qx.Proto._reset = function() {
   this._mainArea.removeAll();
   this._active = false;
   this._type = "null";
-  return;
+}
+
+qx.Proto.postCleanUp = function() {
+  this._reset();
 }
 
 qx.Proto._cancelOp = function() {
 
-  this._reset();
-  this._callExitCallback();
-}
-
-qx.Proto._okOp = function() {
-
-  //TODO: disable ok/cancel buttons and call fsm instead
   this._reset();
   this._callExitCallback();
 }
@@ -291,7 +291,7 @@ qx.Proto.getLdif = function() {
 
   case "add":
 
-    var ldif = "dn: " + this._rdn.getValue() + "," + this._basedn.getValue() + "\n";
+    var ldif = "dn: " + this._rdn.getValue() + "," + this.basedn + "\n";
 
     for (var i = 0; i < c.length; i++) {
       if (c[i] instanceof qx.ui.layout.HorizontalBoxLayout) {
