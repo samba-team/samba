@@ -216,12 +216,19 @@ interface drsblobs {
 		 *    and there's a 32 byte hex string.
 		 *    w2k3 also has 'Primary:WDigest'
 		 *    and there's a 64 byte hex string.
+		 *    ...but this 'Primary:CLEARTEXT'
+		 *    also there's a 104 byte hex string
+		 *    (instead of 3 * (16*2) = 96 ).
 		 *
 		 * 'Primary:Kerberos':
 		 *    ...
 		 *
 		 * 'Primary:WDigest':
 		 *    ...
+		 *
+		 * 'Primary:CLEARTEXT':
+		 *    data contains the cleartext password
+		 *    as UTF16 string encoded as HEX string
 		 */
 		[charset(DOS)] uint8 data[data_len];
 	} supplementalCredentialsPackage;
