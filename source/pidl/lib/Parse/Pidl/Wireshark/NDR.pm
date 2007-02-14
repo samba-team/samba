@@ -17,7 +17,7 @@ Parse::Pidl::Wireshark::NDR - Parser generator for Wireshark
 package Parse::Pidl::Wireshark::NDR;
 
 use strict;
-use Parse::Pidl qw(error);
+use Parse::Pidl qw(error warning);
 use Parse::Pidl::Typelist qw(getType);
 use Parse::Pidl::Util qw(has_property property_matches make_str);
 use Parse::Pidl::NDR qw(ContainsString GetNextLevel);
