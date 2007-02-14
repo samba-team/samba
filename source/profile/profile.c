@@ -288,6 +288,7 @@ BOOL profile_setup(BOOL rdonly)
 	    "syscall_ftruncate",	/* PR_VALUE_SYSCALL_FTRUNCATE */
 	    "syscall_fcntl_lock",	/* PR_VALUE_SYSCALL_FCNTL_LOCK */
 	    "syscall_kernel_flock",     /* PR_VALUE_SYSCALL_KERNEL_FLOCK */
+	    "syscall_linux_setlease",   /* PR_VALUE_SYSCALL_LINUX_SETLEASE */
 	    "syscall_fcntl_getlock",	/* PR_VALUE_SYSCALL_FCNTL_GETLOCK */
 	    "syscall_readlink",		/* PR_VALUE_SYSCALL_READLINK */
 	    "syscall_symlink",		/* PR_VALUE_SYSCALL_SYMLINK */

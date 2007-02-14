@@ -783,6 +783,23 @@ static BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd
 	return result;
 }
 
+static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp, int fd,
+				int leasetype)
+{
+	int result;
+
+	START_PROFILE(syscall_linux_setlease);
+
+	/* first set the signal handler */
+	if(linux_set_lease_sighandler(fd) == -1)
+		return -1;
+
+	result = linux_setlease(fd, leasetype);
+	
+	END_PROFILE(syscall_linux_setlease);
+	return result;
+}
+
 static int vfswrap_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
 {
 	int result;
@@ -1199,6 +1216,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_lock),	SMB_VFS_OP_LOCK,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_kernel_flock),	SMB_VFS_OP_KERNEL_FLOCK,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_linux_setlease),	SMB_VFS_OP_LINUX_SETLEASE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_getlock),	SMB_VFS_OP_GETLOCK,
 	 SMB_VFS_LAYER_OPAQUE},
