@@ -168,6 +168,10 @@ enum profile_stats_values
 #define syscall_kernel_flock_count __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, count)
 #define syscall_kernel_flock_time __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, time)
 
+	PR_VALUE_SYSCALL_LINUX_SETLEASE,
+#define syscall_linux_setlease_count __profile_stats_value(PR_VALUE_SYSCALL_LINUX_SETLEASE, count)
+#define syscall_linux_setlease_time __profile_stats_value(PR_VALUE_SYSCALL_LINUX_SETLEASE, time)
+
 	PR_VALUE_SYSCALL_FCNTL_GETLOCK,
 #define syscall_fcntl_getlock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, count)
 #define syscall_fcntl_getlock_time __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, time)
