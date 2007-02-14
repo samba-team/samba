@@ -568,6 +568,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 
 	highest_usn = lp_parm_int(-1, "dssync", "highest_usn", 0);
 
+	array[0].level = lp_parm_int(-1, "dssync", "get_nc_changes_level", array[0].level);
+
 	if (lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
 		const struct samr_Password *nthash;
 		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
