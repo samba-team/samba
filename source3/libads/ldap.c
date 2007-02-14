@@ -2638,8 +2638,11 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixe
 
 	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
 	if (config_context == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
+
+	ads_msgfree(ads, res);
 
 	base = talloc_asprintf(mem_ctx, "cn=Partitions,%s", config_context);
 	if (base == NULL) {
