@@ -201,25 +201,46 @@ interface drsblobs {
 		[in] ldapControlDirSyncCookie cookie
 		);
 
-	typedef [public] struct {
+	typedef struct {
 		uint16 name_len;
 		uint16 data_len;
-		uint16 id;
+		uint16 unknown1; /* 2 for name = 'Packages', 1 for name = 'Primary:*' */
 		[charset(UTF16)] uint8 name[name_len];
-		uint8 data[data_len];
+		/* 
+		 * the data field contains data as HEX strings
+		 *
+		 * 'Packages':
+		 *    it seems to contains HEX strings
+		 *    of GUID's concatenated together.
+		 *    w2k only has 'Primary:Kerberos'
+		 *    and there's a 32 byte hex string.
+		 *    w2k3 also has 'Primary:WDigest'
+		 *    and there's a 64 byte hex string.
+		 *
+		 * 'Primary:Kerberos':
+		 *    ...
+		 *
+		 * 'Primary:WDigest':
+		 *    ...
+		 */
+		[charset(DOS)] uint8 data[data_len];
 	} supplementalCredentialsPackage;
 
-	typedef [public] struct {
-		uint32 unknown1;
-		[charset(UTF16)] uint16 unknown2[0x30];
-		uint16 unknown3;
+	/* this are 0x30 (48) whitespaces (0x20) followed by 'P' (0x50) */
+	const string SUPPLEMENTAL_CREDENTIALS_PREFIX = "                                                P";
+
+	typedef struct {
+		[value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] uint16 prefix[0x31];
 		uint16 num_packages;
 		supplementalCredentialsPackage packages[num_packages];
 	} supplementalCredentialsSubBlob;
 
 	typedef [public] struct {
-		[value(0)] uint32 version;
-		[subcontext(4)] supplementalCredentialsSubBlob sub;
+		[value(0)] uint32 unknown1;
+		uint32 __ndr_size;
+		[value(0)] uint32 unknown2;
+		[subcontext(0),subcontext_size(__ndr_size)] supplementalCredentialsSubBlob sub;
+		[value(0)] uint8 unknown3;
 	} supplementalCredentialsBlob;
 
 	void decode_supplementalCredentials(
