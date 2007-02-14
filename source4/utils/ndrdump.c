@@ -329,6 +329,9 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		struct ndr_push *ndr_v_push;
 		struct ndr_pull *ndr_v_pull;
 		struct ndr_print *ndr_v_print;
+		uint32_t i;
+		uint8_t byte_a, byte_b;
+		bool differ;
 
 		ndr_v_push = ndr_push_init_ctx(mem_ctx);
 		
@@ -367,11 +370,36 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		f->ndr_print(ndr_v_print, function, flags, v_st);
 
 		if (blob.length != v_blob.length) {
-			printf("WARNING! orig bytes:%ld validated pushed bytes:%ld\n", (long)blob.length, (long)v_blob.length);
+			printf("WARNING! orig bytes:%u validated pushed bytes:%u\n", blob.length, v_blob.length);
 		}
 
 		if (ndr_pull->offset != ndr_v_pull->offset) {
-			printf("WARNING! orig pulled bytes:%d validated pulled bytes:%d\n", ndr_pull->offset, ndr_v_pull->offset);
+			printf("WARNING! orig pulled bytes:%u validated pulled bytes:%u\n", ndr_pull->offset, ndr_v_pull->offset);
+		}
+
+		differ = false;
+		byte_a = 0x00;
+		byte_b = 0x00;
+		for (i=0; i < blob.length; i++) {
+			byte_a = blob.data[i];
+
+			if (i == v_blob.length) {
+				byte_b = 0x00;
+				differ = true;
+				break;
+			}
+
+			byte_b = v_blob.data[i];
+
+			if (byte_a != byte_b) {
+				differ = true;
+				break;
+			}
+		}
+		if (differ) {
+			printf("WARNING! orig and validated differ at byte 0x%02X (%u)\n", i, i);
+			printf("WARNING! orig byte[0x%02X] = 0x%02X validated byte[0x%02X] = 0x%02X\n",
+				i, byte_a, i, byte_b);
 		}
 	}
 
