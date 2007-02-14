@@ -138,10 +138,16 @@ qx.Proto.displayData = function(module, rpcRequest)
     this._displaySearchResults(module, rpcRequest);
     break;
 
-  case "add":
   case "modify":
+    this._displayModifyResults(module, rpcRequest);
+    break;
+
+  case "add":
+    this._displayAddResults(module, rpcRequest);
+    break;
+ 
   case "delete":
-    this._displayCommitResults(module, rpcRequest, requestType);
+    this._displayDeleteResults(module, rpcRequest);
     break;
  
   case "tree_open":
@@ -475,34 +481,51 @@ qx.Proto._switchToModrecord = function()
 qx.Proto._confirmDeleteRecord = function()
 {
   
-  //this._newb.setEnabled(false);
-  //this._modb.setEnabled(false);
-  //this._delb.setEnabled(false);
   this._ldbmod.showConfirmDelete();
 };
 
-qx.Proto._displayCommitResults = function(module, rpcRequest, type)
+qx.Proto._displayModifyResults = function(module, rpcRequest)
+{
+  var tree = module.fsm.getObject("tree");
+  tree.createDispatchDataEvent("changeSelection", tree.getSelectedNodes());
+
+  alert("Object successfully modified!");
+
+  this._switchToNormal();
+  //this._ldbmod.postCleanUp();
+}
+
+qx.Proto._displayAddResults = function(module, rpcRequest)
 {
   var result = rpcRequest.getUserData("result");
 
-  switch (type) {
-  case "add":
-    alert("Object successfully added!");
-    break;
+  var tree = module.fsm.getObject("tree");
+  var node = tree.getSelectedNodes()[0];
+  
+  tree.getDataModel().prune(node.nodeId, false);
+  node.bOpened = false;
+  tree.toggleOpened(node);
 
-  case "modify":
-    alert("Object successfully modified!");
-    break;
-
-  case "delete":
-    alert("Object Successfully deleted!");
-    break;
-  }
+  alert("Object successfully added!");
 
   this._switchToNormal();
+  //this._ldbmod.postCleanUp();
+};
 
-  //TODO: reload tree after add or delete
+qx.Proto._displayDeleteResults = function(module, rpcRequest, type)
+{
+  var result = rpcRequest.getUserData("result");
 
+  var tree = module.fsm.getObject("tree");
+  var node = tree.getDataModel().getData()[tree.getSelectedNodes()[0].parentNodeId];
+  
+  tree.getDataModel().prune(node.nodeId, false);
+  node.bOpened = false;
+  tree.toggleOpened(node);
+
+  alert("Object Successfully deleted!");
+
+  this._ldbmod.setBase("");
 };
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
@@ -559,12 +582,14 @@ qx.Proto._displayTreeOpenResults = function(module, rpcRequest)
   var parentNode = rpcRequest.getUserData("parentNode");
   var attributes = rpcRequest.getUserData("attributes");
 
+  // Remove any existing children, they will be replaced by the result of this call (refresh)
+  dataModel.setData();
+
   // Any children?
   if (! result || result["length"] == 0)
   {
     // Nope.  Remove parent's expand/contract button.
     dataModel.setState(parentNode.nodeId, { bHideOpenClose : true });
-    dataModel.setData();
     return;
   }
 
