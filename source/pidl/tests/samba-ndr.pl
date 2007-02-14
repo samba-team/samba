@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 16;
+use Test::More tests => 20;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv);
+use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv EnvSubstituteValue); 
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -152,3 +152,23 @@ is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionOutEnv($fn));
 
 $fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
 is_deeply({ }, GenerateFunctionInEnv($fn));
+
+$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
+is_deeply({ foo => "r->foo", bar => "r->bar", this => "r" }, GenerateStructEnv($fn));
+
+$fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 3 }} ] };
+
+my $env = GenerateStructEnv($fn);
+EnvSubstituteValue($env, $fn);
+is_deeply($env, { foo => 3, this => "r" });
+
+$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
+$env = GenerateStructEnv($fn);
+EnvSubstituteValue($env, $fn);
+is_deeply($env, { foo => 'r->foo', bar => 'r->bar', this => "r" });
+
+$fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 0 }} ] };
+
+$env = GenerateStructEnv($fn);
+EnvSubstituteValue($env, $fn);
+is_deeply($env, { foo => 0, this => "r" });
