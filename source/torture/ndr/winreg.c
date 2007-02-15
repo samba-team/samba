@@ -279,6 +279,200 @@ static bool querymultiplevalues_out_check(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t flushkey_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3
+};
+
+static bool flushkey_in_check(struct torture_context *tctx, 
+							   struct winreg_FlushKey *r)
+{
+	torture_assert_int_equal(tctx, r->in.handle->handle_type, 0, "handle type");
+	return true;
+}
+
+static const uint8_t flushkey_out_data[] = {
+  0x00, 0x00, 0x00, 0x00
+};
+
+static bool flushkey_out_check(struct torture_context *tctx, 
+							   struct winreg_FlushKey *r)
+{
+	torture_assert_werr_ok(tctx, r->out.result, "return code");
+	return true;
+}
+
+
+static const uint8_t openkey_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3, 0x16, 0x00, 0x16, 0x00,
+  0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x0b, 0x00, 0x00, 0x00, 0x73, 0x00, 0x70, 0x00, 0x6f, 0x00, 0x74, 0x00,
+  0x74, 0x00, 0x79, 0x00, 0x66, 0x00, 0x6f, 0x00, 0x6f, 0x00, 0x74, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02
+};
+
+static bool openkey_in_check(struct torture_context *tctx, struct winreg_OpenKey *r)
+{
+	torture_assert_int_equal(tctx, r->in.unknown, 0, "unknown");
+	torture_assert_int_equal(tctx, r->in.access_mask, 0x02000000, "access mask");
+	torture_assert_str_equal(tctx, r->in.keyname.name, "spottyfoot", "keyname");
+	/* FIXME: parent handle */
+	return true;
+}
+
+static const uint8_t openkey_out_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+};
+
+static bool openkey_out_check(struct torture_context *tctx, struct winreg_OpenKey *r)
+{
+	torture_assert(tctx, GUID_all_zero(&r->out.handle->uuid), "handle");
+	torture_assert_werr_equal(tctx, r->out.result, WERR_BADFILE, "return code");
+	return true;
+}
+
+static const uint8_t deletekey_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3, 0x16, 0x00, 0x16, 0x00,
+  0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x0b, 0x00, 0x00, 0x00, 0x73, 0x00, 0x70, 0x00, 0x6f, 0x00, 0x74, 0x00,
+  0x74, 0x00, 0x79, 0x00, 0x66, 0x00, 0x6f, 0x00, 0x6f, 0x00, 0x74, 0x00,
+  0x00, 0x00
+};
+
+static bool deletekey_in_check(struct torture_context *tctx, struct winreg_DeleteKey *r)
+{
+	/* FIXME: Handle */
+	torture_assert_str_equal(tctx, r->in.key.name, "spottyfoot", "key name");
+	return true;
+}
+
+static const uint8_t deletekey_out_data[] = {
+  0x02, 0x00, 0x00, 0x00
+};
+
+static bool deletekey_out_check(struct torture_context *tctx, struct winreg_DeleteKey *r)
+{
+	torture_assert_werr_equal(tctx, r->out.result, WERR_BADFILE, "return code");
+	return true;
+}
+
+static const uint8_t getversion_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3
+};
+
+static bool getversion_in_check(struct torture_context *tctx, struct winreg_GetVersion *r)
+{
+	/* FIXME: Handle */
+	return true;
+}
+
+static const uint8_t getversion_out_data[] = {
+  0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool getversion_out_check(struct torture_context *tctx, struct winreg_GetVersion *r)
+{
+	torture_assert_int_equal(tctx, *r->out.version, 5, "version");
+	torture_assert_werr_ok(tctx, r->out.result, "return code");
+	return true;
+}
+
+static const uint8_t queryinfokey_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00
+};
+
+static bool queryinfokey_in_check(struct torture_context *tctx, struct winreg_QueryInfoKey *r)
+{
+	/* FIXME: Handle */
+	torture_assert(tctx, r->in.class_in->name == NULL, "class in");
+	return true;
+}
+
+static const uint8_t queryinfokey_out_data[] = {
+  0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00,
+  0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8c, 0x00, 0x00, 0x00,
+  0x10, 0x48, 0x02, 0x3a, 0xcf, 0xfd, 0xc4, 0x01, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool queryinfokey_out_check(struct torture_context *tctx, struct winreg_QueryInfoKey *r)
+{
+	torture_assert(tctx, r->out.class_in != NULL, "class out");
+	torture_assert(tctx, r->out.class_in->name != NULL, "class out name");
+	torture_assert_str_equal(tctx, r->out.class_in->name, "", "class out name");
+	torture_assert_int_equal(tctx, *r->out.num_subkeys, 0, "num subkeys");
+	torture_assert_int_equal(tctx, *r->out.max_subkeylen, 0, "subkey length");
+	torture_assert_int_equal(tctx, *r->out.max_subkeysize, 140, "subkey size");
+	torture_assert_werr_ok(tctx, r->out.result, "return code");
+	return true;
+}
+
+static const uint8_t notifychangekeyvalue_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xb2, 0x64, 0xbc, 0xb3, 0x7f, 0x90, 0x29, 0x4a,
+  0xb4, 0xb3, 0x91, 0xe7, 0xe4, 0x4a, 0x58, 0xe3, 0x01, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00
+};
+
+static bool notifychangekeyvalue_in_check(struct torture_context *tctx, struct winreg_NotifyChangeKeyValue *r)
+{
+	torture_assert_int_equal(tctx, r->in.watch_subtree, 1, "watch subtree");
+	torture_assert_int_equal(tctx, r->in.notify_filter, 0, "notify filter");
+	torture_assert_int_equal(tctx, r->in.unknown, 0, "unknown");
+	torture_assert(tctx, r->in.string1.name == NULL, "string1");
+	torture_assert(tctx, r->in.string2.name == NULL, "string2");
+	torture_assert_int_equal(tctx, r->in.unknown2, 0, "unknown2");
+	return true;
+}
+
+static const uint8_t notifychangekeyvalue_out_data[] = {
+  0x57, 0x00, 0x00, 0x00
+};
+
+static bool notifychangekeyvalue_out_check(struct torture_context *tctx, struct winreg_NotifyChangeKeyValue *r)
+{
+	torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "notify change key value");
+	return true;
+}
+
+static const uint8_t getkeysecurity_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0xbd, 0xaa, 0xf6, 0x59, 0xc1, 0x82, 0x1f, 0x4d,
+  0x84, 0xa9, 0xdd, 0xae, 0x60, 0x77, 0x1e, 0x45, 0x00, 0x00, 0x00, 0x02,
+  0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool getkeysecurity_in_check(struct torture_context *tctx, struct winreg_GetKeySecurity *r)
+{
+	/* FIXME: Handle */
+	torture_assert_int_equal(tctx, r->in.sec_info, 2, "sec info");
+	torture_assert_int_equal(tctx, r->in.sd->size, 65536, "sd size");
+	torture_assert_int_equal(tctx, r->in.sd->len, 0, "sd len");
+	torture_assert(tctx, r->in.sd->data == NULL, "sd data");
+	return true;
+}
+
+static const uint8_t getkeysecurity_out_data[] = {
+  0x08, 0x91, 0x08, 0x00, 0x14, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00,
+  0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00,
+  0x01, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool getkeysecurity_out_check(struct torture_context *tctx, struct winreg_GetKeySecurity *r)
+{
+	torture_assert_int_equal(tctx, r->in.sd->size, 20, "sd size");
+	torture_assert_int_equal(tctx, r->in.sd->len, 20, "sd len");
+	torture_assert_werr_ok(tctx, r->out.result, "return code");
+	return true;
+}
+
 struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "winreg");
@@ -300,6 +494,27 @@ struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 
 	/*torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_in_data, NDR_IN, querymultiplevalues_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_out_data, NDR_OUT, querymultiplevalues_out_check );*/
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_in_data, NDR_IN, flushkey_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_out_data, NDR_OUT, flushkey_out_check );
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_OpenKey, openkey_in_data, NDR_IN, openkey_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_OpenKey, openkey_out_data, NDR_OUT, openkey_out_check );
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_DeleteKey, deletekey_in_data, NDR_IN, deletekey_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_DeleteKey, deletekey_out_data, NDR_OUT, deletekey_out_check );
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_GetVersion, getversion_in_data, NDR_IN, getversion_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_GetVersion, getversion_out_data, NDR_OUT, getversion_out_check );
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryInfoKey, queryinfokey_in_data, NDR_IN, queryinfokey_in_check );
+	/*torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryInfoKey, queryinfokey_out_data, NDR_OUT, queryinfokey_out_check );*/
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_NotifyChangeKeyValue, notifychangekeyvalue_in_data, NDR_IN, notifychangekeyvalue_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_NotifyChangeKeyValue, notifychangekeyvalue_out_data, NDR_OUT, notifychangekeyvalue_out_check );
+
+	/*torture_suite_add_ndr_pull_fn_test(suite, winreg_GetKeySecurity, getkeysecurity_in_data, NDR_IN, getkeysecurity_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_GetKeySecurity, getkeysecurity_out_data, NDR_OUT, getkeysecurity_out_check );*/
 
 	return suite;
 }
