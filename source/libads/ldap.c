@@ -2620,10 +2620,10 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
  * @param ads connection to ads server
  * @param mem_ctx Pointer to talloc context
  * @param suffixes Pointer to an array of suffixes
- * @param site_name Pointer to the number of suffixes
+ * @param num_suffixes Pointer to the number of suffixes
  * @return status of search
  **/
-ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, size_t *num_suffixes)
+ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffixes, size_t *num_suffixes)
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
@@ -2658,8 +2658,8 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixe
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	suffixes = ads_pull_strings(ads, mem_ctx, res, "uPNSuffixes", num_suffixes);
-	if (suffixes == NULL) {
+	(*suffixes) = ads_pull_strings(ads, mem_ctx, res, "uPNSuffixes", num_suffixes);
+	if ((*suffixes) == NULL) {
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
