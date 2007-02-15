@@ -116,7 +116,7 @@ import "security.idl";
 
 	/* notice the screwup with the system_name - thats why MS created
 	   OpenPolicy2 */
-	NTSTATUS lsa_OpenPolicy (
+	[public] NTSTATUS lsa_OpenPolicy (
 		[in,unique]       uint16 *system_name,
 		[in]   lsa_ObjectAttribute *attr,
 		[in]       uint32 access_mask,
@@ -339,7 +339,7 @@ import "security.idl";
 		uint32 max_size;
 	} lsa_RefDomainList;
 
-	NTSTATUS lsa_LookupNames (
+	[public] NTSTATUS lsa_LookupNames (
 		[in]         policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
@@ -364,7 +364,7 @@ import "security.idl";
 		[size_is(count)] lsa_TranslatedName *names;
 	} lsa_TransNameArray;
 
-	NTSTATUS lsa_LookupSids (
+	[public] NTSTATUS lsa_LookupSids (
 		[in]         policy_handle *handle,
 		[in]         lsa_SidArray *sids,
 		[out,unique]        lsa_RefDomainList *domains,
@@ -681,7 +681,7 @@ import "security.idl";
 
 	/**********************/
 	/* Function:     0x2c */
-	NTSTATUS lsa_OpenPolicy2 (
+	[public] NTSTATUS lsa_OpenPolicy2 (
 		[in,unique]      [string,charset(UTF16)] uint16 *system_name,
 		[in]  lsa_ObjectAttribute *attr,
 		[in]      uint32 access_mask,
