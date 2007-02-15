@@ -334,7 +334,14 @@ function _search(params, error)
         return error;
     }
 
-    return ldb.search(expr, baseDN, scope, attrs);
+    var res = ldb.search(expr, baseDN, scope, attrs);
+
+    if (res.error != 0) {
+        error.setError(res.error, res.errstr);
+        return error;
+    }
+
+    return res.msgs;
 }
 jsonrpc.method.search = _search;
 
@@ -371,7 +378,13 @@ function _add(params, error)
         return ldb;
     }
 
-    return ldb.add(params[1]);
+    var res = ldb.add(params[1]);
+    if (res.error != 0) {
+        error.setError(res.error, res.errstr);
+        return error;
+    }
+
+    return true;
 }
 jsonrpc.method.add = _add;
 
@@ -408,7 +421,13 @@ function _modify(params, error)
         return ldb;
     }
 
-    return ldb.modify(params[1]);
+    var res = ldb.modify(params[1]);
+    if (res.error != 0) {
+        error.setError(res.error, res.errstr);
+        return error;
+    }
+
+    return true;
 }
 jsonrpc.method.modify = _modify;
 
@@ -445,7 +464,13 @@ function _del(params, error)
         return ldb;
     }
 
-    return ldb.del(params[1]);
+    var res = ldb.del(params[1]);
+    if (res.error != 0) {
+        error.setError(res.error, res.errstr);
+        return error;
+    }
+
+    return true;
 }
 jsonrpc.method.del = _del;
 
@@ -485,7 +510,13 @@ function _rename(params, error)
         return ldb;
     }
 
-    return ldb.rename(params[1], params[2]);
+    var res = ldb.rename(params[1], params[2]);
+    if (res.error != 0) {
+        error.setError(res.error, res.errstr);
+        return error;
+    }
+
+    return true;
 }
 jsonrpc.method.rename = _rename;
 
