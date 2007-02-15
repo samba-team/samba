@@ -268,7 +268,7 @@ import "security.idl";
 		[size_is(num_sids)] lsa_SidPtr *sids;
 	} lsa_SidArray;
 
-	NTSTATUS lsa_EnumAccounts (
+	[public] NTSTATUS lsa_EnumAccounts (
 		[in]         policy_handle *handle,
 		[in,out]     uint32 *resume_handle,
 		[in,range(0,8192)] uint32 num_entries,
@@ -279,7 +279,7 @@ import "security.idl";
 	/*************************************************/
 	/* Function: 0x0c                                */
 
-	NTSTATUS lsa_CreateTrustedDomain(
+	[public] NTSTATUS lsa_CreateTrustedDomain(
 		[in]         policy_handle *handle,
 		[in]         lsa_DomainInfo *info,
 		[in]         uint32 access_mask,
@@ -824,7 +824,7 @@ import "security.idl";
 		[size_is(count)] lsa_TranslatedName2 *names;
 	} lsa_TransNameArray2;
 
-	NTSTATUS lsa_LookupSids2(
+	[public] NTSTATUS lsa_LookupSids2(
 		[in]     policy_handle *handle,
 		[in]     lsa_SidArray *sids,
 		[out,unique]        lsa_RefDomainList *domains,
