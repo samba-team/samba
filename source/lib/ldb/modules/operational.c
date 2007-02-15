@@ -50,7 +50,7 @@
 
 
   subschemaSubentry: HIDDEN, not-searchable, 
-                     points at DN CN=Aggregate,CN=Schema,CN=Configuration,$BASEDN
+                     points at DN CN=Aggregate,$SCHEMADN
 
      for this one we do the search as normal, then add the static
      value if requested. How do we work out the $BASEDN from inside a
