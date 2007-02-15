@@ -49,7 +49,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS status = NT_STATUS_OK;
-	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , NULL };
+	const char * const attrs[] = { "dBCSPwd", "unicodePwd" , NULL };
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
@@ -190,7 +190,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
-	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
+	const char * const attrs[] = { "objectSid", "dBCSPwd", NULL };
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
@@ -323,7 +323,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
-	const char * const attrs[] = { "ntPwdHash", "lmPwdHash", NULL };
+	const char * const attrs[] = { "unicodePwd", "dBCSPwd", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;

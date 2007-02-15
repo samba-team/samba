@@ -39,8 +39,8 @@ const char *user_attrs[] = {
 	"krb5Key",
 
 	/* passwords */
-	"lmPwdHash", 
-	"ntPwdHash",
+	"dBCSPwd", 
+	"unicodePwd",
 
 	"userAccountControl",
 

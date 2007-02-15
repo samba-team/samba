@@ -80,7 +80,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
-	const char *attrs[] = {"ntPwdHash", "userAccountControl", 
+	const char *attrs[] = {"unicodePwd", "userAccountControl", 
 			       "objectSid", NULL};
 
 	ZERO_STRUCTP(r->out.credentials);
@@ -144,7 +144,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0], 
 						"objectSid", 0);
 
-	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "ntPwdHash");
+	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "unicodePwd");
 	if (mach_pwd == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
