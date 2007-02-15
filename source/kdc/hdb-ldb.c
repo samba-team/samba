@@ -58,8 +58,6 @@ static const char * const krb5_attrs[] = {
 	"userPrincipalName",
 	"servicePrincipalName",
 
-	"krb5Key",
-
 	"userAccountControl",
 
 	"pwdLastSet",
@@ -69,6 +67,10 @@ static const char * const krb5_attrs[] = {
 	"whenChanged",
 
 	"msDS-KeyVersionNumber",
+	"krb5Key",
+
+	"unicodePwd",
+
 	NULL
 };
 
@@ -196,63 +198,109 @@ static void hdb_ldb_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 	talloc_free(entry_ex->ctx);
 }
 
-static krb5_error_code LDB_message2entry_keys(TALLOC_CTX *mem_ctx,
+static krb5_error_code LDB_message2entry_keys(krb5_context context,
+					      TALLOC_CTX *mem_ctx,
 					      struct ldb_message *msg,
 					      unsigned int userAccountControl,
 					      hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
-	struct ldb_message_element *ldb_keys;
+	struct ldb_message_element *krb5keys;
+	struct samr_Password *hash;
 	int i;
+	bool arcfour_needed = true;
+	uint32_t allocated_keys = 0;
+
+	entry_ex->entry.keys.val = NULL;
+	entry_ex->entry.keys.len = 0;
 
 	/* Get krb5Key from the db */
 
-	ldb_keys = ldb_msg_find_element(msg, "krb5Key");
+	krb5keys = ldb_msg_find_element(msg, "krb5Key");
+	hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
 
-	if (!ldb_keys) {
+	if (krb5keys) {
+		allocated_keys = krb5keys->num_values;
+	}
+
+	if (hash) {
+		allocated_keys++;
+	}
+
+	if (allocated_keys == 0) {
 		/* oh, no password.  Apparently (comment in
 		 * hdb-ldap.c) this violates the ASN.1, but this
 		 * allows an entry with no keys (yet). */
-		entry_ex->entry.keys.val = NULL;
-		entry_ex->entry.keys.len = 0;
-	} else {
-		/* allocate space to decode into */
-		entry_ex->entry.keys.val = calloc(ldb_keys->num_values, sizeof(Key));
-		if (entry_ex->entry.keys.val == NULL) {
-			ret = ENOMEM;
+		return 0;
+	}
+
+	/* allocate space to decode into */
+	entry_ex->entry.keys.len = 0;
+	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(Key));
+	if (entry_ex->entry.keys.val == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+
+	/* Decode Kerberos keys into the hdb structure */
+	for (i=0; (krb5keys && i < krb5keys->num_values); i++) {
+		size_t decode_len;
+		Key key;
+		ret = decode_Key(krb5keys->values[i].data, krb5keys->values[i].length, 
+				 &key, &decode_len);
+		if (ret) {
+			/* Could be bougus data in the entry, or out of memory */
 			goto out;
 		}
 
-		entry_ex->entry.keys.len = 0;
-
-		/* Decode Kerberos keys into the hdb structure */
-		for (i=0; i < ldb_keys->num_values; i++) {
-			size_t decode_len;
-			Key key;
-			ret = decode_Key(ldb_keys->values[i].data, ldb_keys->values[i].length, 
-					 &key, &decode_len);
-			if (ret) {
-				/* Could be bougus data in the entry, or out of memory */
-				goto out;
-			}
-
-			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-				switch (key.key.keytype) {
-				case KEYTYPE_DES:
-					entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-					entry_ex->entry.keys.len++;
-				default:
-					/* We must use DES keys only */
-					break;
-				}
-			} else {
+		if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+			switch (key.key.keytype) {
+			case KEYTYPE_DES:
+				arcfour_needed = false;
 				entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 				entry_ex->entry.keys.len++;
+				break;
+			default:
+				/* We must use DES keys only */
+				break;
 			}
+		} else {
+			switch (key.key.keytype) {
+			case KEYTYPE_ARCFOUR:
+				arcfour_needed = false;
+				break;
+			default:
+				break;
+			}
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
 		}
-	} 
+	}
+
+	if (arcfour_needed && hash) {
+		Key key;
+
+		key.mkvno = 0;
+		key.salt = NULL; /* No salt for this enc type */
+
+		ret = krb5_keyblock_init(context,
+					 KEYTYPE_ARCFOUR,
+					 hash->hash, sizeof(hash->hash), 
+					 &key.key);
+		if (ret) {
+			goto out;
+		}
+
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
+	}
 
 out:
+	if (ret != 0 && entry_ex->entry.keys.val) {
+		free(entry_ex->entry.keys.val);
+		entry_ex->entry.keys.val = NULL;
+		entry_ex->entry.keys.len = 0;
+	}
 	return ret;
 }
 
@@ -425,7 +473,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = LDB_message2entry_keys(mem_ctx, msg, userAccountControl, entry_ex);
+	ret = LDB_message2entry_keys(context, private, msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
