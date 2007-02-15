@@ -184,7 +184,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		"flatname",
 		"realm",
 		"secureChannelType",
-		"ntPwdHash",
+		"unicodePwd",
 		"msDS-KeyVersionNumber",
 		"saltPrincipal",
 		"privateKeytab",
@@ -264,7 +264,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 	
 	if (!password) {
-		const struct ldb_val *nt_password_hash = ldb_msg_find_ldb_val(msgs[0], "ntPwdHash");
+		const struct ldb_val *nt_password_hash = ldb_msg_find_ldb_val(msgs[0], "unicodePwd");
 		struct samr_Password hash;
 		ZERO_STRUCT(hash);
 		if (nt_password_hash) {

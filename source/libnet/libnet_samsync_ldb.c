@@ -368,17 +368,17 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	}
 	if (user->lm_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
-				   "lmPwdHash", &user->lmpassword);
+				   "dBCSPwd", &user->lmpassword);
 	} else if (!add) {
 		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-				     "lmPwdHash"); 
+				     "dBCSPwd"); 
 	}
 	if (user->nt_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
-				   "ntPwdHash", &user->ntpassword);
+				   "unicodePwd", &user->ntpassword);
 	} else if (!add) {
 		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-				     "ntPwdHash"); 
+				     "unicodePwd"); 
 	}
 	    
 	ADD_OR_DEL(string, "comment", comment.string);

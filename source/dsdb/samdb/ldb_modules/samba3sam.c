@@ -327,7 +327,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* sambaLMPassword -> lmPwdHash*/
 	{
-		.local_name = "lmPwdHash",
+		.local_name = "dBCSPwd",
 		.type = MAP_CONVERT,
 		.u = {
 			.convert = {

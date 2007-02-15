@@ -54,10 +54,10 @@
 static const char * const password_attrs[] = {
 	"sambaPassword",
 	"krb5Key",
-	"ntPwdHash",
-	"lmPwdHash",
-	"sambaLMPwdHistory", 
-	"sambaNTPwdHistory", 
+	"unicodePwd",
+	"dBCSPwd",
+	"lmPwdHistory", 
+	"ntPwdHistory", 
 	"msDS-KeyVersionNumber",
 	"pwdLastSet"
 };

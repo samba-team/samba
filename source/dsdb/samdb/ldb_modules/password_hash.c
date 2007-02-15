@@ -106,22 +106,22 @@ static int add_password_hashes(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (is_mod) {
-		if (ldb_msg_add_empty(msg, "ntPwdHash", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		if (ldb_msg_add_empty(msg, "unicodePwd", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (ldb_msg_add_empty(msg, "lmPwdHash", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		if (ldb_msg_add_empty(msg, "dBCSPwd", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}	
 
 	/* compute the new nt and lm hashes */
 	E_md4hash(sambaPassword, tmp_hash.hash);
-	if (samdb_msg_add_hash(module->ldb, msg, msg, "ntPwdHash", &tmp_hash) != 0) {
+	if (samdb_msg_add_hash(module->ldb, msg, msg, "unicodePwd", &tmp_hash) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (E_deshash(sambaPassword, tmp_hash.hash)) {
-		if (samdb_msg_add_hash(module->ldb, msg, msg, "lmPwdHash", &tmp_hash) != 0) {
+		if (samdb_msg_add_hash(module->ldb, msg, msg, "dBCSPwd", &tmp_hash) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -276,7 +276,7 @@ static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_messa
 	key.mkvno = 0;
 	key.salt = NULL; /* No salt for this enc type */
 
-	ntPwdHash = samdb_result_hash(msg, msg, "ntPwdHash");
+	ntPwdHash = samdb_result_hash(msg, msg, "unicodePwd");
 	if (ntPwdHash == NULL) { /* what happened ?! */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -362,14 +362,14 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	int lm_hist_len;
 	int i;
 
-	nt_hash = samdb_result_hash(msg, old_msg, "ntPwdHash");
-	lm_hash = samdb_result_hash(msg, old_msg, "lmPwdHash");
+	nt_hash = samdb_result_hash(msg, old_msg, "unicodePwd");
+	lm_hash = samdb_result_hash(msg, old_msg, "dBCSPwd");
 
 	/* if no previous passwords just return */
 	if (nt_hash == NULL && lm_hash == NULL) return LDB_SUCCESS;
 
-	nt_hist_len = samdb_result_hashes(msg, old_msg, "sambaNTPwdHistory", &nt_history);
-	lm_hist_len = samdb_result_hashes(msg, old_msg, "sambaLMPwdHistory", &lm_history);
+	nt_hist_len = samdb_result_hashes(msg, old_msg, "ntPwdHistory", &nt_history);
+	lm_hist_len = samdb_result_hashes(msg, old_msg, "lmPwdHistory", &lm_history);
 
 	/* We might not have an old NT password */
 	new_nt_history = talloc_array(msg, struct samr_Password, hlen);
@@ -385,10 +385,10 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	} else {
 		ZERO_STRUCT(new_nt_history[0]);
 	}
-	if (ldb_msg_add_empty(msg, "sambaNTPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
+	if (ldb_msg_add_empty(msg, "ntPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (samdb_msg_add_hashes(msg, msg, "sambaNTPwdHistory", new_nt_history, nt_hist_len) != LDB_SUCCESS) {
+	if (samdb_msg_add_hashes(msg, msg, "ntPwdHistory", new_nt_history, nt_hist_len) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 		
@@ -408,10 +408,10 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	} else {
 		ZERO_STRUCT(new_lm_history[0]);
 	}
-	if (ldb_msg_add_empty(msg, "sambaLMPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
+	if (ldb_msg_add_empty(msg, "lmPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (samdb_msg_add_hashes(msg, msg, "sambaLMPwdHistory", new_lm_history, lm_hist_len) != LDB_SUCCESS) {
+	if (samdb_msg_add_hashes(msg, msg, "lmPwdHistory", new_lm_history, lm_hist_len) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -594,8 +594,8 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* nobody must touch password Histories */
-	if (ldb_msg_find_element(req->op.add.message, "sambaNTPwdHistory") ||
-	    ldb_msg_find_element(req->op.add.message, "sambaLMPwdHistory")) {
+	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory") ||
+	    ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -603,8 +603,8 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	 * or LM hashes, then we don't need to make any changes.  */
 
 	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
-	ntAttr = ldb_msg_find_element(req->op.mod.message, "ntPwdHash");
-	lmAttr = ldb_msg_find_element(req->op.mod.message, "lmPwdHash");
+	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
+	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
 	if ((!sambaAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
@@ -788,14 +788,14 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* nobody must touch password Histories */
-	if (ldb_msg_find_element(req->op.mod.message, "sambaNTPwdHistory") ||
-	    ldb_msg_find_element(req->op.mod.message, "sambaLMPwdHistory")) {
+	if (ldb_msg_find_element(req->op.mod.message, "ntPwdHistory") ||
+	    ldb_msg_find_element(req->op.mod.message, "lmPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
-	ntAttr = ldb_msg_find_element(req->op.mod.message, "ntPwdHash");
-	lmAttr = ldb_msg_find_element(req->op.mod.message, "lmPwdHash");
+	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
+	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
 	/* check passwords are single valued here */
 	/* TODO: remove this when passwords will be single valued in schema */
@@ -844,8 +844,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	/* - remove any imodification to the password from the first commit
 	 *   we will make the real modification later */
 	if (sambaAttr) ldb_msg_remove_attr(msg, "sambaPassword");
-	if (ntAttr) ldb_msg_remove_attr(msg, "ntPwdHash");
-	if (lmAttr) ldb_msg_remove_attr(msg, "lmPwdHash");
+	if (ntAttr) ldb_msg_remove_attr(msg, "unicodePwd");
+	if (lmAttr) ldb_msg_remove_attr(msg, "dBCSPwd");
 
 	/* if there was nothing else to be modify skip to next step */
 	if (msg->num_elements == 0) {
@@ -902,12 +902,12 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 static int password_hash_mod_search_self(struct ldb_handle *h) {
 
 	struct ph_context *ac;
-	static const char * const attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
-					      "sambaNTPwdHistory", 
+	static const char * const attrs[] = { "userAccountControl", "lmPwdHistory", 
+					      "ntPwdHistory", 
 					      "objectSid", "msDS-KeyVersionNumber", 
 					      "objectClass", "userPrincipalName",
 					      "samAccountName", 
-					      "lmPwdHash", "ntPwdHash",
+					      "dBCSPwd", "unicodePwd",
 					      NULL };
 
 	ac = talloc_get_type(h->private_data, struct ph_context);
@@ -1053,12 +1053,12 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	if (!added_hashes) {
 		struct ldb_message_element *el;
 		
-		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "ntPwdHash");
+		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "unicodePwd");
 		if (ldb_msg_add(msg, el, el->flags) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "lmPwdHash");
+		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "dBCSPwd");
 		if (ldb_msg_add(msg, el, el->flags) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
