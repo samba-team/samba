@@ -66,7 +66,7 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
 SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, BOOL small_query, 
                               SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	int dfree_retval;
+	SMB_BIG_UINT dfree_retval;
 	SMB_BIG_UINT dfree_q = 0;
 	SMB_BIG_UINT bsize_q = 0;
 	SMB_BIG_UINT dsize_q = 0;
