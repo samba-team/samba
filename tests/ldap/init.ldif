@@ -1,0 +1,8 @@
+dn: o=TEST,dc=H5L,dc=SE
+objectclass: organization
+o: Test
+
+dn: ou=kerberosPrincipals,o=TEST,dc=H5L,dc=SE
+objectclass: organizationalUnit
+ou: kerberosPrincipals
+
