@@ -47,7 +47,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS lsa_Delete (
+	[public] NTSTATUS lsa_Delete (
 		[in]     policy_handle *handle
 		);
 
@@ -247,7 +247,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS lsa_CreateAccount (
+	[public] NTSTATUS lsa_CreateAccount (
 		[in]    policy_handle *handle,
 		[in]    dom_sid2 *sid,
 		[in]    uint32 access_mask,
@@ -375,7 +375,7 @@ import "security.idl";
 
 
 	/* Function:        0x10 */
-	NTSTATUS lsa_CreateSecret(
+	[public] NTSTATUS lsa_CreateSecret(
 		[in]         policy_handle *handle,
 		[in]         lsa_String       name,
 		[in]         uint32         access_mask,
@@ -555,7 +555,7 @@ import "security.idl";
 	NTSTATUS lsa_SetInformationTrustedDomain();
 
 	/* Function:          0x1c */
-	NTSTATUS lsa_OpenSecret(
+	[public] NTSTATUS lsa_OpenSecret(
 		[in]     policy_handle    *handle,
 		[in]         lsa_String        name,
 		[in]         uint32            access_mask,
@@ -564,7 +564,7 @@ import "security.idl";
 
 	/* Function:           0x1d */
 
-	NTSTATUS lsa_SetSecret(
+	[public] NTSTATUS lsa_SetSecret(
 		[in]     policy_handle    *sec_handle,
 		[in,unique]         lsa_DATA_BUF     *new_val,
 		[in,unique]         lsa_DATA_BUF     *old_val
@@ -575,7 +575,7 @@ import "security.idl";
 	} lsa_DATA_BUF_PTR;
 
 	/* Function:         0x1e */
-	NTSTATUS lsa_QuerySecret (
+	[public] NTSTATUS lsa_QuerySecret (
 		[in]     policy_handle     *sec_handle,
 		[in,out,unique]     lsa_DATA_BUF_PTR  *new_val,
 		[in,out,unique]     NTTIME_hyper      *new_mtime,
