@@ -110,6 +110,7 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	}
 
 	/* first sizeof(uint32_t) size bytes are for length */
+	*((uint32_t *)buf) = len;
 	buf[sizeof(uint32_t)] = (char)TESTOP_SEND_ID;
 	strcpy(buf+sizeof(uint32_t)+1, tcx->id);
 
@@ -137,6 +138,7 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 		return -1;
 	}
 
+	*((uint32_t *)buf) = len;
 	p = buf;
 	p += sizeof(uint32_t);
 	p[0] = (char)TESTOP_SEND_TEXT;
@@ -190,6 +192,7 @@ int ibwtest_do_varsize_scenario_conn_size(struct ibwtest_ctx *tcx, struct ibw_co
 		DEBUG(0, ("varsize/ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
+	*((uint32_t *)buf) = len;
 	buf[sizeof(uint32_t)] = TESTOP_SEND_RND;
 	sum = ibwtest_fill_random(buf + sizeof(uint32_t) + 1, size);
 	buf[sizeof(uint32_t) + 1 + size] = sum;
@@ -329,7 +332,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				DEBUG(0, ("ERROR: checksum mismatch %u!=%u\n",
 					(uint32_t)sum, (uint32_t)((unsigned char *)buf)[n-1]));
 				ibw_stop(tcx->ibwctx);
-				return -3;
+				goto error;
 			}
 		} else {
 			char *buf2;
@@ -338,12 +341,12 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 			/* bounce message regardless what it is */
 			if (ibw_alloc_send_buf(conn, (void **)&buf2, &key2, n)) {
 				fprintf(stderr, "ibw_alloc_send_buf error #2\n");
-				return -1;
+				goto error;
 			}
 			memcpy(buf2, buf, n);
 			if (ibw_send(conn, buf2, key2, n)) {
 				fprintf(stderr, "ibw_send error #2\n");
-				return -2;
+				goto error;
 			}
 			tcx->nsent++;
 		}
@@ -368,6 +371,8 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 		tcx->error = rc;
 
 	return rc;
+error:
+	return -1;
 }
 
 void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te, 

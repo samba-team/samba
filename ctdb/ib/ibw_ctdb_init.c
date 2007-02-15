@@ -53,24 +53,6 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 	return 0;
 }
 
-int ctdb_ibw_node_connect(struct ibw_ctx *ictx, struct ctdb_node *node)
-{
-        struct sockaddr_in sock_out;
-
-	memset(&sock_out, 0, sizeof(struct sockaddr_in));
-	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
-	sock_out.sin_port = htons(node->address.port);
-	sock_out.sin_family = PF_INET;
-
-	if (ibw_connect(ictx, &sock_out, node)) {
-		DEBUG(0, ("ctdb_ibw_node_connect: ibw_connect failed\n"));
-		return -1;
-	}
-
-	/* continues at ibw_ctdb.c/IBWC_CONNECTED in good case */
-	return 0;
-}
-
 /*
  * Start infiniband
  */

@@ -775,7 +775,7 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 			if (part->len<=sizeof(uint32_t) && part->to_read==0) {
 				assert(part->len==sizeof(uint32_t));
 				/* set it again now... */
-				part->to_read = ntohl(*((uint32_t *)(part->buf)));
+				part->to_read = *((uint32_t *)(part->buf)); /* TODO: ntohl */
 				if (part->to_read<sizeof(uint32_t)) {
 					sprintf(ibw_lasterr, "got msglen=%u #2\n", part->to_read);
 					goto error;
@@ -791,7 +791,7 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 			}
 		} else {
 			if (remain>=sizeof(uint32_t)) {
-				uint32_t msglen = ntohl(*(uint32_t *)p);
+				uint32_t msglen = *(uint32_t *)p; /* TODO: ntohl */
 				if (msglen<sizeof(uint32_t)) {
 					sprintf(ibw_lasterr, "got msglen=%u\n", msglen);
 					goto error;
@@ -1028,7 +1028,8 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "ibw_connect/rdma_create_id error %d\n", rc);
-		return rc;
+		talloc_free(conn);
+		return -1;
 	}
 	DEBUG(10, ("ibw_connect: rdma_create_id succeeded, cm_id=%p\n", pconn->cm_id));
 
@@ -1196,7 +1197,7 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 	int	rc;
 
 	assert(len>=sizeof(uint32_t));
-	*((uint32_t *)buf) = htonl(len);
+	assert((*((uint32_t *)buf)==len)); /* TODO: htonl */
 
 	if (len > pctx->opts.recv_bufsize) {
 		struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);

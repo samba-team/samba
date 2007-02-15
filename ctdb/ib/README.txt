@@ -9,3 +9,12 @@ After then:
 
 ./configure --enable-infiniband
 
+Example for testing
+===================
+bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.1:9001
+bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.2:9001
+
+where 2nodes_rm.txt:
+10.0.0.1:9001
+10.0.0.2:9001
+
