@@ -28,9 +28,12 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/crypto/crypto.h"
+#include "libcli/auth/libcli_auth.h"
 
 static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 					   const DATA_BLOB *gensec_skey,
+					   bool rid_crypt,
+					   uint32_t rid,
 					   DATA_BLOB *in,
 					   DATA_BLOB *out)
 {
@@ -48,6 +51,13 @@ static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	DATA_BLOB checked_buffer;
 
 	DATA_BLOB plain_buffer;
+
+	/*
+	 * users with rid == 0 should not exist
+	 */
+	if (rid_crypt && rid == 0) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
 
 	/* 
 	 * the first 16 bytes at the beginning are the confounder
@@ -90,12 +100,21 @@ static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	}
 	checked_buffer = data_blob_const(dec_buffer.data + 4, dec_buffer.length - 4);
 
-	if (checked_buffer.length) {
-		plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
-		memset(checked_buffer.data, 0x00, checked_buffer.length);
-		W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
-	} else {
-		plain_buffer = data_blob_const(NULL, 0);
+	plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
+	W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
+
+	if (rid_crypt) {
+		uint32_t i, num_hashes;
+
+		if ((checked_buffer.length % 16) != 0) {
+			return WERR_DS_DRA_INVALID_PARAMETER;
+		}
+
+		num_hashes = plain_buffer.length / 16;
+		for (i = 0; i < num_hashes; i++) {
+			uint32_t offset = i * 16;
+			sam_rid_crypt(rid, checked_buffer.data + offset, plain_buffer.data + offset, 0);
+		}
 	}
 
 	*out = plain_buffer;
@@ -103,12 +122,14 @@ static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR dsdb_decrypt_attribute(const DATA_BLOB *gensec_skey,
+				     uint32_t rid,
 				     struct drsuapi_DsReplicaAttribute *attr)
 {
 	WERROR status;
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB *enc_data;
 	DATA_BLOB plain_data;
+	bool rid_crypt = false;
 
 	if (attr->value_ctr.num_values == 0) {
 		return WERR_OK;
@@ -119,6 +140,8 @@ static WERROR dsdb_decrypt_attribute(const DATA_BLOB *gensec_skey,
 	case DRSUAPI_ATTRIBUTE_unicodePwd:
 	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
 	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+		rid_crypt = true;
+		break;
 	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
 	case DRSUAPI_ATTRIBUTE_priorValue:
 	case DRSUAPI_ATTRIBUTE_currentValue:
@@ -144,6 +167,8 @@ static WERROR dsdb_decrypt_attribute(const DATA_BLOB *gensec_skey,
 
 	status = dsdb_decrypt_attribute_value(mem_ctx,
 					      gensec_skey,
+					      rid_crypt,
+					      rid,
 					      enc_data,
 					      &plain_data);
 	W_ERROR_NOT_OK_RETURN(status);
@@ -178,6 +203,8 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	struct drsuapi_DsReplicaAttribute *name_a = NULL;
 	struct drsuapi_DsReplicaMetaData *name_d = NULL;
 	struct replPropertyMetaData1 *rdn_m = NULL;
+	struct dom_sid *sid = NULL;
+	uint32_t rid = 0;
 	int ret;
 
 	if (!in->object.identifier) {
@@ -194,6 +221,11 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 
 	if (in->object.attribute_ctr.num_attributes != in->meta_data_ctr->count) {
 		return WERR_FOOBAR;
+	}
+
+	sid = &in->object.identifier->sid;
+	if (sid->num_auths > 0) {
+		rid = sid->sub_auths[sid->num_auths - 1];
 	}
 
 	msg = ldb_msg_new(mem_ctx);
@@ -238,7 +270,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		m = &md->ctr.ctr1.array[i];
 		e = &msg->elements[i];
 
-		status = dsdb_decrypt_attribute(gensec_skey, a);
+		status = dsdb_decrypt_attribute(gensec_skey, rid, a);
 		W_ERROR_NOT_OK_RETURN(status);
 
 		status = dsdb_attribute_drsuapi_to_ldb(schema, a, msg->elements, e);
