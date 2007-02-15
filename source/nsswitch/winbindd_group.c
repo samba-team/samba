@@ -1302,7 +1302,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	}
 
 	if ( s->domain->primary && lp_winbind_trusted_domains_only()) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting "
+		DEBUG(7,("winbindd_getgroups: My domain -- rejecting "
 			 "getgroups() for %s\\%s.\n", s->domname,
 			 s->username));
 		request_error(state);
