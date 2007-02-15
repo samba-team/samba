@@ -473,6 +473,45 @@ static bool getkeysecurity_out_check(struct torture_context *tctx, struct winreg
 	return true;
 }
 
+static const uint8_t enumkey_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0x85, 0xb8, 0x41, 0xb0, 0x17, 0xe4, 0x28, 0x45,
+  0x8a, 0x69, 0xbf, 0x40, 0x79, 0x82, 0x8b, 0xcb, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x14, 0x04, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x02, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+  0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0x7f
+};
+
+static bool enumkey_in_check(struct torture_context *tctx, struct winreg_EnumKey *r)
+{
+	torture_assert_int_equal(tctx, r->in.enum_index, 0, "enum index");
+	torture_assert_int_equal(tctx, r->in.name->size, 1044, "name size");
+	torture_assert_int_equal(tctx, r->in.name->length, 0, "name len");
+	torture_assert(tctx, r->in.keyclass != NULL, "keyclass pointer");
+	torture_assert(tctx, r->in.keyclass->name == NULL, "keyclass");
+	torture_assert(tctx, r->in.last_changed_time != NULL, "last_changed_time != NULL");
+	return true;
+}
+
+static const uint8_t enumkey_out_data[] = {
+  0x08, 0x00, 0x14, 0x04, 0x18, 0xe8, 0x07, 0x00, 0x0a, 0x02, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x53, 0x00, 0x41, 0x00,
+  0x4d, 0x00, 0x00, 0x00, 0xd0, 0x62, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0xdc, 0x62, 0x07, 0x00, 0x50, 0x67, 0xd0, 0x8b,
+  0x16, 0x06, 0xc2, 0x01, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool enumkey_out_check(struct torture_context *tctx, struct winreg_EnumKey *r)
+{
+	torture_assert_int_equal(tctx, r->out.name->size, 1044, "name size");
+	torture_assert_int_equal(tctx, r->out.name->length, 8, "name len");
+	torture_assert(tctx, r->out.keyclass != NULL, "keyclass pointer");
+	torture_assert(tctx, r->out.keyclass->name == NULL, "keyclass");
+	torture_assert(tctx, r->out.last_changed_time != NULL, "last_changed_time pointer");
+	/* FIXME: *last_changed_time */
+	return true;
+}
+
 struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "winreg");
@@ -515,6 +554,9 @@ struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 
 	/*torture_suite_add_ndr_pull_fn_test(suite, winreg_GetKeySecurity, getkeysecurity_in_data, NDR_IN, getkeysecurity_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_GetKeySecurity, getkeysecurity_out_data, NDR_OUT, getkeysecurity_out_check );*/
+
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_EnumKey, enumkey_in_data, NDR_IN, enumkey_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_EnumKey, enumkey_out_data, NDR_OUT, enumkey_out_check );
 
 	return suite;
 }

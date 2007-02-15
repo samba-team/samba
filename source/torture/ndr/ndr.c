@@ -86,6 +86,7 @@ NTSTATUS torture_ndr_init(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "NDR");
 
 	torture_suite_add_suite(suite, ndr_winreg_suite(suite));
+	torture_suite_add_suite(suite, ndr_atsvc_suite(suite));
 
 	torture_register_suite(suite);
 
