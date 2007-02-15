@@ -1243,6 +1243,7 @@ AC_CHECK_FUNCS(mlock munlock mlockall munlockall)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open)
+AC_CHECK_FUNCS(makecontext getcontext setcontext swapcontext)
 
 # Find a method of generating a stack trace
 AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
