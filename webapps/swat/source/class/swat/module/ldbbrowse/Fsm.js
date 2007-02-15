@@ -311,7 +311,7 @@ qx.Proto.buildFsm = function(module)
           }
 
           // Build the search expression
-          var searchExpr = "(objectclass=*)";
+          var searchExpr = "";
 
           // Get our module descriptor
           var module = fsm.getObject("swat.main.module");
@@ -415,7 +415,7 @@ qx.Proto.buildFsm = function(module)
           baseDN = hierarchy.reverse().join(",");
 
           // Build the search expression
-          var searchExpr = "(objectclass=*)";
+          var searchExpr = "";
 
           // Get our module descriptor
           var module = fsm.getObject("swat.main.module");
