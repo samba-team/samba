@@ -517,15 +517,18 @@ qx.Proto._displayDeleteResults = function(module, rpcRequest, type)
   var result = rpcRequest.getUserData("result");
 
   var tree = module.fsm.getObject("tree");
-  var node = tree.getDataModel().getData()[tree.getSelectedNodes()[0].parentNodeId];
+  var dataModel = tree.getDataModel();
+  var node = dataModel.getData()[tree.getSelectedNodes()[0].parentNodeId];
   
-  tree.getDataModel().prune(node.nodeId, false);
+  dataModel.prune(node.nodeId, false);
   node.bOpened = false;
   tree.toggleOpened(node);
 
   alert("Object Successfully deleted!");
 
   this._ldbmod.setBase("");
+  // just clear the attribute/value table.
+  dataModel.setData([ ]);
 };
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
