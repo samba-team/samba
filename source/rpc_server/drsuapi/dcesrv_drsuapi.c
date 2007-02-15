@@ -395,13 +395,9 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 	r->out.level_out = r->in.req.req1.level;
 
-	sites_dn = samdb_domain_to_dn(b_state->sam_ctx, mem_ctx, r->in.req.req1.domain_name);
+	sites_dn = samdb_sites_dn(b_state->sam_ctx, mem_ctx);
 	if (!sites_dn) {
 		return WERR_DS_OBJ_NOT_FOUND;
-	}
-
-	if (!ldb_dn_add_child_fmt(sites_dn, "CN=Sites,CN=Configuration")) {
-		return WERR_NOMEM;
 	}
 
 	switch (r->out.level_out) {
