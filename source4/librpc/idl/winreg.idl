@@ -148,7 +148,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
 	} winreg_StringBuf;
 
-	WERROR winreg_EnumKey(
+	[public] WERROR winreg_EnumKey(
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
