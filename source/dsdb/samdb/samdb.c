@@ -571,7 +571,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	if (nt_pwd) {
 		int num_nt;
-		num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
+		num_nt = samdb_result_hashes(mem_ctx, msg, "unicodePwd", &ntPwdHash);
 		if (num_nt == 0) {
 			*nt_pwd = NULL;
 		} else if (num_nt > 1) {
@@ -582,7 +582,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	}
 	if (lm_pwd) {
 		int num_lm;
-		num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
+		num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
 		if (num_lm == 0) {
 			*lm_pwd = NULL;
 		} else if (num_lm > 1) {
@@ -1496,9 +1496,9 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
-	const char * const user_attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
-					    "sambaNTPwdHistory", 
-					    "lmPwdHash", "ntPwdHash", 
+	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
+					    "ntPwdHistory", 
+					    "dBCSPwd", "unicodePwd", 
 					    "objectSid", 
 					    "pwdLastSet", NULL };
 	const char * const domain_attrs[] = { "pwdProperties", "pwdHistoryLength", 
@@ -1528,11 +1528,11 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 	}
 	userAccountControl = samdb_result_uint(res[0],   "userAccountControl", 0);
 	sambaLMPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "sambaLMPwdHistory", &sambaLMPwdHistory);
+						 "lmPwdHistory", &sambaLMPwdHistory);
 	sambaNTPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "sambaNTPwdHistory", &sambaNTPwdHistory);
-	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "lmPwdHash");
-	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "ntPwdHash");
+						 "ntPwdHistory", &sambaNTPwdHistory);
+	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "dBCSPwd");
+	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "unicodePwd");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
 
 	if (domain_dn) {
@@ -1692,15 +1692,15 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "sambaPassword"));
 
 		if (lmNewHash) {
-			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "dBCSPwd", lmNewHash));
 		} else {
-			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
+			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "dBCSPwd"));
 		}
 		
 		if (ntNewHash) {
-			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
+			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "unicodePwd", ntNewHash));
 		} else {
-			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHash"));
+			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
 		}
 	}
 
