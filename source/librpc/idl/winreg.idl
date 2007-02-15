@@ -127,7 +127,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x07 */
-	WERROR winreg_DeleteKey(
+	[public] WERROR winreg_DeleteKey(
 		[in,ref] policy_handle *handle,
 		[in]	 winreg_String key
 	);
@@ -171,13 +171,13 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0b */
-	WERROR winreg_FlushKey(
+	[public] WERROR winreg_FlushKey(
 		[in,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x0c */
-	WERROR winreg_GetKeySecurity(
+	[public] WERROR winreg_GetKeySecurity(
 		[in,ref] policy_handle *handle,
 		[in] security_secinfo sec_info,
 		[in,out,ref] KeySecurityData *sd
@@ -193,7 +193,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0e */
-	WERROR winreg_NotifyChangeKeyValue(
+	[public] WERROR winreg_NotifyChangeKeyValue(
 		[in,ref] policy_handle *handle,
 		[in] uint8 watch_subtree,
 		[in] uint32 notify_filter,
@@ -205,7 +205,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0f */
-	WERROR winreg_OpenKey(
+	[public] WERROR winreg_OpenKey(
 		[in,ref] policy_handle *parent_handle,
 		[in] winreg_String keyname,
 		[in] uint32 unknown,
@@ -215,7 +215,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x10 */
-	WERROR winreg_QueryInfoKey(
+	[public] WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
 		[in,out,ref] winreg_String *class_in,
 		[out,ref] uint32 *num_subkeys,
@@ -295,7 +295,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x1a */
-	WERROR winreg_GetVersion(
+	[public] WERROR winreg_GetVersion(
 		[in,ref]     policy_handle *handle,
 		[out,ref]    uint32 *version
 	);
