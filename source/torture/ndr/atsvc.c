@@ -199,16 +199,16 @@ struct torture_suite *ndr_atsvc_suite(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "atsvc");
 
 	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobEnum, jobenum_in_data, NDR_IN, jobenum_in_check );
-	/* torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobEnum, jobenum_out_data, NDR_IN, jobenum_out_check ); */
+	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobEnum, jobenum_out_data, NDR_OUT, jobenum_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobAdd, jobadd_in_data, NDR_IN, jobadd_in_check );
-	/* torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobAdd, jobadd_out_data, NDR_IN, jobadd_out_check ); */
+	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobAdd, jobadd_out_data, NDR_OUT, jobadd_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobDel, jobdel_in_data, NDR_IN, jobdel_in_check );
-	/* torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobDel, jobdel_out_data, NDR_IN, jobdel_out_check ); */
+	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobDel, jobdel_out_data, NDR_OUT, jobdel_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobGetInfo, jobgetinfo_in_data, NDR_IN, jobgetinfo_in_check );
-	/* torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobGetInfo, jobgetinfo_out_data, NDR_IN, jobgetinfo_out_check ); */
+	torture_suite_add_ndr_pull_fn_test(suite, atsvc_JobGetInfo, jobgetinfo_out_data, NDR_OUT, jobgetinfo_out_check );
 
 	return suite;
 }
