@@ -527,8 +527,10 @@ qx.Proto._displayDeleteResults = function(module, rpcRequest, type)
   alert("Object Successfully deleted!");
 
   this._ldbmod.setBase("");
+
   // just clear the attribute/value table.
-  dataModel.setData([ ]);
+  var tableModel = module.fsm.getObject("tableModel:browse");
+  tableModel.setData([]);
 };
 
 qx.Proto._displaySearchResults = function(module, rpcRequest)
