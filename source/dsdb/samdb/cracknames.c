@@ -69,8 +69,8 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
-	service_dn = ldb_dn_new(tmp_ctx, ldb_ctx, "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration");
-	if ( ! ldb_dn_add_base(service_dn, samdb_base_dn(ldb_ctx))) {
+	service_dn = ldb_dn_new(tmp_ctx, ldb_ctx, "CN=Directory Service,CN=Windows NT,CN=Services");
+	if ( ! ldb_dn_add_base(service_dn, samdb_config_dn(ldb_ctx))) {
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 	service_dn_str = ldb_dn_alloc_linearized(tmp_ctx, service_dn);
