@@ -943,9 +943,21 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 		int num_gids = response.data.num_entries;
 		gid_t *gid_list = (gid_t *)response.extra_data.data;
 
+#ifdef DEBUG_NSS
+		fprintf(stderr, "[%5d]: initgroups %s: got NSS_STATUS_SUCCESS "
+				"and %d gids\n", getpid(),
+				user, num_gids);
+#endif
+
 		/* Copy group list to client */
 
 		for (i = 0; i < num_gids; i++) {
+
+#ifdef DEBUG_NSS
+			fprintf(stderr, "[%5d]: initgroups %s (%d): "
+					"processing gid %d \n", getpid(),
+					user, group, gid_list[i]);
+#endif
 
 			/* Skip primary group */
 
