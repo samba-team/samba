@@ -231,7 +231,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 		struct ldb_val val;
 		int ret;
 		
-		if (keys[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5) {
+		if (keys[i].key.keytype == KEYTYPE_ARCFOUR) {
 			/* We might end up doing this below:
 			 * This ensures we get the unicode
 			 * conversion right.  This should also
@@ -282,7 +282,7 @@ static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_messa
 	}
 
 	krb5_ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-				      ETYPE_ARCFOUR_HMAC_MD5,
+				      KEYTYPE_ARCFOUR,
 				      ntPwdHash->hash, sizeof(ntPwdHash->hash), 
 				      &key.key);
 	if (krb5_ret) {
