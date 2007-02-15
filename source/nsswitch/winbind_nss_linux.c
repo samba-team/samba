@@ -69,6 +69,25 @@ NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 extern int winbindd_fd;
 
+#ifdef DEBUG_NSS
+static const char *nss_err_str(NSS_STATUS ret) {
+	switch (ret) {
+		case NSS_STATUS_TRYAGAIN:
+			return "NSS_STATUS_TRYAGAIN";
+		case NSS_STATUS_SUCCESS:
+			return "NSS_STATUS_SUCCESS";
+		case NSS_STATUS_NOTFOUND:
+			return "NSS_STATUS_NOTFOUND";
+		case NSS_STATUS_UNAVAIL:
+			return "NSS_STATUS_UNAVAIL";
+		case NSS_STATUS_RETURN:
+			return "NSS_STATUS_RETURN";
+		default:
+			return "UNKNOWN RETURN CODE!!!!!!!";
+	}
+}
+#endif
+
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */
@@ -329,6 +348,7 @@ static int num_pw_cache;                 /* Current size of pwd cache */
 NSS_STATUS
 _nss_winbind_setpwent(void)
 {
+	NSS_STATUS ret;
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: setpwent\n", getpid());
 #endif
@@ -338,7 +358,12 @@ _nss_winbind_setpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return winbindd_request_response(WINBINDD_SETPWENT, NULL, NULL);
+	ret = winbindd_request_response(WINBINDD_SETPWENT, NULL, NULL);
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: setpwent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
+	return ret;
 }
 
 /* Close ntdom password database "file pointer" */
@@ -346,6 +371,7 @@ _nss_winbind_setpwent(void)
 NSS_STATUS
 _nss_winbind_endpwent(void)
 {
+	NSS_STATUS ret;
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: endpwent\n", getpid());
 #endif
@@ -355,7 +381,12 @@ _nss_winbind_endpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return winbindd_request_response(WINBINDD_ENDPWENT, NULL, NULL);
+	ret = winbindd_request_response(WINBINDD_ENDPWENT, NULL, NULL);
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: endpwent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
+	return ret;
 }
 
 /* Fetch the next password entry from ntdom password database */
@@ -411,7 +442,8 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		/* Check data is valid */
 
 		if (pw_cache == NULL) {
-			return NSS_STATUS_NOTFOUND;
+			ret = NSS_STATUS_NOTFOUND;
+			goto done;
 		}
 
 		ret = fill_pwent(result, &pw_cache[ndx_pw_cache],
@@ -422,7 +454,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			called_again = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		*errnop = errno = 0;
@@ -436,7 +468,11 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 			free_response(&getpwent_response);
 		}
 	}
-
+	done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
@@ -450,6 +486,10 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 	static struct winbindd_response response;
 	struct winbindd_request request;
 	static int keep_response=0;
+
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwuid %d\n", getpid(), (unsigned int)uid);
+#endif
 
 	/* If our static buffer needs to be expanded we are called again */
 	if (!keep_response) {
@@ -470,7 +510,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
 				*errnop = errno = ERANGE;
-				return ret;
+				goto done;
 			}
 		}
 
@@ -483,7 +523,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		keep_response = False;
@@ -491,11 +531,16 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 	}
 
 	free_response(&response);
+	done:
+
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwuid %d returns %s (%d)\n", getpid(),
+		(unsigned int)uid, nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
 /* Return passwd struct from username */
-
 NSS_STATUS
 _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
@@ -532,7 +577,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
 				*errnop = errno = ERANGE;
-				return ret;
+				goto done;
 			}
 		}
 
@@ -545,7 +590,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		keep_response = False;
@@ -553,6 +598,11 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	}
 
 	free_response(&response);
+	done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwnam %s returns %s (%d)\n", getpid(),
+		name, nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
@@ -570,6 +620,7 @@ static int num_gr_cache;                 /* Current size of grp cache */
 NSS_STATUS
 _nss_winbind_setgrent(void)
 {
+	NSS_STATUS ret;
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: setgrent\n", getpid());
 #endif
@@ -579,7 +630,12 @@ _nss_winbind_setgrent(void)
 		free_response(&getgrent_response);
 	}
 
-	return winbindd_request_response(WINBINDD_SETGRENT, NULL, NULL);
+	ret = winbindd_request_response(WINBINDD_SETGRENT, NULL, NULL);
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: setgrent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
+	return ret;
 }
 
 /* Close "file pointer" for ntdom group database */
@@ -587,6 +643,7 @@ _nss_winbind_setgrent(void)
 NSS_STATUS
 _nss_winbind_endgrent(void)
 {
+	NSS_STATUS ret;
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: endgrent\n", getpid());
 #endif
@@ -596,7 +653,12 @@ _nss_winbind_endgrent(void)
 		free_response(&getgrent_response);
 	}
 
-	return winbindd_request_response(WINBINDD_ENDGRENT, NULL, NULL);
+	ret = winbindd_request_response(WINBINDD_ENDGRENT, NULL, NULL);
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: endgrent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
+	return ret;
 }
 
 /* Get next entry from ntdom group database */
@@ -655,7 +717,8 @@ winbind_getgrent(enum winbindd_cmd cmd,
 		/* Check data is valid */
 
 		if (gr_cache == NULL) {
-			return NSS_STATUS_NOTFOUND;
+			ret = NSS_STATUS_NOTFOUND;
+			goto done;
 		}
 
 		/* Fill group membership.  The offset into the extra data
@@ -674,7 +737,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			called_again = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		*errnop = 0;
@@ -688,7 +751,11 @@ winbind_getgrent(enum winbindd_cmd cmd,
 			free_response(&getgrent_response);
 		}
 	}
-
+	done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrent returns %s (%d)\n", getpid(),
+		nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
@@ -747,7 +814,7 @@ _nss_winbind_getgrnam_r(const char *name,
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
 				*errnop = errno = ERANGE;
-				return ret;
+				goto done;
 			}
 		}
 
@@ -762,7 +829,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		keep_response = False;
@@ -770,6 +837,11 @@ _nss_winbind_getgrnam_r(const char *name,
 	}
 
 	free_response(&response);
+	done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrnam %s returns %s (%d)\n", getpid(),
+		name, nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
@@ -811,7 +883,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
 				*errnop = errno = ERANGE;
-				return ret;
+				goto done;
 			}
 		}
 
@@ -826,7 +898,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
 			*errnop = errno = ERANGE;
-			return ret;
+			goto done;
 		}
 
 		keep_response = False;
@@ -834,6 +906,11 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	}
 
 	free_response(&response);
+	done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrgid %d returns %s (%d)\n", getpid(),
+		(unsigned int)gid, nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
@@ -914,6 +991,10 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 	/* Back to your regularly scheduled programming */
 
  done:
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: initgroups %s returns %s (%d)\n", getpid(),
+		user, nss_err_str(ret), ret);
+#endif
 	return ret;
 }
 
