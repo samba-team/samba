@@ -137,7 +137,7 @@ showInAdvancedViewOnly: TRUE
 dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 objectClass: user
 unixName: bin
-unicodePwd: geheim
+sambaUnicodePwd: geheim
 cn: Niemand
 ");
 	if (ok.error != 0) {
@@ -147,27 +147,27 @@ cn: Niemand
 	assert(ok.error == 0);
 
 	println("Checking for existence of record (remote)");
-	msg = ldb.search("(unixName=bin)", new Array('unixName','cn','dn', 'unicodePwd'));
+	msg = ldb.search("(unixName=bin)", new Array('unixName','cn','dn', 'sambaUnicodePwd'));
 	assert(msg.error == 0);
 	assert(msg.msgs.length == 1);
 	assert(msg.msgs[0].cn == "Niemand"); 
-	assert(msg.msgs[0].unicodePwd == "geheim");
+	assert(msg.msgs[0].sambaUnicodePwd == "geheim");
 
 	println("Checking for existence of record (local && remote)");
-	msg = ldb.search("(&(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
+	msg = ldb.search("(&(unixName=bin)(sambaUnicodePwd=geheim))", new Array('unixName','cn','dn', 'sambaUnicodePwd'));
 	assert(msg.error == 0);
 	assert(msg.msgs.length == 1);		// TODO: should check with more records
 	assert(msg.msgs[0].cn == "Niemand");
 	assert(msg.msgs[0].unixName == "bin");
-	assert(msg.msgs[0].unicodePwd == "geheim");
+	assert(msg.msgs[0].sambaUnicodePwd == "geheim");
 
 	println("Checking for existence of record (local || remote)");
-	msg = ldb.search("(|(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
+	msg = ldb.search("(|(unixName=bin)(sambaUnicodePwd=geheim))", new Array('unixName','cn','dn', 'sambaUnicodePwd'));
 	println("got " + msg.msgs.length + " replies");
 	assert(msg.error == 0);
 	assert(msg.msgs.length == 1);		// TODO: should check with more records
 	assert(msg.msgs[0].cn == "Niemand");
-	assert(msg.msgs[0].unixName == "bin" || msg.msgs[0].unicodePwd == "geheim");
+	assert(msg.msgs[0].unixName == "bin" || msg.msgs[0].sambaUnicodePwd == "geheim");
 
 	println("Checking for data in destination database");
 	msg = s3.db.search("(cn=Niemand)");
