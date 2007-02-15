@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -744,7 +744,8 @@ typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
 /* flags for krb5_parse_name_flags */
 enum {
     KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2
+    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
+    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4
 };
 
 /* flags for krb5_unparse_name_flags */
