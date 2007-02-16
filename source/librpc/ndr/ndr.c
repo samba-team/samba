@@ -735,8 +735,8 @@ _PUBLIC_ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *me
 	}
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
-	if (ndr->offset != ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	if (ndr->offset < ndr->data_size) {
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
 	}
 	return status;
 }
