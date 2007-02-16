@@ -104,7 +104,8 @@ OBJ_FILES = ndr/ndr.o \
 			ndr/winreg.o \
 			ndr/atsvc.o \
 			ndr/lsa.o \
-			ndr/epmap.o
+			ndr/epmap.o \
+			ndr/dfs.o
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
