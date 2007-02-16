@@ -1,5 +1,14 @@
-2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: Add link for
+	gsskrb5_register_acceptor_identity.
+
+2007-02-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/copy_ccache.c: Try to leak less memory in the failure case.
+	
+2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_display_status.c: Use right printf formater.
 
 	* test_*.[ch]: split out the error printing function and try to
