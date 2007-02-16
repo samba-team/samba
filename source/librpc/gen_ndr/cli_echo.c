@@ -19,7 +19,7 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, ui
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_ADDONE, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_AddOne, (ndr_push_flags_fn_t)ndr_push_echo_AddOne);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -51,7 +51,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_ECHODATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_EchoData, (ndr_push_flags_fn_t)ndr_push_echo_EchoData);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -63,7 +63,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	}
 	
 	/* Return variables */
-	*out_data = *r.out.out_data;
+	memcpy(out_data, r.out.out_data, r.in.len);
 	
 	/* Return result */
 	return NT_STATUS_OK;
@@ -83,7 +83,7 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_SINKDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_SinkData, (ndr_push_flags_fn_t)ndr_push_echo_SinkData);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -113,7 +113,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_SOURCEDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_SourceData, (ndr_push_flags_fn_t)ndr_push_echo_SourceData);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -125,7 +125,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	*data = *r.out.data;
+	memcpy(data, r.out.data, r.in.len);
 	
 	/* Return result */
 	return NT_STATUS_OK;
@@ -144,7 +144,7 @@ NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTCALL, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestCall, (ndr_push_flags_fn_t)ndr_push_echo_TestCall);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -175,7 +175,7 @@ NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTCALL2, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestCall2, (ndr_push_flags_fn_t)ndr_push_echo_TestCall2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -206,7 +206,7 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTSLEEP, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestSleep, (ndr_push_flags_fn_t)ndr_push_echo_TestSleep);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -220,7 +220,6 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return variables */
 	
 	/* Return result */
-	/* Sorry, don't know how to convert uint32 to NTSTATUS */
 	return NT_STATUS_OK;
 }
 
@@ -239,7 +238,7 @@ NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTENUM, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestEnum, (ndr_push_flags_fn_t)ndr_push_echo_TestEnum);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -272,7 +271,7 @@ NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTSURROUNDING, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestSurrounding, (ndr_push_flags_fn_t)ndr_push_echo_TestSurrounding);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -303,7 +302,7 @@ NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli, TALLOC_CTX *
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, DCERPC_ECHO_TESTDOUBLEPOINTER, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestDoublePointer, (ndr_push_flags_fn_t)ndr_push_echo_TestDoublePointer);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -317,7 +316,6 @@ NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli, TALLOC_CTX *
 	/* Return variables */
 	
 	/* Return result */
-	/* Sorry, don't know how to convert uint16 to NTSTATUS */
 	return NT_STATUS_OK;
 }
 

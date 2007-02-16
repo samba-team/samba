@@ -19,7 +19,7 @@ NTSTATUS rpccli_unixinfo_SidToUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, DCERPC_UNIXINFO_SIDTOUID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_SidToUid, (ndr_push_flags_fn_t)ndr_push_unixinfo_SidToUid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -50,7 +50,7 @@ NTSTATUS rpccli_unixinfo_UidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, DCERPC_UNIXINFO_UIDTOSID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_UidToSid, (ndr_push_flags_fn_t)ndr_push_unixinfo_UidToSid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -81,7 +81,7 @@ NTSTATUS rpccli_unixinfo_SidToGid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, DCERPC_UNIXINFO_SIDTOGID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_SidToGid, (ndr_push_flags_fn_t)ndr_push_unixinfo_SidToGid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -112,7 +112,7 @@ NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, DCERPC_UNIXINFO_GIDTOSID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_GidToSid, (ndr_push_flags_fn_t)ndr_push_unixinfo_GidToSid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -144,7 +144,7 @@ NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, DCERPC_UNIXINFO_GETPWUID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_GetPWUid, (ndr_push_flags_fn_t)ndr_push_unixinfo_GetPWUid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -157,7 +157,7 @@ NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*count = *r.out.count;
-	*infos = *r.out.infos;
+	memcpy(infos, r.out.infos, *r.in.count);
 	
 	/* Return result */
 	return r.out.result;

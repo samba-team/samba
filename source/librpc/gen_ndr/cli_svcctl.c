@@ -19,7 +19,7 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CLOSESERVICEHANDLE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CloseServiceHandle, (ndr_push_flags_fn_t)ndr_push_svcctl_CloseServiceHandle);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -51,7 +51,7 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CONTROLSERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ControlService, (ndr_push_flags_fn_t)ndr_push_svcctl_ControlService);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -82,7 +82,7 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_DELETESERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_DeleteService, (ndr_push_flags_fn_t)ndr_push_svcctl_DeleteService);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -112,7 +112,7 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_LOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_LockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_LockServiceDatabase);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -142,7 +142,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, T
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceObjectSecurity);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -171,7 +171,7 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TAL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SETSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceObjectSecurity);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -201,7 +201,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatus);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -231,7 +231,7 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SETSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceStatus);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -261,7 +261,7 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_UNLOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_UnlockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_UnlockServiceDatabase);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -291,7 +291,7 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_NOTIFYBOOTCONFIGSTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_NotifyBootConfigStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_NotifyBootConfigStatus);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -324,7 +324,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSETSERVICEBITSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsW, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -363,7 +363,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -408,7 +408,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CREATESERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -444,7 +444,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMDEPENDENTSERVICESW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -483,7 +483,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICESSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -495,7 +495,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	*service = *r.out.service;
+	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
 	if ( resume_handle ) {
@@ -521,7 +521,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSCMANAGERW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -554,7 +554,7 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -586,7 +586,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -598,7 +598,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	*query = *r.out.query;
+	memcpy(query, r.out.query, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
@@ -619,7 +619,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICELOCKSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -653,7 +653,7 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_STARTSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -685,7 +685,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEDISPLAYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -721,7 +721,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEKEYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -758,7 +758,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSETSERVICEBITSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsA, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -797,7 +797,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -839,7 +839,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CREATESERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -874,7 +874,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMDEPENDENTSERVICESA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -913,7 +913,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICESSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -925,7 +925,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	*service = *r.out.service;
+	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
 	if ( resume_handle ) {
@@ -951,7 +951,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSCMANAGERA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -984,7 +984,7 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1015,7 +1015,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1027,7 +1027,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	*query = *r.out.query;
+	memcpy(query, r.out.query, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
@@ -1048,7 +1048,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICELOCKSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1082,7 +1082,7 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_STARTSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1114,7 +1114,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEDISPLAYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1150,7 +1150,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEKEYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1183,7 +1183,7 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETCURRENTGROUPESTATEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetCurrentGroupeStateW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetCurrentGroupeStateW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1212,7 +1212,7 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICEGROUPW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServiceGroupW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServiceGroupW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1244,7 +1244,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2A);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1276,7 +1276,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2W);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1308,7 +1308,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2A);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1320,7 +1320,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	*buffer = *r.out.buffer;
+	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
@@ -1342,7 +1342,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2W);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1354,7 +1354,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	*buffer = *r.out.buffer;
+	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
@@ -1376,7 +1376,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICESTATUSEX, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatusEx, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatusEx);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1388,7 +1388,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	*buffer = *r.out.buffer;
+	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
@@ -1413,7 +1413,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_ENUMSERVICESSTATUSEXA, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExA, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExA);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1425,7 +1425,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	*services = *r.out.services;
+	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*service_returned = *r.out.service_returned;
 	if ( resume_handle ) {
@@ -1455,7 +1455,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_ENUMSERVICESSTATUSEXW, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExW, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExW);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1467,7 +1467,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	*services = *r.out.services;
+	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*service_returned = *r.out.service_returned;
 	if ( resume_handle ) {
@@ -1491,7 +1491,7 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSENDTSMESSAGE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSendTSMessage, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSendTSMessage);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	

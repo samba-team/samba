@@ -19,7 +19,7 @@ NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, stru
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CLOSE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_Close, (ndr_push_flags_fn_t)ndr_push_lsa_Close);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -50,7 +50,7 @@ NTSTATUS rpccli_lsa_Delete(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, str
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_DELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_Delete, (ndr_push_flags_fn_t)ndr_push_lsa_Delete);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -82,7 +82,7 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMPRIVS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumPrivs, (ndr_push_flags_fn_t)ndr_push_lsa_EnumPrivs);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -115,7 +115,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QuerySecurity, (ndr_push_flags_fn_t)ndr_push_lsa_QuerySecurity);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -147,7 +147,7 @@ NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETSECOBJ, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetSecObj, (ndr_push_flags_fn_t)ndr_push_lsa_SetSecObj);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -176,7 +176,7 @@ NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CHANGEPASSWORD, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_ChangePassword, (ndr_push_flags_fn_t)ndr_push_lsa_ChangePassword);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -208,7 +208,7 @@ NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENPOLICY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenPolicy, (ndr_push_flags_fn_t)ndr_push_lsa_OpenPolicy);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -240,7 +240,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYINFOPOLICY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryInfoPolicy, (ndr_push_flags_fn_t)ndr_push_lsa_QueryInfoPolicy);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -272,7 +272,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETINFOPOLICY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetInfoPolicy, (ndr_push_flags_fn_t)ndr_push_lsa_SetInfoPolicy);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -301,7 +301,7 @@ NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CLEARAUDITLOG, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_ClearAuditLog, (ndr_push_flags_fn_t)ndr_push_lsa_ClearAuditLog);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -333,7 +333,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREATEACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CreateAccount, (ndr_push_flags_fn_t)ndr_push_lsa_CreateAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -366,7 +366,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMACCOUNTS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumAccounts, (ndr_push_flags_fn_t)ndr_push_lsa_EnumAccounts);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -400,7 +400,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREATETRUSTEDDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CreateTrustedDomain, (ndr_push_flags_fn_t)ndr_push_lsa_CreateTrustedDomain);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -433,7 +433,7 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMTRUSTDOM, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumTrustDom, (ndr_push_flags_fn_t)ndr_push_lsa_EnumTrustDom);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -470,7 +470,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPNAMES, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupNames, (ndr_push_flags_fn_t)ndr_push_lsa_LookupNames);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -509,7 +509,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPSIDS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupSids, (ndr_push_flags_fn_t)ndr_push_lsa_LookupSids);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -546,7 +546,7 @@ NTSTATUS rpccli_lsa_CreateSecret(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREATESECRET, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CreateSecret, (ndr_push_flags_fn_t)ndr_push_lsa_CreateSecret);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -579,7 +579,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenAccount, (ndr_push_flags_fn_t)ndr_push_lsa_OpenAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -610,7 +610,7 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMPRIVSACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumPrivsAccount, (ndr_push_flags_fn_t)ndr_push_lsa_EnumPrivsAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -644,7 +644,7 @@ NTSTATUS rpccli_lsa_AddPrivilegesToAccount(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ADDPRIVILEGESTOACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_AddPrivilegesToAccount, (ndr_push_flags_fn_t)ndr_push_lsa_AddPrivilegesToAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -676,7 +676,7 @@ NTSTATUS rpccli_lsa_RemovePrivilegesFromAccount(struct rpc_pipe_client *cli, TAL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_REMOVEPRIVILEGESFROMACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_RemovePrivilegesFromAccount, (ndr_push_flags_fn_t)ndr_push_lsa_RemovePrivilegesFromAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -705,7 +705,7 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_GETQUOTASFORACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_GetQuotasForAccount, (ndr_push_flags_fn_t)ndr_push_lsa_GetQuotasForAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -734,7 +734,7 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETQUOTASFORACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetQuotasForAccount, (ndr_push_flags_fn_t)ndr_push_lsa_SetQuotasForAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -763,7 +763,7 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_GETSYSTEMACCESSACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_GetSystemAccessAccount, (ndr_push_flags_fn_t)ndr_push_lsa_GetSystemAccessAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -792,7 +792,7 @@ NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETSYSTEMACCESSACCOUNT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetSystemAccessAccount, (ndr_push_flags_fn_t)ndr_push_lsa_SetSystemAccessAccount);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -824,7 +824,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENTRUSTEDDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenTrustedDomain, (ndr_push_flags_fn_t)ndr_push_lsa_OpenTrustedDomain);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -856,7 +856,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYTRUSTEDDOMAININFO, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryTrustedDomainInfo, (ndr_push_flags_fn_t)ndr_push_lsa_QueryTrustedDomainInfo);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -888,7 +888,7 @@ NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli, TAL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETINFORMATIONTRUSTEDDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetInformationTrustedDomain, (ndr_push_flags_fn_t)ndr_push_lsa_SetInformationTrustedDomain);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -920,7 +920,7 @@ NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENSECRET, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenSecret, (ndr_push_flags_fn_t)ndr_push_lsa_OpenSecret);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -953,7 +953,7 @@ NTSTATUS rpccli_lsa_SetSecret(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETSECRET, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetSecret, (ndr_push_flags_fn_t)ndr_push_lsa_SetSecret);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -987,7 +987,7 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYSECRET, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QuerySecret, (ndr_push_flags_fn_t)ndr_push_lsa_QuerySecret);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1030,7 +1030,7 @@ NTSTATUS rpccli_lsa_LookupPrivValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPPRIVVALUE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupPrivValue, (ndr_push_flags_fn_t)ndr_push_lsa_LookupPrivValue);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1062,7 +1062,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPPRIVNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupPrivName, (ndr_push_flags_fn_t)ndr_push_lsa_LookupPrivName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1098,7 +1098,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPPRIVDISPLAYNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupPrivDisplayName, (ndr_push_flags_fn_t)ndr_push_lsa_LookupPrivDisplayName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1131,7 +1131,7 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_DELETEOBJECT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_DeleteObject, (ndr_push_flags_fn_t)ndr_push_lsa_DeleteObject);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1162,7 +1162,7 @@ NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMACCOUNTSWITHUSERRIGHT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumAccountsWithUserRight, (ndr_push_flags_fn_t)ndr_push_lsa_EnumAccountsWithUserRight);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1194,7 +1194,7 @@ NTSTATUS rpccli_lsa_EnumAccountRights(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMACCOUNTRIGHTS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumAccountRights, (ndr_push_flags_fn_t)ndr_push_lsa_EnumAccountRights);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1227,7 +1227,7 @@ NTSTATUS rpccli_lsa_AddAccountRights(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ADDACCOUNTRIGHTS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_AddAccountRights, (ndr_push_flags_fn_t)ndr_push_lsa_AddAccountRights);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1260,7 +1260,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_REMOVEACCOUNTRIGHTS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_RemoveAccountRights, (ndr_push_flags_fn_t)ndr_push_lsa_RemoveAccountRights);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1292,7 +1292,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli, TAL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYTRUSTEDDOMAININFOBYSID, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryTrustedDomainInfoBySid, (ndr_push_flags_fn_t)ndr_push_lsa_QueryTrustedDomainInfoBySid);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1324,7 +1324,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETTRUSTEDDOMAININFO, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetTrustedDomainInfo, (ndr_push_flags_fn_t)ndr_push_lsa_SetTrustedDomainInfo);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1355,7 +1355,7 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_DELETETRUSTEDDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_DeleteTrustedDomain, (ndr_push_flags_fn_t)ndr_push_lsa_DeleteTrustedDomain);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1384,7 +1384,7 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_STOREPRIVATEDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_StorePrivateData, (ndr_push_flags_fn_t)ndr_push_lsa_StorePrivateData);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1413,7 +1413,7 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_RETRIEVEPRIVATEDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_RetrievePrivateData, (ndr_push_flags_fn_t)ndr_push_lsa_RetrievePrivateData);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1445,7 +1445,7 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENPOLICY2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenPolicy2, (ndr_push_flags_fn_t)ndr_push_lsa_OpenPolicy2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1478,7 +1478,7 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_GETUSERNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_GetUserName, (ndr_push_flags_fn_t)ndr_push_lsa_GetUserName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1515,7 +1515,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYINFOPOLICY2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryInfoPolicy2, (ndr_push_flags_fn_t)ndr_push_lsa_QueryInfoPolicy2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1547,7 +1547,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETINFOPOLICY2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetInfoPolicy2, (ndr_push_flags_fn_t)ndr_push_lsa_SetInfoPolicy2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1579,7 +1579,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli, TA
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYTRUSTEDDOMAININFOBYNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryTrustedDomainInfoByName, (ndr_push_flags_fn_t)ndr_push_lsa_QueryTrustedDomainInfoByName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1615,7 +1615,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETTRUSTEDDOMAININFOBYNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetTrustedDomainInfoByName, (ndr_push_flags_fn_t)ndr_push_lsa_SetTrustedDomainInfoByName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1647,7 +1647,7 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_ENUMTRUSTEDDOMAINSEX, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_EnumTrustedDomainsEx, (ndr_push_flags_fn_t)ndr_push_lsa_EnumTrustedDomainsEx);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1678,7 +1678,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREATETRUSTEDDOMAINEX, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CreateTrustedDomainEx, (ndr_push_flags_fn_t)ndr_push_lsa_CreateTrustedDomainEx);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1708,7 +1708,7 @@ NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CLOSETRUSTEDDOMAINEX, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CloseTrustedDomainEx, (ndr_push_flags_fn_t)ndr_push_lsa_CloseTrustedDomainEx);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1740,7 +1740,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli, TA
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_QUERYDOMAININFORMATIONPOLICY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_QueryDomainInformationPolicy, (ndr_push_flags_fn_t)ndr_push_lsa_QueryDomainInformationPolicy);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1775,7 +1775,7 @@ NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_SETDOMAININFORMATIONPOLICY, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_SetDomainInformationPolicy, (ndr_push_flags_fn_t)ndr_push_lsa_SetDomainInformationPolicy);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1807,7 +1807,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomainByName(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_OPENTRUSTEDDOMAINBYNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_OpenTrustedDomainByName, (ndr_push_flags_fn_t)ndr_push_lsa_OpenTrustedDomainByName);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1837,7 +1837,7 @@ NTSTATUS rpccli_lsa_TestCall(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_TESTCALL, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_TestCall, (ndr_push_flags_fn_t)ndr_push_lsa_TestCall);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1873,7 +1873,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPSIDS2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupSids2, (ndr_push_flags_fn_t)ndr_push_lsa_LookupSids2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1915,7 +1915,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPNAMES2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupNames2, (ndr_push_flags_fn_t)ndr_push_lsa_LookupNames2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1949,7 +1949,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREATETRUSTEDDOMAINEX2, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CreateTrustedDomainEx2, (ndr_push_flags_fn_t)ndr_push_lsa_CreateTrustedDomainEx2);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -1978,7 +1978,7 @@ NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRWRITE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRWRITE, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRWRITE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2007,7 +2007,7 @@ NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRREAD, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRREAD, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRREAD);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2036,7 +2036,7 @@ NTSTATUS rpccli_lsa_CREDRENUMERATE(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRENUMERATE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRENUMERATE, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRENUMERATE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2065,7 +2065,7 @@ NTSTATUS rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS(struct rpc_pipe_client *cli, TAL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRWRITEDOMAINCREDENTIALS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRWRITEDOMAINCREDENTIALS, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRWRITEDOMAINCREDENTIALS);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2094,7 +2094,7 @@ NTSTATUS rpccli_lsa_CREDRREADDOMAINCREDENTIALS(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRREADDOMAINCREDENTIALS, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRREADDOMAINCREDENTIALS, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRREADDOMAINCREDENTIALS);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2123,7 +2123,7 @@ NTSTATUS rpccli_lsa_CREDRDELETE(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRDELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRDELETE, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRDELETE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2152,7 +2152,7 @@ NTSTATUS rpccli_lsa_CREDRGETTARGETINFO(struct rpc_pipe_client *cli, TALLOC_CTX *
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRGETTARGETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRGETTARGETINFO, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRGETTARGETINFO);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2181,7 +2181,7 @@ NTSTATUS rpccli_lsa_CREDRPROFILELOADED(struct rpc_pipe_client *cli, TALLOC_CTX *
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRPROFILELOADED, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRPROFILELOADED, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRPROFILELOADED);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2218,7 +2218,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPNAMES3, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupNames3, (ndr_push_flags_fn_t)ndr_push_lsa_LookupNames3);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2252,7 +2252,7 @@ NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRGETSESSIONTYPES, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRGETSESSIONTYPES, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRGETSESSIONTYPES);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2281,7 +2281,7 @@ NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARREGISTERAUDITEVENT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARREGISTERAUDITEVENT, (ndr_push_flags_fn_t)ndr_push_lsa_LSARREGISTERAUDITEVENT);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2310,7 +2310,7 @@ NTSTATUS rpccli_lsa_LSARGENAUDITEVENT(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARGENAUDITEVENT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARGENAUDITEVENT, (ndr_push_flags_fn_t)ndr_push_lsa_LSARGENAUDITEVENT);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2339,7 +2339,7 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli, TALLOC
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARUNREGISTERAUDITEVENT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARUNREGISTERAUDITEVENT, (ndr_push_flags_fn_t)ndr_push_lsa_LSARUNREGISTERAUDITEVENT);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2368,7 +2368,7 @@ NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARQUERYFORESTTRUSTINFORMATION, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION, (ndr_push_flags_fn_t)ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2397,7 +2397,7 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, T
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARSETFORESTTRUSTINFORMATION, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION, (ndr_push_flags_fn_t)ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2426,7 +2426,7 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_CREDRRENAME, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_CREDRRENAME, (ndr_push_flags_fn_t)ndr_push_lsa_CREDRRENAME);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2461,7 +2461,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPSIDS3, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupSids3, (ndr_push_flags_fn_t)ndr_push_lsa_LookupSids3);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2502,7 +2502,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LOOKUPNAMES4, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LookupNames4, (ndr_push_flags_fn_t)ndr_push_lsa_LookupNames4);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2536,7 +2536,7 @@ NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSAROPENPOLICYSCE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSAROPENPOLICYSCE, (ndr_push_flags_fn_t)ndr_push_lsa_LSAROPENPOLICYSCE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2565,7 +2565,7 @@ NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARADTREGISTERSECURITYEVENTSOURCE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARADTREGISTERSECURITYEVENTSOURCE, (ndr_push_flags_fn_t)ndr_push_lsa_LSARADTREGISTERSECURITYEVENTSOURCE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2594,7 +2594,7 @@ NTSTATUS rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, (ndr_push_flags_fn_t)ndr_push_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -2623,7 +2623,7 @@ NTSTATUS rpccli_lsa_LSARADTREPORTSECURITYEVENT(struct rpc_pipe_client *cli, TALL
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_LSARPC, DCERPC_LSA_LSARADTREPORTSECURITYEVENT, &r, (ndr_pull_flags_fn_t)ndr_pull_lsa_LSARADTREPORTSECURITYEVENT, (ndr_push_flags_fn_t)ndr_push_lsa_LSARADTREPORTSECURITYEVENT);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
