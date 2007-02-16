@@ -149,19 +149,22 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 */
 static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	TDB_DATA data;
-	int incr, vnn=ctdb_get_vnn(ctdb);
-
-	data.dptr = (uint8_t *)&incr;
-	data.dsize = sizeof(incr);
+	int vnn=ctdb_get_vnn(ctdb);
 
 	if (vnn == 0) {
 		/* two messages are injected into the ring, moving
 		   in opposite directions */
-		int dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+		int dest, incr;
+		TDB_DATA data;
+		
+		data.dptr = (uint8_t *)&incr;
+		data.dsize = sizeof(incr);
+
 		incr = 1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
 		ctdb_send_message(ctdb, dest, 0, data);
 		incr = -1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
 		ctdb_send_message(ctdb, dest, 0, data);
 	}
 	
