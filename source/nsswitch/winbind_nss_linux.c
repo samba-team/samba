@@ -948,6 +948,10 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 				"and %d gids\n", getpid(),
 				user, num_gids);
 #endif
+		if (gid_list == NULL) {
+			ret = NSS_STATUS_NOTFOUND;
+			goto done;
+		}
 
 		/* Copy group list to client */
 
