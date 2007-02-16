@@ -109,6 +109,9 @@ BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
 			if (NT_STATUS_IS_OK(pass_check_smb(smb_name, get_session_workgroup(), null_password, password_blob, null_password, encrypted))) {
 				return True;
 			}
+			if (NT_STATUS_IS_OK(pass_check_smb(smb_name, get_session_workgroup(), password_blob, null_password, null_password, encrypted))) {
+				return True;
+			}
 		}
 
 		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
