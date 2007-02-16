@@ -128,6 +128,7 @@ typedef struct _krb5_tl_data {
 #define KRB5_TL_PASSWORD           	0x0007
 #define KRB5_TL_EXTENSION           	0x0008
 #define KRB5_TL_PKINIT_ACL           	0x0009
+#define KRB5_TL_ALIASES           	0x000a
 
 typedef struct _kadm5_principal_ent_t {
     krb5_principal principal;
