@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
+#include "torture/ndr/ndr.h"
+#include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
 
 /* ignore me */ static struct torture_suite *
