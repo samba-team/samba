@@ -420,6 +420,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	switch (event->event) {
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
+		DEBUG(11, ("RDMA_CM_EVENT_ADDR_RESOLVED\n"));
 		/* continuing from ibw_connect ... */
 		rc = rdma_resolve_route(cma_id, 2000);
 		if (rc) {
@@ -430,6 +431,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		break;
 
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
+		DEBUG(11, ("RDMA_CM_EVENT_ROUTE_RESOLVED\n"));
 		/* after RDMA_CM_EVENT_ADDR_RESOLVED: */
 		assert(cma_id->context!=NULL);
 		conn = talloc_get_type(cma_id->context, struct ibw_conn);
@@ -441,6 +443,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		break;
 
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+		DEBUG(11, ("RDMA_CM_EVENT_CONNECT_REQUEST\n"));
 		ctx->state = IBWS_CONNECT_REQUEST;
 		conn = ibw_conn_new(ctx);
 		pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
@@ -481,14 +484,23 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		break;
 
 	case RDMA_CM_EVENT_ADDR_ERROR:
+		sprintf(ibw_lasterr, "RDMA_CM_EVENT_ADDR_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_ROUTE_ERROR:
+		sprintf(ibw_lasterr, "RDMA_CM_EVENT_ROUTE_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_CONNECT_ERROR:
+		sprintf(ibw_lasterr, "RDMA_CM_EVENT_CONNECT_ERROR, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_UNREACHABLE:
+		sprintf(ibw_lasterr, "RDMA_CM_EVENT_UNREACHABLE, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_REJECTED:
-		sprintf(ibw_lasterr, "cma event %d, error %d\n", event->event, event->status);
+		sprintf(ibw_lasterr, "RDMA_CM_EVENT_REJECTED, error %d\n", event->status);
 		goto error;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
+		DEBUG(11, ("RDMA_CM_EVENT_DISCONNECTED\n"));
 		if (cma_id!=pctx->cm_id) {
 			DEBUG(0, ("client DISCONNECT event cm_id=%p\n", cma_id));
 			conn = talloc_get_type(cma_id->context, struct ibw_conn);
@@ -763,7 +775,7 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 			if (part->len<=sizeof(uint32_t) && part->to_read==0) {
 				assert(part->len==sizeof(uint32_t));
 				/* set it again now... */
-				part->to_read = ntohl(*((uint32_t *)(part->buf)));
+				part->to_read = *((uint32_t *)(part->buf)); /* TODO: ntohl */
 				if (part->to_read<sizeof(uint32_t)) {
 					sprintf(ibw_lasterr, "got msglen=%u #2\n", part->to_read);
 					goto error;
@@ -779,7 +791,7 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 			}
 		} else {
 			if (remain>=sizeof(uint32_t)) {
-				uint32_t msglen = ntohl(*(uint32_t *)p);
+				uint32_t msglen = *(uint32_t *)p; /* TODO: ntohl */
 				if (msglen<sizeof(uint32_t)) {
 					sprintf(ibw_lasterr, "got msglen=%u\n", msglen);
 					goto error;
@@ -944,7 +956,7 @@ int ibw_bind(struct ibw_ctx *ctx, struct sockaddr_in *my_addr)
 	int	rc;
 
 	DEBUG(10, ("ibw_bind: addr=%s, port=%u\n",
-		inet_ntoa(my_addr->sin_addr), my_addr->sin_port));
+		inet_ntoa(my_addr->sin_addr), ntohs(my_addr->sin_port)));
 	rc = rdma_bind_addr(pctx->cm_id, (struct sockaddr *) my_addr);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_bind_addr error %d\n", rc);
@@ -1008,14 +1020,16 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
 	conn = ibw_conn_new(ctx);
 	conn->conn_userdata = conn_userdata;
 	pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
-	DEBUG(10, ("ibw_connect: addr=%s, port=%u\n", inet_ntoa(serv_addr->sin_addr), serv_addr->sin_port));
+	DEBUG(10, ("ibw_connect: addr=%s, port=%u\n", inet_ntoa(serv_addr->sin_addr),
+		ntohs(serv_addr->sin_port)));
 
 	/* init cm */
 	rc = rdma_create_id(pctx->cm_channel, &pconn->cm_id, conn, RDMA_PS_TCP);
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "ibw_connect/rdma_create_id error %d\n", rc);
-		return rc;
+		talloc_free(conn);
+		return -1;
 	}
 	DEBUG(10, ("ibw_connect: rdma_create_id succeeded, cm_id=%p\n", pconn->cm_id));
 
@@ -1023,6 +1037,7 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_resolve_addr error %d\n", rc);
 		DEBUG(0, (ibw_lasterr));
+		talloc_free(conn);
 		return -1;
 	}
 
@@ -1182,7 +1197,7 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, uint32_t len)
 	int	rc;
 
 	assert(len>=sizeof(uint32_t));
-	*((uint32_t *)buf) = htonl(len);
+	assert((*((uint32_t *)buf)==len)); /* TODO: htonl */
 
 	if (len > pctx->opts.recv_bufsize) {
 		struct ibw_conn_priv *pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
