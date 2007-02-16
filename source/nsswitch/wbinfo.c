@@ -638,7 +638,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 
 /* Lookup a list of RIDs */
 
-static BOOL wbinfo_lookuprids(char *domain_sid, char *arg)
+static BOOL wbinfo_lookuprids(char *domain, char *arg)
 {
 	size_t i;
 	DOM_SID sid;
@@ -650,9 +650,24 @@ static BOOL wbinfo_lookuprids(char *domain_sid, char *arg)
 	enum lsa_SidType *types;
 	const char *domain_name;
 	TALLOC_CTX *mem_ctx;
+	struct winbindd_request request;
+	struct winbindd_response response;
 
-	if (!string_to_sid(&sid, domain_sid)) {
-		d_printf("Could not convert %s to sid\n", domain_sid);
+	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0'))
+		fstrcpy(request.domain_name, get_winbind_domain());
+	else
+		fstrcpy(request.domain_name, domain);
+
+	/* Send request */
+
+	if (winbindd_request_response(WINBINDD_DOMAIN_INFO, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("Could not get domain sid for %s\n", request.domain_name);
+		return False;
+	}
+
+	if (!string_to_sid(&sid, response.data.domain_info.sid)) {
+		d_printf("Could not convert %s to sid\n", response.data.domain_info.sid);
 		return False;
 	}
 
