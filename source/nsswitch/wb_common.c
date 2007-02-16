@@ -504,7 +504,7 @@ int read_reply(struct winbindd_response *response)
 		
 		/* Mallocate memory for extra data */
 		
-		if (!(response->extra_data.data = malloc(extra_data_len))) {
+		if (!(response->extra_data.data = SMB_MALLOC(extra_data_len))) {
 			return -1;
 		}
 		
