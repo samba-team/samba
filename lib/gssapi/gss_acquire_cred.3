@@ -64,6 +64,7 @@
 .Nm gss_krb5_copy_ccache ,
 .Nm gss_krb5_import_cred
 .Nm gsskrb5_extract_authz_data_from_sec_context ,
+.Nm gsskrb5_register_acceptor_identity ,
 .Nm gss_krb5_import_ccache ,
 .Nm gss_krb5_get_tkt_flags ,
 .Nm gss_process_context_token ,
@@ -314,6 +315,10 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "gss_ctx_id_t context_handle"
 .Fa "int ad_type"
 .Fa "gss_buffer_t ad_data"
+.Fc
+.Ft OM_uint32
+.Fo gsskrb5_register_acceptor_identity
+.Fa "const char *identity"
 .Fc
 .Ft OM_uint32
 .Fo gss_krb5_import_cache
@@ -645,7 +650,9 @@ returned by
 will fail.
 .Pp
 .Fn gsskrb5_register_acceptor_identity
-sets the Kerberos 5 principal that the acceptor will use.
+sets the Kerberos 5 filebased keytab that the acceptor will use.  The
+.Fa identifier
+is the file name.
 .Pp
 .Fn gsskrb5_extract_authz_data_from_sec_context
 extracts the Kerberos authorizationdata that may be stored within the
