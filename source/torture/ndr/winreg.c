@@ -390,7 +390,7 @@ static const uint8_t queryinfokey_in_data[] = {
 static bool queryinfokey_in_check(struct torture_context *tctx, struct winreg_QueryInfoKey *r)
 {
 	/* FIXME: Handle */
-	torture_assert(tctx, r->in.class_in->name == NULL, "class in");
+	torture_assert(tctx, r->in.classname->name == NULL, "class in");
 	return true;
 }
 
@@ -403,9 +403,9 @@ static const uint8_t queryinfokey_out_data[] = {
 
 static bool queryinfokey_out_check(struct torture_context *tctx, struct winreg_QueryInfoKey *r)
 {
-	torture_assert(tctx, r->out.class_in != NULL, "class out");
-	torture_assert(tctx, r->out.class_in->name != NULL, "class out name");
-	torture_assert_str_equal(tctx, r->out.class_in->name, "", "class out name");
+	torture_assert(tctx, r->out.classname != NULL, "class out");
+	torture_assert(tctx, r->out.classname->name != NULL, "class out name");
+	torture_assert_str_equal(tctx, r->out.classname->name, "", "class out name");
 	torture_assert_int_equal(tctx, *r->out.num_subkeys, 0, "num subkeys");
 	torture_assert_int_equal(tctx, *r->out.max_subkeylen, 0, "subkey length");
 	torture_assert_int_equal(tctx, *r->out.max_subkeysize, 140, "subkey size");

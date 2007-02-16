@@ -148,6 +148,8 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
 	} winreg_StringBuf;
 
+	/******************/
+	/* Function: 0x09 */
 	[public] WERROR winreg_EnumKey(
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
@@ -217,7 +219,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x10 */
 	[public] WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
-		[in,out,ref] winreg_String *class_in,
+		[in,out,ref] winreg_String *classname,
 		[out,ref] uint32 *num_subkeys,
 		[out,ref] uint32 *max_subkeylen,
 		[out,ref] uint32 *max_subkeysize,
@@ -247,11 +249,24 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x13 */
 	WERROR winreg_RestoreKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *filename,
+		[in]     uint32 flags 
 	);
 
 	/******************/
 	/* Function: 0x14 */
+
+	typedef struct {
+		uint32 data_size;
+		KeySecurityData sec_data;
+		uint8 inherit;
+	} KeySecurityAttribute;
+
 	WERROR winreg_SaveKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *filename,
+		[in,unique] KeySecurityAttribute *sec_attrib
 	);
 
 	/******************/
@@ -259,7 +274,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	WERROR winreg_SetKeySecurity(
 		[in,ref] policy_handle *handle,
 		[in] winreg_AccessMask access_mask,
-		[in,out,ref] KeySecurityData *sd
+		[in,ref] KeySecurityData *sd
 	);
 
 	/******************/

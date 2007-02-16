@@ -25,7 +25,6 @@ OBJ_FILES = \
 		util_strlist.o \
 		util_file.o \
 		sddl.o \
-		ndr.o \
 		tdr.o \
 		event.o \
 		local.o \
@@ -42,6 +41,7 @@ PUBLIC_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		TORTURE_AUTH \
 		TORTURE_UTIL
+PRIVATE_DEPENDENCIES = TORTURE_NDR
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
