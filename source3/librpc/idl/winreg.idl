@@ -16,6 +16,14 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	declare bitmap security_secinfo;
 
 	typedef [bitmap32bit] bitmap {
+		KEY_QUERY_VALUE 		= 0x00001,
+		KEY_SET_VALUE 			= 0x00002,
+		KEY_CREATE_SUB_KEY 		= 0x00004,
+		KEY_ENUMERATE_SUB_KEYS 	= 0x00008,
+		KEY_NOTIFY 				= 0x00010,
+		KEY_CREATE_LINK 		= 0x00020,
+		KEY_WOW64_64KEY 		= 0x00100,
+		KEY_WOW64_32KEY 		= 0x00200
 	} winreg_AccessMask;
 
 	typedef [v1_enum] enum {
@@ -167,9 +175,9 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_ValNameBuf *name,
 		[in,out,unique] winreg_Type *type,
-		[in,out,ref,size_is(*data_size),length_is(*value_length)] uint8 **data,
-		[in,out,unique] uint32 *data_size,
-		[in,out,unique] uint32 *value_length
+		[in,out,unique,size_is(*size),length_is(*length)] uint8 **data,
+		[in,out,unique] uint32 *size,
+		[in,out,unique] uint32 *length
 	);
 
 	/******************/
