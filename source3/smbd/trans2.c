@@ -4069,7 +4069,7 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 #else /* LARGE_SMB_OFF_T */
 	if (IVAL(pdata,4) != 0) {
 		/* more than 32 bits? */
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 #endif /* LARGE_SMB_OFF_T */
 
