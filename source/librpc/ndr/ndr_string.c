@@ -273,6 +273,32 @@ _PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const cha
 		*s = as;
 		break;
 
+	case LIBNDR_FLAG_STR_NOTERM:
+		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
+			break;
+		}
+
+		len1 = ndr->data_size - ndr->offset;
+
+		NDR_PULL_NEED_BYTES(ndr, len1);
+		if (len1 == 0) {
+			as = talloc_strdup(ndr->current_mem_ctx, "");
+		} else {
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    len1,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
+		}
+		NDR_CHECK(ndr_pull_advance(ndr, len1));
+
+		*s = as;
+		break;
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
@@ -383,6 +409,11 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 	}
 
 	default:
+		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
+			NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+			break;		
+		}
+
 		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
