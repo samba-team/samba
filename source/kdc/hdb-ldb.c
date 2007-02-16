@@ -214,6 +214,8 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
 
+	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
+
 	/* Get krb5Key from the db */
 
 	krb5keys = ldb_msg_find_element(msg, "krb5Key");
@@ -398,8 +400,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		free(*krb5_princ_realm(context, entry_ex->entry.principal));
 		krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
 	}
-
-	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 
 	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
