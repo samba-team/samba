@@ -255,9 +255,9 @@ interface drsblobs {
 		);
 
 	typedef struct {
-		[value((string?string->length:0))] uint16 length;
-		[value((string?string->length:0))] uint16 size;
-		[relative,subcontext(0),subcontext_size(size),flag(NDR_REMAINING)] DATA_BLOB *string;
+		[value(2*strlen_m(string))] uint16 length;
+		[value(2*strlen_m(string))] uint16 size;
+		[relative,subcontext(0),subcontext_size(size),flag(STR_NOTERM|NDR_REMAINING)] string *string;
 	} package_PrimaryKerberosString;
 
 	typedef struct {
@@ -277,7 +277,8 @@ interface drsblobs {
 		uint32 unknown2;
 		package_PrimaryKerberosKey keys1[num_keys1];
 		package_PrimaryKerberosKey keys2[num_keys2];
-		udlong unknown3[4];
+		udlong unknown3_1[num_keys1];
+		udlong unknown3_2[num_keys2];
 	} package_PrimaryKerberosBlob;
 
 	void decode_PrimaryKerberos(
