@@ -120,4 +120,8 @@ hdb_entry ::= SEQUENCE {
         extensions[13]  HDB-extensions OPTIONAL
 }
 
+hdb_entry_alias ::= [APPLICATION 0] SEQUENCE {
+	principal[0]	Principal  OPTIONAL
+}
+
 END

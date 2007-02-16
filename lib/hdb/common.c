@@ -61,7 +61,7 @@ hdb_key2principal(krb5_context context, krb5_data *key, krb5_principal p)
 }
 
 int
-hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
+hdb_entry2value(krb5_context context, const hdb_entry *ent, krb5_data *value)
 {
     size_t len;
     int ret;
@@ -78,6 +78,28 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
     return decode_hdb_entry(value->data, value->length, ent, NULL);
 }
 
+int
+hdb_entry_alias2value(krb5_context context, 
+		      const hdb_entry_alias *alias,
+		      krb5_data *value)
+{
+    size_t len;
+    int ret;
+    
+    ASN1_MALLOC_ENCODE(hdb_entry_alias, value->data, value->length, 
+		       alias, &len, ret);
+    if (ret == 0 && value->length != len)
+	krb5_abortx(context, "internal asn.1 encoder error");
+    return ret;
+}
+
+int
+hdb_value2entry_alias(krb5_context context, krb5_data *value, 
+		      hdb_entry_alias *ent)
+{
+    return decode_hdb_entry_alias(value->data, value->length, ent, NULL);
+}
+
 krb5_error_code
 _hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
 	   unsigned flags, hdb_entry_ex *entry)
@@ -91,15 +113,110 @@ _hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
     if(code)
 	return code;
     code = hdb_value2entry(context, &value, &entry->entry);
+    if (code == ASN1_BAD_ID && (flags & HDB_F_CANON) == 0) {
+	krb5_data_free(&value);
+	return HDB_ERR_NOENTRY;
+    } else if (code == ASN1_BAD_ID) {
+	hdb_entry_alias alias;
+
+	code = hdb_value2entry_alias(context, &value, &alias);
+	if (code) {
+	    krb5_data_free(&value);
+	    return code;
+	}
+	hdb_principal2key(context, alias.principal, &key);
+	krb5_data_free(&value);
+	free_hdb_entry_alias(&alias);
+
+	code = db->hdb__get(context, db, key, &value);
+	krb5_data_free(&key);
+	if (code)
+	    return code;
+	code = hdb_value2entry(context, &value, &entry->entry);
+	if (code) {
+	    krb5_data_free(&value);
+	    return code;
+	}
+    }
     krb5_data_free(&value);
-    if (code)
-	return code;
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
 	code = hdb_unseal_keys (context, db, &entry->entry);
 	if (code)
 	    hdb_free_entry(context, entry);
     }
     return code;
+}
+
+static krb5_error_code
+hdb_remove_aliases(krb5_context context, HDB *db, krb5_data *key)
+{
+    const HDB_Ext_Aliases *aliases;
+    krb5_error_code code;
+    hdb_entry oldentry;
+    krb5_data value;
+    int i;
+
+    code = db->hdb__get(context, db, *key, &value);
+    if (code == HDB_ERR_NOENTRY)
+	return 0;
+    else if (code)
+	return code;
+	    
+    code = hdb_value2entry(context, &value, &oldentry);
+    krb5_data_free(&value);
+    if (code)
+	return code;
+
+    code = hdb_entry_get_aliases(&oldentry, &aliases);
+    if (code || aliases == NULL) {
+	free_hdb_entry(&oldentry);
+	return code;
+    }
+    for (i = 0; i < aliases->aliases.len; i++) {
+	krb5_data akey;
+
+	hdb_principal2key(context, &aliases->aliases.val[i], &akey);
+	code = db->hdb__del(context, db, akey);
+	krb5_data_free(&akey);
+	if (code) {
+	    free_hdb_entry(&oldentry);
+	    return code;
+	}
+    }
+    free_hdb_entry(&oldentry);
+    return 0;
+}
+
+static krb5_error_code
+hdb_add_aliases(krb5_context context, HDB *db, 
+		unsigned flags, hdb_entry_ex *entry)
+{
+    const HDB_Ext_Aliases *aliases;
+    krb5_error_code code;
+    krb5_data key, value;
+    int i;
+    
+    code = hdb_entry_get_aliases(&entry->entry, &aliases);
+    if (code || aliases == NULL)
+	return code;
+    
+    for (i = 0; i < aliases->aliases.len; i++) {
+	hdb_entry_alias entryalias;
+	entryalias.principal = entry->entry.principal;
+	
+	hdb_principal2key(context, &aliases->aliases.val[i], &key);
+	code = hdb_entry_alias2value(context, &entryalias, &value);
+	if (code) {
+	    krb5_data_free(&key);
+	    return code;
+	}
+	code = db->hdb__put(context, db, flags, key, value);
+	krb5_data_free(&key);
+	krb5_data_free(&value);
+	if (code)
+	    return code;
+    }
+    return 0;
 }
 
 krb5_error_code
@@ -127,10 +244,22 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 	krb5_data_free(&key);
 	return code;
     }
+
+    /* remove aliases */
+    code = hdb_remove_aliases(context, db, &key);
+    if (code) {
+	krb5_data_free(&key);
+	return code;
+    }
     hdb_entry2value(context, &entry->entry, &value);
     code = db->hdb__put(context, db, flags & HDB_F_REPLACE, key, value);
     krb5_data_free(&value);
     krb5_data_free(&key);
+    if (code)
+	return code;
+
+    code = hdb_add_aliases(context, db, flags, entry);
+
     return code;
 }
 
@@ -141,6 +270,12 @@ _hdb_remove(krb5_context context, HDB *db, krb5_const_principal principal)
     int code;
 
     hdb_principal2key(context, principal, &key);
+
+    code = hdb_remove_aliases(context, db, &key);
+    if (code) {
+	krb5_data_free(&key);
+	return code;
+    }
     code = db->hdb__del(context, db, key);
     krb5_data_free(&key);
     return code;

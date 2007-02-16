@@ -394,3 +394,17 @@ hdb_entry_get_ConstrainedDelegACL(const hdb_entry *entry,
 
     return 0;
 }
+
+krb5_error_code
+hdb_entry_get_aliases(const hdb_entry *entry, const HDB_Ext_Aliases **a)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry, choice_HDB_extension_data_aliases);
+    if (ext)
+	*a = &ext->data.u.aliases;
+    else
+	*a = NULL;
+
+    return 0;
+}

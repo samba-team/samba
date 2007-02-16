@@ -23,7 +23,8 @@ gen_files_hdb = \
 	asn1_HDB_Ext_Aliases.x \
 	asn1_HDB_extension.x \
 	asn1_HDB_extensions.x \
-	asn1_hdb_entry.x
+	asn1_hdb_entry.x \
+	asn1_hdb_entry_alias.x
 
 CLEANFILES = $(BUILT_SOURCES) $(gen_files_hdb) hdb_asn1.h hdb_asn1_files
 
