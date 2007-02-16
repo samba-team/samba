@@ -56,7 +56,7 @@
  * Once this is done (which could update anything at all), we
  * calculate the password hashes.
  *
- * This function must not only update the ntPwdHash, lmPwdHash and
+ * This function must not only update the unicodePwd, dBCSPwd and
  * krb5Key fields, it must also atomicly increment the
  * msDS-KeyVersionNumber.  We should be in a transaction, so all this
  * should be quite safe...
@@ -625,11 +625,11 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (ntAttr && (ntAttr->num_values > 1)) {
-		ldb_set_errstring(module->ldb, "mupltiple values for lmPwdHash not allowed!\n");
+		ldb_set_errstring(module->ldb, "mupltiple values for unicodePwd not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (lmAttr && (lmAttr->num_values > 1)) {
-		ldb_set_errstring(module->ldb, "mupltiple values for lmPwdHash not allowed!\n");
+		ldb_set_errstring(module->ldb, "mupltiple values for dBCSPwd not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -639,11 +639,11 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (ntAttr && (ntAttr->num_values == 0)) {
-		ldb_set_errstring(module->ldb, "lmPwdHash must have a value!\n");
+		ldb_set_errstring(module->ldb, "unicodePwd must have a value!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (lmAttr && (lmAttr->num_values == 0)) {
-		ldb_set_errstring(module->ldb, "lmPwdHash must have a value!\n");
+		ldb_set_errstring(module->ldb, "dBCSPwd must have a value!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -733,7 +733,7 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		}
 	}
 
-	/* add also krb5 keys based on NT the hash (we might have ntPwdHash, but not the cleartext */
+	/* add also krb5 keys based on NT the hash (we might have unicodePwd, but not the cleartext */
 	ret = add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -809,7 +809,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	/* If no part of this touches the sambaPassword OR ntPwdHash and/or lmPwdHash, then we don't
+	/* If no part of this touches the sambaPassword OR unicodePwd and/or dBCSPwd, then we don't
 	 * need to make any changes.  For password changes/set there should
 	 * be a 'delete' or a 'modify' on this attribute. */
 	/* If the only operation is the deletion of the passwords then go on */
