@@ -81,6 +81,10 @@ MIN
 MAX
 QSORT_CAST
 
+Headers:
+stdint.h
+stdbool.h
+
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
