@@ -129,7 +129,7 @@ sub ParseFunction($$)
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
 		pidl "return werror_to_ntstatus(r.out.result);";
 	} else {
-		pidl "#warning Sorry, don't know how to convert $fn->{RETURN_TYPE} to NTSTATUS";
+		warning($fn->{ORIGINAL}, "Unable to convert $fn->{RETURN_TYPE} to NTSTATUS");
 		pidl "return NT_STATUS_OK;";
 	}
 
@@ -146,7 +146,7 @@ sub ParseInterface($)
 
 	pidl_hdr "#ifndef __CLI_$uif\__";
 	pidl_hdr "#define __CLI_$uif\__";
-	ParseFunction($if->{NAME}, $_) foreach (@{$if->{FUNCTIONS}});
+	ParseFunction(uc($if->{NAME}), $_) foreach (@{$if->{FUNCTIONS}});
 	pidl_hdr "#endif /* __CLI_$uif\__ */";
 }
 
