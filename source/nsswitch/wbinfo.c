@@ -653,6 +653,9 @@ static BOOL wbinfo_lookuprids(char *domain, char *arg)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
 	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0'))
 		fstrcpy(request.domain_name, get_winbind_domain());
 	else
