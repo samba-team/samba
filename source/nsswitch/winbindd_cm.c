@@ -1539,7 +1539,12 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
 			  "PI_LSARPC_DS on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
-		return;
+
+		/* if this is just a non-AD domain we need to continue
+		 * identifying so that we can in the end return with
+		 * domain->initialized = True - gd */
+
+		goto no_lsarpc_ds;
 	}
 
 	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
@@ -1561,6 +1566,7 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		domain->native_mode = False;
 	}
 
+no_lsarpc_ds:
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
 
 	if (cli == NULL) {
