@@ -254,6 +254,35 @@ interface drsblobs {
 		[in] supplementalCredentialsBlob blob
 		);
 
+	typedef struct {
+		[value((string?string->length:0))] uint16 length;
+		[value((string?string->length:0))] uint16 size;
+		[relative,subcontext(0),subcontext_size(size),flag(NDR_REMAINING)] DATA_BLOB *string;
+	} package_PrimaryKerberosString;
+
+	typedef struct {
+		uint32 keytype;
+		[value((value?value->length:0))] uint32 value_len;
+		[relative,subcontext(0),subcontext_size(value_len),flag(NDR_REMAINING)] DATA_BLOB *value;
+		uint32 unknown1;
+		uint32 unknown2;
+	} package_PrimaryKerberosKey;
+
+	typedef [public] struct {
+		[value(3)] uint32 version;
+		uint16 num_keys1;
+		uint16 num_keys2;
+		package_PrimaryKerberosString salt;
+		uint32 unknown1;
+		uint32 unknown2;
+		package_PrimaryKerberosKey keys1[num_keys1];
+		package_PrimaryKerberosKey keys2[num_keys2];
+		udlong unknown3[4];
+	} package_PrimaryKerberosBlob;
+
+	void decode_PrimaryKerberos(
+		[in] package_PrimaryKerberosBlob blob
+		);
 
 	typedef struct {
 		NTTIME time1;
