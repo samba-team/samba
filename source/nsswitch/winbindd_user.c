@@ -286,6 +286,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	   call worked or not.   --jerry  */
 
 	if ( s->gid == (gid_t)-1 ) {
+
 		if (!success) {
 			DEBUG(5, ("Could not query user's %s\\%s\n gid",
 				  s->domain->name, s->username));
@@ -293,13 +294,6 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 		}
 
 		/* take what the sid2gid() call gave us */
-		s->gid = gid;
-	}
-
-	/* allow the nss backend to override the primary group ID.
-	   If the gid has already been set, then keep it */
-
-	if ( s->gid == (gid_t)-1 ) {
 		s->gid = gid;
 	}
 

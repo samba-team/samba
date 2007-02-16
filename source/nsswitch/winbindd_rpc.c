@@ -416,6 +416,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		
 		user_info->homedir = NULL;
 		user_info->shell = NULL;
+		user_info->primary_gid = (gid_t)-1;
 						
 		SAFE_FREE(user);
 				
@@ -454,6 +455,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 					    &ctr->info.id21->uni_full_name);
 	user_info->homedir = NULL;
 	user_info->shell = NULL;
+	user_info->primary_gid = (gid_t)-1;
 
 	return NT_STATUS_OK;
 }                                   
