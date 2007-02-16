@@ -392,7 +392,8 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.secdescsize = &secdescsize;
 	r.out.last_changed_time = &last_changed_time;
 	
-	init_winreg_String(&r.in.class_in, class);
+	r.in.classname = talloc(mem_ctx, struct winreg_String);
+	init_winreg_String(r.in.classname, class);
 	
 	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &r);
 

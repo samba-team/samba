@@ -280,7 +280,8 @@ static WERROR rpc_query_key(const struct registry_key *k)
     struct rpc_key_data *mykeydata = k->backend_data;
 	TALLOC_CTX *mem_ctx = talloc_init("query_key");
 
-    init_winreg_String(&r.in.class_in, NULL);
+	r.in.classname = talloc(mem_ctx, struct winreg_String);
+    init_winreg_String(r.in.classname, NULL);
     r.in.handle = &mykeydata->pol;
 	
     status = dcerpc_winreg_QueryInfoKey((struct dcerpc_pipe *)(k->hive->backend_data), mem_ctx, &r);
