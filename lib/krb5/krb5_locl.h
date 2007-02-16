@@ -244,6 +244,10 @@ typedef struct krb5_context_data {
 #define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
 #define KRB5_DEFAULT_CCNAME_API "API:"
 
+#define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
+#define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
+#define EXTRACT_TICKET_MATCH_REALM			4
+
 /*
  * Configurable options
  */
