@@ -1,4 +1,32 @@
+2007-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: Add canonicalize flag.
+
+	* lib/krb5/init_creds_pw.c: Use EXTRACT_TICKET_* flags, support
+	canonicalize.
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_set_canonicalize):
+	new function.
+	
+	* lib/krb5/get_cred.c: Use EXTRACT_TICKET_* flags.
+
+	* lib/krb5/get_in_tkt.c: Use EXTRACT_TICKET_* flags.
+
+	* lib/krb5/krb5_locl.h: Add EXTRACT_TICKET_* flags.
+	
+2007-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_princ.c: test parsing enterprise-names.
+
+	* lib/krb5/principal.c: Add support for parsing enterprise-names.
+
+	* lib/krb5/krb5.h: Add KRB5_PRINCIPAL_PARSE_ENTERPRISE.
+
+	* lib/hdb/hdb-ldap.c: Make work again.
+	
 2007-02-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* doc/setup.texi: prune trailing space
 
 	* lib/hdb/db.c: Be better at setting and clearing error string.
 
