@@ -25,7 +25,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=3
 SAMBA_VERSION_MINOR=0
-SAMBA_VERSION_RELEASE=23
+SAMBA_VERSION_RELEASE=24
 
 ########################################################
 # If a official release has a serious bug              #
@@ -37,7 +37,7 @@ SAMBA_VERSION_RELEASE=23
 # e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
-SAMBA_VERSION_REVISION=d
+SAMBA_VERSION_REVISION=
 
 ########################################################
 # For 'pre' releases the version will be               #
