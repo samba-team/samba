@@ -45,7 +45,10 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, data->pull_fn(ndr, data->ndr_flags, ds), 
 							   "pulling");
 
-	return check_fn(tctx, ds);
+	if (check_fn != NULL) 
+		return check_fn(tctx, ds);
+	else
+		return true;
 }
 
 _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
@@ -89,6 +92,7 @@ NTSTATUS torture_ndr_init(void)
 	torture_suite_add_suite(suite, ndr_atsvc_suite(suite));
 	torture_suite_add_suite(suite, ndr_lsa_suite(suite));
 	torture_suite_add_suite(suite, ndr_epmap_suite(suite));
+	torture_suite_add_suite(suite, ndr_dfs_suite(suite));
 
 	torture_register_suite(suite);
 
