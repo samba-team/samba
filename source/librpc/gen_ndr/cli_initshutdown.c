@@ -23,7 +23,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_INIT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Init, (ndr_push_flags_fn_t)ndr_push_initshutdown_Init);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -53,7 +53,7 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_ABORT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Abort, (ndr_push_flags_fn_t)ndr_push_initshutdown_Abort);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
@@ -88,7 +88,7 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_INITEX, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_InitEx, (ndr_push_flags_fn_t)ndr_push_initshutdown_InitEx);
 	
-	if ( !NT_STATUS_IS_OK(status) ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	

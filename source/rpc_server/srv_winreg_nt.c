@@ -445,22 +445,22 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
 	}
 
 	if (r->out.data != NULL) {
-		if ((r->out.data_size == NULL) || (r->out.value_length == NULL)) {
+		if ((r->out.size == NULL) || (r->out.length == NULL)) {
 			return WERR_INVALID_PARAM;
 		}
 
-		if (value_blob.length > *r->out.data_size) {
+		if (value_blob.length > *r->out.size) {
 			return WERR_MORE_DATA;
 		}
 
 		memcpy( r->out.data, value_blob.data, value_blob.length );
 	}
 
-	if (r->out.value_length != NULL) {
-		*r->out.value_length = value_blob.length;
+	if (r->out.length != NULL) {
+		*r->out.length = value_blob.length;
 	}
-	if (r->out.data_size != NULL) {
-		*r->out.data_size = value_blob.length;
+	if (r->out.size != NULL) {
+		*r->out.size = value_blob.length;
 	}
 
 	return WERR_OK;
