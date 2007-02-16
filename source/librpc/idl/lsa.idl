@@ -69,7 +69,7 @@ import "security.idl";
 		[size_is(count)] lsa_PrivEntry *privs;
 	} lsa_PrivArray;
 
-	NTSTATUS lsa_EnumPrivs (
+	[public] NTSTATUS lsa_EnumPrivs (
 		[in]     policy_handle *handle,
 		[in,out] uint32 *resume_handle,
 		[in]         uint32 max_count,
@@ -850,7 +850,7 @@ import "security.idl";
 		[size_is(count)] lsa_TranslatedSid2 *sids;
 	} lsa_TransSidArray2;
 
-	NTSTATUS lsa_LookupNames2 (
+	[public] NTSTATUS lsa_LookupNames2 (
 		[in]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
@@ -903,7 +903,7 @@ import "security.idl";
 		[size_is(count)] lsa_TranslatedSid3 *sids;
 	} lsa_TransSidArray3;
 
-	NTSTATUS lsa_LookupNames3 (
+	[public] NTSTATUS lsa_LookupNames3 (
 		[in]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
@@ -939,7 +939,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x4c */
 
-	NTSTATUS lsa_LookupSids3(
+	[public] NTSTATUS lsa_LookupSids3(
 		[in]         lsa_SidArray *sids,
 		[out,unique] lsa_RefDomainList *domains,
 		[in,out]     lsa_TransNameArray2 *names,
