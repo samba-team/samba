@@ -265,7 +265,7 @@ interface epmapper
 		epm_twr_t *twr;
 	} epm_twr_p_t;
 
-	error_status_t epm_Map(
+	[public] error_status_t epm_Map(
 		[in,ptr]       GUID            *object,
 		[in,ptr]       epm_twr_t       *map_tower,
 		[in,out]        policy_handle   *entry_handle,
