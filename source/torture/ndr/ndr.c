@@ -88,6 +88,7 @@ NTSTATUS torture_ndr_init(void)
 	torture_suite_add_suite(suite, ndr_winreg_suite(suite));
 	torture_suite_add_suite(suite, ndr_atsvc_suite(suite));
 	torture_suite_add_suite(suite, ndr_lsa_suite(suite));
+	torture_suite_add_suite(suite, ndr_epmap_suite(suite));
 
 	torture_register_suite(suite);
 

@@ -103,7 +103,8 @@ PRIVATE_PROTO_HEADER = ndr/proto.h
 OBJ_FILES = ndr/ndr.o \
 			ndr/winreg.o \
 			ndr/atsvc.o \
-			ndr/lsa.o
+			ndr/lsa.o \
+			ndr/epmap.o
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
