@@ -74,6 +74,7 @@ char *password_file	= NULL;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
+static int canonicalize_flag = 0;
 
 static char *krb4_cc_name;
 
@@ -152,6 +153,9 @@ static struct getargs args[] = {
 
     { "password-file",	0,   arg_string, &password_file,
       "read the password from a file" },
+
+    { "canonicalize",0,   arg_flag, &canonicalize_flag,
+      "canonicalize client principal" },
 
 #ifdef PKINIT
     {  "pk-user",	'C',	arg_string,	&pk_user_id,
@@ -512,6 +516,8 @@ get_new_tickets(krb5_context context,
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
+    if (canonicalize_flag)
+	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
     if (pk_user_id) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
@@ -774,6 +780,7 @@ main (int argc, char **argv)
     krb5_principal principal;
     int optidx = 0;
     krb5_deltat ticket_life = 0;
+    int parseflags = 0;
 
     setprogname (argv[0]);
     
@@ -797,8 +804,11 @@ main (int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
+    if (canonicalize_flag)
+	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
+
     if (argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
+	ret = krb5_parse_name_flags (context, argv[0], parseflags, &principal);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name");
     } else {
