@@ -485,7 +485,7 @@ BOOL net_io_r_logon_ctrl(const char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps
 void init_net_q_getdcname(NET_Q_GETDCNAME *r_t, const char *logon_server,
 			  const char *domainname)
 {
-	DEBUG(5,("init_r_getdcname\n"));
+	DEBUG(5,("init_q_getdcname\n"));
 
 	r_t->ptr_logon_server = (logon_server != NULL);
 	init_unistr2(&r_t->uni_logon_server, logon_server, UNI_STR_TERMINATE);
@@ -573,7 +573,7 @@ BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
 void init_net_q_getanydcname(NET_Q_GETANYDCNAME *r_t, const char *logon_server,
 			     const char *domainname)
 {
-	DEBUG(5,("init_r_getanydcname\n"));
+	DEBUG(5,("init_q_getanydcname\n"));
 
 	init_unistr2(&r_t->uni_logon_server, logon_server, UNI_STR_TERMINATE);
 	r_t->ptr_domainname = (domainname != NULL);
