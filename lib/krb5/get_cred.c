@@ -542,8 +542,8 @@ again:
 				   KRB5_KU_TGS_REP_ENC_PART_SESSION,
 				   &krbtgt->addresses,
 				   nonce,
-				   TRUE,
-				   TRUE /* flags.b.request_anonymous */,
+				   EXTRACT_TICKET_ALLOW_CNAME_MISMATCH|
+				   EXTRACT_TICKET_ALLOW_SERVER_MISMATCH,
 				   decrypt_tkt_with_subkey,
 				   subkey);
 	krb5_free_kdc_rep(context, &rep);

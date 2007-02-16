@@ -125,8 +125,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_key_usage key_usage,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
-		     krb5_boolean allow_server_mismatch,
-		     krb5_boolean ignore_cname,
+		     unsigned flags,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
@@ -146,7 +145,7 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare client */
 
-    if (!ignore_cname) {
+    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0){
 	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
 	if (!tmp) {
 	    krb5_free_principal (context, tmp_principal);
@@ -177,12 +176,13 @@ _krb5_extract_ticket(krb5_context context,
 					      rep->kdc_rep.ticket.realm);
     if (ret)
 	goto out;
-    if(allow_server_mismatch){
+    if(flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH){
 	krb5_free_principal(context, creds->server);
 	creds->server = tmp_principal;
 	tmp_principal = NULL;
-    }else{
-	tmp = krb5_principal_compare (context, tmp_principal, creds->server);
+    } else {
+	tmp = krb5_principal_compare (context, tmp_principal,
+				      creds->server);
 	krb5_free_principal (context, tmp_principal);
 	if (!tmp) {
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
@@ -200,12 +200,19 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
-#if 0
-    /* XXX should this decode be here, or in the decrypt_proc? */
-    ret = krb5_decode_keyblock(context, &rep->enc_part.key, 1);
-    if(ret)
-	goto out;
-#endif
+    /* verify names */
+    if(flags & EXTRACT_TICKET_MATCH_REALM){
+	const char *srealm = krb5_principal_get_realm(context, creds->server);
+	const char *crealm = krb5_principal_get_realm(context, creds->client);
+
+	if (strcmp(rep->enc_part.srealm, srealm) != 0 ||
+	    strcmp(rep->enc_part.srealm, crealm) != 0)
+	{
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+    }
 
     /* compare nonces */
 
@@ -762,18 +769,23 @@ krb5_get_in_cred(krb5_context context,
     if (ret)
 	goto out;
 	
-    ret = _krb5_extract_ticket(context, 
-			       &rep, 
-			       creds, 
-			       key, 
-			       keyseed, 
-			       KRB5_KU_AS_REP_ENC_PART,
-			       NULL, 
-			       nonce, 
-			       FALSE, 
-			       opts.request_anonymous,
-			       decrypt_proc, 
-			       decryptarg);
+    {
+	unsigned flags = 0;
+	if (opts.request_anonymous)
+	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+
+	ret = _krb5_extract_ticket(context, 
+				   &rep, 
+				   creds, 
+				   key, 
+				   keyseed, 
+				   KRB5_KU_AS_REP_ENC_PART,
+				   NULL, 
+				   nonce, 
+				   flags,
+				   decrypt_proc, 
+				   decryptarg);
+    }
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock_contents (context, key);
     free (key);
