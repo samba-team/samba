@@ -330,6 +330,8 @@ get_init_creds_common(krb5_context context,
 	    ctx->addrs = &no_addrs;
 	    break;
 	}
+	if (options->opt_private->canonicalize)
+	    ctx->flags.canonicalize = 1;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
 	etypes = malloc((options->etype_list_length + 1)
@@ -1347,6 +1349,15 @@ init_cred_loop(krb5_context context,
 
     {
 	krb5_keyblock *key = NULL;
+	unsigned flags = 0;
+
+	if (ctx->flags.request_anonymous)
+	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+	if (ctx->flags.canonicalize) {
+	    flags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
+	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+	    flags |= EXTRACT_TICKET_MATCH_REALM;
+	}
 
 	ret = process_pa_data_to_key(context, ctx, creds, 
 				     &ctx->as_req, &rep, hi, &key);
@@ -1361,8 +1372,7 @@ init_cred_loop(krb5_context context,
 				   KRB5_KU_AS_REP_ENC_PART,
 				   NULL,
 				   ctx->nonce,
-				   FALSE,
-				   ctx->flags.request_anonymous,
+				   flags,
 				   NULL,
 				   NULL);
 	krb5_free_keyblock(context, key);
