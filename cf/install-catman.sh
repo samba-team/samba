@@ -37,23 +37,23 @@ for f in "$@"; do
 		fi
 		if test "$cmd" = install ; then
 			target="$mandir/$link.$section"
-			for cmd in "ln -f $mandir/$base.$section $target" \
+			for lncmd in "ln -f $mandir/$base.$section $target" \
 				   "ln -s $base.$section $target" \
 				   "cp -f $mandir/$base.$section $target"
 			do
-				if eval "$cmd"; then
-					eval echo "$cmd"
+				if eval "$lncmd"; then
+					eval echo "$lncmd"
 					break
 				fi
 			done
 			if test "$catinstall" = yes -a -f "$srcdir/$c"; then
 				target="$catdir/$link.$suffix"
-				for cmd in "ln -f $catdir/$base.$suffix $target" \
+				for lncmd in "ln -f $catdir/$base.$suffix $target" \
 					   "ln -fs $base.$suffix $target" \
 					   "cp -f $catdir/$base.$suffix $target"
 				do
-					if eval "$cmd"; then
-						eval echo "$cmd"
+					if eval "$lncmd"; then
+						eval echo "$lncmd"
 						break
 					fi
 				done
