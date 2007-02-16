@@ -25,6 +25,7 @@
 	</xsl:template>
 
 	<xsl:template name="generate-images">
+		<xsl:param name="role"/>
 		<xsl:value-of select="$target"/><xsl:text>-images-</xsl:text><xsl:value-of select="$role"/><xsl:text> = </xsl:text>
 		<xsl:for-each select="//mediaobject/imageobject[@role=$role]">
 			<xsl:value-of select="imagedata/@fileref"/>
