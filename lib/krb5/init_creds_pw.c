@@ -836,6 +836,8 @@ static PA_DATA *
 find_pa_data(const METHOD_DATA *md, int type)
 {
     int i;
+    if (md == NULL)
+	return NULL;
     for (i = 0; i < md->len; i++)
 	if (md->val[i].padata_type == type)
 	    return &md->val[i];
@@ -1387,8 +1389,7 @@ init_cred_loop(krb5_context context,
 	PA_DATA *pa;
 	size_t len;
 
-	pa = find_pa_data(rep.kdc_rep.padata, 
-			  KRB5_PADATA_CLIENT_CANONICALIZED);
+	pa = find_pa_data(rep.kdc_rep.padata, KRB5_PADATA_CLIENT_CANONICALIZED);
 	if (pa == NULL) {
 	    ret = EINVAL;
 	    krb5_set_error_string(context, "Client canonicalizion not signed");
