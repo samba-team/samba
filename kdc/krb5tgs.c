@@ -1258,6 +1258,7 @@ tgs_build_reply(krb5_context context,
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_data rspac;
+    int cross_realm = 0;
 
     PrincipalName *s;
     Realm r;
@@ -1421,6 +1422,8 @@ server_lookup:
 	
 	kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		cpn, krb5_get_err_text(context, ret));
+
+	cross_realm = 1;
     }
     
     /*
@@ -1705,7 +1708,7 @@ server_lookup:
     }
 
     /* check PAC if there is one */
-    {
+    if (!cross_realm) {
 	Key *tkey;
 
 	ret = hdb_enctype2key(context, &krbtgt->entry, 
@@ -1721,7 +1724,7 @@ server_lookup:
 			tgt, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,
-		    "check_PAC check failed for %s (%s) from %s with %s",
+		    "Verify PAC failed for %s (%s) from %s with %s",
 		    spn, cpn, from, krb5_get_err_text(context, ret));
 	    goto out;
 	}
