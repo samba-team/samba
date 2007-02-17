@@ -210,15 +210,9 @@ interface drsblobs {
 		 * the data field contains data as HEX strings
 		 *
 		 * 'Packages':
-		 *    it seems to contains HEX strings
-		 *    of GUID's concatenated together.
-		 *    w2k only has 'Primary:Kerberos'
-		 *    and there's a 32 byte hex string.
-		 *    w2k3 also has 'Primary:WDigest'
-		 *    and there's a 64 byte hex string.
-		 *    ...but this 'Primary:CLEARTEXT'
-		 *    also there's a 104 byte hex string
-		 *    (instead of 3 * (16*2) = 96 ).
+		 *   data contains the list of packages
+		 *   as non termiated UTF16 strings with
+		 *   a UTF16 NULL byte as separator
 		 *
 		 * 'Primary:Kerberos':
 		 *    ...
