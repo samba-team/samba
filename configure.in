@@ -580,6 +580,7 @@ AC_CONFIG_FILES(Makefile 		\
 	tests/Makefile			\
 	tests/db/Makefile		\
 	tests/kdc/Makefile		\
+	tests/ldap/Makefile		\
 	tests/gss/Makefile		\
 	tests/plugin/Makefile		\
 	doc/Makefile			\
