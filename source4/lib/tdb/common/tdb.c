@@ -257,7 +257,7 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	u32 hash;
 	tdb_off_t rec_ptr;
 	char *p = NULL;
-	int ret = 0;
+	int ret = -1;
 
 	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
@@ -277,8 +277,10 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		}
 	} else {
 		/* first try in-place update, on modify or replace. */
-		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
-			goto out;
+		if (tdb_update_hash(tdb, key, hash, dbuf) == 0) {
+			ret = 0;
+			goto fail; /* Well, not really failed */
+		}
 		if (tdb->ecode == TDB_ERR_NOEXIST &&
 		    flag == TDB_MODIFY) {
 			/* if the record doesn't exist and we are in TDB_MODIFY mode then
@@ -328,15 +330,15 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		goto fail;
 	}
 
- out:
-	tdb_increment_seqnum(tdb);
+	ret = 0;
+ fail:
+	if (ret == 0) {
+		tdb_increment_seqnum(tdb);
+	}
 
 	SAFE_FREE(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
-fail:
-	ret = -1;
-	goto out;
 }
 
 
