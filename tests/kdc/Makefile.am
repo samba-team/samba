@@ -7,7 +7,7 @@ noinst_DATA = krb5.conf krb5-pkinit.conf
 check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
 
-SCRIPT_TESTS = check-kdc check-digest check-pkinit check-uu
+SCRIPT_TESTS = check-kdc check-digest check-pkinit check-uu check-referral
 TESTS = $(SCRIPT_TESTS)
 
 port = 49188
@@ -39,6 +39,11 @@ check-digest: check-digest.in Makefile
 	chmod +x check-digest.tmp
 	mv check-digest.tmp check-digest
 
+check-referral: check-referral.in Makefile
+	$(do_subst) < $(srcdir)/check-referral.in > check-referral.tmp
+	chmod +x check-referral.tmp
+	mv check-referral.tmp check-referral
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
@@ -56,6 +61,7 @@ CLEANFILES= \
 	cdigest-reply \
 	check-digest.tmp \
 	check-kdc.tmp \
+	check-referral.tmp \
 	check-uu.tmp \
 	check-pkinit.tmp \
 	client-cache \
@@ -82,6 +88,7 @@ CLEANFILES= \
 
 EXTRA_DIST = \
 	check-kdc.in \
+	check-referral.in \
 	check-uu.in \
 	check-pkinit.in \
 	check-digest.in \
