@@ -1,4 +1,4 @@
-.\" Copyright (c) 2002 - 2004, 2006 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2002 - 2007 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -32,7 +32,7 @@
 .\" $Id$
 .\"
 .Dd September 18, 2006
-.Dt KERBEROS SECTION
+.Dt KERBEROS 1
 .Os Heimdal
 .Sh NAME
 .Nm kimpersonate
@@ -68,8 +68,8 @@ impersonate a user when there exist a srvtab, keyfile or KeyFile
 .Sh DESCRIPTION
 The
 .Nm
-program create a "fake" ticket using the service-key of the service,
-the service key can be read from a Kerberos 5 keytab, AFS KeyFile or
+program creates a "fake" ticket using the service-key of the service.
+The service key can be read from a Kerberos 5 keytab, AFS KeyFile or
 (if compiled with support for Kerberos 4) a Kerberos 4 srvtab.
 Supported options:
 .Bl -tag -width Ds
@@ -92,7 +92,7 @@ name of keytab file
 .Fl 5 Ns ,
 .Fl -krb5
 .Xc
-create a kerberos 5 ticket
+create a Kerberos 5 ticket
 .It Xo
 .Fl e Ar integer Ns ,
 .Fl -expire-time= Ns Ar integer
@@ -143,8 +143,8 @@ or for debugging.
 .Nm
 -s host/hummel.e.kth.se@E.KTH.SE -c lha@E.KTH.SE -5
 will create a Kerberos 5 ticket for lha@E.KTH.SE for the host
-hummel.e.kth.se if there exist a keytab entry for it in
-.Pa /etc/krb5.keytab
+hummel.e.kth.se if there exists a keytab entry for it in
+.Pa /etc/krb5.keytab .
 .Sh SEE ALSO
 .Xr kinit 1 ,
 .Xr klist 1
