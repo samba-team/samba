@@ -1584,13 +1584,13 @@ _kdc_as_rep(krb5_context context,
 	free(data.data);
 	krb5_crypto_destroy(context, crypto);
 	if (ret)
-	    return ret;
+	    goto out;
 	  
 	ASN1_MALLOC_ENCODE(PA_ClientCanonicalized, data.data, data.length,
 			   &canon, &len, ret);
 	free_Checksum(&canon.canon_checksum);
 	if (ret) 
-	    return ret;
+	    goto out;
 	if (data.length != len)
 	    krb5_abortx(context, "internal asn.1 error");
 
@@ -1599,7 +1599,7 @@ _kdc_as_rep(krb5_context context,
 	ret = add_METHOD_DATA(rep.padata, &pa);
 	free(data.data);
 	if (ret)
-	    return ret;
+	    goto out;
     }
 
     if (rep.padata->len == 0) {
