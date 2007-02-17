@@ -29,6 +29,7 @@ gen_files_k5 =						\
 	asn1_AD_IF_RELEVANT.x				\
 	asn1_AD_KDCIssued.x				\
 	asn1_AD_MANDATORY_FOR_KDC.x			\
+	asn1_AD_LoginAlias.x				\
 	asn1_APOptions.x				\
 	asn1_AP_REP.x					\
 	asn1_AP_REQ.x					\
@@ -86,6 +87,9 @@ gen_files_k5 =						\
 	asn1_PA_SAM_REDIRECT.x				\
 	asn1_PA_SAM_RESPONSE_2.x			\
 	asn1_PA_SAM_TYPE.x				\
+	asn1_PA_ClientCanonicalized.x			\
+	asn1_PA_ClientCanonicalizedNames.x		\
+	asn1_PA_SvrReferralData.x			\
 	asn1_PROV_SRV_LOCATION.x			\
 	asn1_Principal.x				\
 	asn1_PrincipalName.x				\
@@ -544,7 +548,7 @@ cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
 
 krb5_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
-	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
 
 pkinit_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1 pkinit_asn1 || (rm -f pkinit_asn1_files ; exit 1)
