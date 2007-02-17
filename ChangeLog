@@ -1,3 +1,18 @@
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: add KRB5_KU_CANONICALIZED_NAMES.
+
+	* lib/krb5/init_creds_pw.c: Verify client referral data.
+
+	* kdc/kerberos5.c: switch some "return ret" to "goto out".
+	
+	* kdc/kerberos5.c: Pass down canonicalize request to hdb layer,
+	sign client referrals.
+	
+	* lib/hdb/hdb.h: Add HDB_F_CANON.
+
+	* lib/hdb: add simple alias support to the database backends
+
 2007-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: Add canonicalize flag.
