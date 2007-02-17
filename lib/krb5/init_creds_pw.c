@@ -1377,6 +1377,59 @@ init_cred_loop(krb5_context context,
 				   NULL);
 	krb5_free_keyblock(context, key);
     }
+    /*
+     * Verify referral data
+     */
+    if (ctx->flags.canonicalize /* && not pre referrals draft */) {
+	PA_ClientCanonicalized canon;
+	krb5_crypto crypto;
+	krb5_data data;
+	PA_DATA *pa;
+	size_t len;
+
+	pa = find_pa_data(rep.kdc_rep.padata, 
+			  KRB5_PADATA_CLIENT_CANONICALIZED);
+	if (pa == NULL) {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, "Client canonicalizion not signed");
+	    goto out;
+	}
+	
+	ret = decode_PA_ClientCanonicalized(pa->padata_value.data, 
+					    pa->padata_value.length,
+					    &canon, &len);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode "
+				  "PA_ClientCanonicalized");
+	    goto out;
+	}
+
+	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
+			   &canon.names, &len, ret);
+	if (ret) 
+	    goto out;
+	if (data.length != len)
+	    krb5_abortx(context, "internal asn.1 error");
+
+	ret = krb5_crypto_init(context, &creds->session, 0, &crypto);
+	if (ret) {
+	    free(data.data);
+	    free_PA_ClientCanonicalized(&canon);
+	    goto out;
+	}
+
+	ret = krb5_verify_checksum(context, crypto, KRB5_KU_CANONICALIZED_NAMES,
+				   data.data, data.length,
+				   &canon.canon_checksum);
+	krb5_crypto_destroy(context, crypto);
+	free(data.data);
+	free_PA_ClientCanonicalized(&canon);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to verify "
+				  "client canonicalized data");
+	    goto out;
+	}
+    }
 out:
     krb5_data_free(&ctx->req_buffer);
     free_METHOD_DATA(&md);
