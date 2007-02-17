@@ -318,7 +318,6 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS saved_status1 = NT_STATUS_OK;
 	NTSTATUS saved_status2 = NT_STATUS_OK;
-	NTSTATUS saved_status3 = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
 
 	cancel_aio_by_fsp(fsp);
@@ -328,7 +327,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	 * error here, we must remember this.
 	 */
 
-	saved_status2 = close_filestruct(fsp);
+	saved_status1 = close_filestruct(fsp);
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, close_type);
@@ -342,7 +341,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	if (fsp->fh->ref_count == 1) {
 		/* Should we return on error here... ? */
-		saved_status3 = close_remove_share_mode(fsp, close_type);
+		saved_status2 = close_remove_share_mode(fsp, close_type);
 	}
 
 	if(fsp->oplock_type) {
@@ -373,8 +372,6 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 			status = saved_status1;
 		} else if (!NT_STATUS_IS_OK(saved_status2)) {
 			status = saved_status2;
-		} else if (!NT_STATUS_IS_OK(saved_status3)) {
-			status = saved_status3;
 		}
 	}
 
