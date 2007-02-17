@@ -248,6 +248,14 @@ interface drsblobs {
 		[in] supplementalCredentialsBlob blob
 		);
 
+	typedef [public] struct {
+		[flag(STR_NOTERM|NDR_REMAINING)] string_array names;
+	} package_PackagesBlob;
+
+	void decode_Packages(
+		[in] package_PackagesBlob blob
+		);
+
 	typedef struct {
 		[value(2*strlen_m(string))] uint16 length;
 		[value(2*strlen_m(string))] uint16 size;
@@ -277,6 +285,14 @@ interface drsblobs {
 
 	void decode_PrimaryKerberos(
 		[in] package_PrimaryKerberosBlob blob
+		);
+
+	typedef [public] struct {
+		[flag(STR_NOTERM|NDR_REMAINING)] string cleartext;
+	} package_PrimaryCLEARTEXTBlob;
+
+	void decode_PrimaryCLEARTEXT(
+		[in] package_PrimaryCLEARTEXTBlob blob
 		);
 
 	typedef struct {
