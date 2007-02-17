@@ -16,6 +16,10 @@ Parse::Pidl::Wireshark::NDR - Parser generator for Wireshark
 
 package Parse::Pidl::Wireshark::NDR;
 
+use Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(field2name @ett %res PrintIdl);
+
 use strict;
 use Parse::Pidl qw(error warning);
 use Parse::Pidl::Typelist qw(getType);
@@ -28,7 +32,7 @@ use File::Basename;
 use vars qw($VERSION);
 $VERSION = '0.01';
 
-my @ett;
+our @ett;
 
 my %hf_used = ();
 my %return_types = ();
@@ -66,7 +70,7 @@ sub field2name($)
     return $field;
 }
 
-my %res = ();
+our %res = ();
 my $tabs = "";
 my $cur_fn = undef;
 sub pidl_fn_start($)
@@ -108,7 +112,7 @@ sub deindent()
 
 sub PrintIdl($)
 {
-	my $idl = shift;
+	my ($idl) = @_;
 
 	foreach (split /\n/, $idl) {
 		pidl_code "/* IDL: $_ */";
