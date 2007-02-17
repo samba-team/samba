@@ -1,3 +1,7 @@
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Add PA-ClientCanonicalized and friends.
+	
 2007-02-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: Drop one over INT_MAX test-case.
