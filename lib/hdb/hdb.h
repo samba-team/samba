@@ -50,6 +50,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_SERVER	8	/* fetch server */
 #define HDB_F_GET_KRBTGT	16	/* fetch krbtgt */
 #define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
+#define HDB_F_CANON		32	/* want canonicalition */
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
