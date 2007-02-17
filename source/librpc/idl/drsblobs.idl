@@ -202,8 +202,8 @@ interface drsblobs {
 		);
 
 	typedef struct {
-		uint16 name_len;
-		uint16 data_len;
+		[value(2*strlen_m(name))] uint16 name_len;
+		[value(strlen(data))] uint16 data_len;
 		uint16 unknown1; /* 2 for name = 'Packages', 1 for name = 'Primary:*' */
 		[charset(UTF16)] uint8 name[name_len];
 		/* 
