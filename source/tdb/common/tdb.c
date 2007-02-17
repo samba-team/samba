@@ -328,9 +328,9 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		goto fail;
 	}
 
+ out:
 	tdb_increment_seqnum(tdb);
 
- out:
 	SAFE_FREE(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
