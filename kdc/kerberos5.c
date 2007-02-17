@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -921,11 +921,15 @@ _kdc_as_rep(krb5_context context,
     krb5_crypto crypto;
     Key *ckey, *skey;
     EncryptionKey *reply_key;
+    int flags = 0;
 #ifdef PKINIT
     pk_client_params *pkp = NULL;
 #endif
 
     memset(&rep, 0, sizeof(rep));
+
+    if (f.canonicalize)
+	flags |= HDB_F_CANON;
 
     if(b->sname == NULL){
 	ret = KRB5KRB_ERR_GENERIC;
@@ -947,10 +951,23 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
-	_krb5_principalname2krb5_principal (context,
-					    &client_princ,
-					    *(b->cname),
-					    b->realm);
+
+	if (b->cname->name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	    if (b->cname->name_string.len != 1) {
+		kdc_log(context, config, 0,
+			"AS-REQ malformed canon request from %s", from);
+		ret = KRB5_PARSE_MALFORMED;
+		goto out;
+	    }
+	    ret = krb5_parse_name(context, b->cname->name_string.val[0],
+				  &client_princ);
+	    if (ret)
+		goto out;
+	} else
+	    _krb5_principalname2krb5_principal (context,
+						&client_princ,
+						*(b->cname),
+						b->realm);
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
     if (ret) {
@@ -963,7 +980,7 @@ _kdc_as_rep(krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch(context, config, client_princ, 
-			HDB_F_GET_CLIENT, NULL, &client);
+			HDB_F_GET_CLIENT | flags, NULL, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -1532,6 +1549,58 @@ _kdc_as_rep(krb5_context context,
 #endif
 
     set_salt_padata (rep.padata, ckey->salt);
+
+    /* Add signing of alias referral */
+    if (f.canonicalize) {
+	PA_ClientCanonicalized canon;
+	krb5_data data;
+	PA_DATA pa;
+	krb5_crypto crypto;
+	size_t len;
+
+	memset(&canon, 0, sizeof(canon));
+
+	canon.names.requested_name = *b->cname;
+	canon.names.real_name = client->entry.principal->name;
+
+	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
+			   &canon.names, &len, ret);
+	if (ret) 
+	    goto out;
+	if (data.length != len)
+	    krb5_abortx(context, "internal asn.1 error");
+
+	/* sign using "returned session key" */
+	ret = krb5_crypto_init(context, &et.key, 0, &crypto);
+	if (ret) {
+	    free(data.data);
+	    goto out;
+	}
+
+	ret = krb5_create_checksum(context, crypto, 
+				   KRB5_KU_CANONICALIZED_NAMES, 0,
+				   data.data, data.length,
+				   &canon.canon_checksum);
+	free(data.data);
+	krb5_crypto_destroy(context, crypto);
+	if (ret)
+	    return ret;
+	  
+	ASN1_MALLOC_ENCODE(PA_ClientCanonicalized, data.data, data.length,
+			   &canon, &len, ret);
+	free_Checksum(&canon.canon_checksum);
+	if (ret) 
+	    return ret;
+	if (data.length != len)
+	    krb5_abortx(context, "internal asn.1 error");
+
+	pa.padata_type = KRB5_PADATA_CLIENT_CANONICALIZED;
+	pa.padata_value = data;
+	ret = add_METHOD_DATA(rep.padata, &pa);
+	free(data.data);
+	if (ret)
+	    return ret;
+    }
 
     if (rep.padata->len == 0) {
 	free(rep.padata);
