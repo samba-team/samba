@@ -319,6 +319,12 @@ command = {
 		argument = "principal"
 		help = "allowed target principal"
 	}
+	option = {
+		long = "alias"
+		type = "strings"
+		argument = "principal"
+		help = "aliases"
+	}
 	argument = "principal"
 	min_args = "1"
 	max_args = "1"

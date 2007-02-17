@@ -65,6 +65,7 @@ static struct field_name {
     { "keytypes", KADM5_KEY_DATA, 0, KADM5_PRINCIPAL, "Keytypes", "Keytypes", 0 },
     { "password", KADM5_TL_DATA, KRB5_TL_PASSWORD, KADM5_KEY_DATA, "Password", "Password", 0 },
     { "pkinit-acl", KADM5_TL_DATA, KRB5_TL_PKINIT_ACL, 0, "PK-INIT ACL", "PK-INIT ACL", 0 },
+    { "aliases", KADM5_TL_DATA, KRB5_TL_ALIASES, 0, "Aliases", "Aliases", 0 },
     { NULL }
 };
 
@@ -246,7 +247,7 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 	    if (tl->tl_data_type == subfield)
 		break;
 	if (tl == NULL) {
-	    strlcpy(buf, "no stored value", buf_len);
+	    strlcpy(buf, "", buf_len);
 	    break;
 	}
 
@@ -272,20 +273,47 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 
 	    buf[0] = '\0';
 	    for (i = 0; i < acl.len; i++) {
-		strlcpy(buf, "subject: ", buf_len);
-		strlcpy(buf, acl.val[i].subject, buf_len);
+		strlcat(buf, "subject: ", buf_len);
+		strlcat(buf, acl.val[i].subject, buf_len);
 		if (acl.val[i].issuer) {
-		    strlcpy(buf, " issuer:", buf_len);
-		    strlcpy(buf, *acl.val[i].issuer, buf_len);
+		    strlcat(buf, " issuer:", buf_len);
+		    strlcat(buf, *acl.val[i].issuer, buf_len);
 		}
 		if (acl.val[i].anchor) {
-		    strlcpy(buf, " anchor:", buf_len);
-		    strlcpy(buf, *acl.val[i].anchor, buf_len);
+		    strlcat(buf, " anchor:", buf_len);
+		    strlcat(buf, *acl.val[i].anchor, buf_len);
 		}
 		if (i + 1 < acl.len)
-		    strlcpy(buf, ", ", buf_len);
+		    strlcat(buf, ", ", buf_len);
 	    }
 	    free_HDB_Ext_PKINIT_acl(&acl);
+	    break;
+	}
+	case KRB5_TL_ALIASES: {
+	    HDB_Ext_Aliases alias;
+	    size_t size;
+	    int i, ret;
+
+	    ret = decode_HDB_Ext_Aliases(tl->tl_data_contents,
+					 tl->tl_data_length,
+					 &alias,
+					 &size);
+	    if (ret) {
+		snprintf(buf, buf_len, "failed to decode alias");
+		break;
+	    }
+	    buf[0] = '\0';
+	    for (i = 0; i < alias.aliases.len; i++) {
+		char *p;
+		ret = krb5_unparse_name(context, &alias.aliases.val[i], &p);
+		if (ret)
+		    break;
+		if (i < 0)
+		    strlcat(buf, " ", buf_len);
+		strlcat(buf, p, buf_len);
+		free(p);
+	    }
+	    free_HDB_Ext_Aliases(&alias);
 	    break;
 	}
 	default:
@@ -391,7 +419,7 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 }
 
 #define DEFAULT_COLUMNS_SHORT "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife"
-#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes"
+#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes,pkinit-acl,aliases"
 #define DEFAULT_COLUMNS_TERSE "principal="
 
 static int
