@@ -268,7 +268,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x04 */
 
-	NTSTATUS netr_ServerReqChallenge(
+	[public] NTSTATUS netr_ServerReqChallenge(
 		[in,string,charset(UTF16)] uint16 *server_name,
 		[in,string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials
@@ -950,7 +950,7 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1a */
-	NTSTATUS netr_ServerAuthenticate3(
+	[public] NTSTATUS netr_ServerAuthenticate3(
 		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,

@@ -249,6 +249,7 @@ struct torture_suite *torture_local_ndr(void)
 	torture_suite_add_suite(suite, ndr_lsa_suite(suite));
 	torture_suite_add_suite(suite, ndr_epmap_suite(suite));
 	torture_suite_add_suite(suite, ndr_dfs_suite(suite));
+	torture_suite_add_suite(suite, ndr_netlogon_suite(suite));
 
 	torture_suite_add_simple_test(suite, "string terminator", 
 								   test_check_string_terminator);
