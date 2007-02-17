@@ -1,5 +1,10 @@
 2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c (find_pa_data): if there is no list,
+	there is no entry.
+
+	* kdc/krb5tgs.c: Don't check PACs on cross realm requests.
+
 	* lib/krb5/krb5.h: add KRB5_KU_CANONICALIZED_NAMES.
 
 	* lib/krb5/init_creds_pw.c: Verify client referral data.
