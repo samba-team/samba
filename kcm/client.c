@@ -105,7 +105,7 @@ kcm_ccache_new_client(krb5_context context,
 	size_t prefix_len;
 	int bad = 1;
 
-	snprintf(prefix, sizeof(prefix), "%d:", client->uid);
+	snprintf(prefix, sizeof(prefix), "%ld:", (long)client->uid);
 	prefix_len = strlen(prefix);
 
 	if (strncmp(name, prefix, prefix_len) == 0)
