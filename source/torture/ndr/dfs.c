@@ -23,8 +23,6 @@
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
 
-static const uint8_t getmanagerversion_in_data[] = {};
-
 static const uint8_t getmanagerversion_out_data[] = {
   0x04, 0x00, 0x00, 0x00
 };
@@ -107,7 +105,6 @@ struct torture_suite *ndr_dfs_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dfs");
 
-	torture_suite_add_ndr_pull_fn_test(suite, dfs_GetManagerVersion, getmanagerversion_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, dfs_GetManagerVersion, getmanagerversion_out_data, NDR_OUT, getmanagerversion_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, dfs_EnumEx, enumex_in_data300, NDR_IN, enumex_in_check300 );
