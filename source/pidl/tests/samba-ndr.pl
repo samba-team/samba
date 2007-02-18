@@ -11,7 +11,7 @@ use Util;
 use Parse::Pidl::Util qw(MyDumper);
 use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer 
 	GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv 
-	EnvSubstituteValue NeededFunction NeededElement NeededTypedef); 
+	EnvSubstituteValue NeededFunction NeededElement NeededType); 
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -202,19 +202,19 @@ is_deeply($needed, { pull_foo => 1, print_foo => 1, push_foo => 1,
 
 # public structs are always needed
 $needed = {};
-NeededTypedef({ NAME => "bla", DATA => { TYPE => "STRUCT", ELEMENTS => [] } },
+NeededType({ NAME => "bla", DATA => { TYPE => "STRUCT", ELEMENTS => [] } },
 			  $needed);
 is_deeply($needed, { });
 
 $needed = {};
-NeededTypedef({ PROPERTIES => { public => 1 }, NAME => "bla", 
+NeededType({ PROPERTIES => { public => 1 }, NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", ELEMENTS => [] } },
 			  $needed);
 is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1 });
 
 # make sure types for elements are set too
 $needed = {};
-NeededTypedef({ PROPERTIES => { public => 1 }, NAME => "bla", 
+NeededType({ PROPERTIES => { public => 1 }, NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
 						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
 			  $needed);
@@ -222,7 +222,7 @@ is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1,
 	                 pull_bar => 1, print_bar => 1, push_bar => 1});
 
 $needed = {};
-NeededTypedef({ PROPERTIES => { gensize => 1}, NAME => "bla", 
+NeededType({ PROPERTIES => { gensize => 1}, NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
 						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
 			  $needed);
@@ -230,14 +230,14 @@ is_deeply($needed, { ndr_size_bla => 1 });
 	                 
 # make sure types for elements are set too
 $needed = { pull_bla => 1 };
-NeededTypedef({ NAME => "bla", 
+NeededType({ NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
 						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
 			  $needed);
 is_deeply($needed, { pull_bla => 1, pull_bar => 1 });
 
 $needed = {};
-NeededTypedef({ PROPERTIES => { public => 1}, 
+NeededType({ PROPERTIES => { public => 1}, 
 				NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
 						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "rep" } ] } },
