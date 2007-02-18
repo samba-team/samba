@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -34,3 +34,5 @@ like(parse_idl("interface x { void foo ([out] uint32 x); };"),
 like(parse_idl("interface x { void foo ([in,out] uint32 x); };"),
      qr/struct foo.*{.*struct\s+{\s+uint32_t x;\s+} in;\s+struct\s+{\s+uint32_t x;\s+} out;.*};/sm, "fn in,out arg works");
 like(parse_idl("interface x { void foo (uint32 x); };"), qr/struct foo.*{.*struct\s+{\s+uint32_t x;\s+} in;\s+struct\s+{\s+uint32_t x;\s+} out;.*};/sm, "fn with no props implies in,out");
+like(parse_idl("interface p { struct x { int y; }; };"),
+     qr/struct x.*{.*int32_t y;.*}.*;/sm, "interface member generated properly");
