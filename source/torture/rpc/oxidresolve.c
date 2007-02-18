@@ -25,9 +25,12 @@
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/epmapper.h"
 #include "torture/rpc/rpc.h"
-#include "librpc/gen_ndr/ndr_dcom.h"
 
 #define CLSID_IMAGEDOC "02B01C80-E03D-101A-B294-00DD010F2BF9"
+
+const struct GUID IUnknown_uuid = {
+	0x00000000,0x0000,0x0000,{0xc0,0x00},{0x00,0x00,0x00,0x00,0x00,0x46}
+};
 
 static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t *oxid, struct GUID *oid)
 {
@@ -45,7 +48,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	r.in.num_protseqs = 3;
 	r.in.protseq = protseq;
 	r.in.Interfaces = 1;
-	iids[0] = dcerpc_table_IUnknown.syntax_id.uuid;
+	iids[0] = IUnknown_uuid;
 	r.in.pIIDs = iids;
 	r.out.pOxid = oxid;
 	r.out.ipidRemUnknown = oid;

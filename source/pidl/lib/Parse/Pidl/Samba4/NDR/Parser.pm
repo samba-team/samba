@@ -15,7 +15,7 @@ require Exporter;
    NeededElement NeededType);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapType);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
@@ -636,7 +636,7 @@ sub ParseElementPushLevel
 
 			# Allow speedups for arrays of scalar types
 			if (is_charset_array($e,$l)) {
-				pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+				pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . mapTypeName($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				return;
 			} elsif (has_fast_array($e,$l)) {
 				pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
@@ -707,7 +707,7 @@ sub ParseElementPush($$$$$)
 		pidl "{";
 		indent;
 		my $transmit_name = "_transmit_$e->{NAME}";
-		pidl mapType($e->{TYPE}) ." $transmit_name;";
+		pidl mapTypeName($e->{TYPE}) ." $transmit_name;";
 		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}($var_name, " . get_pointer_to($transmit_name) . "));";
 		$var_name = $transmit_name;
 	}
@@ -1014,7 +1014,7 @@ sub ParseElementPullLevel
 				if ($l->{IS_ZERO_TERMINATED}) {
 					CheckStringTerminator($ndr, $e, $l, $length);
 				}
-				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapTypeName($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				return;
 			} elsif (has_fast_array($e, $l)) {
 				if ($l->{IS_ZERO_TERMINATED}) {
@@ -1116,7 +1116,7 @@ sub ParseElementPull($$$$$)
 		$represent_name = $var_name;
 		$transmit_name = "_transmit_$e->{NAME}";
 		$var_name = $transmit_name;
-		pidl mapType($e->{TYPE})." $var_name;";
+		pidl mapTypeName($e->{TYPE})." $var_name;";
 	}
 
 	$var_name = append_prefix($e, $var_name);
@@ -1294,7 +1294,7 @@ sub ParseEnumPull($$)
 {
 	my($enum,$name) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
-	my($type_v_decl) = mapType($type_fn);
+	my($type_v_decl) = mapTypeName($type_fn);
 
 	pidl "$type_v_decl v;";
 	start_flags($enum);
@@ -1369,7 +1369,7 @@ sub ParseBitmapPull($$)
 {
 	my($bitmap,$name) = @_;
 	my $type_fn = $bitmap->{BASE_TYPE};
-	my($type_decl) = mapType($bitmap->{BASE_TYPE});
+	my($type_decl) = mapTypeName($bitmap->{BASE_TYPE});
 
 	pidl "$type_decl v;";
 	start_flags($bitmap);
@@ -1384,7 +1384,7 @@ sub ParseBitmapPull($$)
 sub ParseBitmapPrintElement($$$)
 {
 	my($e,$bitmap,$name) = @_;
-	my($type_decl) = mapType($bitmap->{BASE_TYPE});
+	my($type_decl) = mapTypeName($bitmap->{BASE_TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 	my($flag);
 
@@ -1402,7 +1402,7 @@ sub ParseBitmapPrintElement($$$)
 sub ParseBitmapPrint($$)
 {
 	my($bitmap,$name) = @_;
-	my($type_decl) = mapType($bitmap->{TYPE});
+	my($type_decl) = mapTypeName($bitmap->{TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
 	start_flags($bitmap);
@@ -1421,7 +1421,7 @@ sub ParseBitmapPrint($$)
 sub DeclBitmap($$$)
 {
 	my ($e,$t,$name) = @_;
-	return mapType(Parse::Pidl::Typelist::bitmap_type_fn($e)) . 
+	return mapTypeName(Parse::Pidl::Typelist::bitmap_type_fn($e)) . 
 		($t eq "pull"?" *":" ") . "r";
 }
 
@@ -1771,7 +1771,7 @@ sub ParseUnionPull($$)
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
 			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type)->{DATA});
 		}
-		pidl mapType($switch_type) . " _level;";
+		pidl mapTypeName($switch_type) . " _level;";
 	}
 
 	my %double_cases = ();

@@ -7,7 +7,7 @@
 package Parse::Pidl::Samba4::Header;
 
 use strict;
-use Parse::Pidl::Typelist qw(mapType);
+use Parse::Pidl::Typelist qw(mapTypeName);
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::Samba4 qw(is_intree);
 
@@ -55,7 +55,7 @@ sub HeaderElement($)
 
 	pidl tabs();
 	if (has_property($element, "represent_as")) {
-		pidl mapType($element->{PROPERTIES}->{represent_as})." ";
+		pidl mapTypeName($element->{PROPERTIES}->{represent_as})." ";
 	} else {
 		HeaderType($element, $element->{TYPE}, "");
 		pidl " ";
@@ -209,7 +209,7 @@ sub HeaderType($$$)
 	if (has_property($e, "charset")) {
 		pidl "const char";
 	} else {
-		pidl mapType($e->{TYPE});
+		pidl mapTypeName($e->{TYPE});
 	}
 }
 
@@ -303,7 +303,7 @@ sub HeaderFunction($)
 	    HeaderFunctionInOut($fn, "out");
 	    HeaderFunctionInOut($fn, "inout");
 	    if ($fn->{RETURN_TYPE} ne "void") {
-		    pidl tabs().mapType($fn->{RETURN_TYPE}) . " result;\n";
+		    pidl tabs().mapTypeName($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
 	    pidl tabs()."} out;\n\n";
