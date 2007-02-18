@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 31;
+use Test::More tests => 32;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -156,22 +156,29 @@ $fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
 is_deeply({ }, GenerateFunctionInEnv($fn));
 
 $fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
-is_deeply({ foo => "r->foo", bar => "r->bar", this => "r" }, GenerateStructEnv($fn));
+is_deeply({ foo => "r->foo", bar => "r->bar", this => "r" }, 
+		GenerateStructEnv($fn, "r"));
+
+$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
+is_deeply({ foo => "some->complex.variable->foo", 
+		    bar => "some->complex.variable->bar", 
+			this => "some->complex.variable" }, 
+		GenerateStructEnv($fn, "some->complex.variable"));
 
 $fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 3 }} ] };
 
-my $env = GenerateStructEnv($fn);
+my $env = GenerateStructEnv($fn, "r");
 EnvSubstituteValue($env, $fn);
 is_deeply($env, { foo => 3, this => "r" });
 
 $fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
-$env = GenerateStructEnv($fn);
+$env = GenerateStructEnv($fn, "r");
 EnvSubstituteValue($env, $fn);
 is_deeply($env, { foo => 'r->foo', bar => 'r->bar', this => "r" });
 
 $fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 0 }} ] };
 
-$env = GenerateStructEnv($fn);
+$env = GenerateStructEnv($fn, "r");
 EnvSubstituteValue($env, $fn);
 is_deeply($env, { foo => 0, this => "r" });
 
