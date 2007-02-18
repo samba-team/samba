@@ -28,6 +28,7 @@
 #include "lib/db_wrap.h"
 #include "torture/torture.h"
 
+float tdb_speed;
 
 static BOOL tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1, const char *fmt2, int i)
 {
@@ -110,7 +111,8 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		free(data.dptr);
 	}
 
-	torture_comment(torture, "tdb speed %.2f ops/sec\n", count/timeval_elapsed(&tv));
+	tdb_speed = count/timeval_elapsed(&tv);
+	torture_comment(torture, "tdb speed %.2f ops/sec\n", tdb_speed);
 	
 
 	unlink("test.tdb");
@@ -164,6 +166,7 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 	struct ldb_ldif *ldif;
 	const char *init_ldif = "dn: @INDEXLIST\n" \
 		"@IDXATTR: UID\n";
+	float ldb_speed;
 
 	unlink("./test.ldb");
 
@@ -227,7 +230,10 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 		torture_fail(torture, "memory leak in ldb search");
 	}
 
-	torture_comment(torture, "ldb speed %.2f ops/sec\n", count/timeval_elapsed(&tv));
+	ldb_speed = count/timeval_elapsed(&tv);
+	torture_comment(torture, "ldb speed %.2f ops/sec\n", ldb_speed);
+
+	torture_comment(torture, "ldb/tdb speed ratio is %.2f%%\n", (100*ldb_speed/tdb_speed));
 	
 
 	unlink("./test.ldb");
