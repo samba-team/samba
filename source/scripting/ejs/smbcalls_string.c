@@ -185,7 +185,7 @@ static int ejs_substr(MprVarHandle eid, int argc, struct MprVar **argv)
 	length = strlen(orig);
 	if (start_offset < 0) start_offset += strlen(orig);
 	if (start_offset < 0 || start_offset > strlen(orig)) {
-		ejsSetErrorMsg(eid, "substr arg 2 out of bounds");
+		ejsSetErrorMsg(eid, "substr arg 2 out of bounds ([%s], %d)", orig, start_offset);
 		return -1;
 	}
 
@@ -193,7 +193,7 @@ static int ejs_substr(MprVarHandle eid, int argc, struct MprVar **argv)
 		length = mprToInt(argv[2]);
 		if (length < 0) length += strlen(orig) - start_offset;
 		if (length < 0 || length+start_offset > strlen(orig)) {
-			ejsSetErrorMsg(eid, "substr arg 3 out of bounds");
+			ejsSetErrorMsg(eid, "substr arg 3 out of bounds ([%s], %d, %d)", orig, start_offset, length);
 			return -1;
 		}
 	}
