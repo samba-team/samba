@@ -55,6 +55,7 @@ typedef struct krb5_get_init_creds_ctx {
     krb5_get_init_creds_tristate req_pac;
 
     krb5_pk_init_ctx pk_init_ctx;
+    int ic_flags;
 } krb5_get_init_creds_ctx;
 
 static krb5_error_code
@@ -285,11 +286,15 @@ get_init_creds_common(krb5_context context,
 	ctx->key_proc = options->opt_private->key_proc;
 	ctx->req_pac = options->opt_private->req_pac;
 	ctx->pk_init_ctx = options->opt_private->pk_init_ctx;
+	ctx->ic_flags = options->opt_private->flags;
     } else
 	ctx->req_pac = KRB5_INIT_CREDS_TRISTATE_UNSET;
 
     if (ctx->key_proc == NULL)
 	ctx->key_proc = default_s2k_func;
+
+    if (ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE)
+	ctx->flags.canonicalize = 1;
 
     ctx->pre_auth_types = NULL;
     ctx->addrs = NULL;
@@ -330,8 +335,6 @@ get_init_creds_common(krb5_context context,
 	    ctx->addrs = &no_addrs;
 	    break;
 	}
-	if (options->opt_private->canonicalize)
-	    ctx->flags.canonicalize = 1;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
 	etypes = malloc((options->etype_list_length + 1)
@@ -1382,7 +1385,9 @@ init_cred_loop(krb5_context context,
     /*
      * Verify referral data
      */
-    if (ctx->flags.canonicalize /* && not pre referrals draft */) {
+    if ((ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE) &&
+	(ctx->ic_flags & KRB5_INIT_CREDS_NO_C_CANON_CHECK) == 0)
+    {
 	PA_ClientCanonicalized canon;
 	krb5_crypto crypto;
 	krb5_data data;
