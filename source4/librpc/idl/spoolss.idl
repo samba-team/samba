@@ -586,10 +586,10 @@ import "security.idl", "winreg.idl";
 		[in] [string,charset(UTF16)] uint16 *server,
 		[in] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		/*[in,out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info, */
-		[in,out,unique] DATA_BLOB *data,
+		[in] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,ref] uint32 *needed
+		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
+		[out] uint32 needed
 	);
 
 	/******************/
