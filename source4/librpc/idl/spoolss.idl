@@ -1153,7 +1153,8 @@ import "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x3c */
-	WERROR spoolss_ReplyClosePrinter(
+	[public] WERROR spoolss_ReplyClosePrinter(
+		[in,out,ref] policy_handle *handle
 	);
 
 	/******************/
