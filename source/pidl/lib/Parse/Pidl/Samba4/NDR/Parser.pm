@@ -703,7 +703,7 @@ sub ParseElementPush($$$$$)
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	# Representation type is different from transmit_as
-	if ($e->{REPRESENTATION_TYPE}) {
+	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		pidl "{";
 		indent;
 		my $transmit_name = "_transmit_$e->{NAME}";
@@ -724,7 +724,7 @@ sub ParseElementPush($$$$$)
 
 	end_flags($e);
 
-	if ($e->{REPRESENTATION_TYPE}) {
+	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		deindent;
 		pidl "}";
 	}
@@ -760,7 +760,7 @@ sub ParseElementPrint($$$)
 
 	return if (has_property($e, "noprint"));
 
-	if ($e->{REPRESENTATION_TYPE}) {
+	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		pidl "ndr_print_$e->{REPRESENTATION_TYPE}(ndr, \"$e->{NAME}\", $var_name);";
 		return;
 	}
@@ -1110,7 +1110,7 @@ sub ParseElementPull($$$$$)
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
-	if ($e->{REPRESENTATION_TYPE}) {
+	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		pidl "{";
 		indent;
 		$represent_name = $var_name;
@@ -1128,7 +1128,7 @@ sub ParseElementPull($$$$$)
 	end_flags($e);
 
 	# Representation type is different from transmit_as
-	if ($e->{REPRESENTATION_TYPE}) {
+	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}($transmit_name, ".get_pointer_to($represent_name)."));";
 		deindent;
 		pidl "}";
@@ -2488,8 +2488,28 @@ sub NeededElement($$$)
 {
 	my ($e, $dir, $needed) = @_;
 
-	return if (defined($needed->{"$dir\_$e->{TYPE}"}));
-	$needed->{"$dir\_$e->{TYPE}"} = 1;
+	return if ($e->{TYPE} eq "EMPTY");
+
+	my @fn = ();
+	if ($dir eq "print") {
+		push(@fn, "print_$e->{REPRESENTATION_TYPE}");
+	} elsif ($dir eq "pull") {
+		push (@fn, "pull_$e->{TYPE}");
+		push (@fn, "ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}")
+			if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE});
+	} elsif ($dir eq "push") {
+		push (@fn, "push_$e->{TYPE}");
+		push (@fn, "ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}")
+			if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE});
+	} else {
+		die("invalid direction `$dir'");
+	}
+
+	foreach (@fn) {
+		unless (defined($needed->{$_})) {
+			$needed->{$_} = 1;
+		}
+	}
 }
 
 sub NeededFunction($$)
