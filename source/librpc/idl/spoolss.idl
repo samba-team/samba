@@ -3,7 +3,7 @@
 /*
   spoolss interface definitions
 */
-import "security.idl";
+import "security.idl", "winreg.idl";
 
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),
@@ -14,6 +14,7 @@ import "security.idl";
   helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
+	declare [v1_enum] enum winreg_Type;
 	typedef struct {
 		uint16 year;
 		uint16 month;
@@ -287,7 +288,7 @@ import "security.idl";
 		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
-	WERROR spoolss_OpenPrinter(
+	[public] WERROR spoolss_OpenPrinter(
 		[in] [string,charset(UTF16)] uint16 *printername,
 		[in] [string,charset(UTF16)] uint16 *datatype,
 		[in] spoolss_DevmodeContainer devmode_ctr,
@@ -431,7 +432,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x08 */
-	WERROR spoolss_GetPrinter(
+	[public] WERROR spoolss_GetPrinter(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
 		[in] 	 DATA_BLOB *buffer,
@@ -774,7 +775,7 @@ import "security.idl";
 		[in] spoolss_PrinterDataType type,
 		[out,switch_is(type)] spoolss_PrinterData data
 	);
-	[nopull,nopush] WERROR spoolss_GetPrinterData(
+	[nopull,nopush,public] WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
@@ -811,7 +812,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x1d */
-	WERROR spoolss_ClosePrinter(
+	[public] WERROR spoolss_ClosePrinter(
 		[in,out,ref]     policy_handle *handle
 	);
 
@@ -1135,7 +1136,13 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x3a */
-	WERROR spoolss_ReplyOpenPrinter(
+	[public] WERROR spoolss_ReplyOpenPrinter(
+		[in,string,charset(UTF16)] uint16 server_name[],
+		[in] uint32 printer_local,
+		[in] winreg_Type type,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -1226,7 +1233,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x45 */
-	WERROR spoolss_OpenPrinterEx(
+	[public] WERROR spoolss_OpenPrinterEx(
 		[in]                  [string,charset(UTF16)] uint16 *printername,
 		[in]                  [string,charset(UTF16)] uint16 *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
