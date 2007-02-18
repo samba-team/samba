@@ -231,6 +231,15 @@ static const uint8_t enumprinterkey_out_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x00, 0xea, 0x00, 0x00, 0x00
 };
 
+static const uint8_t FCPN_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0xcf, 0xe5, 0x98, 0xfd, 0x15, 0x4b,
+  0xba, 0x28, 0x03, 0x70, 0x74, 0x35, 0x8d, 0x14
+};
+
+static const uint8_t FCPN_out_data[] = {
+  0x00, 0x00, 0x00, 0x00
+};
+
 struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "spoolss");
@@ -264,6 +273,9 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_out_data, NDR_OUT, NULL );
+
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_FindClosePrinterNotify, FCPN_in_data, NDR_IN, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_FindClosePrinterNotify, FCPN_out_data, NDR_OUT, NULL );
 
 	return suite;
 }
