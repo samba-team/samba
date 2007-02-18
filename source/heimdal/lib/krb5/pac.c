@@ -850,11 +850,11 @@ _krb5_pac_sign(krb5_context context,
 
     krb5_data_zero(&logon);
 
+    if (p->logon_name == NULL)
+	num++;
     if (p->server_checksum == NULL)
 	num++;
     if (p->privsvr_checksum == NULL)
-	num++;
-    if (p->logon_name == NULL)
 	num++;
 
     if (num) {
@@ -867,6 +867,11 @@ _krb5_pac_sign(krb5_context context,
 	}
 	p->pac = ptr;
 
+	if (p->logon_name == NULL) {
+	    p->logon_name = &p->pac->buffers[p->pac->numbuffers++];
+	    memset(p->logon_name, 0, sizeof(*p->logon_name));
+	    p->logon_name->type = PAC_LOGON_NAME;
+	}
 	if (p->server_checksum == NULL) {
 	    p->server_checksum = &p->pac->buffers[p->pac->numbuffers++];
 	    memset(p->server_checksum, 0, sizeof(*p->server_checksum));
@@ -876,11 +881,6 @@ _krb5_pac_sign(krb5_context context,
 	    p->privsvr_checksum = &p->pac->buffers[p->pac->numbuffers++];
 	    memset(p->privsvr_checksum, 0, sizeof(*p->privsvr_checksum));
 	    p->privsvr_checksum->type = PAC_PRIVSVR_CHECKSUM;
-	}
-	if (p->logon_name == NULL) {
-	    p->logon_name = &p->pac->buffers[p->pac->numbuffers++];
-	    memset(p->logon_name, 0, sizeof(*p->logon_name));
-	    p->logon_name->type = PAC_LOGON_NAME;
 	}
     }
 
