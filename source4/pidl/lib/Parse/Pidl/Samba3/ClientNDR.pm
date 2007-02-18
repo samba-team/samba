@@ -12,7 +12,7 @@ use Exporter;
 
 use strict;
 use Parse::Pidl qw(fatal warning);
-use Parse::Pidl::Typelist qw(hasType getType mapType scalar_is_reference);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(DeclLong);

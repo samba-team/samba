@@ -3,7 +3,7 @@
   http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
  */
 
-import "dcom.idl", "orpc.idl";
+import "orpc.idl";
 
 [
 	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
