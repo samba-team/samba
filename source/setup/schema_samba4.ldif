@@ -11,65 +11,77 @@
 #
 
 
-dn: cn=ntpwdHash,${SCHEMADN}
-cn: ntpwdHash
-name: NTPWDHash
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: ntpwdhash
-isSingleValued: TRUE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: E961130F-5084-458C-9E9C-DEC16DA08592
-adminDisplayName: NT-PWD-Hash
-attributeID: 1.3.6.1.4.1.7165.4.1.1
-attributeSyntax: 2.5.5.10
-oMSyntax: 4
+#
+# Not used anymore
+#
+#dn: cn=ntpwdHash,${SCHEMADN}
+#cn: ntpwdHash
+#name: NTPWDHash
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: ntpwdhash
+#isSingleValued: TRUE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: E961130F-5084-458C-9E9C-DEC16DA08592
+#adminDisplayName: NT-PWD-Hash
+#attributeID: 1.3.6.1.4.1.7165.4.1.1
+#attributeSyntax: 2.5.5.10
+#oMSyntax: 4
 
-dn: cn=lmpwdHash,${SCHEMADN}
-cn: lmpwdHash
-name: lmpwdHash
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: lmpwdhash
-isSingleValued: TRUE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: CBD0D18C-9C54-4A77-87C4-5CEEAF781253
-adminDisplayName: LM-PWD-Hash
-attributeID: 1.3.6.1.4.1.7165.4.1.2
-attributeSyntax: 2.5.5.10
-oMSyntax: 4
+#
+# Not used anymore
+#
+#dn: cn=lmpwdHash,${SCHEMADN}
+#cn: lmpwdHash
+#name: lmpwdHash
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: lmpwdhash
+#isSingleValued: TRUE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: CBD0D18C-9C54-4A77-87C4-5CEEAF781253
+#adminDisplayName: LM-PWD-Hash
+#attributeID: 1.3.6.1.4.1.7165.4.1.2
+#attributeSyntax: 2.5.5.10
+#oMSyntax: 4
 
-dn: cn=sambaNtPwdHistory,${SCHEMADN}
-cn: sambaNtPwdHistory
-name: sambaNtPwdHistory
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: sambaNtPwdHistory
-isSingleValued: TRUE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: 8CCD7658-C574-4435-A38C-99572E349E6B
-adminDisplayName: SAMBA-NT-PWD-History
-attributeID: 1.3.6.1.4.1.7165.4.1.3
-attributeSyntax: 2.5.5.10
-oMSyntax: 4
+#
+# Not used anymore
+#
+#dn: cn=sambaNtPwdHistory,${SCHEMADN}
+#cn: sambaNtPwdHistory
+#name: sambaNtPwdHistory
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: sambaNtPwdHistory
+#isSingleValued: TRUE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: 8CCD7658-C574-4435-A38C-99572E349E6B
+#adminDisplayName: SAMBA-NT-PWD-History
+#attributeID: 1.3.6.1.4.1.7165.4.1.3
+#attributeSyntax: 2.5.5.10
+#oMSyntax: 4
 
-dn: cn=sambaLmPwdHistory,${SCHEMADN}
-cn: sambaLmPwdHistory
-name: sambaLmPwdHistory
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: sambaLmPwdHistory
-isSingleValued: FALSE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
-adminDisplayName: SAMBA-LM-PWDHistory
-attributeID: 1.3.6.1.4.1.7165.4.1.4
-attributeSyntax: 2.5.5.10
-oMSyntax: 4
+#
+# Not used anymore
+#
+#dn: cn=sambaLmPwdHistory,${SCHEMADN}
+#cn: sambaLmPwdHistory
+#name: sambaLmPwdHistory
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: sambaLmPwdHistory
+#isSingleValued: FALSE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
+#adminDisplayName: SAMBA-LM-PWDHistory
+#attributeID: 1.3.6.1.4.1.7165.4.1.4
+#attributeSyntax: 2.5.5.10
+#oMSyntax: 4
 
 dn: cn=sambaPassword,${SCHEMADN}
 cn: sambaPassword
@@ -132,20 +144,23 @@ attributeID: 1.3.6.1.4.1.7165.4.1.9
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-dn: cn=krb5Key,${SCHEMADN}
-cn: krb5Key
-name: krb5Key
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: krb5Key
-isSingleValued: FALSE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
-adminDisplayName: krb5-Key
-attributeID: 1.3.6.1.4.1.5322.10.1.10
-attributeSyntax: 2.5.5.10
-oMSyntax: 4
+#
+# Not used anymore
+#
+#dn: cn=krb5Key,${SCHEMADN}
+#cn: krb5Key
+#name: krb5Key
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: krb5Key
+#isSingleValued: FALSE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
+#adminDisplayName: krb5-Key
+#attributeID: 1.3.6.1.4.1.5322.10.1.10
+#attributeSyntax: 2.5.5.10
+#oMSyntax: 4
 
 #Allocated: (not used anymore) DSDB_CONTROL_REPLICATED_OBJECT_OID 1.3.6.1.4.1.7165.4.3.1
 
