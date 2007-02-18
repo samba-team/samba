@@ -7,7 +7,10 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(hasType getType mapTypeName scalar_is_reference expandAlias);
+@EXPORT_OK = qw(hasType getType mapTypeName scalar_is_reference expandAlias
+			    mapScalarType addType typeIs is_scalar enum_type_fn
+				bitmap_type_fn mapType
+);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
