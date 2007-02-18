@@ -1175,31 +1175,65 @@ import "security.idl", "winreg.idl";
 	WERROR spoolss_ResetPrinterEx(
 	);
 
+	typedef [enum16bit] enum {
+		SPOOLSS_FIELD_SERVER_NAME		=  0,
+		SPOOLSS_FIELD_PRINTER_NAME		=  1,
+		SPOOLSS_FIELD_SHARE_NAME    	=  2,
+		SPOOLSS_FIELD_PORT_NAME			=  3,
+		SPOOLSS_FIELD_DRIVER_NAME		=  4,
+		SPOOLSS_FIELD_COMMENT			=  5,
+		SPOOLSS_FIELD_LOCATION			=  6,
+		SPOOLSS_FIELD_DEVMODE			=  7,
+		SPOOLSS_FIELD_SEPFILE			=  8,
+		SPOOLSS_FIELD_PRINT_PROCESSOR	=  9,
+		SPOOLSS_FIELD_PARAMETERS		= 10,
+		SPOOLSS_FIELD_DATATYPE			= 11,
+		SPOOLSS_FIELD_SECURITY_DESCRIPTOR=12,
+		SPOOLSS_FIELD_ATTRIBUTES		= 13,
+		SPOOLSS_FIELD_PRIORITY			= 14,
+		SPOOLSS_FIELD_DEFAULT_PRIORITY	= 15,
+		SPOOLSS_FIELD_START_TIME		= 16,
+		SPOOLSS_FIELD_UNTIL_TIME		= 17,
+		SPOOLSS_FIELD_STATUS			= 18,
+		SPOOLSS_FIELD_STATUS_STRING		= 19,
+		SPOOLSS_FIELD_CJOBS				= 20,
+		SPOOLSS_FIELD_AVERAGE_PPM		= 21,
+		SPOOLSS_FIELD_TOTAL_PAGES		= 22,
+		SPOOLSS_FIELD_PAGES_PRINTED 	= 23,
+		SPOOLSS_FIELD_TOTAL_BYTES		= 24,
+		SPOOLSS_FIELD_BYTES_PRINTED		= 25
+	} spoolss_Field;
+
+	typedef [enum16bit] enum {
+		SPOOLSS_NOTIFY_PRINTER 			= 0,
+		SPOOLSS_NOTIFY_JOB				= 1
+	} spoolss_NotifyType;
+
 	/******************/
 	/* Function: 0x41 */
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef struct {
+		spoolss_NotifyType type;
 		uint16 u1;
-		uint16 u2;
+		uint32 u2;
 		uint32 u3;
-		uint32 u4;
 		uint32 count;
-		[size_is(count)] uint16 *array;
-	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2;
+		[size_is(count)] spoolss_Field *fields;
+	} spoolss_NotifyOptionsArray;
 
 	typedef struct {
-		uint32 u1;
-		uint32 u2;
+		uint32 version;
+		uint32 flags;
 		uint32 count;
-		[size_is(count)] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2 *t2;
-	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1;
+		[size_is(count)] spoolss_NotifyOptionsArray *options;
+	} spoolss_NotifyOptionsContainer;
 
-	WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
+	[public] WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
 		[in,ref] policy_handle *handle,
-		[in] uint32 u1,
-		[in] uint32 u2,
+		[in] uint32 flags,
+		[in] uint32 options,
 		[in] [string,charset(UTF16)] uint16 *str,
-		[in] uint32 u3,
-		[in] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1 *t1
+		[in] uint32 printer_local,
+		[in] spoolss_NotifyOptionsContainer *t1
 	);
 
 	/******************/
@@ -1207,9 +1241,55 @@ import "security.idl", "winreg.idl";
 	WERROR spoolss_RouterRefreshPrinterChangeNotification(
 	);
 
+	typedef struct {
+		uint32 size;
+		[size_is(size/2),unique,charset(UTF16)] uint16 *string;
+	} spoolss_NotifyUTF16String;
+
+	typedef struct {
+		uint32 size;
+		[size_is(size),charset(DOS)] uint8 *string;
+	} spoolss_NotifyDOSString;
+
+	typedef struct {
+		uint16 data[8];
+	} spoolss_NotifyBlobData;
+
+	typedef struct {
+		uint32 len;
+		[unique] spoolss_NotifyBlobData *data;
+	} spoolss_NotifyBlob;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] dlong integer;
+		[case(2)] spoolss_NotifyUTF16String utf16_string;
+		[case(3)] spoolss_NotifyDOSString ascii_string;
+		[case(4)] spoolss_NotifyBlob blob;
+		[case(5)] spoolss_NotifyDOSString ascii_string;
+	} spoolss_NotifyData;
+
+	typedef struct {
+		spoolss_NotifyType type;
+		spoolss_Field field;
+		uint32 variable_type;
+		uint32 job_id;
+		[switch_is(variable_type)] spoolss_NotifyData data;
+	} spoolss_Notify;
+
+	typedef struct {
+		uint32 version;
+		uint32 flags;
+		uint32 count;
+		[size_is(count)] spoolss_Notify notifies[];
+	} spoolss_NotifyInfo;
+
 	/******************/
 	/* Function: 0x43 */
-	WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
+	[public] WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
+		[in,ref] policy_handle *handle,
+		[in] uint32 change_low,
+		[in,unique] spoolss_NotifyOptionsContainer *container,
+		[out, unique] spoolss_NotifyInfo *info
 	);
 
 	/******************/
@@ -1320,7 +1400,7 @@ import "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x4f */
-	WERROR spoolss_EnumPrinterDataEx(
+	[public] WERROR spoolss_EnumPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 uint32 offered,
@@ -1331,7 +1411,12 @@ import "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x50 */
-	WERROR spoolss_EnumPrinterKey(
+	[public] WERROR spoolss_EnumPrinterKey(
+		[in, ref] policy_handle *handle,
+		[in] [string,charset(UTF16)] uint16 key_name[],
+		[out, ref] uint32 *key_buffer_size,
+		[out] uint8 key_buffer[*key_buffer_size],
+		[in,out,ref] uint32 *needed
 	);
 
 	/******************/
