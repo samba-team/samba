@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2007 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -54,6 +54,8 @@
 .Nm krb5_get_init_creds_opt_set_renew_life ,
 .Nm krb5_get_init_creds_opt_set_salt ,
 .Nm krb5_get_init_creds_opt_set_tkt_life ,
+.Nm krb5_get_init_creds_opt_set_canonicalize ,
+.Nm krb5_get_init_creds_opt_set_win2k ,
 .Nm krb5_get_init_creds_password ,
 .Nm krb5_prompt ,
 .Nm krb5_prompter_posix
@@ -160,6 +162,18 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_get_init_creds_opt_set_tkt_life
 .Fa "krb5_get_init_creds_opt *opt"
 .Fa "krb5_deltat tkt_life"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_set_canonicalize
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_boolean req"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_set_win2k
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_boolean req"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_get_init_creds
@@ -370,6 +384,12 @@ sets the salt that is going to be used in the request.
 .Pp
 .Fn krb5_get_init_creds_opt_set_tkt_life
 sets requested ticket lifetime.
+.Pp
+.Fn krb5_get_init_creds_opt_set_canonicalize
+requests that the KDC canonicalize the client pricipal if possible.
+.Pp
+.Fn krb5_get_init_creds_opt_set_win2k
+turns on compatibility with Windows 2000.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_creds 3 ,
