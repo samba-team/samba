@@ -52,8 +52,7 @@
  */
 
 static const char * const password_attrs[] = {
-	"sambaPassword",
-	"krb5Key",
+	"supplementalCredentials",
 	"unicodePwd",
 	"dBCSPwd",
 	"lmPwdHistory", 

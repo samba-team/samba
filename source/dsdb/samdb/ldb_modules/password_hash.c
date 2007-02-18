@@ -45,6 +45,8 @@
 #include "dsdb/common/flags.h"
 #include "hdb.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.
@@ -57,7 +59,7 @@
  * calculate the password hashes.
  *
  * This function must not only update the unicodePwd, dBCSPwd and
- * krb5Key fields, it must also atomicly increment the
+ * supplementalCredentials fields, it must also atomicly increment the
  * msDS-KeyVersionNumber.  We should be in a transaction, so all this
  * should be quite safe...
  *
@@ -95,324 +97,660 @@ struct domain_data {
 	char *realm;
 };
 
-static int add_password_hashes(struct ldb_module *module, struct ldb_message *msg, int is_mod)
+struct setup_password_fields_io {
+	struct ph_context *ac;
+	struct domain_data *domain;
+	struct smb_krb5_context *smb_krb5_context;
+
+	/* infos about the user account */
+	struct {
+		uint32_t user_account_control;
+		const char *sAMAccountName;
+		const char *user_principal_name;
+		bool is_computer;
+	} u;
+
+	/* new credentials */
+	struct {
+		const char *cleartext;
+		struct samr_Password *nt_hash;
+		struct samr_Password *lm_hash;
+	} n;
+
+	/* old credentials */
+	struct {
+		uint32_t nt_history_len;
+		struct samr_Password *nt_history;
+		uint32_t lm_history_len;
+		struct samr_Password *lm_history;
+		const struct ldb_val *supplemental;
+		struct supplementalCredentialsBlob scb;
+		uint32_t kvno;
+	} o;
+
+	/* generated credentials */
+	struct {
+		struct samr_Password *nt_hash;
+		struct samr_Password *lm_hash;
+		uint32_t nt_history_len;
+		struct samr_Password *nt_history;
+		uint32_t lm_history_len;
+		struct samr_Password *lm_history;
+		struct ldb_val supplemental;
+		NTTIME last_set;
+		uint32_t kvno;
+	} g;
+};
+
+static int setup_nt_fields(struct setup_password_fields_io *io)
 {
-	const char *sambaPassword;
-	struct samr_Password tmp_hash;
-	
-	sambaPassword = ldb_msg_find_attr_as_string(msg, "sambaPassword", NULL);
-	if (sambaPassword == NULL) { /* impossible, what happened ?! */
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+	uint32_t i;
+
+	io->g.nt_hash = io->n.nt_hash;
+
+	if (io->domain->pwdHistoryLength == 0) {
+		return LDB_SUCCESS;
 	}
 
-	if (is_mod) {
-		if (ldb_msg_add_empty(msg, "unicodePwd", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		if (ldb_msg_add_empty(msg, "dBCSPwd", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}	
-
-	/* compute the new nt and lm hashes */
-	E_md4hash(sambaPassword, tmp_hash.hash);
-	if (samdb_msg_add_hash(module->ldb, msg, msg, "unicodePwd", &tmp_hash) != 0) {
+	/* We might not have an old NT password */
+	io->g.nt_history = talloc_array(io->ac,
+					struct samr_Password,
+					io->domain->pwdHistoryLength);
+	if (!io->g.nt_history) {
+		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (E_deshash(sambaPassword, tmp_hash.hash)) {
-		if (samdb_msg_add_hash(module->ldb, msg, msg, "dBCSPwd", &tmp_hash) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+	for (i = 0; i < MIN(io->domain->pwdHistoryLength-1, io->o.nt_history_len); i++) {
+		io->g.nt_history[i+1] = io->o.nt_history[i];
+	}
+	io->g.nt_history_len = i + 1;
+
+	if (io->g.nt_hash) {
+		io->g.nt_history[0] = *io->g.nt_hash;
+	} else {
+		/* 
+		 * TODO: is this correct?
+		 * the simular behavior is correct for the lm history case
+		 */
+		E_md4hash("", io->g.nt_history[0].hash);
 	}
 
 	return LDB_SUCCESS;
 }
 
-static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_message *msg,
-					struct smb_krb5_context *smb_krb5_context,
-					struct domain_data *domain,
-					const char *samAccountName,
-					const char *user_principal_name,
-					int is_computer)
+static int setup_lm_fields(struct setup_password_fields_io *io)
 {
-	const char *sambaPassword;
-	Principal *salt_principal;
+	uint32_t i;
+
+	io->g.lm_hash = io->n.lm_hash;
+
+	if (io->domain->pwdHistoryLength == 0) {
+		return LDB_SUCCESS;
+	}
+
+	/* We might not have an old NT password */
+	io->g.lm_history = talloc_array(io->ac,
+					struct samr_Password,
+					io->domain->pwdHistoryLength);
+	if (!io->g.lm_history) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i = 0; i < MIN(io->domain->pwdHistoryLength-1, io->o.lm_history_len); i++) {
+		io->g.lm_history[i+1] = io->o.lm_history[i];
+	}
+	io->g.lm_history_len = i + 1;
+
+	if (io->g.lm_hash) {
+		io->g.lm_history[0] = *io->g.lm_hash;
+	} else {
+		E_deshash("", io->g.lm_history[0].hash);
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int setup_primary_kerberos(struct setup_password_fields_io *io,
+				  const struct supplementalCredentialsBlob *old_scb,
+				  struct package_PrimaryKerberosBlob *pkb)
+{
 	krb5_error_code krb5_ret;
-	size_t num_keys;
-	Key *keys;
-	int i;
+	Principal *salt_principal;
+	krb5_salt salt;
+	krb5_keyblock key;
+	uint32_t k=0;
+	struct supplementalCredentialsPackage *old_scp = NULL;
+	struct package_PrimaryKerberosBlob _old_pkb;
+	struct package_PrimaryKerberosBlob *old_pkb = NULL;
+	uint32_t i;
+	NTSTATUS status;
 
 	/* Many, many thanks to lukeh@padl.com for this
 	 * algorithm, described in his Nov 10 2004 mail to
 	 * samba-technical@samba.org */
 
-	sambaPassword = ldb_msg_find_attr_as_string(msg, "sambaPassword", NULL);
-	if (sambaPassword == NULL) { /* impossible, what happened ?! */
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (is_computer) {
-		/* Determine a salting principal */
-		char *name = talloc_strdup(msg, samAccountName);
+	/*
+	 * Determine a salting principal
+	 */
+	if (io->u.is_computer) {
+		char *name;
 		char *saltbody;
-		if (name == NULL) {
-			ldb_asprintf_errstring(module->ldb,
-						"password_hash_handle: "
-						"generation of new kerberos keys failed: %s is a computer without a samAccountName",
-						ldb_dn_get_linearized(msg->dn));
+
+		name = talloc_strdup(io->ac, io->u.sAMAccountName);
+		if (!name) {
+			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+
 		if (name[strlen(name)-1] == '$') {
 			name[strlen(name)-1] = '\0';
 		}
-		saltbody = talloc_asprintf(msg, "%s.%s", name, domain->dns_domain);
-		
-		krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,
-						&salt_principal,
-						domain->realm, "host",
-						saltbody, NULL);
-	} else if (user_principal_name) {
-		char *p;
-		user_principal_name = talloc_strdup(msg, user_principal_name);
-		if (user_principal_name == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		} else {
-			p = strchr(user_principal_name, '@');
-			if (p) {
-				p[0] = '\0';
-			}
-			krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,
-							&salt_principal,
-							domain->realm, user_principal_name, NULL);
-		} 
-	} else {
-		if (!samAccountName) {
-			ldb_asprintf_errstring(module->ldb,
-						"password_hash_handle: "
-						"generation of new kerberos keys failed: %s has no samAccountName",
-						ldb_dn_get_linearized(msg->dn));
+
+		saltbody = talloc_asprintf(io->ac, "%s.%s", name, io->domain->dns_domain);
+		if (!saltbody) {
+			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,
-						&salt_principal,
-						domain->realm, samAccountName,
-						NULL);
-	}
-
-	if (krb5_ret) {
-		ldb_asprintf_errstring(module->ldb,
-					"password_hash_handle: "
-					"generation of a saltking principal failed: %s",
-					smb_get_krb5_error_message(smb_krb5_context->krb5_context, krb5_ret, msg));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* TODO: We may wish to control the encryption types chosen in future */
-	krb5_ret = hdb_generate_key_set_password(smb_krb5_context->krb5_context,
-						 salt_principal, sambaPassword, &keys, &num_keys);
-	krb5_free_principal(smb_krb5_context->krb5_context, salt_principal);
-
-	if (krb5_ret) {
-		ldb_asprintf_errstring(module->ldb,
-					"password_hash_handle: "
-					"generation of new kerberos keys failed: %s",
-					smb_get_krb5_error_message(smb_krb5_context->krb5_context, krb5_ret, msg));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Walking all the key types generated, transform each
-	 * key into an ASN.1 blob
-	 */
-	for (i=0; i < num_keys; i++) {
-		unsigned char *buf;
-		size_t buf_size;
-		size_t len;
-		struct ldb_val val;
-		int ret;
 		
-		if (keys[i].key.keytype == KEYTYPE_ARCFOUR) {
-			/* We might end up doing this below:
-			 * This ensures we get the unicode
-			 * conversion right.  This should also
-			 * be fixed in the Heimdal libs */
+		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+					       &salt_principal,
+					       io->domain->realm, "host",
+					       saltbody, NULL);
+	} else if (io->u.user_principal_name) {
+		char *user_principal_name;
+		char *p;
+
+		user_principal_name = talloc_strdup(io->ac, io->u.user_principal_name);
+		if (!user_principal_name) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		p = strchr(user_principal_name, '@');
+		if (p) {
+			p[0] = '\0';
+		}
+
+		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+					       &salt_principal,
+					       io->domain->realm, user_principal_name,
+					       NULL);
+	} else {
+		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+					       &salt_principal,
+					       io->domain->realm, io->u.sAMAccountName,
+					       NULL);
+	}
+	if (krb5_ret) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_primary_kerberos: "
+				       "generation of a salting principal failed: %s",
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*
+	 * create salt from salt_principal
+	 */
+	krb5_ret = krb5_get_pw_salt(io->smb_krb5_context->krb5_context,
+				    salt_principal, &salt);
+	krb5_free_principal(io->smb_krb5_context->krb5_context, salt_principal);
+	if (krb5_ret) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_primary_kerberos: "
+				       "generation of krb5_salt failed: %s",
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* create a talloc copy */
+	pkb->salt.string = talloc_strndup(io->ac,
+					  salt.saltvalue.data,
+					  salt.saltvalue.length);
+	krb5_free_salt(io->smb_krb5_context->krb5_context, salt);
+	if (!pkb->salt.string) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	salt.saltvalue.data	= discard_const(pkb->salt.string);
+	salt.saltvalue.length	= strlen(pkb->salt.string);
+
+	/*
+	 * prepare generation of keys
+	 *
+	 * ENCTYPE_AES256_CTS_HMAC_SHA1_96 (disabled by default)
+	 * ENCTYPE_DES_CBC_MD5
+	 * ENCTYPE_DES_CBC_CRC
+	 *
+	 * NOTE: update num_keys1 when you add another enctype!
+	 */
+	pkb->num_keys1	= 0;
+	pkb->keys1	= talloc_array(io->ac, struct package_PrimaryKerberosKey, 3);
+	if (!pkb->keys1) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pkb->unknown3_1	= talloc_zero_array(io->ac, uint64_t, pkb->num_keys1);
+	if (!pkb->unknown3_1) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
+/*
+ * TODO:
+ *
+ * w2k and w2k3 doesn't support AES, so we'll not include
+ * the AES key here yet.
+ *
+ * Also we don't have an example supplementalCredentials blob
+ * from Windows Longhorn Server with AES support
+ *
+ */
+	/*
+	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of
+	 * the salt and the cleartext password
+	 */
+	krb5_ret = krb5_string_to_key_salt(io->smb_krb5_context->krb5_context,
+					   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+					   io->n.cleartext,
+					   salt,
+					   &key);
+	pkb->keys1[k].keytype	= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
+	if (!pkb->keys1[k].value) {
+		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+						   key.keyvalue.data,
+						   key.keyvalue.length);
+	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+	if (!pkb->keys1[k].value->data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	k++;
+}
+
+	/*
+	 * create ENCTYPE_DES_CBC_MD5 key out of
+	 * the salt and the cleartext password
+	 */
+	krb5_ret = krb5_string_to_key_salt(io->smb_krb5_context->krb5_context,
+					   ENCTYPE_DES_CBC_MD5,
+					   io->n.cleartext,
+					   salt,
+					   &key);
+	pkb->keys1[k].keytype	= ENCTYPE_DES_CBC_MD5;
+	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
+	if (!pkb->keys1[k].value) {
+		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+						   key.keyvalue.data,
+						   key.keyvalue.length);
+	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+	if (!pkb->keys1[k].value->data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	k++;
+
+	/*
+	 * create ENCTYPE_DES_CBC_CRC key out of
+	 * the salt and the cleartext password
+	 */
+	krb5_ret = krb5_string_to_key_salt(io->smb_krb5_context->krb5_context,
+					   ENCTYPE_DES_CBC_CRC,
+					   io->n.cleartext,
+					   salt,
+					   &key);
+	pkb->keys1[k].keytype	= ENCTYPE_DES_CBC_CRC;
+	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
+	if (!pkb->keys1[k].value) {
+		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+						   key.keyvalue.data,
+						   key.keyvalue.length);
+	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+	if (!pkb->keys1[k].value->data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	k++;
+
+	/* fix up key number */
+	pkb->num_keys1 = k;
+
+	/* initialize the old keys to zero */
+	pkb->num_keys2	= 0;
+	pkb->keys2	= NULL;
+	pkb->unknown3_2	= NULL;
+
+	/* if there're no old keys, then we're done */
+	if (!old_scb) {
+		return LDB_SUCCESS;
+	}
+
+	for (i=0; i < old_scb->sub.num_packages; i++) {
+		if (old_scb->sub.packages[i].unknown1 != 0x00000001) {
 			continue;
 		}
-		ASN1_MALLOC_ENCODE(Key, buf, buf_size, &keys[i], &len, krb5_ret);
-		if (krb5_ret) {
-			return LDB_ERR_OPERATIONS_ERROR;
+
+		if (strcmp("Primary:Kerberos", old_scb->sub.packages[i].name) != 0) {
+			continue;
 		}
-		
-		val.data = talloc_memdup(msg, buf, len);
-		val.length = len;
-		free(buf);
-		if (!val.data || krb5_ret) {
-			hdb_free_keys (smb_krb5_context->krb5_context, num_keys, keys);
-			return LDB_ERR_OPERATIONS_ERROR;
+
+		if (!old_scb->sub.packages[i].data || !old_scb->sub.packages[i].data[0]) {
+			continue;
 		}
-		ret = ldb_msg_add_value(msg, "krb5Key", &val, NULL);
-		if (ret != LDB_SUCCESS) {
-			hdb_free_keys (smb_krb5_context->krb5_context, num_keys, keys);
-			return ret;
-		}
+
+		old_scp = &old_scb->sub.packages[i];
+		break;
 	}
-	
-	hdb_free_keys (smb_krb5_context->krb5_context, num_keys, keys);
+	/* Primary:Kerberos element of supplementalCredentials */
+	if (old_scp) {
+		DATA_BLOB blob;
+
+		blob = strhex_to_data_blob(old_scp->data);
+		if (!blob.data) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		talloc_steal(io->ac, blob.data);
+
+		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
+		status = ndr_pull_struct_blob(&blob, io->ac, &_old_pkb,
+					      (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_asprintf_errstring(io->ac->module->ldb,
+					       "setup_primary_kerberos: "
+					       "failed to pull old package_PrimaryKerberosBlob: %s",
+					       nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		old_pkb = &_old_pkb;
+	}
+
+	/* if we didn't found the old keys we're done */
+	if (!old_pkb) {
+		return LDB_SUCCESS;
+	}
+
+	/* fill in the old keys */
+	pkb->num_keys2	= old_pkb->num_keys1;
+	pkb->keys2	= old_pkb->keys1;
+	pkb->unknown3_2	= old_pkb->unknown3_1;
 
 	return LDB_SUCCESS;
 }
 
-static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_message *msg,
-					struct smb_krb5_context *smb_krb5_context)
+static int setup_supplemental_field(struct setup_password_fields_io *io)
 {
-	struct samr_Password *ntPwdHash;
-	krb5_error_code krb5_ret;
-	unsigned char *buf;
-	size_t buf_size;
-	size_t len;
-	struct ldb_val val;
-	Key key;
-	
-	key.mkvno = 0;
-	key.salt = NULL; /* No salt for this enc type */
+	struct supplementalCredentialsBlob scb;
+	struct supplementalCredentialsBlob _old_scb;
+	struct supplementalCredentialsBlob *old_scb = NULL;
+	/* Packages + (Kerberos and maybe CLEARTEXT) */
+	uint32_t num_packages = 1 + 1;
+	struct supplementalCredentialsPackage packages[1+2];
+	struct supplementalCredentialsPackage *pp = &packages[0];
+	struct supplementalCredentialsPackage *pk = &packages[1];
+	struct supplementalCredentialsPackage *pc = NULL;
+	struct package_PackagesBlob pb;
+	DATA_BLOB pb_blob;
+	char *pb_hexstr;
+	struct package_PrimaryKerberosBlob pkb;
+	DATA_BLOB pkb_blob;
+	char *pkb_hexstr;
+	struct package_PrimaryCLEARTEXTBlob pcb;
+	DATA_BLOB pcb_blob;
+	char *pcb_hexstr;
+	int ret;
+	NTSTATUS status;
+	uint8_t zero16[16];
 
-	ntPwdHash = samdb_result_hash(msg, msg, "unicodePwd");
-	if (ntPwdHash == NULL) { /* what happened ?! */
-		return LDB_ERR_OPERATIONS_ERROR;
+	ZERO_STRUCT(zero16);
+
+	if (!io->n.cleartext) {
+		/* 
+		 * when we don't have a cleartext password
+		 * we can't setup a supplementalCredential value
+		 */
+		return LDB_SUCCESS;
 	}
 
-	krb5_ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-				      KEYTYPE_ARCFOUR,
-				      ntPwdHash->hash, sizeof(ntPwdHash->hash), 
-				      &key.key);
-	if (krb5_ret) {
+	/* if there's an old supplementaCredentials blob then parse it */
+	if (io->o.supplemental) {
+		status = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, &_old_scb,
+						  (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_asprintf_errstring(io->ac->module->ldb,
+					       "setup_supplemental_field: "
+					       "failed to pull old supplementalCredentialsBlob: %s",
+					       nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		old_scb = &_old_scb;
+	}
+
+	if (io->domain->store_cleartext &&
+	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+		pc = &packages[2];
+		num_packages++;
+	}
+
+	/* Kerberos, CLEARTEXT and termination(counted by the Packages element) */
+	pb.names = talloc_zero_array(io->ac, const char *, num_packages);
+
+	/*
+	 * setup 'Primary:Kerberos' element
+	 */
+	pb.names[0] = "Kerberos";
+
+	ret = setup_primary_kerberos(io, old_scb, &pkb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	status = ndr_push_struct_blob(&pkb_blob, io->ac, &pkb,
+				      (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_supplemental_field: "
+				       "failed to push package_PrimaryKerberosBlob: %s",
+				       nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ASN1_MALLOC_ENCODE(Key, buf, buf_size, &key, &len, krb5_ret);
-	if (krb5_ret) {
+	/*
+	 * TODO:
+	 *
+	 * This is ugly, but we want to generate the same blob as
+	 * w2k and w2k3...we should handle this in the idl
+	 */
+	status = data_blob_append(io->ac, &pkb_blob, zero16, sizeof(zero16));
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context,
-				    &key.key);
-	
-	val.data = talloc_memdup(msg, buf, len);
-	val.length = len;
-	free(buf);
-	if (!val.data) {
+	pkb_hexstr = data_blob_hex_string(io->ac, &pkb_blob);
+	if (!pkb_hexstr) {
+		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, "krb5Key", &val, NULL) != 0) {
+	pk->name	= "Primary:Kerberos";
+	pk->unknown1	= 1;
+	pk->data	= pkb_hexstr;
+
+	/*
+	 * setup 'Primary:CLEARTEXT' element
+	 */
+	if (pc) {
+		pb.names[1]	= "CLEARTEXT";
+
+		pcb.cleartext	= io->n.cleartext;
+
+		status = ndr_push_struct_blob(&pcb_blob, io->ac, &pcb,
+					      (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_asprintf_errstring(io->ac->module->ldb,
+					       "setup_supplemental_field: "
+					       "failed to push package_PrimaryCLEARTEXTBlob: %s",
+					       nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pcb_hexstr = data_blob_hex_string(io->ac, &pcb_blob);
+		if (!pcb_hexstr) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pc->name	= "Primary:CLEARTEXT";
+		pc->unknown1	= 1;
+		pc->data	= pcb_hexstr;
+	}
+
+	/*
+	 * setup 'Packages' element
+	 */
+	status = ndr_push_struct_blob(&pb_blob, io->ac, &pb,
+				      (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_supplemental_field: "
+				       "failed to push package_PackagesBlob: %s",
+				       nt_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pb_hexstr = data_blob_hex_string(io->ac, &pb_blob);
+	if (!pb_hexstr) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pp->name	= "Packages";
+	pp->unknown1	= 2;
+	pp->data	= pb_hexstr;
+
+	/*
+	 * setup 'supplementalCredentials' value
+	 */
+	scb.sub.num_packages	= num_packages;
+	scb.sub.packages	= packages;
+
+	status = ndr_push_struct_blob(&io->g.supplemental, io->ac, &scb,
+				      (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_supplemental_field: "
+				       "failed to push supplementalCredentialsBlob: %s",
+				       nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return LDB_SUCCESS;
 }
 
-static int set_pwdLastSet(struct ldb_module *module, struct ldb_message *msg, int is_mod)
+static int setup_last_set_field(struct setup_password_fields_io *io)
 {
-	NTTIME now_nt;
-
 	/* set it as now */
-	unix_to_nt_time(&now_nt, time(NULL));
-
-	if (!is_mod) {
-		/* be sure there isn't a 0 value set (eg. coming from the template) */
-		ldb_msg_remove_attr(msg, "pwdLastSet");
-		/* add */
-		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_ADD, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	} else {
-		/* replace */
-		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-
-	if (samdb_msg_add_uint64(module->ldb, msg, msg, "pwdLastSet", now_nt) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	unix_to_nt_time(&io->g.last_set, time(NULL));
 
 	return LDB_SUCCESS;
 }
 
-static int add_keyVersionNumber(struct ldb_module *module, struct ldb_message *msg, int previous)
+static int setup_kvno_field(struct setup_password_fields_io *io)
 {
-	/* replace or add */
-	if (ldb_msg_add_empty(msg, "msDS-KeyVersionNumber", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (samdb_msg_add_uint(module->ldb, msg, msg, "msDS-KeyVersionNumber", previous+1) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	/* increment by one */
+	io->g.kvno = io->o.kvno + 1;
 
 	return LDB_SUCCESS;
 }
 
-static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, struct ldb_message *old_msg, int hlen)
+static int setup_password_fields(struct setup_password_fields_io *io)
 {
-	struct samr_Password *nt_hash;
-	struct samr_Password *lm_hash;
-	struct samr_Password *nt_history;
-	struct samr_Password *lm_history;
-	struct samr_Password *new_nt_history;
-	struct samr_Password *new_lm_history;
-	int nt_hist_len;
-	int lm_hist_len;
-	int i;
+	bool ok;
+	int ret;
 
-	nt_hash = samdb_result_hash(msg, old_msg, "unicodePwd");
-	lm_hash = samdb_result_hash(msg, old_msg, "dBCSPwd");
+	/*
+	 * refuse the change if someone want to change the cleartext
+	 * and supply his own hashes at the same time...
+	 */
+	if (io->n.cleartext && (io->n.nt_hash || io->n.lm_hash)) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_password_fields: "
+				       "it's only allowed to set the cleartext password or the password hashes");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
-	/* if no previous passwords just return */
-	if (nt_hash == NULL && lm_hash == NULL) return LDB_SUCCESS;
+	if (io->n.cleartext && !io->n.nt_hash) {
+		struct samr_Password *hash;
 
-	nt_hist_len = samdb_result_hashes(msg, old_msg, "ntPwdHistory", &nt_history);
-	lm_hist_len = samdb_result_hashes(msg, old_msg, "lmPwdHistory", &lm_history);
+		hash = talloc(io->ac, struct samr_Password);
+		if (!hash) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-	/* We might not have an old NT password */
-	new_nt_history = talloc_array(msg, struct samr_Password, hlen);
-	if (new_nt_history == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		/* compute the new nt hash */
+		ok = E_md4hash(io->n.cleartext, hash->hash);
+		if (ok) {
+			io->n.nt_hash = hash;
+		} else {
+			ldb_asprintf_errstring(io->ac->module->ldb,
+					       "setup_password_fields: "
+					       "failed to generate nthash from cleartext password");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
-	for (i = 0; i < MIN(hlen-1, nt_hist_len); i++) {
-		new_nt_history[i+1] = nt_history[i];
-	}
-	nt_hist_len = i + 1;
-	if (nt_hash) {
-		new_nt_history[0] = *nt_hash;
-	} else {
-		ZERO_STRUCT(new_nt_history[0]);
-	}
-	if (ldb_msg_add_empty(msg, "ntPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	if (samdb_msg_add_hashes(msg, msg, "ntPwdHistory", new_nt_history, nt_hist_len) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-		
 
-	/* Don't store 'long' passwords in the LM history, 
-	   but make sure to 'expire' one password off the other end */
-	new_lm_history = talloc_array(msg, struct samr_Password, hlen);
-	if (new_lm_history == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (io->n.cleartext && !io->n.lm_hash) {
+		struct samr_Password *hash;
+
+		hash = talloc(io->ac, struct samr_Password);
+		if (!hash) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* compute the new lm hash */
+		ok = E_deshash(io->n.cleartext, hash->hash);
+		if (ok) {
+			io->n.lm_hash = hash;
+		} else {
+			talloc_free(hash->hash);
+		}
 	}
-	for (i = 0; i < MIN(hlen-1, lm_hist_len); i++) {
-		new_lm_history[i+1] = lm_history[i];
+
+	ret = setup_nt_fields(io);
+	if (ret != 0) {
+		return ret;
 	}
-	lm_hist_len = i + 1;
-	if (lm_hash) {
-		new_lm_history[0] = *lm_hash;
-	} else {
-		ZERO_STRUCT(new_lm_history[0]);
+
+	ret = setup_lm_fields(io);
+	if (ret != 0) {
+		return ret;
 	}
-	if (ldb_msg_add_empty(msg, "lmPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+
+	ret = setup_supplemental_field(io);
+	if (ret != 0) {
+		return ret;
 	}
-	if (samdb_msg_add_hashes(msg, msg, "lmPwdHistory", new_lm_history, lm_hist_len) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+
+	ret = setup_last_set_field(io);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = setup_kvno_field(io);
+	if (ret != 0) {
+		return ret;
 	}
 
 	return LDB_SUCCESS;
@@ -593,9 +931,14 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* nobody must touch password Histories */
-	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory") ||
-	    ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
+	/* nobody must touch this fields */
+	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory")) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (ldb_msg_find_element(req->op.add.message, "supplementalCredentials")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -677,8 +1020,8 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 	struct ph_context *ac;
 	struct domain_data *domain;
 	struct smb_krb5_context *smb_krb5_context;
-	struct ldb_message_element *sambaAttr;
 	struct ldb_message *msg;
+	struct setup_password_fields_io io;
 	int ret;
 
 	ac = talloc_get_type(h->private_data, struct ph_context);
@@ -704,53 +1047,83 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* if we have sambaPassword in the original message add the operatio on it here */
-	sambaAttr = ldb_msg_find_element(msg, "sambaPassword");
-	if (sambaAttr) {
-		unsigned int user_account_control;
-		ret = add_password_hashes(ac->module, msg, 0);
-		/* we can compute new password hashes from the unicode password */
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
-		/* now add krb5 keys based on unicode password */
-		ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-						  ldb_msg_find_attr_as_string(msg, "samAccountName", NULL),
-						  ldb_msg_find_attr_as_string(msg, "userPrincipalName", NULL),
-						  ldb_msg_check_string_attribute(msg, "objectClass", "computer"));
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
-		/* if both the domain properties and the user account controls do not permit
-		 * clear text passwords then wipe out the sambaPassword */
-		user_account_control = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
-		if (domain->store_cleartext && (user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-			/* Keep sambaPassword attribute */
-		} else {
-			ldb_msg_remove_attr(msg, "sambaPassword");
-		}
-	}
+	ZERO_STRUCT(io);
+	io.ac				= ac;
+	io.domain			= domain;
+	io.smb_krb5_context		= smb_krb5_context;
 
-	/* add also krb5 keys based on NT the hash (we might have unicodePwd, but not the cleartext */
-	ret = add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context);
+	io.u.user_account_control	= samdb_result_uint(msg, "userAccountControl", 0);
+	io.u.sAMAccountName		= samdb_result_string(msg, "samAccountName", NULL);
+	io.u.user_principal_name	= samdb_result_string(msg, "userPrincipalName", NULL);
+	io.u.is_computer		= ldb_msg_check_string_attribute(msg, "objectClass", "computer");
+
+	io.n.cleartext			= samdb_result_string(msg, "sambaPassword", NULL);
+	io.n.nt_hash			= samdb_result_hash(io.ac, msg, "unicodePwd");
+	io.n.lm_hash			= samdb_result_hash(io.ac, msg, "dBCSPwd");
+
+	/* remove attributes */
+	if (io.n.cleartext) ldb_msg_remove_attr(msg, "sambaPassword");
+	if (io.n.nt_hash) ldb_msg_remove_attr(msg, "unicodePwd");
+	if (io.n.lm_hash) ldb_msg_remove_attr(msg, "dBCSPwd");
+	ldb_msg_remove_attr(msg, "pwdLastSet");
+	io.o.kvno = samdb_result_uint(msg, "msDs-KeyVersionNumber", 1) - 1;
+	ldb_msg_remove_attr(msg, "msDs-KeyVersionNumber");
+
+	ret = setup_password_fields(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-		
-	/* don't touch it if a value is set. It could be an incoming samsync */
-	if (ldb_msg_find_attr_as_uint64(msg, "pwdLastSet", 0) == 0) {
-		if (set_pwdLastSet(ac->module, msg, 0) != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+
+	if (io.g.nt_hash) {
+		ret = samdb_msg_add_hash(ac->module->ldb, ac, msg,
+					 "unicodePwd", io.g.nt_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
-
-	/* don't touch it if a value is set. It could be an incoming samsync */
-	if (!ldb_msg_find_element(msg, "msDS-KeyVersionNumber")) {
-		if (add_keyVersionNumber(ac->module, msg, 0) != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+	if (io.g.lm_hash) {
+		ret = samdb_msg_add_hash(ac->module->ldb, ac, msg,
+					 "dBCSPwd", io.g.lm_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
+	}
+	if (io.g.nt_history_len > 0) {
+		ret = samdb_msg_add_hashes(ac, msg,
+					   "ntPwdHistory",
+					   io.g.nt_history,
+					   io.g.nt_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io.g.lm_history_len > 0) {
+		ret = samdb_msg_add_hashes(ac, msg,
+					   "lmPwdHistory",
+					   io.g.lm_history,
+					   io.g.lm_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io.g.supplemental.length > 0) {
+		ret = ldb_msg_add_value(msg, "supplementalCredentials",
+					&io.g.supplemental, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	ret = samdb_msg_add_uint64(ac->module->ldb, ac, msg,
+				   "pwdLastSet",
+				   io.g.last_set);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samdb_msg_add_uint(ac->module->ldb, ac, msg,
+				 "msDs-KeyVersionNumber",
+				 io.g.kvno);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	h->state = LDB_ASYNC_INIT;
@@ -788,14 +1161,26 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* nobody must touch password Histories */
-	if (ldb_msg_find_element(req->op.mod.message, "ntPwdHistory") ||
-	    ldb_msg_find_element(req->op.mod.message, "lmPwdHistory")) {
+	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory")) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (ldb_msg_find_element(req->op.add.message, "supplementalCredentials")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
 	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
+
+	/* If no part of this touches the sambaPassword OR unicodePwd and/or dBCSPwd, then we don't
+	 * need to make any changes.  For password changes/set there should
+	 * be a 'delete' or a 'modify' on this attribute. */
+	if ((!sambaAttr) && (!ntAttr) && (!lmAttr)) {
+		return ldb_next_request(module, req);
+	}
 
 	/* check passwords are single valued here */
 	/* TODO: remove this when passwords will be single valued in schema */
@@ -807,17 +1192,6 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	}
 	if (lmAttr && (lmAttr->num_values > 1)) {
 		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	/* If no part of this touches the sambaPassword OR unicodePwd and/or dBCSPwd, then we don't
-	 * need to make any changes.  For password changes/set there should
-	 * be a 'delete' or a 'modify' on this attribute. */
-	/* If the only operation is the deletion of the passwords then go on */
-	if (	   ((!sambaAttr) || ((sambaAttr->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE))
-		&& ((!ntAttr) || ((ntAttr->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE))
-		&& ((!lmAttr) || ((lmAttr->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE))	) {
-
-		return ldb_next_request(module, req);
 	}
 
 	h = ph_init_handle(req, module, PH_MOD);
@@ -906,8 +1280,9 @@ static int password_hash_mod_search_self(struct ldb_handle *h) {
 					      "ntPwdHistory", 
 					      "objectSid", "msDS-KeyVersionNumber", 
 					      "objectClass", "userPrincipalName",
-					      "samAccountName", 
+					      "sAMAccountName", 
 					      "dBCSPwd", "unicodePwd",
+					      "supplementalCredentials",
 					      NULL };
 
 	ac = talloc_get_type(h->private_data, struct ph_context);
@@ -968,11 +1343,11 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	struct ph_context *ac;
 	struct domain_data *domain;
 	struct smb_krb5_context *smb_krb5_context;
-	struct ldb_message_element *sambaAttr;
 	struct ldb_message *msg;
-	int phlen;
+	struct ldb_message *orig_msg;
+	struct ldb_message *searched_msg;
+	struct setup_password_fields_io io;
 	int ret;
-	BOOL added_hashes = False;
 
 	ac = talloc_get_type(h->private_data, struct ph_context);
 
@@ -1002,93 +1377,92 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* we are going to replace the existing krb5key or delete it */
-	if (ldb_msg_add_empty(msg, "krb5key", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	orig_msg	= discard_const(ac->orig_req->op.mod.message);
+	searched_msg	= ac->search_res->message;
+
+	ZERO_STRUCT(io);
+	io.ac				= ac;
+	io.domain			= domain;
+	io.smb_krb5_context		= smb_krb5_context;
+
+	io.u.user_account_control	= samdb_result_uint(searched_msg, "userAccountControl", 0);
+	io.u.sAMAccountName		= samdb_result_string(searched_msg, "samAccountName", NULL);
+	io.u.user_principal_name	= samdb_result_string(searched_msg, "userPrincipalName", NULL);
+	io.u.is_computer		= ldb_msg_check_string_attribute(searched_msg, "objectClass", "computer");
+
+	io.n.cleartext			= samdb_result_string(orig_msg, "sambaPassword", NULL);
+	io.n.nt_hash			= samdb_result_hash(io.ac, orig_msg, "unicodePwd");
+	io.n.lm_hash			= samdb_result_hash(io.ac, orig_msg, "dBCSPwd");
+
+	io.o.kvno			= samdb_result_uint(searched_msg, "msDs-KeyVersionNumber", 0);
+	io.o.nt_history_len		= samdb_result_hashes(io.ac, searched_msg, "ntPwdHistory", &io.o.nt_history);
+	io.o.lm_history_len		= samdb_result_hashes(io.ac, searched_msg, "lmPwdHistory", &io.o.lm_history);
+	io.o.supplemental		= ldb_msg_find_ldb_val(searched_msg, "supplementalCredentials");
+
+	ret = setup_password_fields(&io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	/* if we have sambaPassword in the original message add the operation on it here */
-	sambaAttr = ldb_msg_find_element(ac->orig_req->op.mod.message, "sambaPassword");
-	if (sambaAttr) {
+	/* make sure we replace all the old attributes */
+	ret = ldb_msg_add_empty(msg, "unicodePwd", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "dBCSPwd", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "ntPwdHistory", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "lmPwdHistory", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "supplementalCredentials", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_add_empty(msg, "msDs-KeyVersionNumber", LDB_FLAG_MOD_REPLACE, NULL);
 
-		if (ldb_msg_add(msg, sambaAttr, sambaAttr->flags) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		/* if we are actually settting a new unicode password,
-		 * use it to generate the password hashes */
-	       	if (((sambaAttr->flags & LDB_FLAG_MOD_MASK) != LDB_FLAG_MOD_DELETE)
-		    && (sambaAttr->num_values == 1)) {
-			/* we can compute new password hashes from the unicode password */
-			ret = add_password_hashes(ac->module, msg, 1);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-
-			added_hashes = True;
-
-			/* now add krb5 keys based on unicode password */
-			ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-							  ldb_msg_find_attr_as_string(ac->search_res->message, "samAccountName", NULL),
-							  ldb_msg_find_attr_as_string(ac->search_res->message, "userPrincipalName", NULL),
-							  ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "computer"));
-
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-
-			/* if the domain properties or the user account controls do not permit
-			 * clear text passwords then wipe out the sambaPassword */
-			if (domain->store_cleartext &&
-			    (ldb_msg_find_attr_as_uint(ac->search_res->message, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-				/* Keep sambaPassword attribute */
-			} else {
-				ldb_msg_remove_attr(msg, "sambaPassword");
-			}
-
+	if (io.g.nt_hash) {
+		ret = samdb_msg_add_hash(ac->module->ldb, ac, msg,
+					 "unicodePwd", io.g.nt_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
-
-	/* if we didn't create the hashes above, try using values supplied directly */
-	if (!added_hashes) {
-		struct ldb_message_element *el;
-		
-		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "unicodePwd");
-		if (ldb_msg_add(msg, el, el->flags) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "dBCSPwd");
-		if (ldb_msg_add(msg, el, el->flags) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
+	if (io.g.lm_hash) {
+		ret = samdb_msg_add_hash(ac->module->ldb, ac, msg,
+					 "dBCSPwd", io.g.lm_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
-
-	/* add also krb5 keys based on NT the hash */
-	if (add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* set change time */
-	if (set_pwdLastSet(ac->module, msg, 1) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* don't touch it if a value is set. It could be an incoming samsync */
-	if (!ldb_msg_find_element(ac->orig_req->op.mod.message, 
-				 "msDS-KeyVersionNumber")) {
-		if (add_keyVersionNumber(ac->module, msg,
-					 ldb_msg_find_attr_as_uint(ac->search_res->message, 
-							   "msDS-KeyVersionNumber", 0)
-			    ) != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+	if (io.g.nt_history_len > 0) {
+		ret = samdb_msg_add_hashes(ac, msg,
+					   "ntPwdHistory",
+					   io.g.nt_history,
+					   io.g.nt_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
-
-	if ((phlen = samdb_result_uint(ac->dom_res->message, "pwdHistoryLength", 0)) > 0) {
-		if (setPwdHistory(ac->module, msg, ac->search_res->message, phlen) != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+	if (io.g.lm_history_len > 0) {
+		ret = samdb_msg_add_hashes(ac, msg,
+					   "lmPwdHistory",
+					   io.g.lm_history,
+					   io.g.lm_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
+	}
+	if (io.g.supplemental.length > 0) {
+		ret = ldb_msg_add_value(msg, "supplementalCredentials",
+					&io.g.supplemental, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	ret = samdb_msg_add_uint64(ac->module->ldb, ac, msg,
+				   "pwdLastSet",
+				   io.g.last_set);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samdb_msg_add_uint(ac->module->ldb, ac, msg,
+				 "msDs-KeyVersionNumber",
+				 io.g.kvno);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	h->state = LDB_ASYNC_INIT;

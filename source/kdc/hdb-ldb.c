@@ -46,6 +46,9 @@
 #include "auth/auth_sam.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "libcli/auth/libcli_auth.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
@@ -67,9 +70,9 @@ static const char * const krb5_attrs[] = {
 	"whenChanged",
 
 	"msDS-KeyVersionNumber",
-	"krb5Key",
 
 	"unicodePwd",
+	"supplementalCredentials",
 
 	NULL
 };
@@ -205,10 +208,14 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 					      hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
-	struct ldb_message_element *krb5keys;
+	NTSTATUS status;
 	struct samr_Password *hash;
-	int i;
-	bool arcfour_needed = true;
+	const struct ldb_val *sc_val;
+	struct supplementalCredentialsBlob scb;
+	struct supplementalCredentialsPackage *scp = NULL;
+	struct package_PrimaryKerberosBlob _pkb;
+	struct package_PrimaryKerberosBlob *pkb = NULL;
+	uint32_t i;
 	uint32_t allocated_keys = 0;
 
 	entry_ex->entry.keys.val = NULL;
@@ -216,17 +223,64 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 
-	/* Get krb5Key from the db */
+	/* Get keys from the db */
 
-	krb5keys = ldb_msg_find_element(msg, "krb5Key");
 	hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
+	sc_val = ldb_msg_find_ldb_val(msg, "supplementalCredentials");
 
-	if (krb5keys) {
-		allocated_keys = krb5keys->num_values;
-	}
-
+	/* unicodePwd for enctype 0x17 (23) if present */
 	if (hash) {
 		allocated_keys++;
+	}
+
+	/* supplementalCredentials if present */
+	if (sc_val) {
+		status = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
+						  (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+		if (!NT_STATUS_IS_OK(status)) {
+			dump_data(0, sc_val->data, sc_val->length);
+			ret = EINVAL;
+			goto out;
+		}
+
+		for (i=0; i < scb.sub.num_packages; i++) {
+			if (scb.sub.packages[i].unknown1 != 0x00000001) {
+				continue;
+			}
+
+			if (strcmp("Primary:Kerberos", scb.sub.packages[i].name) != 0) {
+				continue;
+			}
+
+			if (!scb.sub.packages[i].data || !scb.sub.packages[i].data[0]) {
+				continue;
+			}
+
+			scp = &scb.sub.packages[i];
+			break;
+		}
+	}
+	/* Primary:Kerberos element of supplementalCredentials */
+	if (scp) {
+		DATA_BLOB blob;
+
+		blob = strhex_to_data_blob(scp->data);
+		if (!blob.data) {
+			ret = ENOMEM;
+			goto out;
+		}
+		talloc_steal(mem_ctx, blob.data);
+
+		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
+		status = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
+					      (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = EINVAL;
+			goto out;
+		}
+		pkb = &_pkb;
+
+		allocated_keys += pkb->num_keys1;
 	}
 
 	if (allocated_keys == 0) {
@@ -244,49 +298,14 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		goto out;
 	}
 
-	/* Decode Kerberos keys into the hdb structure */
-	for (i=0; (krb5keys && i < krb5keys->num_values); i++) {
-		size_t decode_len;
-		Key key;
-		ret = decode_Key(krb5keys->values[i].data, krb5keys->values[i].length, 
-				 &key, &decode_len);
-		if (ret) {
-			/* Could be bougus data in the entry, or out of memory */
-			goto out;
-		}
-
-		if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-			switch (key.key.keytype) {
-			case KEYTYPE_DES:
-				arcfour_needed = false;
-				entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-				entry_ex->entry.keys.len++;
-				break;
-			default:
-				/* We must use DES keys only */
-				break;
-			}
-		} else {
-			switch (key.key.keytype) {
-			case KEYTYPE_ARCFOUR:
-				arcfour_needed = false;
-				break;
-			default:
-				break;
-			}
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-		}
-	}
-
-	if (arcfour_needed && hash) {
+	if (hash && !(userAccountControl & UF_USE_DES_KEY_ONLY)) {
 		Key key;
 
 		key.mkvno = 0;
 		key.salt = NULL; /* No salt for this enc type */
 
 		ret = krb5_keyblock_init(context,
-					 KEYTYPE_ARCFOUR,
+					 ENCTYPE_ARCFOUR_HMAC_MD5,
 					 hash->hash, sizeof(hash->hash), 
 					 &key.key);
 		if (ret) {
@@ -297,11 +316,75 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		entry_ex->entry.keys.len++;
 	}
 
+	if (pkb) {
+		for (i=0; i < pkb->num_keys1; i++) {
+			bool use = true;
+			Key key;
+
+			if (!pkb->keys1[i].value) continue;
+
+			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+				switch (pkb->keys1[i].keytype) {
+				case ENCTYPE_DES_CBC_CRC:
+				case ENCTYPE_DES_CBC_MD5:
+					break;
+				default:
+					use = false;
+					break;
+				}
+			}
+
+			if (!use) continue;
+
+			key.mkvno = 0;
+
+			if (pkb->salt.string) {
+				DATA_BLOB salt;
+
+				salt = data_blob_string_const(pkb->salt.string);
+
+				key.salt = calloc(1, sizeof(*key.salt));
+				if (key.salt == NULL) {
+					ret = ENOMEM;
+					goto out;
+				}
+
+				key.salt->type = hdb_pw_salt;
+
+				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				if (ret) {
+					free(key.salt);
+					key.salt = NULL;
+					goto out;
+				}
+			}
+
+			ret = krb5_keyblock_init(context,
+						 pkb->keys1[i].keytype,
+						 pkb->keys1[i].value->data,
+						 pkb->keys1[i].value->length,
+						 &key.key);
+			if (ret) {
+				if (key.salt) {
+					free_Salt(key.salt);
+					free(key.salt);
+					key.salt = NULL;
+				}
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+	}
+
 out:
-	if (ret != 0 && entry_ex->entry.keys.val) {
+	if (ret != 0) {
+		entry_ex->entry.keys.len = 0;	
+	}
+	if (entry_ex->entry.keys.len == 0 && entry_ex->entry.keys.val) {
 		free(entry_ex->entry.keys.val);
 		entry_ex->entry.keys.val = NULL;
-		entry_ex->entry.keys.len = 0;
 	}
 	return ret;
 }
