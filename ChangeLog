@@ -1,5 +1,9 @@
 2007-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_get_init_creds.3: document new options.
+
+	* kdc/krb5tgs.c: Only check service key for cross realm PACs.
+
 	* lib/krb5/init_creds.c: use the new merged flags field.
 	(krb5_get_init_creds_opt_set_win2k): new function, turn on all w2k
 	compat flags.
