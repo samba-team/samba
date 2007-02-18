@@ -25,7 +25,7 @@ use Parse::Pidl qw(error warning);
 use Parse::Pidl::Typelist qw(getType);
 use Parse::Pidl::Util qw(has_property property_matches make_str);
 use Parse::Pidl::NDR qw(ContainsString GetNextLevel);
-use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
+use Parse::Pidl::Dump qw(DumpType DumpFunction);
 use Parse::Pidl::Wireshark::Conformance qw(ReadConformance);
 use File::Basename;	
 
@@ -127,7 +127,7 @@ sub Interface($)
 {
 	my($interface) = @_;
 	Const($_,$interface->{NAME}) foreach (@{$interface->{CONSTS}});
-	Typedef($_,$interface->{NAME}) foreach (@{$interface->{TYPES}});
+	Type($_, $_->{NAME}, $interface->{NAME}) foreach (@{$interface->{TYPES}});
 	Function($_,$interface->{NAME}) foreach (@{$interface->{FUNCTIONS}});
 }
 
@@ -637,18 +637,26 @@ sub Const($$)
     	}
 }
 
-sub Typedef($$)
+sub Typedef($$$)
 {
-	my ($e,$ifname) = @_;
+	my ($e,$name,$ifname) = @_;
 
-	PrintIdl DumpTypedef($e->{ORIGINAL});
+	Type($e->{DATA}, $name, $ifname);
+}
+
+sub Type($$$)
+{
+	my ($e, $name, $ifname) = @_;
+
+	PrintIdl DumpType($e->{ORIGINAL});
 
 	{
 		ENUM => \&Enum,
 		STRUCT => \&Struct,
 		UNION => \&Union,
-		BITMAP => \&Bitmap
-	}->{$e->{DATA}->{TYPE}}->($e->{DATA}, $e->{NAME}, $ifname);
+		BITMAP => \&Bitmap,
+		TYPEDEF => \&Typedef
+	}->{$e->{TYPE}}->($e, $name, $ifname);
 }
 
 sub RegisterInterface($)
