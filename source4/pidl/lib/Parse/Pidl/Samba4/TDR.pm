@@ -207,7 +207,7 @@ sub ParserTypedef($$)
 
 	return if (has_property($e, "no$t"));
 
-	$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
+	$e->{PROPERTIES} = $e->{DATA}->{PROPERTIES};
 
 	{ STRUCT => \&ParserStruct, UNION => \&ParserUnion, 
 		ENUM => \&ParserEnum, BITMAP => \&ParserBitmap
