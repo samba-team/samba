@@ -36,7 +36,7 @@ const char *user_attrs[] = {
 	"userPrincipalName",
 	"servicePrincipalName",
 	"msDS-KeyVersionNumber",
-	"krb5Key",
+	"supplementalCredentials",
 
 	/* passwords */
 	"dBCSPwd", 
