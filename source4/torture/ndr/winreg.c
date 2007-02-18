@@ -517,7 +517,7 @@ struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "winreg");
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_CloseKey, closekey_in_data, NDR_IN, closekey_in_check );
-	torture_suite_add_ndr_pull_fn_test(suite, winreg_CloseKey, closekey_out_data, NDR_IN, closekey_out_check );
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_CloseKey, closekey_out_data, NDR_OUT, closekey_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_OpenHKLM, OpenHKLM_In, NDR_IN, openhklm_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_OpenHKLM, openhklm_out_data, NDR_OUT, openhklm_out_check );
