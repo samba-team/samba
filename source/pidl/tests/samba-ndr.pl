@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 29;
+use Test::More tests => 31;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -176,27 +176,27 @@ EnvSubstituteValue($env, $fn);
 is_deeply($env, { foo => 0, this => "r" });
 
 my $needed = {};
-NeededElement({ TYPE => "foo" }, "pull", $needed); 
+NeededElement({ TYPE => "foo", REPRESENTATION_TYPE => "foo" }, "pull", $needed); 
 is_deeply($needed, { pull_foo => 1 });
 
 # old settings should be kept
 $needed = { pull_foo => 0 };
-NeededElement({ TYPE => "foo" }, "pull", $needed); 
+NeededElement({ TYPE => "foo", REPRESENTATION_TYPE => "foo" }, "pull", $needed); 
 is_deeply($needed, { pull_foo => 0 });
 
 # print/pull/push are independent of each other
 $needed = { pull_foo => 0 };
-NeededElement({ TYPE => "foo" }, "print", $needed); 
+NeededElement({ TYPE => "foo", REPRESENTATION_TYPE => "foo" }, "print", $needed); 
 is_deeply($needed, { pull_foo => 0, print_foo => 1 });
 
 $needed = { };
-NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar" } ] }, $needed); 
+NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] }, $needed); 
 is_deeply($needed, { pull_foo => 1, print_foo => 1, push_foo => 1,
 	                 pull_bar => 1, print_bar => 1, push_bar => 1});
 
 # push/pull/print are always set for functions
 $needed = { pull_foo => 0 };
-NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar" } ] }, $needed); 
+NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] }, $needed); 
 is_deeply($needed, { pull_foo => 1, print_foo => 1, push_foo => 1,
 	                 pull_bar => 1, push_bar => 1, print_bar => 1});
 
@@ -216,7 +216,7 @@ is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1 });
 $needed = {};
 NeededTypedef({ PROPERTIES => { public => 1 }, NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
-						  ELEMENTS => [ { TYPE => "bar" } ] } },
+						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
 			  $needed);
 is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1,
 	                 pull_bar => 1, print_bar => 1, push_bar => 1});
@@ -224,7 +224,25 @@ is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1,
 $needed = {};
 NeededTypedef({ PROPERTIES => { gensize => 1}, NAME => "bla", 
 	            DATA => { TYPE => "STRUCT", 
-						  ELEMENTS => [ { TYPE => "bar" } ] } },
+						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
 			  $needed);
 is_deeply($needed, { ndr_size_bla => 1 });
 	                 
+# make sure types for elements are set too
+$needed = { pull_bla => 1 };
+NeededTypedef({ NAME => "bla", 
+	            DATA => { TYPE => "STRUCT", 
+						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "bar" } ] } },
+			  $needed);
+is_deeply($needed, { pull_bla => 1, pull_bar => 1 });
+
+$needed = {};
+NeededTypedef({ PROPERTIES => { public => 1}, 
+				NAME => "bla", 
+	            DATA => { TYPE => "STRUCT", 
+						  ELEMENTS => [ { TYPE => "bar", REPRESENTATION_TYPE => "rep" } ] } },
+			  $needed);
+is_deeply($needed, { pull_bla => 1, push_bla => 1, print_bla => 1, print_rep => 1,
+	                 pull_bar => 1, push_bar => 1, 
+				     ndr_bar_to_rep => 1, ndr_rep_to_bar => 1});
+	
