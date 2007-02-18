@@ -11,7 +11,8 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(is_charset_array);
 @EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv 
-   GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
+   GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction
+   NeededElement NeededTypedef);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
@@ -2483,6 +2484,14 @@ sub Parse($$$)
 	return ($res_hdr, $res);
 }
 
+sub NeededElement($$$)
+{
+	my ($e, $dir, $needed) = @_;
+
+	return if (defined($needed->{"$dir\_$e->{TYPE}"}));
+	$needed->{"$dir\_$e->{TYPE}"} = 1;
+}
+
 sub NeededFunction($$)
 {
 	my ($fn,$needed) = @_;
@@ -2491,15 +2500,7 @@ sub NeededFunction($$)
 	$needed->{"print_$fn->{NAME}"} = 1;
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
-		unless(defined($needed->{"pull_$e->{TYPE}"})) {
-			$needed->{"pull_$e->{TYPE}"} = 1;
-		}
-		unless(defined($needed->{"push_$e->{TYPE}"})) {
-			$needed->{"push_$e->{TYPE}"} = 1;
-		}
-		unless(defined($needed->{"print_$e->{TYPE}"})) {
-			$needed->{"print_$e->{TYPE}"} = 1;
-		}
+		NeededElement($e, $_, $needed) foreach ("pull", "push", "print");
 	}
 }
 
@@ -2522,18 +2523,9 @@ sub NeededTypedef($$)
 			if (has_property($e, "compression")) { 
 				$needed->{"compression"} = 1;
 			}
-			if ($needed->{"pull_$t->{NAME}"} and
-				not defined($needed->{"pull_$e->{TYPE}"})) {
-				$needed->{"pull_$e->{TYPE}"} = 1;
-			}
-			if ($needed->{"push_$t->{NAME}"} and
-				not defined($needed->{"push_$e->{TYPE}"})) {
-				$needed->{"push_$e->{TYPE}"} = 1;
-			}
-			if ($needed->{"print_$t->{NAME}"} and 
-				not defined($needed->{"print_$e->{TYPE}"})) {
-				$needed->{"print_$e->{TYPE}"} = 1;
-			}
+			NeededElement($e, "pull", $needed) if ($needed->{"pull_$t->{NAME}"});
+			NeededElement($e, "push", $needed) if ($needed->{"push_$t->{NAME}"});
+			NeededElement($e, "print", $needed) if ($needed->{"print_$t->{NAME}"});
 		}
 	}
 }
