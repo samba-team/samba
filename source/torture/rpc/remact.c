@@ -23,10 +23,11 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "librpc/gen_ndr/ndr_dcom.h"
 #include "torture/rpc/rpc.h"
 
 #define CLSID_IMAGEDOC "02B01C80-E03D-101A-B294-00DD010F2BF9"
+#define DCERPC_IUNKNOWN_UUID "00000000-0000-0000-c000-000000000046"
+#define DCERPC_ICLASSFACTORY_UUID "00000001-0000-0000-c000-000000000046"
 
 static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
