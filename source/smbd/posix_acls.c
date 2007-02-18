@@ -972,7 +972,7 @@ BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_
 	 */
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
-		sid_copy(&grp_sid, psd->grp_sid);
+		sid_copy(&grp_sid, psd->group_sid);
 		if (!sid_to_gid( &grp_sid, pgrp)) {
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take group ownership to work
@@ -1276,7 +1276,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 	 */
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa = &dacl->ace[i];
+		SEC_ACE *psa = &dacl->aces[i];
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
 			DEBUG(3,("create_canon_ace_lists: unable to set anything but an ALLOW or DENY ACE.\n"));
@@ -1295,12 +1295,12 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			 * Convert GENERIC bits to specific bits.
 			 */
  
-			se_map_generic(&psa->info.mask, &file_generic_mapping);
+			se_map_generic(&psa->access_mask, &file_generic_mapping);
 
-			psa->info.mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
+			psa->access_mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
 
-			if(psa->info.mask != UNIX_ACCESS_NONE)
-				psa->info.mask &= ~UNIX_ACCESS_NONE;
+			if(psa->access_mask != UNIX_ACCESS_NONE)
+				psa->access_mask &= ~UNIX_ACCESS_NONE;
 		}
 	}
 
@@ -1313,12 +1313,12 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 	 */
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa1 = &dacl->ace[i];
+		SEC_ACE *psa1 = &dacl->aces[i];
 
 		for (j = i + 1; j < dacl->num_aces; j++) {
-			SEC_ACE *psa2 = &dacl->ace[j];
+			SEC_ACE *psa2 = &dacl->aces[j];
 
-			if (psa1->info.mask != psa2->info.mask)
+			if (psa1->access_mask != psa2->access_mask)
 				continue;
 
 			if (!sid_equal(&psa1->trustee, &psa2->trustee))
@@ -1344,7 +1344,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 	}
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa = &dacl->ace[i];
+		SEC_ACE *psa = &dacl->aces[i];
 
 		/*
 		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
@@ -1430,7 +1430,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 		 * S_I(R|W|X)USR bits.
 		 */
 
-		current_ace->perms |= map_nt_perms( &psa->info.mask, S_IRUSR);
+		current_ace->perms |= map_nt_perms( &psa->access_mask, S_IRUSR);
 		current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
 		current_ace->inherited = ((psa->flags & SEC_ACE_FLAG_INHERITED_ACE) ? True : False);
 
@@ -2666,7 +2666,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 			/* We know the lower number ACE's are file entries. */
 			if ((nt_ace_list[i].type == nt_ace_list[j].type) &&
 				(nt_ace_list[i].size == nt_ace_list[j].size) &&
-				(nt_ace_list[i].info.mask == nt_ace_list[j].info.mask) &&
+				(nt_ace_list[i].access_mask == nt_ace_list[j].access_mask) &&
 				sid_equal(&nt_ace_list[i].trustee, &nt_ace_list[j].trustee) &&
 				(i_inh == j_inh) &&
 				(i_flags_ni == 0) &&
@@ -2679,7 +2679,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 				 * the non-inherited ACE onto the inherited ACE.
 				 */
 
-				if (nt_ace_list[i].info.mask == 0) {
+				if (nt_ace_list[i].access_mask == 0) {
 					nt_ace_list[j].flags = SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 								(i_inh ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 					if (num_aces - i - 1 > 0)
@@ -2979,7 +2979,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	}
 
 	if (psd->dacl) {
-		dacl_sort_into_canonical_order(psd->dacl->ace, (unsigned int)psd->dacl->num_aces);
+		dacl_sort_into_canonical_order(psd->dacl->aces, (unsigned int)psd->dacl->num_aces);
 	}
 
 	*ppdesc = psd;

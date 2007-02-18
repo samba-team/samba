@@ -372,7 +372,7 @@ static int info_fn(struct file_list *fl, void *priv)
 		const char *name;
 		NTSTATUS ntstatus;
 
-		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name);
+		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->aces[num_aces].trustee, &domain, &name);
 
 		if (NT_STATUS_IS_OK(ntstatus)) {
 			if (domain && *domain) {
@@ -382,15 +382,15 @@ static int info_fn(struct file_list *fl, void *priv)
 			pstrcat(acl_str,name);
 		} else {
 			fstring sidstr;
-			sid_to_string(sidstr, &psd->dacl->ace[num_aces].trustee);
+			sid_to_string(sidstr, &psd->dacl->aces[num_aces].trustee);
 			pstrcat(acl_str,sidstr);
 		}
 		pstrcat(acl_str, ":");
 
-		if (psd->dacl->ace[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
+		if (psd->dacl->aces[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
 			pstrcat(acl_str, "D,");
 		} else {
-			if (psd->dacl->ace[num_aces].info.mask & GENERIC_ALL_ACCESS) {
+			if (psd->dacl->aces[num_aces].access_mask & GENERIC_ALL_ACCESS) {
 				pstrcat(acl_str, "F,");
 			} else {
 				pstrcat(acl_str, "R,");

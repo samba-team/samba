@@ -72,20 +72,15 @@
 					PROTECTED_DACL_SECURITY_INFORMATION)
 
 /* SEC_ACCESS */
-typedef struct security_info_info
-{
-	uint32 mask;
-
-} SEC_ACCESS;
+typedef uint32 SEC_ACCESS;
 
 /* SEC_ACE */
-typedef struct security_ace_info
-{
+typedef struct security_ace_info {
 	uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
 	uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
 	uint16 size;
 
-	SEC_ACCESS info;
+	SEC_ACCESS access_mask;
 
 	/* this stuff may be present when type is XXXX_TYPE_XXXX_OBJECT */
 	uint32  obj_flags; /* xxxx_ACE_OBJECT_xxxx e.g present/inherited present etc */
@@ -104,13 +99,12 @@ typedef struct security_ace_info
 
 #ifndef _SEC_ACL
 /* SEC_ACL */
-typedef struct security_acl_info
-{
+typedef struct security_acl_info {
 	uint16 revision; /* 0x0003 */
 	uint16 size; /* size in bytes of the entire ACL structure */
 	uint32 num_aces; /* number of Access Control Entries */
 
-	SEC_ACE *ace;
+	SEC_ACE *aces;
 
 } SEC_ACL;
 #define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16) + sizeof(uint32))
@@ -123,8 +117,7 @@ typedef struct security_acl_info
 
 #ifndef _SEC_DESC
 /* SEC_DESC */
-typedef struct security_descriptor_info
-{
+typedef struct security_descriptor_info {
 	uint16 revision; /* 0x0001 */
 	uint16 type;     /* SEC_DESC_xxxx flags */
 
@@ -136,7 +129,7 @@ typedef struct security_descriptor_info
 	SEC_ACL *dacl; /* user ACL */
 	SEC_ACL *sacl; /* system ACL */
 	DOM_SID *owner_sid; 
-	DOM_SID *grp_sid;
+	DOM_SID *group_sid;
 
 } SEC_DESC;
 #define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
@@ -145,8 +138,7 @@ typedef struct security_descriptor_info
 
 #ifndef _SEC_DESC_BUF
 /* SEC_DESC_BUF */
-typedef struct sec_desc_buf_info
-{
+typedef struct sec_desc_buf_info {
 	uint32 max_len;
 	uint32 ptr;
 	uint32 len;

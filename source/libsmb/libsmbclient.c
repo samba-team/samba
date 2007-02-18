@@ -3745,8 +3745,8 @@ ace_compare(SEC_ACE *ace1,
 	if (ace1->flags != ace2->flags) 
 		return ace1->flags - ace2->flags;
 
-	if (ace1->info.mask != ace2->info.mask) 
-		return ace1->info.mask - ace2->info.mask;
+	if (ace1->access_mask != ace2->access_mask) 
+		return ace1->access_mask - ace2->access_mask;
 
 	if (ace1->size != ace2->size) 
 		return ace1->size - ace2->size;
@@ -3761,14 +3761,14 @@ sort_acl(SEC_ACL *the_acl)
 	uint32 i;
 	if (!the_acl) return;
 
-	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]),
+	qsort(the_acl->aces, the_acl->num_aces, sizeof(the_acl->aces[0]),
               QSORT_CAST ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
-		if (sec_ace_equal(&the_acl->ace[i-1], &the_acl->ace[i])) {
+		if (sec_ace_equal(&the_acl->aces[i-1], &the_acl->aces[i])) {
 			int j;
 			for (j=i; j<the_acl->num_aces-1; j++) {
-				the_acl->ace[j] = the_acl->ace[j+1];
+				the_acl->aces[j] = the_acl->aces[j+1];
 			}
 			the_acl->num_aces--;
 		} else {
@@ -3973,7 +3973,7 @@ parse_ace(struct cli_state *ipc_cli,
 	}
 
  done:
-	mask.mask = amask;
+	mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
 }
@@ -3995,7 +3995,7 @@ add_ace(SEC_ACL **the_acl,
 	if ((aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces)) == NULL) {
 		return False;
 	}
-	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	newacl = make_sec_acl(ctx, (*the_acl)->revision,
                               1+(*the_acl)->num_aces, aces);
@@ -4017,7 +4017,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	fstring tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL;
+	DOM_SID *group_sid=NULL;
         DOM_SID *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
@@ -4062,15 +4062,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4078,15 +4078,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4124,10 +4124,10 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	}
 
 	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
-			    owner_sid, grp_sid, NULL, dacl, &sd_size);
+			    owner_sid, group_sid, NULL, dacl, &sd_size);
 
   done:
-	SAFE_FREE(grp_sid);
+	SAFE_FREE(group_sid);
 	SAFE_FREE(owner_sid);
 
 	return ret;
@@ -4570,10 +4570,10 @@ cacl_get(SMBCCTX *context,
                 }
 
                 if (! exclude_nt_group) {
-                        if (sd->grp_sid) {
+                        if (sd->group_sid) {
                                 convert_sid_to_string(ipc_cli, pol,
                                                       sidstr, numeric,
-                                                      sd->grp_sid);
+                                                      sd->group_sid);
                         } else {
                                 fstrcpy(sidstr, "");
                         }
@@ -4618,7 +4618,7 @@ cacl_get(SMBCCTX *context,
                         /* Add aces to value buffer  */
                         for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 
-                                SEC_ACE *ace = &sd->dacl->ace[i];
+                                SEC_ACE *ace = &sd->dacl->aces[i];
                                 convert_sid_to_string(ipc_cli, pol,
                                                       sidstr, numeric,
                                                       &ace->trustee);
@@ -4632,7 +4632,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->info.mask);
+                                                        ace->access_mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4645,7 +4645,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->info.mask);
+                                                        ace->access_mask);
                                         }
                                 } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
                                             StrCaseCmp(name+3, sidstr) == 0) ||
@@ -4657,7 +4657,7 @@ cacl_get(SMBCCTX *context,
                                                         "%d/%d/0x%08x", 
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->info.mask);
+                                                        ace->access_mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4668,7 +4668,7 @@ cacl_get(SMBCCTX *context,
                                                              "%d/%d/0x%08x", 
                                                              ace->type,
                                                              ace->flags,
-                                                             ace->info.mask);
+                                                             ace->access_mask);
                                         }
                                 } else if (all_nt_acls) {
                                         if (determine_size) {
@@ -4679,7 +4679,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->info.mask);
+                                                        ace->access_mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4692,7 +4692,7 @@ cacl_get(SMBCCTX *context,
                                                              sidstr,
                                                              ace->type,
                                                              ace->flags,
-                                                             ace->info.mask);
+                                                             ace->access_mask);
                                         }
                                 }
                                 if (n > bufsize) {
@@ -5062,7 +5062,7 @@ cacl_set(TALLOC_CTX *ctx,
 	SEC_DESC *sd = NULL, *old;
         SEC_ACL *dacl = NULL;
 	DOM_SID *owner_sid = NULL; 
-	DOM_SID *grp_sid = NULL;
+	DOM_SID *group_sid = NULL;
 	uint32 i, j;
 	size_t sd_size;
 	int ret = 0;
@@ -5123,7 +5123,7 @@ cacl_set(TALLOC_CTX *ctx,
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
-                SAFE_FREE(old->dacl->ace);
+                SAFE_FREE(old->dacl->aces);
                 SAFE_FREE(old->dacl);
                 old->dacl = NULL;
                 dacl = old->dacl;
@@ -5134,16 +5134,16 @@ cacl_set(TALLOC_CTX *ctx,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-                                if (sec_ace_equal(&sd->dacl->ace[i],
-                                                  &old->dacl->ace[j])) {
+                                if (sec_ace_equal(&sd->dacl->aces[i],
+                                                  &old->dacl->aces[j])) {
 					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
-						old->dacl->ace[k] =
-                                                        old->dacl->ace[k+1];
+						old->dacl->aces[k] =
+                                                        old->dacl->aces[k+1];
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						SAFE_FREE(old->dacl->ace);
+						SAFE_FREE(old->dacl->aces);
 						SAFE_FREE(old->dacl);
 						old->dacl = NULL;
 					}
@@ -5166,14 +5166,14 @@ cacl_set(TALLOC_CTX *ctx,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->ace[i].trustee,
-					      &old->dacl->ace[j].trustee)) {
+				if (sid_equal(&sd->dacl->aces[i].trustee,
+					      &old->dacl->aces[j].trustee)) {
                                         if (!(flags & SMBC_XATTR_FLAG_CREATE)) {
                                                 err = EEXIST;
                                                 ret = -1;
                                                 goto failed;
                                         }
-                                        old->dacl->ace[j] = sd->dacl->ace[i];
+                                        old->dacl->aces[j] = sd->dacl->aces[i];
                                         ret = -1;
 					found = True;
 				}
@@ -5186,7 +5186,7 @@ cacl_set(TALLOC_CTX *ctx,
 			}
                         
                         for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-                                add_ace(&old->dacl, &sd->dacl->ace[i], ctx);
+                                add_ace(&old->dacl, &sd->dacl->aces[i], ctx);
                         }
 		}
                 dacl = old->dacl;
@@ -5195,7 +5195,7 @@ cacl_set(TALLOC_CTX *ctx,
 	case SMBC_XATTR_MODE_SET:
  		old = sd;
                 owner_sid = old->owner_sid;
-                grp_sid = old->grp_sid;
+                group_sid = old->group_sid;
                 dacl = old->dacl;
 		break;
 
@@ -5204,7 +5204,7 @@ cacl_set(TALLOC_CTX *ctx,
                 break;
 
         case SMBC_XATTR_MODE_CHGRP:
-                grp_sid = sd->grp_sid;
+                group_sid = sd->group_sid;
                 break;
 	}
 
@@ -5213,7 +5213,7 @@ cacl_set(TALLOC_CTX *ctx,
 
 	/* Create new security descriptor and set it */
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE, 
-			   owner_sid, grp_sid, NULL, dacl, &sd_size);
+			   owner_sid, group_sid, NULL, dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename,
                              WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);

@@ -5883,10 +5883,10 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].trustee);
+			sid_to_string(sid_str, &the_acl->aces[i].trustee);
 
 			DEBUG(10, ("%s 0x%08x\n", sid_str, 
-				  the_acl->ace[i].info.mask));
+				  the_acl->aces[i].access_mask));
 		}
 
 		the_acl = secdesc_ctr->sec->dacl;
@@ -5898,10 +5898,10 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 			for (i = 0; i < the_acl->num_aces; i++) {
 				fstring sid_str;
 				
-				sid_to_string(sid_str, &the_acl->ace[i].trustee);
+				sid_to_string(sid_str, &the_acl->aces[i].trustee);
 				
 				DEBUG(10, ("%s 0x%08x\n", sid_str, 
-					   the_acl->ace[i].info.mask));
+					   the_acl->aces[i].access_mask));
 			}
 		} else {
 			DEBUG(10, ("dacl for secdesc_ctr is NULL\n"));

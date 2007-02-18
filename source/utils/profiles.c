@@ -43,14 +43,14 @@ static BOOL swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 		update = True;
 	}
 
-	if ( sid_equal( sd->grp_sid, s1 ) ) {
-		sid_copy( sd->grp_sid, s2 );
+	if ( sid_equal( sd->group_sid, s1 ) ) {
+		sid_copy( sd->group_sid, s2 );
 		update = True;
 	}
 
 	for ( i=0; i<acl->num_aces; i++ ) {
-		if ( sid_equal( &acl->ace[i].trustee, s1 ) ) {
-			sid_copy( &acl->ace[i].trustee, s2 );
+		if ( sid_equal( &acl->aces[i].trustee, s1 ) ) {
+			sid_copy( &acl->aces[i].trustee, s2 );
 			update = True;
 		}
 	}

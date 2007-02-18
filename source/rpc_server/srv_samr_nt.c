@@ -724,9 +724,9 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 
 	dacl = q_u->buf->sec->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
-		if (sid_equal(&pol_sid, &dacl->ace[i].trustee)) {
+		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass, 
-				(dacl->ace[i].info.mask & 
+				(dacl->aces[i].access_mask & 
 				 SA_RIGHT_USER_CHANGE_PASSWORD) ? 
 						      True: False);
 			break;

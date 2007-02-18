@@ -1024,7 +1024,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	if (psd->owner_sid==0) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	}
-	if (psd->grp_sid==0) {
+	if (psd->group_sid==0) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
 	}
 	if (psd->sacl==0) {

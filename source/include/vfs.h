@@ -88,7 +88,7 @@
 struct vfs_handle_struct;
 struct connection_struct;
 struct files_struct;
-struct security_descriptor;
+struct security_descriptor_info;
 struct vfs_statvfs_struct;
 
 /*

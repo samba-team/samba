@@ -385,17 +385,17 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	/* update access masks */
 	
 	for ( i=0; i<sec->dacl->num_aces; i++ ) {
-		switch ( sec->dacl->ace[i].info.mask ) {
+		switch ( sec->dacl->aces[i].access_mask ) {
 			case (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS):
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_PRINT;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_PRINT;
 				break;
 				
 			case GENERIC_ALL_ACCESS:
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_FULL_CONTROL;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_FULL_CONTROL;
 				break;
 				
 			case READ_CONTROL_ACCESS:
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_MANAGE_DOCUMENTS;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_MANAGE_DOCUMENTS;
 			
 			default:	/* no change */
 				break;
@@ -5063,7 +5063,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	   permissions through NT.  If they are NULL in the new security
 	   descriptor then copy them over from the old one. */
 
-	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
+	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->group_sid) {
 		DOM_SID *owner_sid, *group_sid;
 		SEC_ACL *dacl, *sacl;
 		SEC_DESC *psd = NULL;
@@ -5080,9 +5080,9 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 			secdesc_ctr->sec->owner_sid :
 			old_secdesc_ctr->sec->owner_sid;
 
-		group_sid = secdesc_ctr->sec->grp_sid ?
-			secdesc_ctr->sec->grp_sid :
-			old_secdesc_ctr->sec->grp_sid;
+		group_sid = secdesc_ctr->sec->group_sid ?
+			secdesc_ctr->sec->group_sid :
+			old_secdesc_ctr->sec->group_sid;
 
 		dacl = secdesc_ctr->sec->dacl ?
 			secdesc_ctr->sec->dacl :
@@ -5293,7 +5293,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 			psd = make_sec_desc(ctx, (*secdesc_ctr)->sec->revision, (*secdesc_ctr)->sec->type,
 					    &owner_sid,
-					    (*secdesc_ctr)->sec->grp_sid,
+					    (*secdesc_ctr)->sec->group_sid,
 					    (*secdesc_ctr)->sec->sacl,
 					    (*secdesc_ctr)->sec->dacl,
 					    &size);
@@ -5327,11 +5327,11 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].trustee);
+			sid_to_string(sid_str, &the_acl->aces[i].trustee);
 
 			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
-				   the_acl->ace[i].type, the_acl->ace[i].flags, 
-				   the_acl->ace[i].info.mask)); 
+				   the_acl->aces[i].type, the_acl->aces[i].flags, 
+				   the_acl->aces[i].access_mask)); 
 		}
 	}
 
@@ -5383,7 +5383,7 @@ void map_printer_permissions(SEC_DESC *sd)
 	int i;
 
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		se_map_generic(&sd->dacl->ace[i].info.mask,
+		se_map_generic(&sd->dacl->aces[i].access_mask,
 			       &printer_generic_mapping);
 	}
 }

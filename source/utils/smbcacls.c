@@ -172,7 +172,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 	if (numeric) {
 		fprintf(f, "%d/%d/0x%08x", 
-			ace->type, ace->flags, ace->info.mask);
+			ace->type, ace->flags, ace->access_mask);
 		return;
 	}
 
@@ -193,7 +193,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	/* Standard permissions */
 
 	for (v = standard_values; v->perm; v++) {
-		if (ace->info.mask == v->mask) {
+		if (ace->access_mask == v->mask) {
 			fprintf(f, "%s", v->perm);
 			return;
 		}
@@ -202,11 +202,11 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	/* Special permissions.  Print out a hex value if we have
 	   leftover bits in the mask. */
 
-	got_mask = ace->info.mask;
+	got_mask = ace->access_mask;
 
  again:
 	for (v = special_values; v->perm; v++) {
-		if ((ace->info.mask & v->mask) == v->mask) {
+		if ((ace->access_mask & v->mask) == v->mask) {
 			if (do_print) {
 				fprintf(f, "%s", v->perm);
 			}
@@ -216,7 +216,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 	if (!do_print) {
 		if (got_mask != 0) {
-			fprintf(f, "0x%08x", ace->info.mask);
+			fprintf(f, "0x%08x", ace->access_mask);
 		} else {
 			do_print = 1;
 			goto again;
@@ -348,7 +348,7 @@ static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 	}
 
  done:
-	mask.mask = amask;
+	mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	SAFE_FREE(str);
 	return True;
@@ -366,7 +366,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	if (!(aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces))) {
 		return False;
 	}
-	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	new_ace = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
@@ -381,7 +381,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	fstring tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
+	DOM_SID *group_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
@@ -407,13 +407,13 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				printf("Only specify group once\n");
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
-			    !StringToSid(grp_sid, tok+6)) {
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
+			    !StringToSid(group_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
 				goto done;
 			}
@@ -436,11 +436,11 @@ static SEC_DESC *sec_desc_parse(char *str)
 		goto done;
 	}
 
-	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, 
+	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, group_sid, 
 			    NULL, dacl, &sd_size);
 
   done:
-	SAFE_FREE(grp_sid);
+	SAFE_FREE(group_sid);
 	SAFE_FREE(owner_sid);
 
 	return ret;
@@ -465,8 +465,8 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	fprintf(f, "OWNER:%s\n", sidstr);
 
-	if (sd->grp_sid) {
-		SidToString(sidstr, sd->grp_sid);
+	if (sd->group_sid) {
+		SidToString(sidstr, sd->group_sid);
 	} else {
 		fstrcpy(sidstr, "");
 	}
@@ -475,7 +475,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	/* Print aces */
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->dacl->ace[i];
+		SEC_ACE *ace = &sd->dacl->aces[i];
 		fprintf(f, "ACL:");
 		print_ace(f, ace);
 		fprintf(f, "\n");
@@ -593,8 +593,8 @@ static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 	if (ace1->flags != ace2->flags) 
 		return ace1->flags - ace2->flags;
 
-	if (ace1->info.mask != ace2->info.mask) 
-		return ace1->info.mask - ace2->info.mask;
+	if (ace1->access_mask != ace2->access_mask) 
+		return ace1->access_mask - ace2->access_mask;
 
 	if (ace1->size != ace2->size) 
 		return ace1->size - ace2->size;
@@ -607,13 +607,13 @@ static void sort_acl(SEC_ACL *the_acl)
 	uint32 i;
 	if (!the_acl) return;
 
-	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]), QSORT_CAST ace_compare);
+	qsort(the_acl->aces, the_acl->num_aces, sizeof(the_acl->aces[0]), QSORT_CAST ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
-		if (sec_ace_equal(&the_acl->ace[i-1], &the_acl->ace[i])) {
+		if (sec_ace_equal(&the_acl->aces[i-1], &the_acl->aces[i])) {
 			int j;
 			for (j=i; j<the_acl->num_aces-1; j++) {
-				the_acl->ace[j] = the_acl->ace[j+1];
+				the_acl->aces[j] = the_acl->aces[j+1];
 			}
 			the_acl->num_aces--;
 		} else {
@@ -665,11 +665,11 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sec_ace_equal(&sd->dacl->ace[i],
-						  &old->dacl->ace[j])) {
+				if (sec_ace_equal(&sd->dacl->aces[i],
+						  &old->dacl->aces[j])) {
 					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
-						old->dacl->ace[k] = old->dacl->ace[k+1];
+						old->dacl->aces[k] = old->dacl->aces[k+1];
 					}
 					old->dacl->num_aces--;
 					found = True;
@@ -679,7 +679,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 			if (!found) {
 				printf("ACL for ACE:"); 
-				print_ace(stdout, &sd->dacl->ace[i]);
+				print_ace(stdout, &sd->dacl->aces[i]);
 				printf(" not found\n");
 			}
 		}
@@ -690,9 +690,9 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->ace[i].trustee,
-					      &old->dacl->ace[j].trustee)) {
-					old->dacl->ace[j] = sd->dacl->ace[i];
+				if (sid_equal(&sd->dacl->aces[i].trustee,
+					      &old->dacl->aces[j].trustee)) {
+					old->dacl->aces[j] = sd->dacl->aces[i];
 					found = True;
 				}
 			}
@@ -700,7 +700,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			if (!found) {
 				fstring str;
 
-				SidToString(str, &sd->dacl->ace[i].trustee);
+				SidToString(str, &sd->dacl->aces[i].trustee);
 				printf("ACL for SID %s not found\n", str);
 			}
 		}
@@ -709,15 +709,15 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			old->owner_sid = sd->owner_sid;
 		}
 
-		if (sd->grp_sid) { 
-			old->grp_sid = sd->grp_sid;
+		if (sd->group_sid) { 
+			old->group_sid = sd->group_sid;
 		}
 
 		break;
 
 	case SMB_ACL_ADD:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-			add_ace(&old->dacl, &sd->dacl->ace[i]);
+			add_ace(&old->dacl, &sd->dacl->aces[i]);
 		}
 		break;
 
@@ -738,7 +738,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	   and W2K. JRA.
 	*/
 
-	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->grp_sid,
+	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->group_sid,
 			   NULL, old->dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
