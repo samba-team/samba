@@ -371,7 +371,7 @@ sub ParseElement($)
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
 		LEVELS => GetElementLevelTable($e),
-		REPRESENTATION_TYPE => $e->{PROPERTIES}->{represent_as},
+		REPRESENTATION_TYPE => ($e->{PROPERTIES}->{represent_as} or $e->{TYPE}),
 		ALIGN => align_type($e->{TYPE}),
 		ORIGINAL => $e
 	};
@@ -388,7 +388,7 @@ sub ParseStruct($$)
 		my $e = ParseElement($x);
 		if ($x != $struct->{ELEMENTS}[-1] and 
 			$e->{LEVELS}[0]->{IS_SURROUNDING}) {
-			print "$x->{FILE}:$x->{LINE}: error: conformant member not at end of struct\n";
+			fatal($x, "conformant member not at end of struct");
 		}
 		push @elements, $e;
 	}
