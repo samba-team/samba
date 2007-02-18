@@ -1292,19 +1292,35 @@ _kdc_as_rep(krb5_context context,
 
     {
 	const krb5_enctype *p;
-	int i, j;
+	int i, j, y;
 
 	p = krb5_kerberos_enctypes(context);
 
 	sessionetype = ETYPE_NULL;
 
 	for (i = 0; p[i] != ETYPE_NULL && sessionetype == ETYPE_NULL; i++) {
+	    /* check it's valid */
 	    if (krb5_enctype_valid(context, p[i]) != 0)
 		continue;
-	    for (j = 0; j < b->etype.len; j++) {
+
+	    /* check if the client supports it */
+	    for (j = 0; j < b->etype.len && sessionetype == ETYPE_NULL; j++) {
 		if (p[i] == b->etype.val[j]) {
-		    sessionetype = p[i];
-		    break;
+		    /*
+		     * if the server (krbtgt) has explicit etypes,
+		     * check if it also supports it
+		     */
+		    if (server->entry.etypes) {
+		        for (y = 0; y < server->entry.etypes->len; y++) {
+			    if (p[i] == server->entry.etypes->val[y]) {
+			        sessionetype = p[i];
+			        break;
+			    }
+		        }
+		    } else {
+			sessionetype = p[i];
+			break;
+		    }
 		}
 	    }
 	}
