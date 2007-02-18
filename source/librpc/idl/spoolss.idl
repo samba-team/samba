@@ -1126,7 +1126,8 @@ import "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x38 */
-	WERROR spoolss_FindClosePrinterNotify(
+	[public] WERROR spoolss_FindClosePrinterNotify(
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
