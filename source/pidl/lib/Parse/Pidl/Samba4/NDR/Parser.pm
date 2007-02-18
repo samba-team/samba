@@ -12,7 +12,7 @@ require Exporter;
 @EXPORT = qw(is_charset_array);
 @EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv 
    GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction
-   NeededElement NeededTypedef);
+   NeededElement NeededType);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
@@ -1335,10 +1335,10 @@ sub ParseEnumPrint($$)
 	end_flags($enum);
 }
 
-sub DeclEnum($)
+sub DeclEnum($$$)
 {
-	my ($e,$t) = @_;
-	return "enum $e->{NAME} " . 
+	my ($e,$t,$name) = @_;
+	return "enum $name " . 
 		($t eq "pull"?"*":"") . "r";
 }
 
@@ -1418,10 +1418,10 @@ sub ParseBitmapPrint($$)
 	end_flags($bitmap);
 }
 
-sub DeclBitmap($$)
+sub DeclBitmap($$$)
 {
-	my ($e,$t) = @_;
-	return mapType(Parse::Pidl::Typelist::bitmap_type_fn($e->{DATA})) . 
+	my ($e,$t,$name) = @_;
+	return mapType(Parse::Pidl::Typelist::bitmap_type_fn($e)) . 
 		($t eq "pull"?" *":" ") . "r";
 }
 
@@ -1581,27 +1581,27 @@ sub ParseStructPull($$)
 
 #####################################################################
 # calculate size of ndr struct
-sub ParseStructNdrSize($)
+sub ParseStructNdrSize($$)
 {
-	my $t = shift;
+	my ($t, $name) = @_;
 	my $sizevar;
 
 	if (my $flags = has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
-	pidl "return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
+	pidl "return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$name);";
 }
 
-sub DeclStruct($)
+sub DeclStruct($$$)
 {
-	my ($e,$t) = @_;
-	return ($t ne "pull"?"const ":"") . "struct $e->{NAME} *r";
+	my ($e,$t,$name) = @_;
+	return ($t ne "pull"?"const ":"") . "struct $name *r";
 }
 
-sub ArgsStructNdrSize($)
+sub ArgsStructNdrSize($$)
 {
-	my $d = shift;
-	return "const struct $d->{NAME} *r, int flags";
+	my ($d, $name) = @_;
+	return "const struct $name *r, int flags";
 }
 
 $typefamily{STRUCT} = {
@@ -1615,16 +1615,16 @@ $typefamily{STRUCT} = {
 
 #####################################################################
 # calculate size of ndr struct
-sub ParseUnionNdrSize($)
+sub ParseUnionNdrSize($$)
 {
-	my $t = shift;
+	my ($t, $name) = @_;
 	my $sizevar;
 
 	if (my $flags = has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
 
-	pidl "return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
+	pidl "return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_$name);";
 }
 
 #####################################################################
@@ -1864,16 +1864,16 @@ sub ParseUnionPull($$)
 	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($e->{PROPERTIES}{relative_base});
 }
 
-sub DeclUnion($$)
+sub DeclUnion($$$)
 {
-	my ($e,$t) = @_;
-	return ($t ne "pull"?"const ":"") . "union $e->{NAME} *r";
+	my ($e,$t,$name) = @_;
+	return ($t ne "pull"?"const ":"") . "union $name *r";
 }
 
-sub ArgsUnionNdrSize($)
+sub ArgsUnionNdrSize($$)
 {
-	my $d = shift;
-	return "const union $d->{NAME} *r, uint32_t level, int flags";
+	my ($d,$name) = @_;
+	return "const union $name *r, uint32_t level, int flags";
 }
 
 $typefamily{UNION} = {
@@ -1887,80 +1887,61 @@ $typefamily{UNION} = {
 	
 #####################################################################
 # parse a typedef - push side
-sub ParseTypedefPush($)
+sub ParseTypedefPush($$)
 {
-	my($e) = shift;
+	my($e,$name) = @_;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"push");
-	fn_declare("push", $e, "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $args)") or return;
-
-	pidl "{";
-	indent;
-	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($e->{DATA}, $e->{NAME});
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}";
-	pidl "";;
+	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($e->{DATA}, $name);
 }
 
 #####################################################################
 # parse a typedef - pull side
-sub ParseTypedefPull($)
+sub ParseTypedefPull($$)
 {
-	my($e) = shift;
+	my($e,$name) = @_;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"pull");
-
-	fn_declare("pull", $e, "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $args)") or return;
-
-	pidl "{";
-	indent;
-	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}->($e->{DATA}, $e->{NAME});
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}";
-	pidl "";
+	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}->($e->{DATA}, $name);
 }
 
 #####################################################################
 # parse a typedef - print side
-sub ParseTypedefPrint($)
+sub ParseTypedefPrint($$)
 {
-	my($e) = shift;
+	my($e,$name) = @_;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"print");
-
-	pidl_hdr "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args);";
-
-	return if (has_property($e, "noprint"));
-
-	pidl "_PUBLIC_ void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
-	pidl "{";
-	indent;
-	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA}, $e->{NAME});
-	deindent;
-	pidl "}";
-	pidl "";
+	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA}, $name);
 }
 
 #####################################################################
 ## calculate the size of a structure
-sub ParseTypedefNdrSize($)
+sub ParseTypedefNdrSize($$)
 {
-	my($t) = shift;
+	my($t,$name) = @_;
 
-	my $tf = $typefamily{$t->{DATA}->{TYPE}};
-	my $args = $tf->{SIZE_FN_ARGS}->($t);
-
-	fn_declare("size", $t, "size_t ndr_size_$t->{NAME}($args)") or return;
-
-	pidl "{";
-	indent;
-	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN_BODY}->($t);
-	deindent;
-	pidl "}";
-	pidl "";
+	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN_BODY}->($t->{DATA}, $name);
 }
+
+sub DeclTypedef($$$)
+{
+	my ($e, $t, $name) = @_;
+	
+	return $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e->{DATA}, $t, $name);
+}
+
+sub ArgsTypedefNdrSize($$)
+{
+	my ($d, $name) = @_;
+	return $typefamily{$d->{DATA}->{TYPE}}->{SIZE_FN_ARGS}->($d->{DATA}, $name);
+}
+
+$typefamily{TYPEDEF} = {
+	PUSH_FN_BODY => \&ParseTypedefPush,
+	DECL => \&DeclTypedef,
+	PULL_FN_BODY => \&ParseTypedefPull,
+	PRINT_FN_BODY => \&ParseTypedefPrint,
+	SIZE_FN_ARGS => \&ArgsTypedefNdrSize,
+	SIZE_FN_BODY => \&ParseTypedefNdrSize,
+};
 
 #####################################################################
 # parse a function - print side
@@ -2379,6 +2360,74 @@ sub HeaderInterface($)
 
 }
 
+sub ParseTypePush($)
+{
+	my ($e) = @_;
+
+	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "push", $e->{NAME});
+	fn_declare("push", $e, "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $args)") or return;
+
+	pidl "{";
+	indent;
+	$typefamily{$e->{TYPE}}->{PUSH_FN_BODY}->($e, $e->{NAME});
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}";
+	pidl "";;
+}
+
+sub ParseTypePull($)
+{
+	my ($e) = @_;
+
+	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "pull", $e->{NAME});
+
+	fn_declare("pull", $e, "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $args)") or return;
+
+	pidl "{";
+	indent;
+	$typefamily{$e->{TYPE}}->{PULL_FN_BODY}->($e, $e->{NAME});
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}";
+	pidl "";
+}
+
+sub ParseTypePrint($)
+{
+	my ($e) = @_;
+	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "print", $e->{NAME});
+
+	pidl_hdr "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args);";
+
+	return if (has_property($e, "noprint"));
+
+	pidl "_PUBLIC_ void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
+	pidl "{";
+	indent;
+	$typefamily{$e->{TYPE}}->{PRINT_FN_BODY}->($e, $e->{NAME});
+	deindent;
+	pidl "}";
+	pidl "";
+}
+
+sub ParseTypeNdrSize($)
+{
+	my ($t) = @_;
+
+	my $tf = $typefamily{$t->{TYPE}};
+	my $args = $tf->{SIZE_FN_ARGS}->($t, $t->{NAME});
+
+	fn_declare("size", $t, "size_t ndr_size_$t->{NAME}($args)") or return;
+
+	pidl "{";
+	indent;
+	$typefamily{$t->{TYPE}}->{SIZE_FN_BODY}->($t, $t->{NAME});
+	deindent;
+	pidl "}";
+	pidl "";
+}
+
 #####################################################################
 # parse the interface definitions
 sub ParseInterface($$)
@@ -2398,15 +2447,15 @@ sub ParseInterface($$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
-		($needed->{"push_$d->{NAME}"}) && ParseTypedefPush($d);
-		($needed->{"pull_$d->{NAME}"}) && ParseTypedefPull($d);
-		($needed->{"print_$d->{NAME}"}) && ParseTypedefPrint($d);
+		($needed->{"push_$d->{NAME}"}) && ParseTypePush($d);
+		($needed->{"pull_$d->{NAME}"}) && ParseTypePull($d);
+		($needed->{"print_$d->{NAME}"}) && ParseTypePrint($d);
 
 		# Make sure we don't generate a function twice...
 		$needed->{"push_$d->{NAME}"} = $needed->{"pull_$d->{NAME}"} = 
 			$needed->{"print_$d->{NAME}"} = 0;
 
-		($needed->{"ndr_size_$d->{NAME}"}) && ParseTypedefNdrSize($d);
+		($needed->{"ndr_size_$d->{NAME}"}) && ParseTypeNdrSize($d);
 	}
 
 	# Functions
@@ -2524,7 +2573,7 @@ sub NeededFunction($$)
 	}
 }
 
-sub NeededTypedef($$)
+sub NeededType($$)
 {
 	my ($t,$needed) = @_;
 	if (has_property($t, "public")) {
@@ -2556,7 +2605,7 @@ sub NeededInterface($$)
 {
 	my ($interface,$needed) = @_;
 	NeededFunction($_, $needed) foreach (@{$interface->{FUNCTIONS}});
-	NeededTypedef($_, $needed) foreach (reverse @{$interface->{TYPES}});
+	NeededType($_, $needed) foreach (reverse @{$interface->{TYPES}});
 }
 
 1;

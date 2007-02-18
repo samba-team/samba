@@ -219,8 +219,6 @@ sub HeaderTypedef($)
 {
     my($typedef) = shift;
     HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    pidl ";\n\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP" or 
-	                     $typedef->{DATA}->{TYPE} eq "ENUM");
 }
 
 #####################################################################
@@ -354,8 +352,12 @@ sub HeaderInterface($)
 	}
 
 	foreach my $d (@{$interface->{DATA}}) {
-		next if ($d->{TYPE} ne "TYPEDEF");
-		HeaderTypedef($d);
+		HeaderTypedef($d) if ($d->{TYPE} eq "TYPEDEF");
+		HeaderStruct($d, $d->{NAME}) if ($d->{TYPE} eq "STRUCT");
+		HeaderUnion($d, $d->{NAME}) if ($d->{TYPE} eq "UNION");
+		HeaderEnum($d, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
+		HeaderBitmap($d, $d->{NAME}) if ($d->{TYPE} eq "BITMAP");
+		pidl ";\n\n";
 	}
 
 	foreach my $d (@{$interface->{DATA}}) {
