@@ -216,16 +216,16 @@ sub end_flags($)
 	}
 }
 
-sub GenerateStructEnv($)
+sub GenerateStructEnv($$)
 {
-	my $x = shift;
+	my ($x, $v) = @_;
 	my %env;
 
 	foreach my $e (@{$x->{ELEMENTS}}) {
-		$env{$e->{NAME}} = "r->$e->{NAME}";
+		$env{$e->{NAME}} = "$v->$e->{NAME}";
 	}
 
-	$env{"this"} = "r";
+	$env{"this"} = $v;
 
 	return \%env;
 }
@@ -1198,7 +1198,7 @@ sub ParseStructPush($$)
 	
 	return unless defined($struct->{ELEMENTS});
 
-	my $env = GenerateStructEnv($struct);
+	my $env = GenerateStructEnv($struct, "r");
 
 	EnvSubstituteValue($env, $struct);
 
@@ -1440,7 +1440,7 @@ sub ParseStructPrint($$)
 
 	return unless defined $struct->{ELEMENTS};
 
-	my $env = GenerateStructEnv($struct);
+	my $env = GenerateStructEnv($struct, "r");
 
 	EnvSubstituteValue($env, $struct);
 
@@ -1521,7 +1521,7 @@ sub ParseStructPull($$)
 
 	return unless defined $struct->{ELEMENTS};
 
-	my $env = GenerateStructEnv($struct);
+	my $env = GenerateStructEnv($struct, "r");
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
