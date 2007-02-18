@@ -196,9 +196,11 @@ struct _krb5_get_init_creds_opt_private {
     krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
-    int canonicalize;
     KRB_ERROR *error;
     krb5_get_init_creds_tristate addressless;
+    int flags;
+#define KRB5_INIT_CREDS_CANONICALIZE		1
+#define KRB5_INIT_CREDS_NO_C_CANON_CHECK	2
 };
 
 typedef struct krb5_context_data {
