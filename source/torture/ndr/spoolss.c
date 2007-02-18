@@ -240,6 +240,16 @@ static const uint8_t FCPN_out_data[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
+static const uint8_t replycloseprinter_in_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0x60, 0xe4, 0xdf, 0x77, 0xb1, 0xbf, 0x43, 0x4f,
+  0xbf, 0xb4, 0x58, 0x5c, 0x44, 0xc6, 0x3e, 0x09
+};
+
+static const uint8_t replycloseprinter_out_data[] = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "spoolss");
@@ -258,6 +268,9 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_resp_data, NDR_OUT, NULL );
+
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyClosePrinter, replycloseprinter_in_data, NDR_IN, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyClosePrinter, replycloseprinter_out_data, NDR_OUT, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindFirstPrinterChangeNotifyEx, RFFPCNEX_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindFirstPrinterChangeNotifyEx, RFFPCNEX_out_data, NDR_OUT, NULL );
