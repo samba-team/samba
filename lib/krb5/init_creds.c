@@ -418,7 +418,26 @@ krb5_get_init_creds_opt_set_canonicalize(krb5_context context,
     ret = require_ext_opt(context, opt, "init_creds_opt_set_canonicalize");
     if (ret)
 	return ret;
-    opt->opt_private->canonicalize = req;
+    if (req)
+	opt->opt_private->flags |= KRB5_INIT_CREDS_CANONICALIZE;
+    else
+	opt->opt_private->flags &= ~KRB5_INIT_CREDS_CANONICALIZE;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_win2k(krb5_context context,
+				  krb5_get_init_creds_opt *opt,
+				  krb5_boolean req)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_win2k");
+    if (ret)
+	return ret;
+    if (req)
+	opt->opt_private->flags |= KRB5_INIT_CREDS_NO_C_CANON_CHECK;
+    else
+	opt->opt_private->flags &= ~KRB5_INIT_CREDS_NO_C_CANON_CHECK;
     return 0;
 }
 
