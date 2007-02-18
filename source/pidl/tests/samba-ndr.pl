@@ -4,12 +4,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 29;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv EnvSubstituteValue); 
+use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer 
+	GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv 
+	EnvSubstituteValue NeededFunction NeededElement NeededTypedef); 
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -172,3 +174,57 @@ $fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 0 }} ] };
 $env = GenerateStructEnv($fn);
 EnvSubstituteValue($env, $fn);
 is_deeply($env, { foo => 0, this => "r" });
+
+my $needed = {};
+NeededElement({ TYPE => "foo" }, "pull", $needed); 
+is_deeply($needed, { pull_foo => 1 });
+
+# old settings should be kept
+$needed = { pull_foo => 0 };
+NeededElement({ TYPE => "foo" }, "pull", $needed); 
+is_deeply($needed, { pull_foo => 0 });
+
+# print/pull/push are independent of each other
+$needed = { pull_foo => 0 };
+NeededElement({ TYPE => "foo" }, "print", $needed); 
+is_deeply($needed, { pull_foo => 0, print_foo => 1 });
+
+$needed = { };
+NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar" } ] }, $needed); 
+is_deeply($needed, { pull_foo => 1, print_foo => 1, push_foo => 1,
+	                 pull_bar => 1, print_bar => 1, push_bar => 1});
+
+# push/pull/print are always set for functions
+$needed = { pull_foo => 0 };
+NeededFunction({ NAME => "foo", ELEMENTS => [ { TYPE => "bar" } ] }, $needed); 
+is_deeply($needed, { pull_foo => 1, print_foo => 1, push_foo => 1,
+	                 pull_bar => 1, push_bar => 1, print_bar => 1});
+
+# public structs are always needed
+$needed = {};
+NeededTypedef({ NAME => "bla", DATA => { TYPE => "STRUCT", ELEMENTS => [] } },
+			  $needed);
+is_deeply($needed, { });
+
+$needed = {};
+NeededTypedef({ PROPERTIES => { public => 1 }, NAME => "bla", 
+	            DATA => { TYPE => "STRUCT", ELEMENTS => [] } },
+			  $needed);
+is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1 });
+
+# make sure types for elements are set too
+$needed = {};
+NeededTypedef({ PROPERTIES => { public => 1 }, NAME => "bla", 
+	            DATA => { TYPE => "STRUCT", 
+						  ELEMENTS => [ { TYPE => "bar" } ] } },
+			  $needed);
+is_deeply($needed, { pull_bla => 1, print_bla => 1, push_bla => 1,
+	                 pull_bar => 1, print_bar => 1, push_bar => 1});
+
+$needed = {};
+NeededTypedef({ PROPERTIES => { gensize => 1}, NAME => "bla", 
+	            DATA => { TYPE => "STRUCT", 
+						  ELEMENTS => [ { TYPE => "bar" } ] } },
+			  $needed);
+is_deeply($needed, { ndr_size_bla => 1 });
+	                 
