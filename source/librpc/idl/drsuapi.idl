@@ -111,7 +111,7 @@ interface drsuapi
 	const char *DRSUAPI_DS_BIND_GUID_W2K	= "6abec3d1-3054-41c8-a362-5a0c5b7d5d71";
 	const char *DRSUAPI_DS_BIND_GUID_W2K3	= "6afab99c-6e26-464a-975f-f58f105218bc";
 
-	WERROR drsuapi_DsBind(
+	[public] WERROR drsuapi_DsBind(
 		[in,unique]	    GUID *bind_guid,
 		[in,out,unique]    drsuapi_DsBindInfoCtr *bind_info,
 		[out]   policy_handle *bind_handle
@@ -1114,7 +1114,7 @@ interface drsuapi
 		[case(3)] drsuapi_DsAddEntryCtr3 ctr3;
 	} drsuapi_DsAddEntryCtr;
 
-	WERROR drsuapi_DsAddEntry(
+	[public] WERROR drsuapi_DsAddEntry(
 		[in] policy_handle *bind_handle,
 		[in,out] int32 level,
 		[in,switch_is(level)] drsuapi_DsAddEntryRequest req,
