@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
+#include "torture/ui.h"
 #include "util/dlinklist.h"
 
 struct ndr_pull_test_data {
@@ -44,6 +45,10 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, data->pull_fn(ndr, data->ndr_flags, ds), 
 							   "pulling");
+
+	torture_assert(tctx, ndr->offset == ndr->data_size, 
+				   talloc_asprintf(tctx, 
+					   "%d unread bytes", ndr->data_size - ndr->offset));
 
 	if (check_fn != NULL) 
 		return check_fn(tctx, ds);

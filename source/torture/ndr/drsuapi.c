@@ -294,10 +294,10 @@ struct torture_suite *ndr_drsuapi_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsAddEntry, DsAddEntry_req1_dat, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsAddEntry, DsAddEntry_resp1_dat, NDR_OUT, NULL );
 
-	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_req1_dat, NDR_IN, NULL );
+	/*torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_req1_dat, NDR_IN, NULL );*/
 	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_resp1_dat, NDR_OUT, NULL );
 
-	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_req2_dat, NDR_IN, NULL );
+	/* torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_req2_dat, NDR_IN, NULL ); */
 	torture_suite_add_ndr_pull_fn_test(suite, drsuapi_DsBind, DsBind_resp2_dat, NDR_OUT, NULL );
 
 	return suite;
