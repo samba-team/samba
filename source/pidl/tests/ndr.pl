@@ -27,15 +27,13 @@ is_deeply(GetElementLevelTable($e), [
 		'IS_DEFERRED' => 0,
 		'LEVEL_INDEX' => 0,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
-my $ne = ParseElement($e);
+my $ne = ParseElement($e, undef);
 is($ne->{ORIGINAL}, $e);
 is($ne->{NAME}, "v");
 is($ne->{ALIGN}, 1);
@@ -45,11 +43,9 @@ is_deeply($ne->{LEVELS},  [
 		'IS_DEFERRED' => 0,
 		'LEVEL_INDEX' => 0,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
@@ -77,11 +73,9 @@ is_deeply(GetElementLevelTable($e), [
 		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 1,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
@@ -117,11 +111,9 @@ is_deeply(GetElementLevelTable($e), [
 		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 2,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
@@ -149,11 +141,9 @@ is_deeply(GetElementLevelTable($e), [
 		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 1,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
@@ -182,11 +172,9 @@ is_deeply(GetElementLevelTable($e), [
 		'IS_DEFERRED' => 0,
 		'LEVEL_INDEX' => 1,
 		'DATA_TYPE' => 'uint8',
-		'CONVERT_FROM' => undef,
 		'CONTAINS_DEFERRED' => 0,
 		'TYPE' => 'DATA',
 		'IS_SURROUNDING' => 0,
-		'CONVERT_TO' => undef
 	}
 ]);
 
@@ -200,7 +188,7 @@ $e = {
 	'PARENT' => { TYPE => 'STRUCT' },
 	'LINE' => 42 };
 
-$ne = ParseElement($e);
+$ne = ParseElement($e, undef);
 is($ne->{REPRESENTATION_TYPE}, "bar");
 
 # representation_type
@@ -213,5 +201,5 @@ $e = {
 	'PARENT' => { TYPE => 'STRUCT' },
 	'LINE' => 42 };
 
-$ne = ParseElement($e);
+$ne = ParseElement($e, undef);
 is($ne->{REPRESENTATION_TYPE}, "uint8");

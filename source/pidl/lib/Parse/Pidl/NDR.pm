@@ -257,8 +257,6 @@ sub GetElementLevelTable($)
 
 	push (@$order, {
 		TYPE => "DATA",
-		CONVERT_TO => has_property($e, ""),
-		CONVERT_FROM => has_property($e, ""),
 		DATA_TYPE => $e->{TYPE},
 		IS_DEFERRED => $is_deferred,
 		CONTAINS_DEFERRED => can_contain_deferred($e),
@@ -360,11 +358,15 @@ sub align_type($)
 	die("Unknown data type type $dt->{TYPE}");
 }
 
-sub ParseElement($)
+sub ParseElement($$)
 {
-	my $e = shift;
+	my ($e, $pointer_default) = @_;
 
 	$e->{TYPE} = expandAlias($e->{TYPE});
+
+	if (ref($e->{TYPE}) eq "HASH") {
+		$e->{TYPE} = ParseType($e->{TYPE}, $pointer_default);
+	}
 
 	return {
 		NAME => $e->{NAME},
@@ -379,14 +381,13 @@ sub ParseElement($)
 
 sub ParseStruct($$)
 {
-	my ($ndr,$struct) = @_;
+	my ($struct, $pointer_default) = @_;
 	my @elements = ();
 	my $surrounding = undef;
 
-
 	foreach my $x (@{$struct->{ELEMENTS}}) 
 	{
-		my $e = ParseElement($x);
+		my $e = ParseElement($x, $pointer_default);
 		if ($x != $struct->{ELEMENTS}[-1] and 
 			$e->{LEVELS}[0]->{IS_SURROUNDING}) {
 			fatal($x, "conformant member not at end of struct");
@@ -423,7 +424,7 @@ sub ParseStruct($$)
 
 sub ParseUnion($$)
 {
-	my ($ndr,$e) = @_;
+	my ($e, $pointer_default) = @_;
 	my @elements = ();
 	my $switch_type = has_property($e, "switch_type");
 	unless (defined($switch_type)) { $switch_type = "uint32"; }
@@ -437,7 +438,7 @@ sub ParseUnion($$)
 		if ($x->{TYPE} eq "EMPTY") {
 			$t = { TYPE => "EMPTY" };
 		} else {
-			$t = ParseElement($x);
+			$t = ParseElement($x, $pointer_default);
 		}
 		if (has_property($x, "default")) {
 			$t->{CASE} = "default";
@@ -463,7 +464,7 @@ sub ParseUnion($$)
 
 sub ParseEnum($$)
 {
-	my ($ndr,$e) = @_;
+	my ($e, $pointer_default) = @_;
 
 	return {
 		TYPE => "ENUM",
@@ -477,7 +478,7 @@ sub ParseEnum($$)
 
 sub ParseBitmap($$)
 {
-	my ($ndr,$e) = @_;
+	my ($e, $pointer_default) = @_;
 
 	return {
 		TYPE => "BITMAP",
@@ -491,10 +492,10 @@ sub ParseBitmap($$)
 
 sub ParseType($$)
 {
-	my ($ndr, $d) = @_;
+	my ($d, $pointer_default) = @_;
 
 	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "UNION") {
-		CheckPointerTypes($d, $ndr->{PROPERTIES}->{pointer_default});
+		CheckPointerTypes($d, $pointer_default);
 	}
 
 	my $data = {
@@ -503,20 +504,20 @@ sub ParseType($$)
 		ENUM => \&ParseEnum,
 		BITMAP => \&ParseBitmap,
 		TYPEDEF => \&ParseTypedef,
-	}->{$d->{TYPE}}->($ndr, $d);
+	}->{$d->{TYPE}}->($d, $pointer_default);
 
 	return $data;
 }
 
 sub ParseTypedef($$)
 {
-	my ($ndr,$d) = @_;
+	my ($d, $pointer_default) = @_;
 
 	if (defined($d->{DATA}->{PROPERTIES}) && !defined($d->{PROPERTIES})) {
 		$d->{PROPERTIES} = $d->{DATA}->{PROPERTIES};
 	}
 
-	my $data = ParseType($ndr, $d->{DATA});
+	my $data = ParseType($d->{DATA}, $pointer_default);
 	$data->{ALIGN} = align_type($d->{NAME});
 
 	return {
@@ -550,7 +551,7 @@ sub ParseFunction($$$)
 	}
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
-		my $e = ParseElement($x);
+		my $e = ParseElement($x, $ndr->{PROPERTIES}->{pointer_default});
 		push (@{$e->{DIRECTION}}, "in") if (has_property($x, "in"));
 		push (@{$e->{DIRECTION}}, "out") if (has_property($x, "out"));
 
@@ -618,7 +619,7 @@ sub ParseInterface($)
 		} elsif ($d->{TYPE} eq "CONST") {
 			push (@consts, ParseConst($idl, $d));
 		} else {
-			push (@types, ParseType($idl, $d));
+			push (@types, ParseType($d, $idl->{PROPERTIES}->{pointer_default}));
 		}
 	}
 
