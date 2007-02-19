@@ -270,17 +270,25 @@ interface drsblobs {
 		[value(0)] uint32 unknown2;
 	} package_PrimaryKerberosKey;
 
-	typedef [public] struct {
-		[value(3)] uint32 version;
-		uint16 num_keys1;
-		uint16 num_keys2;
+	typedef struct {
+		uint16 num_keys;
+		uint16 num_old_keys;
 		package_PrimaryKerberosString salt;
 		[value(0)] uint32 unknown1;
 		[value(0)] uint32 unknown2;
-		package_PrimaryKerberosKey keys1[num_keys1];
-		package_PrimaryKerberosKey keys2[num_keys2];
-		udlong unknown3_1[num_keys1];
-		udlong unknown3_2[num_keys2];
+		package_PrimaryKerberosKey keys[num_keys];
+		package_PrimaryKerberosKey old_keys[num_old_keys];
+		udlong unknown3[num_keys];
+		udlong unknown3_old[num_old_keys];
+	} package_PrimaryKerberosCtr3;
+
+	typedef [nodiscriminant] union {
+		[case(3)] package_PrimaryKerberosCtr3 ctr3;
+	} package_PrimaryKerberosCtr;
+
+	typedef [public] struct {
+		[value(3)] uint32 version;
+		[switch_is(version)] package_PrimaryKerberosCtr ctr;
 	} package_PrimaryKerberosBlob;
 
 	void decode_PrimaryKerberos(
