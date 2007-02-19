@@ -363,7 +363,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 		domain->name ));
 
 	if (domain->internal) {
-		DEBUG(3,("set_domain_offline: domain %s is internal - logic error.\n",
+		DEBUG(3,("set_domain_online: domain %s is internal - logic error.\n",
 			domain->name ));
 		return;
 	}
