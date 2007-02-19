@@ -348,6 +348,7 @@ typedef struct {
 	char *szQueuepausecommand;
 	char *szQueueresumecommand;
 	char *szPrintername;
+	char *szPrintjobUsername;
 	char *szDontdescend;
 	char **szHostsallow;
 	char **szHostsdeny;
@@ -488,6 +489,7 @@ static service sDefault = {
 	NULL,			/* szQueuepausecommand */
 	NULL,			/* szQueueresumecommand */
 	NULL,			/* szPrintername */
+	NULL,			/* szPrintjobUsername */
 	NULL,			/* szDontdescend */
 	NULL,			/* szHostsallow */
 	NULL,			/* szHostsdeny */
@@ -1067,6 +1069,7 @@ static struct parm_struct parm_table[] = {
 	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"force printername", P_BOOL, P_LOCAL, &sDefault.bForcePrintername, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"printjob username", P_STRING, P_LOCAL, &sDefault.szPrintjobUsername, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT},
 
 	{N_("Filename Handling"), P_SEP, P_SEPARATOR}, 
 	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, FLAG_ADVANCED}, 
@@ -1410,6 +1413,7 @@ static void init_globals(BOOL first_time_only)
 				string_set((char **)parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
+		string_set(&sDefault.szPrintjobUsername, "%U");
 
 		init_printer_values(&sDefault);
 
@@ -1993,6 +1997,7 @@ FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
 static FN_LOCAL_STRING(_lp_printername, szPrintername)
+FN_LOCAL_CONST_STRING(lp_printjob_username, szPrintjobUsername)
 FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
 FN_LOCAL_LIST(lp_hostsdeny, szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript, szMagicScript)
