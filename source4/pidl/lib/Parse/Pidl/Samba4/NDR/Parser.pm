@@ -643,9 +643,9 @@ sub ParseElementPushLevel
 				return;
 			} 
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
+			ParseSwitchPush($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
-			ParseDataPush($e, $l, $ndr, $var_name, $ndr_flags);
+			ParseDataPush($e, $l, $ndr, $var_name, $primitives, $deferred);
 		}
 	}
 
@@ -868,9 +868,9 @@ sub ParseElementPrint($$$)
 
 #####################################################################
 # parse scalars in a structure element - pull size
-sub ParseSwitchPull($$$$$$)
+sub ParseSwitchPull($$$$$)
 {
-	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
+	my($e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 
@@ -880,9 +880,9 @@ sub ParseSwitchPull($$$$$$)
 
 #####################################################################
 # push switch element
-sub ParseSwitchPush($$$$$$)
+sub ParseSwitchPush($$$$$)
 {
-	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
+	my($e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 		check_null_pointer($e, $env, \&pidl, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
 
@@ -890,12 +890,14 @@ sub ParseSwitchPush($$$$$$)
 	pidl "NDR_CHECK(ndr_push_set_switch_value($ndr, $var_name, $switch_var));";
 }
 
-sub ParseDataPull($$$$$)
+sub ParseDataPull($$$$$$)
 {
-	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
+	my ($e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
 	if (not ref($l->{DATA_TYPE}) or 
 		defined($l->{DATA_TYPE}->{NAME})) {
+
+		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 		my $t;
 		if (ref($l->{DATA_TYPE}) eq "HASH") {
 			$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
@@ -919,13 +921,13 @@ sub ParseDataPull($$$$$)
 			pidl "}";
 		}
 	} else {
-		ParseTypePull($l->{DATA_TYPE}, $var_name);
+		ParseTypePull($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
 	}
 }
 
-sub ParseDataPush($$$$$)
+sub ParseDataPush($$$$$$)
 {
-	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
+	my ($e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
 	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
 		my $t;
@@ -941,9 +943,10 @@ sub ParseDataPush($$$$$)
 			$var_name = get_pointer_to($var_name);
 		}
 
+		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 		pidl "NDR_CHECK(ndr_push_$t($ndr, $ndr_flags, $var_name));";
 	} else {
-		ParseTypePush($l->{DATA_TYPE}, $var_name);
+		ParseTypePush($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
 	}
 }
 
@@ -1069,9 +1072,9 @@ sub ParseElementPullLevel
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPull($e, $l, $ndr, $var_name);
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			ParseSwitchPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
+			ParseSwitchPull($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
-			ParseDataPull($e, $l, $ndr, $var_name, $ndr_flags);
+			ParseDataPull($e, $l, $ndr, $var_name, $primitives, $deferred);
 		}
 	}
 
@@ -2419,9 +2422,9 @@ sub HeaderInterface($)
 
 }
 
-sub ParseTypePush($$)
+sub ParseTypePush($$$$)
 {
-	my ($e, $varname) = @_;
+	my ($e, $varname, $primitives, $deferred) = @_;
 
 	# save the old relative_base_offset
 	pidl "uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);" if defined(has_property($e, "relative_base"));
@@ -2439,16 +2442,16 @@ sub ParseTypePushFunction($$)
 
 	pidl "{";
 	indent;
-	ParseTypePush($e, $varname);
+	ParseTypePush($e, $varname, 1, 1);
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
 	pidl "";;
 }
 
-sub ParseTypePull($$)
+sub ParseTypePull($$$$)
 {
-	my ($e, $varname) = @_;
+	my ($e, $varname, $primitives, $deferred) = @_;
 
 	# save the old relative_base_offset
 	pidl "uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);" if defined(has_property($e, "relative_base"));
@@ -2468,7 +2471,7 @@ sub ParseTypePullFunction($$)
 
 	pidl "{";
 	indent;
-	ParseTypePull($e, $varname);
+	ParseTypePull($e, $varname, 1, 1);
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
