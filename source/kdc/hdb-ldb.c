@@ -214,7 +214,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsPackage *scp = NULL;
 	struct package_PrimaryKerberosBlob _pkb;
-	struct package_PrimaryKerberosBlob *pkb = NULL;
+	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
 	uint32_t i;
 	uint32_t allocated_keys = 0;
 
@@ -275,12 +275,22 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		status = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
 					      (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NT_STATUS_IS_OK(status)) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			ret = EINVAL;
 			goto out;
 		}
-		pkb = &_pkb;
 
-		allocated_keys += pkb->num_keys1;
+		if (_pkb.version != 3) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse PrimaryKerberos not version 3");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse PrimaryKerberos not version 3");
+			ret = EINVAL;
+			goto out;
+		}
+		
+		pkb3 = &_pkb.ctr.ctr3;
+
+		allocated_keys += pkb3->num_keys;
 	}
 
 	if (allocated_keys == 0) {
@@ -316,15 +326,15 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		entry_ex->entry.keys.len++;
 	}
 
-	if (pkb) {
-		for (i=0; i < pkb->num_keys1; i++) {
+	if (pkb3) {
+		for (i=0; i < pkb3->num_keys; i++) {
 			bool use = true;
 			Key key;
 
-			if (!pkb->keys1[i].value) continue;
+			if (!pkb3->keys[i].value) continue;
 
 			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-				switch (pkb->keys1[i].keytype) {
+				switch (pkb3->keys[i].keytype) {
 				case ENCTYPE_DES_CBC_CRC:
 				case ENCTYPE_DES_CBC_MD5:
 					break;
@@ -338,10 +348,10 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 			key.mkvno = 0;
 
-			if (pkb->salt.string) {
+			if (pkb3->salt.string) {
 				DATA_BLOB salt;
 
-				salt = data_blob_string_const(pkb->salt.string);
+				salt = data_blob_string_const(pkb3->salt.string);
 
 				key.salt = calloc(1, sizeof(*key.salt));
 				if (key.salt == NULL) {
@@ -360,9 +370,9 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			}
 
 			ret = krb5_keyblock_init(context,
-						 pkb->keys1[i].keytype,
-						 pkb->keys1[i].value->data,
-						 pkb->keys1[i].value->length,
+						 pkb3->keys[i].keytype,
+						 pkb3->keys[i].value->data,
+						 pkb3->keys[i].value->length,
 						 &key.key);
 			if (ret) {
 				if (key.salt) {
@@ -380,7 +390,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 out:
 	if (ret != 0) {
-		entry_ex->entry.keys.len = 0;	
+		entry_ex->entry.keys.len = 0;
 	}
 	if (entry_ex->entry.keys.len == 0 && entry_ex->entry.keys.val) {
 		free(entry_ex->entry.keys.val);

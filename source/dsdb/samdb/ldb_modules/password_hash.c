@@ -221,9 +221,10 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	krb5_salt salt;
 	krb5_keyblock key;
 	uint32_t k=0;
+	struct package_PrimaryKerberosCtr3 *pkb3 = &pkb->ctr.ctr3;
 	struct supplementalCredentialsPackage *old_scp = NULL;
 	struct package_PrimaryKerberosBlob _old_pkb;
-	struct package_PrimaryKerberosBlob *old_pkb = NULL;
+	struct package_PrimaryKerberosCtr3 *old_pkb3 = NULL;
 	uint32_t i;
 	NTSTATUS status;
 
@@ -305,16 +306,16 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* create a talloc copy */
-	pkb->salt.string = talloc_strndup(io->ac,
+	pkb3->salt.string = talloc_strndup(io->ac,
 					  salt.saltvalue.data,
 					  salt.saltvalue.length);
 	krb5_free_salt(io->smb_krb5_context->krb5_context, salt);
-	if (!pkb->salt.string) {
+	if (!pkb3->salt.string) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	salt.saltvalue.data	= discard_const(pkb->salt.string);
-	salt.saltvalue.length	= strlen(pkb->salt.string);
+	salt.saltvalue.data	= discard_const(pkb3->salt.string);
+	salt.saltvalue.length	= strlen(pkb3->salt.string);
 
 	/*
 	 * prepare generation of keys
@@ -323,16 +324,16 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	 * ENCTYPE_DES_CBC_MD5
 	 * ENCTYPE_DES_CBC_CRC
 	 *
-	 * NOTE: update num_keys1 when you add another enctype!
+	 * NOTE: update num_keys when you add another enctype!
 	 */
-	pkb->num_keys1	= 0;
-	pkb->keys1	= talloc_array(io->ac, struct package_PrimaryKerberosKey, 3);
-	if (!pkb->keys1) {
+	pkb3->num_keys	= 3;
+	pkb3->keys	= talloc_array(io->ac, struct package_PrimaryKerberosKey, pkb3->num_keys);
+	if (!pkb3->keys) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	pkb->unknown3_1	= talloc_zero_array(io->ac, uint64_t, pkb->num_keys1);
-	if (!pkb->unknown3_1) {
+	pkb3->unknown3	= talloc_zero_array(io->ac, uint64_t, pkb3->num_keys);
+	if (!pkb3->unknown3) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -357,18 +358,18 @@ if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
 					   io->n.cleartext,
 					   salt,
 					   &key);
-	pkb->keys1[k].keytype	= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
-	if (!pkb->keys1[k].value) {
+	pkb3->keys[k].keytype	= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
+	if (!pkb3->keys[k].value) {
 		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
 						   key.keyvalue.data,
 						   key.keyvalue.length);
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb->keys1[k].value->data) {
+	if (!pkb3->keys[k].value->data) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -384,18 +385,18 @@ if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
 					   io->n.cleartext,
 					   salt,
 					   &key);
-	pkb->keys1[k].keytype	= ENCTYPE_DES_CBC_MD5;
-	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
-	if (!pkb->keys1[k].value) {
+	pkb3->keys[k].keytype	= ENCTYPE_DES_CBC_MD5;
+	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
+	if (!pkb3->keys[k].value) {
 		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
 						   key.keyvalue.data,
 						   key.keyvalue.length);
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb->keys1[k].value->data) {
+	if (!pkb3->keys[k].value->data) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -410,30 +411,30 @@ if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
 					   io->n.cleartext,
 					   salt,
 					   &key);
-	pkb->keys1[k].keytype	= ENCTYPE_DES_CBC_CRC;
-	pkb->keys1[k].value	= talloc(pkb->keys1, DATA_BLOB);
-	if (!pkb->keys1[k].value) {
+	pkb3->keys[k].keytype	= ENCTYPE_DES_CBC_CRC;
+	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
+	if (!pkb3->keys[k].value) {
 		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pkb->keys1[k].value	= data_blob_talloc(pkb->keys1[k].value,
+	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
 						   key.keyvalue.data,
 						   key.keyvalue.length);
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb->keys1[k].value->data) {
+	if (!pkb3->keys[k].value->data) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	k++;
 
 	/* fix up key number */
-	pkb->num_keys1 = k;
+	pkb3->num_keys = k;
 
 	/* initialize the old keys to zero */
-	pkb->num_keys2	= 0;
-	pkb->keys2	= NULL;
-	pkb->unknown3_2	= NULL;
+	pkb3->num_old_keys	= 0;
+	pkb3->old_keys		= NULL;
+	pkb3->unknown3_old	= NULL;
 
 	/* if there're no old keys, then we're done */
 	if (!old_scb) {
@@ -477,18 +478,27 @@ if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
 					       nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		old_pkb = &_old_pkb;
+
+		if (_old_pkb.version != 3) {
+			ldb_asprintf_errstring(io->ac->module->ldb,
+					       "setup_primary_kerberos: "
+					       "package_PrimaryKerberosBlob version[%u] expected[3]",
+					       _old_pkb.version);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		old_pkb3 = &_old_pkb.ctr.ctr3;
 	}
 
 	/* if we didn't found the old keys we're done */
-	if (!old_pkb) {
+	if (!old_pkb3) {
 		return LDB_SUCCESS;
 	}
 
 	/* fill in the old keys */
-	pkb->num_keys2	= old_pkb->num_keys1;
-	pkb->keys2	= old_pkb->keys1;
-	pkb->unknown3_2	= old_pkb->unknown3_1;
+	pkb3->num_old_keys	= old_pkb3->num_keys;
+	pkb3->old_keys		= old_pkb3->keys;
+	pkb3->unknown3_old	= old_pkb3->unknown3;
 
 	return LDB_SUCCESS;
 }
