@@ -183,19 +183,14 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 {
 	tdb_off_t rec_ptr;
 	struct list_struct rec;
-	TDB_DATA data;
 	int ret;
 	u32 hash;
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
 
-	rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec);
-
-	if (rec_ptr == 0) {
-		data.dptr = NULL;
-		data.dsize = 0;
-		return parser(key, data, private_data);
+	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec))) {
+		return TDB_ERRCODE(TDB_ERR_NOEXIST, 0);
 	}
 
 	ret = tdb_parse_data(tdb, key, rec_ptr + sizeof(rec) + rec.key_len,
@@ -204,9 +199,7 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 
 	return ret;
-	
 }
-		     
 
 /* check if an entry in the database exists 
 
