@@ -238,6 +238,11 @@ BOOL cli_credentials_authentication_requested(struct cli_credentials *cred)
 	if (cred->username_obtained >= CRED_SPECIFIED) {
 		return True;
 	}
+
+	if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+		return True;
+	}
+
 	return False;
 }
 
