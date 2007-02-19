@@ -397,7 +397,7 @@ CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
 CHARSET_MACOSXFS_OBJ = modules/charset_macosxfs.o
 
-GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_ldb.o
+GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_tdb.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o \
