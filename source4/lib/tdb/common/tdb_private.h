@@ -196,6 +196,11 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct *rec);
 unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len);
+int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
+		   tdb_off_t offset, tdb_len_t len,
+		   int (*parser)(TDB_DATA key, TDB_DATA data,
+				 void *private_data),
+		   void *private_data);
 tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, int locktype,
 			   struct list_struct *rec);
 void tdb_io_init(struct tdb_context *tdb);

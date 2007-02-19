@@ -101,6 +101,10 @@ void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
 TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
+int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+		     int (*parser)(TDB_DATA key, TDB_DATA data,
+				   void *private_data),
+		     void *private_data);
 int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
 int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);

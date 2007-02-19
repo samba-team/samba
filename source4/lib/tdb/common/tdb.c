@@ -56,6 +56,10 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1, 1);
 }
 
+static int tdb_key_compare(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	return memcmp(data.dptr, key.dptr, data.dsize);
+}
 
 /* Returns 0 on fail.  On success, return offset of record, and fills
    in rec */
@@ -73,19 +77,12 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, u32 hash,
 		if (tdb_rec_read(tdb, rec_ptr, r) == -1)
 			return 0;
 
-		if (!TDB_DEAD(r) && hash==r->full_hash && key.dsize==r->key_len) {
-			unsigned char *k;
-			/* a very likely hit - read the key */
-			k = tdb_alloc_read(tdb, rec_ptr + sizeof(*r), 
-					   r->key_len);
-			if (!k)
-				return 0;
-
-			if (memcmp(key.dptr, k, key.dsize) == 0) {
-				SAFE_FREE(k);
-				return rec_ptr;
-			}
-			SAFE_FREE(k);
+		if (!TDB_DEAD(r) && hash==r->full_hash
+		    && key.dsize==r->key_len
+		    && tdb_parse_data(tdb, key, rec_ptr + sizeof(*r),
+				      r->key_len, tdb_key_compare,
+				      NULL) == 0) {
+			return rec_ptr;
 		}
 		rec_ptr = r->next;
 	}
@@ -160,6 +157,47 @@ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 				  rec.data_len);
 	ret.dsize = rec.data_len;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
+	return ret;
+}
+
+/*
+ * Find an entry in the database and hand the record's data to a parsing
+ * function. The parsing function is executed under the chain read lock, so it
+ * should be fast and should not block on other syscalls.
+ *
+ * DONT CALL OTHER TDB CALLS FROM THE PARSER, THIS MIGHT LEAD TO SEGFAULTS.
+ *
+ * For mmapped tdb's that do not have a transaction open it points the parsing
+ * function directly at the mmap area, it avoids the malloc/memcpy in this
+ * case. If a transaction is open or no mmap is available, it has to do
+ * malloc/read/parse/free.
+ *
+ * This is interesting for all readers of potentially large data structures in
+ * the tdb records, ldb indexes being one example.
+ */
+
+int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+		     int (*parser)(TDB_DATA key, TDB_DATA data,
+				   void *private_data),
+		     void *private_data)
+{
+	tdb_off_t rec_ptr;
+	struct list_struct rec;
+	int ret;
+	u32 hash;
+
+	/* find which hash bucket it is in */
+	hash = tdb->hash_fn(&key);
+
+	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec))) {
+		return TDB_ERRCODE(TDB_ERR_NOEXIST, 0);
+	}
+
+	ret = tdb_parse_data(tdb, key, rec_ptr + sizeof(rec) + rec.key_len,
+			     rec.data_len, parser, private_data);
+
+	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
+
 	return ret;
 }
 

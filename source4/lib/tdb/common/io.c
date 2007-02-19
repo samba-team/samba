@@ -353,6 +353,40 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 	return buf;
 }
 
+/* Give a piece of tdb data to a parser */
+
+int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
+		   tdb_off_t offset, tdb_len_t len,
+		   int (*parser)(TDB_DATA key, TDB_DATA data,
+				 void *private_data),
+		   void *private_data)
+{
+	TDB_DATA data;
+	int result;
+
+	data.dsize = len;
+
+	if ((tdb->transaction == NULL) && (tdb->map_ptr != NULL)) {
+		/*
+		 * Optimize by avoiding the malloc/memcpy/free, point the
+		 * parser directly at the mmap area.
+		 */
+		if (tdb->methods->tdb_oob(tdb, offset+len, 0) != 0) {
+			return -1;
+		}
+		data.dptr = offset + (unsigned char *)tdb->map_ptr;
+		return parser(key, data, private_data);
+	}
+
+	if (!(data.dptr = tdb_alloc_read(tdb, offset, len))) {
+		return -1;
+	}
+
+	result = parser(key, data, private_data);
+	free(data.dptr);
+	return result;
+}
+
 /* read/write a record */
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
