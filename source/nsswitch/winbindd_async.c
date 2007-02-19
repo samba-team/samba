@@ -764,9 +764,7 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 	}
 
 	fstrcpy(state->response.data.name.dom_name, dom_name);
-	TALLOC_FREE(dom_name);
 	fstrcpy(state->response.data.name.name, name);
-	TALLOC_FREE(name);
 	state->response.data.name.type = type;
 
 	TALLOC_FREE(dom_name);
