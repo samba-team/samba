@@ -1,7 +1,7 @@
 <samba:parameter name="kernel change notify"
-                 context="G"
+                 context="S"
 				 type="boolean"
-                 advanced="1" developer="1"
+                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies whether Samba should ask the 
@@ -10,7 +10,7 @@
 	</para>
 
 	<para>This parameter is only used when your kernel supports 
-	change notification to user programs, using the F_NOTIFY fcntl.
+	change notification to user programs using the inotify interface.
 	</para>
 </description>
 <value type="default">yes</value>
