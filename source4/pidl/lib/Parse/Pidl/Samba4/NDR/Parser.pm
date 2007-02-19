@@ -12,7 +12,7 @@ require Exporter;
 @EXPORT = qw(is_charset_array);
 @EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv 
    GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction
-   NeededElement NeededType);
+   NeededElement NeededType $res);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
@@ -110,7 +110,7 @@ sub get_value_of($)
 	}
 }
 
-my $res;
+our $res;
 my $deferred = [];
 my $tabs = "";
 
@@ -1194,6 +1194,34 @@ sub ParseStructPushPrimitives($$$$)
 {
 	my ($struct, $name, $varname, $env) = @_;
 
+	# see if the structure contains a conformant array. If it
+	# does, then it must be the last element of the structure, and
+	# we need to push the conformant length early, as it fits on
+	# the wire before the structure (and even before the structure
+	# alignment)
+	if (defined($struct->{SURROUNDING_ELEMENT})) {
+		my $e = $struct->{SURROUNDING_ELEMENT};
+
+		if (defined($e->{LEVELS}[0]) and 
+			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
+			my $size;
+			
+			if ($e->{LEVELS}[0]->{IS_ZERO_TERMINATED}) {
+				if (has_property($e, "charset")) {
+					$size = "ndr_charset_length($varname->$e->{NAME}, CH_$e->{PROPERTIES}->{charset})";
+				} else {
+					$size = "ndr_string_length($varname->$e->{NAME}, sizeof(*$varname->$e->{NAME}))";
+				}
+			} else {
+				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
+			}
+
+			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
+		} else {
+			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, $varname->$e->{NAME})));";
+		}
+	}
+
 	pidl "NDR_CHECK(ndr_push_align(ndr, $struct->{ALIGN}));";
 
 	if (defined($struct->{PROPERTIES}{relative_base})) {
@@ -1231,34 +1259,6 @@ sub ParseStructPush($$$)
 	DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
 	start_flags($struct);
-
-	# see if the structure contains a conformant array. If it
-	# does, then it must be the last element of the structure, and
-	# we need to push the conformant length early, as it fits on
-	# the wire before the structure (and even before the structure
-	# alignment)
-	if (defined($struct->{SURROUNDING_ELEMENT})) {
-		my $e = $struct->{SURROUNDING_ELEMENT};
-
-		if (defined($e->{LEVELS}[0]) and 
-			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
-			my $size;
-			
-			if ($e->{LEVELS}[0]->{IS_ZERO_TERMINATED}) {
-				if (has_property($e, "charset")) {
-					$size = "ndr_charset_length($varname->$e->{NAME}, CH_$e->{PROPERTIES}->{charset})";
-				} else {
-					$size = "ndr_string_length($varname->$e->{NAME}, sizeof(*$varname->$e->{NAME}))";
-				}
-			} else {
-				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
-			}
-
-			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
-		} else {
-			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, $varname->$e->{NAME})));";
-		}
-	}
 
 	pidl "if (ndr_flags & NDR_SCALARS) {";
 	indent;

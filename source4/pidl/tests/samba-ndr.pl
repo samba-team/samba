@@ -4,14 +4,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 34;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
 use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer 
 	GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv 
-	EnvSubstituteValue NeededFunction NeededElement NeededType); 
+	EnvSubstituteValue NeededFunction NeededElement NeededType $res); 
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -253,3 +253,41 @@ is_deeply($needed, { pull_bla => 1, push_bla => 1, print_bla => 1, print_rep => 
 	                 pull_bar => 1, push_bar => 1, 
 				     ndr_bar_to_rep => 1, ndr_rep_to_bar => 1});
 	
+$res = "";
+Parse::Pidl::Samba4::NDR::Parser::ParseStructPush({
+			NAME => "mystruct",
+			TYPE => "STRUCT",
+			PROPERTIES => {},
+			ALIGN => 4,
+			ELEMENTS => [ ]}, "mystruct", "x");
+is($res, "if (ndr_flags & NDR_SCALARS) {
+	NDR_CHECK(ndr_push_align(ndr, 4));
+}
+if (ndr_flags & NDR_BUFFERS) {
+}
+");
+
+$res = "";
+my $e = { 
+	NAME => "el1", 
+	TYPE => "mytype",
+	REPRESENTATION_TYPE => "mytype",
+	PROPERTIES => {},
+	LEVELS => [ 
+		{ LEVEL_INDEX => 0, TYPE => "DATA", DATA_TYPE => "mytype" } 
+] };
+Parse::Pidl::Samba4::NDR::Parser::ParseStructPush({
+			NAME => "mystruct",
+			TYPE => "STRUCT",
+			PROPERTIES => {},
+			ALIGN => 4,
+			SURROUNDING_ELEMENT => $e,
+			ELEMENTS => [ $e ]}, "mystruct", "x");
+is($res, "if (ndr_flags & NDR_SCALARS) {
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, x->el1)));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_mytype(ndr, NDR_SCALARS, &x->el1));
+}
+if (ndr_flags & NDR_BUFFERS) {
+}
+");
