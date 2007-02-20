@@ -121,12 +121,14 @@ static void terminate(void)
 {
 	pstring path;
 
-	idmap_close();
-	
 	/* Remove socket file */
 	pstr_sprintf(path, "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
+
+	idmap_close();
+	
+	trustdom_cache_shutdown();
 
 #if 0
 	if (interactive) {
@@ -1092,8 +1094,6 @@ int main(int argc, char **argv, char **envp)
 
 	while (1)
 		process_loop();
-
-	trustdom_cache_shutdown();
 
 	return 0;
 }
