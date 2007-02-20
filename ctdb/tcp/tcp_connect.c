@@ -46,6 +46,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	struct ctdb_context *ctdb = node->ctdb;
 	int error = 0;
 	socklen_t len = sizeof(error);
+	int one = 1;
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
@@ -63,6 +64,8 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
+
+        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
 
 	if (tnode->queue) {
 		EVENT_FD_WRITEABLE(tnode->fde);		

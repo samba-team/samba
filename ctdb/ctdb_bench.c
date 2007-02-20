@@ -43,6 +43,7 @@ static double end_timer(void)
 
 static int timelimit = 10;
 static int num_records = 10;
+static int num_msgs = 1;
 static int num_repeats = 100;
 
 enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
@@ -152,6 +153,7 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	int vnn=ctdb_get_vnn(ctdb);
 
 	if (vnn == 0) {
+		int i;
 		/* two messages are injected into the ring, moving
 		   in opposite directions */
 		int dest, incr;
@@ -160,18 +162,21 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 		data.dptr = (uint8_t *)&incr;
 		data.dsize = sizeof(incr);
 
-		incr = 1;
-		dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-		ctdb_send_message(ctdb, dest, 0, data);
-		incr = -1;
-		dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-		ctdb_send_message(ctdb, dest, 0, data);
+		for (i=0;i<num_msgs;i++) {
+			incr = 1;
+			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+			ctdb_send_message(ctdb, dest, 0, data);
+
+			incr = -1;
+			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+			ctdb_send_message(ctdb, dest, 0, data);
+		}
 	}
 	
 	start_timer();
 
 	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 1000 == 0) {
+		if (vnn == 0 && msg_count % 10000 == 0) {
 			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
 			       msg_count/end_timer(), msg_plus, msg_minus);
 			fflush(stdout);
@@ -203,6 +208,7 @@ int main(int argc, const char *argv[])
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
+		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
