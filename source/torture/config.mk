@@ -223,6 +223,7 @@ OBJ_FILES = \
 		ldap/common.o \
 		ldap/basic.o \
 		ldap/schema.o \
+		ldap/uptodatevector.o \
 		ldap/cldap.o \
 		ldap/cldapbench.o
 PUBLIC_DEPENDENCIES = \
