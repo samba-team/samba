@@ -698,4 +698,3 @@ interface nbt
 		[switch_is(opcode)] nbt_browse_payload payload;	
 	} nbt_browse_packet;
 }
-
