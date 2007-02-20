@@ -303,6 +303,23 @@ interface drsblobs {
 		[in] package_PrimaryCLEARTEXTBlob blob
 		);
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 hash[16];
+	} package_PrimaryWDigestHash;
+
+	typedef [public] struct {
+		[value(0x31)] uint16 unknown1;
+		[value(0x01)] uint8  unknown2;
+		uint8  num_hashes;
+		[value(0)] uint32 unknown3;
+		[value(0)] udlong uuknown4;
+		package_PrimaryWDigestHash hashes[num_hashes];
+	} package_PrimaryWDigestBlob;
+
+	void decode_PrimaryWDigest(
+		[in] package_PrimaryWDigestBlob blob
+		);
+
 	typedef struct {
 		NTTIME time1;
 		uint32 unknown1;
