@@ -10,9 +10,6 @@
 */
 import "misc.idl";
 
-[
-pointer_default(unique)
-]
 interface dcerpc
 {
 	typedef [public] struct {
@@ -36,7 +33,6 @@ interface dcerpc
 		[flag(NDR_ALIGN4)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind;
-
 
 	const uint8 DCERPC_REQUEST_LENGTH = 24;
 	const uint8 DCERPC_MAX_SIGN_SIZE  = 32;
