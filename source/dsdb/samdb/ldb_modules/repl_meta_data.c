@@ -1233,11 +1233,11 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 	/*
 	 * the new uptodateness vector will at least
-	 * contain 2 entries, one for the source_dsa and one the local server
+	 * contain 1 entry, one for the source_dsa
 	 *
 	 * plus optional values from our old vector and the one from the source_dsa
 	 */
-	nuv.ctr.ctr2.count = 2 + ouv.ctr.ctr2.count;
+	nuv.ctr.ctr2.count = 1 + ouv.ctr.ctr2.count;
 	if (ruv) nuv.ctr.ctr2.count += ruv->count;
 	nuv.ctr.ctr2.cursors = talloc_array(ar->sub.mem_ctx,
 					    struct drsuapi_DsReplicaCursor2,
@@ -1250,9 +1250,18 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		ni++;
 	}
 
+	/* get our invocation_id if we have one already attached to the ldb */
+	our_invocation_id = samdb_ntds_invocation_id(ar->module->ldb);
+
 	/* merge in the source_dsa vector is available */
 	for (i=0; (ruv && i < ruv->count); i++) {
 		found = false;
+
+		if (our_invocation_id &&
+		    GUID_equal(&ruv->cursors[i].source_dsa_invocation_id,
+			       our_invocation_id)) {
+			continue;
+		}
 
 		for (j=0; j < ni; j++) {
 			if (!GUID_equal(&ruv->cursors[i].source_dsa_invocation_id,
@@ -1314,41 +1323,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		nuv.ctr.ctr2.cursors[ni].highest_usn		= ar->objs->source_dsa->highwatermark.tmp_highest_usn;
 		nuv.ctr.ctr2.cursors[ni].last_sync_success	= now;
 		ni++;
-	}
-
-	/*
-	 * merge our own current values if we have a invocation_id already
-	 * attached to the ldb
-	 */
-	our_invocation_id = samdb_ntds_invocation_id(ar->module->ldb);
-	if (our_invocation_id) {
-		found = false;
-		for (j=0; j < ni; j++) {
-			if (!GUID_equal(our_invocation_id,
-					&nuv.ctr.ctr2.cursors[j].source_dsa_invocation_id)) {
-				continue;
-			}
-
-			found = true;
-
-			/*
-			 * here we update the highest_usn and last_sync_success time
-			 * because it's our own entry
-			 */
-			nuv.ctr.ctr2.cursors[j].highest_usn		= seq_num;
-			nuv.ctr.ctr2.cursors[j].last_sync_success	= now;
-			break;
-		}
-		if (!found) {
-			/*
-			 * here we update the highest_usn and last_sync_success time
-			 * because it's our own entry
-			 */
-			nuv.ctr.ctr2.cursors[ni].source_dsa_invocation_id= *our_invocation_id;
-			nuv.ctr.ctr2.cursors[ni].highest_usn		= seq_num;
-			nuv.ctr.ctr2.cursors[ni].last_sync_success	= now;
-			ni++;
-		}
 	}
 
 	/*
