@@ -32,6 +32,8 @@ done
 
 testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP
 
+testit "LDAP-UPTODATENESS" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ LDAP-UPTODATENESS
+
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
 # is now pretty well tested by the rest of the quick tests anyway
 test "$TORTURE_QUICK" = "yes" || {
