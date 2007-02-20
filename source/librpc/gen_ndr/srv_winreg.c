@@ -728,7 +728,7 @@ static BOOL api_winreg_EnumValue(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.name = r.in.name;
 	r.out.type = r.in.type;
-	r.out.data = r.in.data;
+	r.out.value = r.in.value;
 	r.out.size = r.in.size;
 	r.out.length = r.in.length;
 	r.out.result = _winreg_EnumValue(p, &r);

@@ -340,7 +340,7 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type *type, uint8_t **data, uint32_t *size, uint32_t *length)
+NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type *type, uint8_t *value, uint32_t *size, uint32_t *length)
 {
 	struct winreg_EnumValue r;
 	NTSTATUS status;
@@ -350,7 +350,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	r.in.enum_index = enum_index;
 	r.in.name = name;
 	r.in.type = type;
-	r.in.data = data;
+	r.in.value = value;
 	r.in.size = size;
 	r.in.length = length;
 	
@@ -375,8 +375,8 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	if ( type ) {
 		*type = *r.out.type;
 	}
-	if ( data ) {
-		*data = *r.out.data;
+	if ( value ) {
+		*value = *r.out.value;
 	}
 	if ( size ) {
 		*size = *r.out.size;
