@@ -29,7 +29,26 @@ remove_share_test()
 
 restore_snapshot()
 {
-	echo -e $1
-	vmrun revertToSnapshot "$VM_CFG_PATH"
-	echo "Snapshot restored."
+	err_str=$1
+	VMX_PATH=$2
+
+	# Display the error that caused us to restore the snapshot.
+	echo -e $err_str
+
+	if [ -z $HOST_SERVER_NAME ]; then
+		# The vmware server is running locally.
+		vmrun revertToSnapshot "$VMX_PATH"
+		err_rtn=$?
+	else
+		vmrun -h $HOST_SERVER_NAME -P $HOST_SERVER_PORT \
+			-u $HOST_USERNAME -p $HOST_PASSWORD \
+			revertToSnapshot "$VMX_PATH"
+		err_rtn=$?
+	fi
+
+	if [ $err_rtn -eq 0 ]; then
+		echo "Snapshot restored."
+	else
+		echo "Error $err_rtn restoring snapshot!"
+	fi
 }
