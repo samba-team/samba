@@ -74,6 +74,3 @@ uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
 
 	return real_size;
 }
-
-
-

@@ -260,7 +260,7 @@ struct winreg_EnumValue {
 		uint32_t enum_index;
 		struct winreg_ValNameBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t **data;/* [unique,length_is(*length),size_is(*size)] */
+		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
 		uint32_t *length;/* [unique] */
 	} in;
@@ -268,7 +268,7 @@ struct winreg_EnumValue {
 	struct {
 		struct winreg_ValNameBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t **data;/* [unique,length_is(*length),size_is(*size)] */
+		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
 		uint32_t *length;/* [unique] */
 		WERROR result;
