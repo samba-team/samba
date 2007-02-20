@@ -592,9 +592,15 @@ AC_DEFUN([SMB_CHECK_DMAPI],
 		[samba_dmapi_libs="-lxdsm"], [])
     fi
 
+    if test x"$samba_dmapi_libs" = x"" ; then
+        AC_CHECK_LIB(dmapi, dm_get_eventlist,
+                [samba_dmapi_libs="-ldmapi"], [])
+    fi
+
+
     # Only bother to test ehaders if we have a candidate DMAPI library
     if test x"$samba_dmapi_libs" != x"" ; then
-	AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h)
+	AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h dmapi.h)
     fi
 
     if test x"$samba_dmapi_libs" != x"" ; then
@@ -612,6 +618,8 @@ AC_DEFUN([SMB_CHECK_DMAPI],
 #include <sys/jfsdmapi.h>
 #elif defined(HAVE_SYS_DMAPI_H)
 #include <sys/dmapi.h>
+#elif defined(HAVE_DMAPI_H)
+#include <dmapi.h>
 #endif
 		],
 		[

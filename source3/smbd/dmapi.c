@@ -40,6 +40,8 @@ BOOL dmapi_have_session(void) { return False; }
 #include <sys/jfsdmapi.h>
 #elif defined(HAVE_SYS_DMAPI_H)
 #include <sys/dmapi.h>
+#elif defined(HAVE_DMAPI_H)
+#include <dmapi.h>
 #endif
 
 #define DMAPI_SESSION_NAME "samba"
