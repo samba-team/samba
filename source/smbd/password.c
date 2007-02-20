@@ -111,6 +111,7 @@ void invalidate_vuid(uint16 vuid)
 
 	SAFE_FREE(vuser->groups);
 	TALLOC_FREE(vuser->nt_user_token);
+
 	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }

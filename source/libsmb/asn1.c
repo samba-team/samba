@@ -23,6 +23,14 @@
 /* free an asn1 structure */
 void asn1_free(ASN1_DATA *data)
 {
+	struct nesting *nesting = data->nesting;
+
+	while (nesting) {
+		struct nesting *nnext = nesting->next;
+		free(nesting);
+		nesting = nnext;
+	};
+	data->nesting = NULL;
 	SAFE_FREE(data->data);
 }
 
