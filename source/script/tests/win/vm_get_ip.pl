@@ -19,7 +19,7 @@ sub check_error {
 }
 
 # Read in parameters from environment.
-my $vm_cfg_path = $ENV{'VM_CFG_PATH'};
+my $vm_cfg_path = $ENV{"$ARGV[0]"};
 my $host_server_name = $ENV{'HOST_SERVER_NAME'};
 my $host_server_port = $ENV{'HOST_SERVER_PORT'};
 if (!defined($host_server_port)) {
