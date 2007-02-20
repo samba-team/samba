@@ -828,6 +828,10 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 	}
 	pad->needed_len = needed_len - pblob->length;
 	pad->partial_data = data_blob(pblob->data, pblob->length);
+	if (pad->partial_data.data == NULL) {
+		SAFE_FREE(pad);
+		return NT_STATUS_NO_MEMORY;
+	}
 	pad->smbpid = smbpid;
 	pad->vuid = vuid;
 	DLIST_ADD(pd_list, pad);
