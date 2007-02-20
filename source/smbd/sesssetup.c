@@ -693,7 +693,7 @@ static struct pending_auth_data *get_pending_auth_data(uint16 smbpid)
 
 /****************************************************************************
  Check the size of an SPNEGO blob. If we need more return NT_STATUS_MORE_PROCESSING_REQUIRED,
- else return NT_STATUS_OK.
+ else return NT_STATUS_OK. Don't allow the blob to be more than 64k.
 ****************************************************************************/
 
 static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB *pblob)
@@ -715,17 +715,18 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 	/* Were we waiting for more data ? */
 	if (pad) {
 		DATA_BLOB tmp_blob;
+		size_t copy_len = MIN(65536, pblob->length);
 
 		/* Integer wrap paranoia.... */
 
-		if (pad->partial_data.length + pblob->length < pad->partial_data.length ||
-		    pad->partial_data.length + pblob->length < pblob->length) {
+		if (pad->partial_data.length + copy_len < pad->partial_data.length ||
+		    pad->partial_data.length + copy_len < copy_len) {
 
 			DEBUG(2,("check_spnego_blob_complete: integer wrap "
 				"pad->partial_data.length = %u, "
-				"pblob->length = %u\n",
+				"copy_len = %u\n",
 				(unsigned int)pad->partial_data.length,
-				(unsigned int)pblob->length ));
+				(unsigned int)copy_len ));
 
 			delete_partial_auth(pad);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -734,21 +735,23 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 		DEBUG(10,("check_spnego_blob_complete: "
 			"pad->partial_data.length = %u, "
 			"pad->needed_len = %u, "
+			"copy_len = %u, "
 			"pblob->length = %u,\n",
 			(unsigned int)pad->partial_data.length,
 			(unsigned int)pad->needed_len,
+			(unsigned int)copy_len,
 			(unsigned int)pblob->length ));
 
 		tmp_blob = data_blob(NULL,
-				pad->partial_data.length + pblob->length);
+				pad->partial_data.length + copy_len);
 
-		/* Concatenate the two. */
+		/* Concatenate the two (up to copy_len) bytes. */
 		memcpy(tmp_blob.data,
 			pad->partial_data.data,
 			pad->partial_data.length);
 		memcpy(tmp_blob.data + pad->partial_data.length,
 			pblob->data,
-			pblob->length);
+			copy_len);
 
 		/* Replace the partial data. */
 		data_blob_free(&pad->partial_data);
@@ -766,7 +769,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 		}
 
 		/* Still need more data. */
-		pad->needed_len -= pblob->length;
+		pad->needed_len -= copy_len;
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 
@@ -819,6 +822,13 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 	if (needed_len <= pblob->length) {
 		/* Nothing to do - blob is complete. */
 		return NT_STATUS_OK;
+	}
+
+	/* Refuse the blob if it's bigger than 64k. */
+	if (needed_len > 65536) {
+		DEBUG(2,("check_spnego_blob_complete: needed_len too large (%u)\n",
+			(unsigned int)needed_len ));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We must store this blob until complete. */
