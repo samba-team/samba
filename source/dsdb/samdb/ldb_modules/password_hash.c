@@ -4,6 +4,7 @@
    Copyright (C) Simo Sorce  2004-2006
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2006
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Stefan Metzmacher 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@
  *  Description: correctly update hash values based on changes to sambaPassword and friends
  *
  *  Author: Andrew Bartlett
+ *  Author: Stefan Metzmacher
  */
 
 #include "includes.h"
@@ -47,6 +49,7 @@
 #include "dsdb/samdb/ldb_modules/password_modules.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "lib/crypto/crypto.h"
 
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.
@@ -93,6 +96,7 @@ struct domain_data {
 	BOOL store_cleartext;
 	uint_t pwdProperties;
 	uint_t pwdHistoryLength;
+	char *netbios_domain;
 	char *dns_domain;
 	char *realm;
 };
@@ -503,16 +507,349 @@ if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
 	return LDB_SUCCESS;
 }
 
+static int setup_primary_wdigest(struct setup_password_fields_io *io,
+				 const struct supplementalCredentialsBlob *old_scb,
+				 struct package_PrimaryWDigestBlob *pdb)
+{
+	DATA_BLOB sAMAccountName;
+	DATA_BLOB sAMAccountName_l;
+	DATA_BLOB sAMAccountName_u;
+	const char *user_principal_name = io->u.user_principal_name;
+	DATA_BLOB userPrincipalName;
+	DATA_BLOB userPrincipalName_l;
+	DATA_BLOB userPrincipalName_u;
+	DATA_BLOB netbios_domain;
+	DATA_BLOB netbios_domain_l;
+	DATA_BLOB netbios_domain_u;
+	DATA_BLOB dns_domain;
+	DATA_BLOB dns_domain_l;
+	DATA_BLOB dns_domain_u;
+	DATA_BLOB cleartext;
+	DATA_BLOB digest;
+	DATA_BLOB delim;
+	DATA_BLOB backslash;
+	uint8_t i;
+	struct {
+		DATA_BLOB *user;
+		DATA_BLOB *realm;
+		DATA_BLOB *nt4dom;
+	} wdigest[] = {
+	/*
+	 * See
+	 * http://technet2.microsoft.com/WindowsServer/en/library/717b450c-f4a0-4cc9-86f4-cc0633aae5f91033.mspx?mfr=true
+	 * for what precalculated hashes are supposed to be stored...
+	 *
+	 * I can't reproduce all values which should contain "Digest" as realm,
+	 * am I doing something wrong or is w2k3 just broken...?
+	 *
+	 * W2K3 fills in following for a user:
+	 *
+	 * dn: CN=NewUser,OU=newtop,DC=sub1,DC=w2k3,DC=vmnet1,DC=vm,DC=base
+	 * sAMAccountName: NewUser2Sam
+	 * userPrincipalName: NewUser2Princ@sub1.w2k3.vmnet1.vm.base
+	 *
+	 * 4279815024bda54fc074a5f8bd0a6e6f => NewUser2Sam:SUB1:TestPwd2007
+	 * b7ec9da91062199aee7d121e6710fe23 => newuser2sam:sub1:TestPwd2007
+	 * 17d290bc5c9f463fac54c37a8cea134d => NEWUSER2SAM:SUB1:TestPwd2007
+	 * 4279815024bda54fc074a5f8bd0a6e6f => NewUser2Sam:SUB1:TestPwd2007
+	 * 5d57e7823938348127322e08cd81bcb5 => NewUser2Sam:sub1:TestPwd2007
+	 * 07dd701bf8a011ece585de3d47237140 => NEWUSER2SAM:sub1:TestPwd2007
+	 * e14fb0eb401498d2cb33c9aae1cc7f37 => newuser2sam:SUB1:TestPwd2007
+	 * 8dadc90250f873d8b883f79d890bef82 => NewUser2Sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * f52da1266a6bdd290ffd48b2c823dda7 => newuser2sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * d2b42f171248cec37a3c5c6b55404062 => NEWUSER2SAM:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * fff8d790ff6c152aaeb6ebe17b4021de => NewUser2Sam:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * 8dadc90250f873d8b883f79d890bef82 => NewUser2Sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * 2a7563c3715bc418d626dabef378c008 => NEWUSER2SAM:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * c8e9557a87cd4200fda0c11d2fa03f96 => newuser2sam:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * 221c55284451ae9b3aacaa2a3c86f10f => NewUser2Princ@sub1.w2k3.vmnet1.vm.base::TestPwd2007
+	 * 74e1be668853d4324d38c07e2acfb8ea => (w2k3 has a bug here!) newuser2princ@sub1.w2k3.vmnet1.vm.base::TestPwd2007
+	 * e1e244ab7f098e3ae1761be7f9229bbb => NEWUSER2PRINC@SUB1.W2K3.VMNET1.VM.BASE::TestPwd2007
+	 * 86db637df42513039920e605499c3af6 => SUB1\NewUser2Sam::TestPwd2007
+	 * f5e43474dfaf067fee8197a253debaa2 => sub1\newuser2sam::TestPwd2007
+	 * 2ecaa8382e2518e4b77a52422b279467 => SUB1\NEWUSER2SAM::TestPwd2007
+	 * 31dc704d3640335b2123d4ee28aa1f11 => ??? changes with NewUser2Sam => NewUser1Sam
+	 * 36349f5cecd07320fb3bb0e119230c43 => ??? changes with NewUser2Sam => NewUser1Sam
+	 * 12adf019d037fb535c01fd0608e78d9d => ??? changes with NewUser2Sam => NewUser1Sam
+	 * 6feecf8e724906f3ee1105819c5105a1 => ??? changes with NewUser2Princ => NewUser1Princ
+	 * 6c6911f3de6333422640221b9c51ff1f => ??? changes with NewUser2Princ => NewUser1Princ
+	 * 4b279877e742895f9348ac67a8de2f69 => ??? changes with NewUser2Princ => NewUser1Princ
+	 * db0c6bff069513e3ebb9870d29b57490 => ??? changes with NewUser2Sam => NewUser1Sam
+	 * 45072621e56b1c113a4e04a8ff68cd0e => ??? changes with NewUser2Sam => NewUser1Sam
+	 * 11d1220abc44a9c10cf91ef4a9c1de02 => ??? changes with NewUser2Sam => NewUser1Sam
+	 *
+	 * dn: CN=NewUser,OU=newtop,DC=sub1,DC=w2k3,DC=vmnet1,DC=vm,DC=base
+	 * sAMAccountName: NewUser2Sam
+	 *
+	 * 4279815024bda54fc074a5f8bd0a6e6f => NewUser2Sam:SUB1:TestPwd2007
+	 * b7ec9da91062199aee7d121e6710fe23 => newuser2sam:sub1:TestPwd2007
+	 * 17d290bc5c9f463fac54c37a8cea134d => NEWUSER2SAM:SUB1:TestPwd2007
+	 * 4279815024bda54fc074a5f8bd0a6e6f => NewUser2Sam:SUB1:TestPwd2007
+	 * 5d57e7823938348127322e08cd81bcb5 => NewUser2Sam:sub1:TestPwd2007
+	 * 07dd701bf8a011ece585de3d47237140 => NEWUSER2SAM:sub1:TestPwd2007
+	 * e14fb0eb401498d2cb33c9aae1cc7f37 => newuser2sam:SUB1:TestPwd2007
+	 * 8dadc90250f873d8b883f79d890bef82 => NewUser2Sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * f52da1266a6bdd290ffd48b2c823dda7 => newuser2sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * d2b42f171248cec37a3c5c6b55404062 => NEWUSER2SAM:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * fff8d790ff6c152aaeb6ebe17b4021de => NewUser2Sam:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * 8dadc90250f873d8b883f79d890bef82 => NewUser2Sam:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * 2a7563c3715bc418d626dabef378c008 => NEWUSER2SAM:sub1.w2k3.vmnet1.vm.base:TestPwd2007
+	 * c8e9557a87cd4200fda0c11d2fa03f96 => newuser2sam:SUB1.W2K3.VMNET1.VM.BASE:TestPwd2007
+	 * 8a140d30b6f0a5912735dc1e3bc993b4 => NewUser2Sam@sub1.w2k3.vmnet1.vm.base::TestPwd2007
+	 * 86d95b2faae6cae4ec261e7fbaccf093 => (here w2k3 is correct) newuser2sam@sub1.w2k3.vmnet1.vm.base::TestPwd2007
+	 * dfeff1493110220efcdfc6362e5f5450 => NEWUSER2SAM@SUB1.W2K3.VMNET1.VM.BASE::TestPwd2007
+	 * 86db637df42513039920e605499c3af6 => SUB1\NewUser2Sam::TestPwd2007
+	 * f5e43474dfaf067fee8197a253debaa2 => sub1\newuser2sam::TestPwd2007
+	 * 2ecaa8382e2518e4b77a52422b279467 => SUB1\NEWUSER2SAM::TestPwd2007
+	 * 31dc704d3640335b2123d4ee28aa1f11 => ???M1   changes with NewUser2Sam => NewUser1Sam
+	 * 36349f5cecd07320fb3bb0e119230c43 => ???M1.L changes with newuser2sam => newuser1sam
+	 * 12adf019d037fb535c01fd0608e78d9d => ???M1.U changes with NEWUSER2SAM => NEWUSER1SAM
+	 * 569b4533f2d9e580211dd040e5e360a8 => ???M2   changes with NewUser2Princ => NewUser1Princ
+	 * 52528bddf310a587c5d7e6a9ae2cbb20 => ???M2.L changes with newuser2princ => newuser1princ
+	 * 4f629a4f0361289ca4255ab0f658fcd5 => ???M3 changes with NewUser2Princ => NewUser1Princ (doesn't depend on case of userPrincipal )
+	 * db0c6bff069513e3ebb9870d29b57490 => ???M4 changes with NewUser2Sam => NewUser1Sam
+	 * 45072621e56b1c113a4e04a8ff68cd0e => ???M5 changes with NewUser2Sam => NewUser1Sam (doesn't depend on case of sAMAccountName)
+	 * 11d1220abc44a9c10cf91ef4a9c1de02 => ???M4.U changes with NEWUSER2SAM => NEWUSER1SAM
+	 */
+
+	/*
+	 * sAMAccountName, netbios_domain
+	 */
+		{
+		.user	= &sAMAccountName,
+		.realm	= &netbios_domain,
+		},
+		{
+		.user	= &sAMAccountName_l,
+		.realm	= &netbios_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_u,
+		.realm	= &netbios_domain_u,
+		},
+		{
+		.user	= &sAMAccountName,
+		.realm	= &netbios_domain_u,
+		},
+		{
+		.user	= &sAMAccountName,
+		.realm	= &netbios_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_u,
+		.realm	= &netbios_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_l,
+		.realm	= &netbios_domain_u,
+		},
+	/* 
+	 * sAMAccountName, dns_domain
+	 */
+		{
+		.user	= &sAMAccountName,
+		.realm	= &dns_domain,
+		},
+		{
+		.user	= &sAMAccountName_l,
+		.realm	= &dns_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_u,
+		.realm	= &dns_domain_u,
+		},
+		{
+		.user	= &sAMAccountName,
+		.realm	= &dns_domain_u,
+		},
+		{
+		.user	= &sAMAccountName,
+		.realm	= &dns_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_u,
+		.realm	= &dns_domain_l,
+		},
+		{
+		.user	= &sAMAccountName_l,
+		.realm	= &dns_domain_u,
+		},
+	/* 
+	 * userPrincipalName, no realm
+	 */
+		{
+		.user	= &userPrincipalName,
+		},
+		{
+		/* 
+		 * NOTE: w2k3 messes this up, if the user has a real userPrincipalName,
+		 *       the fallback to the sAMAccountName based userPrincipalName is correct
+		 */
+		.user	= &userPrincipalName_l,
+		},
+		{
+		.user	= &userPrincipalName_u,
+		},
+	/* 
+	 * nt4dom\sAMAccountName, no realm
+	 */
+		{
+		.user	= &sAMAccountName,
+		.nt4dom	= &netbios_domain
+		},
+		{
+		.user	= &sAMAccountName_l,
+		.nt4dom	= &netbios_domain_l
+		},
+		{
+		.user	= &sAMAccountName_u,
+		.nt4dom	= &netbios_domain_u
+		},
+
+	/*
+	 * the following ones are guessed depending on the technet2 article
+	 * but not reproducable on a w2k3 server
+	 */
+	/* sAMAccountName with "Digest" realm */
+		{
+		.user 	= &sAMAccountName,
+		.realm	= &digest
+		},
+		{
+		.user 	= &sAMAccountName_l,
+		.realm	= &digest
+		},
+		{
+		.user 	= &sAMAccountName_u,
+		.realm	= &digest
+		},
+	/* userPrincipalName with "Digest" realm */
+		{
+		.user	= &userPrincipalName,
+		.realm	= &digest
+		},
+		{
+		.user	= &userPrincipalName_l,
+		.realm	= &digest
+		},
+		{
+		.user	= &userPrincipalName_u,
+		.realm	= &digest
+		},
+	/* nt4dom\\sAMAccountName with "Digest" realm */
+		{
+		.user 	= &sAMAccountName,
+		.nt4dom	= &netbios_domain,
+		.realm	= &digest
+		},
+		{
+		.user 	= &sAMAccountName_l,
+		.nt4dom	= &netbios_domain_l,
+		.realm	= &digest
+		},
+		{
+		.user 	= &sAMAccountName_u,
+		.nt4dom	= &netbios_domain_u,
+		.realm	= &digest
+		},
+	};
+
+	/* prepare DATA_BLOB's used in the combinations array */
+	sAMAccountName		= data_blob_string_const(io->u.sAMAccountName);
+	sAMAccountName_l	= data_blob_string_const(strlower_talloc(io->ac, io->u.sAMAccountName));
+	if (!sAMAccountName_l.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	sAMAccountName_u	= data_blob_string_const(strupper_talloc(io->ac, io->u.sAMAccountName));
+	if (!sAMAccountName_u.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* if the user doesn't have a userPrincipalName, create one (with lower case realm) */
+	if (!user_principal_name) {
+		user_principal_name = talloc_asprintf(io->ac, "%s@%s",
+						      io->u.sAMAccountName,
+						      io->domain->dns_domain);
+		if (!user_principal_name) {
+			ldb_oom(io->ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}	
+	}
+	userPrincipalName	= data_blob_string_const(user_principal_name);
+	userPrincipalName_l	= data_blob_string_const(strlower_talloc(io->ac, user_principal_name));
+	if (!userPrincipalName_l.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	userPrincipalName_u	= data_blob_string_const(strupper_talloc(io->ac, user_principal_name));
+	if (!userPrincipalName_u.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	netbios_domain		= data_blob_string_const(io->domain->netbios_domain);
+	netbios_domain_l	= data_blob_string_const(strlower_talloc(io->ac, io->domain->netbios_domain));
+	if (!netbios_domain_l.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	netbios_domain_u	= data_blob_string_const(strupper_talloc(io->ac, io->domain->netbios_domain));
+	if (!netbios_domain_u.data) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dns_domain		= data_blob_string_const(io->domain->dns_domain);
+	dns_domain_l		= data_blob_string_const(io->domain->dns_domain);
+	dns_domain_u		= data_blob_string_const(io->domain->realm);
+
+	cleartext		= data_blob_string_const(io->n.cleartext);
+
+	digest			= data_blob_string_const("Digest");
+
+	delim			= data_blob_string_const(":");
+	backslash		= data_blob_string_const("\\");
+
+	pdb->num_hashes	= ARRAY_SIZE(wdigest);
+	pdb->hashes	= talloc_array(io->ac, struct package_PrimaryWDigestHash, pdb->num_hashes);
+	if (!pdb->hashes) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i < ARRAY_SIZE(wdigest); i++) {
+		struct MD5Context md5;
+		MD5Init(&md5);
+		if (wdigest[i].nt4dom) {
+			MD5Update(&md5, wdigest[i].nt4dom->data, wdigest[i].nt4dom->length);
+			MD5Update(&md5, backslash.data, backslash.length);
+		}
+		MD5Update(&md5, wdigest[i].user->data, wdigest[i].user->length);
+		MD5Update(&md5, delim.data, delim.length);
+		if (wdigest[i].realm) {
+			MD5Update(&md5, wdigest[i].realm->data, wdigest[i].realm->length);
+		}
+		MD5Update(&md5, delim.data, delim.length);
+		MD5Update(&md5, cleartext.data, cleartext.length);
+		MD5Final(pdb->hashes[i].hash, &md5);
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int setup_supplemental_field(struct setup_password_fields_io *io)
 {
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsBlob _old_scb;
 	struct supplementalCredentialsBlob *old_scb = NULL;
-	/* Packages + (Kerberos and maybe CLEARTEXT) */
-	uint32_t num_packages = 1 + 1;
-	struct supplementalCredentialsPackage packages[1+2];
+	/* Packages + (Kerberos, WDigest and maybe CLEARTEXT) */
+	uint32_t num_packages = 1 + 2;
+	struct supplementalCredentialsPackage packages[1+3];
 	struct supplementalCredentialsPackage *pp = &packages[0];
 	struct supplementalCredentialsPackage *pk = &packages[1];
+	struct supplementalCredentialsPackage *pd = &packages[2];
 	struct supplementalCredentialsPackage *pc = NULL;
 	struct package_PackagesBlob pb;
 	DATA_BLOB pb_blob;
@@ -520,6 +857,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	struct package_PrimaryKerberosBlob pkb;
 	DATA_BLOB pkb_blob;
 	char *pkb_hexstr;
+	struct package_PrimaryWDigestBlob pdb;
+	DATA_BLOB pdb_blob;
+	char *pdb_hexstr;
 	struct package_PrimaryCLEARTEXTBlob pcb;
 	DATA_BLOB pcb_blob;
 	char *pcb_hexstr;
@@ -554,11 +894,11 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 	if (io->domain->store_cleartext &&
 	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-		pc = &packages[2];
+		pc = &packages[3];
 		num_packages++;
 	}
 
-	/* Kerberos, CLEARTEXT and termination(counted by the Packages element) */
+	/* Kerberos, WDigest, CLEARTEXT and termination(counted by the Packages element) */
 	pb.names = talloc_zero_array(io->ac, const char *, num_packages);
 
 	/*
@@ -601,10 +941,38 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	pk->data	= pkb_hexstr;
 
 	/*
+	 * setup 'Primary:WDigest' element
+	 */
+	pb.names[1] = "WDigest";
+
+	ret = setup_primary_wdigest(io, old_scb, &pdb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	status = ndr_push_struct_blob(&pdb_blob, io->ac, &pdb,
+				      (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_supplemental_field: "
+				       "failed to push package_PrimaryWDigestBlob: %s",
+				       nt_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pdb_hexstr = data_blob_hex_string(io->ac, &pdb_blob);
+	if (!pdb_hexstr) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pd->name	= "Primary:WDigest";
+	pd->unknown1	= 1;
+	pd->data	= pdb_hexstr;
+
+	/*
 	 * setup 'Primary:CLEARTEXT' element
 	 */
 	if (pc) {
-		pb.names[1]	= "CLEARTEXT";
+		pb.names[2]	= "CLEARTEXT";
 
 		pcb.cleartext	= io->n.cleartext;
 
@@ -912,6 +1280,15 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 		}
 		data->realm = strupper_talloc(data, tmp);
 		if (data->realm == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Out of memory!\n");
+			return NULL;
+		}
+		p = strchr(tmp, '.');
+		if (p) {
+			p[0] = '\0';
+		}
+		data->netbios_domain = strupper_talloc(data, tmp);
+		if (data->netbios_domain == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Out of memory!\n");
 			return NULL;
 		}
