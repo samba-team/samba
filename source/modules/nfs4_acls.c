@@ -446,16 +446,16 @@ static int smbacl4_fill_ace4(
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
 	ace_v4->aceType = ace_nt->type; /* only ACCES|DENY supported right now */
 	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
-	ace_v4->aceMask = ace_nt->info.mask &
+	ace_v4->aceMask = ace_nt->access_mask &
 		(STD_RIGHT_ALL_ACCESS | SA_RIGHT_FILE_ALL_ACCESS);
 
 	if (ace_v4->aceFlags!=ace_nt->flags)
 		DEBUG(9, ("ace_v4->aceFlags(0x%x)!=ace_nt->flags(0x%x)\n",
 			ace_v4->aceFlags, ace_nt->flags));
 
-	if (ace_v4->aceMask!=ace_nt->info.mask)
+	if (ace_v4->aceMask!=ace_nt->access_mask)
 		DEBUG(9, ("ace_v4->aceMask(0x%x)!=ace_nt->access_mask(0x%x)\n",
-			ace_v4->aceMask, ace_nt->info.mask));
+			ace_v4->aceMask, ace_nt->access_mask));
 
 	if (sid_equal(&ace_nt->trustee, &global_sid_World)) {
 		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
@@ -557,7 +557,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 		BOOL	addNewACE = True;
 
 		if (smbacl4_fill_ace4(mem_ctx, pparams, ownerUID, ownerGID,
-			dacl->ace + i, &ace_v4))
+			dacl->aces + i, &ace_v4))
 			return NULL;
 
 		if (pparams->acedup!=e_dontcare) {
