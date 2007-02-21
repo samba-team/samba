@@ -694,7 +694,7 @@ propagate_database (krb5_context context, int type,
 	    failed++;
 	    krb5_warn(context, ret, "krb5_sendauth (%s)", host);
 	    close(fd);
-	    continue;
+	    goto next_host;
 	}
 	
 	pd.context      = context;
@@ -705,6 +705,7 @@ propagate_database (krb5_context context, int type,
 	if (ret) {
 	    krb5_warnx(context, "iterate to host %s failed", host);
 	    failed++;
+	    goto next_host;
 	}
 
 	krb5_data_zero (&data);
@@ -712,15 +713,18 @@ propagate_database (krb5_context context, int type,
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_write_priv_message");
 	    failed++;
+	    goto next_host;
 	}
 
 	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_read_priv_message: %s", host);
 	    failed++;
+	    goto next_host;
 	} else
 	    krb5_data_free (&data);
 	
+    next_host:
 	krb5_auth_con_free(context, auth_context);
 	close(fd);
     }
