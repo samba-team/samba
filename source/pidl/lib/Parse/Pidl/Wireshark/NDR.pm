@@ -427,7 +427,7 @@ sub Function($$$)
 	PrintIdl DumpFunction($fn->{ORIGINAL});
 	pidl_fn_start "$ifname\_dissect\_$fn_name\_response";
 	pidl_code "static int";
-	pidl_code "$ifname\_dissect\_${fn_name}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
+	pidl_code "$ifname\_dissect\_${fn_name}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
 	if ( not defined($fn->{RETURN_TYPE})) {
@@ -446,6 +446,7 @@ sub Function($$$)
 		error($fn, "unknown return type `$fn->{RETURN_TYPE}'");
 	}
 
+	pidl_code "pinfo->dcerpc_procedure_name=\"${fn_name}\";";
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$_->{DIRECTION}})) {
 			pidl_code "$dissectornames{$_->{NAME}}";
@@ -491,9 +492,10 @@ sub Function($$$)
 
 	pidl_fn_start "$ifname\_dissect\_$fn_name\_request";
 	pidl_code "static int";
-	pidl_code "$ifname\_dissect\_${fn_name}_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
+	pidl_code "$ifname\_dissect\_${fn_name}_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
+	pidl_code "pinfo->dcerpc_procedure_name=\"${fn_name}\";";
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$_->{DIRECTION}})) {
 			pidl_code "$dissectornames{$_->{NAME}}";
@@ -849,7 +851,7 @@ sub Initialize($)
 	register_type("long", "offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT32", "BASE_DEC", 0, "NULL", 4);
 	register_type("dlong", "offset = dissect_ndr_duint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT64", "BASE_DEC", 0, "NULL", 8);
 	register_type("GUID", "offset = dissect_ndr_uuid_t(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_GUID", "BASE_NONE", 0, "NULL", 4);
-	register_type("policy_handle", "offset = dissect_nt_policy_hnd(tvb, offset, pinfo, tree, drep, \@HF\@, NULL, NULL, \@PARAM\@&0x01, \@PARAM\@&0x02);","FT_BYTES", "BASE_NONE", 0, "NULL", 4);
+	register_type("policy_handle", "offset = PIDL_dissect_policy_hnd(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);","FT_BYTES", "BASE_NONE", 0, "NULL", 4);
 	register_type("NTTIME", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
 	register_type("NTTIME_hyper", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
 	register_type("time_t", "offset = dissect_ndr_time_t(tvb, offset, pinfo,tree, drep, \@HF\@, NULL);","FT_ABSOLUTE_TIME", "BASE_DEC", 0, "NULL", 4);
