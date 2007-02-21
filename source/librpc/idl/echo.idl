@@ -99,7 +99,7 @@ interface rpcecho
 	} echo_Enum1_32;
 
 	typedef struct {
-		enum { foo=1, bar=2} e1;
+		echo_Enum1 e1;
 		echo_Enum1_32 e2;
 	} echo_Enum2;
 
