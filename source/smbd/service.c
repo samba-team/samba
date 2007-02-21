@@ -312,6 +312,13 @@ int find_service(fstring service)
 	if (iService < 0) {
 	}
 
+	/* Is it a usershare service ? */
+	if (iService < 0 && *lp_usershare_path()) {
+		/* Ensure the name is canonicalized. */
+		strlower_m(service);
+		iService = load_usershare_service(service);
+	}
+
 	/* just possibly it's a default service? */
 	if (iService < 0) {
 		char *pdefservice = lp_defaultservice();
@@ -324,6 +331,14 @@ int find_service(fstring service)
 			 */
 			pstring defservice;
 			pstrcpy(defservice, pdefservice);
+
+			/* Disallow anything except explicit share names. */
+			if (strequal(defservice,HOMES_NAME) ||
+					strequal(defservice, PRINTERS_NAME) ||
+					strequal(defservice, "ipc$")) {
+				goto fail;
+			}
+
 			iService = find_service(defservice);
 			if (iService >= 0) {
 				all_string_sub(service, "_","/",0);
@@ -332,19 +347,14 @@ int find_service(fstring service)
 		}
 	}
 
-	/* Is it a usershare service ? */
-	if (iService < 0 && *lp_usershare_path()) {
-		/* Ensure the name is canonicalized. */
-		strlower_m(service);
-		iService = load_usershare_service(service);
-	}
-
 	if (iService >= 0) {
 		if (!VALID_SNUM(iService)) {
 			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
 			iService = -1;
 		}
 	}
+
+  fail:
 
 	if (iService < 0)
 		DEBUG(3,("find_service() failed to find service %s\n", service));
