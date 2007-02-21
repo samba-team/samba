@@ -128,10 +128,10 @@ sub HeaderEnum($$)
 	}
 	pidl "\n";
 	$tab_depth--;
-	pidl "};\n";
+	pidl "}\n";
 	pidl "#else\n";
 	my $count = 0;
-	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF};\n";
+	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF}\n";
 	my $with_val = 0;
 	my $without_val = 0;
 	foreach my $e (@{$enum->{ELEMENTS}}) {
@@ -154,7 +154,6 @@ sub HeaderEnum($$)
 	    pidl "#define $name ( $value )\n";
 	}
 	pidl "#endif\n";
-	pidl "\n";
 }
 
 #####################################################################
@@ -357,7 +356,11 @@ sub HeaderInterface($)
 		HeaderUnion($d, $d->{NAME}) if ($d->{TYPE} eq "UNION");
 		HeaderEnum($d, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
 		HeaderBitmap($d, $d->{NAME}) if ($d->{TYPE} eq "BITMAP");
-		pidl ";\n\n";
+		pidl ";\n\n" if ($d->{TYPE} eq "BITMAP" or 
+			             $d->{TYPE} eq "STRUCT" or 
+						 $d->{TYPE} eq "TYPEDEF" or 
+						 $d->{TYPE} eq "UNION" or 
+						 $d->{TYPE} eq "ENUM");
 	}
 
 	foreach my $d (@{$interface->{DATA}}) {
