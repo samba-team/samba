@@ -20,10 +20,20 @@ password="$3"
 domain="$4"
 shift 4
 
+export SMBTORTURE_REMOTE_HOST=$server
+
 raw_tests="RAW-QFILEINFO RAW-SFILEINFO RAW-MKDIR RAW-SEEK RAW-OPEN RAW-WRITE RAW-UNLINK RAW-READ RAW-CLOSE RAW-IOCTL RAW-RENAME RAW-EAS RAW-STREAMS"
 # This test fails: RAW-QFSINFO
 
 all_errs=0
+err=0
+
+on_error() {
+	errstr=$1
+	all_errs=`expr $all_errs + 1`
+
+	restore_snapshot $errstr "$VM_CFG_PATH"
+}
 
 for t in $raw_tests; do
 	test_name="$t / WINDOWS SERVER"
@@ -33,17 +43,15 @@ for t in $raw_tests; do
 
 	if [ $err_rtn -ne 0 ]; then
 		# If test setup fails, load VM snapshot and skip test.
-		restore_snapshot "\n$test_name setup failed, skipping test."
+		on_error "\n$test_name setup failed, skipping test."
 	else
 		echo -e "\n$test_name setup completed successfully."
-		old_errs=$all_errs
 
-		testit "$test_name" $SMBTORTURE_BIN_PATH \
-			-U $username%$password \
-			-W $domain //$server/$SMBTORTURE_REMOTE_SHARE_NAME \
-			$t || all_errs=`expr $all_errs + 1`
-		if [ $old_errs -lt $all_errs ]; then
-			restore_snapshot "\n$test_name failed."
+		$SMBTORTURE_BIN_PATH -U $username%$password -W $domain \
+			//$server/$SMBTORTURE_REMOTE_SHARE_NAME \
+			$t || err=1
+		if [ $err -ne 0 ]; then
+			on_error "\n$test_name failed."
 		else
 			echo -e "\n$test_name CLEANUP PHASE"
 			remove_share_test
@@ -57,4 +65,4 @@ for t in $raw_tests; do
 	fi
 done
 
-testok $0 $all_errs
+exit $all_errs

@@ -9,12 +9,10 @@ fi
 
 TESTGROUP=$1
 
-if [ -z $SRCDIR ]; then
-	echo "Please point environment variable SRCDIR to the Samba 4 source tree."
+if [ -z $WINTEST_DIR ]; then
+	echo "Environment variable WINTEST_DIR not found."
 	exit 1;
 fi
-
-WINTEST_DIR=$SRCDIR/script/tests/win
 
 # This variable is defined in the per-hosts .fns file for build-farm hosts that run windows tests.
 if [ -z $WINTESTCONF ]; then
