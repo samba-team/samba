@@ -157,7 +157,15 @@ sub EjsPullScalar($$$$$)
 	    and (defined($pl) and $pl->{TYPE} eq "POINTER")) {
                 $var = get_pointer_to($var);
         }
-	pidl "NDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));";
+
+	my $t;
+	if (ref($e->{TYPE}) eq "HASH") {
+		$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
+	} else {
+		$t = $e->{TYPE};
+	}
+
+	pidl "NDR_CHECK(ejs_pull_$t(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -449,7 +457,15 @@ sub EjsPushScalar($$$$$)
 	    or (defined($pl) and $pl->{TYPE} eq "POINTER")) {
                 $var = get_pointer_to($var);
         }
-	pidl "NDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));";
+
+	my $t;
+	if (ref($e->{TYPE}) eq "HASH") {
+		$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
+	} else {
+		$t = $e->{TYPE};
+	}
+
+	pidl "NDR_CHECK(ejs_push_$t(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -877,11 +893,17 @@ sub NeededTypedef($$)
 
 	foreach (@{$t->{DATA}->{ELEMENTS}}) {
 		next if (has_property($_, "subcontext")); #FIXME: Support subcontexts
-		unless (defined($needed->{"pull_$_->{TYPE}"})) {
-			$needed->{"pull_$_->{TYPE}"} = $needed->{"pull_$t->{NAME}"};
+		my $n;
+		if (ref($_->{TYPE}) eq "HASH") {
+			$n = "$_->{TYPE}->{TYPE}_$_->{TYPE}->{NAME}";
+		} else {
+			$n = $_->{TYPE};
 		}
-		unless (defined($needed->{"push_$_->{TYPE}"})) {
-			$needed->{"push_$_->{TYPE}"} = $needed->{"push_$t->{NAME}"};
+		unless (defined($needed->{"pull_$n"})) {
+			$needed->{"pull_$n"} = $needed->{"pull_$t->{NAME}"};
+		}
+		unless (defined($needed->{"push_$n"})) {
+			$needed->{"push_$n"} = $needed->{"push_$t->{NAME}"};
 		}
 	}
 }
