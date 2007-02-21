@@ -34,6 +34,14 @@ bind_options="seal,padcheck bigendian"
 test_type="ncalrpc ncacn_np ncacn_ip_tcp"
 
 all_errs=0
+
+on_error() { 
+	errstr=$1
+
+	all_errs=`expr $all_errs + 1`
+	restore_snapshot $errstr "$VM_CFG_PATH"
+}
+
 for o in $bind_options; do
 	for transport in $test_type; do
 		case $transport in
@@ -49,12 +57,9 @@ for o in $bind_options; do
 				-U $username%$password \
 				-W $domain \
 				$transport:$server[$o] \
-				$t || all_errs=`expr $all_errs + 1`
-			if [ $old_errs -lt $all_errs ]; then
-				restore_snapshot "\n$test_name failed."
-			fi
+				$t || on_error "\n$test_name failed."
 		done
 	done
 done
 
-testok $0 $all_errs
+exit $all_errs
