@@ -28,7 +28,3 @@
  . $WINTESTCONF
 
  $SRCDIR/script/tests/test_win.sh
- status=$?
-
- echo "$0 exits with status $status"
- exit $status
