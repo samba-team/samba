@@ -38,13 +38,13 @@ struct deferred_open_record {
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
-static BOOL fd_open(struct connection_struct *conn,
+static NTSTATUS fd_open(struct connection_struct *conn,
 		    const char *fname, 
 		    files_struct *fsp,
 		    int flags,
 		    mode_t mode)
 {
-	int sav;
+	NTSTATUS status = NT_STATUS_OK;
 
 #ifdef O_NOFOLLOW
 	if (!lp_symlinks(SNUM(conn))) {
@@ -53,14 +53,15 @@ static BOOL fd_open(struct connection_struct *conn,
 #endif
 
 	fsp->fh->fd = SMB_VFS_OPEN(conn,fname,fsp,flags,mode);
-	sav = errno;
+	if (fsp->fh->fd == -1) {
+		status = map_nt_error_from_unix(errno);
+	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
 		    fname, flags, (int)mode, fsp->fh->fd,
 		(fsp->fh->fd == -1) ? strerror(errno) : "" ));
 
-	errno = sav;
-	return fsp->fh->fd != -1;
+	return status;
 }
 
 /****************************************************************************
@@ -205,6 +206,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			  uint32 access_mask, /* client requested access mask. */
 			  uint32 open_access_mask) /* what we're actually using in the open. */
 {
+	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	BOOL file_existed = VALID_STAT(*psbuf);
@@ -287,11 +289,12 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Actually do the open */
-		if (!fd_open(conn, path, fsp, local_flags, unx_mode)) {
+		status = fd_open(conn, path, fsp, local_flags, unx_mode);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n",
-				 path,strerror(errno),local_flags,flags));
-			return map_nt_error_from_unix(errno);
+				 path,nt_errstr(status),local_flags,flags));
+			return status;
 		}
 
 		if ((local_flags & O_CREAT) && !file_existed) {
@@ -332,7 +335,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		/* For a non-io open, this stat failing means file not found. JRA */
 		if (ret == -1) {
-			NTSTATUS status = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
 			fd_close(conn, fsp);
 			return status;
 		}
