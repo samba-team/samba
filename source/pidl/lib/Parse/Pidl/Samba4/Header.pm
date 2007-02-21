@@ -7,7 +7,7 @@
 package Parse::Pidl::Samba4::Header;
 
 use strict;
-use Parse::Pidl::Typelist qw(mapTypeName);
+use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::Samba4 qw(is_intree);
 
@@ -61,7 +61,7 @@ sub HeaderElement($)
 		pidl " ";
 		my $numstar = $element->{POINTERS};
 		if ($numstar >= 1) {
-			$numstar-- if Parse::Pidl::Typelist::scalar_is_reference($element->{TYPE});
+			$numstar-- if (scalar_is_reference($element->{TYPE}));
 		}
 		foreach (@{$element->{ARRAY_LEN}})
 		{
