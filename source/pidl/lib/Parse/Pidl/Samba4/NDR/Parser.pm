@@ -2651,6 +2651,9 @@ sub NeededElement($$$)
 
 	return if ($e->{TYPE} eq "EMPTY");
 
+	return if (ref($e->{TYPE}) eq "HASH" and 
+		       not defined($e->{TYPE}->{NAME}));
+
 	my ($t, $rt);
 	if (ref($e->{TYPE}) eq "HASH") {
 		$t = $e->{TYPE}->{TYPE}."_".$e->{TYPE}->{NAME};
