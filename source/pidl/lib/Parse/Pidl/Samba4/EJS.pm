@@ -8,7 +8,8 @@ package Parse::Pidl::Samba4::EJS;
 
 use strict;
 use Parse::Pidl::Typelist;
-use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -45,7 +46,6 @@ sub deindent()
 	$tabs = substr($tabs, 0, -1);
 }
 
-# this should probably be in ndr.pm
 sub GenerateStructEnv($)
 {
 	my $x = shift;
@@ -177,7 +177,7 @@ sub EjsPullPointer($$$$$)
 	indent;
 	pidl "EJS_ALLOC(ejs, $var);";
 	$var = get_value_of($var);		
-	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPullElement($e, GetNextLevel($e, $l), $var, $name, $env);
 	deindent;
 	pidl "}";
 }
@@ -187,7 +187,7 @@ sub EjsPullPointer($$$$$)
 sub EjsPullString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	my $pl = GetPrevLevel($e, $l);
 	$var = get_pointer_to($var);
 	if (defined($pl) and $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
@@ -201,10 +201,10 @@ sub EjsPullString($$$$$)
 sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env, $e);
-	my $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env, $e);
-	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	my $nl = GetNextLevel($e, $l);
+	my $length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+	my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
+	my $pl = GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
 	}
@@ -242,9 +242,9 @@ sub EjsPullArray($$$$$)
 sub EjsPullSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env, $e);
+	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env, $e);
 	pidl "ejs_set_switch(ejs, $switch_var);";
-	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPullElement($e, GetNextLevel($e, $l), $var, $name, $env);
 }
 
 ###########################
@@ -271,10 +271,9 @@ sub EjsPullElement($$$$$)
 # pull a structure/union element at top level
 sub EjsPullElementTop($$)
 {
-	my $e = shift;
-	my $env = shift;
+	my ($e, $env) = @_;
 	my $l = $e->{LEVELS}[0];
-	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env, $e);
+	my $var = ParseExpr($e->{NAME}, $env, $e);
 	my $name = "\"$e->{NAME}\"";
 	EjsPullElement($e, $l, $var, $name, $env);
 }
@@ -283,8 +282,7 @@ sub EjsPullElementTop($$)
 # pull a struct
 sub EjsStructPull($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $env = GenerateStructEnv($d);
 	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)");
 	pidl "{";
@@ -302,10 +300,8 @@ sub EjsStructPull($$)
 # pull a union
 sub EjsUnionPull($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $have_default = 0;
-	my $env = GenerateStructEnv($d);
 	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)");
 	pidl "{";
 	indent;
@@ -319,7 +315,7 @@ sub EjsUnionPull($$)
 		pidl "$e->{CASE}:";
 		indent;
 		if ($e->{TYPE} ne "EMPTY") {
-			EjsPullElementTop($e, $env);
+			EjsPullElementTop($e, { $e->{NAME} => "r->$e->{NAME}"});
 		}
 		pidl "break;";
 		deindent;
@@ -359,8 +355,7 @@ sub EjsEnumConstant($)
 # pull a enum
 sub EjsEnumPull($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	EjsEnumConstant($d);
 	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)");
 	pidl "{";
@@ -377,8 +372,7 @@ sub EjsEnumPull($$)
 # pull a bitmap
 sub EjsBitmapPull($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $type_fn = $d->{BASE_TYPE};
 	my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
 	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)");
@@ -449,7 +443,7 @@ sub EjsPushScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
         # have to handle strings specially :(
-        my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+        my $pl = GetPrevLevel($e, $l);
 
 	if ((not Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE}))
 	    or (defined($pl) and $pl->{TYPE} eq "POINTER")) {
@@ -463,7 +457,7 @@ sub EjsPushScalar($$$$$)
 sub EjsPushString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	my $pl = GetPrevLevel($e, $l);
 	if (defined($pl) and $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
 	}
@@ -486,7 +480,7 @@ sub EjsPushPointer($$$$$)
 	pidl "} else {";
 	indent;
 	$var = get_value_of($var);		
-	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPushElement($e, GetNextLevel($e, $l), $var, $name, $env);
 	deindent;
 	pidl "}";
 }
@@ -496,9 +490,9 @@ sub EjsPushPointer($$$$$)
 sub EjsPushSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env, $e);
+	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env, $e);
 	pidl "ejs_set_switch(ejs, $switch_var);";
-	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPushElement($e, GetNextLevel($e, $l), $var, $name, $env);
 }
 
 
@@ -507,9 +501,9 @@ sub EjsPushSwitch($$$$$)
 sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env, $e);
-	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	my $nl = GetNextLevel($e, $l);
+	my $length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+	my $pl = GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
 	}
@@ -558,10 +552,9 @@ sub EjsPushElement($$$$$)
 # push a structure/union element at top level
 sub EjsPushElementTop($$)
 {
-	my $e = shift;
-	my $env = shift;
+	my ($e, $env) = @_;
 	my $l = $e->{LEVELS}[0];
-	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env, $e);
+	my $var = ParseExpr($e->{NAME}, $env, $e);
 	my $name = "\"$e->{NAME}\"";
 	EjsPushElement($e, $l, $var, $name, $env);
 }
@@ -570,8 +563,7 @@ sub EjsPushElementTop($$)
 # push a struct
 sub EjsStructPush($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $env = GenerateStructEnv($d);
 	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)");
 	pidl "{";
@@ -589,10 +581,8 @@ sub EjsStructPush($$)
 # push a union
 sub EjsUnionPush($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $have_default = 0;
-	my $env = GenerateStructEnv($d);
 	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)");
 	pidl "{";
 	indent;
@@ -606,7 +596,7 @@ sub EjsUnionPush($$)
 		pidl "$e->{CASE}:";
 		indent;
 		if ($e->{TYPE} ne "EMPTY") {
-			EjsPushElementTop($e, $env);
+			EjsPushElementTop($e, { $e->{NAME} => "r->$e->{NAME}"} );
 		}
 		pidl "break;";
 		deindent;
@@ -645,8 +635,7 @@ sub EjsEnumPush($$)
 # push a bitmap
 sub EjsBitmapPush($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($name, $d) = @_;
 	my $type_fn = $d->{BASE_TYPE};
 	my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
 	# put the bitmap elements in the constants array
@@ -719,8 +708,7 @@ sub EjsPushFunction($)
 # generate a ejs mapping function
 sub EjsFunction($$)
 {
-	my $d = shift;
-	my $iface = shift;
+	my ($d, $iface) = @_;
 	my $name = $d->{NAME};
 	my $callnum = uc("DCERPC_$name");
 	my $table = "&dcerpc_table_$iface";
