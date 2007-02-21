@@ -220,14 +220,6 @@ pidl/lib/Parse/Pidl/Expr.pm: pidl/idl.yp
 	-$(YAPP) -m 'Parse::Pidl::Expr' -o pidl/lib/Parse/Pidl/Expr.pm pidl/expr.yp ||\
 		touch pidl/lib/Parse/Pidl/Expr.pm 
 
-smb_interfaces: pidl/smb_interfaces.pm
-	$(PERL) -Ipidl $(srcdir)/script/build_smb_interfaces.pl \
-		include/smb_interfaces.h
-
-pidl/smb_interfaces.pm: pidl/smb_interfaces.yp
-	-$(YAPP) -s -m 'smb_interfaces' -o pidl/smb_interfaces.pm pidl/smb_interfaces.yp ||\
-		touch pidl/smb_interfaces.pm
-
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
