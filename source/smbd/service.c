@@ -335,7 +335,7 @@ int find_service(fstring service)
 			/* Disallow anything except explicit share names. */
 			if (strequal(defservice,HOMES_NAME) ||
 					strequal(defservice, PRINTERS_NAME) ||
-					strequal(defservice, "ipc$")) {
+					strequal(defservice, "IPC$")) {
 				goto fail;
 			}
 
