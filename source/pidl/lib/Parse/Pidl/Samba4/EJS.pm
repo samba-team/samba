@@ -6,16 +6,23 @@
 
 package Parse::Pidl::Samba4::EJS;
 
+use Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(get_pointer_to get_value_of check_null_pointer $res
+                $res_hdr fn_declare);
+
 use strict;
 use Parse::Pidl::Typelist;
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
+use Parse::Pidl::Samba4::NDR::Parser qw(GenerateStructEnv GenerateFunctionInEnv
+                                        GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
 
-my $res;
-my $res_hdr;
+our $res;
+our $res_hdr;
 
 my %constants;
 
@@ -44,52 +51,6 @@ sub indent()
 sub deindent()
 {
 	$tabs = substr($tabs, 0, -1);
-}
-
-sub GenerateStructEnv($)
-{
-	my $x = shift;
-	my %env;
-
-	foreach my $e (@{$x->{ELEMENTS}}) {
-		if ($e->{NAME}) {
-			$env{$e->{NAME}} = "r->$e->{NAME}";
-		}
-	}
-
-	$env{"this"} = "r";
-
-	return \%env;
-}
-
-sub GenerateFunctionInEnv($)
-{
-	my $fn = shift;
-	my %env;
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
-}
-
-sub GenerateFunctionOutEnv($)
-{
-	my $fn = shift;
-	my %env;
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/out/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->out.$e->{NAME}";
-		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
 }
 
 sub get_pointer_to($)
@@ -126,7 +87,6 @@ sub check_null_pointer($)
 		pidl "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
 	}
 }
-
 
 #####################################################################
 # work out is a parse function should be declared static or not
@@ -291,7 +251,7 @@ sub EjsPullElementTop($$)
 sub EjsStructPull($$)
 {
 	my ($name, $d) = @_;
-	my $env = GenerateStructEnv($d);
+	my $env = GenerateStructEnv($d, "r");
 	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)");
 	pidl "{";
 	indent;
@@ -390,7 +350,6 @@ sub EjsBitmapPull($$)
 	deindent;
 	pidl "}";
 }
-
 
 ###########################
 # generate a structure pull
@@ -580,7 +539,7 @@ sub EjsPushElementTop($$)
 sub EjsStructPush($$)
 {
 	my ($name, $d) = @_;
-	my $env = GenerateStructEnv($d);
+	my $env = GenerateStructEnv($d, "r");
 	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)");
 	pidl "{";
 	indent;
@@ -879,32 +838,25 @@ sub NeededFunction($$)
 	}
 }
 
-sub NeededTypedef($$)
+sub NeededType($$$)
 {
-	my ($t,$needed) = @_;
+	sub NeededType($$$);
+	my ($t,$needed,$req) = @_;
 
-	if (has_property($t, "public")) {
-		$needed->{"pull_$t->{NAME}"} = not has_property($t, "noejs");
-		$needed->{"push_$t->{NAME}"} = not has_property($t, "noejs");
-	}
+	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
 
-	return if (($t->{DATA}->{TYPE} ne "STRUCT") and 
-			   ($t->{DATA}->{TYPE} ne "UNION"));
+	return if (($t->{TYPE} ne "STRUCT") and 
+			   ($t->{TYPE} ne "UNION"));
 
-	foreach (@{$t->{DATA}->{ELEMENTS}}) {
+	foreach (@{$t->{ELEMENTS}}) {
 		next if (has_property($_, "subcontext")); #FIXME: Support subcontexts
 		my $n;
-		if (ref($_->{TYPE}) eq "HASH") {
-			$n = "$_->{TYPE}->{TYPE}_$_->{TYPE}->{NAME}";
-		} else {
-			$n = $_->{TYPE};
+		if (ref($_->{TYPE}) eq "HASH" and defined($_->{TYPE}->{NAME})) {
+			$needed->{"$req\_$_->{TYPE}->{TYPE}_$_->{TYPE}->{NAME}"} = 1;
+		} elsif (ref($_->{TYPE}) ne "HASH") {
+			$needed->{$req."_".$_->{TYPE}} = 1;
 		}
-		unless (defined($needed->{"pull_$n"})) {
-			$needed->{"pull_$n"} = $needed->{"pull_$t->{NAME}"};
-		}
-		unless (defined($needed->{"push_$n"})) {
-			$needed->{"push_$n"} = $needed->{"push_$t->{NAME}"};
-		}
+		NeededType($_->{TYPE}, $needed, $req) if (ref($_->{TYPE}) eq "HASH");
 	}
 }
 
@@ -915,7 +867,16 @@ sub NeededInterface($$)
 	my ($interface,$needed) = @_;
 
 	NeededFunction($_, $needed) foreach (@{$interface->{FUNCTIONS}});
-	NeededTypedef($_, $needed) foreach (reverse @{$interface->{TYPES}});
+
+	foreach (reverse @{$interface->{TYPES}}) {
+		if (has_property($_, "public")) {
+			$needed->{"pull_$_->{NAME}"} = not has_property($_, "noejs");
+			$needed->{"push_$_->{NAME}"} = not has_property($_, "noejs");
+		}
+
+		NeededType($_, $needed, "pull")  if ($needed->{"pull_$_->{NAME}"});
+		NeededType($_, $needed, "push")  if ($needed->{"push_$_->{NAME}"});
+	}
 }
 
 1;
