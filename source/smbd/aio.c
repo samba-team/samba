@@ -79,7 +79,9 @@ static struct aio_extra *create_aio_ex_read(files_struct *fsp, size_t buflen,
 *****************************************************************************/
 
 static struct aio_extra *create_aio_ex_write(files_struct *fsp,
-					     size_t outbuflen, uint16 mid)
+					     size_t inbuflen,
+					     size_t outbuflen,
+					     uint16 mid)
 {
 	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
 
@@ -94,17 +96,12 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp,
 		SAFE_FREE(aio_ex);
 		return NULL;
 	}
-	/* Steal the input buffer containing the write data from the main SMB
-	 * call. */
-	/* We must re-allocate a new one here. */
-	if (NewInBuffer(&aio_ex->inbuf) == NULL) {
+
+	if (!(aio_ex->inbuf = SMB_MALLOC_ARRAY(char, inbuflen))) {
 		SAFE_FREE(aio_ex->outbuf);
 		SAFE_FREE(aio_ex);
 		return NULL;
 	}
-
-	/* aio_ex->inbuf now contains the stolen old InBuf containing the data
-	 * to write. */
 
 	DLIST_ADD(aio_list_head, aio_ex);
 	aio_ex->fsp = fsp;
@@ -120,9 +117,7 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp,
 static void delete_aio_ex(struct aio_extra *aio_ex)
 {
 	DLIST_REMOVE(aio_list_head, aio_ex);
-	/* Safe to do as we've removed ourselves from the in use list first. */
-	free_InBuffer(aio_ex->inbuf);
-
+	SAFE_FREE(aio_ex->inbuf);
 	SAFE_FREE(aio_ex->outbuf);
 	SAFE_FREE(aio_ex);
 }
@@ -288,7 +283,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 {
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
-	size_t outbufsize;
+	size_t inbufsize, outbufsize;
 	BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
@@ -321,15 +316,16 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
+	inbufsize =  smb_len(inbuf) + 4;
 	outbufsize = smb_len(outbuf) + 4;
-	if ((aio_ex = create_aio_ex_write(fsp, outbufsize,
-					  SVAL(inbuf,smb_mid))) == NULL) {
+	if (!(aio_ex = create_aio_ex_write(fsp, inbufsize, outbufsize,
+					   SVAL(inbuf,smb_mid)))) {
 		DEBUG(0,("schedule_aio_write_and_X: malloc fail.\n"));
 		return False;
 	}
 
-	/* Paranioa.... */
-	SMB_ASSERT(aio_ex->inbuf == inbuf);
+	/* Copy the SMB header already setup in outbuf. */
+	memcpy(aio_ex->inbuf, inbuf, inbufsize);
 
 	/* Copy the SMB header already setup in outbuf. */
 	memcpy(aio_ex->outbuf, outbuf, outbufsize);
@@ -340,8 +336,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	/* Now set up the aio record for the write call. */
 	
 	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = data; /* As we've stolen inbuf this points within
-			    * inbuf. */
+	a->aio_buf = aio_ex->inbuf + (PTR_DIFF(data, inbuf));
 	a->aio_nbytes = numtowrite;
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
@@ -351,9 +346,6 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	if (SMB_VFS_AIO_WRITE(fsp,a) == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
-		/* Replace global InBuf as we're going to do a normal write. */
-		set_InBuffer(aio_ex->inbuf);
-		aio_ex->inbuf = NULL;
 		delete_aio_ex(aio_ex);
 		return False;
 	}
@@ -748,21 +740,6 @@ void cancel_aio_by_fsp(files_struct *fsp)
 	}
 }
 
-/****************************************************************************
- Check if a buffer was stolen for aio use.
-*****************************************************************************/
-
-BOOL aio_inbuffer_in_use(char *inbuf)
-{
-	struct aio_extra *aio_ex;
-
-	for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
-		if (aio_ex->inbuf == inbuf) {
-			return True;
-		}
-	}
-	return False;
-}
 #else
 BOOL aio_finished(void)
 {
@@ -804,10 +781,5 @@ void cancel_aio_by_fsp(files_struct *fsp)
 BOOL wait_for_aio_completion(files_struct *fsp)
 {
 	return True;
-}
-
-BOOL aio_inbuffer_in_use(char *ptr)
-{
-	return False;
 }
 #endif

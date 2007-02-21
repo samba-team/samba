@@ -1463,45 +1463,9 @@ char *get_InBuffer(void)
 	return InBuffer;
 }
 
-void set_InBuffer(char *new_inbuf)
-{
-	InBuffer = new_inbuf;
-	current_inbuf = InBuffer;
-}
-
 char *get_OutBuffer(void)
 {
 	return OutBuffer;
-}
-
-void set_OutBuffer(char *new_outbuf)
-{
-	OutBuffer = new_outbuf;
-}
-
-/****************************************************************************
- Free an InBuffer. Checks if not in use by aio system.
- Must have been allocated by NewInBuffer.
-****************************************************************************/
-
-void free_InBuffer(char *inbuf)
-{
-	if (!aio_inbuffer_in_use(inbuf)) {
-		if (current_inbuf == inbuf) {
-			current_inbuf = NULL;
-		}
-		SAFE_FREE(inbuf);
-	}
-}
-
-/****************************************************************************
- Free an OutBuffer. No outbuffers currently stolen by aio system.
- Must have been allocated by NewInBuffer.
-****************************************************************************/
-
-void free_OutBuffer(char *outbuf)
-{
-	SAFE_FREE(outbuf);
 }
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
@@ -1510,7 +1474,7 @@ const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARG
  Allocate a new InBuffer. Returns the new and old ones.
 ****************************************************************************/
 
-char *NewInBuffer(char **old_inbuf)
+static char *NewInBuffer(char **old_inbuf)
 {
 	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
 	if (!new_inbuf) {
@@ -1530,7 +1494,7 @@ char *NewInBuffer(char **old_inbuf)
  Allocate a new OutBuffer. Returns the new and old ones.
 ****************************************************************************/
 
-char *NewOutBuffer(char **old_outbuf)
+static char *NewOutBuffer(char **old_outbuf)
 {
 	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
 	if (!new_outbuf) {
