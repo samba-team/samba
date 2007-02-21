@@ -110,22 +110,25 @@ sub EjsPullScalar($$$$$)
 
 	return if (has_property($e, "value"));
 
-        my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	if (ref($e->{TYPE}) eq "HASH" and not defined($e->{TYPE}->{NAME})) {
+		EjsTypePull($e->{TYPE}, $var);
+	} else {
+		my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
         $var = get_pointer_to($var);
         # have to handle strings specially :(
-	if (Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE})
-	    and (defined($pl) and $pl->{TYPE} eq "POINTER")) {
+		if (Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE})
+			and (defined($pl) and $pl->{TYPE} eq "POINTER")) {
                 $var = get_pointer_to($var);
         }
 
-	my $t;
-	if (ref($e->{TYPE}) eq "HASH") {
-		$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
-	} else {
-		$t = $e->{TYPE};
+    	my $t;
+		if (ref($e->{TYPE}) eq "HASH") {
+			$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
+		} else {
+			$t = $e->{TYPE};
+		}
+		pidl "NDR_CHECK(ejs_pull_$t(ejs, v, $name, $var));";
 	}
-
-	pidl "NDR_CHECK(ejs_pull_$t(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -162,7 +165,6 @@ sub EjsPullString($$$$$)
 	}
 	pidl "NDR_CHECK(ejs_pull_string(ejs, v, $name, $var));";
 }
-
 
 ###########################
 # pull an array element
@@ -250,29 +252,20 @@ sub EjsPullElementTop($$)
 # pull a struct
 sub EjsStructPull($$)
 {
-	my ($name, $d) = @_;
-	my $env = GenerateStructEnv($d, "r");
-	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)");
-	pidl "{";
-	indent;
+	my ($d, $varname) = @_;
+	my $env = GenerateStructEnv($d, $varname);
 	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));";
-        foreach my $e (@{$d->{ELEMENTS}}) {
+    foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPullElementTop($e, $env);
 	}
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}\n";
 }
 
 ###########################
 # pull a union
 sub EjsUnionPull($$)
 {
-	my ($name, $d) = @_;
+	my ($d, $varname) = @_;
 	my $have_default = 0;
-	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)");
-	pidl "{";
-	indent;
 	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));";
 	pidl "switch (ejs->switch_var) {";
 	indent;
@@ -283,7 +276,7 @@ sub EjsUnionPull($$)
 		pidl "$e->{CASE}:";
 		indent;
 		if ($e->{TYPE} ne "EMPTY") {
-			EjsPullElementTop($e, { $e->{NAME} => "r->$e->{NAME}"});
+			EjsPullElementTop($e, { $e->{NAME} => "$varname->$e->{NAME}"});
 		}
 		pidl "break;";
 		deindent;
@@ -294,9 +287,6 @@ sub EjsUnionPull($$)
 		pidl "return ejs_panic(ejs, \"Bad switch value\");";
 		deindent;
 	}
-	deindent;
-	pidl "}";
-	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
 }
@@ -323,50 +313,66 @@ sub EjsEnumConstant($)
 # pull a enum
 sub EjsEnumPull($$)
 {
-	my ($name, $d) = @_;
+	my ($d, $varname) = @_;
 	EjsEnumConstant($d);
-	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)");
-	pidl "{";
-	indent;
 	pidl "unsigned e;";
 	pidl "NDR_CHECK(ejs_pull_enum(ejs, v, name, &e));";
-	pidl "*r = e;";
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}\n";
+	pidl "*$varname = e;";
 }
 
 ###########################
 # pull a bitmap
 sub EjsBitmapPull($$)
 {
-	my ($name, $d) = @_;
+	my ($d, $varname) = @_;
 	my $type_fn = $d->{BASE_TYPE};
-	my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
-	fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)");
-	pidl "{";
-	indent;
-	pidl "return ejs_pull_$type_fn(ejs, v, name, r);";
-	deindent;
-	pidl "}";
+	pidl "NDR_CHECK(ejs_pull_$type_fn(ejs, v, name, $varname));";
 }
 
-###########################
-# generate a structure pull
-sub EjsTypedefPull($)
+sub EjsTypePullFunction($$)
 {
-	my $d = shift;
+	sub EjsTypePullFunction($$);
+	my ($d, $name) = @_;
 	return if (has_property($d, "noejs"));
-	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
-		EjsStructPull($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
-		EjsUnionPull($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
-		EjsEnumPull($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
-		EjsBitmapPull($d->{NAME}, $d->{DATA});
+
+	if ($d->{TYPE} eq "TYPEDEF") {
+		EjsTypePullFunction($d->{DATA}, $name);
+		return;
+	}
+
+	if ($d->{TYPE} eq "STRUCT") {
+		fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)");
+	} elsif ($d->{TYPE} eq "UNION") {
+		fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)");
+	} elsif ($d->{TYPE} eq "ENUM") {
+		fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)");
+	} elsif ($d->{TYPE} eq "BITMAP") {
+		my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
+		fn_declare($d, "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)");
+	}
+	pidl "{";
+	indent;
+
+	EjsTypePull($d, "r");
+
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
+}
+
+sub EjsTypePull($$)
+{
+	my ($d, $varname) = @_;
+	if ($d->{TYPE} eq 'STRUCT') {
+		EjsStructPull($d, $varname);
+	} elsif ($d->{TYPE} eq 'UNION') {
+		EjsUnionPull($d, $varname);
+	} elsif ($d->{TYPE} eq 'ENUM') {
+		EjsEnumPull($d, $varname);
+	} elsif ($d->{TYPE} eq 'BITMAP') {
+		EjsBitmapPull($d, $varname);
 	} else {
-		warn "Unhandled pull typedef $d->{NAME} of type $d->{DATA}->{TYPE}";
+		warn "Unhandled pull $varname of type $d->{TYPE}";
 	}
 }
 
@@ -403,28 +409,32 @@ sub EjsPullFunction($)
 	pidl "}\n";
 }
 
-
 ###########################
 # push a scalar element
 sub EjsPushScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-        # have to handle strings specially :(
+
+	if (ref($e->{TYPE}) eq "HASH" and not defined($e->{TYPE}->{NAME})) {
+		EjsTypePush($e->{TYPE}, get_pointer_to($var));
+	} else {
+    # have to handle strings specially :(
         my $pl = GetPrevLevel($e, $l);
 
-	if ((not Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE}))
-	    or (defined($pl) and $pl->{TYPE} eq "POINTER")) {
-                $var = get_pointer_to($var);
-        }
+		if ((not Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE}))
+			or (defined($pl) and $pl->{TYPE} eq "POINTER")) {
+					$var = get_pointer_to($var);
+			}
 
-	my $t;
-	if (ref($e->{TYPE}) eq "HASH") {
-		$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
-	} else {
-		$t = $e->{TYPE};
+		my $t;
+		if (ref($e->{TYPE}) eq "HASH") {
+			$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
+		} else {
+			$t = $e->{TYPE};
+		}
+
+		pidl "NDR_CHECK(ejs_push_$t(ejs, v, $name, $var));";
 	}
-
-	pidl "NDR_CHECK(ejs_push_$t(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -469,7 +479,6 @@ sub EjsPushSwitch($$$$$)
 	pidl "ejs_set_switch(ejs, $switch_var);";
 	EjsPushElement($e, GetNextLevel($e, $l), $var, $name, $env);
 }
-
 
 ###########################
 # push an array element
@@ -538,29 +547,20 @@ sub EjsPushElementTop($$)
 # push a struct
 sub EjsStructPush($$)
 {
-	my ($name, $d) = @_;
-	my $env = GenerateStructEnv($d, "r");
-	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)");
-	pidl "{";
-	indent;
+	my ($d, $varname) = @_;
+	my $env = GenerateStructEnv($d, $varname);
 	pidl "NDR_CHECK(ejs_push_struct_start(ejs, &v, name));";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPushElementTop($e, $env);
 	}
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}\n";
 }
 
 ###########################
 # push a union
 sub EjsUnionPush($$)
 {
-	my ($name, $d) = @_;
+	my ($d, $varname) = @_;
 	my $have_default = 0;
-	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)");
-	pidl "{";
-	indent;
 	pidl "NDR_CHECK(ejs_push_struct_start(ejs, &v, name));";
 	pidl "switch (ejs->switch_var) {";
 	indent;
@@ -571,7 +571,7 @@ sub EjsUnionPush($$)
 		pidl "$e->{CASE}:";
 		indent;
 		if ($e->{TYPE} ne "EMPTY") {
-			EjsPushElementTop($e, { $e->{NAME} => "r->$e->{NAME}"} );
+			EjsPushElementTop($e, { $e->{NAME} => "$varname->$e->{NAME}"} );
 		}
 		pidl "break;";
 		deindent;
@@ -584,35 +584,24 @@ sub EjsUnionPush($$)
 	}
 	deindent;
 	pidl "}";
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}";
 }
 
 ###########################
 # push a enum
 sub EjsEnumPush($$)
 {
-	my $name = shift;
-	my $d = shift;
+	my ($d, $varname) = @_;
 	EjsEnumConstant($d);
-	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)");
-	pidl "{";
-	indent;
-	pidl "unsigned e = *r;";
+	pidl "unsigned e = ".get_value_of($varname).";";
 	pidl "NDR_CHECK(ejs_push_enum(ejs, v, name, &e));";
-	pidl "return NT_STATUS_OK;";
-	deindent;
-	pidl "}\n";
 }
 
 ###########################
 # push a bitmap
 sub EjsBitmapPush($$)
 {
-	my ($name, $d) = @_;
+	my ($d, $varname) = @_;
 	my $type_fn = $d->{BASE_TYPE};
-	my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
 	# put the bitmap elements in the constants array
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		if ($e =~ /^(\w*)\s*(.*)\s*$/) {
@@ -621,35 +610,54 @@ sub EjsBitmapPush($$)
 			$constants{$bname} = $v;
 		}
 	}
-	fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)");
-	pidl "{";
-	indent;
-	pidl "return ejs_push_$type_fn(ejs, v, name, r);";
-	deindent;
-	pidl "}";
+	pidl "NDR_CHECK(ejs_push_$type_fn(ejs, v, name, $varname));";
 }
 
-
-###########################
-# generate a structure push
-sub EjsTypedefPush($)
+sub EjsTypePushFunction($$)
 {
-	my $d = shift;
+	sub EjsTypePushFunction($$);
+	my ($d, $name) = @_;
 	return if (has_property($d, "noejs"));
 
-	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
-		EjsStructPush($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
-		EjsUnionPush($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
-		EjsEnumPush($d->{NAME}, $d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
-		EjsBitmapPush($d->{NAME}, $d->{DATA});
-	} else {
-		warn "Unhandled push typedef $d->{NAME} of type $d->{DATA}->{TYPE}";
+	if ($d->{TYPE} eq "TYPEDEF") {
+		EjsTypePushFunction($d->{DATA}, $name);
+		return;
 	}
+
+	if ($d->{TYPE} eq "STRUCT") {
+		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)");
+	} elsif ($d->{TYPE} eq "UNION") {
+		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)");
+	} elsif ($d->{TYPE} eq "ENUM") {
+		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)");
+	} elsif ($d->{TYPE} eq "BITMAP") {
+		my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
+		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)");
+	}
+	pidl "{";
+	indent;
+	EjsTypePush($d, "r");
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
+sub EjsTypePush($$)
+{
+	my ($d, $varname) = @_;
+
+	if ($d->{TYPE} eq 'STRUCT') {
+		EjsStructPush($d, $varname);
+	} elsif ($d->{TYPE} eq 'UNION') {
+		EjsUnionPush($d, $varname);
+	} elsif ($d->{TYPE} eq 'ENUM') {
+		EjsEnumPush($d, $varname);
+	} elsif ($d->{TYPE} eq 'BITMAP') {
+		EjsBitmapPush($d, $varname);
+	} else {
+		warn "Unhandled push $varname of type $d->{TYPE}";
+	}
+}
 
 #####################
 # generate a function
@@ -677,7 +685,6 @@ sub EjsPushFunction($)
 	deindent;
 	pidl "}\n";
 }
-
 
 #################################
 # generate a ejs mapping function
@@ -730,8 +737,8 @@ sub EjsInterface($$)
 	pidl_hdr "\n";
 
 	foreach my $d (@{$interface->{TYPES}}) {
-		($needed->{"push_$d->{NAME}"}) && EjsTypedefPush($d);
-		($needed->{"pull_$d->{NAME}"}) && EjsTypedefPull($d);
+		($needed->{"push_$d->{NAME}"}) && EjsTypePushFunction($d, $d->{NAME});
+		($needed->{"pull_$d->{NAME}"}) && EjsTypePullFunction($d, $d->{NAME});
 	}
 
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
