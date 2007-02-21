@@ -670,6 +670,9 @@ static struct pending_auth_data *pd_list;
 
 static void delete_partial_auth(struct pending_auth_data *pad)
 {
+	if (!pad) {
+		return;
+	}
 	DLIST_REMOVE(pd_list, pad);
 	data_blob_free(&pad->partial_data);
 	SAFE_FREE(pad);
@@ -698,9 +701,11 @@ static struct pending_auth_data *get_pending_auth_data(uint16 smbpid)
 
 static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB *pblob)
 {
-	struct pending_auth_data *pad;
+	struct pending_auth_data *pad = NULL;
 	ASN1_DATA data;
 	size_t needed_len = 0;
+
+	pad = get_pending_auth_data(smbpid);
 
 	/* Ensure we have some data. */
 	if (pblob->length == 0) {
@@ -709,8 +714,6 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 		delete_partial_auth(pad);
 		return NT_STATUS_OK;
 	}
-
-	pad = get_pending_auth_data(smbpid);
 
 	/* Were we waiting for more data ? */
 	if (pad) {
