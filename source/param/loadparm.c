@@ -1821,7 +1821,49 @@ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
-FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
+/* FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
+ * lp_passdb_backend() should be replace by the this macro again after
+ * some releases.
+ * */
+const char *lp_passdb_backend()
+{
+	char *delim, *quote;
+	int pos, i;
+
+	delim = strchr( Globals.szPassdbBackend, ' ');
+	/* no space at all */
+	if (delim == NULL) {
+		goto out;
+	}
+
+	quote = strchr(Globals.szPassdbBackend, '"');
+	/* no quote char or non in the first part */
+	if (quote == NULL || quote > delim) {
+		*delim = '\0';
+		goto warn;
+	}
+
+	quote = strchr(quote+1, '"');
+	if (quote == NULL) {
+		DEBUG(0, ("WARNING: Your 'passdb backend' configuration is invalid due to a missing second \" char.\n"));
+		goto out;
+	} else if (*(quote+1) == '\0') {
+		/* space, fitting quote char, and one backend only */
+		goto out;
+	} else {
+		/* terminate string after the fitting quote char */
+		*(quote+1) = '\0';
+	}
+
+warn:
+	DEBUG(0, ("WARNING: Your 'passdb backend' configuration includes multiple backends.  This\n"
+		"is deprecated since Samba 3.0.23.  Please check WHATSNEW.txt or the section 'Passdb\n"
+		"Changes' from the ChangeNotes as part of the Samba HOWTO collection.  The first part\n"
+		"(%s) of your configuration is used instead.\n", Globals.szPassdbBackend));
+
+out:
+	return Globals.szPassdbBackend;
+}
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
