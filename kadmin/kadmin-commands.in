@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -218,6 +218,18 @@ command = {
 	argument = "principal enctype..."
 	min_args = "2"
 	help = "Delete all the mentioned enctypes for principal."
+}
+command = {
+	name = "add_enctype"
+	option = {
+		long = "random-key"
+		short = "r"
+		type = "flag"
+		help = "set random key"
+	}
+	argument = "principal enctype..."
+	min_args = "2"
+	help = "Add new enctypes for principal."
 }
 command = {
 	name = "ext_keytab"
