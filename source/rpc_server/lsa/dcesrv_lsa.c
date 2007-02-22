@@ -53,10 +53,12 @@ struct lsa_policy_state {
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
 	struct ldb_dn *domain_dn;
+	struct ldb_dn *forest_dn;
 	struct ldb_dn *builtin_dn;
 	struct ldb_dn *system_dn;
 	const char *domain_name;
 	const char *domain_dns;
+	const char *forest_dns;
 	struct dom_sid *domain_sid;
 	struct GUID domain_guid;
 	struct dom_sid *builtin_sid;
@@ -281,6 +283,7 @@ static NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, 
 		NULL
 	};
 	struct ldb_result *ref_res;
+	struct ldb_result *forest_ref_res;
 	const char *ref_attrs[] = {
 		"nETBIOSName",
 		"dnsRoot",
@@ -310,6 +313,13 @@ static NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, 
 	   fetching here */
 	state->domain_dn = samdb_base_dn(state->sam_ldb);
 	if (!state->domain_dn) {
+		return NT_STATUS_NO_MEMORY;		
+	}
+
+	/* work out the forest root_dn - useful for so many calls its worth
+	   fetching here */
+	state->forest_dn = samdb_root_dn(state->sam_ldb);
+	if (!state->forest_dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
 
@@ -366,6 +376,29 @@ static NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, 
 	talloc_steal(state, state->domain_dns);
 
 	talloc_free(ref_res);
+
+	ret = ldb_search_exp_fmt(state->sam_ldb, state, &forest_ref_res,
+				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
+				 "(&(objectclass=crossRef)(ncName=%s))",
+				 ldb_dn_get_linearized(state->forest_dn));
+	
+	if (ret != LDB_SUCCESS) {
+		talloc_free(forest_ref_res);
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+	if (ref_res->count != 1) {
+		talloc_free(forest_ref_res);
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	state->forest_dns = ldb_msg_find_attr_as_string(forest_ref_res->msgs[0], "dnsRoot", NULL);
+	if (!state->forest_dns) {
+		talloc_free(forest_ref_res);
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+	talloc_steal(state, state->forest_dns);
+
+	talloc_free(forest_ref_res);
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
@@ -460,7 +493,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 			
 			domain		= state->domain_name;
 			dns_domain	= state->domain_dns;
-			forest		= state->domain_dns;
+			forest		= state->forest_dns;
 
 			domain_guid	= state->domain_guid;
 			flags	|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
@@ -575,7 +608,7 @@ static NTSTATUS dcesrv_lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *
 	info->name.string = state->domain_name;
 	info->sid         = state->domain_sid;
 	info->dns_domain.string = state->domain_dns;
-	info->dns_forest.string = state->domain_dns;
+	info->dns_forest.string = state->forest_dns;
 	info->domain_guid       = state->domain_guid;
 
 	return NT_STATUS_OK;
