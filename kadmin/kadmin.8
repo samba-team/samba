@@ -1,4 +1,4 @@
-.\" Copyright (c) 2000 - 2006 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2000 - 2007 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May  1, 2006
+.Dd Feb  22, 2007
 .Dt KADMIN 8
 .Os HEIMDAL
 .Sh NAME
@@ -163,6 +163,15 @@ Commands include:
 .Bd -ragged -offset indent
 Adds a new principal to the database. The options not passed on the
 command line will be promped for.
+.Ed
+.Pp
+.Nm add_enctype
+.Op Fl r | Fl -random-key
+.Ar principal enctypes...
+.Pp
+.Bd -ragged -offset indent
+Adds a new encryption type to the principal, only random key are
+supported.
 .Ed
 .Pp
 .Nm delete
@@ -303,8 +312,10 @@ no rpc call is done to the server.
 .Bd -ragged -offset indent
 Lists the operations you are allowed to perform. These include
 .Li add ,
+.Li add_enctype ,
 .Li change-password ,
 .Li delete ,
+.Li del_enctype ,
 .Li get ,
 .Li list ,
 and
