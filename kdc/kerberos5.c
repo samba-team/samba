@@ -433,8 +433,9 @@ get_pa_etype_info(krb5_context context,
 	char *name;
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
-	    name = "<unparse_name failed>";
-	kdc_log(context, config, 0, "internal error in get_pa_etype_info(%s): %d != %d", 
+	    name = rk_UNCONST("<unparse_name failed>");
+	kdc_log(context, config, 0, 
+		"internal error in get_pa_etype_info(%s): %d != %d", 
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
@@ -613,7 +614,7 @@ get_pa_etype_info2(krb5_context context,
 	char *name;
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
-	    name = "<unparse_name failed>";
+	    name = rk_UNCONST("<unparse_name failed>");
 	kdc_log(context, config, 0,
 		"internal error in get_pa_etype_info2(%s): %d != %d", 
 		name, n, pa.len);
@@ -692,11 +693,11 @@ log_as_req(krb5_context context,
     }
     
     {
-	char str[128];
+	char fixedstr[128];
 	unparse_flags(KDCOptions2int(b->kdc_options), asn1_KDCOptions_units(), 
-		      str, sizeof(str));
-	if(*str)
-	    kdc_log(context, config, 2, "Requested flags: %s", str);
+		      fixedstr, sizeof(fixedstr));
+	if(*fixedstr)
+	    kdc_log(context, config, 2, "Requested flags: %s", fixedstr);
     }
 }
 
