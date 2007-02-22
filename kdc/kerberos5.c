@@ -913,6 +913,7 @@ _kdc_as_rep(krb5_context context,
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
     krb5_enctype cetype, setype, sessionetype;
+    krb5_data e_data;
     EncTicketPart et;
     EncKDCRepPart ek;
     krb5_principal client_princ = NULL, server_princ = NULL;
@@ -928,6 +929,7 @@ _kdc_as_rep(krb5_context context,
 #endif
 
     memset(&rep, 0, sizeof(rep));
+    krb5_data_zero(&e_data);
 
     if (f.canonicalize)
 	flags |= HDB_F_CANON;
@@ -1234,7 +1236,6 @@ _kdc_as_rep(krb5_context context,
 	PA_DATA *pa;
 	unsigned char *buf;
 	size_t len;
-	krb5_data foo_data;
 
     use_pa: 
 	method_data.len = 0;
@@ -1274,25 +1275,17 @@ _kdc_as_rep(krb5_context context,
 	
 	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
 	free_METHOD_DATA(&method_data);
-	foo_data.data   = buf;
-	foo_data.length = len;
-	
+
+	e_data.data   = buf;
+	e_data.length = len;
+	e_text ="Need to use PA-ENC-TIMESTAMP/PA-PK-AS-REQ",
+
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
-	krb5_mk_error(context,
-		      ret,
-		      "Need to use PA-ENC-TIMESTAMP/PA-PK-AS-REQ",
-		      &foo_data,
-		      client_princ,
-		      server_princ,
-		      NULL,
-		      NULL,
-		      reply);
-	free(buf);
+
 	kdc_log(context, config, 0,
 		"No preauth found, returning PREAUTH-REQUIRED -- %s",
 		client_name);
-	ret = 0;
-	goto out2;
+	goto out;
     }
     
     /*
@@ -1705,7 +1698,7 @@ out:
 	krb5_mk_error(context,
 		      ret,
 		      e_text,
-		      NULL,
+		      (e_data.data ? &e_data : NULL),
 		      client_princ,
 		      server_princ,
 		      NULL,
@@ -1713,11 +1706,12 @@ out:
 		      reply);
 	ret = 0;
     }
-out2:
 #ifdef PKINIT
     if (pkp)
 	_kdc_pk_free_client_param(context, pkp);
 #endif
+    if (e_data.data)
+        free(e_data.data);
     if (client_princ)
 	krb5_free_principal(context, client_princ);
     free(client_name);
