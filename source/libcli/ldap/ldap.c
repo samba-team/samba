@@ -237,6 +237,10 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		ldap_encode_response(&data, &r->response);
 		if (r->SASL.secblob) {
 			asn1_write_ContextSimple(&data, 7, r->SASL.secblob);
+		} else {
+			/* ugly but the windows 2000 mmc deturns decoding error without this */
+			DATA_BLOB zero = data_blob(NULL, 0);
+			asn1_write_ContextSimple(&data, 7, &zero);
 		}
 		asn1_pop_tag(&data);
 		break;
