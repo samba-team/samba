@@ -657,6 +657,7 @@ get_new_tickets(krb5_context context,
 	exit(1);
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
+    case KRB5KDC_ERR_PREAUTH_FAILED:
 	krb5_errx(context, 1, "Password incorrect");
 	break;
     default:
