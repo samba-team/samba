@@ -1,5 +1,19 @@
 2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c: Select a session enctype from the list of the
+	crypto systems supported enctype, is supported by the client and
+	is one of the enctype of the enctype of the krbtgt.
+	
+	The later is used as a hint what enctype all KDC are supporting to
+	make sure a newer version of KDC wont generate a session enctype
+	that and older version of a KDC in the same realm can't decrypt.
+	
+	But if the KDC admin is paranoid and doesn't want to have "no the
+	best" enctypes on the krbtgt, lets save the best pick from the
+	client list and hope that that will work for any other KDCs.
+	
+	Reported by metze.
+
 	* kdc/hprop.c (propagate_database): on any failure, drop the
 	connection to the peer and try next one.
 	
