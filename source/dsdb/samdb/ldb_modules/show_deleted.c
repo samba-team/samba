@@ -96,7 +96,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	int ret;
 
 	/* check if there's a show deleted control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_SHOW_DELETED_OID);
+	control = ldb_request_get_control(req, LDB_CONTROL_SHOW_DELETED_OID);
 
 	/* copy the request for modification */
 	down_req = talloc(req, struct ldb_request);
