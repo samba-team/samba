@@ -1858,8 +1858,8 @@ const char *lp_passdb_backend()
 warn:
 	DEBUG(0, ("WARNING: Your 'passdb backend' configuration includes multiple backends.  This\n"
 		"is deprecated since Samba 3.0.23.  Please check WHATSNEW.txt or the section 'Passdb\n"
-		"Changes' from the ChangeNotes as part of the Samba HOWTO collection.  The first part\n"
-		"(%s) of your configuration is used instead.\n", Globals.szPassdbBackend));
+		"Changes' from the ChangeNotes as part of the Samba HOWTO collection.  Only the first\n"
+		"backend (%s) is used.  The rest is ignored.\n", Globals.szPassdbBackend));
 
 out:
 	return Globals.szPassdbBackend;
