@@ -265,6 +265,19 @@ for a in $enctypes; do
 	${kdestroy}
 done
 
+echo deleting all enctypes on krbtgt
+${kadmin} del_enctype krbtgt/${R}@${R} aes256-cts-hmac-sha1-96 || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "try initial ticket w/o and keys on krbtgt"
+${kinit} --password-file=${objdir}/foopassword foo@${R} 2>/dev/null && \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "adding random aes key"
+${kadmin} add_enctype -r krbtgt/${R}@${R} aes256-cts-hmac-sha1-96 || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "try initial ticket with random aes key on krbtgt"
+${kinit} --password-file=${objdir}/foopassword foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+
 rsa=yes
 pkinit=no
 if ${hxtool} info | grep 'rsa: hx509 null RSA' > /dev/null ; then
