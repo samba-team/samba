@@ -1049,19 +1049,11 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 
 	/* Delete previous mappings. */
 	
-	data = tdb_fetch(ctx->tdb, ksid);
-	if (data.dptr) {
-		DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksid.dptr, kid.dptr ));
-		tdb_delete(ctx->tdb, ksid);
-		SAFE_FREE(data.dptr);
-	}
+	DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksid.dptr, kid.dptr ));
+	tdb_delete(ctx->tdb, ksid);
 
-	data = tdb_fetch(ctx->tdb, kid);
-	if (data.dptr) {
-		DEBUG(10,("Deleting existing mapping %s -> %s\n", kid.dptr, ksid.dptr ));
-		tdb_delete(ctx->tdb, kid);
-		SAFE_FREE(data.dptr);
-	}
+	DEBUG(10,("Deleting existing mapping %s -> %s\n", kid.dptr, ksid.dptr ));
+	tdb_delete(ctx->tdb, kid);
 
 	tdb_chainunlock(ctx->tdb, ksid);
 	ret = NT_STATUS_OK;
