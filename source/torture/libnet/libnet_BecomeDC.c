@@ -812,7 +812,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		goto cleanup;
 	}
 
-	if (lp_parm_bool(-1, "become dc", "donnot leave", False)) {
+	if (lp_parm_bool(-1, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;
 	}
