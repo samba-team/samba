@@ -8,3 +8,5 @@ config.cache
 configure
 config.h
 config.h.in
+nodes-ssh.txt
+TAGS

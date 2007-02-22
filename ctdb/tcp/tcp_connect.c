@@ -46,6 +46,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	struct ctdb_context *ctdb = node->ctdb;
 	int error = 0;
 	socklen_t len = sizeof(error);
+	int one = 1;
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
@@ -64,9 +65,27 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
 
+        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
+
 	if (tnode->queue) {
 		EVENT_FD_WRITEABLE(tnode->fde);		
 	}
+}
+
+
+static int ctdb_tcp_get_address(struct ctdb_context *ctdb,
+				const char *address, struct in_addr *addr)
+{
+	if (inet_pton(AF_INET, address, addr) <= 0) {
+		struct hostent *he = gethostbyname(address);
+		if (he == NULL || he->h_length > sizeof(*addr)) {
+			ctdb_set_error(ctdb, "invalid nework address '%s'\n", 
+				       address);
+			return -1;
+		}
+		memcpy(addr, he->h_addr, he->h_length);
+	}
+	return 0;
 }
 
 /*
@@ -85,7 +104,9 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 
 	set_nonblocking(tnode->fd);
 
-	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
+	if (ctdb_tcp_get_address(ctdb, node->address.address, &sock_out.sin_addr) != 0) {
+		return;
+	}
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
 	
@@ -159,7 +180,9 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 
         sock.sin_port = htons(ctdb->address.port);
         sock.sin_family = PF_INET;
-	inet_pton(AF_INET, ctdb->address.address, &sock.sin_addr);
+	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock.sin_addr) != 0) {
+		return -1;
+	}
 
         ctcp->listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (ctcp->listen_fd == -1) {
