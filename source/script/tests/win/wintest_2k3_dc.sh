@@ -8,6 +8,7 @@ exit 1;
 fi
 
 TESTGROUP=$1
+export WIN2K3_DC_VM_CFG_PATH=$2
 
 if [ -z $WINTEST_DIR ]; then
 	echo "Environment variable WINTEST_DIR not found."
