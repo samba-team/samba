@@ -621,9 +621,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
 	struct ldb_message *result = NULL;
-	struct ldb_dn *result_basedn;
+	struct ldb_dn *result_basedn = NULL;
 	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 	int i;
+	char *p;
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -671,42 +672,97 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		/* if we have a domain_filter look it up and set the result_basedn and the dns_domain_name */
 		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
 				       "%s", domain_filter);
-	} else {
-		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
-				       "(ncName=%s)", ldb_dn_get_linearized(samdb_base_dn(sam_ctx)));
-	} 
+		switch (ldb_ret) {
+		case 1:
+			break;
+		case 0:
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+			return WERR_OK;
+		case -1:
+			DEBUG(2, ("DsCrackNameOneFilter domain ref search failed: %s", ldb_errstring(sam_ctx)));
+			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+			return WERR_OK;
+		default:
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+			return WERR_OK;
+		}
 
-	switch (ldb_ret) {
-	case 1:
-		break;
-	case 0:
-		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-		return WERR_OK;
-	case -1:
-		DEBUG(2, ("DsCrackNameOneFilter domain ref search failed: %s", ldb_errstring(sam_ctx)));
+		info1->dns_domain_name	= samdb_result_string(domain_res[0], "dnsRoot", NULL);
+		W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
+		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
+	} else {
+		info1->dns_domain_name	= NULL;
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
-		return WERR_OK;
-	default:
-		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
-		return WERR_OK;
 	}
 
-	info1->dns_domain_name	= samdb_result_string(domain_res[0], "dnsRoot", NULL);
-	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
-	info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
-
 	if (result_filter) {
-		result_basedn = samdb_result_dn(sam_ctx, mem_ctx, domain_res[0], "ncName", NULL);
-		
-		ldb_ret = gendb_search(sam_ctx, mem_ctx, result_basedn, &result_res,
-				       result_attrs, "%s", result_filter);
+		if (domain_res) {
+			result_basedn = samdb_result_dn(sam_ctx, mem_ctx, domain_res[0], "ncName", NULL);
+			
+			ldb_ret = gendb_search(sam_ctx, mem_ctx, result_basedn, &result_res,
+					       result_attrs, "%s", result_filter);
+		} else {
+			/* search with the 'phantom root' flag */
+			struct ldb_request *req;
+			int ret;
+			struct ldb_result *res;
+
+			res = talloc_zero(mem_ctx, struct ldb_result);
+			W_ERROR_HAVE_NO_MEMORY(res);
+			
+			ret = ldb_build_search_req(&req, sam_ctx, mem_ctx,
+						   ldb_get_root_basedn(sam_ctx),
+						   LDB_SCOPE_SUBTREE,
+						   result_filter,
+						   result_attrs,
+						   NULL,
+						   res,
+						   ldb_search_default_callback);
+			if (ret == LDB_SUCCESS) {
+				struct ldb_search_options_control *search_options;
+				search_options = talloc(req, struct ldb_search_options_control);
+				W_ERROR_HAVE_NO_MEMORY(search_options);
+				search_options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
+
+				ret = ldb_request_add_control(req, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
+			}
+			if (ret != LDB_SUCCESS) {
+				talloc_free(res);
+				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+				return WERR_OK;
+			}
+			
+			ldb_set_timeout(sam_ctx, req, 0); /* use default timeout */
+			
+			ret = ldb_request(sam_ctx, req);
+			
+			if (ret == LDB_SUCCESS) {
+				ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+			}
+			
+			talloc_free(req);
+
+			if (ret != LDB_SUCCESS) {
+				DEBUG(2, ("DsCrackNameOneFilter phantom root search failed: %s", 
+					  ldb_errstring(sam_ctx)));
+				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+				return WERR_OK;
+			}
+			ldb_ret = res->count;
+			result_res = res->msgs;
+		}
 	} else if (format_offered == DRSUAPI_DS_NAME_FORMAT_FQDN_1779) {
 		ldb_ret = gendb_search_dn(sam_ctx, mem_ctx, name_dn, &result_res,
 					  result_attrs);
-	} else {
+	} else if (domain_res) {
 		name_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res[0], "ncName", NULL);
 		ldb_ret = gendb_search_dn(sam_ctx, mem_ctx, name_dn, &result_res,
 					  result_attrs);
+	} else {
+		/* Can't happen */
+		DEBUG(0, ("LOGIC ERROR: DsCrackNameOneFilter domain ref search not availible: This can't happen..."));
+		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_OK;
 	}
 
 	switch (ldb_ret) {
@@ -764,6 +820,13 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		}
 	}
 
+	info1->dns_domain_name = ldb_dn_canonical_string(mem_ctx, result->dn);
+	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
+	p = strchr(info1->dns_domain_name, '/');
+	if (p) {
+		p[0] = '\0';
+	}
+	
 	/* here we can use result and domain_res[0] */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
