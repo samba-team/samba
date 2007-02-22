@@ -671,6 +671,17 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n", 
 				nt_errstr(result)));
 		}
+	} else {
+
+		/* need to delete the memory cred cache, it is not used anymore */
+
+		krb5_ret = ads_kdestroy(cc);
+		if (krb5_ret) {
+			DEBUG(3,("winbindd_raw_kerberos_login: "
+				 "could not destroy krb5 credential cache: "
+				 "%s\n", error_message(krb5_ret)));
+		}
+
 	}
 
 	result = NT_STATUS_OK;
