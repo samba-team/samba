@@ -1,5 +1,20 @@
 2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c: Return the same error codes as a windows KDC.
+
+	* kuser/kinit.c: KRB5KDC_ERR_PREAUTH_FAILED is also a password
+	failed.
+	
+	* kdc/kerberos5.c: Make handling of replying e_data more generic,
+	from metze.
+
+	* kdc/kerberos5.c: Fix (string const and shadow) warnings, from
+	metze.
+
+	* lib/krb5/pac.c: Create the PAC element in the same order as
+	w2k3, maybe there's some broken code in windows which relies on
+	this... From metze.
+
 	* kdc/kerberos5.c: Select a session enctype from the list of the
 	crypto systems supported enctype, is supported by the client and
 	is one of the enctype of the enctype of the krbtgt.
