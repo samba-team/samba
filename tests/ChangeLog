@@ -1,5 +1,9 @@
-2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: test new kadmin add_enctype functionallity
+	
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: add ldap
 
 	* kdc/check-referral.in: add check-referral
