@@ -202,8 +202,11 @@ static int do_search(struct ldb_context *ldb,
 	sctx->sort = options->sorted;
 	sctx->num_stored = 0;
 	sctx->store = NULL;
-	sctx->req_ctrls = parse_controls(ldb, options->controls);
-	if (options->controls != NULL &&  sctx->req_ctrls== NULL) return -1;
+	sctx->req_ctrls = ldb_parse_control_strings(ldb, sctx, (const char **)options->controls);
+	if (options->controls != NULL &&  sctx->req_ctrls== NULL) {
+		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
+		return -1;
+	}
 	sctx->entries = 0;
 	sctx->refs = 0;
 

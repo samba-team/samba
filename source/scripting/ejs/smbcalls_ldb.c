@@ -49,6 +49,7 @@ static struct ldb_context *ejs_get_ldb_context(int eid)
      ldb.search("expression", attrs);
      var basedn = "cn=this,dc=is,dc=a,dc=test";
      ldb.search("expression", basedn, ldb.SCOPE_SUBTREE, attrs);
+     ldb.search("expression", basedn, ldb.SCOPE_SUBTREE, attrs, controls);
 */
 static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -60,10 +61,12 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
 	int ret;
+	struct ldb_control **parsed_controls = NULL;
 	struct ldb_result *res=NULL;
+	struct ldb_request *req;
 
 	/* validate arguments */
-	if (argc < 1 || argc > 4) {
+	if (argc < 1 || argc > 5) {
 		ejsSetErrorMsg(eid, "ldb.search invalid number of arguments");
 		goto failed;
 	}
@@ -88,6 +91,8 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 			ejsSetErrorMsg(eid, "ldb.search malformed base dn");
 			goto failed;
 		}
+	} else {
+		basedn = ldb_get_default_basedn(ldb);
 	}
 	if (argc > 2) {
 		scope = mprToInt(argv[2]);
@@ -105,14 +110,51 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	if (argc > 3) {
 		attrs = mprToList(tmp_ctx, argv[3]);
 	}
-	ret = ldb_search(ldb, basedn, scope, expression, attrs, &res);
+	if (argc > 4) {
+		const char **controls;
+		controls = mprToList(tmp_ctx, argv[4]);
+		if (controls) {
+			parsed_controls = ldb_parse_control_strings(ldb, tmp_ctx, controls);
+			if (!parsed_controls) {
+				ejsSetErrorMsg(eid, "ldb.search cannot parse controls: %s", 
+					       ldb_errstring(ldb));
+				goto failed;
+			}
+		}
+	}
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   basedn,
+				   scope,
+				   expression,
+				   attrs,
+				   parsed_controls,
+				   res,
+				   ldb_search_default_callback);
+
+	if (ret == LDB_SUCCESS) {
+
+		ldb_set_timeout(ldb, req, 0); /* use default timeout */
+		
+		ret = ldb_request(ldb, req);
+		
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
+	}
+
 	if (ret != LDB_SUCCESS) {
 		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
 		mpr_Return(eid, mprLdbResult(ldb, ret, NULL));
 	} else {
 		mpr_Return(eid, mprLdbResult(ldb, ret, res));
-		talloc_free(res);
 	}
+
 	talloc_free(tmp_ctx);
 	return 0;
 

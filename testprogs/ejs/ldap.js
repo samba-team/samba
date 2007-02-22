@@ -218,6 +218,18 @@ objectClass: user
 		assert(res.msgs[0].dn == res3gc.msgs[0].dn);
 	}
 
+	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in with 'phantom root' control");
+	var attrs = new Array("cn");
+	var controls = new Array("search_options:1:2");
+	var res3control = gc_ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))", base_dn, ldb.SCOPE_SUBTREE, attrs, controls);
+	if (res3control.error != 0 || res3control.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
+		assert(res3control.error == 0);
+		assert(res3control.msgs.length == 1);
+	}
+	
+	assert(res.msgs[0].dn == res3control.msgs[0].dn);
+
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
 		println(ok.errstr);
@@ -414,7 +426,21 @@ objectClass: user
 	assert(res.error == 0);
 	assert(res.msgs.length == 0);
 
+	println("Testing that we can get at the configuration DN from the main search base on the LDAP port with the 'phantom root' search_options control");
+	var attrs = new Array("cn");
+	var controls = new Array("search_options:1:2");
+	var res = ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs, controls);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+
 	if (gc_ldb != undefined) {
+		println("Testing that we can get at the configuration DN from the main search base on the GC port with the search_options control == 0");
+		var attrs = new Array("cn");
+		var controls = new Array("search_options:1:0");
+		var res = gc_ldb.search("objectClass=crossRef", base_dn, gc_ldb.SCOPE_SUBTREE, attrs, controls);
+		assert(res.error == 0);
+		assert(res.msgs.length > 0);
+
 		println("Testing that we do find configuration elements in the global catlog");
 		var attrs = new Array("cn");
 		var res = gc_ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);

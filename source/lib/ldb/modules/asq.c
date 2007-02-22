@@ -401,7 +401,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_handle *h;
 
 	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_ASQ_OID);
+	control = ldb_request_get_control(req, LDB_CONTROL_ASQ_OID);
 	if (control == NULL) {
 		/* not found go on */
 		return ldb_next_request(module, req);

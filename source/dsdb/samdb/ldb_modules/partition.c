@@ -1,3 +1,4 @@
+
 /* 
    Partitions ldb module
 
@@ -219,16 +220,26 @@ static int partition_send_request(struct partition_context *ac, struct dsdb_cont
 	ac->down_req = talloc_realloc(ac, ac->down_req, 
 					struct ldb_request *, ac->num_requests + 1);
 	if (!ac->down_req) {
-		ldb_set_errstring(ac->module->ldb, "Out of Memory");
+		ldb_oom(ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	req = ac->down_req[ac->num_requests] = talloc(ac, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ac->module->ldb, "Out of Memory");
+		ldb_oom(ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	*ac->down_req[ac->num_requests] = *ac->orig_req; /* copy the request */
+	*req = *ac->orig_req; /* copy the request */
+
+	if (ac->orig_req->controls) {
+		req->controls
+			= talloc_memdup(req,
+					ac->orig_req->controls, talloc_get_size(ac->orig_req->controls));
+		if (req->controls == NULL) {
+			ldb_oom(ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
 
 	if (req->operation == LDB_SEARCH) {
 		/* If the search is for 'more' than this partition,
@@ -350,7 +361,14 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* (later) consider if we should be searching multiple
 	 * partitions (for 'invisible' partition behaviour */
-	if (ldb_get_opaque(module->ldb, "global_catalog")) {
+	struct ldb_control *search_control = ldb_request_get_control(req, LDB_CONTROL_SEARCH_OPTIONS_OID);
+	
+	struct ldb_search_options_control *search_options = NULL;
+	if (search_control) {
+		search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
+	}
+
+	if (search_options && (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
 		int ret, i;
 		struct partition_context *ac;
 		

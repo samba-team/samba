@@ -239,7 +239,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 
 	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_PAGED_RESULTS_OID);
+	control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
 	if (control == NULL) {
 		/* not found go on */
 		return ldb_next_request(module, req);

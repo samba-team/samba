@@ -535,18 +535,10 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_EXTENDED_START_TLS_OID	"1.3.6.1.4.1.1466.20037"
 
 /**
-   OID for LDAP Extended Operation START_TLS.
-
-   This Extended operation is used to start a new TLS
-   channel on top of a clear text channel.
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
 
 /**
-   OID for LDAP Extended Operation START_TLS.
-
-   This Extended operation is used to start a new TLS
-   channel on top of a clear text channel.
 */
 #define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
 
@@ -560,20 +552,24 @@ struct ldb_sd_flags_control {
 	unsigned secinfo_flags;
 };
 
+/*
+ * DOMAIN_SCOPE		0x00000001
+ * this limits the search to one partition,
+ * and no referrals will be returned.
+ * (Note this doesn't limit the entries by there
+ *  objectSid belonging to a domain! Builtin and Foreign Sids
+ *  are still returned)
+ *
+ * PHANTOM_ROOT		0x00000002
+ * this search on the whole tree on a domain controller
+ * over multiple partitions without referrals.
+ * (This is the default behavior on the Global Catalog Port)
+ */
+
+#define LDB_SEARCH_OPTION_DOMAIN_SCOPE 0x00000001
+#define LDB_SEARCH_OPTION_PHANTOM_ROOT 0x00000002
+
 struct ldb_search_options_control {
-	/*
-	 * DOMAIN_SCOPE		0x00000001
-	 * this limits the search to one partition,
-	 * and no referrals will be returned.
-	 * (Note this doesn't limit the entries by there
-	 *  objectSid belonging to a domain! Builtin and Foreign Sids
-	 *  are still returned)
-	 *
-	 * PHANTOM_ROOT		0x00000002
-	 * this search on the whole tree on a domain controller
-	 * over multiple partitions without referrals.
-	 * (This is the default behavior on the Global Catalog Port)
-	 */
 	unsigned search_options;
 };
 
@@ -1000,6 +996,15 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
 int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data);
+
+/**
+   check if a control with the specified "oid" exist and return it 
+  \param req the request struct where to add the control
+  \param oid the object identifier of the control as string
+
+  \return the control, NULL if not found 
+*/
+struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid);
 
 /**
   Search the database
@@ -1676,4 +1681,17 @@ time_t ldb_string_utc_to_time(const char *s);
 
 
 void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
+
+
+/**
+   Convert an array of string represention of a control into an array of ldb_control structures 
+   
+   \param ldb LDB context
+   \param mem_ctx TALLOC context to return result on, and to allocate error_string on
+   \param control_strings Array of string-formatted controls
+
+   \return array of ldb_control elements
+*/
+struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *mem_ctx, const char **control_strings);
+
 #endif

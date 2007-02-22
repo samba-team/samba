@@ -260,7 +260,7 @@ static int replmd_prepare_originating(struct ldb_module *module, struct ldb_requ
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	partition_ctrl = get_control_from_list(req->controls, DSDB_CONTROL_CURRENT_PARTITION_OID);
+	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
 			      "%s: no current partition control found",
