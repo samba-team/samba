@@ -469,6 +469,8 @@ struct WINBINDD_MEMORY_CREDS {
 	uid_t uid;
 	int ref_count;
 	size_t len;
+	unsigned char *buffer;  /* buffer block containing the
+				   following 3 */
 	unsigned char *nt_hash; /* Base pointer for the following 2 */
 	unsigned char *lm_hash;
 	char *pass;
