@@ -812,6 +812,11 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		goto cleanup;
 	}
 
+	if (lp_parm_bool(-1, "become dc", "donnot leave", False)) {
+		talloc_free(s);
+		return ret;
+	}
+
 cleanup:
 	ZERO_STRUCT(u);
 	u.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
