@@ -1384,6 +1384,23 @@ struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 }
 
 /*
+  work out the server dn for the current open ldb
+*/
+struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
+{
+	struct ldb_dn *server_dn;
+	struct ldb_dn *server_site_dn;
+
+	server_dn = samdb_server_dn(ldb, mem_ctx);
+	if (!server_dn) return NULL;
+
+	server_site_dn = ldb_dn_get_parent(mem_ctx, server_dn);
+
+	talloc_free(server_dn);
+	return server_site_dn;
+}
+
+/*
   work out if we are the PDC for the domain of the current open ldb
 */
 BOOL samdb_is_pdc(struct ldb_context *ldb)
