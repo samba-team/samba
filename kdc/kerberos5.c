@@ -1106,7 +1106,7 @@ _kdc_as_rep(krb5_context context,
 	    if(ret){
 		char *estr;
 		e_text = "No key matches pa-data";
-		ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		ret = KRB5KDC_ERR_ETYPE_NOSUPP;
 		if(krb5_enctype_to_string(context, enc_data.etype, &estr))
 		    estr = NULL;
 		if(estr == NULL)
@@ -1158,7 +1158,7 @@ _kdc_as_rep(krb5_context context,
 		e_text = "Failed to decrypt PA-DATA";
 
 		free_EncryptedData(&enc_data);
-		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		ret = KRB5KDC_ERR_PREAUTH_FAILED;
 		continue;
 	    }
 	    free_EncryptedData(&enc_data);
@@ -1169,7 +1169,7 @@ _kdc_as_rep(krb5_context context,
 	    krb5_data_free(&ts_data);
 	    if(ret){
 		e_text = "Failed to decode PA-ENC-TS-ENC";
-		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		ret = KRB5KDC_ERR_PREAUTH_FAILED;
 		kdc_log(context, config, 
 			5, "Failed to decode PA-ENC-TS_ENC -- %s",
 			client_name);
