@@ -90,10 +90,6 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanims", sasl_mechs);
 	}
 
-	if (conn->global_catalog) {
-		ldb_set_opaque(conn->ldb, "global_catalog", (void *)(-1));
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -228,6 +224,21 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	lreq->op.search.attrs = attrs;
 
 	lreq->controls = call->request->controls;
+
+	if (call->conn->global_catalog) {
+		struct ldb_control *search_control = ldb_request_get_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID);
+		
+		struct ldb_search_options_control *search_options = NULL;
+		if (search_control) {
+			search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
+			search_options->search_options |= LDB_SEARCH_OPTION_PHANTOM_ROOT;
+		} else {
+			search_options = talloc(lreq, struct ldb_search_options_control);
+			NT_STATUS_HAVE_NO_MEMORY(search_options);
+			search_options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
+			ldb_request_add_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
+		}
+	}
 
 	lreq->context = res;
 	lreq->callback = ldb_search_default_callback;
