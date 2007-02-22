@@ -198,6 +198,7 @@ static void _pam_log_state(const pam_handle_t *pamh, int ctrl)
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_LOGONSERVER);
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_PROFILEPATH);
 	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_NEW_AUTHTOK_REQD); /* Use atoi to get PAM result code */
+	_PAM_LOG_STATE_DATA_STRING(pamh, ctrl, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH);
 	_PAM_LOG_STATE_DATA_POINTER(pamh, ctrl, PAM_WINBIND_PWD_LAST_SET);
 }
 
@@ -1564,6 +1565,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
 
+		char *new_authtok_required_during_auth = NULL;
+
 		if (!asprintf(&new_authtok_required, "%d", retval)) {
 			retval = PAM_BUF_ERR;
 			goto out;
@@ -1572,6 +1575,15 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, new_authtok_required, _pam_winbind_cleanup_func);
 
 		retval = PAM_SUCCESS;
+
+		if (!asprintf(&new_authtok_required_during_auth, "%d", True)) {
+			retval = PAM_BUF_ERR;
+			goto out;
+		}
+
+		pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH, 
+			     new_authtok_required_during_auth, _pam_winbind_cleanup_func);
+
 		goto out;
 	}
 
@@ -1851,6 +1863,49 @@ out:
 	return retval;
 }
 
+/**
+ * evaluate whether we need to re-authenticate with kerberos after a password change
+ * 
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param user The username
+ *
+ * @return boolean Returns True if required, False if not.
+ */
+
+static BOOL _pam_require_krb5_auth_after_chauthtok(pam_handle_t *pamh, int ctrl, const char *user)
+{
+
+	/* Make sure that we only do this if 
+	 * a) the chauthtok got initiated during a logon attempt (authenticate->acct_mgmt->chauthtok)
+	 * b) any later password change via the "passwd" command if done by the user itself 
+	 */
+		
+	char *new_authtok_reqd_during_auth = NULL;
+	struct passwd *pwd = NULL;
+
+	if (!(ctrl & WINBIND_KRB5_AUTH)) {
+		return False;
+	}
+
+	_pam_get_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH, &new_authtok_reqd_during_auth);
+	pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH, NULL, NULL);
+
+	if (new_authtok_reqd_during_auth) {
+		return True;
+	}
+
+	pwd = getpwnam(user);
+	if (!pwd) {
+		return False;
+	}
+
+	if (getuid() == pwd->pw_uid) {
+		return True;
+	}
+
+	return False;
+}
 
 
 PAM_EXTERN 
@@ -1948,9 +2003,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			goto out;
 		}
 
-		/* We don't need krb5 env set for password change test. */
-		ctrl &= ~WINBIND_KRB5_AUTH;
-
 		/* verify that this is the password for this user */
 		
 		ret = winbind_auth_request(pamh, ctrl, user, pass_old,
@@ -2042,9 +2094,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			goto out;
 		}
 
-		/* just in case we need krb5 creds after a password change over msrpc */
-
-		if (ctrl & WINBIND_KRB5_AUTH) {
+		if (_pam_require_krb5_auth_after_chauthtok(pamh, ctrl, user)) {
 
 			const char *member = get_member_from_config(pamh, argc, argv, ctrl, d);
 			const char *cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
