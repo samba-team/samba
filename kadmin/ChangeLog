@@ -1,5 +1,16 @@
-2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kadmin.8: document kadmin add_enctype functionallity.
+
+	* Makefile.am: Add new command, add_enctype.
+
+	* kadmin-commands.in: Add new command, add_enctype.
+
+	* add_enctype.c: Add support for adding a random key enctype to a
+	principal.
+	
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mod.c: add setting and displaying aliases
 
 	* get.c: add setting and displaying aliases
