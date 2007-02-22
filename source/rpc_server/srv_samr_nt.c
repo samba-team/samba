@@ -2179,6 +2179,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
+	BOOL success = False;
 
 	/*
 	 * from the SID in the request:
@@ -2223,9 +2224,15 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 	sids = NULL;
 
+	/* make both calls inside the root block */
 	become_root();
 	result = pdb_enum_group_memberships(p->mem_ctx, sam_pass,
 					    &sids, &unix_gids, &num_groups);
+	if ( NT_STATUS_IS_OK(result) ) {
+		success = sid_peek_check_rid(get_global_sam_sid(), 
+					     pdb_get_group_sid(sam_pass),
+					     &primary_group_rid);
+	}
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2234,15 +2241,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return result;
 	}
 
-	gids = NULL;
-	num_gids = 0;
-
-	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
-			SE_GROUP_ENABLED);
-
-	if (!sid_peek_check_rid(get_global_sam_sid(),
-				pdb_get_group_sid(sam_pass),
-				&primary_group_rid)) {
+	if ( !success ) {
 		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
 			  sid_string_static(pdb_get_group_sid(sam_pass)),
 			  pdb_get_username(sam_pass)));
@@ -2250,8 +2249,12 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dom_gid.g_rid = primary_group_rid;
+	gids = NULL;
+	num_gids = 0;
 
+	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			SE_GROUP_ENABLED);
+	dom_gid.g_rid = primary_group_rid;
 	ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
 
 	for (i=0; i<num_groups; i++) {

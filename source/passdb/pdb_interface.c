@@ -987,13 +987,25 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->get_account_policy(pdb, policy_index, value));
+	NTSTATUS status;
+	
+	become_root();
+	status = pdb->get_account_policy(pdb, policy_index, value);
+	unbecome_root();
+	
+	return NT_STATUS_IS_OK(status);	
 }
 
 BOOL pdb_set_account_policy(int policy_index, uint32 value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->set_account_policy(pdb, policy_index, value));
+	NTSTATUS status;
+
+	become_root();
+	status = pdb->set_account_policy(pdb, policy_index, value);
+	unbecome_root();
+
+	return NT_STATUS_IS_OK(status);
 }
 
 BOOL pdb_get_seq_num(time_t *seq_num)
