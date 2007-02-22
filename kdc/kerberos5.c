@@ -1315,8 +1315,24 @@ _kdc_as_rep(krb5_context context,
     if(ret)
 	goto out;
 
+    /* 
+     * Select a session enctype from the list of the crypto systems
+     * supported enctype, is supported by the client and is one of the
+     * enctype of the enctype of the krbtgt.
+     *
+     * The later is used as a hint what enctype all KDC are supporting
+     * to make sure a newer version of KDC wont generate a session
+     * enctype that and older version of a KDC in the same realm can't
+     * decrypt.
+     *
+     * But if the KDC admin is paranoid and doesn't want to have "no
+     * the best" enctypes on the krbtgt, lets save the best pick from
+     * the client list and hope that that will work for any other
+     * KDCs.
+     */
     {
 	const krb5_enctype *p;
+	krb5_enctype clientbest = ETYPE_NULL;
 	int i, j;
 
 	p = krb5_kerberos_enctypes(context);
@@ -1326,18 +1342,30 @@ _kdc_as_rep(krb5_context context,
 	for (i = 0; p[i] != ETYPE_NULL && sessionetype == ETYPE_NULL; i++) {
 	    if (krb5_enctype_valid(context, p[i]) != 0)
 		continue;
-	    for (j = 0; j < b->etype.len; j++) {
-		if (p[i] == b->etype.val[j]) {
-		    sessionetype = p[i];
-		    break;
-		}
+
+	    for (j = 0; j < b->etype.len && sessionetype == ETYPE_NULL; j++) {
+		Key *dummy;
+		/* check with client */
+		if (p[i] != b->etype.val[j])
+		    continue; 
+		/* save best of union of { client, crypto system } */
+		if (clientbest == ETYPE_NULL)
+		    clientbest = p[i];
+		/* check with krbtgt */
+		ret = hdb_enctype2key(context, &server->entry, p[i], &dummy);
+		if (ret) 
+		    continue;
+		sessionetype = p[i];
 	    }
 	}
-	if (sessionetype == ETYPE_NULL) {
-	    kdc_log(context, config, 0, 
+	/* if krbtgt had no shared keys with client, pick clients best */
+	if (clientbest != ETYPE_NULL && sessionetype == ETYPE_NULL) {
+	    sessionetype = clientbest;
+	} else if (sessionetype == ETYPE_NULL) {
+	    kdc_log(context, config, 0,
 		    "Client (%s) from %s has no common enctypes with KDC"
-		    "to use for the session key",
-		    client_name, from);
+		    "to use for the session key", 
+		    client_name, from); 
 	    goto out;
 	}
     }
