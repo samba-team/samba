@@ -6261,8 +6261,10 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	become_root();	
 	group_sid = pdb_get_group_sid(pw);
-	
+	unbecome_root();
+
 	if (!sid_peek_check_rid(domain_sid, group_sid, &group_rid)) {
 		fstring group_sid_string;
 		fstring domain_sid_string;
