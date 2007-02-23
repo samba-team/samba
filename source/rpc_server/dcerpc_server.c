@@ -779,7 +779,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	call->context	= context;
 	call->ndr_pull	= pull;
 
-	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		pull->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 

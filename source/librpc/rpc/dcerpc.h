@@ -94,6 +94,8 @@ struct dcerpc_connection {
 struct dcerpc_pipe {
 	uint32_t context_id;
 
+	uint32_t assoc_group_id;
+
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
 
@@ -151,6 +153,9 @@ struct dcerpc_pipe {
 /* select NTLM auth */
 #define DCERPC_AUTH_NTLM               (1<<18)
 
+/* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
+#define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
+
 /*
   this is used to find pointers to calls
 */
@@ -197,6 +202,7 @@ struct dcerpc_binding {
 	const char *endpoint;
 	const char **options;
 	uint32_t flags;
+	uint32_t assoc_group_id;
 };
 
 
