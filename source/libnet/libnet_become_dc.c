@@ -1487,6 +1487,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsAddEntry *r = talloc_get_type(req->ndr.struct_ptr,
 				       struct drsuapi_DsAddEntry);
+	char *binding_str;
 	bool print = false;
 
 	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
@@ -1565,6 +1566,17 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 	c->status = becomeDC_prepare_db(s);
 	if (!composite_is_ok(c)) return;
 
+	/* this avoids the epmapper lookup on the 2nd connection */
+	binding_str = dcerpc_binding_string(s, s->drsuapi1.binding);
+	if (composite_nomem(binding_str, c)) return;
+
+	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi2.binding);
+	talloc_free(binding_str);
+	if (!composite_is_ok(c)) return;
+
+	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
+	s->drsuapi2.binding->assoc_group_id	= s->drsuapi1.pipe->assoc_group_id;
+
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi2, becomeDC_drsuapi2_connect_recv);
 }
 
@@ -1627,13 +1639,18 @@ static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
 		return;
 	}
 
-	/* this avoids the epmapper lookup on the 2nd connection */
-	binding_str = dcerpc_binding_string(s, s->drsuapi2.binding);
+	/* this avoids the epmapper lookup on the 3rd connection */
+	binding_str = dcerpc_binding_string(s, s->drsuapi1.binding);
 	if (composite_nomem(binding_str, c)) return;
 
 	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi3.binding);
 	talloc_free(binding_str);
 	if (!composite_is_ok(c)) return;
+
+	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
+	s->drsuapi3.binding->assoc_group_id	= s->drsuapi1.pipe->assoc_group_id;
+	/* w2k3 uses the concurrent multiplex feature on the 3rd connection, so we do */
+	s->drsuapi3.binding->flags		|= DCERPC_CONCURRENT_MULTIPLEX;
 
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi3, becomeDC_drsuapi3_connect_recv);
 }
@@ -1711,7 +1728,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	 * are needed for it. Or the same KRB5 TGS is needed on both
 	 * connections.
 	 */
-	req = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi_h->pipe, r, r);
+	req = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi_p->pipe, r, r);
 	composite_continue_rpc(c, req, recv_fn, s);
 }
 
@@ -1782,7 +1799,7 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	 * we need to use the drsuapi_p->gensec_skey here,
 	 * when we use drsuapi_p->pipe in the for this request
 	 */
-	s->_sc.gensec_skey	= &drsuapi_h->gensec_skey;
+	s->_sc.gensec_skey	= &drsuapi_p->gensec_skey;
 
 	nt_status = partition->store_chunk(s->callbacks.private_data, &s->_sc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
