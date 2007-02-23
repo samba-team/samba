@@ -8,7 +8,6 @@ exit 1;
 fi
 
 TESTGROUP=$1
-export WIN2K3_DC_VM_CFG_PATH="$2"
 
 if [ -z $WINTEST_DIR ]; then
 	echo "Environment variable WINTEST_DIR not found."
@@ -24,7 +23,7 @@ fi
 . $WINTESTCONF
 . $WINTEST_DIR/wintest_functions.sh
 
-WIN2K3_DC_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl WIN2K3_DC_VM_CFG_PATH`
+export WIN2K3_DC_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl WIN2K3_DC_VM_CFG_PATH`
 
 if [ -z $WIN2K3_DC_REMOTE_HOST ]; then
 	# Restore snapshot to ensure VM is in a known state, then exit.
@@ -54,12 +53,12 @@ drsuapi_tests() {
 	name="RPC-DRSUAPI on ncacn_ip_tcp with seal"
 	bin/smbtorture \
 		ncacn_ip_tcp:$server[seal] $OPTIONS \
-		RPC-DRSUAPI || on_error $name
+		RPC-DRSUAPI || on_error "$name"
 
 	name="RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian"
 	bin/smbtorture \
 		ncacn_ip_tcp:$server[seal,bigendian] $OPTIONS \
-		RPC-DRSUAPI || on_error $name
+		RPC-DRSUAPI || on_error "$name"
 }
 
 spoolss_tests() {
@@ -67,7 +66,7 @@ spoolss_tests() {
 	name="RPC-SPOOLSS on ncacn_np"
 	bin/smbtorture \
 		ncacn_np:$server $OPTIONS \
-		RPC-SPOOLSS || on_error $name
+		RPC-SPOOLSS || on_error "$name"
 }
 
 ncacn_ip_tcp_tests() {
@@ -80,7 +79,7 @@ ncacn_ip_tcp_tests() {
 			name="$t on $transport with $bindoptions"
 			bin/smbtorture $TORTURE_OPTIONS \
 				$transport:$server[$bindoptions] \
-				$OPTIONS $t || on_error $name
+				$OPTIONS $t || on_error "$name"
 		done
 	done
 }
@@ -95,7 +94,7 @@ ncacn_np_tests() {
 			name="$t on $transport with $bindoptions"
 			bin/smbtorture $TORTURE_OPTIONS \
 				$transport:$server[$bindoptions] \
-				$OPTIONS $t || on_error $name
+				$OPTIONS $t || on_error "$name"
 		done
 	done
 }

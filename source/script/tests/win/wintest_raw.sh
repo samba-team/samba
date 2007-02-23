@@ -32,7 +32,7 @@ on_error() {
 	errstr=$1
 	all_errs=`expr $all_errs + 1`
 
-	restore_snapshot $errstr "$VM_CFG_PATH"
+	restore_snapshot "$errstr" "$VM_CFG_PATH"
 }
 
 for t in $raw_tests; do
@@ -57,7 +57,7 @@ for t in $raw_tests; do
 			remove_share_test
 			if [ $err_rtn -ne 0 ]; then
 				# If cleanup fails, restore VM snapshot.
-				restore_snapshot "\n$test_name removal failed."
+				on_error "\n$test_name removal failed."
 			else
 				echo -e "\n$test_name removal completed successfully."
 			fi
