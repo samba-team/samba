@@ -27,6 +27,7 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 /* 
   drsuapi_DsBind 
@@ -38,38 +39,160 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct dcesrv_handle *handle;
 	struct drsuapi_DsBindInfoCtr *bind_info;
 	struct GUID site_guid;
+	struct ldb_result *site_res;
+	struct ldb_dn *server_site_dn;
+	static const char *site_attrs[] = { "objectGUID", NULL };
+	struct ldb_result *ntds_res;
+	struct ldb_dn *ntds_dn;
+	static const char *ntds_attrs[] = { "ms-DS-ReplicationEpoch", NULL };
+	uint32_t u1;
+	uint32_t repl_epoch;
+	int ret;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
 
-	b_state = talloc(dce_call->conn, struct drsuapi_bind_state);
+	b_state = talloc_zero(mem_ctx, struct drsuapi_bind_state);
 	W_ERROR_HAVE_NO_MEMORY(b_state);
 
+	/*
+	 * connect to the samdb
+	 */
 	b_state->sam_ctx = samdb_connect(b_state, dce_call->conn->auth_state.session_info); 
 	if (!b_state->sam_ctx) {
-		talloc_free(b_state);
 		return WERR_FOOBAR;
 	}
 
-	handle = dcesrv_handle_new(dce_call->context, DRSUAPI_BIND_HANDLE);
-	if (!handle) {
-		talloc_free(b_state);
-		return WERR_NOMEM;
+	/*
+	 * find out the guid of our own site
+	 */
+	server_site_dn = samdb_server_site_dn(b_state->sam_ctx, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(server_site_dn);
+
+	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &site_res,
+				 server_site_dn, LDB_SCOPE_BASE, site_attrs,
+				 "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	if (site_res->count != 1) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	site_guid = samdb_result_guid(site_res->msgs[0], "objectGUID");
+
+	/*
+	 * lookup the local servers Replication Epoch
+	 */
+	ntds_dn = samdb_ntds_settings_dn(b_state->sam_ctx);
+	W_ERROR_HAVE_NO_MEMORY(ntds_dn);
+
+	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &ntds_res,
+				 ntds_dn, LDB_SCOPE_BASE, ntds_attrs,
+				 "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	if (ntds_res->count != 1) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	repl_epoch = samdb_result_uint(ntds_res->msgs[0], "ms-DS-ReplicationEpoch", 0);
+
+	/*
+	 * TODO: find out what this is...
+	 */
+	u1 = 0;
+
+	/*
+	 * store the clients bind_guid
+	 */
+	if (r->in.bind_guid) {
+		b_state->remote_bind_guid = *r->in.bind_guid;
 	}
 
-	handle->data = talloc_steal(handle, b_state);
+	/*
+	 * store the clients bind_info
+	 */
+	if (r->in.bind_info) {
+		switch (r->in.bind_info->length) {
+		case 24: {
+			struct drsuapi_DsBindInfo24 *info24;
+			info24 = &r->in.bind_info->info.info24;
+			b_state->remote_info28.supported_extensions	= info24->supported_extensions;
+			b_state->remote_info28.site_guid		= info24->site_guid;
+			b_state->remote_info28.u1			= info24->u1;
+			b_state->remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 28:
+			b_state->remote_info28 = r->in.bind_info->info.info28;
+			break;
+		}
+	}
 
+	/*
+	 * fill in our local bind info 28
+	 */
+	b_state->local_info28.supported_extensions	= 0;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+#if 0 /* we don't support MSZIP compression (only decompression) */
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+#endif
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	if (0 /*domain.behavior_version == 2*/) {
+		/* TODO: find out how this is really triggered! */
+		b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	}
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_00100000;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+#if 0 /* we don't support XPRESS compression yet */
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
+#endif
+	b_state->local_info28.site_guid			= site_guid;
+	b_state->local_info28.u1				= u1;
+	b_state->local_info28.repl_epoch			= repl_epoch;
+
+	/*
+	 * allocate the return bind_info
+	 */
 	bind_info = talloc(mem_ctx, struct drsuapi_DsBindInfoCtr);
 	W_ERROR_HAVE_NO_MEMORY(bind_info);
 
-	ZERO_STRUCT(site_guid);
+	bind_info->length	= 28;
+	bind_info->info.info28	= b_state->local_info28;
 
-	bind_info->length				= 28;
-	bind_info->info.info28.supported_extensions	= 0;
-	bind_info->info.info28.site_guid		= site_guid;
-	bind_info->info.info28.u1			= 0;
-	bind_info->info.info28.repl_epoch		= 0;
+	/*
+	 * allocate a bind handle
+	 */
+	handle = dcesrv_handle_new(dce_call->context, DRSUAPI_BIND_HANDLE);
+	W_ERROR_HAVE_NO_MEMORY(handle);
+	handle->data = talloc_steal(handle, b_state);
 
+	/*
+	 * prepare reply
+	 */
 	r->out.bind_info = bind_info;
 	*r->out.bind_handle = handle->wire_handle;
 
