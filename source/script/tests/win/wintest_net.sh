@@ -39,7 +39,7 @@ on_error() {
 	errstr=$1
 
 	all_errs=`expr $all_errs + 1`
-	restore_snapshot $errstr "$VM_CFG_PATH"
+	restore_snapshot "$errstr" "$VM_CFG_PATH"
 }
 
 for o in $bind_options; do
@@ -52,7 +52,6 @@ for o in $bind_options; do
 
 		for t in $net_test; do
 			test_name="$t on $transport with $o"
-			old_errs=$all_errs
 			testit "$test_name" $SMBTORTURE_BIN_PATH \
 				-U $username%$password \
 				-W $domain \
