@@ -31,5 +31,8 @@ enum drsuapi_handle {
   state asscoiated with a drsuapi_DsBind*() operation
 */
 struct drsuapi_bind_state {
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
+	struct GUID remote_bind_guid;
+	struct drsuapi_DsBindInfo28 remote_info28;
+	struct drsuapi_DsBindInfo28 local_info28;
 };
