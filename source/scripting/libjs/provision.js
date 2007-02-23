@@ -177,7 +177,7 @@ function ldb_erase(ldb)
 		return;
 	}
 	for (i=0;i<res.msgs.length;i++) {
-		ldb.del(res[i].dn);
+		ldb.del(res.msgs[i].dn);
 	}
 
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
