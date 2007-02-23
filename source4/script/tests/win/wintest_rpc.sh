@@ -42,7 +42,7 @@ on_error() {
 	errstr=$1
 	all_errs=`expr $all_errs + 1`
 
-	restore_snapshot $errstr "$VM_CFG_PATH"
+	restore_snapshot "$errstr" "$VM_CFG_PATH"
 }
 
 for o in $bind_options; do
