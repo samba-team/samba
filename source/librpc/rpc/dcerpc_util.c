@@ -1387,6 +1387,8 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->transfer_syntax = ndr_transfer_syntax;
 
+	p2->binding = talloc_reference(p2, p->binding);
+
 	status = dcerpc_alter_context(p2, p2, &p2->syntax, &p2->transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p2);
