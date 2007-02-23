@@ -185,14 +185,10 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		status = gensec_update(conn->gensec, reply,
 				       input, &output);
 
-		/* TODO: gensec should really handle the difference between NULL and length=0 better! */
-		if (output.data) {
-			resp->SASL.secblob = talloc(reply, DATA_BLOB);
-			NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
-			*resp->SASL.secblob = output;
-		} else {
-			resp->SASL.secblob = NULL;
-		}
+		/* Windows 2000 mmc doesn't like secblob == NULL and reports a decoding error */
+		resp->SASL.secblob = talloc(reply, DATA_BLOB);
+		NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
+		*resp->SASL.secblob = output;
 	} else {
 		resp->SASL.secblob = NULL;
 	}
