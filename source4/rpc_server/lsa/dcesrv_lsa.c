@@ -386,7 +386,7 @@ static NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, 
 		talloc_free(forest_ref_res);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	if (ref_res->count != 1) {
+	if (forest_ref_res->count != 1) {
 		talloc_free(forest_ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
