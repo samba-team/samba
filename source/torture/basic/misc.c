@@ -66,6 +66,7 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 		return False;
 	}
 
+	generate_random_buffer(buf, sizeof(buf));
 
 	for (i=0;i<torture_numops;i++) {
 		uint_t n = (uint_t)random()%10;
