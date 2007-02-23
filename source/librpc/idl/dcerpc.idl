@@ -245,10 +245,13 @@ interface dcerpc
 	} dcerpc_payload;
 
 	/* pfc_flags values */
-	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
-	const uint8 DCERPC_PFC_FLAG_LAST   = 0x02;
-	const uint8 DCERPC_PFC_FLAG_NOCALL = 0x20;
-	const uint8 DCERPC_PFC_FLAG_ORPC   = 0x80;
+	const uint8 DCERPC_PFC_FLAG_FIRST		= 0x01; /* First fragment */
+	const uint8 DCERPC_PFC_FLAG_LAST		= 0x02; /* Last fragment */
+	const uint8 DCERPC_PFC_FLAG_PENDING_CANCEL	= 0x04; /* Cancel was pending at sender */
+	const uint8 DCERPC_PFC_FLAG_CONC_MPX		= 0x10; /* supports concurrent multiplexing of a single connection. */
+	const uint8 DCERPC_PFC_FLAG_DID_NOT_EXECUTE	= 0x20; /* on a fault it means the server hasn't done anything */
+	const uint8 DCERPC_PFC_FLAG_MAYBE		= 0x40; /* `maybe' call semantics requested */
+	const uint8 DCERPC_PFC_FLAG_OBJECT_UUID		= 0x80; /* on valid guid is in the optional object field */
 
 	/* these offsets are needed by the signing code */
 	const uint8 DCERPC_DREP_OFFSET     =  4;

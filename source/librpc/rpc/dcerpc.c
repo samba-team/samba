@@ -346,7 +346,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	if (pkt->pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
@@ -625,6 +625,8 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 		if (!composite_is_ok(c)) return;
 	}
 
+	req->p->assoc_group_id = pkt->u.bind_ack.assoc_group_id;
+
 	composite_done(c);
 }
 
@@ -647,7 +649,6 @@ static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event 
 		req->async.callback(req);
 	}
 }
-
 
 /*
   send a async dcerpc bind request
@@ -677,9 +678,13 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	pkt.call_id = p->conn->call_id;
 	pkt.auth_length = 0;
 
+	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
 	pkt.u.bind.max_xmit_frag = 5840;
 	pkt.u.bind.max_recv_frag = 5840;
-	pkt.u.bind.assoc_group_id = 0;
+	pkt.u.bind.assoc_group_id = p->binding->assoc_group_id;
 	pkt.u.bind.num_contexts = 1;
 	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
 	if (composite_nomem(pkt.u.bind.ctx_list, c)) return c;
@@ -1004,7 +1009,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 
 	if (req->object) {
 		pkt.u.request.object.object = *req->object;
-		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_OBJECT_UUID;
 		chunk_size -= ndr_size_GUID(req->object,0);
 	}
 
@@ -1547,9 +1552,13 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.call_id = p->conn->call_id;
 	pkt.auth_length = 0;
 
+	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
 	pkt.u.alter.max_xmit_frag = 5840;
 	pkt.u.alter.max_recv_frag = 5840;
-	pkt.u.alter.assoc_group_id = 0;
+	pkt.u.alter.assoc_group_id = p->binding->assoc_group_id;
 	pkt.u.alter.num_contexts = 1;
 	pkt.u.alter.ctx_list = talloc_array(c, struct dcerpc_ctx_list, 1);
 	if (composite_nomem(pkt.u.alter.ctx_list, c)) return c;

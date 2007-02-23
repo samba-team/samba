@@ -65,7 +65,7 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	if (pkt->pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
@@ -366,6 +366,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	b->options = NULL;
 	b->flags = 0;
+	b->assoc_group_id = 0;
 	b->endpoint = NULL;
 
 	if (!options) {
@@ -650,6 +651,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	binding->host = NULL;
 	binding->target_hostname = NULL;
 	binding->flags = 0;
+	binding->assoc_group_id = 0;
 
 	binding->transport = dcerpc_transport_by_tower(tower);
 
@@ -950,6 +952,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->target_hostname       = epmapper_binding->host;
 	epmapper_binding->options		= NULL;
 	epmapper_binding->flags			= 0;
+	epmapper_binding->assoc_group_id	= 0;
 	epmapper_binding->endpoint		= NULL;
 
 	/* initiate rpc pipe connection */
