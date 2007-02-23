@@ -1824,10 +1824,9 @@ FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
  * lp_passdb_backend() should be replace by the this macro again after
  * some releases.
  * */
-const char *lp_passdb_backend()
+const char *lp_passdb_backend(void)
 {
 	char *delim, *quote;
-	int pos, i;
 
 	delim = strchr( Globals.szPassdbBackend, ' ');
 	/* no space at all */
