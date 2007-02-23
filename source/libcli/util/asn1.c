@@ -89,7 +89,18 @@ BOOL asn1_pop_tag(struct asn1_data *data)
 	/* yes, this is ugly. We don't know in advance how many bytes the length
 	   of a tag will take, so we assumed 1 byte. If we were wrong then we 
 	   need to correct our mistake */
-	if (len > 0xFFFF) {
+	if (len > 0xFFFFFF) {
+		data->data[nesting->start] = 0x84;
+		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return False;
+		memmove(data->data+nesting->start+5, data->data+nesting->start+1, len);
+		data->data[nesting->start+1] = (len>>24) & 0xFF;
+		data->data[nesting->start+2] = (len>>16) & 0xFF;
+		data->data[nesting->start+3] = (len>>8) & 0xFF;
+		data->data[nesting->start+4] = len&0xff;
+	} else if (len > 0xFFFF) {
 		data->data[nesting->start] = 0x83;
 		if (!asn1_write_uint8(data, 0)) return False;
 		if (!asn1_write_uint8(data, 0)) return False;
