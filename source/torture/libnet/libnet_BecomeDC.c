@@ -94,13 +94,9 @@ failed:
 	return ejs_error;
 }
 
-#define TORTURE_NETBIOS_NAME "smbtorturedc"
-#define TORTURE_SAMDB_LDB "test_samdb.ldb"
-#define TORTURE_SECRETS_LDB "test_secrets.ldb"
-#define TORTURE_SECRETS_KEYTAB "test_secrets.keytab"
-
 struct test_become_dc_state {
 	struct libnet_context *ctx;
+	const char *netbios_name;
 	struct test_join *tj;
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *self_made_schema;
@@ -114,13 +110,25 @@ struct test_become_dc_state {
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
 	} schema_part;
 
+	struct {
+		const char *samdb_ldb;
+		const char *domaindn_ldb;
+		const char *configdn_ldb;
+		const char *schemadn_ldb;
+		const char *secrets_ldb;
+		const char *secrets_keytab;
+	} path;
+
 	const char *computer_dn;
 };
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
 					     const struct libnet_BecomeDC_CheckOptions *o)
 {
-	DEBUG(0,("Become DC of Domain[%s]/[%s]\n",
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+
+	DEBUG(0,("Become DC [%s] of Domain[%s]/[%s]\n",
+		s->netbios_name,
 		o->domain->netbios_name, o->domain->dns_name));
 
 	DEBUG(0,("Promotion Partner is Server[%s] from Site[%s]\n",
@@ -156,14 +164,21 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		GUID_string(s, &p->dest_dsa->ntds_guid),
 		GUID_string(s, &p->dest_dsa->invocation_id)));
 
-	DEBUG(0,("Schema Partition[%s]\n",
-		p->forest->schema_dn_str));
+	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
+		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
+		lp_private_dir(),
+		s->path.samdb_ldb,
+		s->path.secrets_ldb,
+		s->path.secrets_keytab));
 
-	DEBUG(0,("Config Partition[%s]\n",
-		p->forest->config_dn_str));
+	DEBUG(0,("Schema Partition[%s => %s]\n",
+		p->forest->schema_dn_str, s->path.schemadn_ldb));
 
-	DEBUG(0,("Domain Partition[%s]\n",
-		p->domain->dn_str));
+	DEBUG(0,("Config Partition[%s => %s]\n",
+		p->forest->config_dn_str, s->path.configdn_ldb));
+
+	DEBUG(0,("Domain Partition[%s => %s]\n",
+		p->domain->dn_str, s->path.domaindn_ldb));
 
 	ejs = talloc_asprintf(s,
 		"libinclude(\"base.js\");\n"
@@ -174,11 +189,11 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"var subobj = provision_guess();\n"
 		"subobj.ROOTDN       = \"%s\";\n"
 		"subobj.DOMAINDN     = \"%s\";\n"
-		"subobj.DOMAINDN_LDB = \"test_domain.ldb\";\n"
+		"subobj.DOMAINDN_LDB = \"%s\";\n"
 		"subobj.CONFIGDN     = \"%s\";\n"
-		"subobj.CONFIGDN_LDB = \"test_config.ldb\";\n"
+		"subobj.CONFIGDN_LDB = \"%s\";\n"
 		"subobj.SCHEMADN     = \"%s\";\n"
-		"subobj.SCHEMADN_LDB = \"test_schema.ldb\";\n"
+		"subobj.SCHEMADN_LDB = \"%s\";\n"
 		"subobj.HOSTNAME     = \"%s\";\n"
 		"subobj.DNSNAME      = \"%s\";\n"
 		"subobj.DEFAULTSITE  = \"%s\";\n"
@@ -217,15 +232,18 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"return 0;\n",
 		p->forest->root_dn_str,		/* subobj.ROOTDN */
 		p->domain->dn_str,		/* subobj.DOMAINDN */
+		s->path.domaindn_ldb,		/* subobj.DOMAINDN_LDB */
 		p->forest->config_dn_str,	/* subobj.CONFIGDN */
+		s->path.configdn_ldb,		/* subobj.CONFIGDN_LDB */
 		p->forest->schema_dn_str,	/* subobj.SCHEMADN */
+		s->path.schemadn_ldb,		/* subobj.SCHEMADN_LDB */
 		p->dest_dsa->netbios_name,	/* subobj.HOSTNAME */
 		p->dest_dsa->dns_name,		/* subobj.DNSNAME */
 		p->dest_dsa->site_name,		/* subobj.DEFAULTSITE */
 		cli_credentials_get_password(s->machine_account),/* subobj.MACHINEPASS */
-		TORTURE_SAMDB_LDB,		/* paths.samdb */
-		TORTURE_SECRETS_LDB,		/* paths.secrets */
-		TORTURE_SECRETS_KEYTAB);	/* paths.keytab */
+		s->path.samdb_ldb,		/* paths.samdb */
+		s->path.secrets_ldb,		/* paths.secrets */
+		s->path.secrets_keytab);	/* paths.keytab */
 	NT_STATUS_HAVE_NO_MEMORY(ejs);
 
 	ret = test_run_ejs(ejs);
@@ -239,14 +257,14 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	talloc_free(s->ldb);
 
-	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", TORTURE_SAMDB_LDB));
+	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", s->path.samdb_ldb));
 
-	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			TORTURE_SAMDB_LDB));
+			s->path.samdb_ldb));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -468,13 +486,13 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
 	s->schema = NULL;
 
-	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", TORTURE_SAMDB_LDB));
-	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", s->path.samdb_ldb));
+	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			TORTURE_SAMDB_LDB));
+			s->path.samdb_ldb));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -722,13 +740,31 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return False;
 
+	s->netbios_name = lp_parm_string(-1, "become dc", "smbtorture dc");
+	if (!s->netbios_name || !s->netbios_name[0]) {
+		s->netbios_name = "smbtorturedc";
+	}
+
+	s->path.samdb_ldb	= talloc_asprintf(s, "%s_samdb.ldb", s->netbios_name);
+	if (!s->path.samdb_ldb) return false;
+	s->path.domaindn_ldb	= talloc_asprintf(s, "%s_domain.ldb", s->netbios_name);
+	if (!s->path.domaindn_ldb) return false;
+	s->path.configdn_ldb	= talloc_asprintf(s, "%s_config.ldb", s->netbios_name);
+	if (!s->path.configdn_ldb) return false;
+	s->path.schemadn_ldb	= talloc_asprintf(s, "%s_schema.ldb", s->netbios_name);
+	if (!s->path.schemadn_ldb) return false;
+	s->path.secrets_ldb	= talloc_asprintf(s, "%s_secrets.ldb", s->netbios_name);
+	if (!s->path.secrets_ldb) return false;
+	s->path.secrets_keytab	= talloc_asprintf(s, "%s_secrets.keytab", s->netbios_name);
+	if (!s->path.secrets_keytab) return false;
+
 	/* Join domain as a member server. */
-	s->tj = torture_join_domain(TORTURE_NETBIOS_NAME,
+	s->tj = torture_join_domain(s->netbios_name,
 				 ACB_WSTRUST,
 				 &s->machine_account);
 	if (!s->tj) {
 		DEBUG(0, ("%s failed to join domain as workstation\n",
-			  TORTURE_NETBIOS_NAME));
+			  s->netbios_name));
 		return False;
 	}
 
@@ -742,7 +778,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
 	b.in.domain_sid			= torture_join_sid(s->tj);
 	b.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
-	b.in.dest_dsa_netbios_name	= TORTURE_NETBIOS_NAME;
+	b.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	b.in.callbacks.private_data	= s;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
@@ -794,13 +830,13 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
 	s->schema = NULL;
 
-	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", TORTURE_SAMDB_LDB));
-	s->ldb = ldb_wrap_connect(s, TORTURE_SAMDB_LDB,
+	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", s->path.samdb_ldb));
+	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			TORTURE_SAMDB_LDB));
+			s->path.samdb_ldb));
 		ret = False;
 		goto cleanup;
 	}
@@ -822,7 +858,7 @@ cleanup:
 	u.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	u.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
 	u.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
-	u.in.dest_dsa_netbios_name	= TORTURE_NETBIOS_NAME;
+	u.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	status = libnet_UnbecomeDC(s->ctx, s, &u);
 	if (!NT_STATUS_IS_OK(status)) {
