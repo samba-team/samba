@@ -127,7 +127,7 @@ BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
 	torture_smb2_testfile(tree, FNAME, &handle);
 
 	ZERO_STRUCT(io);
-	io.in.blob = data_blob_talloc(mem_ctx, NULL, 1024);
+	io.in.blob = data_blob_talloc_zero(mem_ctx, 1024);
 
 	for (c=1;c<5;c++) {
 		for (i=0;i<0x100;i++) {
