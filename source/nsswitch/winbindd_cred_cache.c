@@ -482,29 +482,21 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 		memcredp->len += strlen(pass)+1;
 	}
 
-	/* On non-linux platforms, mlock()'d memory must be aligned on
-	   a page boundary so allocate a bit more so we can offset
-	   enough */
+	/* On non-linux platforms, mlock()'d memory must be aligned */
 
-	memcredp->len += psize;
-			  
-	memcredp->buffer = (unsigned char*)TALLOC_ZERO(memcredp, memcredp->len);
-				  
-	if (!memcredp->buffer) {
+	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char*, psize, 
+					       memcredp->len);
+	if (!memcredp->nt_hash) {
 		return NT_STATUS_NO_MEMORY;
 	}
-				  
+	memset( memcredp->nt_hash, 0x0, memcredp->len );
 
-	/* point the nt_hash at the page boundary in the buffer */
-
-	memcredp->nt_hash = memcredp->buffer +
-		(psize - ((uint32)memcredp->buffer % psize));
 	memcredp->lm_hash = memcredp->nt_hash + NT_HASH_LEN;
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(10,("mlocking memory: %p\n", memcredp->nt_hash));
 #endif		
-	if ((mlock(memcredp->nt_hash, memcredp->len-psize)) == -1) {
+	if ((mlock(memcredp->nt_hash, memcredp->len)) == -1) {
 		DEBUG(0,("failed to mlock memory: %s (%d)\n", 
 			strerror(errno), errno));
 		return map_nt_error_from_unix(errno);
@@ -536,15 +528,13 @@ static NTSTATUS delete_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp)
 #if !defined(HAVE_MUNLOCK)
 	return NT_STATUS_OK;
 #else
-	int psize = getpagesize();	
-
-	if (munlock(memcredp->buffer, memcredp->len - psize) == -1) {
+	if (munlock(memcredp->nt_hash, memcredp->len) == -1) {
 		DEBUG(0,("failed to munlock memory: %s (%d)\n", 
 			strerror(errno), errno));
 		return map_nt_error_from_unix(errno);
 	}
-	memset(memcredp->buffer, '\0', memcredp->len);
-	TALLOC_FREE(memcredp->buffer);
+	memset(memcredp->nt_hash, '\0', memcredp->len);
+	SAFE_FREE(memcredp->nt_hash);
 	memcredp->nt_hash = NULL;
 	memcredp->lm_hash = NULL;
 	memcredp->pass = NULL;

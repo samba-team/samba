@@ -276,6 +276,7 @@ copy an IP address from one buffer to another
 *****************************************************************************/
 
 #define SMB_MALLOC_ARRAY(type,count) (type *)malloc_array(sizeof(type),(count))
+#define SMB_MEMALIGN_ARRAY(type,align,count) (type *)memalign_array(sizeof(type),align,(count))
 #define SMB_REALLOC(p,s) Realloc((p),(s),True)	/* Always frees p on error or s == 0 */
 #define SMB_REALLOC_KEEP_OLD_ON_ERROR(p,s) Realloc((p),(s),False) /* Never frees p on error or s == 0 */
 #define SMB_REALLOC_ARRAY(p,type,count) (type *)realloc_array((p),sizeof(type),(count),True) /* Always frees p on error or s == 0 */
