@@ -44,6 +44,27 @@
 
 
 /*******************************************************************
+ A wrapper for memalign
+********************************************************************/
+
+void* sys_memalign( size_t align, size_t size )
+{
+#if defined(HAVE_MEMALIGN)
+	return memalign( align, size );
+#elif defined(HAVE_POSIX_MEMALIGN)
+	char *p = NULL;
+	int ret = posix_memalign( &p, align, size );
+	if ( ret == 0 )
+		return p;
+		
+	return NULL;
+#else
+	DEBUG(0,("memalign functionalaity not available on this platform!\n"));
+	return NULL;
+#endif
+}
+
+/*******************************************************************
  A wrapper for usleep in case we don't have one.
 ********************************************************************/
 

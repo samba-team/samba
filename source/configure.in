@@ -1240,6 +1240,7 @@ AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
 AC_CHECK_FUNCS(mlock munlock mlockall munlockall)
+AC_CHECK_FUNCS(memalign posix_memalign)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open)
