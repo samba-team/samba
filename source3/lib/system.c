@@ -59,7 +59,7 @@ void* sys_memalign( size_t align, size_t size )
 		
 	return NULL;
 #else
-	DEBUG(0,("memalign functionalaity not available on this platform!\n"));
+	DEBUG(0,("memalign functionalaity not available on this platform!\n"));
 	return NULL;
 #endif
 }
