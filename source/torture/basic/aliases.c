@@ -160,6 +160,7 @@ static bool qpathinfo_aliases(struct torture_context *tctx,
 	t2.in.setup = &setup;
 	t2.in.params = data_blob_talloc(tctx, NULL, 6);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
