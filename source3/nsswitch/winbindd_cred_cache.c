@@ -484,7 +484,7 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 
 	/* On non-linux platforms, mlock()'d memory must be aligned */
 
-	memcredp->nt_hash = (unsigned char *)SMB_MEMALIGN_ARRAY(unsigned char*, psize, 
+	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char, psize, 
 					       memcredp->len);
 	if (!memcredp->nt_hash) {
 		return NT_STATUS_NO_MEMORY;
