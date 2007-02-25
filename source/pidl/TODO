@@ -1,3 +1,5 @@
+- allow [public] on typedefs only
+
 - EJS output backend shouldn't use the NDR levels stuff but instead 
   as the "C levels" and NDR levels don't necessarily match.
 
