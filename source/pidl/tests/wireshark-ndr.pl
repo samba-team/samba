@@ -5,12 +5,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 6;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Wireshark::NDR qw(field2name %res PrintIdl);
+use Parse::Pidl::Wireshark::NDR qw(field2name %res PrintIdl StripPrefixes);
 
 is("Access Mask", field2name("access_mask"));
 is("Accessmask", field2name("AccessMask"));
@@ -21,3 +21,7 @@ is("/* IDL: foo */
 /* IDL: bar */
 
 ", $res{code});
+
+is("bla_foo", StripPrefixes("bla_foo", []));
+is("foo", StripPrefixes("bla_foo", ["bla"]));
+is("foo_bla", StripPrefixes("foo_bla", ["bla"]));
