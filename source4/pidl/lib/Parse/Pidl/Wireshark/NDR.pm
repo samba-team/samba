@@ -18,7 +18,7 @@ package Parse::Pidl::Wireshark::NDR;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(field2name @ett %res PrintIdl);
+@EXPORT_OK = qw(field2name @ett %res PrintIdl StripPrefixes);
 
 use strict;
 use Parse::Pidl qw(error warning);
@@ -46,11 +46,11 @@ my %ptrtype_mappings = (
 	"ptr" => "NDR_POINTER_PTR"
 );
 
-sub StripPrefixes($)
+sub StripPrefixes($$)
 {
-	my ($s) = @_;
+	my ($s, $prefixes) = @_;
 
-	foreach (@{$conformance->{strip_prefixes}}) {
+	foreach (@$prefixes) {
 		$s =~ s/^$_\_//g;
 	}
 
@@ -135,9 +135,9 @@ sub Enum($$$)
 {
 	my ($e,$name,$ifname) = @_;
 	my $valsstring = "$ifname\_$name\_vals";
-	my $dissectorname = "$ifname\_dissect\_enum\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_enum\_".StripPrefixes($name, $conformance->{strip_prefixes});
 
-	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
+	return if (defined($conformance->{noemit}->{StripPrefixes($name, $conformance->{strip_prefixes})}));
 
    	foreach (@{$e->{ELEMENTS}}) {
 		if (/([^=]*)=(.*)/) {
@@ -176,7 +176,7 @@ sub Enum($$$)
 sub Bitmap($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_bitmap\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_bitmap\_".StripPrefixes($name, $conformance->{strip_prefixes});
 
 	register_ett("ett_$ifname\_$name");
 
@@ -272,7 +272,7 @@ sub ElementLevel($$$$$$)
 		} elsif ($l->{LEVEL} eq "EMBEDDED") {
 			$type = "embedded";
 		}
-		pidl_code "offset = dissect_ndr_$type\_pointer(tvb, offset, pinfo, tree, drep, $myname\_, $ptrtype_mappings{$l->{POINTER_TYPE}}, \"Pointer to ".field2name(StripPrefixes($e->{NAME})) . " ($e->{TYPE})\",$hf);";
+		pidl_code "offset = dissect_ndr_$type\_pointer(tvb, offset, pinfo, tree, drep, $myname\_, $ptrtype_mappings{$l->{POINTER_TYPE}}, \"Pointer to ".field2name(StripPrefixes($e->{NAME}, $conformance->{strip_prefixes})) . " ($e->{TYPE})\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		if ($l->{IS_INLINE}) {
 			error($e->{ORIGINAL}, "Inline arrays not supported");
@@ -353,7 +353,7 @@ sub Element($$$)
 {
 	my ($e,$pn,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect\_element\_".StripPrefixes($pn)."\_".StripPrefixes($e->{NAME});
+	my $dissectorname = "$ifname\_dissect\_element\_".StripPrefixes($pn, $conformance->{strip_prefixes})."\_".StripPrefixes($e->{NAME}, $conformance->{strip_prefixes});
 
 	my $call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep);";
 
@@ -381,7 +381,7 @@ sub Element($$$)
 	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", $type->{FT_TYPE}, $type->{BASE_TYPE}, $type->{VALSSTRING}, $type->{MASK}, "");
 	$hf_used{$hf} = 1;
 
-	my $eltname = StripPrefixes($pn) . ".$e->{NAME}";
+	my $eltname = StripPrefixes($pn, $conformance->{strip_prefixes}) . ".$e->{NAME}";
 	if (defined($conformance->{noemit}->{$eltname})) {
 		return $call_code;
 	}
@@ -513,9 +513,9 @@ sub Function($$$)
 sub Struct($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_struct\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_struct\_".StripPrefixes($name, $conformance->{strip_prefixes});
 
-	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
+	return if (defined($conformance->{noemit}->{StripPrefixes($name, $conformance->{strip_prefixes})}));
 
 	register_ett("ett_$ifname\_$name");
 
@@ -563,9 +563,9 @@ sub Union($$$)
 {
 	my ($e,$name,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect_".StripPrefixes($name, $conformance->{strip_prefixes});
 
-	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
+	return if (defined($conformance->{noemit}->{StripPrefixes($name, $conformance->{strip_prefixes})}));
 	
 	register_ett("ett_$ifname\_$name");
 
