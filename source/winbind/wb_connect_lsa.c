@@ -72,7 +72,7 @@ struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 	state->lsa_pipe = dcerpc_pipe_init(state, result->event_ctx);
 	if (state->lsa_pipe == NULL) goto failed;
 
-	ctx = dcerpc_pipe_open_smb_send(state->lsa_pipe->conn, tree,
+	ctx = dcerpc_pipe_open_smb_send(state->lsa_pipe, tree,
 					"\\lsarpc");
 	ctx->async.fn = init_lsa_recv_pipe;
 	ctx->async.private_data = state;

@@ -78,7 +78,7 @@ static void continue_smb_connect(struct composite_context *ctx)
 	s->io.pipe_name = s->io.binding->endpoint;
 
 	/* send named pipe open request */
-	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
+	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe, s->tree, s->io.pipe_name);
 	if (composite_nomem(open_ctx, c)) return;
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);
@@ -192,7 +192,7 @@ static void continue_smb2_connect(struct composite_context *ctx)
 	s->io.pipe_name = s->io.binding->endpoint;
 
 	/* send named pipe open request */
-	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
+	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe, s->tree, s->io.pipe_name);
 	if (composite_nomem(open_req, c)) return;
 
 	composite_continue(c, open_req, continue_pipe_open_smb2, c);
@@ -969,7 +969,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 			return c;
 		}
 
-		pipe_smb_req = dcerpc_pipe_open_smb_send(s->pipe2->conn, s->tree,
+		pipe_smb_req = dcerpc_pipe_open_smb_send(s->pipe2, s->tree,
 							 s->binding->endpoint);
 		composite_continue(c, pipe_smb_req, continue_open_smb, c);
 		return c;

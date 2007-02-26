@@ -81,7 +81,7 @@ struct composite_context *wb_get_schannel_creds_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	creq = dcerpc_pipe_open_smb_send(state->p->conn, tree, "\\netlogon");
+	creq = dcerpc_pipe_open_smb_send(state->p, tree, "\\netlogon");
 	if (creq == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
