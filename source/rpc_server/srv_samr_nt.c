@@ -64,8 +64,6 @@ typedef struct disp_info {
 /* We keep a static list of these by SID as modern clients close down
    all resources between each request in a complete enumeration. */
 
-static DISP_INFO *disp_info_list;
-
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
@@ -254,6 +252,24 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
 
 static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 {
+	/*
+	 * We do a static cache for DISP_INFO's here. Explanation can be found
+	 * in Jeremy's checkin message to r11793:
+	 *
+	 * Fix the SAMR cache so it works across completely insane
+	 * client behaviour (ie.:
+	 * open pipe/open SAMR handle/enumerate 0 - 1024
+	 * close SAMR handle, close pipe.
+	 * open pipe/open SAMR handle/enumerate 1024 - 2048...
+	 * close SAMR handle, close pipe.
+	 * And on ad-nausium. Amazing.... probably object-oriented
+	 * client side programming in action yet again.
+	 * This change should *massively* improve performance when
+	 * enumerating users from an LDAP database.
+	 * Jeremy.
+	 */
+
+	static DISP_INFO *disp_info_list;
 	TALLOC_CTX *mem_ctx;
 	DISP_INFO *dpi;
 
