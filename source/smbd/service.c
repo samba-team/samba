@@ -313,6 +313,14 @@ static int load_registry_service(const char *servicename)
 		TALLOC_FREE(value);
 	}
 
+	if (!service_ok(res)) {
+		/* this is actually never reached, since 
+		 * service_ok only returns False if the service
+		 * entry does not have a service name, and we _know_
+		 * we do have a service name here... */
+		res = -1;
+	}
+
  error:
 
 	TALLOC_FREE(key);
