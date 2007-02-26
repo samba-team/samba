@@ -2479,7 +2479,6 @@ sub ParseTypePull($$$$)
 	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined(has_property($e, "relative_base"));
 }
 
-
 sub ParseTypePullFunction($$)
 {
 	my ($e, $varname) = @_;
