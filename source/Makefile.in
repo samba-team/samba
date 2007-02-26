@@ -864,14 +864,14 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+all : SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(SHLIBS) $(MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
 pam_modules : $(PAM_MODULES)
 
-pam_smbpass : SHOWFLAGS proto_exists bin/pam_smbpass.@SHLIBEXT@
+pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
-pam_winbind : SHOWFLAGS proto_exists bin/pam_winbind.@SHLIBEXT@
+pam_winbind : SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
@@ -912,7 +912,7 @@ nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
-modules: SHOWFLAGS proto_exists $(MODULES)
+modules: SHOWFLAGS $(MODULES)
 
 cac: SHOWFLAGS $(LIBMSRPC)
 
@@ -1008,56 +1008,56 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbd@EXEEXT@: proto_exists $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LDAP_LIBS) \
 		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
 		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@ @SMBD_LIBS@ 
 
-bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/nmbd@EXEEXT@: proto_exists $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/swat@EXEEXT@: proto_exists $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) \
 	  $(AUTH_LIBS) $(LIBS) $(PASSDB_LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/rpcclient@EXEEXT@: proto_exists $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(PASSDB_LIBS) $(RPCCLIENT_OBJ) \
 		$(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
 		$(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbclient@EXEEXT@: proto_exists $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/smbctool@EXEEXT@: $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbctool@EXEEXT@: proto_exists $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TOOL_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) -Lbin -lsmbclient
 
-bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ @BUILD_INIPARSER@ bin/.dummy
+bin/net@EXEEXT@: proto_exists $(NET_OBJ) @BUILD_POPT@ @BUILD_INIPARSER@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) @INIPARSERLIBS@
 
-bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
+bin/profiles@EXEEXT@: proto_exists $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
+bin/smbspool@EXEEXT@: proto_exists $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
+bin/smbmount@EXEEXT@: proto_exists $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
+bin/smbmnt@EXEEXT@: proto_exists $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(DYNEXP) $(LDFLAGS) 
 
-bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
+bin/smbumount@EXEEXT@: proto_exists $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
@@ -1069,35 +1069,35 @@ bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
+bin/testparm@EXEEXT@: proto_exists $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbstatus@EXEEXT@: proto_exists $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAP_LIBS) \
 	@POPTLIBS@
 
-bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbcontrol@EXEEXT@: proto_exists $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ \
 	$(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) \
 	$(LIBS) $(LDAP_LIBS) @LIBUNWIND_PTRACE@ @POPTLIBS@
 
-bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbtree@EXEEXT@: proto_exists $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbpasswd@EXEEXT@: proto_exists $(SMBPASSWD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(PASSDB_LIBS) \
 		$(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/pdbedit@EXEEXT@: proto_exists $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS)
 
-bin/smbget@EXEEXT@: $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbget@EXEEXT@: proto_exists $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBGET_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@  $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
@@ -1105,15 +1105,15 @@ bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
+bin/nmblookup@EXEEXT@: proto_exists $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(LDAP_LIBS)
 
-bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
+bin/smbtorture@EXEEXT@: proto_exists $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
+bin/talloctort@EXEEXT@: proto_exists $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS)
@@ -1123,45 +1123,45 @@ bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ) bin/.dummy
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(REPLACETORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS)
 
-bin/masktest@EXEEXT@: $(MASKTEST_OBJ) bin/.dummy
+bin/masktest@EXEEXT@: proto_exists $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
+bin/msgtest@EXEEXT@: proto_exists $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbcacls@EXEEXT@: proto_exists $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ \
 	$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/smbcquotas@EXEEXT@: $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbcquotas@EXEEXT@: proto_exists $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ \
 	$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/eventlogadm@EXEEXT@: $(EVTLOGADM_OBJ) @BUILD_POPT@ bin/.dummy
+bin/eventlogadm@EXEEXT@: proto_exists $(EVTLOGADM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(EVTLOGADM_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/sharesec@EXEEXT@: $(SHARESEC_OBJ) @BUILD_POPT@ bin/.dummy
+bin/sharesec@EXEEXT@: proto_exists $(SHARESEC_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SHARESEC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@ 
 
-bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
+bin/locktest@EXEEXT@: proto_exists $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
+bin/nsstest@EXEEXT@: proto_exists $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)  $(LDAP_LIBS)
 
-bin/pdbtest@EXEEXT@: $(PDBTEST_OBJ) bin/.dummy
+bin/pdbtest@EXEEXT@: proto_exists $(PDBTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@
 
-bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
+bin/vfstest@EXEEXT@: proto_exists $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) $(ACL_LIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) @SMBD_LIBS@ $(NSCD_LIBS)
 
@@ -1169,11 +1169,11 @@ bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBICONV_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
-bin/log2pcap@EXEEXT@: $(LOG2PCAP_OBJ) @BUILD_POPT@ bin/.dummy
+bin/log2pcap@EXEEXT@: proto_exists $(LOG2PCAP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOG2PCAP_OBJ) $(LDFLAGS) $(DYNEXP) @POPTLIBS@ $(LIBS)
 
-bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
+bin/locktest2@EXEEXT@: proto_exists $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
@@ -1181,76 +1181,76 @@ bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/debug2html@EXEEXT@: $(DEBUG2HTML_OBJ) bin/.dummy
+bin/debug2html@EXEEXT@: proto_exists $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
-bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
+bin/smbfilter@EXEEXT@: proto_exists $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 
-bin/ldbedit: $(LDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/ldbedit: proto_exists $(LDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDBEDIT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
 
-bin/ldbsearch: $(LDBSEARCH_OBJ) @BUILD_POPT@ bin/.dummy
+bin/ldbsearch: proto_exists $(LDBSEARCH_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDBSEARCH_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
 
-bin/ldbadd: $(LDBADD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/ldbadd: proto_exists $(LDBADD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDBADD_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
 
-bin/ldbmodify: $(LDBMODIFY_OBJ) @BUILD_POPT@ bin/.dummy
+bin/ldbmodify: proto_exists $(LDBMODIFY_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDBMODIFY_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
 
-bin/ldbdel: $(LDBDEL_OBJ) @BUILD_POPT@ bin/.dummy
+bin/ldbdel: proto_exists $(LDBDEL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDBDEL_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
 
-bin/libaddns.@SHLIBEXT@: $(LIBADDNS_OBJ)
+bin/libaddns.@SHLIBEXT@: proto_exists $(LIBADDNS_OBJ)
 	@echo Linking libaddns shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS)\
 		@SONAMEFLAG@`basename $@`.$(LIBADDNS_MAJOR)
 
-bin/libaddns.a: $(LIBADDNS_OBJ)
+bin/libaddns.a: proto_exists $(LIBADDNS_OBJ)
 	@echo Linking libaddns non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
-bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_OBJ)
+bin/libsmbclient.@SHLIBEXT@: proto_exists $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
-bin/libsmbclient.a: $(LIBSMBCLIENT_OBJ)
+bin/libsmbclient.a: proto_exists $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ)
 
-bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_OBJ)
+bin/libsmbsharemodes.@SHLIBEXT@: proto_exists $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
 
-bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_OBJ)
+bin/libsmbsharemodes.a: proto_exists $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
 
-bin/libmsrpc.@SHLIBEXT@: $(CAC_OBJ)
+bin/libmsrpc.@SHLIBEXT@: proto_exists $(CAC_OBJ)
 	@echo Linking libmsrpc shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ) $(LDFLAGS) $(LIBS) \
 	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
 
-bin/libmsrpc.a: $(CAC_OBJ)
+bin/libmsrpc.a: proto_exists $(CAC_OBJ)
 	@echo Linking libmsrpc non-shared library $@
 	@-$(AR) -rc $@ $(CAC_OBJ)
 
 # This is probably wrong for anything other than the GNU linker. 
-bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_OBJ)
+bin/libbigballofmud.@SHLIBEXT@: proto_exists $(LIBBIGBALLOFMUD_OBJ)
 	@echo Linking bigballofmud shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_OBJ) $(LIBS) \
 		$(PASSDB_LIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAP_LIBS) \
@@ -1267,82 +1267,82 @@ libsmbsharemodes: $(LIBSMBSHAREMODES)
 libmsrpc: $(LIBMSRPC)
 libaddns: $(LIBADDNS)
 
-bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
+bin/librpc_lsarpc.@SHLIBEXT@: proto_exists $(RPC_LSA_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_samr.@SHLIBEXT@: $(RPC_SAMR_OBJ)
+bin/librpc_samr.@SHLIBEXT@: proto_exists $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_unixinfo.@SHLIBEXT@: $(RPC_UNIXINFO_OBJ)
+bin/librpc_unixinfo.@SHLIBEXT@: proto_exists $(RPC_UNIXINFO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_UNIXINFO_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)
+bin/librpc_srvsvc.@SHLIBEXT@: proto_exists $(RPC_SVC_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVC_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_svcctl.@SHLIBEXT@: $(RPC_SVCCTL_OBJ)
+bin/librpc_svcctl.@SHLIBEXT@: proto_exists $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVCCTL_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_ntsvcs.@SHLIBEXT@: $(RPC_NTSVCS_OBJ)
+bin/librpc_ntsvcs.@SHLIBEXT@: proto_exists $(RPC_NTSVCS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NTSVCS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_wkssvc.@SHLIBEXT@: $(RPC_WKS_OBJ)
+bin/librpc_wkssvc.@SHLIBEXT@: proto_exists $(RPC_WKS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_WKS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_NETLOGON.@SHLIBEXT@: $(RPC_NETLOG_OBJ)
+bin/librpc_NETLOGON.@SHLIBEXT@: proto_exists $(RPC_NETLOG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_winreg.@SHLIBEXT@: $(RPC_REG_OBJ)
+bin/librpc_winreg.@SHLIBEXT@: proto_exists $(RPC_REG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_initshutdown.@SHLIBEXT@: $(RPC_INITSHUTDOWN_OBJ)
+bin/librpc_initshutdown.@SHLIBEXT@: proto_exists $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_INITSHUTDOWN_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_lsa_ds.@SHLIBEXT@: $(RPC_LSA_DS_OBJ)
+bin/librpc_lsa_ds.@SHLIBEXT@: proto_exists $(RPC_LSA_DS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_DS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_spoolss.@SHLIBEXT@: $(RPC_SPOOLSS_OBJ)
+bin/librpc_spoolss.@SHLIBEXT@: proto_exists $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_eventlog.@SHLIBEXT@: $(RPC_EVENTLOG_OBJ)
+bin/librpc_eventlog.@SHLIBEXT@: proto_exists $(RPC_EVENTLOG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EVENTLOG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
+bin/librpc_netdfs.@SHLIBEXT@: proto_exists $(RPC_DFS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
+bin/librpc_echo.@SHLIBEXT@: proto_exists $(RPC_ECHO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
 	@$(CC) $(FLAGS) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
@@ -1363,31 +1363,31 @@ bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@` -lpam @INIPARSERLIBS@
 
-bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ)
+bin/builtin.@SHLIBEXT@: proto_exists $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ)
+bin/domain.@SHLIBEXT@: proto_exists $(AUTH_DOMAIN_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/script.@SHLIBEXT@: $(AUTH_SCRIPT_OBJ)
+bin/script.@SHLIBEXT@: proto_exists $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SCRIPT_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/smbserver.@SHLIBEXT@: $(AUTH_SERVER_OBJ)
+bin/smbserver.@SHLIBEXT@: proto_exists $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/winbind.@SHLIBEXT@: $(AUTH_WINBIND_OBJ)
+bin/winbind.@SHLIBEXT@: proto_exists $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/unix.@SHLIBEXT@: $(AUTH_UNIX_OBJ)
+bin/unix.@SHLIBEXT@: proto_exists $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ)
+bin/sam.@SHLIBEXT@: proto_exists $(AUTH_SAM_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ) @SONAMEFLAG@`basename $@`
 
@@ -1396,17 +1396,17 @@ bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
 	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.o
+bin/tdbsam.@SHLIBEXT@: proto_exists passdb/pdb_tdb.o
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.o
+bin/smbpasswd.@SHLIBEXT@: proto_exists passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/rid.@SHLIBEXT@: nsswitch/idmap_rid.o
+bin/rid.@SHLIBEXT@: proto_exists nsswitch/idmap_rid.o
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_rid.o \
 		@SONAMEFLAG@`basename $@`
@@ -1416,17 +1416,17 @@ bin/ad.@SHLIBEXT@: nsswitch/idmap_ad.o
 	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ad.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ)
+bin/weird.@SHLIBEXT@: proto_exists $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP850.@SHLIBEXT@: $(CP850_OBJ)
+bin/CP850.@SHLIBEXT@: proto_exists $(CP850_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP850_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP437.@SHLIBEXT@: $(CP437_OBJ)
+bin/CP437.@SHLIBEXT@: proto_exists $(CP437_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1439,57 +1439,57 @@ bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ)
 # NOTE, there is no build rule for a dynamic default VFS module because
 # this one MUST MUST MUST be built statically.
 
-bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
+bin/audit.@SHLIBEXT@: proto_exists $(VFS_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
+bin/extd_audit.@SHLIBEXT@: proto_exists $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/full_audit.@SHLIBEXT@: $(VFS_FULL_AUDIT_OBJ)
+bin/full_audit.@SHLIBEXT@: proto_exists $(VFS_FULL_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FULL_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
+bin/recycle.@SHLIBEXT@: proto_exists $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
+bin/netatalk.@SHLIBEXT@: proto_exists $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
+bin/fake_perms.@SHLIBEXT@: proto_exists $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ)
+bin/default_quota.@SHLIBEXT@: proto_exists $(VFS_DEFAULT_QUOTA_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ)
+bin/readonly.@SHLIBEXT@: proto_exists $(VFS_READONLY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/shadow_copy.@SHLIBEXT@: $(VFS_SHADOW_COPY_OBJ)
+bin/shadow_copy.@SHLIBEXT@: proto_exists $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SHADOW_COPY_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ)
+bin/cap.@SHLIBEXT@: proto_exists $(VFS_CAP_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/expand_msdfs.@SHLIBEXT@: $(VFS_EXPAND_MSDFS_OBJ)
+bin/expand_msdfs.@SHLIBEXT@: proto_exists $(VFS_EXPAND_MSDFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXPAND_MSDFS_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1519,12 +1519,12 @@ bin/solarisacl.@SHLIBEXT@: $(VFS_SOLARISACL_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SOLARISACL_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/irixacl.@SHLIBEXT@: $(VFS_IRIXACL_OBJ)
+bin/irixacl.@SHLIBEXT@: proto_exists $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_IRIXACL_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/hpuxacl.@SHLIBEXT@: $(VFS_HPUXACL_OBJ)
+bin/hpuxacl.@SHLIBEXT@: proto_exists $(VFS_HPUXACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_HPUXACL_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1534,22 +1534,22 @@ bin/tru64acl.@SHLIBEXT@: $(VFS_TRU64ACL_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_TRU64ACL_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/catia.@SHLIBEXT@: $(VFS_CATIA_OBJ)
+bin/catia.@SHLIBEXT@: proto_exists $(VFS_CATIA_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CATIA_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/cacheprime.@SHLIBEXT@: $(VFS_CACHEPRIME_OBJ)
+bin/cacheprime.@SHLIBEXT@: proto_exists $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CACHEPRIME_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/prealloc.@SHLIBEXT@: $(VFS_PREALLOC_OBJ)
+bin/prealloc.@SHLIBEXT@: proto_exists $(VFS_PREALLOC_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_PREALLOC_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/commit.@SHLIBEXT@: $(VFS_COMMIT_OBJ)
+bin/commit.@SHLIBEXT@: proto_exists $(VFS_COMMIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_COMMIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1570,11 +1570,11 @@ bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 ## None here right now
 #########################################################
 
-bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
+bin/wbinfo@EXEEXT@: proto_exists $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(WBINFO_OBJ) $(DYNEXP) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+bin/ntlm_auth@EXEEXT@: proto_exists $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		@BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(NTLM_AUTH_OBJ) \
@@ -1585,7 +1585,7 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
-bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
+bin/tdbbackup@EXEEXT@: proto_exists $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ)
 
@@ -1597,21 +1597,21 @@ bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ)
 
-bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
+bin/t_strcmp@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
 
-bin/t_strstr@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
+bin/t_strstr@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
 
-bin/t_strappend@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
+bin/t_strappend@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strappend.o -L ./bin -lbigballofmud
 
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
 
-bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
+bin/t_doschar@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
-bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
+bin/t_push_ucs2@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
 
 bin/timelimit@EXEEXT@: script/tests/timelimit.o
