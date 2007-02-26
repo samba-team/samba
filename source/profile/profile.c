@@ -229,7 +229,7 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
-		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",
+		DEBUG(0,("WARNING: profile size is %d (expected %lu). Deleting\n",
 			 (int)shm_ds.shm_segsz, sizeof(*profile_h)));
 		if (shmctl(shm_id, IPC_RMID, &shm_ds) == 0) {
 			goto again;
