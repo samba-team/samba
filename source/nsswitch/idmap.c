@@ -497,7 +497,8 @@ NTSTATUS idmap_init(void)
 	/**** finished adding idmap_passdb backend ****/
 
 	/* sort domains so that the default is the last one */
-	if (def_dom_num != num_domains-1) { /* default is not last, move it */
+	/* don't sort if no default domain defined */
+	if (def_dom_num != -1 && def_dom_num != num_domains-1) { /* default is not last, move it */
 		struct idmap_domain *tmp;
 
 		if (pdb_dom_num > def_dom_num) {
