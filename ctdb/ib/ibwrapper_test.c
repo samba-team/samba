@@ -81,11 +81,13 @@ enum testopcode {
 
 int ibwtest_connect_everybody(struct ibwtest_ctx *tcx)
 {
-	struct ibwtest_conn	*pconn = talloc_zero(tcx, struct ibwtest_conn);
+	struct ibw_conn		*conn;
+	struct ibwtest_conn	*tconn = talloc_zero(tcx, struct ibwtest_conn);
 	int	i;
 
 	for(i=0; i<tcx->naddrs; i++) {
-		if (ibw_connect(tcx->ibwctx, &tcx->addrs[i], pconn)) {
+		conn = ibw_conn_new(tcx->ibwctx, tconn);
+		if (ibw_connect(conn, &tcx->addrs[i], tconn)) {
 			fprintf(stderr, "ibw_connect error at %d\n", i);
 			return -1;
 		}
@@ -237,7 +239,7 @@ int ibwtest_do_varsize_scenario_conn(struct ibwtest_ctx *tcx, struct ibw_conn *c
 int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 {
 	struct ibwtest_ctx	*tcx = NULL; /* userdata */
-	struct ibwtest_conn	*pconn = NULL; /* userdata */
+	struct ibwtest_conn	*tconn = NULL; /* userdata */
 
 	if (ctx) {
 		tcx = talloc_get_type(ctx->ctx_userdata, struct ibwtest_ctx);
@@ -251,8 +253,8 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			break;
 		case IBWS_CONNECT_REQUEST:
 			DEBUG(10, ("test IBWS_CONNECT_REQUEST\n"));
-			pconn = talloc_zero(conn, struct ibwtest_conn);
-			if (ibw_accept(ctx, conn, pconn)) {
+			tconn = talloc_zero(conn, struct ibwtest_conn);
+			if (ibw_accept(ctx, conn, tconn)) {
 				DEBUG(0, ("error accepting the connect request\n"));
 			}
 			break;
@@ -271,7 +273,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 	}
 
 	if (conn) {
-		pconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
+		tconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
 		switch(conn->state) {
 		case IBWC_INIT:
 			DEBUG(10, ("test IBWC_INIT\n"));
@@ -300,22 +302,22 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 
 int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 {
-	struct ibwtest_conn *pconn;
+	struct ibwtest_conn *tconn;
 	enum testopcode op;
 	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
 	int	rc = 0;
 
 	assert(conn!=NULL);
 	assert(n>=sizeof(uint32_t)+1);
-	pconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
+	tconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
 
 	op = (enum testopcode)((char *)buf)[sizeof(uint32_t)];
 	if (op==TESTOP_SEND_ID) {
-		pconn->id = talloc_strdup(pconn, ((char *)buf)+sizeof(uint32_t)+1);
+		tconn->id = talloc_strdup(tconn, ((char *)buf)+sizeof(uint32_t)+1);
 	}
 	if (op==TESTOP_SEND_ID || op==TESTOP_SEND_TEXT) {
 		DEBUG(11, ("[%d]msg from %s: \"%s\"(%d)\n", op,
-			pconn->id ? pconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
+			tconn->id ? tconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
 	}
 
 	if (tcx->is_server) {
@@ -327,7 +329,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				op,
 				n - sizeof(uint32_t) - 2,
 				(uint32_t)sum,
-				pconn->id ? pconn->id : "NULL"));
+				tconn->id ? tconn->id : "NULL"));
 			if (sum!=((unsigned char *)buf)[n-1]) {
 				DEBUG(0, ("ERROR: checksum mismatch %u!=%u\n",
 					(uint32_t)sum, (uint32_t)((unsigned char *)buf)[n-1]));

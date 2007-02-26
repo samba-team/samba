@@ -60,8 +60,6 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	struct ctdb_req_message *r;
 	int len;
 
-	ctdb_connect_wait(ctdb); /* recursion */
-
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY(ctdb, r);

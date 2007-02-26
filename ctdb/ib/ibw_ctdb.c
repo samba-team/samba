@@ -29,8 +29,13 @@
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 
-int ctdb_ibw_node_connect(struct ibw_ctx *ictx, struct ctdb_node *node)
+int ctdb_ibw_node_connect(struct ctdb_node *node)
 {
+	struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+	int	rc;
+
+	assert(cn!=NULL);
+	assert(cn->conn!=NULL);
 	struct sockaddr_in sock_out;
 
 	memset(&sock_out, 0, sizeof(struct sockaddr_in));
@@ -38,12 +43,12 @@ int ctdb_ibw_node_connect(struct ibw_ctx *ictx, struct ctdb_node *node)
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
 
-	if (ibw_connect(ictx, &sock_out, node)) {
-		DEBUG(0, ("ctdb_ibw_node_connect: ibw_connect failed - retrying in 1 sec...\n"));
+	rc = ibw_connect(cn->conn, &sock_out, node);
+	if (rc) {
+		DEBUG(0, ("ctdb_ibw_node_connect/ibw_connect failed - retrying...\n"));
 		/* try again once a second */
 		event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0), 
 			ctdb_ibw_node_connect_event, node);
-		return -1;
 	}
 
 	/* continues at ibw_ctdb.c/IBWC_CONNECTED in good case */
@@ -54,9 +59,8 @@ void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *t
 	struct timeval t, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private, struct ibw_ctx);
 
-	ctdb_ibw_node_connect(ictx, node);
+	ctdb_ibw_node_connect(node);
 }
 
 int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
@@ -94,14 +98,15 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		case IBWC_CONNECTED: { /* after ibw_accept or ibw_connect */
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
 			if (node!=NULL) { /* after ibw_connect */
-				node->private = (void *)conn;
+				struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+
 				node->ctdb->upcalls->node_connected(node);
+				ctdb_flush_cn_queue(cn);
 			} else { /* after ibw_accept */
 				/* NOP in CTDB case */
 			}
 		} break;
 		case IBWC_DISCONNECTED: { /* after ibw_disconnect */
-			/* TODO: have a CTDB upcall */
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
 			if (node!=NULL)
 				node->ctdb->upcalls->node_dead(node);
@@ -110,13 +115,16 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		} break;
 		case IBWC_ERROR: {
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
-			if (node!=NULL)
-				node->private = NULL; /* not to use again */
+			if (node!=NULL) {
+				struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+				struct ibw_ctx *ictx = cn->conn->ctx;
 
-			DEBUG(10, ("IBWC_ERROR, reconnecting immediately...\n"));
-			talloc_free(conn);
-			event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0),
-				ctdb_ibw_node_connect_event, node);
+				DEBUG(10, ("IBWC_ERROR, reconnecting...\n"));
+				talloc_free(cn->conn); /* internal queue content is destroyed */
+				cn->conn = (void *)ibw_conn_new(ictx, node);
+				event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0),
+					ctdb_ibw_node_connect_event, node);
+			}
 		} break;
 		default:
 			assert(0);
