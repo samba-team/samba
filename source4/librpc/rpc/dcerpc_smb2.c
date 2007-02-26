@@ -362,7 +362,7 @@ struct pipe_open_smb2_state {
 
 static void pipe_open_recv(struct smb2_request *req);
 
-struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_connection *c, 
+struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p, 
 						     struct smb2_tree *tree,
 						     const char *pipe_name)
 {
@@ -370,6 +370,7 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_connection *c
 	struct pipe_open_smb2_state *state;
 	struct smb2_create io;
 	struct smb2_request *req;
+	struct dcerpc_connection *c = p->conn;
 
 	ctx = composite_create(c, c->event_ctx);
 	if (ctx == NULL) return NULL;
@@ -463,11 +464,11 @@ NTSTATUS dcerpc_pipe_open_smb2_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_connection *c,
+NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
 			       struct smb2_tree *tree,
 			       const char *pipe_name)
 {
-	struct composite_context *ctx =	dcerpc_pipe_open_smb2_send(c, tree, pipe_name);
+	struct composite_context *ctx =	dcerpc_pipe_open_smb2_send(p, tree, pipe_name);
 	return dcerpc_pipe_open_smb2_recv(ctx);
 }
 

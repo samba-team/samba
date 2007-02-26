@@ -107,7 +107,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	status = dcerpc_pipe_open_smb(lsa_pipe->conn, cli->tree, "\\lsarpc");
+	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
@@ -223,7 +223,7 @@ static BOOL bindtest(struct smbcli_state *cli,
 		goto done;
 	}
 
-	status = dcerpc_pipe_open_smb(lsa_pipe->conn, cli->tree, "\\lsarpc");
+	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
@@ -362,7 +362,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		goto fail;
 	}
 
-	status = dcerpc_pipe_open_smb(samr_pipe->conn, cli->tree, "\\samr");
+	status = dcerpc_pipe_open_smb(samr_pipe, cli->tree, "\\samr");
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
@@ -822,7 +822,7 @@ static BOOL auth2(struct smbcli_state *cli,
 		goto done;
 	}
 
-	status = dcerpc_pipe_open_smb(net_pipe->conn, cli->tree, "\\netlogon");
+	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
@@ -923,7 +923,7 @@ static BOOL schan(struct smbcli_state *cli,
 		goto done;
 	}
 
-	status = dcerpc_pipe_open_smb(net_pipe->conn, cli->tree, "\\netlogon");
+	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
@@ -1374,7 +1374,7 @@ static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_pipe_open_smb(result->conn, tree, pipe_name);
+	status = dcerpc_pipe_open_smb(result, tree, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));

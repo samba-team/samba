@@ -110,6 +110,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *
 	p->last_fault_code = 0;
 	p->context_id = 0;
 	p->request_timeout = DCERPC_REQUEST_TIMEOUT;
+	p->binding = NULL;
 
 	ZERO_STRUCT(p->syntax);
 	ZERO_STRUCT(p->transfer_syntax);

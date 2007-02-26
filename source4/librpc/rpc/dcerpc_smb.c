@@ -390,13 +390,26 @@ struct pipe_open_smb_state {
 
 static void pipe_open_recv(struct smbcli_request *req);
 
-struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_connection *c, 
+struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p, 
 						    struct smbcli_tree *tree,
 						    const char *pipe_name)
 {
 	struct composite_context *ctx;
 	struct pipe_open_smb_state *state;
 	struct smbcli_request *req;
+	struct dcerpc_connection *c = p->conn;
+
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (p->binding == NULL) {
+		NTSTATUS status;
+		char *s = talloc_asprintf(p, "ncacn_np:%s", tree->session->transport->socket->hostname);
+		if (s == NULL) return NULL;
+		status = dcerpc_parse_binding(p, s, &p->binding);
+		talloc_free(s);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+	}
 
 	ctx = composite_create(c, c->event_ctx);
 	if (ctx == NULL) return NULL;
@@ -494,11 +507,11 @@ NTSTATUS dcerpc_pipe_open_smb_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
+NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name)
 {
-	struct composite_context *ctx =	dcerpc_pipe_open_smb_send(c, tree,
+	struct composite_context *ctx =	dcerpc_pipe_open_smb_send(p, tree,
 								  pipe_name);
 	return dcerpc_pipe_open_smb_recv(ctx);
 }

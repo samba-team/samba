@@ -80,7 +80,7 @@ struct composite_context *wb_connect_sam_send(TALLOC_CTX *mem_ctx,
 	state->samr_pipe = dcerpc_pipe_init(state, result->event_ctx);
 	if (state->samr_pipe == NULL) goto failed;
 
-	ctx = dcerpc_pipe_open_smb_send(state->samr_pipe->conn, tree,
+	ctx = dcerpc_pipe_open_smb_send(state->samr_pipe, tree,
 					"\\samr");
 	ctx->async.fn = connect_samr_recv_pipe;
 	ctx->async.private_data = state;
