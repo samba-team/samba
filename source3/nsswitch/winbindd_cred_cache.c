@@ -249,6 +249,16 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 }
 
 /****************************************************************
+ Check if an ccache entry exists.
+****************************************************************/
+
+BOOL ccache_entry_exists(const char *username)
+{
+	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+	return (entry != NULL);
+}
+
+/****************************************************************
  Ensure we're changing the correct entry.
 ****************************************************************/
 
@@ -305,6 +315,8 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		entry->ref_count++;
 		DEBUG(10,("add_ccache_to_list: ref count on entry %s is now %d\n",
 			username, entry->ref_count));
+		/* FIXME: in this case we still might want to have a krb5 cred
+		 * event handler created - gd*/
 		return NT_STATUS_OK;
 	}
 	
