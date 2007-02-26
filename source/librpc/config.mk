@@ -324,9 +324,12 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_POLICYAGENT
 OBJ_FILES = gen_ndr/ndr_unixinfo_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_UNIXINFO
 
-[SUBSYSTEM::RPC_NDR_SAMR]
+[LIBRARY::dcerpc_samr]
 OBJ_FILES = gen_ndr/ndr_samr_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
+VERSION = 0.0.1
+SO_VERSION = 0
+DESCRIPTION = DCE/RPC client library - SAMR
 
 [SUBSYSTEM::RPC_NDR_SPOOLSS]
 OBJ_FILES = gen_ndr/ndr_spoolss_c.o
@@ -345,10 +348,13 @@ OBJ_FILES = gen_ndr/ndr_svcctl_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_svcctl_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
 
-[SUBSYSTEM::RPC_NDR_ATSVC]
+[LIBRARY::dcerpc_atsvc]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_atsvc_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
+VERSION = 0.0.1
+SO_VERSION = 0
+DESCRIPTION = DCE/RPC client library - ATSVC
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
 OBJ_FILES = gen_ndr/ndr_eventlog_c.o
@@ -382,9 +388,12 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_WINREG
 OBJ_FILES = gen_ndr/ndr_initshutdown_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN
 
-[SUBSYSTEM::RPC_NDR_MGMT]
+[LIBRARY::dcerpc_mgmt]
 OBJ_FILES = gen_ndr/ndr_mgmt_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_MGMT
+VERSION = 0.0.1
+SO_VERSION = 0
+DESCRIPTION = DCE/RPC client library - MGMT
 
 [SUBSYSTEM::RPC_NDR_PROTECTED_STORAGE]
 OBJ_FILES = gen_ndr/ndr_protected_storage_c.o

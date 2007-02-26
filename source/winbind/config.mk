@@ -30,7 +30,7 @@ PUBLIC_DEPENDENCIES = \
 		NDR_WINBIND \
 		process_model \
 		RPC_NDR_LSA \
-		RPC_NDR_SAMR \
+		dcerpc_samr \
 		PAM_ERRORS \
 		LIBCLI_LDAP
 # End SUBSYSTEM WINBIND
@@ -42,6 +42,6 @@ PUBLIC_DEPENDENCIES = \
 PRIVATE_PROTO_HEADER = wb_helper.h
 OBJ_FILES = \
 		wb_async_helpers.o
-PUBLIC_DEPENDENCIES = RPC_NDR_LSA RPC_NDR_SAMR
+PUBLIC_DEPENDENCIES = RPC_NDR_LSA dcerpc_samr
 # End SUBSYSTEM WB_HELPER
 ################################################

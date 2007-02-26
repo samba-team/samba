@@ -71,8 +71,8 @@ sub _prepare_path_vars($)
 prefix = $self->{config}->{prefix}
 exec_prefix = $self->{config}->{exec_prefix}
 selftest_prefix = $self->{config}->{selftest_prefix}
-VPATH = $self->{config}->{srcdir}:heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 srcdir = $self->{config}->{srcdir}
+VPATH = \$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 builddir = $self->{config}->{builddir}
 datarootdir = $self->{config}->{datarootdir}
 
@@ -85,10 +85,10 @@ MODULESDIR = $self->{config}->{modulesdir}
 INCLUDEDIR = $self->{config}->{includedir}
 CONFIGDIR = $self->{config}->{sysconfdir}
 DATADIR = $self->{config}->{datadir}
-WEBAPPSDIR = $self->{config}->{datadir}/webapps
-SERVICESDIR = $self->{config}->{datadir}/services
-JSDIR = $self->{config}->{datadir}/js
-SETUPDIR = $self->{config}->{datadir}/setup
+WEBAPPSDIR = \$(DATADIR)/webapps
+SERVICESDIR = \$(DATADIR)/services
+JSDIR = \$(DATADIR)/js
+SETUPDIR = \$(DATADIR)/setup
 VARDIR = $self->{config}->{localstatedir}
 LOGFILEBASE = $self->{config}->{logfilebase}
 NCALRPCDIR = $self->{config}->{localstatedir}/ncalrpc
@@ -476,12 +476,17 @@ sub PkgConfig($$$)
 			"includedir=$self->{config}->{includedir}"
 		]
 	); 
+	my $abs_srcdir = abs_path($self->{config}->{srcdir});
 	smb_build::env::PkgConfig($self,
 		"bin/pkgconfig/$link_name-uninstalled.pc",
 		$link_name,
 		"-Lbin/shared -Lbin/static -l$link_name",
 		$privlibs,
-		"-I. -Iinclude -Ilib -Ilib/replace",
+		join(' ', 
+			"-I$abs_srcdir",
+			"-I$abs_srcdir/include",
+			"-I$abs_srcdir/lib",
+			"-I$abs_srcdir/lib/replace"),
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
 		defined($ctx->{INIT_FUNCTIONS}),
