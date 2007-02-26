@@ -193,7 +193,7 @@ static void init_domain_recv_netlogoncreds(struct composite_context *ctx)
 		return;
 	}
 
-	ctx = dcerpc_pipe_open_smb_send(state->domain->netlogon_pipe->conn,
+	ctx = dcerpc_pipe_open_smb_send(state->domain->netlogon_pipe,
 					tree, "\\netlogon");
 	composite_continue(state->ctx, ctx, init_domain_recv_netlogonpipe,
 			   state);
