@@ -766,7 +766,7 @@ static NTSTATUS create_builtin_users( void )
 		sid_append_rid(&dom_users, DOMAIN_GROUP_RID_USERS );
 		status = pdb_add_aliasmem( &global_sid_Builtin_Users, &dom_users);
 		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(0,("create_builtin_administrators: Failed to add Domain Users to"
+			DEBUG(0,("create_builtin_users: Failed to add Domain Users to"
 				" Users\n"));
 			return status;
 		}
