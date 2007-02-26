@@ -1189,7 +1189,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= talloc_asprintf(vd, "CN=NTDS-DSA,%s",
 							  s->forest.schema_dn_str);
-		if (composite_nomem(v->dn, c)) return;
+		if (composite_nomem(v[0].dn, c)) return;
 
 		c->status = ndr_push_struct_blob(&vd[0], vd, &v[0],
 						 (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
