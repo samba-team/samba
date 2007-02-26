@@ -49,6 +49,7 @@ typedef struct disp_info {
 	struct disp_info *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID sid; /* identify which domain this is. */
+	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
@@ -64,9 +65,12 @@ typedef struct disp_info {
 /* We keep a static list of these by SID as modern clients close down
    all resources between each request in a complete enumeration. */
 
+static DISP_INFO *disp_info_list;
+
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
+	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	DISP_INFO *disp_info;
@@ -250,28 +254,21 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
  Fetch or create a dispinfo struct.
 ********************************************************************/
 
-static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
+static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
 {
-	/*
-	 * We do a static cache for DISP_INFO's here. Explanation can be found
-	 * in Jeremy's checkin message to r11793:
-	 *
-	 * Fix the SAMR cache so it works across completely insane
-	 * client behaviour (ie.:
-	 * open pipe/open SAMR handle/enumerate 0 - 1024
-	 * close SAMR handle, close pipe.
-	 * open pipe/open SAMR handle/enumerate 1024 - 2048...
-	 * close SAMR handle, close pipe.
-	 * And on ad-nausium. Amazing.... probably object-oriented
-	 * client side programming in action yet again.
-	 * This change should *massively* improve performance when
-	 * enumerating users from an LDAP database.
-	 * Jeremy.
-	 */
-
-	static DISP_INFO *disp_info_list;
 	TALLOC_CTX *mem_ctx;
 	DISP_INFO *dpi;
+
+	/* There are two cases to consider here:
+	   1) The SID is a domain SID and we look for an equality match, or
+	   2) This is an account SID and so we return the DISP_INFO* for our 
+	      domain */
+
+	if ( psid && sid_check_is_in_our_domain( psid ) ) {
+		DEBUG(10,("get_samr_dispinfo_by_sid: Replacing %s with our domain SID\n",
+			sid_str));
+		psid = get_global_sam_sid();
+	}
 
 	for (dpi = disp_info_list; dpi; dpi = dpi->next) {
 		if (sid_equal(psid, &dpi->sid)) {
@@ -283,18 +280,19 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 	   can get a list out of smbd using smbcontrol. There will
 	   be one of these per SID we're authorative for. JRA. */
 
-	mem_ctx = talloc_init("DISP_INFO for domain sid %s",
-			      sid_string_static(psid));
+	mem_ctx = talloc_init("DISP_INFO for domain sid %s", sid_str);
 
-	if ((dpi = TALLOC_ZERO_P(mem_ctx, DISP_INFO)) == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(mem_ctx);
+	if ((dpi = TALLOC_ZERO_P(mem_ctx, DISP_INFO)) == NULL)
 		return NULL;
-	}
 
 	dpi->mem_ctx = mem_ctx;
 
-	sid_copy( &dpi->sid, psid);
+	if (psid) {
+		sid_copy( &dpi->sid, psid);
+		dpi->builtin_domain = sid_check_is_builtin(psid);
+	} else {
+		dpi->builtin_domain = False;
+	}
 
 	DLIST_ADD(disp_info_list, dpi);
 
@@ -325,10 +323,19 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_str));
 	if (psid) {
 		sid_copy( &info->sid, psid);
+		info->builtin_domain = sid_check_is_builtin(psid);
 	} else {
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
+		info->builtin_domain = False;
 	}
 	info->mem_ctx = mem_ctx;
+
+	info->disp_info = get_samr_dispinfo_by_sid(psid, sid_str);
+
+	if (!info->disp_info) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
 
 	return info;
 }
@@ -486,7 +493,7 @@ static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
 {
 	struct samr_displayentry *entry;
 
-	if (sid_check_is_builtin(&info->sid)) {
+	if (info->builtin_domain) {
 		/* No users in builtin. */
 		return 0;
 	}
@@ -510,7 +517,7 @@ static uint32 count_sam_groups(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
 
-	if (sid_check_is_builtin(&info->sid)) {
+	if (info->builtin_domain) {
 		/* No groups in builtin. */
 		return 0;
 	}
@@ -618,11 +625,6 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 		return NT_STATUS_NO_MEMORY;
 	info->acc_granted = acc_granted;
 
-	if (!(info->disp_info = get_samr_dispinfo_by_sid(&q_u->dom_sid.sid))) {
-		TALLOC_FREE(info->mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->domain_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -676,11 +678,6 @@ static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 
 	if (!info)
 		return False;
-
-	if (!info->disp_info) {
-		/* Not a domain */
-		return False;
-	}
 
 	*sid = info->sid;
 	*acc_granted = info->acc_granted;
@@ -914,11 +911,6 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!info->disp_info) {
-		/* not a domain */
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
  	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
 					SA_RIGHT_DOMAIN_ENUM_ACCOUNTS, 
 					"_samr_enum_dom_users"))) {
@@ -927,7 +919,7 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
  	
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
-	if (sid_check_is_builtin(&info->sid)) {
+	if (info->builtin_domain) {
 		/* No users in builtin. */
 		init_samr_r_enum_dom_users(r_u, q_u->start_idx, 0);
 		DEBUG(5,("_samr_enum_dom_users: No users in BUILTIN\n"));
@@ -1052,11 +1044,6 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!info->disp_info) {
-		/* not a domain */
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
 	r_u->status = access_check_samr_function(info->acc_granted,
 						 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
 						 "_samr_enum_dom_groups");
@@ -1065,7 +1052,7 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
-	if (sid_check_is_builtin(&info->sid)) {
+	if (info->builtin_domain) {
 		/* No groups in builtin. */
 		init_samr_r_enum_dom_groups(r_u, q_u->start_idx, 0);
 		DEBUG(5,("_samr_enum_dom_users: No groups in BUILTIN\n"));
@@ -1115,11 +1102,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
-	if (!info->disp_info) {
-		/* not a domain */
-		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	r_u->status = access_check_samr_function(info->acc_granted,
 						 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
@@ -1186,11 +1168,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
-	if (!info->disp_info) {
-		/* not a domain */
-		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	/*
 	 * calculate how many entries we will return.
@@ -2346,11 +2323,6 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 	
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info)) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (!info->disp_info) {
-		/* not a domain */
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
