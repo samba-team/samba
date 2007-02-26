@@ -18,7 +18,7 @@ package Parse::Pidl::Wireshark::NDR;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(field2name @ett %res PrintIdl StripPrefixes);
+@EXPORT_OK = qw(field2name @ett %res PrintIdl StripPrefixes %hf_used RegisterInterfaceHandoff $conformance register_hf_field CheckUsed);
 
 use strict;
 use Parse::Pidl qw(error warning);
@@ -34,11 +34,11 @@ $VERSION = '0.01';
 
 our @ett;
 
-my %hf_used = ();
+our %hf_used = ();
 my %return_types = ();
 my %dissector_used = ();
 
-my $conformance = undef;
+our $conformance = undef;
 
 my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
