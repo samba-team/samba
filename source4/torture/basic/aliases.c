@@ -84,8 +84,7 @@ static bool gen_aliases(struct torture_context *tctx,
 }
 
 /* look for qfsinfo aliases */
-static bool qfsinfo_aliases(struct torture_context *tctx, 
-							struct smbcli_state *cli)
+static bool qfsinfo_aliases(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QFSINFO;
@@ -97,15 +96,15 @@ static bool qfsinfo_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob(NULL, 2);
+	t2.in.params = data_blob_talloc_zero(tctx, 2);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	return gen_aliases(tctx, cli, &t2, 0);
 }
 
 /* look for qfileinfo aliases */
-static bool qfileinfo_aliases(struct torture_context *tctx, 
-							  struct smbcli_state *cli)
+static bool qfileinfo_aliases(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QFILEINFO;
@@ -119,8 +118,9 @@ static bool qfileinfo_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob(NULL, 4);
+	t2.in.params = data_blob_talloc_zero(tctx, 4);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
@@ -143,15 +143,13 @@ static bool qfileinfo_aliases(struct torture_context *tctx,
 
 
 /* look for qpathinfo aliases */
-static bool qpathinfo_aliases(struct torture_context *tctx, 
-							  struct smbcli_state *cli)
+static bool qpathinfo_aliases(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QPATHINFO;
 	const char *fname = "\\qpathinfo_aliases.txt";
 	int fnum;
 
-	ZERO_STRUCT(t2);
 	t2.in.max_param = 2;
 	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 2);
 	t2.in.max_setup = 0;
@@ -159,8 +157,9 @@ static bool qpathinfo_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob_talloc(tctx, NULL, 6);
+	t2.in.params = data_blob_talloc_zero(tctx, 6);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
@@ -186,8 +185,7 @@ static bool qpathinfo_aliases(struct torture_context *tctx,
 
 
 /* look for trans2 findfirst aliases */
-static bool findfirst_aliases(struct torture_context *tctx, 
-							  struct smbcli_state *cli)
+static bool findfirst_aliases(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_FINDFIRST;
@@ -201,8 +199,9 @@ static bool findfirst_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob_talloc(tctx, NULL, 12);
+	t2.in.params = data_blob_talloc_zero(tctx, 12);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
@@ -300,8 +299,7 @@ static bool gen_set_aliases(struct torture_context *tctx,
 
 
 /* look for setfileinfo aliases */
-static bool setfileinfo_aliases(struct torture_context *tctx, 
-								struct smbcli_state *cli)
+static bool setfileinfo_aliases(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_SETFILEINFO;
@@ -315,8 +313,9 @@ static bool setfileinfo_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob(NULL, 6);
+	t2.in.params = data_blob_talloc_zero(tctx, 6);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
@@ -353,8 +352,9 @@ static bool setpathinfo_aliases(struct torture_context *tctx,
 	t2.in.timeout = 0;
 	t2.in.setup_count = 1;
 	t2.in.setup = &setup;
-	t2.in.params = data_blob_talloc(tctx, NULL, 4);
+	t2.in.params = data_blob_talloc_zero(tctx, 4);
 	t2.in.data = data_blob(NULL, 0);
+	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 
@@ -384,19 +384,14 @@ static bool setpathinfo_aliases(struct torture_context *tctx,
 /* look for aliased info levels in trans2 calls */
 struct torture_suite *torture_trans2_aliases(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(), 
-										"ALIASES");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ALIASES");
 
-	torture_suite_add_1smb_test(suite, "QFILEINFO aliases", 
-								qfsinfo_aliases);
+	torture_suite_add_1smb_test(suite, "QFILEINFO aliases", qfsinfo_aliases);
 	torture_suite_add_1smb_test(suite, "QFSINFO aliases", qfileinfo_aliases);
 	torture_suite_add_1smb_test(suite, "QPATHINFO aliases", qpathinfo_aliases);
 	torture_suite_add_1smb_test(suite, "FINDFIRST aliases", findfirst_aliases);
-	torture_suite_add_1smb_test(suite, "setfileinfo_aliases", 
-								setfileinfo_aliases);
-	torture_suite_add_1smb_test(suite, "setpathinfo_aliases", 
-								setpathinfo_aliases);
+	torture_suite_add_1smb_test(suite, "setfileinfo_aliases", setfileinfo_aliases);
+	torture_suite_add_1smb_test(suite, "setpathinfo_aliases", setpathinfo_aliases);
 
 	return suite;
 }
