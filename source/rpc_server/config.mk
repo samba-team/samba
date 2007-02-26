@@ -87,8 +87,8 @@ PUBLIC_DEPENDENCIES = \
 ################################################
 
 ################################################
-# Start MODULE dcerpc_samr
-[MODULE::dcerpc_samr]
+# Start MODULE dcesrv_samr
+[MODULE::dcesrv_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
 PRIVATE_PROTO_HEADER = samr/proto.h
 SUBSYSTEM = dcerpc_server
@@ -99,7 +99,7 @@ PUBLIC_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
 		NDR_SAMR
-# End MODULE dcerpc_samr
+# End MODULE dcesrv_samr
 ################################################
 
 ################################################
