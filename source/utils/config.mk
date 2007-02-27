@@ -1,23 +1,6 @@
 # utils subsystem
 
 #################################
-# Start BINARY ndrdump
-[BINARY::ndrdump]
-INSTALLDIR = BINDIR
-OBJ_FILES = \
-		ndrdump.o
-PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG \
-		LIBSAMBA-UTIL \
-		LIBPOPT \
-		POPT_SAMBA \
-		NDR_TABLE
-MANPAGE = man/ndrdump.1
-# FIXME: ndrdump shouldn't have to depend on RPC...
-# End BINARY ndrdump
-#################################
-
-#################################
 # Start BINARY ntlm_auth
 [BINARY::ntlm_auth]
 INSTALLDIR = BINDIR
