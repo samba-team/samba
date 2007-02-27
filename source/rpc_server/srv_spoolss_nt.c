@@ -8633,7 +8633,7 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
-	WERROR result = WERR_NOMEM;
+	WERROR result = WERR_OK;
 	
 	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
 		return WERR_NOMEM;
