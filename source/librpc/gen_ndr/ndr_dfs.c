@@ -850,9 +850,8 @@ _PUBLIC_ void ndr_print_dfs_Info300(struct ndr_print *ndr, const char *name, con
 
 NTSTATUS ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, const union dfs_Info *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -892,6 +891,7 @@ NTSTATUS ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, const union dfs_
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->info0) {
@@ -964,7 +964,7 @@ NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, union dfs_Info *
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for dfs_Info", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -1739,9 +1739,8 @@ _PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name
 
 NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, const union dfs_EnumInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1:
@@ -1773,6 +1772,7 @@ NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, const union 
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 1:
 				if (r->info1) {
@@ -1831,7 +1831,7 @@ NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, union dfs_En
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for dfs_EnumInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 1: {

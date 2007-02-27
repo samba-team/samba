@@ -18,6 +18,8 @@
 #define KEY_WOW64_64KEY ( 0x00100 )
 #define KEY_WOW64_32KEY ( 0x00200 )
 
+;
+
 #ifndef USE_UINT_ENUMS
 enum winreg_Type {
 	REG_NONE=0,
@@ -32,9 +34,9 @@ enum winreg_Type {
 	REG_FULL_RESOURCE_DESCRIPTOR=9,
 	REG_RESOURCE_REQUIREMENTS_LIST=10,
 	REG_QWORD=11
-};
+}
 #else
-enum winreg_Type { __donnot_use_enum_winreg_Type=0x7FFFFFFF};
+enum winreg_Type { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
 #define REG_NONE ( 0 )
 #define REG_SZ ( 1 )
 #define REG_EXPAND_SZ ( 2 )
@@ -48,6 +50,7 @@ enum winreg_Type { __donnot_use_enum_winreg_Type=0x7FFFFFFF};
 #define REG_RESOURCE_REQUIREMENTS_LIST ( 10 )
 #define REG_QWORD ( 11 )
 #endif
+;
 
 struct winreg_String {
 	uint16_t name_len;/* [value(strlen_m_term(name)*2)] */
@@ -72,13 +75,14 @@ enum winreg_CreateAction {
 	REG_ACTION_NONE=0,
 	REG_CREATED_NEW_KEY=1,
 	REG_OPENED_EXISTING_KEY=2
-};
+}
 #else
-enum winreg_CreateAction { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF};
+enum winreg_CreateAction { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF}
 #define REG_ACTION_NONE ( 0 )
 #define REG_CREATED_NEW_KEY ( 1 )
 #define REG_OPENED_EXISTING_KEY ( 2 )
 #endif
+;
 
 struct winreg_StringBuf {
 	uint16_t length;/* [value(strlen_m_term_null(name)*2)] */

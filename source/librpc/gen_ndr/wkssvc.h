@@ -175,8 +175,12 @@ struct wkssvc_PasswordBuffer {
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 #define WKSSVC_JOIN_FLAGS_JOIN_TYPE ( 0x00000001 )
 
+;
+
 /* bitmap wkssvc_renameflags */
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
+
+;
 
 
 struct wkssvc_NetWkstaGetInfo {

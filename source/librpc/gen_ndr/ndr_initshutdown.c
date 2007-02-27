@@ -41,7 +41,7 @@ _PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const cha
 {
 	ndr_print_struct(ndr, name, "initshutdown_String_sub");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name):r->name_size);
+	ndr_print_uint32(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name):strlen_m_term(r->name));
 	ndr_print_string(ndr, "name", r->name);
 	ndr->depth--;
 }
@@ -92,8 +92,8 @@ _PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *n
 {
 	ndr_print_struct(ndr, name, "initshutdown_String");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name->name) * 2:r->name_len);
-	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name->name) * 2:r->name_size);
+	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name->name) * 2:strlen_m(r->name->name) * 2);
+	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name->name) * 2:strlen_m_term(r->name->name) * 2);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
 	if (r->name) {

@@ -495,7 +495,7 @@ _PUBLIC_ void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		ndr->depth++;
 		ndr_print_uint16(ndr, "length", r->length);
-		ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->size);
+		ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->length);
 		ndr_print_ptr(ndr, "data", r->data);
 		ndr->depth++;
 		if (r->data) {
@@ -569,9 +569,8 @@ _PUBLIC_ void ndr_print_netr_NetworkInfo(struct ndr_print *ndr, const char *name
 
 _PUBLIC_ NTSTATUS ndr_push_netr_LogonLevel(struct ndr_push *ndr, int ndr_flags, const union netr_LogonLevel *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1:
@@ -599,6 +598,7 @@ _PUBLIC_ NTSTATUS ndr_push_netr_LogonLevel(struct ndr_push *ndr, int ndr_flags, 
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 1:
 				if (r->password) {
@@ -647,7 +647,7 @@ _PUBLIC_ NTSTATUS ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int ndr_flags, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_LogonLevel", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 1: {
@@ -1579,9 +1579,8 @@ _PUBLIC_ void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, co
 
 _PUBLIC_ NTSTATUS ndr_push_netr_Validation(struct ndr_push *ndr, int ndr_flags, const union netr_Validation *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 2:
@@ -1609,6 +1608,7 @@ _PUBLIC_ NTSTATUS ndr_push_netr_Validation(struct ndr_push *ndr, int ndr_flags, 
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 2:
 				if (r->sam2) {
@@ -1659,7 +1659,7 @@ _PUBLIC_ NTSTATUS ndr_pull_netr_Validation(struct ndr_pull *ndr, int ndr_flags, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_Validation", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 2: {
@@ -2031,7 +2031,7 @@ _PUBLIC_ void ndr_print_netr_USER_KEY16(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "netr_USER_KEY16");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "length", r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->size);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->length);
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_samr_Password(ndr, "pwd", &r->pwd);
 	ndr->depth--;
@@ -3791,9 +3791,8 @@ _PUBLIC_ void ndr_print_netr_DeltaEnum(struct ndr_print *ndr, const char *name, 
 
 NTSTATUS ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_UNION *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_netr_DeltaEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case NETR_DELTA_DOMAIN:
@@ -3886,6 +3885,7 @@ NTSTATUS ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr_flags, const un
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case NETR_DELTA_DOMAIN:
 				if (r->domain) {
@@ -4032,7 +4032,7 @@ NTSTATUS ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr_flags, union ne
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_DELTA_UNION", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case NETR_DELTA_DOMAIN: {
@@ -4569,9 +4569,8 @@ _PUBLIC_ void ndr_print_netr_DELTA_UNION(struct ndr_print *ndr, const char *name
 
 NTSTATUS ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_ID_UNION *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_netr_DeltaEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case NETR_DELTA_DOMAIN:
@@ -4666,6 +4665,7 @@ NTSTATUS ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int ndr_flags, const
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case NETR_DELTA_DOMAIN:
 			break;
@@ -4777,7 +4777,7 @@ NTSTATUS ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int ndr_flags, union
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_DELTA_ID_UNION", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case NETR_DELTA_DOMAIN: {
@@ -5530,9 +5530,8 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *
 
 NTSTATUS ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_QUERY_INFORMATION *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1:
@@ -5552,6 +5551,7 @@ NTSTATUS ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push *ndr, int ndr_f
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 1:
 				if (r->info1) {
@@ -5589,7 +5589,7 @@ NTSTATUS ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_CONTROL_QUERY_INFORMATION", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 1: {
@@ -5729,9 +5729,8 @@ _PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char 
 
 NTSTATUS ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_DATA_INFORMATION *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case NETLOGON_CONTROL_REDISCOVER:
@@ -5755,6 +5754,7 @@ NTSTATUS ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push *ndr, int ndr_fl
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case NETLOGON_CONTROL_REDISCOVER:
 				if (r->domain) {
@@ -5802,7 +5802,7 @@ NTSTATUS ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull *ndr, int ndr_fl
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_CONTROL_DATA_INFORMATION", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case NETLOGON_CONTROL_REDISCOVER: {
@@ -6618,9 +6618,8 @@ _PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *nam
 
 NTSTATUS ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr_flags, const union netr_DomainQuery *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1:
@@ -6636,6 +6635,7 @@ NTSTATUS ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr_flags, const un
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 1:
 				if (r->query1) {
@@ -6665,7 +6665,7 @@ NTSTATUS ndr_pull_netr_DomainQuery(struct ndr_pull *ndr, int ndr_flags, union ne
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_DomainQuery", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 1: {
@@ -6979,9 +6979,8 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 
 NTSTATUS ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_flags, const union netr_DomainInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1:
@@ -6997,6 +6996,7 @@ NTSTATUS ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_flags, const uni
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 1:
 				if (r->info1) {
@@ -7026,7 +7026,7 @@ NTSTATUS ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, union net
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for netr_DomainInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 1: {

@@ -144,9 +144,9 @@ enum lsaPolicyInfo {
 	LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 	LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
 	LSA_POLICY_INFO_DNS=12
-};
+}
 #else
-enum lsaPolicyInfo { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF};
+enum lsaPolicyInfo { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF}
 #define LSA_POLICY_INFO_AUDIT_LOG ( 1 )
 #define LSA_POLICY_INFO_AUDIT_EVENTS ( 2 )
 #define LSA_POLICY_INFO_DOMAIN ( 3 )
@@ -160,6 +160,7 @@ enum lsaPolicyInfo { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF};
 #define LSA_POLICY_INFO_AUDIT_FULL_QUERY ( 11 )
 #define LSA_POLICY_INFO_DNS ( 12 )
 #endif
+;
 
 union lsa_PolicyInformation {
 	struct lsa_AuditLogInfo audit_log;/* [case(LSA_POLICY_INFO_AUDIT_LOG)] */
@@ -202,9 +203,9 @@ enum lsa_SidType {
 	SID_NAME_INVALID=7,
 	SID_NAME_UNKNOWN=8,
 	SID_NAME_COMPUTER=9
-};
+}
 #else
-enum lsa_SidType { __donnot_use_enum_lsa_SidType=0x7FFFFFFF};
+enum lsa_SidType { __donnot_use_enum_lsa_SidType=0x7FFFFFFF}
 #define SID_NAME_USE_NONE ( 0 )
 #define SID_NAME_USER ( 1 )
 #define SID_NAME_DOM_GRP ( 2 )
@@ -216,6 +217,7 @@ enum lsa_SidType { __donnot_use_enum_lsa_SidType=0x7FFFFFFF};
 #define SID_NAME_UNKNOWN ( 8 )
 #define SID_NAME_COMPUTER ( 9 )
 #endif
+;
 
 struct lsa_TranslatedSid {
 	enum lsa_SidType sid_type;
@@ -279,9 +281,9 @@ enum lsa_TrustDomInfoEnum {
 	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO=8,
 	LSA_TRUSTED_DOMAIN_INFO_11=11,
 	LSA_TRUSTED_DOMAIN_INFO_INFO_ALL=12
-};
+}
 #else
-enum lsa_TrustDomInfoEnum { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF};
+enum lsa_TrustDomInfoEnum { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF}
 #define LSA_TRUSTED_DOMAIN_INFO_NAME ( 1 )
 #define LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO ( 2 )
 #define LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET ( 3 )
@@ -293,6 +295,7 @@ enum lsa_TrustDomInfoEnum { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF};
 #define LSA_TRUSTED_DOMAIN_INFO_11 ( 11 )
 #define LSA_TRUSTED_DOMAIN_INFO_INFO_ALL ( 12 )
 #endif
+;
 
 struct lsa_TrustDomainInfoName {
 	struct lsa_StringLarge netbios_name;
@@ -406,12 +409,13 @@ struct lsa_DomainInfoEfs {
 enum lsa_DomainInfoEnum {
 	LSA_DOMAIN_INFO_POLICY_EFS=2,
 	LSA_DOMAIN_INFO_POLICY_KERBEROS=3
-};
+}
 #else
-enum lsa_DomainInfoEnum { __donnot_use_enum_lsa_DomainInfoEnum=0x7FFFFFFF};
+enum lsa_DomainInfoEnum { __donnot_use_enum_lsa_DomainInfoEnum=0x7FFFFFFF}
 #define LSA_DOMAIN_INFO_POLICY_EFS ( 2 )
 #define LSA_DOMAIN_INFO_POLICY_KERBEROS ( 3 )
 #endif
+;
 
 union lsa_DomainInformationPolicy {
 	struct lsa_DomainInfoEfs efs_info;/* [case(LSA_DOMAIN_INFO_POLICY_EFS)] */

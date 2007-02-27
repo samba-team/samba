@@ -799,5 +799,6 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob
 
 uint32_t ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
 {
+	if (!data) return ret;
 	return ret + data->length;
 }

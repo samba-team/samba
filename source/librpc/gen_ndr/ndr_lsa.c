@@ -64,8 +64,8 @@ _PUBLIC_ void ndr_print_lsa_String(struct ndr_print *ndr, const char *name, cons
 {
 	ndr_print_struct(ndr, name, "lsa_String");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->size);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):2 * strlen_m(r->string));
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):2 * strlen_m(r->string));
 	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
 	if (r->string) {
@@ -135,8 +135,8 @@ _PUBLIC_ void ndr_print_lsa_StringLarge(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "lsa_StringLarge");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * (strlen_m(r->string) + 1):r->size);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->string):2 * strlen_m(r->string));
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * (strlen_m(r->string) + 1):2 * (strlen_m(r->string) + 1));
 	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
 	if (r->string) {
@@ -299,8 +299,8 @@ _PUBLIC_ void ndr_print_lsa_AsciiString(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "lsa_AsciiString");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->string):r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->string):r->size);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->string):strlen_m(r->string));
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->string):strlen_m(r->string));
 	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
 	if (r->string) {
@@ -1149,9 +1149,8 @@ _PUBLIC_ void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *nam
 
 NTSTATUS ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, const union lsa_PolicyInformation *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case LSA_POLICY_INFO_AUDIT_LOG:
@@ -1207,6 +1206,7 @@ NTSTATUS ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, con
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case LSA_POLICY_INFO_AUDIT_LOG:
 			break;
@@ -1265,7 +1265,7 @@ NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uni
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for lsa_PolicyInformation", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case LSA_POLICY_INFO_AUDIT_LOG: {
@@ -2068,8 +2068,8 @@ _PUBLIC_ void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *nam
 NTSTATUS ndr_push_lsa_PrivilegeSet(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivilegeSet *r)
 {
 	uint32_t cntr_set_0;
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
@@ -2883,9 +2883,8 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoInfoAll(struct ndr_print *ndr, const 
 
 NTSTATUS ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, int ndr_flags, const union lsa_TrustedDomainInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case LSA_TRUSTED_DOMAIN_INFO_NAME:
@@ -2929,6 +2928,7 @@ NTSTATUS ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, int ndr_flags, con
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case LSA_TRUSTED_DOMAIN_INFO_NAME:
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoName(ndr, NDR_BUFFERS, &r->name));
@@ -2980,7 +2980,7 @@ NTSTATUS ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, int ndr_flags, uni
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for lsa_TrustedDomainInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case LSA_TRUSTED_DOMAIN_INFO_NAME: {
@@ -3497,9 +3497,8 @@ _PUBLIC_ void ndr_print_lsa_DomainInfoEfs(struct ndr_print *ndr, const char *nam
 
 NTSTATUS ndr_push_lsa_DomainInformationPolicy(struct ndr_push *ndr, int ndr_flags, const union lsa_DomainInformationPolicy *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case LSA_DOMAIN_INFO_POLICY_EFS:
@@ -3515,6 +3514,7 @@ NTSTATUS ndr_push_lsa_DomainInformationPolicy(struct ndr_push *ndr, int ndr_flag
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case LSA_DOMAIN_INFO_POLICY_EFS:
 				NDR_CHECK(ndr_push_lsa_DomainInfoEfs(ndr, NDR_BUFFERS, &r->efs_info));
@@ -3538,7 +3538,7 @@ NTSTATUS ndr_pull_lsa_DomainInformationPolicy(struct ndr_pull *ndr, int ndr_flag
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for lsa_DomainInformationPolicy", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case LSA_DOMAIN_INFO_POLICY_EFS: {

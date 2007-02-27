@@ -13,6 +13,8 @@
 #define EVENTLOG_FORWARDS_READ ( 0x0004 )
 #define EVENTLOG_BACKWARDS_READ ( 0x0008 )
 
+;
+
 /* bitmap eventlogEventTypes */
 #define EVENTLOG_SUCCESS ( 0x0000 )
 #define EVENTLOG_ERROR_TYPE ( 0x0001 )
@@ -20,6 +22,8 @@
 #define EVENTLOG_INFORMATION_TYPE ( 0x0004 )
 #define EVENTLOG_AUDIT_SUCCESS ( 0x0008 )
 #define EVENTLOG_AUDIT_FAILURE ( 0x0010 )
+
+;
 
 struct eventlog_OpenUnknown0 {
 	uint16_t unknown0;

@@ -102,6 +102,8 @@ struct netr_LMSessionKey {
 #define NETLOGON_RESOURCE_GROUPS ( 0x0200 )
 #define NETLOGON_PROFILE_PATH_RETURNED ( 0x0400 )
 
+;
+
 struct netr_SamBaseInfo {
 	NTTIME last_logon;
 	NTTIME last_logoff;
@@ -488,9 +490,9 @@ enum netr_DeltaEnum {
 	NETR_DELTA_DELETE_GROUP2=20,
 	NETR_DELTA_DELETE_USER2=21,
 	NETR_DELTA_MODIFY_COUNT=22
-};
+}
 #else
-enum netr_DeltaEnum { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF};
+enum netr_DeltaEnum { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF}
 #define NETR_DELTA_DOMAIN ( 1 )
 #define NETR_DELTA_GROUP ( 2 )
 #define NETR_DELTA_DELETE_GROUP ( 3 )
@@ -514,6 +516,7 @@ enum netr_DeltaEnum { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF};
 #define NETR_DELTA_DELETE_USER2 ( 21 )
 #define NETR_DELTA_MODIFY_COUNT ( 22 )
 #endif
+;
 
 union netr_DELTA_UNION {
 	struct netr_DELTA_DOMAIN *domain;/* [unique,case(NETR_DELTA_DOMAIN)] */
@@ -598,14 +601,15 @@ enum netr_LogonControlCode {
 	NETLOGON_CONTROL_TC_QUERY=6,
 	NETLOGON_CONTROL_TRANSPORT_NOTIFY=7,
 	NETLOGON_CONTROL_SET_DBFLAG=65534
-};
+}
 #else
-enum netr_LogonControlCode { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF};
+enum netr_LogonControlCode { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF}
 #define NETLOGON_CONTROL_REDISCOVER ( 5 )
 #define NETLOGON_CONTROL_TC_QUERY ( 6 )
 #define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 7 )
 #define NETLOGON_CONTROL_SET_DBFLAG ( 65534 )
 #endif
+;
 
 union netr_CONTROL_DATA_INFORMATION {
 	const char *domain;/* [unique,charset(UTF16),case(NETLOGON_CONTROL_REDISCOVER)] */
@@ -688,20 +692,23 @@ struct netr_CryptPassword {
 #define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
 #define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
 
+;
+
 #ifndef USE_UINT_ENUMS
 enum netr_TrustType {
 	NETR_TRUST_TYPE_DOWNLEVEL=1,
 	NETR_TRUST_TYPE_UPLEVEL=2,
 	NETR_TRUST_TYPE_MIT=3,
 	NETR_TRUST_TYPE_DCE=4
-};
+}
 #else
-enum netr_TrustType { __donnot_use_enum_netr_TrustType=0x7FFFFFFF};
+enum netr_TrustType { __donnot_use_enum_netr_TrustType=0x7FFFFFFF}
 #define NETR_TRUST_TYPE_DOWNLEVEL ( 1 )
 #define NETR_TRUST_TYPE_UPLEVEL ( 2 )
 #define NETR_TRUST_TYPE_MIT ( 3 )
 #define NETR_TRUST_TYPE_DCE ( 4 )
 #endif
+;
 
 /* bitmap netr_TrustAttributes */
 #define NETR_TRUST_ATTRIBUTE_NON_TRANSITIVE ( 0x00000001 )
@@ -711,6 +718,8 @@ enum netr_TrustType { __donnot_use_enum_netr_TrustType=0x7FFFFFFF};
 #define NETR_TRUST_ATTRIBUTE_CROSS_ORGANIZATION ( 0x00000010 )
 #define NETR_TRUST_ATTRIBUTE_WITHIN_FOREST ( 0x00000020 )
 #define NETR_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL ( 0x00000040 )
+
+;
 
 struct netr_DomainTrust {
 	const char *netbios_name;/* [unique,charset(UTF16)] */
