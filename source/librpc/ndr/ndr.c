@@ -205,16 +205,13 @@ static void ndr_print_string_helper(struct ndr_print *ndr, const char *format, .
 	int i;
 
 	for (i=0;i<ndr->depth;i++) {
-		ndr->private_data = talloc_asprintf_append(
-			(char *)ndr->private_data, "    ");
+		ndr->private_data = talloc_asprintf_append(ndr->private_data, "    ");
 	}
 
 	va_start(ap, format);
-	ndr->private_data = talloc_vasprintf_append(
-		(char *)ndr->private_data, format, ap);
+	ndr->private_data = talloc_vasprintf_append(ndr->private_data, format, ap);
 	va_end(ap);
-	ndr->private_data = talloc_asprintf_append(
-		(char *)ndr->private_data, "\n");
+	ndr->private_data = talloc_asprintf_append(ndr->private_data, "\n");
 }
 
 /*
@@ -701,8 +698,8 @@ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, vo
 	}
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
-	if (ndr->offset != ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	if (ndr->offset < ndr->data_size) {
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
 	}
 	return status;
 }
@@ -747,6 +744,8 @@ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *
 	}
 
 	*blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob->data);
+	talloc_free(ndr);
 
 	return NT_STATUS_OK;
 }
@@ -770,6 +769,8 @@ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	}
 
 	*blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob->data);
+	talloc_free(ndr);
 
 	return NT_STATUS_OK;
 }

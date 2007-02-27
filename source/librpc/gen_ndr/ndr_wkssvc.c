@@ -753,9 +753,8 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1033(struct ndr_print *ndr, const cha
 
 NTSTATUS ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 100:
@@ -812,6 +811,7 @@ NTSTATUS ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int ndr_flags, const
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 100:
 				if (r->info100) {
@@ -913,7 +913,7 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaInfo(struct ndr_pull *ndr, int ndr_flags, union
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for wkssvc_NetWkstaInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 100: {
@@ -1674,9 +1674,8 @@ _PUBLIC_ void ndr_print_USER_INFO_1_CONTAINER(struct ndr_print *ndr, const char 
 
 NTSTATUS ndr_push_WKS_USER_ENUM_UNION(struct ndr_push *ndr, int ndr_flags, const union WKS_USER_ENUM_UNION *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -1692,6 +1691,7 @@ NTSTATUS ndr_push_WKS_USER_ENUM_UNION(struct ndr_push *ndr, int ndr_flags, const
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->user0) {
@@ -1722,7 +1722,7 @@ NTSTATUS ndr_pull_WKS_USER_ENUM_UNION(struct ndr_pull *ndr, int ndr_flags, union
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for WKS_USER_ENUM_UNION", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -1996,9 +1996,8 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr0(struct ndr_print *ndr, cons
 
 NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaTransportCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -2011,6 +2010,7 @@ NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *ndr, int ndr_flag
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -2035,7 +2035,7 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaTransportCtr(struct ndr_pull *ndr, int ndr_flag
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for wkssvc_NetWkstaTransportCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
