@@ -340,9 +340,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr1(struct ndr_print *ndr, const char 
 
 NTSTATUS ndr_push_srvsvc_NetCharDevInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetCharDevInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -359,6 +358,7 @@ NTSTATUS ndr_push_srvsvc_NetCharDevInfo(struct ndr_push *ndr, int ndr_flags, con
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->info0) {
@@ -390,7 +390,7 @@ NTSTATUS ndr_pull_srvsvc_NetCharDevInfo(struct ndr_pull *ndr, int ndr_flags, uni
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetCharDevInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -478,9 +478,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevInfo(struct ndr_print *ndr, const char 
 
 NTSTATUS ndr_push_srvsvc_NetCharDevCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetCharDevCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -497,6 +496,7 @@ NTSTATUS ndr_push_srvsvc_NetCharDevCtr(struct ndr_push *ndr, int ndr_flags, cons
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -528,7 +528,7 @@ NTSTATUS ndr_pull_srvsvc_NetCharDevCtr(struct ndr_pull *ndr, int ndr_flags, unio
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetCharDevCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -952,9 +952,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr1(struct ndr_print *ndr, const char
 
 NTSTATUS ndr_push_srvsvc_NetCharDevQInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetCharDevQInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -971,6 +970,7 @@ NTSTATUS ndr_push_srvsvc_NetCharDevQInfo(struct ndr_push *ndr, int ndr_flags, co
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->info0) {
@@ -1002,7 +1002,7 @@ NTSTATUS ndr_pull_srvsvc_NetCharDevQInfo(struct ndr_pull *ndr, int ndr_flags, un
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetCharDevQInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -1090,9 +1090,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQInfo(struct ndr_print *ndr, const char
 
 NTSTATUS ndr_push_srvsvc_NetCharDevQCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetCharDevQCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -1109,6 +1108,7 @@ NTSTATUS ndr_push_srvsvc_NetCharDevQCtr(struct ndr_push *ndr, int ndr_flags, con
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -1140,7 +1140,7 @@ NTSTATUS ndr_pull_srvsvc_NetCharDevQCtr(struct ndr_pull *ndr, int ndr_flags, uni
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetCharDevQCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -1534,9 +1534,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnCtr1(struct ndr_print *ndr, const char *na
 
 NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetConnCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -1553,6 +1552,7 @@ NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, const u
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -1584,7 +1584,7 @@ NTSTATUS ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int ndr_flags, union s
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetConnCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -1972,9 +1972,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *na
 
 NTSTATUS ndr_push_srvsvc_NetFileInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetFileInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 2:
@@ -1991,6 +1990,7 @@ NTSTATUS ndr_push_srvsvc_NetFileInfo(struct ndr_push *ndr, int ndr_flags, const 
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 2:
 				if (r->info2) {
@@ -2022,7 +2022,7 @@ NTSTATUS ndr_pull_srvsvc_NetFileInfo(struct ndr_pull *ndr, int ndr_flags, union 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetFileInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 2: {
@@ -2110,9 +2110,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileInfo(struct ndr_print *ndr, const char *na
 
 NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetFileCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 2:
@@ -2129,6 +2128,7 @@ NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, const u
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 2:
 				if (r->ctr2) {
@@ -2160,7 +2160,7 @@ NTSTATUS ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int ndr_flags, union s
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetFileCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 2: {
@@ -3256,9 +3256,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *
 
 NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetSessCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -3287,6 +3286,7 @@ NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, const u
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -3339,7 +3339,7 @@ NTSTATUS ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int ndr_flags, union s
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetSessCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -5259,9 +5259,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1501(struct ndr_print *ndr, const char
 
 NTSTATUS ndr_push_srvsvc_NetShareInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetShareInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -5310,6 +5309,7 @@ NTSTATUS ndr_push_srvsvc_NetShareInfo(struct ndr_push *ndr, int ndr_flags, const
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->info0) {
@@ -5397,7 +5397,7 @@ NTSTATUS ndr_pull_srvsvc_NetShareInfo(struct ndr_pull *ndr, int ndr_flags, union
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetShareInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -5709,9 +5709,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareInfo(struct ndr_print *ndr, const char *n
 
 NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetShareCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -5760,6 +5759,7 @@ NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, const 
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -5847,7 +5847,7 @@ NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, union 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetShareCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -9010,9 +9010,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1556(struct ndr_print *ndr, const char 
 
 NTSTATUS ndr_push_srvsvc_NetSrvInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetSrvInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 100:
@@ -9257,6 +9256,7 @@ NTSTATUS ndr_push_srvsvc_NetSrvInfo(struct ndr_push *ndr, int ndr_flags, const u
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 100:
 				if (r->info100) {
@@ -9687,7 +9687,7 @@ NTSTATUS ndr_pull_srvsvc_NetSrvInfo(struct ndr_pull *ndr, int ndr_flags, union s
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetSrvInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 100: {
@@ -12554,9 +12554,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr3(struct ndr_print *ndr, const cha
 
 NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetTransportCtr *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -12581,6 +12580,7 @@ NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, co
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				if (r->ctr0) {
@@ -12626,7 +12626,7 @@ NTSTATUS ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, int ndr_flags, un
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetTransportCtr", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {
@@ -12833,9 +12833,8 @@ _PUBLIC_ void ndr_print_srvsvc_NetRemoteTODInfo(struct ndr_print *ndr, const cha
 
 NTSTATUS ndr_push_srvsvc_NetTransportInfo(struct ndr_push *ndr, int ndr_flags, const union srvsvc_NetTransportInfo *r)
 {
-	int level;
-	level = ndr_push_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 0:
@@ -12859,6 +12858,7 @@ NTSTATUS ndr_push_srvsvc_NetTransportInfo(struct ndr_push *ndr, int ndr_flags, c
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case 0:
 				NDR_CHECK(ndr_push_srvsvc_NetTransportInfo0(ndr, NDR_BUFFERS, &r->info0));
@@ -12891,7 +12891,7 @@ NTSTATUS ndr_pull_srvsvc_NetTransportInfo(struct ndr_pull *ndr, int ndr_flags, u
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for srvsvc_NetTransportInfo", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
 		}
 		switch (level) {
 			case 0: {

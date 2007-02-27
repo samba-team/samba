@@ -125,8 +125,8 @@ _PUBLIC_ void ndr_print_winreg_String(struct ndr_print *ndr, const char *name, c
 {
 	ndr_print_struct(ndr, name, "winreg_String");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:r->name_len);
-	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:r->name_size);
+	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:strlen_m_term(r->name) * 2);
+	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:strlen_m_term(r->name) * 2);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
 	if (r->name) {
@@ -332,7 +332,7 @@ _PUBLIC_ void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name
 {
 	ndr_print_struct(ndr, name, "winreg_StringBuf");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term_null(r->name) * 2:r->length);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term_null(r->name) * 2:strlen_m_term_null(r->name) * 2);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
@@ -403,7 +403,7 @@ _PUBLIC_ void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *nam
 {
 	ndr_print_struct(ndr, name, "winreg_ValNameBuf");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:r->length);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name) * 2:strlen_m_term(r->name) * 2);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
