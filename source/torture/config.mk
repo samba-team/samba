@@ -155,7 +155,8 @@ OBJ_FILES = \
 		rpc/bench.o \
 		rpc/samba3rpc.o \
 		rpc/rpc.o \
-		rpc/async_bind.o
+		rpc/async_bind.o \
+		rpc/handles.o
 PUBLIC_DEPENDENCIES = \
 		NDR_TABLE RPC_NDR_UNIXINFO dcerpc_samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
