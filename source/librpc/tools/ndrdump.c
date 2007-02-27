@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
