@@ -607,6 +607,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	const char *attrs[] = {"memberOf", NULL};
 	size_t num_groups = 0;
 	DOM_SID *group_sids = NULL;
+	char *escaped_dn;
 	int i;
 
 	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
@@ -618,9 +619,16 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry_extended_dn(ads, &res, user_dn, attrs, 
+	if (!(escaped_dn = escape_ldap_string_alloc(user_dn))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	rc = ads_search_retry_extended_dn(ads, &res, escaped_dn, attrs, 
 					  ADS_EXTENDED_DN_HEX_STRING);
 	
+	SAFE_FREE(escaped_dn);
+
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("lookup_usergroups_memberof ads_search member=%s: %s\n", 
 			user_dn, ads_errstr(rc)));
