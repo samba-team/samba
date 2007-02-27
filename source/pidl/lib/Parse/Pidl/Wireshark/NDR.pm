@@ -18,7 +18,7 @@ package Parse::Pidl::Wireshark::NDR;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(field2name @ett %res PrintIdl StripPrefixes %hf_used RegisterInterfaceHandoff $conformance register_hf_field CheckUsed ProcessImport ProcessInclude find_type DumpEttList DumpEttDeclaration DumpHfList DumpHfDeclaration DumpFunctionTable);
+@EXPORT_OK = qw(field2name @ett %res PrintIdl StripPrefixes %hf_used RegisterInterfaceHandoff $conformance register_hf_field CheckUsed ProcessImport ProcessInclude find_type DumpEttList DumpEttDeclaration DumpHfList DumpHfDeclaration DumpFunctionTable register_type register_ett);
 
 use strict;
 use Parse::Pidl qw(error warning);
