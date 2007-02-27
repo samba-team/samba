@@ -46,8 +46,6 @@
 #define DISP_INFO_CACHE_TIMEOUT 10
 
 typedef struct disp_info {
-	struct disp_info *next, *prev;
-	TALLOC_CTX *mem_ctx;
 	DOM_SID sid; /* identify which domain this is. */
 	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
@@ -64,8 +62,6 @@ typedef struct disp_info {
 
 /* We keep a static list of these by SID as modern clients close down
    all resources between each request in a complete enumeration. */
-
-static DISP_INFO *disp_info_list;
 
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
@@ -254,49 +250,59 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
  Fetch or create a dispinfo struct.
 ********************************************************************/
 
-static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
+static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 {
-	TALLOC_CTX *mem_ctx;
-	DISP_INFO *dpi;
+	/*
+	 * We do a static cache for DISP_INFO's here. Explanation can be found
+	 * in Jeremy's checkin message to r11793:
+	 *
+	 * Fix the SAMR cache so it works across completely insane
+	 * client behaviour (ie.:
+	 * open pipe/open SAMR handle/enumerate 0 - 1024
+	 * close SAMR handle, close pipe.
+	 * open pipe/open SAMR handle/enumerate 1024 - 2048...
+	 * close SAMR handle, close pipe.
+	 * And on ad-nausium. Amazing.... probably object-oriented
+	 * client side programming in action yet again.
+	 * This change should *massively* improve performance when
+	 * enumerating users from an LDAP database.
+	 * Jeremy.
+	 *
+	 * "Our" and the builtin domain are the only ones where we ever
+	 * enumerate stuff, so just cache 2 entries.
+	 */
+
+	static struct disp_info builtin_dispinfo;
+	static struct disp_info domain_dispinfo;
 
 	/* There are two cases to consider here:
 	   1) The SID is a domain SID and we look for an equality match, or
 	   2) This is an account SID and so we return the DISP_INFO* for our 
 	      domain */
 
-	if ( psid && sid_check_is_in_our_domain( psid ) ) {
-		DEBUG(10,("get_samr_dispinfo_by_sid: Replacing %s with our domain SID\n",
-			sid_str));
-		psid = get_global_sam_sid();
-	}
-
-	for (dpi = disp_info_list; dpi; dpi = dpi->next) {
-		if (sid_equal(psid, &dpi->sid)) {
-			return dpi;
-		}
-	}
-
-	/* This struct is never free'd - I'm using talloc so we
-	   can get a list out of smbd using smbcontrol. There will
-	   be one of these per SID we're authorative for. JRA. */
-
-	mem_ctx = talloc_init("DISP_INFO for domain sid %s", sid_str);
-
-	if ((dpi = TALLOC_ZERO_P(mem_ctx, DISP_INFO)) == NULL)
+	if (psid == NULL) {
 		return NULL;
-
-	dpi->mem_ctx = mem_ctx;
-
-	if (psid) {
-		sid_copy( &dpi->sid, psid);
-		dpi->builtin_domain = sid_check_is_builtin(psid);
-	} else {
-		dpi->builtin_domain = False;
 	}
 
-	DLIST_ADD(disp_info_list, dpi);
+	if (sid_check_is_builtin(psid) || sid_check_is_in_builtin(psid)) {
+		/*
+		 * Necessary only once, but it does not really hurt.
+		 */
+		sid_copy(&builtin_dispinfo.sid, &global_sid_Builtin);
 
-	return dpi;
+		return &builtin_dispinfo;
+	}
+		
+	if (sid_check_is_domain(psid) || sid_check_is_in_our_domain(psid)) {
+		/*
+		 * Necessary only once, but it does not really hurt.
+		 */
+		sid_copy(&domain_dispinfo.sid, get_global_sam_sid());
+
+		return &domain_dispinfo;
+	}
+
+	return NULL;
 }
 
 /*******************************************************************
@@ -330,12 +336,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	}
 	info->mem_ctx = mem_ctx;
 
-	info->disp_info = get_samr_dispinfo_by_sid(psid, sid_str);
-
-	if (!info->disp_info) {
-		talloc_destroy(mem_ctx);
-		return NULL;
-	}
+	info->disp_info = get_samr_dispinfo_by_sid(psid);
 
 	return info;
 }
