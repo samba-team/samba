@@ -5,12 +5,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 25;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Wireshark::NDR qw(field2name %res PrintIdl StripPrefixes %hf_used RegisterInterfaceHandoff $conformance register_hf_field CheckUsed);
+use Parse::Pidl::Wireshark::NDR qw(field2name %res PrintIdl StripPrefixes %hf_used RegisterInterfaceHandoff $conformance register_hf_field CheckUsed ProcessImport ProcessInclude find_type DumpEttList DumpEttDeclaration DumpHfList DumpHfDeclaration DumpFunctionTable);
 
 is("Access Mask", field2name("access_mask"));
 is("Accessmask", field2name("AccessMask"));
@@ -70,3 +70,68 @@ test_warnings("", sub {
 %hf_used = ( );
 test_warnings("hf field `hf_bla' not used\n", sub { 
 		CheckUsed({ header_fields => { foo => { INDEX => "hf_bla" }}})});
+
+$res{hdr} = "";
+ProcessImport("security", "bla");
+is($res{hdr}, "#include \"packet-dcerpc-bla.h\"\n\n");
+
+$res{hdr} = "";
+ProcessImport("\"bla.idl\"", "\"foo.idl\"");
+is($res{hdr}, "#include \"packet-dcerpc-bla.h\"\n" . 
+              "#include \"packet-dcerpc-foo.h\"\n\n");
+
+$res{hdr} = "";
+ProcessInclude("foo.h", "bla.h", "bar.h");
+is($res{hdr}, "#include \"foo.h\"\n" . 
+	          "#include \"bla.h\"\n" . 
+			  "#include \"bar.h\"\n\n");
+	
+$conformance = {types => { bla => "brainslug" } };
+is("brainslug", find_type("bla"));
+
+is(DumpEttList("ett_t1", "ett_bla"), 
+	"\tstatic gint *ett[] = {\n" . 
+	"\t\t&ett_t1,\n" .
+	"\t\t&ett_bla,\n" .
+	"\t};\n");
+
+is(DumpEttList(), "\tstatic gint *ett[] = {\n\t};\n");
+is(DumpEttList("bla"), "\tstatic gint *ett[] = {\n\t\t&bla,\n\t};\n");
+
+is(DumpEttDeclaration("void", "zoid"), 
+	"\n/* Ett declarations */\n" . 
+	"static gint void = -1;\n" .
+	"static gint zoid = -1;\n" .
+	"\n");
+
+is(DumpEttDeclaration(), "\n/* Ett declarations */\n\n");
+
+$conformance = {
+	header_fields => {
+		hf_bla => { INDEX => "hf_bla", NAME => "Bla", FILTER => "bla.field", FT_TYPE => "FT_UINT32", BASE_TYPE => "BASE_DEC", VALSSTRING => "NULL", MASK => 0xFF, BLURB => "NULL" } 
+	} 
+};
+
+is(DumpHfList(), "\tstatic hf_register_info hf[] = {
+	{ &hf_bla, 
+	  { \"Bla\", \"bla.field\", FT_UINT32, BASE_DEC, NULL, 255, \"NULL\", HFILL }},
+	};
+");
+
+is(DumpHfDeclaration(), "
+/* Header field declarations */
+static gint hf_bla = -1;
+
+");
+
+is(DumpFunctionTable({
+			NAME => "someif",
+			FUNCTIONS => [ { NAME => "fn1", OPNUM => 3 }, { NAME => "someif_fn2", OPNUM => 2 } ] }),
+'static dcerpc_sub_dissector someif_dissectors[] = {
+	{ 3, "fn1",
+	   someif_dissect_fn1_request, someif_dissect_fn1_response},
+	{ 2, "fn2",
+	   someif_dissect_fn2_request, someif_dissect_fn2_response},
+	{ 0, NULL, NULL, NULL }
+};
+');
