@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 45;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -94,3 +94,72 @@ test_warnings("nofile:1: invalid FT_TYPE `BLA'\n",
 
 test_warnings("nofile:1: invalid BASE_TYPE `BLOE'\n",
 	sub { parse_conf("TYPE winreg_String dissect_myminregstring FT_UINT32 BLOE 0 0 2\n"); });
+
+is_deeply(parse_conf("TFS hf_bla \"True string\" \"False String\"\n"),
+		{ tfs => { hf_bla => {
+					TRUE_STRING => "\"True string\"",
+				   FALSE_STRING => "\"False String\"" } } });
+
+test_errors("nofile:1: incomplete TFS command\n",
+	sub { parse_conf("TFS hf_bla \"Trues\""); } );
+
+test_errors("nofile:1: incomplete PARAM_VALUE command\n",
+	sub { parse_conf("PARAM_VALUE\n"); });
+
+is_deeply(parse_conf("PARAM_VALUE Life 42\n"),
+	{ dissectorparams => {
+			Life => {
+				DISSECTOR => "Life",
+				POS => { FILE => "nofile", LINE => 1 },
+				PARAM => 42,
+				USED => 0
+			}
+		}
+	});
+
+is_deeply(parse_conf("STRIP_PREFIX bla_\n"),
+	{ strip_prefixes => [ "bla_" ] });
+
+is_deeply(parse_conf("STRIP_PREFIX bla_\nSTRIP_PREFIX bloe\n"),
+	{ strip_prefixes => [ "bla_", "bloe" ] });
+
+is_deeply(parse_conf("PROTOCOL atsvc \"Scheduling jobs on remote machines\" \"at\" \"atsvc\"\n"), 
+	{ protocols => {
+			atsvc => {
+				LONGNAME => "\"Scheduling jobs on remote machines\"",
+				SHORTNAME => "\"at\"",
+				FILTERNAME => "\"atsvc\""
+			}
+		}
+	}
+);
+
+is_deeply(parse_conf("IMPORT bla\n"), {
+		imports => {
+			bla => {
+				NAME => "bla",
+				DATA => "",
+				USED => 0,
+				POS => { FILE => "nofile", LINE => 1 }
+			}
+		}
+	}
+);
+
+is_deeply(parse_conf("IMPORT bla fn1 fn2 fn3\n"), {
+		imports => {
+			bla => {
+				NAME => "bla",
+				DATA => "fn1 fn2 fn3",
+				USED => 0,
+				POS => { FILE => "nofile", LINE => 1 }
+			}
+		}
+	}
+);
+
+test_errors("nofile:1: no dissectorname specified\n",
+	sub { parse_conf("IMPORT\n"); } );
+
+test_errors("nofile:1: incomplete HF_FIELD command\n",
+	sub { parse_conf("HF_FIELD hf_idx\n"); });
