@@ -96,44 +96,44 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			goto out;
 		}
 
-		for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
-			if (strequal(entry_princ_s, valid_princ_formats[i])) {
-				number_matched_principals++;
-				p_packet->length = ticket->length;
-				p_packet->data = (char *)ticket->data;
-				*pp_tkt = NULL;
+		for (i = 0; i < ARRAY_SIZE(valid_princ_formats); i++) {
 
-				ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, p_packet,
-								  	      kt_entry.principal, keytab,
-									      NULL, pp_tkt, keyblock);
+			if (!strequal(entry_princ_s, valid_princ_formats[i])) {
+				continue;
+			}
 
-				if (ret) {
-					DEBUG(10,("ads_keytab_verify_ticket: "
-						"krb5_rd_req_return_keyblock_from_keytab(%s) failed: %s\n",
-						entry_princ_s, error_message(ret)));
+			number_matched_principals++;
+			p_packet->length = ticket->length;
+			p_packet->data = (char *)ticket->data;
+			*pp_tkt = NULL;
 
-					/* workaround for MIT: 
-					 * as krb5_ktfile_get_entry will
-					 * explicitly close the
-					 * krb5_keytab as soon as
-					 * krb5_rd_req has sucessfully
-					 * decrypted the ticket but the
-					 * ticket is not valid yet (due
-					 * to clockskew) there is no
-					 * point in querying more
-					 * keytab entries - Guenther */
-						
-					if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
-					    ret == KRB5KRB_AP_ERR_TKT_EXPIRED) {
-						break;
-					}
-				} else {
-					DEBUG(3,("ads_keytab_verify_ticket: "
-						"krb5_rd_req_return_keyblock_from_keytab succeeded for principal %s\n",
-						entry_princ_s));
-					auth_ok = True;
+			ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, p_packet,
+							  	      kt_entry.principal, keytab,
+								      NULL, pp_tkt, keyblock);
+
+			if (ret) {
+				DEBUG(10,("ads_keytab_verify_ticket: "
+					"krb5_rd_req_return_keyblock_from_keytab(%s) failed: %s\n",
+					entry_princ_s, error_message(ret)));
+
+				/* workaround for MIT: 
+				* as krb5_ktfile_get_entry will explicitly
+				* close the krb5_keytab as soon as krb5_rd_req
+				* has sucessfully decrypted the ticket but the
+				* ticket is not valid yet (due to clockskew)
+				* there is no point in querying more keytab
+				* entries - Guenther */
+					
+				if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
+				    ret == KRB5KRB_AP_ERR_TKT_EXPIRED) {
 					break;
 				}
+			} else {
+				DEBUG(3,("ads_keytab_verify_ticket: "
+					"krb5_rd_req_return_keyblock_from_keytab succeeded for principal %s\n",
+					entry_princ_s));
+				auth_ok = True;
+				break;
 			}
 		}
 
@@ -150,7 +150,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 
   out:
 	
-	for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(valid_princ_formats); i++) {
 		SAFE_FREE(valid_princ_formats[i]);
 	}
 	
