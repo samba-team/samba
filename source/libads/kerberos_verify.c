@@ -88,7 +88,6 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		goto out;
 	}
   
-	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		while (!auth_ok && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
 			ret = smb_krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
 			if (ret) {
@@ -146,7 +145,6 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			ZERO_STRUCT(kt_entry);
 		}
 		krb5_kt_end_seq_get(context, keytab, &kt_cursor);
-	}
 
 	ZERO_STRUCT(kt_cursor);
 
