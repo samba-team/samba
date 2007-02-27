@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -335,7 +335,11 @@ sub find_largest_alignment($)
 sub align_type($)
 {
 	sub align_type($);
-	my $e = shift;
+	my ($e) = @_;
+
+	if (ref($e) eq "HASH" and $e->{TYPE} eq "SCALAR") {
+		return $scalar_alignment->{$e->{NAME}};
+	}
 
 	unless (hasType($e)) {
 	    # it must be an external type - all we can do is guess 
@@ -343,16 +347,16 @@ sub align_type($)
 	    return 4;
 	}
 
-	my $dt = getType($e)->{DATA};
+	my $dt = getType($e);
 
-	if ($dt->{TYPE} eq "ENUM") {
+	if ($dt->{TYPE} eq "TYPEDEF") {
+		return align_type($dt->{DATA});
+	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
 		return align_type(Parse::Pidl::Typelist::bitmap_type_fn($dt));
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
 		return find_largest_alignment($dt);
-	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return $scalar_alignment->{$dt->{NAME}};
 	}
 
 	die("Unknown data type type $dt->{TYPE}");

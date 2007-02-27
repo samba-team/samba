@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 38;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -22,15 +22,23 @@ is("uint32_t", mapScalarType("uint32"));
 is("void", mapScalarType("void"));
 is("uint64_t", mapScalarType("hyper"));
 
-my $x = { TYPE => "ENUM", NAME => "foo" };
+my $x = { TYPE => "ENUM", NAME => "foo", EXTRADATA => 1 };
 addType($x);
-is($x, getType("foo"));
+is_deeply($x, getType("foo"));
 is(undef, getType("bloebla"));
+is_deeply(getType({ TYPE => "STRUCT" }), { TYPE => "STRUCT" });
+is_deeply(getType({ TYPE => "ENUM", NAME => "foo" }), $x);
+is_deeply(getType("uint16"), {
+		NAME => "uint16",
+		TYPE => "TYPEDEF",
+		DATA => { NAME => "uint16", TYPE => "SCALAR" }});
 
 is(0, typeIs("someUnknownType", "ENUM"));
 
 is(1, hasType("foo"));
 is(0, hasType("nonexistant"));
+is(0, hasType({TYPE => "ENUM", NAME => "someUnknownType"}));
+is(1, hasType({TYPE => "ENUM", NAME => "foo"}));
 
 is(1, is_scalar("uint32"));
 is(0, is_scalar("nonexistant"));
