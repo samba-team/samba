@@ -247,7 +247,11 @@ exit $?
 ) 9>$SMBD_TEST_FIFO
 totalfailed=$?
 
-kill `cat $PIDDIR/smbd.pid`
+smbd_PID=`cat $PIDDIR/smbd.pid`
+waitforpid $smbd_PID 20 || {
+    echo "smbd process $1 took more than 20 seconds to exit, killing"
+    kill -9 $smbd_PID
+}
 
 if [ "$TEST_LDAP"x = "yesx" ]; then
     if test -z "$FEDORA_DS_PREFIX"; then
