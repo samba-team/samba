@@ -52,6 +52,9 @@ done
 
 touch librpc/gen_ndr/ndr_dcerpc.h
 
+echo Generating librpc/gen_ndr/tables.c
+./librpc/tables.pl --output=librpc/gen_ndr/tables.c librpc/gen_ndr/*.h > librpc/gen_ndr/tables.c
+
 cd ${oldpwd}
 
 exit 0

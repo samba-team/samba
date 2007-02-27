@@ -213,9 +213,11 @@ ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
+
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
-	     rpc_client/ndr.o
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
+
+RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
@@ -326,7 +328,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_srvsvc.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o \
-		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
+		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -718,6 +720,11 @@ TALLOCTORT_OBJ = lib/talloc/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 REPLACETORT_OBJ = lib/replace/test/testsuite.o lib/replace/test/os2_delete.o \
 		$(LIBREPLACE_OBJ)
 
+NDRDUMP_OBJ = librpc/tools/ndrdump.o \
+			  $(PARAM_OBJ) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
+			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(POPT_OBJ) $(SECRETS_OBJ)
+
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
@@ -733,8 +740,8 @@ DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
 
-PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
-	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
+PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ) \
+			$(LIBNDR_GEN_OBJ) $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) @SMBWRAP_OBJS@ \
 	    $(LIB_WITH_PROTO_OBJ) \
@@ -1180,6 +1187,11 @@ bin/locktest2@EXEEXT@: proto_exists $(LOCKTEST2_OBJ) bin/.dummy
 bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
+		@POPTLIBS@ @LDAP_LIBS@
 
 bin/debug2html@EXEEXT@: proto_exists $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
