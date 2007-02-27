@@ -98,7 +98,9 @@ sub addType($)
 sub getType($)
 {
 	my $t = shift;
+	return ($t) if (ref($t) eq "HASH" and not defined($t->{NAME}));
 	return undef if not hasType($t);
+	return $types{$t->{NAME}} if (ref($t) eq "HASH");
 	return $types{$t};
 }
 
@@ -113,6 +115,11 @@ sub typeIs($$)
 sub hasType($)
 {
 	my $t = shift;
+	if (ref($t) eq "HASH") {
+		return 1 if (defined($types{$t->{NAME}}) and 
+			$types{$t->{NAME}}->{TYPE} eq $t->{TYPE});
+		return 0;
+	}
 	return 1 if defined($types{$t});
 	return 0;
 }

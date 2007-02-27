@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 17;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement);
+use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement align_type);
 
 # Case 1
 
@@ -203,3 +203,11 @@ $e = {
 
 $ne = ParseElement($e, undef);
 is($ne->{REPRESENTATION_TYPE}, "uint8");
+
+is(align_type("uint32"), 4);
+is(align_type("uint16"), 2);
+is(align_type("uint8"), 1);
+is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
+			    ELEMENTS => [ { TYPE => "uint16" } ] }), 4);
+is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
+			    ELEMENTS => [ { TYPE => "uint8" } ] }), 4);
