@@ -408,12 +408,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	DEBUG(3,("ads_keytab_flush: Using default keytab: %s\n", (char *) &keytab_name));
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: krb5_kt_resolve failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
