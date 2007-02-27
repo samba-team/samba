@@ -224,9 +224,6 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 */
 int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num);
 
-
-/* Parse controls from the format used on the command line and in ejs */
-
 #define LDB_SEQ_GLOBAL_SEQUENCE    0x01
 #define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02
 
