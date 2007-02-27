@@ -16,6 +16,23 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET EXT_NSL \
 # End SUBSYSTEM LIBNDR
 ################################################
 
+#################################
+# Start BINARY ndrdump
+[BINARY::ndrdump]
+INSTALLDIR = BINDIR
+OBJ_FILES = \
+		tools/ndrdump.o
+PRIVATE_DEPENDENCIES = \
+		LIBSAMBA-CONFIG \
+		LIBSAMBA-UTIL \
+		LIBPOPT \
+		POPT_SAMBA \
+		NDR_TABLE
+MANPAGE = tools/ndrdump.1
+# FIXME: ndrdump shouldn't have to depend on RPC...
+# End BINARY ndrdump
+#################################
+
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
 [LIBRARY::NDR_COMPRESSION]
