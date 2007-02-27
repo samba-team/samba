@@ -2902,10 +2902,11 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 }
 
 /**********************************************************************
- Converts a name to a fully qalified domain name.
+ Converts a name to a fully qualified domain name.
+ Returns True if lookup succeeded, False if not (then fqdn is set to name)
 ***********************************************************************/
                                                                                                                                                    
-void name_to_fqdn(fstring fqdn, const char *name)
+BOOL name_to_fqdn(fstring fqdn, const char *name)
 {
 	struct hostent *hp = sys_gethostbyname(name);
 
@@ -2927,7 +2928,7 @@ void name_to_fqdn(fstring fqdn, const char *name)
 		if (full && (StrCaseCmp(full, "localhost.localdomain") == 0)) {
 			DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
 			DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
-			DEBUGADD(1, ("    to Kerberos authentication probelms as localhost.localdomain\n"));
+			DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
 			DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
 			full = hp->h_name;
 		}
@@ -2938,9 +2939,11 @@ void name_to_fqdn(fstring fqdn, const char *name)
 
 		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
 		fstrcpy(fqdn, full);
+		return True;
 	} else {
 		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
 		fstrcpy(fqdn, name);
+		return False;
 	}
 }
 
