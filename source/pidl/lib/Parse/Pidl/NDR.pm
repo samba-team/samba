@@ -349,7 +349,7 @@ sub align_type($)
 
 	my $dt = getType($e);
 
-	if ($dt->{TYPE} eq "TYPEDEF") {
+	if ($dt->{TYPE} eq "TYPEDEF" or $dt->{TYPE} eq "DECLARE") {
 		return align_type($dt->{DATA});
 	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
