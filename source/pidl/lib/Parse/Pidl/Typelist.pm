@@ -132,6 +132,7 @@ sub hasType($)
 
 sub is_scalar($)
 {
+	sub is_scalar($);
 	my $type = shift;
 
 	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
