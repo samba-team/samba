@@ -30,7 +30,6 @@ STLD=${PROG_AR}
 STLD_FLAGS="-rcs"
 BLDSHARED="false"
 LD="${CC}"
-LDFLAGS=""
 SHLD="${CC}"
 SHLD_FLAGS="-shared"
 SHLIBEXT="so"
@@ -45,7 +44,7 @@ case "$host_os" in
 		BLDSHARED="true"
 		SHLD_FLAGS="-shared -Wl,-Bsymbolic"
 		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
 		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
 		;;
@@ -57,7 +56,7 @@ case "$host_os" in
 			PICFLAG="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
-				LDFLAGS="-Wl,-E"
+				LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
 		else
 			PICFLAG="-KPIC"
@@ -74,13 +73,13 @@ case "$host_os" in
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC -DPIC"
 		;;
 	*openbsd*)
 		BLDSHARED="true"
-		LDFLAGS="-Wl,-Bdynamic"
+		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC"
 		;;
@@ -98,7 +97,7 @@ case "$host_os" in
 	*aix*)
 		BLDSHARED="true"
 		SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
-		LDFLAGS="-Wl,-brtl,-bexpall,-bbigtoc"
+		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
 		# as AIX code is always position independent...
 		PICFLAG="-O2"
 		;;
@@ -115,10 +114,10 @@ case "$host_os" in
 		fi
 		if test "$host_cpu" = "ia64"; then
 			SHLIBEXT="so"
-			LDFLAGS="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
+			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
 			SHLIBEXT="sl"
-			LDFLAGS="-Wl,-E,+b/usr/local/lib:/usr/lib"
+			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib:/usr/lib"
 		fi
 		;;
 	*osf*)
