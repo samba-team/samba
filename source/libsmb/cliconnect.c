@@ -521,8 +521,6 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
  Send a extended security session setup blob, returning a reply blob.
 ****************************************************************************/
 
-#define MAX_SESSION_SECURITY_BLOB	4000
-
 /* The following is calculated from :
  * (smb_size-4) = 35
  * (smb_wcnt * 2) = 24 (smb_wcnt == 12 in cli_session_setup_blob_send() )
