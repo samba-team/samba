@@ -330,6 +330,8 @@ static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
 	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
+	memset(data, 0xff, 40); /* Set all sizes/times to no change. */
+
 	SIVAL(data,40,uid);
 	SIVAL(data,48,gid);
 	SIVAL(data,84,mode);
