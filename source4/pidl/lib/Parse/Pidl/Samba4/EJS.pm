@@ -426,14 +426,7 @@ sub EjsPushScalar($$$$$)
 					$var = get_pointer_to($var);
 			}
 
-		my $t;
-		if (ref($e->{TYPE}) eq "HASH") {
-			$t = "$e->{TYPE}->{TYPE}_$e->{TYPE}->{NAME}";
-		} else {
-			$t = $e->{TYPE};
-		}
-
-		pidl "NDR_CHECK(ejs_push_$t(ejs, v, $name, $var));";
+		pidl "NDR_CHECK(".TypeFunctionName("ejs_push", $e->{TYPE})."(ejs, v, $name, $var));";
 	}
 }
 
@@ -619,21 +612,22 @@ sub EjsTypePushFunction($$)
 	my ($d, $name) = @_;
 	return if (has_property($d, "noejs"));
 
-	if ($d->{TYPE} eq "TYPEDEF") {
-		EjsTypePushFunction($d->{DATA}, $name);
-		return;
+	my $var = undef;
+	my $dt = $d;
+	if ($dt->{TYPE} eq "TYPEDEF") {
+		$dt = $dt->{DATA};
 	}
-
-	if ($d->{TYPE} eq "STRUCT") {
-		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)");
-	} elsif ($d->{TYPE} eq "UNION") {
-		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)");
-	} elsif ($d->{TYPE} eq "ENUM") {
-		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)");
-	} elsif ($d->{TYPE} eq "BITMAP") {
-		my($type_decl) = Parse::Pidl::Typelist::mapTypeName($d->{BASE_TYPE});
-		fn_declare($d, "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)");
+	if ($dt->{TYPE} eq "STRUCT") {
+		$var = "const struct $name *r";
+	} elsif ($dt->{TYPE} eq "UNION") {
+		$var = "const union $name *r";
+	} elsif ($dt->{TYPE} eq "ENUM") {
+		$var = "const enum $name *r";
+	} elsif ($dt->{TYPE} eq "BITMAP") {
+		my($type_decl) = Parse::Pidl::Typelist::mapTypeName($dt->{BASE_TYPE});
+		$var = "const $type_decl *r";
 	}
+	fn_declare($d, "NTSTATUS ".TypeFunctionName("ejs_push", $d) . "(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $var)");
 	pidl "{";
 	indent;
 	EjsTypePush($d, "r");
@@ -644,6 +638,7 @@ sub EjsTypePushFunction($$)
 
 sub EjsTypePush($$)
 {
+	sub EjsTypePush($$);
 	my ($d, $varname) = @_;
 
 	if ($d->{TYPE} eq 'STRUCT') {
@@ -654,6 +649,8 @@ sub EjsTypePush($$)
 		EjsEnumPush($d, $varname);
 	} elsif ($d->{TYPE} eq 'BITMAP') {
 		EjsBitmapPush($d, $varname);
+	} elsif ($d->{TYPE} eq 'TYPEDEF') {
+		EjsTypePush($d->{DATA}, $varname);
 	} else {
 		warn "Unhandled push $varname of type $d->{TYPE}";
 	}
@@ -677,8 +674,7 @@ sub EjsPushFunction($)
 	}
 
 	if ($d->{RETURN_TYPE}) {
-		my $t = $d->{RETURN_TYPE};
-		pidl "NDR_CHECK(ejs_push_$t(ejs, v, \"result\", &r->out.result));";
+		pidl "NDR_CHECK(".TypeFunctionName("ejs_push", $d->{RETURN_TYPE})."(ejs, v, \"result\", &r->out.result));";
 	}
 
 	pidl "return NT_STATUS_OK;";

@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -499,6 +499,7 @@ sub ParseType($$)
 	my ($d, $pointer_default) = @_;
 
 	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "UNION") {
+		return $d if (not defined($d->{ELEMENTS}));
 		CheckPointerTypes($d, $pointer_default);
 	}
 
