@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 50;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -34,14 +34,27 @@ is_deeply(getType("uint16"), {
 		DATA => { NAME => "uint16", TYPE => "SCALAR" }});
 
 is(0, typeIs("someUnknownType", "ENUM"));
+is(0, typeIs("foo", "ENUM"));
+addType({NAME => "mytypedef", TYPE => "TYPEDEF", DATA => { TYPE => "ENUM" }});
+is(1, typeIs("mytypedef", "ENUM"));
+is(0, typeIs("mytypedef", "BITMAP"));
+is(1, typeIs({ TYPE => "ENUM"}, "ENUM"));
+is(0, typeIs({ TYPE => "BITMAP"}, "ENUM"));
+is(1, typeIs("uint32", "SCALAR"));
+is(0, typeIs("uint32", "ENUM"));
 
 is(1, hasType("foo"));
 is(0, hasType("nonexistant"));
 is(0, hasType({TYPE => "ENUM", NAME => "someUnknownType"}));
 is(1, hasType({TYPE => "ENUM", NAME => "foo"}));
+is(1, hasType({TYPE => "ENUM"}));
+is(1, hasType({TYPE => "STRUCT"}));
 
 is(1, is_scalar("uint32"));
 is(0, is_scalar("nonexistant"));
+is(1, is_scalar({TYPE => "ENUM"}));
+is(0, is_scalar({TYPE => "STRUCT"}));
+is(1, is_scalar({TYPE => "TYPEDEF", DATA => {TYPE => "ENUM" }}));
 
 is(1, scalar_is_reference("string"));
 is(0, scalar_is_reference("uint32"));
