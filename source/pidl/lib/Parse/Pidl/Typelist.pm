@@ -107,8 +107,13 @@ sub getType($)
 sub typeIs($$)
 {
 	my ($t,$tt) = @_;
-
-	return 1 if (hasType($t) and getType($t)->{DATA}->{TYPE} eq $tt);
+	
+	if (ref($t) eq "HASH") {
+		return 1 if ($t->{TYPE} eq $tt);
+		return 0;
+	}
+	return 1 if (hasType($t) and getType($t)->{TYPE} eq "TYPEDEF" and 
+		         getType($t)->{DATA}->{TYPE} eq $tt);
 	return 0;
 }
 
@@ -116,6 +121,7 @@ sub hasType($)
 {
 	my $t = shift;
 	if (ref($t) eq "HASH") {
+		return 1 if (not defined($t->{NAME}));
 		return 1 if (defined($types{$t->{NAME}}) and 
 			$types{$t->{NAME}}->{TYPE} eq $t->{TYPE});
 		return 0;
@@ -128,10 +134,12 @@ sub is_scalar($)
 {
 	my $type = shift;
 
-	return 0 unless(hasType($type));
+	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
 
-	if (my $dt = getType($type)->{DATA}->{TYPE}) {
-		return 1 if ($dt eq "SCALAR" or $dt eq "ENUM" or $dt eq "BITMAP");
+	if (my $dt = getType($type)) {
+		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF");
+		return 1 if ($dt->{TYPE} eq "SCALAR" or $dt->{TYPE} eq "ENUM" or 
+			         $dt->{TYPE} eq "BITMAP");
 	}
 
 	return 0;
