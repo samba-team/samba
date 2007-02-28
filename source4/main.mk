@@ -194,6 +194,11 @@ ctags:
 pidl/Makefile: pidl/Makefile.PL
 	cd pidl && $(PERL) Makefile.PL 
 
+testcov-html:: pidl-testcov
+
+pidl-testcov: pidl/Makefile
+	cd pidl && cover -test
+
 installpidl: pidl/Makefile
 	$(MAKE) -C pidl install
 
