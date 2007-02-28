@@ -28,151 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static void add_member(const char *domain, const char *user,
-	   char **pp_members, size_t *p_num_members)
-{
-	fstring name;
-
-	fill_domain_username(name, domain, user, True);
-	safe_strcat(name, ",", sizeof(name)-1);
-	string_append(pp_members, name);
-	*p_num_members += 1;
-}
-
-/**********************************************************************
- Add member users resulting from sid. Expand if it is a domain group.
-**********************************************************************/
-
-static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_num_members)
-{
-	DOM_SID dom_sid;
-	uint32 rid;
-	struct winbindd_domain *domain;
-	size_t i;
-
-	char *domain_name = NULL;
-	char *name = NULL;
-	enum SID_NAME_USE type;
-
-	uint32 num_names;
-	DOM_SID *sid_mem;
-	char **names;
-	uint32 *types;
-
-	NTSTATUS result;
-
-	TALLOC_CTX *mem_ctx = talloc_init("add_expanded_sid");
-
-	if (mem_ctx == NULL) {
-		DEBUG(1, ("talloc_init failed\n"));
-		return;
-	}
-
-	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
-
-	domain = find_lookup_domain_from_sid(sid);
-
-	if (domain == NULL) {
-		DEBUG(3, ("Could not find domain for sid %s\n",
-			  sid_string_static(sid)));
-		goto done;
-	}
-
-	result = domain->methods->sid_to_name(domain, mem_ctx, sid,
-					      &domain_name, &name, &type);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3, ("sid_to_name failed for sid %s\n",
-			  sid_string_static(sid)));
-		goto done;
-	}
-
-	DEBUG(10, ("Found name %s, type %d\n", name, type));
-
-	if (type == SID_NAME_USER) {
-		add_member(domain_name, name, pp_members, p_num_members);
-		goto done;
-	}
-
-	if (type != SID_NAME_DOM_GRP) {
-		DEBUG(10, ("Alias member %s neither user nor group, ignore\n",
-			   name));
-		goto done;
-	}
-
-	/* Expand the domain group, this must be done via the target domain */
-
-	domain = find_domain_from_sid(sid);
-
-	if (domain == NULL) {
-		DEBUG(3, ("Could not find domain from SID %s\n",
-			  sid_string_static(sid)));
-		goto done;
-	}
-
-	result = domain->methods->lookup_groupmem(domain, mem_ctx,
-						  sid, &num_names,
-						  &sid_mem, &names,
-						  &types);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("Could not lookup group members for %s: %s\n",
-			   name, nt_errstr(result)));
-		goto done;
-	}
-
-	for (i=0; i<num_names; i++) {
-		DEBUG(10, ("Adding group member SID %s\n",
-			   sid_string_static(&sid_mem[i])));
-
-		if (types[i] != SID_NAME_USER) {
-			DEBUG(1, ("Hmmm. Member %s of group %s is no user. "
-				  "Ignoring.\n", names[i], name));
-			continue;
-		}
-
-		add_member(domain->name, names[i], pp_members, p_num_members);
-	}
-
- done:
-	talloc_destroy(mem_ctx);
-	return;
-}
-
-BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
-			     DOM_SID *group_sid, 
-			     size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
-{
-	DOM_SID *members;
-	size_t i, num_members;
-
-	*num_gr_mem = 0;
-	*gr_mem = NULL;
-	*gr_mem_len = 0;
-
-	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(group_sid, &members,
-					       &num_members)))
-		return True;
-
-	for (i=0; i<num_members; i++) {
-		add_expanded_sid(&members[i], gr_mem, num_gr_mem);
-	}
-
-	SAFE_FREE(members);
-
-	if (*gr_mem != NULL) {
-		size_t len;
-
-		/* We have at least one member, strip off the last "," */
-		len = strlen(*gr_mem);
-		(*gr_mem)[len-1] = '\0';
-		*gr_mem_len = len;
-	}
-
-	return True;
-}
-
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
@@ -241,7 +96,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	DEBUG(10, ("Finding name %s\n", name));
 
@@ -262,7 +117,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	const char *dom, *nam;
 
@@ -284,6 +139,18 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	*name = talloc_strdup(mem_ctx, nam);
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum lsa_SidType **types)
+{
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /* Lookup user information from a rid or username. */
@@ -353,15 +220,21 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	const DOM_SID **sids;
 	struct lsa_dom_info *lsa_domains;
 	struct lsa_name_info *lsa_names;
+	TALLOC_CTX *tmp_ctx;
 
 	if (!sid_check_is_in_our_domain(group_sid)) {
 		/* There's no groups, only aliases in BUILTIN */
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	result = pdb_enum_group_members(mem_ctx, group_sid, &rids,
+	if (!(tmp_ctx = talloc_init("lookup_groupmem"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result = pdb_enum_group_members(tmp_ctx, group_sid, &rids,
 					&num_members);
 	if (!NT_STATUS_IS_OK(result)) {
+		TALLOC_FREE(tmp_ctx);
 		return result;
 	}
 
@@ -370,29 +243,39 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		*sid_mem = NULL;
 		*names = NULL;
 		*name_types = NULL;
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
 	*sid_mem = TALLOC_ARRAY(mem_ctx, DOM_SID, num_members);
 	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
 	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
-	sids = TALLOC_ARRAY(mem_ctx, const DOM_SID *, num_members);
+	sids = TALLOC_ARRAY(tmp_ctx, const DOM_SID *, num_members);
 
 	if (((*sid_mem) == NULL) || ((*names) == NULL) ||
 	    ((*name_types) == NULL) || (sids == NULL)) {
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * Prepare an array of sid pointers for the lookup_sids calling
+	 * convention.
+	 */
+
 	for (i=0; i<num_members; i++) {
 		DOM_SID *sid = &((*sid_mem)[i]);
-		sid_copy(sid, &domain->sid);
-		sid_append_rid(sid, rids[i]);
+		if (!sid_compose(sid, &domain->sid, rids[i])) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		sids[i] = sid;
 	}
 
-	result = lookup_sids(mem_ctx, num_members, sids, 1,
+	result = lookup_sids(tmp_ctx, num_members, sids, 1,
 			     &lsa_domains, &lsa_names);
 	if (!NT_STATUS_IS_OK(result)) {
+		TALLOC_FREE(tmp_ctx);
 		return result;
 	}
 
@@ -403,8 +286,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				  sid_type_lookup(lsa_names[i].type)));
 			continue;
 		}
-		(*names)[i] = talloc_steal((*names),
-					   lsa_names[i].name);
+		if (!((*names)[i] = talloc_strdup((*names),
+						  lsa_names[i].name))) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		(*name_types)[i] = lsa_names[i].type;
 
 		num_mapped += 1;
@@ -412,6 +299,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	*num_names = num_mapped;
 
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -497,15 +385,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	NTSTATUS nt_status;
 	struct trustdom_info **domains;
 	int i;
+	TALLOC_CTX *tmp_ctx;
 
 	*num_domains = 0;
 	*names = NULL;
 	*alt_names = NULL;
 	*dom_sids = NULL;
 
-	nt_status = secrets_trusted_domains(mem_ctx, num_domains,
+	if (!(tmp_ctx = talloc_init("trusted_domains"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = secrets_trusted_domains(tmp_ctx, num_domains,
 					    &domains);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
@@ -514,15 +408,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
 
 	if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<*num_domains; i++) {
 		(*alt_names)[i] = NULL;
-		(*names)[i] = talloc_steal((*names), domains[i]->name);
+		if (!((*names)[i] = talloc_strdup((*names),
+						  domains[i]->name))) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		sid_copy(&(*dom_sids)[i], &domains[i]->sid);
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -534,6 +434,7 @@ struct winbindd_methods passdb_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,

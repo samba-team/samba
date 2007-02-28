@@ -65,6 +65,10 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
 #define NTLMSSP_NEGOTIATE_56               0x80000000
 
+#define NTLMSSP_FEATURE_SESSION_KEY        0x00000001
+#define NTLMSSP_FEATURE_SIGN               0x00000002
+#define NTLMSSP_FEATURE_SEAL               0x00000004
+
 #define NTLMSSP_NAME_TYPE_SERVER      0x01
 #define NTLMSSP_NAME_TYPE_DOMAIN      0x02
 #define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
@@ -85,7 +89,8 @@ typedef struct ntlmssp_state
 	char *user;
 	char *domain;
 	char *workstation;
-	char *password;
+	unsigned char *nt_hash;
+	unsigned char *lm_hash;
 	char *server_domain;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */

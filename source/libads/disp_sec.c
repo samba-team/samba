@@ -90,13 +90,13 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
 		  sec_ace->type,
 		  sec_ace->flags,
 		  sec_ace->size,
-		  sec_ace->info.mask);			
+		  sec_ace->access_mask);			
 	} else {
 		printf("------- ACE (type: 0x%02x, flags: 0x%02x, size: 0x%02x, mask: 0x%x, object flags: 0x%x)\n", 
 		  sec_ace->type,
 		  sec_ace->flags,
 		  sec_ace->size,
-		  sec_ace->info.mask,
+		  sec_ace->access_mask,
 		  sec_ace->obj_flags);
 	}
 	
@@ -117,7 +117,7 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
 	printf("access SID:  %s\naccess type: %s\n", 
                sid_string_static(&sec_ace->trustee), access_type);
 
-	ads_disp_perms(sec_ace->info.mask);
+	ads_disp_perms(sec_ace->access_mask);
 }
 
 /* display ACL */
@@ -143,15 +143,15 @@ void ads_disp_sd(SEC_DESC *sd)
                sd->revision,
                sd->type);
 	printf("owner SID: %s\n", sid_string_static(sd->owner_sid));
-	printf("group SID: %s\n", sid_string_static(sd->grp_sid));
+	printf("group SID: %s\n", sid_string_static(sd->group_sid));
 
 	ads_disp_acl(sd->sacl, "system");
 	for (i = 0; i < sd->sacl->num_aces; i ++)
-		ads_disp_ace(&sd->sacl->ace[i]);
+		ads_disp_ace(&sd->sacl->aces[i]);
 	
 	ads_disp_acl(sd->dacl, "user");
 	for (i = 0; i < sd->dacl->num_aces; i ++)
-		ads_disp_ace(&sd->dacl->ace[i]);
+		ads_disp_ace(&sd->dacl->aces[i]);
 
 	printf("-------------- End Of Security Descriptor\n");
 }

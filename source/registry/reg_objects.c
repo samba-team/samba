@@ -181,7 +181,8 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 	
 	if ( val->data_p && val->size ) 
 	{
-		if ( !(copy->data_p = memdup( val->data_p, val->size )) ) {
+		if ( !(copy->data_p = (uint8 *)memdup( val->data_p,
+						       val->size )) ) {
 			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
 				val->size));
 			SAFE_FREE( copy );
@@ -307,7 +308,8 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 	
 	fstrcpy( ctr->values[ctr->num_values]->valuename, name );
 	ctr->values[ctr->num_values]->type = type;
-	ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr, data_p, size );
+	ctr->values[ctr->num_values]->data_p = (uint8 *)TALLOC_MEMDUP(
+		ctr, data_p, size );
 	ctr->values[ctr->num_values]->size = size;
 	ctr->num_values++;
 
@@ -346,7 +348,8 @@ int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
 	
 		fstrcpy( ctr->values[ctr->num_values]->valuename, val->valuename );
 		ctr->values[ctr->num_values]->type = val->type;
-		ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr, val->data_p, val->size );
+		ctr->values[ctr->num_values]->data_p = (uint8 *)TALLOC_MEMDUP(
+			ctr, val->data_p, val->size );
 		ctr->values[ctr->num_values]->size = val->size;
 		ctr->num_values++;
 	}

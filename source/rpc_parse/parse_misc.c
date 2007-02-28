@@ -115,6 +115,7 @@ static BOOL smb_io_utime(const char *desc, UTIME *t, prs_struct *ps, int depth)
 
 BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 {
+	uint32 low, high;
 	if (nttime == NULL)
 		return False;
 
@@ -124,10 +125,19 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("low ", ps, depth, &nttime->low)) /* low part */
+	if (MARSHALLING(ps)) {
+		low = *nttime & 0xFFFFFFFF;
+		high = *nttime >> 32;
+	}
+	
+	if(!prs_uint32("low ", ps, depth, &low)) /* low part */
 		return False;
-	if(!prs_uint32("high", ps, depth, &nttime->high)) /* high part */
+	if(!prs_uint32("high", ps, depth, &high)) /* high part */
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		*nttime = (((uint64_t)high << 32) + low);
+	}
 
 	return True;
 }
@@ -288,10 +298,10 @@ BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a struct uuid
+ Reads or writes a struct GUID
 ********************************************************************/
 
-BOOL smb_io_uuid(const char *desc, struct uuid *uuid, 
+BOOL smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth)
 {
 	if (uuid == NULL)
@@ -518,7 +528,7 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 
 size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
-	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
+	str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_rpc_blob: talloc fail\n");
 	return len;
@@ -617,7 +627,8 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 
 	if (buf != NULL) {
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
+		str->buffer = (uint16 *)TALLOC_ZERO(get_talloc_ctx(),
+						    str->buf_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_regval_buffer: talloc fail\n");
 		memcpy(str->buffer, buf, str->buf_len);
@@ -723,7 +734,8 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 
 	/* store the string */
 	if(str_len != 0) {
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->str_max_len);
+		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(),
+						   str->str_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, str_len);
@@ -1690,15 +1702,9 @@ BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 	if(UNMARSHALLING(ps))
 		ZERO_STRUCTP(pol);
 	
-	if (!prs_uint32("data1", ps, depth, &pol->data1))
+	if (!prs_uint32("handle_type", ps, depth, &pol->handle_type))
 		return False;
-	if (!prs_uint32("data2", ps, depth, &pol->data2))
-		return False;
-	if (!prs_uint16("data3", ps, depth, &pol->data3))
-		return False;
-	if (!prs_uint16("data4", ps, depth, &pol->data4))
-		return False;
-	if(!prs_uint8s (False, "data5", ps, depth, pol->data5, sizeof(pol->data5)))
+	if (!smb_io_uuid("uuid", (struct GUID*)&pol->uuid, ps, depth))
 		return False;
 
 	return True;
@@ -1760,10 +1766,25 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 /*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
-BOOL prs_uint64(const char *name, prs_struct *ps, int depth, UINT64_S *data64)
+BOOL prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 {
-	return prs_uint32(name, ps, depth+1, &data64->low) &&
-		prs_uint32(name, ps, depth+1, &data64->high);
+	if (UNMARSHALLING(ps)) {
+		uint32 high, low;
+
+		if (!prs_uint32(name, ps, depth+1, &low))
+			return False;
+
+		if (!prs_uint32(name, ps, depth+1, &high))
+			return False;
+
+		*data64 = ((uint64_t)high << 32) + low;
+
+		return True;
+	} else {
+		uint32 high = (*data64) >> 32, low = (*data64) & 0xFFFFFFFF;
+		return prs_uint32(name, ps, depth+1, &low) && 
+			   prs_uint32(name, ps, depth+1, &high);
+	}
 }
 
 /*******************************************************************

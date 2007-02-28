@@ -84,6 +84,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	struct hostent *hostent;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
+	char *sitename;
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
 
@@ -92,24 +93,28 @@ static int net_lookup_ldap(int argc, const char **argv)
 	else
 		domain = opt_target_workgroup;
 
+	sitename = sitename_fetch(domain);
+
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
 		d_fprintf(stderr, "net_lookup_ldap: talloc_inti() failed!\n");
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	status = ads_dns_query_dcs( ctx, domain, sitename, &dcs, &numdcs );
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-
+		SAFE_FREE(sitename);
 		return 0;
 	}
 
      	DEBUG(9, ("Looking up DC for domain %s\n", domain));
 	if (!get_pdc_ip(domain, &addr)) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -117,6 +122,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 				AF_INET);
 	if (!hostent) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -124,22 +130,23 @@ static int net_lookup_ldap(int argc, const char **argv)
 	domain = strchr(hostent->h_name, '.');
 	if (!domain) {
 		TALLOC_FREE( ctx );
+		SAFE_FREE(sitename);
 		return -1;
 	}
 	domain++;
 
 	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	status = ads_dns_query_dcs( ctx, domain, sitename, &dcs, &numdcs );
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-
+		SAFE_FREE(sitename);
 		return 0;
 	}
 
 	TALLOC_FREE( ctx );
-
+	SAFE_FREE(sitename);
 
 	return -1;
 #endif
@@ -153,6 +160,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	struct in_addr addr;
 	char *pdc_str = NULL;
 	const char *domain=opt_target_workgroup;
+	char *sitename = NULL;
 	int count, i;
 
 	if (argc > 0)
@@ -165,10 +173,13 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_sorted_dc_list(domain, &ip_list, &count, False)) {
+	sitename = sitename_fetch(domain);
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, False))) {
 		SAFE_FREE(pdc_str);
+		SAFE_FREE(sitename);
 		return 0;
 	}
+	SAFE_FREE(sitename);
 	for (i=0;i<count;i++) {
 		char *dc_str = inet_ntoa(ip_list[i].ip);
 		if (!strequal(pdc_str, dc_str))
@@ -211,11 +222,11 @@ static int net_lookup_kdc(int argc, const char **argv)
 	}
 
 	if (argc>0) {
-                realm.data = CONST_DISCARD(krb5_pointer, argv[0]);
+                realm.data = CONST_DISCARD(char *, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
-		realm.data = (krb5_pointer) lp_realm();
-		realm.length = strlen(realm.data);
+		realm.data = lp_realm();
+		realm.length = strlen((const char *)realm.data);
 	} else {
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
 		if (rc) {
@@ -223,8 +234,8 @@ static int net_lookup_kdc(int argc, const char **argv)
 				 error_message(rc)));
 			return -1;
 		}
-		realm.data = (krb5_pointer) *realms;
-		realm.length = strlen(realm.data);
+		realm.data = (char *) *realms;
+		realm.length = strlen((const char *)realm.data);
 	}
 
 	rc = krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);
@@ -247,7 +258,7 @@ static int net_lookup_name(int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc != 1) {
 		d_printf("usage: net lookup name <name>\n");
@@ -269,7 +280,7 @@ static int net_lookup_sid(int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc != 1) {
 		d_printf("usage: net lookup sid <sid>\n");

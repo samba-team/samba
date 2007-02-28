@@ -56,7 +56,8 @@ static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
 
-	if (ch == CH_UCS2) ret = "UTF-16LE";
+	if (ch == CH_UTF16LE) ret = "UTF-16LE";
+	else if (ch == CH_UTF16BE) ret = "UTF-16BE";
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
@@ -132,11 +133,11 @@ void init_iconv(void)
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
-	if (!conv_handles[CH_UNIX][CH_UCS2])
-		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open(charset_name(CH_UCS2), "ASCII");
+	if (!conv_handles[CH_UNIX][CH_UTF16LE])
+		conv_handles[CH_UNIX][CH_UTF16LE] = smb_iconv_open(charset_name(CH_UTF16LE), "ASCII");
 
-	if (!conv_handles[CH_UCS2][CH_UNIX])
-		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", charset_name(CH_UCS2));
+	if (!conv_handles[CH_UTF16LE][CH_UNIX])
+		conv_handles[CH_UTF16LE][CH_UNIX] = smb_iconv_open("ASCII", charset_name(CH_UTF16LE));
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
@@ -156,10 +157,10 @@ void init_iconv(void)
 			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
 				DEBUG(0,("init_iconv: Conversion from %s to %s not supported\n",
 					 charset_name((charset_t)c1), charset_name((charset_t)c2)));
-				if (c1 != CH_UCS2) {
+				if (c1 != CH_UTF16LE && c1 != CH_UTF16BE) {
 					n1 = "ASCII";
 				}
-				if (c2 != CH_UCS2) {
+				if (c2 != CH_UTF16LE && c2 != CH_UTF16BE) {
 					n2 = "ASCII";
 				}
 				DEBUG(0,("init_iconv: Attempting to replace with conversion from %s to %s\n",
@@ -214,7 +215,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	descriptor = conv_handles[from][to];
 
 	if (srclen == (size_t)-1) {
-		if (from == CH_UCS2) {
+		if (from == CH_UTF16LE || from == CH_UTF16BE) {
 			srclen = (strlen_w((const smb_ucs2_t *)src)+1) * 2;
 		} else {
 			srclen = strlen((const char *)src)+1;
@@ -286,8 +287,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 		if (o_len == 0 || i_len == 0)
 			return destlen - o_len;
 
-		if (from == CH_UCS2 && to != CH_UCS2) {
-			/* Can't convert from ucs2 to multibyte. Replace with the default fail char. */
+		if (((from == CH_UTF16LE)||(from == CH_UTF16BE)) &&
+				((to != CH_UTF16LE)||(to != CH_UTF16BE))) {
+			/* Can't convert from utf16 any endian to multibyte.
+			   Replace with the default fail char.
+			*/
 			if (i_len < 2)
 				return destlen - o_len;
 			if (i_len >= 2) {
@@ -306,8 +310,10 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			/* Keep trying with the next char... */
 			goto again;
 
-		} else if (from != CH_UCS2 && to == CH_UCS2) {
-			/* Can't convert to ucs2 - just widen by adding the default fail char then zero. */
+		} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
+			/* Can't convert to UTF16LE - just widen by adding the
+			   default fail char then zero.
+			*/
 			if (o_len < 2)
 				return destlen - o_len;
 
@@ -326,7 +332,8 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			/* Keep trying with the next char... */
 			goto again;
 
-		} else if (from != CH_UCS2 && to != CH_UCS2) {
+		} else if (from != CH_UTF16LE && from != CH_UTF16BE &&
+				to != CH_UTF16LE && to != CH_UTF16BE) {
 			/* Failed multibyte to multibyte. Just copy the default fail char and
 				try again. */
 			outbuf[0] = lp_failed_convert_char();
@@ -384,7 +391,7 @@ size_t convert_string(charset_t from, charset_t to,
 	if (srclen == 0)
 		return 0;
 
-	if (from != CH_UCS2 && to != CH_UCS2) {
+	if (from != CH_UTF16LE && from != CH_UTF16BE && to != CH_UTF16LE && to != CH_UTF16BE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t slen = srclen;
@@ -419,7 +426,7 @@ size_t convert_string(charset_t from, charset_t to,
 			}
 		}
 		return retval;
-	} else if (from == CH_UCS2 && to != CH_UCS2) {
+	} else if (from == CH_UTF16LE && to != CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
@@ -455,7 +462,7 @@ size_t convert_string(charset_t from, charset_t to,
 			}
 		}
 		return retval;
-	} else if (from != CH_UCS2 && to == CH_UCS2) {
+	} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
@@ -516,13 +523,14 @@ size_t convert_string(charset_t from, charset_t to,
  **/
 
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			       void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+			       void const *src, size_t srclen, void *dst, BOOL allow_bad_conv)
 {
 	size_t i_len, o_len, destlen = MAX(srclen, 512);
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
+	void **dest = (void **)dst;
 
 	*dest = NULL;
 
@@ -628,8 +636,12 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		if (o_len == 0 || i_len == 0)
 			goto out;
 
-		if (from == CH_UCS2 && to != CH_UCS2) {
-			/* Can't convert from ucs2 to multibyte. Just use the default fail char. */
+		if (((from == CH_UTF16LE)||(from == CH_UTF16BE)) &&
+				((to != CH_UTF16LE)||(to != CH_UTF16BE))) {
+			/* Can't convert from utf16 any endian to multibyte.
+			   Replace with the default fail char.
+			*/
+
 			if (i_len < 2)
 				goto out;
 
@@ -649,8 +661,10 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			/* Keep trying with the next char... */
 			goto again;
 
-		} else if (from != CH_UCS2 && to == CH_UCS2) {
-			/* Can't convert to ucs2 - just widen by adding the default fail char then zero. */
+		} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
+			/* Can't convert to UTF16LE - just widen by adding the
+			   default fail char then zero.
+			*/
 			if (o_len < 2)
 				goto out;
 
@@ -669,9 +683,10 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			/* Keep trying with the next char... */
 			goto again;
 
-		} else if (from != CH_UCS2 && to != CH_UCS2) {
+		} else if (from != CH_UTF16LE && from != CH_UTF16BE &&
+				to != CH_UTF16LE && to != CH_UTF16BE) {
 			/* Failed multibyte to multibyte. Just copy the default fail char and
-				try again. */
+			   try again. */
 			outbuf[0] = lp_failed_convert_char();
 
 			inbuf++;
@@ -702,9 +717,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  *
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-		      		void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+			     void const *src, size_t srclen, void *dst,
+			     BOOL allow_bad_conv)
 {
+	void **dest = (void **)dst;
 	size_t dest_len;
 
 	*dest = NULL;
@@ -730,7 +747,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 		return srclen;
 	}
 	
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen, True);
+	size = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, True);
 	free(buffer);
 	return size;
 }
@@ -766,14 +783,14 @@ char *strdup_upper(const char *s)
 		/* MB case. */
 		size_t size;
 		wpstring buffer;
-		size = convert_string(CH_UNIX, CH_UCS2, s, -1, buffer, sizeof(buffer), True);
+		size = convert_string(CH_UNIX, CH_UTF16LE, s, -1, buffer, sizeof(buffer), True);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
 
 		strupper_w(buffer);
 	
-		size = convert_string(CH_UCS2, CH_UNIX, buffer, -1, out_buffer, sizeof(out_buffer), True);
+		size = convert_string(CH_UTF16LE, CH_UNIX, buffer, -1, out_buffer, sizeof(out_buffer), True);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
@@ -787,7 +804,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer = NULL;
 	
-	size = convert_string_allocate(NULL, CH_UNIX, CH_UCS2, src, srclen,
+	size = convert_string_allocate(NULL, CH_UNIX, CH_UTF16LE, src, srclen,
 				       (void **)(void *)&buffer, True);
 	if (size == (size_t)-1 || !buffer) {
 		smb_panic("failed to create UCS2 buffer");
@@ -796,7 +813,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 		SAFE_FREE(buffer);
 		return srclen;
 	}
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen, True);
+	size = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, True);
 	SAFE_FREE(buffer);
 	return size;
 }
@@ -904,7 +921,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	for (i = 0; buffer[i] != 0 && (i < buffer_len); i++) {
 		unsigned char mb[10];
 		/* Convert one smb_ucs2_t character at a time. */
-		size_t mb_len = convert_string(CH_UCS2, CH_DOS, buffer+i, sizeof(smb_ucs2_t), mb, sizeof(mb), False);
+		size_t mb_len = convert_string(CH_UTF16LE, CH_DOS, buffer+i, sizeof(smb_ucs2_t), mb, sizeof(mb), False);
 		if ((mb_len != (size_t)-1) && (dest_len + mb_len <= MAX_NETBIOSNAME_LEN - 1)) {
 			memcpy((char *)dest + dest_len, mb, mb_len);
 			dest_len += mb_len;
@@ -944,9 +961,9 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
-			src_len = strlen(src) + 1;
+			src_len = strlen((const char *)src) + 1;
 		} else {
-			size_t len = strnlen(src, src_len);
+			size_t len = strnlen((const char *)src, src_len);
 			if (len < src_len)
 				len++;
 			src_len = len;
@@ -1026,7 +1043,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	ret =  convert_string(CH_UNIX, CH_UCS2, src, src_len, dest, dest_len, True);
+	ret =  convert_string(CH_UNIX, CH_UTF16LE, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
 		return 0;
 	}
@@ -1034,9 +1051,13 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	len += ret;
 
 	if (flags & STR_UPPER) {
-		smb_ucs2_t *dest_ucs2 = dest;
+		smb_ucs2_t *dest_ucs2 = (smb_ucs2_t *)dest;
 		size_t i;
-		for (i = 0; i < (dest_len / 2) && dest_ucs2[i]; i++) {
+
+		/* We check for i < (ret / 2) below as the dest string isn't null
+		   terminated if STR_TERMINATE isn't set. */
+
+		for (i = 0; i < (ret / 2) && i < (dest_len / 2) && dest_ucs2[i]; i++) {
 			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
 			if (v != dest_ucs2[i]) {
 				dest_ucs2[i] = v;
@@ -1062,7 +1083,7 @@ size_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, (void **)dest, True);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE, src, src_len, (void **)dest, True);
 }
 
 
@@ -1080,7 +1101,7 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_allocate(NULL, CH_UNIX, CH_UCS2, src, src_len, (void **)dest, True);
+	return convert_string_allocate(NULL, CH_UNIX, CH_UTF16LE, src, src_len, (void **)dest, True);
 }
 
 /**
@@ -1178,7 +1199,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (flags & STR_TERMINATE) {
 		/* src_len -1 is the default for null terminated strings. */
 		if (src_len != (size_t)-1) {
-			size_t len = strnlen_w(src, src_len/2);
+			size_t len = strnlen_w((const smb_ucs2_t *)src,
+						src_len/2);
 			if (len < src_len/2)
 				len++;
 			src_len = len*2;
@@ -1189,7 +1211,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
-	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len, True);
+	ret = convert_string(CH_UTF16LE, CH_UNIX, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
 		return 0;
 	}
@@ -1227,7 +1249,7 @@ size_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
 {
 	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UCS2, CH_UNIX, src, src_len, (void **)dest, True);
+	return convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src, src_len, (void **)dest, True);
 }
 
 /**
@@ -1242,7 +1264,7 @@ size_t pull_ucs2_allocate(char **dest, const smb_ucs2_t *src)
 {
 	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
-	return convert_string_allocate(NULL, CH_UCS2, CH_UNIX, src, src_len, (void **)dest, True);
+	return convert_string_allocate(NULL, CH_UTF16LE, CH_UNIX, src, src_len, (void **)dest, True);
 }
 
 /**
@@ -1370,33 +1392,85 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-/****************************************************************
- Calculate the size (in bytes) of the next multibyte character in
- our internal character set. Note that p must be pointing to a
- valid mb char, not within one.
-****************************************************************/
+/*
+  Return the unicode codepoint for the next multi-byte CH_UNIX character
+  in the string. The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
 
-size_t next_mb_char_size(const char *s)
+  Also return the number of bytes consumed (which tells the caller
+  how many bytes to skip to get to the next CH_UNIX character).
+
+  Return INVALID_CODEPOINT if the next character cannot be converted.
+*/
+
+codepoint_t next_codepoint(const char *str, size_t *size)
 {
-	size_t i;
+	/* It cannot occupy more than 4 bytes in UTF16 format */
+	uint8_t buf[4];
+	smb_iconv_t descriptor;
+	size_t ilen_orig;
+	size_t ilen;
+	size_t olen;
+	char *outbuf;
 
-	if (!(*s & 0x80))
-		return 1; /* ascii. */
-
-	conv_silent = True;
-	for ( i = 1; i <=4; i++ ) {
-		smb_ucs2_t uc;
-		if (convert_string(CH_UNIX, CH_UCS2, s, i, &uc, 2, False) == 2) {
-#if 0 /* JRATEST */
-			DEBUG(10,("next_mb_char_size: size %u at string %s\n",
-				(unsigned int)i, s));
-#endif
-			conv_silent = False;
-			return i;
-		}
+	if ((str[0] & 0x80) == 0) {
+		*size = 1;
+		return (codepoint_t)str[0];
 	}
-	/* We're hosed - we don't know how big this is... */
-	DEBUG(10,("next_mb_char_size: unknown size at string %s\n", s));
-	conv_silent = False;
-	return 1;
+
+	/* We assume that no multi-byte character can take
+	   more than 5 bytes. This is OK as we only
+	   support codepoints up to 1M */
+
+	ilen_orig = strnlen(str, 5);
+	ilen = ilen_orig;
+
+        lazy_initialize_conv();
+
+        descriptor = conv_handles[CH_UNIX][CH_UTF16LE];
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		*size = 1;
+		return INVALID_CODEPOINT;
+	}
+
+	/* This looks a little strange, but it is needed to cope
+	   with codepoints above 64k which are encoded as per RFC2781. */
+	olen = 2;
+	outbuf = (char *)buf;
+	smb_iconv(descriptor, &str, &ilen, &outbuf, &olen);
+	if (olen == 2) {
+		/* We failed to convert to a 2 byte character.
+		   See if we can convert to a 4 UTF16-LE byte char encoding.
+		*/
+		olen = 4;
+		outbuf = (char *)buf;
+		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
+		if (olen == 4) {
+			/* We didn't convert any bytes */
+			*size = 1;
+			return INVALID_CODEPOINT;
+		}
+		olen = 4 - olen;
+	} else {
+		olen = 2 - olen;
+	}
+
+	*size = ilen_orig - ilen;
+
+	if (olen == 2) {
+		/* 2 byte, UTF16-LE encoded value. */
+		return (codepoint_t)SVAL(buf, 0);
+	}
+	if (olen == 4) {
+		/* Decode a 4 byte UTF16-LE character manually.
+		   See RFC2871 for the encoding machanism.
+		*/
+		codepoint_t w1 = SVAL(buf,0) & ~0xD800;
+		codepoint_t w2 = SVAL(buf,2) & ~0xDC00;
+
+		return (codepoint_t)0x10000 +
+				(w1 << 10) + w2;
+	}
+
+	/* no other length is valid */
+	return INVALID_CODEPOINT;
 }

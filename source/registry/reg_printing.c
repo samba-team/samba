@@ -382,7 +382,6 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	UNISTR2		data;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
-	int snum;
 	
 	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
 	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
@@ -438,8 +437,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 
 	/* stream the device mode */
 		
-	snum = lp_servicenumber(info2->sharename);
-	if ( (devmode = construct_dev_mode( snum )) != NULL ) {			
+	if ( (devmode = construct_dev_mode( info2->sharename )) != NULL ) {
 		if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
 			offset = prs_offset( &prs );
 			regval_ctr_addvalue( values, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );
@@ -557,7 +555,7 @@ struct {
 	{ "UntilTime",	 	REG_IDX_UNTILTIME },
 	{ "Name", 		REG_IDX_NAME },
 	{ "Location", 		REG_IDX_LOCATION },
-	{ "Descrioption", 	REG_IDX_DESCRIPTION },
+	{ "Description", 	REG_IDX_DESCRIPTION },
 	{ "Parameters", 	REG_IDX_PARAMETERS },
 	{ "Port", 		REG_IDX_PORT },
 	{ "Share Name", 	REG_IDX_SHARENAME },
@@ -924,7 +922,7 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 			
 			length = strlen(filename);
 		
-			buffer = SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
+			buffer = (char *)SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
 			if ( !buffer ) {
 				break;
 			}
@@ -937,7 +935,7 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 		
 		/* terminated by double NULL.  Add the final one here */
 		
-		buffer = SMB_REALLOC( buffer, buffer_size + 2 );
+		buffer = (char *)SMB_REALLOC( buffer, buffer_size + 2 );
 		if ( !buffer ) {
 			buffer_size = 0;
 		} else {

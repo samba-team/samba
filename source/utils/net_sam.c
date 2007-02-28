@@ -32,7 +32,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 
@@ -127,7 +127,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 	uint16 acct_flags;
@@ -206,23 +206,20 @@ static int net_sam_set_pwnoexp(int argc, const char **argv)
 }
 
 /*
- * Set a user's time field
+ * Set pass last change time, based on force pass change now
  */
 
-static int net_sam_set_time(int argc, const char **argv, const char *field,
-			    BOOL (*fn)(struct samu *, time_t,
-				       enum pdb_value_state))
+static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
-	time_t new_time;
 
-	if (argc != 2) {
-		d_fprintf(stderr, "usage: net sam set %s <user> "
-			  "[now|YYYY-MM-DD HH:MM]\n", field);
+	if ((argc != 2) || (!strequal(argv[1], "yes") &&
+			    !strequal(argv[1], "no"))) {
+		d_fprintf(stderr, "usage: net sam set pwdmustchangenow <user> [yes|no]\n");
 		return -1;
 	}
 
@@ -238,22 +235,6 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (strequal(argv[1], "now")) {
-		new_time = time(NULL);
-	} else {
-		struct tm tm;
-		char *end;
-		ZERO_STRUCT(tm);
-		end = strptime(argv[1], "%Y-%m-%d %H:%M", &tm);
-		new_time = mktime(&tm);
-		if ((end == NULL) || (*end != '\0') || (new_time == -1)) {
-			d_fprintf(stderr, "Could not parse time string %s\n",
-				  argv[1]);
-			return -1;
-		}
-	}
-
-
 	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
@@ -264,9 +245,10 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!fn(sam_acct, new_time, PDB_CHANGED)) {
-		d_fprintf(stderr, "Internal error\n");
-		return -1;
+	if (strequal(argv[1], "yes")) {
+		pdb_set_pass_last_set_time(sam_acct, 0, PDB_CHANGED);
+	} else {
+		pdb_set_pass_last_set_time(sam_acct, time(NULL), PDB_CHANGED);
 	}
 
 	status = pdb_update_sam_account(sam_acct);
@@ -278,21 +260,11 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 
 	TALLOC_FREE(sam_acct);
 
-	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
+	d_fprintf(stderr, "Updated 'user must change password at next logon' for %s\\%s to %s\n", dom,
+		  name, argv[1]);
 	return 0;
 }
 
-static int net_sam_set_pwdmustchange(int argc, const char **argv)
-{
-	return net_sam_set_time(argc, argv, "pwdmustchange",
-				pdb_set_pass_must_change_time);
-}
-
-static int net_sam_set_pwdcanchange(int argc, const char **argv)
-{
-	return net_sam_set_time(argc, argv, "pwdcanchange",
-				pdb_set_pass_can_change_time);
-}
 
 /*
  * Set a user's or a group's comment
@@ -302,7 +274,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 {
 	GROUP_MAP map;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 
@@ -376,14 +348,159 @@ static int net_sam_set(int argc, const char **argv)
 		  "Disable/Enable a user's lockout flag" },
 		{ "pwnoexp", net_sam_set_pwnoexp,
 		  "Disable/Enable whether a user's pw does not expire" },
-		{ "pwdmustchange", net_sam_set_pwdmustchange,
-		  "Set a users password must change time" },
-		{ "pwdcanchange", net_sam_set_pwdcanchange,
-		  "Set a users password can change time" },
+		{ "pwdmustchangenow", net_sam_set_pwdmustchangenow,
+		  "Force users password must change at next logon" },
 		{NULL, NULL}
 	};
 
 	return net_run_function2(argc, argv, "net sam set", func);
+}
+
+/*
+ * Manage account policies
+ */
+
+static int net_sam_policy_set(int argc, const char **argv)
+{
+	const char *account_policy = NULL;
+	uint32 value, old_value;
+	int field;
+	char *endptr;
+
+        if (argc != 2) {
+                d_fprintf(stderr, "usage: net sam policy set " 
+			  "\"<account policy>\" <value> \n");
+                return -1;
+        }
+
+	account_policy = argv[0];
+	field = account_policy_name_to_fieldnum(account_policy);
+
+	if (strequal(argv[1], "forever") || strequal(argv[1], "never")
+	    || strequal(argv[1], "off")) {
+		value = -1;
+	}
+	else {
+		value = strtoul(argv[1], &endptr, 10);
+
+		if ((endptr == argv[1]) || (endptr[0] != '\0')) {
+			d_printf("Unable to set policy \"%s\"! Invalid value "
+				 "\"%s\".\n", 
+				 account_policy, argv[1]); 
+			return -1;
+		}
+	}
+
+	if (field == 0) {
+		const char **names;
+                int i, count;
+
+                account_policy_names_list(&names, &count);
+		d_fprintf(stderr, "No account policy \"%s\"!\n\n", argv[0]);
+		d_fprintf(stderr, "Valid account policies are:\n");
+
+		for (i=0; i<count; i++) {
+			d_fprintf(stderr, "%s\n", names[i]);
+		}
+
+		SAFE_FREE(names);
+		return -1;
+	}
+
+	if (!pdb_get_account_policy(field, &old_value)) {
+		d_fprintf(stderr, "Valid account policy, but unable to fetch "
+			  "value!\n");
+	}
+
+	if (!pdb_set_account_policy(field, value)) {
+		d_fprintf(stderr, "Valid account policy, but unable to "
+			  "set value!\n");
+		return -1;
+	}
+
+	d_printf("Account policy \"%s\" value was: %d\n", account_policy,
+		 old_value);
+
+	d_printf("Account policy \"%s\" value is now: %d\n", account_policy,
+		 value);
+	return 0;
+}
+
+static int net_sam_policy_show(int argc, const char **argv)
+{
+	const char *account_policy = NULL;
+        uint32 old_value;
+        int field;
+
+        if (argc != 1) {
+                d_fprintf(stderr, "usage: net sam policy show"
+			  " \"<account policy>\" \n");
+                return -1;
+        }
+	
+	account_policy = argv[0];
+        field = account_policy_name_to_fieldnum(account_policy);
+
+        if (field == 0) {
+		const char **names;
+		int count;
+		int i;
+                account_policy_names_list(&names, &count);
+                d_fprintf(stderr, "No account policy by that name!\n");
+                if (count != 0) {
+                        d_fprintf(stderr, "Valid account policies "
+                                  "are:\n");
+			for (i=0; i<count; i++) {
+				d_fprintf(stderr, "%s\n", names[i]);
+			}
+                }
+                SAFE_FREE(names);
+                return -1;
+        }
+
+	if (!pdb_get_account_policy(field, &old_value)) {
+                fprintf(stderr, "Valid account policy, but unable to "
+                        "fetch value!\n");
+                return -1;
+        }
+	
+	printf("Account policy \"%s\" description: %s\n",
+	       account_policy, account_policy_get_desc(field));
+        printf("Account policy \"%s\" value is: %d\n", account_policy,
+	       old_value);
+        return 0;
+}
+
+static int net_sam_policy_list(int argc, const char **argv)
+{
+	const char **names;
+	int count;
+	int i;
+	account_policy_names_list(&names, &count);
+        if (count != 0) {
+        	d_fprintf(stderr, "Valid account policies "
+			  "are:\n");
+		for (i = 0; i < count ; i++) {
+			d_fprintf(stderr, "%s\n", names[i]);
+		}
+	}
+        SAFE_FREE(names);
+        return -1;
+}
+
+static int net_sam_policy(int argc, const char **argv)
+{
+        struct functable2 func[] = {
+		{ "list", net_sam_policy_list,
+                  "List account policies" },
+                { "show", net_sam_policy_show,
+                  "Show account policies" },
+		{ "set", net_sam_policy_set,
+                  "Change account policies" },
+                {NULL, NULL}
+        };
+
+        return net_run_function2(argc, argv, "net sam policy", func);
 }
 
 /*
@@ -462,7 +579,7 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
 {
 	NTSTATUS status;
 	uint32 rid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	fstring groupname;
 	DOM_SID sid;
 
@@ -514,7 +631,7 @@ static int net_sam_addmem(int argc, const char **argv)
 {
 	const char *groupdomain, *groupname, *memberdomain, *membername;
 	DOM_SID group, member;
-	enum SID_NAME_USE grouptype, membertype;
+	enum lsa_SidType grouptype, membertype;
 	NTSTATUS status;
 
 	if (argc != 2) {
@@ -587,7 +704,7 @@ static int net_sam_delmem(int argc, const char **argv)
 	const char *memberdomain = NULL;
 	const char *membername = NULL;
 	DOM_SID group, member;
-	enum SID_NAME_USE grouptype;
+	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
 	if (argc != 2) {
@@ -645,7 +762,7 @@ static int net_sam_listmem(int argc, const char **argv)
 {
 	const char *groupdomain, *groupname;
 	DOM_SID group;
-	enum SID_NAME_USE grouptype;
+	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
 	if (argc != 1) {
@@ -793,7 +910,7 @@ static int net_sam_list(int argc, const char **argv)
 static int net_sam_show(int argc, const char **argv)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 
 	if (argc != 1) {
@@ -1232,6 +1349,8 @@ int net_sam(int argc, const char **argv)
 		  "Show details of a SAM entry" },
 		{ "set", net_sam_set,
 		  "Set details of a SAM account" },
+		{ "policy", net_sam_policy,
+		  "Set account policies" },
 #ifdef HAVE_LDAP
 		{ "provision", net_sam_provision,
 		  "Provision a clean User Database" },

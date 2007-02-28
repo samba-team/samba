@@ -28,7 +28,6 @@ static TDB_CONTEXT *tdb;
  * ldap directly) - gd */
 
 #define DATABASE_VERSION 	3
-#define AP_LASTSET 		"LAST_CACHE_UPDATE"
 #define AP_TTL			60
 
 
@@ -84,28 +83,24 @@ static const struct ap_table account_policy_names[] = {
 	{0, NULL, 0, "", NULL}
 };
 
-char *account_policy_names_list(void)
-{
-	char *nl, *p;
-	int i;
-	size_t len = 0;
+void account_policy_names_list(const char ***names, int *num_names)
+{	
+	const char **nl;
+	int i, count;
 
-	for (i=0; account_policy_names[i].string; i++) {
-		len += strlen(account_policy_names[i].string) + 1;
+	for (count=0; account_policy_names[count].string; count++) {
 	}
-	len++;
-	nl = SMB_MALLOC(len);
+	nl = SMB_MALLOC_ARRAY(const char *, count);
 	if (!nl) {
-		return NULL;
+		*num_names = 0;
+		return;
 	}
-	p = nl;
 	for (i=0; account_policy_names[i].string; i++) {
-		memcpy(p, account_policy_names[i].string, strlen(account_policy_names[i].string) + 1);
-		p[strlen(account_policy_names[i].string)] = '\n';
-		p += strlen(account_policy_names[i].string) + 1;
+		nl[i] = account_policy_names[i].string;
 	}
-	*p = '\0';
-	return nl;
+	*num_names = count;
+	*names = nl;
+	return;
 }
 
 /****************************************************************************
@@ -169,50 +164,6 @@ int account_policy_name_to_fieldnum(const char *name)
 }
 
 /*****************************************************************************
-Update LAST-Set counter inside the cache
-*****************************************************************************/
-
-static BOOL account_policy_cache_timestamp(uint32 *value, BOOL update, 
-					   const char *ap_name)
-{
-	pstring key;
-	uint32 val = 0;
-	time_t now;
-
-	if (ap_name == NULL)
-		return False;
-		
-	slprintf(key, sizeof(key)-1, "%s/%s", ap_name, AP_LASTSET);
-
-	if (!init_account_policy()) {
-		return False;
-	}
-
-	if (!tdb_fetch_uint32(tdb, key, &val) && !update) {
-		DEBUG(10,("failed to get last set timestamp of cache\n"));
-		return False;
-	}
-
-	*value = val;
-
-	DEBUG(10, ("account policy cache lastset was: %s\n", http_timestring(val)));
-
-	if (update) {
-
-		now = time(NULL);
-
-		if (!tdb_store_uint32(tdb, key, (uint32)now)) {
-			DEBUG(1, ("tdb_store_uint32 failed for %s\n", key));
-			return False;
-		}
-		DEBUG(10, ("account policy cache lastset now: %s\n", http_timestring(now)));
-		*value = now;
-	}
-
-	return True;
-}
-
-/*****************************************************************************
 Get default value for account policy
 *****************************************************************************/
 
@@ -262,10 +213,13 @@ BOOL init_account_policy(void)
 		return True;
 	}
 
-	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
-		DEBUG(0,("Failed to open account policy database\n"));
-		return False;
+	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	if (!tdb) { /* the account policies files does not exist or open failed, try to create a new one */
+		tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		if (!tdb) {
+			DEBUG(0,("Failed to open account policy database\n"));
+			return False;
+		}
 	}
 
 	/* handle a Samba upgrade */
@@ -311,7 +265,7 @@ Get an account policy (from tdb)
 
 BOOL account_policy_get(int field, uint32 *value)
 {
-	fstring name;
+	const char *name;
 	uint32 regval;
 
 	if (!init_account_policy()) {
@@ -322,8 +276,8 @@ BOOL account_policy_get(int field, uint32 *value)
 		*value = 0;
 	}
 
-	fstrcpy(name, decode_account_policy_name(field));
-	if (!*name) {
+	name = decode_account_policy_name(field);
+	if (name == NULL) {
 		DEBUG(1, ("account_policy_get: Field %d is not a valid account policy type!  Cannot get, returning 0.\n", field));
 		return False;
 	}
@@ -348,14 +302,14 @@ Set an account policy (in tdb)
 
 BOOL account_policy_set(int field, uint32 value)
 {
-	fstring name;
+	const char *name;
 
 	if (!init_account_policy()) {
 		return False;
 	}
 
-	fstrcpy(name, decode_account_policy_name(field));
-	if (!*name) {
+	name = decode_account_policy_name(field);
+	if (name == NULL) {
 		DEBUG(1, ("Field %d is not a valid account policy type!  Cannot set.\n", field));
 		return False;
 	}
@@ -376,8 +330,10 @@ Set an account policy in the cache
 
 BOOL cache_account_policy_set(int field, uint32 value)
 {
-	uint32 lastset;
 	const char *policy_name = NULL;
+	char *cache_key = NULL;
+	char *cache_value = NULL;
+	BOOL ret = False;
 
 	policy_name = decode_account_policy_name(field);
 	if (policy_name == NULL) {
@@ -385,70 +341,25 @@ BOOL cache_account_policy_set(int field, uint32 value)
 		return False;
 	}
 
+	if (asprintf(&cache_key, "ACCT_POL/%s", policy_name) < 0) {
+		DEBUG(0, ("asprintf failed\n"));
+		goto done;
+	}
+
+	if (asprintf(&cache_value, "%lu\n", (unsigned long)value) < 0) {
+		DEBUG(0, ("asprintf failed\n"));
+		goto done;
+	}
+
 	DEBUG(10,("cache_account_policy_set: updating account pol cache\n"));
 
-	if (!account_policy_set(field, value)) {
-		return False;
-	}
+	ret = gencache_set(cache_key, cache_value, time(NULL)+AP_TTL);
 
-	if (!account_policy_cache_timestamp(&lastset, True, policy_name)) 
-	{
-		DEBUG(10,("cache_account_policy_set: failed to get lastest cache update timestamp\n"));
-		return False;
-	}
-
-	DEBUG(10,("cache_account_policy_set: cache valid until: %s\n", http_timestring(lastset+AP_TTL)));
-
-	return True;
+ done:
+	SAFE_FREE(cache_key);
+	SAFE_FREE(cache_value);
+	return ret;
 }
-
-/*****************************************************************************
-Check whether account policies have been migrated to passdb
-*****************************************************************************/
-
-BOOL account_policy_migrated(BOOL init)
-{
-	pstring key;
-	uint32 val;
-	time_t now;
-
-	slprintf(key, sizeof(key)-1, "AP_MIGRATED_TO_PASSDB");
-
-	if (!init_account_policy()) {
-		return False;
-	}
-
-	if (init) {
-		now = time(NULL);
-
-		if (!tdb_store_uint32(tdb, key, (uint32)now)) {
-			DEBUG(1, ("tdb_store_uint32 failed for %s\n", key));
-			return False;
-		}
-
-		return True;
-	}
-
-	if (!tdb_fetch_uint32(tdb, key, &val)) {
-		return False;
-	}
-
-	return True;
-}
-
-/*****************************************************************************
- Remove marker that informs that account policies have been migrated to passdb
-*****************************************************************************/
-
-BOOL remove_account_policy_migrated(void)
-{
-	if (!init_account_policy()) {
-		return False;
-	}
-
-	return tdb_delete_bystring(tdb, "AP_MIGRATED_TO_PASSDB");
-}
-
 
 /*****************************************************************************
 Get an account policy from the cache 
@@ -456,23 +367,33 @@ Get an account policy from the cache
 
 BOOL cache_account_policy_get(int field, uint32 *value)
 {
-	uint32 lastset;
+	const char *policy_name = NULL;
+	char *cache_key = NULL;
+	char *cache_value = NULL;
+	BOOL ret = False;
 
-	if (!account_policy_cache_timestamp(&lastset, False, 
-					    decode_account_policy_name(field))) 
-	{
-		DEBUG(10,("cache_account_policy_get: failed to get latest cache update timestamp\n"));
+	policy_name = decode_account_policy_name(field);
+	if (policy_name == NULL) {
+		DEBUG(0,("cache_account_policy_set: no policy found\n"));
 		return False;
 	}
 
-	if ((lastset + AP_TTL) < (uint32)time(NULL) ) {
-		DEBUG(10,("cache_account_policy_get: no valid cache entry (cache expired)\n"));
-		return False;
-	} 
+	if (asprintf(&cache_key, "ACCT_POL/%s", policy_name) < 0) {
+		DEBUG(0, ("asprintf failed\n"));
+		goto done;
+	}
 
-	return account_policy_get(field, value);
+	if (gencache_get(cache_key, &cache_value, NULL)) {
+		uint32 tmp = strtoul(cache_value, NULL, 10);
+		*value = tmp;
+		ret = True;
+	}
+
+ done:
+	SAFE_FREE(cache_key);
+	SAFE_FREE(cache_value);
+	return ret;
 }
-
 
 /****************************************************************************
 ****************************************************************************/

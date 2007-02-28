@@ -424,12 +424,12 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_name,
 				     const char *domain_name,
-				     struct uuid *domain_guid,
-				     struct uuid *site_guid,
+				     struct GUID *domain_guid,
+				     struct GUID *site_guid,
 				     uint32_t flags,
 				     char **dc_unc, char **dc_address,
 				     int32 *dc_address_type,
-				     struct uuid *domain_guid_out,
+				     struct GUID *domain_guid_out,
 				     char **domain_name_out,
 				     char **forest_name,
 				     uint32 *dc_flags,
@@ -638,7 +638,7 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 /* Sam synchronisation */
 
 NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 uint32 database_id, UINT64_S seqnum,
+                                 uint32 database_id, uint64 seqnum,
                                  uint32 *num_deltas, 
                                  SAM_DELTA_HDR **hdr_deltas, 
                                  SAM_DELTA_CTR **deltas)
@@ -695,6 +695,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *domain,
 				   const char *username,
 				   const char *password,
+				   const char *workstation,
 				   int logon_type)
 {
 	prs_struct qbuf, rbuf;
@@ -712,7 +713,11 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
 
-	fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
+	if (workstation) {
+		fstr_sprintf( clnt_name_slash, "\\\\%s", workstation );
+	} else {
+		fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
+	}
 
         /* Initialise input parameters */
 

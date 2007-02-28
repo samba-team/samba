@@ -66,10 +66,6 @@ static uint32 smb_connections=0;
 
 extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 
-#define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
-((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
-
-
 /* API table for Xcv Monitor functions */
 
 struct xcv_api_table {
@@ -719,7 +715,8 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 	}
 
 	data->notify_data.data.length = prs_offset(&ps);
-	data->notify_data.data.string = TALLOC(mem_ctx, prs_offset(&ps));
+	data->notify_data.data.string = (uint16 *)
+		TALLOC(mem_ctx, prs_offset(&ps));
 	if (!data->notify_data.data.string) {
 		prs_mem_free(&ps);
 		return;
@@ -911,7 +908,8 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	/* need to allocate own copy of data */
 	
 	if ( msg->len != 0 ) 
-		msg_grp->msgs[new_slot].notify.data = TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
+		msg_grp->msgs[new_slot].notify.data = (char *)
+			TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
 	
 	return ctr->num_groups;
 }
@@ -1101,7 +1099,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  ********************************************************************/
 
 static void receive_notify2_message_list(int msg_type, struct process_id src,
-					 void *msg, size_t len)
+					 void *msg, size_t len,
+					 void *private_data)
 {
 	size_t 			msg_count, i;
 	char 			*buf = (char *)msg;
@@ -1213,14 +1212,15 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src,
+			    void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
 	int snum;
 	int n_services = lp_numservices();
 	
 	len = MIN(len,sizeof(drivername)-1);
-	strncpy(drivername, buf, len);
+	strncpy(drivername, (const char *)buf, len);
 	
 	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
 
@@ -1311,14 +1311,14 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  **********************************************************************/
  
 void reset_all_printerdata(int msg_type, struct process_id src,
-			   void *buf, size_t len)
+			   void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
 	int snum;
 	int n_services = lp_numservices();
 	
 	len = MIN( len, sizeof(drivername)-1 );
-	strncpy( drivername, buf, len );
+	strncpy( drivername, (const char *)buf, len );
 	
 	DEBUG(10,("reset_all_printerdata: Got message for new driver [%s]\n", drivername ));
 
@@ -1381,7 +1381,7 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	
 	/* bulk copy first */
 	
-	d = TALLOC_MEMDUP(ctx, devmode, sizeof(DEVICEMODE));
+	d = (DEVICEMODE *)TALLOC_MEMDUP(ctx, devmode, sizeof(DEVICEMODE));
 	if (!d)
 		return NULL;
 		
@@ -1408,7 +1408,8 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 			return NULL;
 	}
 
-	d->dev_private = TALLOC_MEMDUP(ctx, devmode->dev_private, devmode->driverextra);
+	d->dev_private = (uint8 *)TALLOC_MEMDUP(ctx, devmode->dev_private,
+						devmode->driverextra);
 	if (!d->dev_private) {
 		return NULL;
 	}	
@@ -2599,7 +2600,8 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ip, unix_printer ))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
+		message_register(MSG_PRINTER_NOTIFY2,
+				 receive_notify2_message_list, NULL);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
 		register_message_flags( True, FLAG_MSG_PRINT_NOTIFY );
@@ -4080,7 +4082,7 @@ static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
  Create a DEVMODE struct. Returns malloced memory.
 ****************************************************************************/
 
-DEVICEMODE *construct_dev_mode(int snum)
+DEVICEMODE *construct_dev_mode(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	DEVICEMODE 		*devmode = NULL;
@@ -4089,7 +4091,7 @@ DEVICEMODE *construct_dev_mode(int snum)
 	
 	DEBUGADD(8,("getting printer characteristics\n"));
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum)))) 
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename))) 
 		return NULL;
 
 	if ( !printer->info_2->devmode ) {
@@ -4161,7 +4163,8 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter->info_2->averageppm;			/* average pages per minute */
 			
-	if ( !(printer->devmode = construct_dev_mode(snum)) )
+	if ( !(printer->devmode = construct_dev_mode(
+		       lp_const_servicename(snum))) )
 		DEBUG(8, ("Returning NULL Devicemode!\n"));
 
 	printer->secdesc = NULL;
@@ -4275,7 +4278,7 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
-	struct uuid guid; 
+	struct GUID guid; 
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
@@ -5296,8 +5299,7 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	info->previousdrivernames=NULL;
 	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
 
-	info->driver_date.low=0;
-	info->driver_date.high=0;
+	info->driver_date=0;
 
 	info->padding=0;
 	info->driver_version_low=0;
@@ -5848,6 +5850,12 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 	
+	if (!secdesc_ctr) {
+		DEBUG(10,("update_printer_sec: secdesc_ctr is NULL !\n"));
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
+
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
 	   requires Full Access to the printer to change security
@@ -5875,10 +5883,10 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].trustee);
+			sid_to_string(sid_str, &the_acl->aces[i].trustee);
 
 			DEBUG(10, ("%s 0x%08x\n", sid_str, 
-				  the_acl->ace[i].info.mask));
+				  the_acl->aces[i].access_mask));
 		}
 
 		the_acl = secdesc_ctr->sec->dacl;
@@ -5890,10 +5898,10 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 			for (i = 0; i < the_acl->num_aces; i++) {
 				fstring sid_str;
 				
-				sid_to_string(sid_str, &the_acl->ace[i].trustee);
+				sid_to_string(sid_str, &the_acl->aces[i].trustee);
 				
 				DEBUG(10, ("%s 0x%08x\n", sid_str, 
-					   the_acl->ace[i].info.mask));
+					   the_acl->aces[i].access_mask));
 			}
 		} else {
 			DEBUG(10, ("dacl for secdesc_ctr is NULL\n"));
@@ -6030,7 +6038,9 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	BOOL is_print_op = False;
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
+	standard_sub_basic(current_user_info.smb_name,
+			   current_user_info.domain,
+			   remote_machine,sizeof(remote_machine));
 	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
@@ -6553,7 +6563,7 @@ static WERROR enumjobs_level2(const print_queue_struct *queue, int snum,
 		
 	/* this should not be a failure condition if the devmode is NULL */
 	
-	devmode = construct_dev_mode(snum);
+	devmode = construct_dev_mode(lp_const_servicename(snum));
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
@@ -8491,7 +8501,7 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
-	WERROR result = WERR_NOMEM;
+	WERROR result = WERR_OK;
 	
 	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
 		return WERR_NOMEM;
@@ -8785,7 +8795,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	 */
 	 
 	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
-		devmode = construct_dev_mode(snum);
+		devmode = construct_dev_mode(lp_const_servicename(snum));
 	else {
 		if ((devmode = SMB_MALLOC_P(DEVICEMODE)) != NULL) {
 			ZERO_STRUCTP( devmode );
@@ -9378,6 +9388,15 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	
 	/* housekeeping information in the reply */
 	
+	/* Fix from Martin Zielinski <mz@seh.de> - ensure
+	 * the hand marshalled container size is a multiple
+	 * of 4 bytes for RPC alignment.
+	 */
+
+	if (needed % 4) {
+		needed += 4-(needed % 4);
+	}
+
 	r_u->needed 	= needed;
 	r_u->returned 	= num_entries;
 
@@ -9389,6 +9408,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	/* copy data into the reply */
 	
 	r_u->ctr.size        	= r_u->needed;
+
 	r_u->ctr.size_of_array 	= r_u->returned;
 	r_u->ctr.values 	= enum_values;
 	

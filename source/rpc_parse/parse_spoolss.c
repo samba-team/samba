@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2000,
  *  Copyright (C) Gerald Carter                2000-2002,
  *  Copyright (C) Tim Potter		       2001-2002.
  *
@@ -606,7 +606,7 @@ static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struc
 	switch ( q_u->level ) 
 	{	
 		case 1:
-			if ( !prs_pointer( "" , ps, depth, (void**)&q_u->user.user1, 
+			if ( !prs_pointer( "" , ps, depth, (void*)&q_u->user.user1, 
 				sizeof(SPOOL_USER_1), (PRS_POINTER_CAST)spool_io_user_level_1 )) 
 			{
 				return False;
@@ -2452,6 +2452,24 @@ BOOL smb_io_printer_info_5(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_5 
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_6 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_6(const char *desc, RPC_BUFFER *buffer,
+			   PRINTER_INFO_6 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_6");
+	depth++;	
+	
+	if (!prs_uint32("status", ps, depth, &info->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a PRINTER_INFO_7 structure.
 ********************************************************************/  
 
@@ -2643,9 +2661,7 @@ BOOL smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 	if (!smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
 		return False;
 
-	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
-		return False;
-	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
+	if (!prs_uint64("date", ps, depth, &info->driver_date))
 		return False;
 
 	if (!prs_uint32("padding", ps, depth, &info->padding))
@@ -3112,6 +3128,14 @@ uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info)
 	return size;
 }
 
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_6(PRINTER_INFO_6 *info)
+{
+	return sizeof(uint32);
+}
 
 /*******************************************************************
 return the size required by a struct in the stream
@@ -3893,7 +3917,16 @@ BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 		}
 		case 3:
 		{
-			ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			/* FIXME ! Our parsing here is wrong I think,
+			 * but for a level3 it makes no sense for
+			 * ptr_sec_desc to be NULL. JRA. Based on
+			 * a Vista sniff from Martin Zielinski <mz@seh.de>.
+			 */
+			if (UNMARSHALLING(ps)) {
+				ptr_sec_desc = 1;
+			} else {
+				ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			}
 			break;
 		}
 	}
@@ -3910,8 +3943,8 @@ BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 		prs_debug(ps, depth, "", "sec_io_desc_buf");
 		if (!prs_uint32("size", ps, depth + 1, &dummy))
 			return False;
-		if (!prs_uint32("ptr", ps, depth + 1, &dummy)) return
-								       False;
+		if (!prs_uint32("ptr", ps, depth + 1, &dummy))
+			return False;
 	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
@@ -6265,6 +6298,11 @@ void free_printer_info_4(PRINTER_INFO_4 *printer)
 }
 
 void free_printer_info_5(PRINTER_INFO_5 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_6(PRINTER_INFO_6 *printer)
 {
 	SAFE_FREE(printer);
 }

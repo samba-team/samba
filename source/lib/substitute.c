@@ -415,11 +415,12 @@ static const char *automount_server(const char *user_name)
  don't allow expansions.
 ****************************************************************************/
 
-void standard_sub_basic(const char *smb_name, char *str, size_t len)
+void standard_sub_basic(const char *smb_name, const char *domain_name,
+			char *str, size_t len)
 {
 	char *s;
 	
-	if ( (s = alloc_sub_basic( smb_name, str )) != NULL ) {
+	if ( (s = alloc_sub_basic( smb_name, domain_name, str )) != NULL ) {
 		strncpy( str, s, len );
 	}
 	
@@ -432,11 +433,12 @@ void standard_sub_basic(const char *smb_name, char *str, size_t len)
  This function will return an allocated string that have to be freed.
 ****************************************************************************/
 
-char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
+char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
+		       const char *domain_name, const char *str)
 {
 	char *a, *t;
 	
-	if ( (a = alloc_sub_basic(smb_name, str)) == NULL ) {
+	if ( (a = alloc_sub_basic(smb_name, domain_name, str)) == NULL ) {
 		return NULL;
 	}
 	t = talloc_strdup(mem_ctx, a);
@@ -447,7 +449,8 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *st
 /****************************************************************************
 ****************************************************************************/
 
-char *alloc_sub_basic(const char *smb_name, const char *str)
+char *alloc_sub_basic(const char *smb_name, const char *domain_name,
+		      const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr;
@@ -463,7 +466,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 	
 	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		DEBUG(0, ("alloc_sub_basic: Out of memory!\n"));
 		return NULL;
 	}
 	
@@ -490,7 +493,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			} 
 			break;
 		case 'D' :
-			r = strdup_upper(current_user_info.domain);
+			r = strdup_upper(domain_name);
 			if (r == NULL) {
 				goto error;
 			}
@@ -522,7 +525,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			a_string = realloc_string_sub(a_string, "%R", remote_proto);
 			break;
 		case 'T' :
-			a_string = realloc_string_sub(a_string, "%T", timestring(False));
+			a_string = realloc_string_sub(a_string, "%T", current_timestring(False));
 			break;
 		case 'a' :
 			a_string = realloc_string_sub(a_string, "%a", remote_arch);
@@ -580,32 +583,20 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			uid_t uid,
 			gid_t gid)
 {
-	char *a, *t;
-       	a = alloc_sub_specified(input_string, username, domain, uid, gid);
-	if (!a) {
+	char *a_string;
+	char *ret_string = NULL;
+	char *b, *p, *s;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		DEBUG(0, ("talloc_new failed\n"));
 		return NULL;
 	}
-	t = talloc_strdup(mem_ctx, a);
-	SAFE_FREE(a);
-	return t;
-}
 
-/****************************************************************************
-****************************************************************************/
-
-char *alloc_sub_specified(const char *input_string,
-			const char *username,
-			const char *domain,
-			uid_t uid,
-			gid_t gid)
-{
-	char *a_string, *ret_string;
-	char *b, *p, *s;
-
-	a_string = SMB_STRDUP(input_string);
+	a_string = talloc_strdup(tmp_ctx, input_string);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
-		return NULL;
+		DEBUG(0, ("talloc_sub_specified: Out of memory!\n"));
+		goto done;
 	}
 	
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
@@ -614,30 +605,42 @@ char *alloc_sub_specified(const char *input_string,
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			a_string = realloc_string_sub(a_string, "%U", username);
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%U", username);
 			break;
 		case 'u' : 
-			a_string = realloc_string_sub(a_string, "%u", username);
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%u", username);
 			break;
 		case 'G' :
 			if (gid != -1) {
-				a_string = realloc_string_sub(a_string, "%G", gidtoname(gid));
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%G",
+					gidtoname(gid));
 			} else {
-				a_string = realloc_string_sub(a_string, "%G", "NO_GROUP");
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string,
+					"%G", "NO_GROUP");
 			}
 			break;
 		case 'g' :
 			if (gid != -1) {
-				a_string = realloc_string_sub(a_string, "%g", gidtoname(gid));
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%g",
+					gidtoname(gid));
 			} else {
-				a_string = realloc_string_sub(a_string, "%g", "NO_GROUP");
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%g", "NO_GROUP");
 			}
 			break;
 		case 'D' :
-			a_string = realloc_string_sub(a_string, "%D", domain);
+			a_string = talloc_string_sub(tmp_ctx, a_string,
+						     "%D", domain);
 			break;
 		case 'N' : 
-			a_string = realloc_string_sub(a_string, "%N", automount_server(username)); 
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%N",
+				automount_server(username)); 
 			break;
 		default: 
 			break;
@@ -645,42 +648,27 @@ char *alloc_sub_specified(const char *input_string,
 
 		p++;
 		if (a_string == NULL) {
-			return NULL;
+			goto done;
 		}
 	}
 
-	ret_string = alloc_sub_basic(username, a_string);
-	SAFE_FREE(a_string);
+	/* Watch out, using "mem_ctx" here, so all intermediate stuff goes
+	 * away with the TALLOC_FREE(tmp_ctx) further down. */
+
+	ret_string = talloc_sub_basic(mem_ctx, username, domain, a_string);
+
+ done:
+	TALLOC_FREE(tmp_ctx);
 	return ret_string;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
-			int snum,
-			const char *user,
-			const char *connectpath,
-			gid_t gid,
-			const char *smb_name,
-			const char *str)
-{
-	char *a, *t;
-       	a = alloc_sub_advanced(snum, user, connectpath, gid, smb_name, str);
-	if (!a) {
-		return NULL;
-	}
-	t = talloc_strdup(mem_ctx, a);
-	SAFE_FREE(a);
-	return t;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-char *alloc_sub_advanced(int snum, const char *user, 
-				  const char *connectpath, gid_t gid, 
-				  const char *smb_name, const char *str)
+static char *alloc_sub_advanced(const char *servicename, const char *user, 
+			 const char *connectpath, gid_t gid, 
+			 const char *smb_name, const char *domain_name,
+			 const char *str)
 {
 	char *a_string, *ret_string;
 	char *b, *p, *s, *h;
@@ -707,7 +695,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 			a_string = realloc_string_sub(a_string, "%P", connectpath); 
 			break;
 		case 'S': 
-			a_string = realloc_string_sub(a_string, "%S", lp_servicename(snum)); 
+			a_string = realloc_string_sub(a_string, "%S", servicename);
 			break;
 		case 'g': 
 			a_string = realloc_string_sub(a_string, "%g", gidtoname(gid)); 
@@ -724,7 +712,8 @@ char *alloc_sub_advanced(int snum, const char *user,
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			a_string = realloc_string_sub(a_string, "%p", automount_path(lp_servicename(snum))); 
+			a_string = realloc_string_sub(a_string, "%p",
+						      automount_path(servicename)); 
 			break;
 			
 		default: 
@@ -737,21 +726,60 @@ char *alloc_sub_advanced(int snum, const char *user,
 		}
 	}
 
-	ret_string = alloc_sub_basic(smb_name, a_string);
+	ret_string = alloc_sub_basic(smb_name, domain_name, a_string);
 	SAFE_FREE(a_string);
 	return ret_string;
 }
 
+/*
+ * This obviously is inefficient and needs to be merged into
+ * alloc_sub_advanced...
+ */
+
+char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
+			  const char *servicename, const char *user, 
+			  const char *connectpath, gid_t gid, 
+			  const char *smb_name, const char *domain_name,
+			  const char *str)
+{
+	char *a, *t;
+
+	if (!(a = alloc_sub_advanced(servicename, user, connectpath, gid,
+				     smb_name, domain_name, str))) {
+		return NULL;
+	}
+	t = talloc_strdup(mem_ctx, a);
+	SAFE_FREE(a);
+	return t;
+}
+
+
+void standard_sub_advanced(const char *servicename, const char *user, 
+			   const char *connectpath, gid_t gid, 
+			   const char *smb_name, const char *domain_name,
+			   char *str, size_t len)
+{
+	char *s;
+	
+	s = alloc_sub_advanced(servicename, user, connectpath,
+			       gid, smb_name, domain_name, str);
+
+	if ( s ) {
+		strncpy( str, s, len );
+		SAFE_FREE( s );
+	}
+}
+
 /****************************************************************************
- Do some standard substitutions in a string.
-****************************************************************************/
+ *  Do some standard substitutions in a string.
+ *  ****************************************************************************/
 
 void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 {
 	char *s;
-	
-	s = alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
-			conn->gid, smb_user_name, str);
+
+	s = alloc_sub_advanced(lp_servicename(SNUM(conn)), conn->user, conn->connectpath,
+			       conn->gid, smb_user_name, "", str);
 
 	if ( s ) {
 		strncpy( str, s, len );
@@ -759,48 +787,3 @@ void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
-
-char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, const char *str)
-{
-	return talloc_sub_advanced(mem_ctx, SNUM(conn), conn->user,
-			conn->connectpath, conn->gid,
-			smb_user_name, str);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-char *alloc_sub_conn(connection_struct *conn, const char *str)
-{
-	return alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
-			conn->gid, smb_user_name, str);
-}
-
-/****************************************************************************
- Like standard_sub but by snum.
-****************************************************************************/
-
-void standard_sub_snum(int snum, char *str, size_t len)
-{
-	static uid_t cached_uid = -1;
-	static fstring cached_user;
-	char *s;
-	
-	/* calling uidtoname() on every substitute would be too expensive, so
-	   we cache the result here as nearly every call is for the same uid */
-
-	if (cached_uid != current_user.ut.uid) {
-		fstrcpy(cached_user, uidtoname(current_user.ut.uid));
-		cached_uid = current_user.ut.uid;
-	}
-
-	s = alloc_sub_advanced(snum, cached_user, "", current_user.ut.gid,
-			      smb_user_name, str);
-
-	if ( s ) {
-		strncpy( str, s, len );
-		SAFE_FREE( s );
-	}
-}

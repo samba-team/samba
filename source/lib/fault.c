@@ -160,12 +160,13 @@ void dump_core_setup(const char *progname)
 		exit(1);
 	}
 
+#if DUMP_CORE
 	if (*corepath != '\0') {
 		/* The chdir might fail if we dump core before we finish
 		 * processing the config file.
 		 */
 		if (chdir(corepath) != 0) {
-			DEBUG(0, ("unable to change to %s", corepath));
+			DEBUG(0, ("unable to change to %s\n", corepath));
 			DEBUGADD(0, ("refusing to dump core\n"));
 			exit(1);
 		}
@@ -182,5 +183,9 @@ void dump_core_setup(const char *progname)
 #endif
 
 	abort();
+
+#else /* DUMP_CORE */
+	exit(1);
+#endif /* DUMP_CORE */
 }
 

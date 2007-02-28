@@ -32,29 +32,6 @@
 
 #define ZERO_ZERO 0
 
-/* This contains elements that differentiate locks. The smbpid is a
-   client supplied pid, and is essentially the locking context for
-   this client */
-
-struct lock_context {
-	uint16 smbpid;
-	uint16 tid;
-	struct process_id pid;
-};
-
-/* The data in brlock records is an unsorted linear array of these
-   records.  It is unnecessary to store the count as tdb provides the
-   size of the record */
-
-struct lock_struct {
-	struct lock_context context;
-	br_off start;
-	br_off size;
-	int fnum;
-	enum brl_type lock_type;
-	enum brl_flavour lock_flav;
-};
-
 /* The open brlock.tdb database. */
 
 static TDB_CONTEXT *tdb;
@@ -83,7 +60,7 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
  See if two locking contexts are equal.
 ****************************************************************************/
 
-static BOOL brl_same_context(const struct lock_context *ctx1, 
+BOOL brl_same_context(const struct lock_context *ctx1, 
 			     const struct lock_context *ctx2)
 {
 	return (procid_equal(&ctx1->pid, &ctx2->pid) &&
@@ -121,7 +98,7 @@ static BOOL brl_conflict(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	/* Ignore PENDING locks. */
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	/* Read locks never conflict. */
@@ -152,7 +129,7 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 #endif
 
 	/* Ignore PENDING locks. */
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	/* Read locks never conflict. */
@@ -174,7 +151,7 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 static BOOL brl_conflict1(const struct lock_struct *lck1, 
 			 const struct lock_struct *lck2)
 {
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
@@ -207,7 +184,7 @@ static BOOL brl_conflict1(const struct lock_struct *lck1,
 
 static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock_struct *lck2)
 {
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
@@ -234,29 +211,46 @@ static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock
 } 
 
 /****************************************************************************
- Amazingly enough, w2k3 "remembers" whether the last lock failure
+ Check if an unlock overlaps a pending lock.
+****************************************************************************/
+
+static BOOL brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
+{
+	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
+		return True;
+	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
+		return True;
+	return False;
+}
+
+/****************************************************************************
+ Amazingly enough, w2k3 "remembers" whether the last lock failure on a fnum
  is the same as this one and changes its error code. I wonder if any
  app depends on this ?
 ****************************************************************************/
 
-static NTSTATUS brl_lock_failed(const struct lock_struct *lock)
+static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, BOOL blocking_lock)
 {
-	static struct lock_struct last_lock_failure;
-
-	if (brl_same_context(&lock->context, &last_lock_failure.context) &&
-			lock->fnum == last_lock_failure.fnum &&
-			lock->start == last_lock_failure.start &&
-			lock->size == last_lock_failure.size) {
-		return NT_STATUS_FILE_LOCK_CONFLICT;
-	}
-	last_lock_failure = *lock;
-	if (lock->start >= 0xEF000000 &&
-			(lock->start >> 63) == 0) {
+	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
 		   suite. Locks beyond this offset (as a 64 bit
 		   number!) always generate the conflict error code,
 		   unless the top bit is set */
+		if (!blocking_lock) {
+			fsp->last_lock_failure = *lock;
+		}
 		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	if (procid_equal(&lock->context.pid, &fsp->last_lock_failure.context.pid) &&
+			lock->context.tid == fsp->last_lock_failure.context.tid &&
+			lock->fnum == fsp->last_lock_failure.fnum &&
+			lock->start == fsp->last_lock_failure.start) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	if (!blocking_lock) {
+		fsp->last_lock_failure = *lock;
 	}
 	return NT_STATUS_LOCK_NOT_GRANTED;
 }
@@ -316,8 +310,7 @@ static int lock_compare(const struct lock_struct *lck1,
 ****************************************************************************/
 
 static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock,
-			BOOL *my_lock_ctx)
+			const struct lock_struct *plock, BOOL blocking_lock)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
@@ -326,12 +319,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
-			NTSTATUS status = brl_lock_failed(plock);;
-			/* Did we block ourselves ? */
-			if (brl_same_context(&locks[i].context, &plock->context)) {
-				*my_lock_ctx = True;
-			}
-			return status;
+			return brl_lock_failed(fsp,plock,blocking_lock);
 		}
 #if ZERO_ZERO
 		if (plock->start == 0 && plock->size == 0 && 
@@ -343,13 +331,19 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 
 	/* We can get the Windows lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
-	   we get it ? We tell the lower lock layer about the
-	   lock type so it can cope with the difference between
-	   Windows "stacking" locks and POSIX "flat" ones. */
+	   we get it ? */
 
-	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
-		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, WINDOWS_LOCK)) {
-			if (errno == EACCES || errno == EAGAIN) {
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(fsp->conn->params)) {
+		int errno_ret;
+		if (!set_posix_lock_windows_flavour(fsp,
+				plock->start,
+				plock->size,
+				plock->lock_type,
+				&plock->context,
+				locks,
+				br_lck->num_locks,
+				&errno_ret)) {
+			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			} else {
 				return map_nt_error_from_unix(errno);
@@ -375,9 +369,9 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
  Cope with POSIX range splits and merges.
 ****************************************************************************/
 
-static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,
-						const struct lock_struct *ex,
-						const struct lock_struct *plock,
+static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,		/* Output array. */
+						const struct lock_struct *ex,		/* existing lock. */
+						const struct lock_struct *plock,	/* proposed lock. */
 						BOOL *lock_was_added)
 {
 	BOOL lock_types_differ = (ex->lock_type != plock->lock_type);
@@ -398,26 +392,26 @@ static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,
                                              +---------+
                                              | ex      |
                                              +---------+
-                                +-------+
-                                | plock |
-                                +-------+
+                              +-------+
+                              | plock |
+                              +-------+
 OR....
              +---------+
              |  ex     |
              +---------+
 **********************************************/
 
-	if ( (ex->start >= (plock->start + plock->size)) ||
-			(plock->start >= (ex->start + ex->size))) {
+	if ( (ex->start > (plock->start + plock->size)) ||
+			(plock->start > (ex->start + ex->size))) {
 		/* No overlap with this lock - copy existing. */
 		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
 		return 1;
 	}
 
 /*********************************************
-                +---------+
-                |  ex     |
-                +---------+
+        +---------------------------+
+        |          ex               |
+        +---------------------------+
         +---------------------------+
         |       plock               | -> replace with plock.
         +---------------------------+
@@ -431,24 +425,32 @@ OR....
 	}
 
 /*********************************************
-                +---------------+
-                |  ex           |
-                +---------------+
+        +-----------------------+
+        |          ex           |
+        +-----------------------+
         +---------------+
         |   plock       |
         +---------------+
+OR....
+                        +-------+
+                        |  ex   |
+                        +-------+
+        +---------------+
+        |   plock       |
+        +---------------+
+
 BECOMES....
         +---------------+-------+
         |   plock       | ex    | - different lock types.
         +---------------+-------+
-OR....
+OR.... (merge)
         +-----------------------+
         |   ex                  | - same lock type.
         +-----------------------+
 **********************************************/
 
 	if ( (ex->start >= plock->start) &&
-				(ex->start < plock->start + plock->size) &&
+				(ex->start <= plock->start + plock->size) &&
 				(ex->start + ex->size > plock->start + plock->size) ) {
 
 		*lock_was_added = True;
@@ -475,9 +477,16 @@ OR....
 	}
 
 /*********************************************
-   +---------------+
-   |  ex           |
-   +---------------+
+   +-----------------------+
+   |  ex                   |
+   +-----------------------+
+           +---------------+
+           |   plock       |
+           +---------------+
+OR....
+   +-------+        
+   |  ex   |
+   +-------+
            +---------------+
            |   plock       |
            +---------------+
@@ -486,7 +495,7 @@ BECOMES....
    | ex    |   plock       | - different lock types
    +-------+---------------+
 
-OR
+OR.... (merge)
    +-----------------------+
    | ex                    | - same lock type.
    +-----------------------+
@@ -494,7 +503,7 @@ OR
 **********************************************/
 
 	if ( (ex->start < plock->start) &&
-			(ex->start + ex->size > plock->start) &&
+			(ex->start + ex->size >= plock->start) &&
 			(ex->start + ex->size <= plock->start + plock->size) ) {
 
 		*lock_was_added = True;
@@ -573,13 +582,13 @@ OR
 ****************************************************************************/
 
 static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock,
-			BOOL *my_lock_ctx)
+			const struct lock_struct *plock)
 {
 	unsigned int i, count;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
+	BOOL signal_pending_read = False;
 
 	/* No zero-zero locks for POSIX. */
 	if (plock->start == 0 && plock->size == 0) {
@@ -603,23 +612,28 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	
 	count = 0;
 	for (i=0; i < br_lck->num_locks; i++) {
-		if (locks[i].lock_flav == WINDOWS_LOCK) {
+		struct lock_struct *curr_lock = &locks[i];
+
+		/* If we have a pending read lock, a lock downgrade should
+		   trigger a lock re-evaluation. */
+		if (curr_lock->lock_type == PENDING_READ_LOCK &&
+				brl_pending_overlap(plock, curr_lock)) {
+			signal_pending_read = True;
+		}
+
+		if (curr_lock->lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
-			if (brl_conflict(&locks[i], plock)) {
-				/* Did we block ourselves ? */
-				if (brl_same_context(&locks[i].context, &plock->context)) {
-					*my_lock_ctx = True;
-				}
+			if (brl_conflict(curr_lock, plock)) {
 				/* No games with error messages. */
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			}
 			/* Just copy the Windows lock into the new array. */
-			memcpy(&tp[count], &locks[i], sizeof(struct lock_struct));
+			memcpy(&tp[count], curr_lock, sizeof(struct lock_struct));
 			count++;
 		} else {
 			/* POSIX conflict semantics are different. */
-			if (brl_conflict_posix(&locks[i], plock)) {
+			if (brl_conflict_posix(curr_lock, plock)) {
 				/* Can't block ourselves with POSIX locks. */
 				/* No games with error messages. */
 				SAFE_FREE(tp);
@@ -627,24 +641,32 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 
 			/* Work out overlaps. */
-			count += brlock_posix_split_merge(&tp[count], &locks[i], plock, &lock_was_added);
+			count += brlock_posix_split_merge(&tp[count], curr_lock, plock, &lock_was_added);
 		}
+	}
+
+	if (!lock_was_added) {
+		memcpy(&tp[count], plock, sizeof(struct lock_struct));
+		count++;
 	}
 
 	/* We can get the POSIX lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
-	   we get it ? We well the lower lock layer about the
-	   lock type so it can cope with the difference between
-	   Windows "stacking" locks and POSIX "flat" ones. */
+	   we get it ? */
 
-#if 0
-	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(br_lck->fsp->conn->params)) {
+		int errno_ret;
 
-	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
-		files_struct *fsp = br_lck->fsp;
+		/* The lower layer just needs to attempt to
+		   get the system POSIX lock. We've weeded out
+		   any conflicts above. */
 
-		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, POSIX_LOCK)) {
-			if (errno == EACCES || errno == EAGAIN) {
+		if (!set_posix_lock_posix_flavour(br_lck->fsp,
+				plock->start,
+				plock->size,
+				plock->lock_type,
+				&errno_ret)) {
+			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			} else {
@@ -652,12 +674,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				return map_nt_error_from_unix(errno);
 			}
 		}
-	}
-#endif
-
-	if (!lock_was_added) {
-		memcpy(&tp[count], plock, sizeof(struct lock_struct));
-		count++;
 	}
 
 	/* Realloc so we don't leak entries per lock call. */
@@ -668,7 +684,34 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
+	locks = tp;
 	br_lck->modified = True;
+
+	/* A successful downgrade from write to read lock can trigger a lock
+	   re-evalutation where waiting readers can now proceed. */
+
+	if (signal_pending_read) {
+		/* Send unlock messages to any pending read waiters that overlap. */
+		for (i=0; i < br_lck->num_locks; i++) {
+			struct lock_struct *pend_lock = &locks[i];
+
+			/* Ignore non-pending locks. */
+			if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
+				continue;
+			}
+
+			if (pend_lock->lock_type == PENDING_READ_LOCK &&
+					brl_pending_overlap(plock, pend_lock)) {
+				DEBUG(10,("brl_lock_posix: sending unlock message to pid %s\n",
+					procid_str_static(&pend_lock->context.pid )));
+
+				message_send_pid(pend_lock->context.pid,
+						MSG_SMB_UNLOCK,
+						NULL, 0, True);
+			}
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -677,18 +720,16 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 NTSTATUS brl_lock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size, 
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		BOOL *my_lock_ctx)
+		BOOL blocking_lock)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
-
-	*my_lock_ctx = False;
 
 #if !ZERO_ZERO
 	if (start == 0 && size == 0) {
@@ -706,9 +747,9 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		ret = brl_lock_windows(br_lck, &lock, my_lock_ctx);
+		ret = brl_lock_windows(br_lck, &lock, blocking_lock);
 	} else {
-		ret = brl_lock_posix(br_lck, &lock, my_lock_ctx);
+		ret = brl_lock_posix(br_lck, &lock);
 	}
 
 #if ZERO_ZERO
@@ -720,19 +761,6 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 }
 
 /****************************************************************************
- Check if an unlock overlaps a pending lock.
-****************************************************************************/
-
-static BOOL brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
-{
-	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
-		return True;
-	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
-		return True;
-	return False;
-}
-
-/****************************************************************************
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
@@ -740,8 +768,12 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 {
 	unsigned int i, j;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
 
 #if ZERO_ZERO
+	/* Delete write locks by preference... The lock list
+	   is sorted in the zero zero case. */
+
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
@@ -753,15 +785,14 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		    lock->size == plock->size) {
 
 			/* found it - delete it */
-			if (i < br_lck->num_locks - 1) {
-				memmove(&locks[i], &locks[i+1], 
-					sizeof(*locks)*((br_lck->num_locks-1) - i));
-			}
-
-			br_lck->num_locks -= 1;
-			br_lck->modified = True;
-			return True;
+			deleted_lock_type = lock->lock_type;
+			break;
 		}
+	}
+
+	if (i != br_lck->num_locks) {
+		/* We found it - don't search again. */
+		goto unlock_continue;
 	}
 #endif
 
@@ -774,6 +805,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 					lock->lock_flav == WINDOWS_LOCK &&
 					lock->start == plock->start &&
 					lock->size == plock->size ) {
+			deleted_lock_type = lock->lock_type;
 			break;
 		}
 	}
@@ -783,32 +815,9 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		return False;
 	}
 
-	/* Unlock any POSIX regions. */
-	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
-		release_posix_lock(br_lck->fsp, plock->start, plock->size);
-	}
-
-	/* Send unlock messages to any pending waiters that overlap. */
-	for (j=0; j < br_lck->num_locks; j++) {
-		struct lock_struct *pend_lock = &locks[j];
-
-		/* Ignore non-pending locks. */
-		if (pend_lock->lock_type != PENDING_LOCK) {
-			continue;
-		}
-
-		/* We could send specific lock info here... */
-		if (brl_pending_overlap(plock, pend_lock)) {
-			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
-				procid_str_static(&pend_lock->context.pid )));
-
-			become_root();
-			message_send_pid(pend_lock->context.pid,
-					MSG_SMB_UNLOCK,
-					NULL, 0, True);
-			unbecome_root();
-		}
-	}
+#if ZERO_ZERO
+  unlock_continue:
+#endif
 
 	/* Actually delete the lock. */
 	if (i < br_lck->num_locks - 1) {
@@ -818,6 +827,38 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 
 	br_lck->num_locks -= 1;
 	br_lck->modified = True;
+
+	/* Unlock the underlying POSIX regions. */
+	if(lp_posix_locking(br_lck->fsp->conn->params)) {
+		release_posix_lock_windows_flavour(br_lck->fsp,
+				plock->start,
+				plock->size,
+				deleted_lock_type,
+				&plock->context,
+				locks,
+				br_lck->num_locks);
+	}
+
+	/* Send unlock messages to any pending waiters that overlap. */
+	for (j=0; j < br_lck->num_locks; j++) {
+		struct lock_struct *pend_lock = &locks[j];
+
+		/* Ignore non-pending locks. */
+		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
+			continue;
+		}
+
+		/* We could send specific lock info here... */
+		if (brl_pending_overlap(plock, pend_lock)) {
+			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
+				procid_str_static(&pend_lock->context.pid )));
+
+			message_send_pid(pend_lock->context.pid,
+					MSG_SMB_UNLOCK,
+					NULL, 0, True);
+		}
+	}
+
 	return True;
 }
 
@@ -861,9 +902,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		BOOL lock_was_added = False;
 		unsigned int tmp_count;
 
-
 		/* Only remove our own locks - ignore fnum. */
-		if (lock->lock_type == PENDING_LOCK ||
+		if (IS_PENDING_LOCK(lock->lock_type) ||
 				!brl_same_context(&lock->context, &plock->context)) {
 			memcpy(&tp[count], lock, sizeof(struct lock_struct));
 			count++;
@@ -894,13 +934,18 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
 				SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
 				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
+				if (tmp_lock[0].size != locks[i].size) {
+					overlap_found = True;
+				}
 			} else {
 				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
 				SMB_ASSERT(tmp_lock[1].lock_type == locks[i].lock_type);
 				memcpy(&tp[count], &tmp_lock[1], sizeof(struct lock_struct));
+				if (tmp_lock[1].start != locks[i].start) {
+					overlap_found = True;
+				}
 			}
 			count++;
-			overlap_found = True;
 			continue;
 		} else {
 			/* tmp_count == 3 - (we split a lock range in two). */
@@ -932,14 +977,15 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		return True;
 	}
 
-#if 0
-	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
-
 	/* Unlock any POSIX regions. */
-	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
-		release_posix_lock(br_lck->fsp, plock->start, plock->size);
+	if(lp_posix_locking(br_lck->fsp->conn->params)) {
+		release_posix_lock_posix_flavour(br_lck->fsp,
+						plock->start,
+						plock->size,
+						&plock->context,
+						tp,
+						count);
 	}
-#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
@@ -956,7 +1002,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
-	locks = br_lck->lock_data = (void *)tp;
+	locks = tp;
+	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -965,7 +1012,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		struct lock_struct *pend_lock = &locks[j];
 
 		/* Ignore non-pending locks. */
-		if (pend_lock->lock_type != PENDING_LOCK) {
+		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
 			continue;
 		}
 
@@ -974,11 +1021,9 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			become_root();
 			message_send_pid(pend_lock->context.pid,
 					MSG_SMB_UNLOCK,
 					NULL, 0, True);
-			unbecome_root();
 		}
 	}
 
@@ -990,7 +1035,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 ****************************************************************************/
 
 BOOL brl_unlock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size,
@@ -1020,7 +1065,7 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 BOOL brl_locktest(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size, 
@@ -1030,7 +1075,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	BOOL ret = True;
 	unsigned int i;
 	struct lock_struct lock;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = smbpid;
@@ -1058,7 +1103,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	 * This only conflicts with Windows locks, not POSIX locks.
 	 */
 
-	if(lp_posix_locking(fsp->conn->cnum) && (lock_flav == WINDOWS_LOCK)) {
+	if(lp_posix_locking(fsp->conn->params) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
 		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -1078,7 +1123,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
-		uint16 *psmbpid,
+		uint32 *psmbpid,
 		struct process_id pid,
 		br_off *pstart,
 		br_off *psize, 
@@ -1087,7 +1132,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	struct lock_struct lock;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = *psmbpid;
@@ -1101,7 +1146,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 	/* Make sure existing locks don't conflict */
 	for (i=0; i < br_lck->num_locks; i++) {
-		struct lock_struct *exlock = &locks[i];
+		const struct lock_struct *exlock = &locks[i];
 		BOOL conflict = False;
 
 		if (exlock->lock_flav == WINDOWS_LOCK) {
@@ -1124,7 +1169,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 	 * see if there is a POSIX lock from a UNIX or NFS process.
 	 */
 
-	if(lp_posix_locking(fsp->conn->cnum)) {
+	if(lp_posix_locking(fsp->conn->params)) {
 		BOOL ret = is_posix_locked(fsp, pstart, psize, plock_type, POSIX_LOCK);
 
 		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -1141,13 +1186,12 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 	return NT_STATUS_OK;
 }
 
-
 /****************************************************************************
  Remove a particular pending lock.
 ****************************************************************************/
 
-BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size,
@@ -1167,7 +1211,7 @@ BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
 		/* For pending locks we *always* care about the fnum. */
 		if (brl_same_context(&lock->context, &context) &&
 				lock->fnum == br_lck->fsp->fnum &&
-				lock->lock_type == PENDING_LOCK &&
+				IS_PENDING_LOCK(lock->lock_type) &&
 				lock->lock_flav == lock_flav &&
 				lock->start == start &&
 				lock->size == size) {
@@ -1191,18 +1235,75 @@ BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
 	return True;
 }
 
-
 /****************************************************************************
  Remove any locks associated with a open file.
+ We return True if this process owns any other Windows locks on this
+ fd and so we should not immediately close the fd.
 ****************************************************************************/
 
-void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
+void brl_close_fnum(struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
 	uint16 tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
 	unsigned int i, j, dcount=0;
+	int num_deleted_windows_locks = 0;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct process_id pid = procid_self();
+	BOOL unlock_individually = False;
+
+	if(lp_posix_locking(fsp->conn->params)) {
+
+		/* Check if there are any Windows locks associated with this dev/ino
+		   pair that are not this fnum. If so we need to call unlock on each
+		   one in order to release the system POSIX locks correctly. */
+
+		for (i=0; i < br_lck->num_locks; i++) {
+			struct lock_struct *lock = &locks[i];
+
+			if (!procid_equal(&lock->context.pid, &pid)) {
+				continue;
+			}
+
+			if (lock->lock_type != READ_LOCK && lock->lock_type != WRITE_LOCK) {
+				continue; /* Ignore pending. */
+			}
+
+			if (lock->context.tid != tid || lock->fnum != fnum) {
+				unlock_individually = True;
+				break;
+			}
+		}
+
+		if (unlock_individually) {
+			struct lock_struct *locks_copy;
+			unsigned int num_locks_copy;
+
+			/* Copy the current lock array. */
+			locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+			if (!locks_copy) {
+				smb_panic("brl_close_fnum: talloc fail.\n");
+			}
+			num_locks_copy = br_lck->num_locks;
+
+			for (i=0; i < num_locks_copy; i++) {
+				struct lock_struct *lock = &locks_copy[i];
+
+				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
+						(lock->fnum == fnum)) {
+					brl_unlock(br_lck,
+						lock->context.smbpid,
+						pid,
+						lock->start,
+						lock->size,
+						lock->lock_flav);
+				}
+			}
+			return;
+		}
+	}
+
+	/* We can bulk delete - any POSIX locks will be removed when the fd closes. */
 
 	/* Remove any existing locks for this fnum (or any fnum if they're POSIX). */
 
@@ -1213,6 +1314,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid)) {
 			if ((lock->lock_flav == WINDOWS_LOCK) && (lock->fnum == fnum)) {
 				del_this_lock = True;
+				num_deleted_windows_locks++;
 			} else if (lock->lock_flav == POSIX_LOCK) {
 				del_this_lock = True;
 			}
@@ -1224,7 +1326,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 				struct lock_struct *pend_lock = &locks[j];
 
 				/* Ignore our own or non-pending locks. */
-				if (pend_lock->lock_type != PENDING_LOCK) {
+				if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
 					continue;
 				}
 
@@ -1238,11 +1340,9 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 
 				/* We could send specific lock info here... */
 				if (brl_pending_overlap(lock, pend_lock)) {
-					become_root();
 					message_send_pid(pend_lock->context.pid,
 							MSG_SMB_UNLOCK,
 							NULL, 0, True);
-					unbecome_root();
 				}
 			}
 
@@ -1256,6 +1356,11 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 			i--;
 			dcount++;
 		}
+	}
+
+	if(lp_posix_locking(fsp->conn->params) && num_deleted_windows_locks) {
+		/* Reduce the Windows lock POSIX reference count on this dev/ino pair. */
+		reduce_windows_lock_ref_count(fsp, num_deleted_windows_locks);
 	}
 }
 
@@ -1345,7 +1450,7 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	}
 
 	if (orig_num_locks != num_locks) {
-		dbuf.dptr = (void *)locks;
+		dbuf.dptr = (char *)locks;
 		dbuf.dsize = num_locks * sizeof(*locks);
 
 		if (dbuf.dsize) {
@@ -1387,12 +1492,16 @@ int brl_forall(BRLOCK_FN(fn))
  Unlock the record.
 ********************************************************************/
 
-int byte_range_lock_destructor(struct byte_range_lock *br_lck)
+static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
 	TDB_DATA key;
 
 	key.dptr = (char *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
+
+	if (br_lck->read_only) {
+		SMB_ASSERT(!br_lck->modified);
+	}
 
 	if (!br_lck->modified) {
 		goto done;
@@ -1405,7 +1514,7 @@ int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 		}
 	} else {
 		TDB_DATA data;
-		data.dptr = br_lck->lock_data;
+		data.dptr = (char *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
 		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
@@ -1415,22 +1524,25 @@ int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 
  done:
 
-	tdb_chainunlock(tdb, key);
+	if (!br_lck->read_only) {
+		tdb_chainunlock(tdb, key);
+	}
 	SAFE_FREE(br_lck->lock_data);
-	SAFE_FREE(br_lck);
 	return 0;
 }
 
 /*******************************************************************
  Fetch a set of byte range lock data from the database.
  Leave the record locked.
+ TALLOC_FREE(brl) will release the lock in the destructor.
 ********************************************************************/
 
-struct byte_range_lock *brl_get_locks(files_struct *fsp)
+static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
+					files_struct *fsp, BOOL read_only)
 {
 	TDB_DATA key;
 	TDB_DATA data;
-	struct byte_range_lock *br_lck = SMB_MALLOC_P(struct byte_range_lock);
+	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
 
 	if (br_lck == NULL) {
 		return NULL;
@@ -1446,11 +1558,24 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 	key.dptr = (char *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
 
-	if (tdb_chainlock(tdb, key) != 0) {
-		DEBUG(3, ("Could not lock byte range lock entry\n"));
-		SAFE_FREE(br_lck);
-		return NULL;
+	if (!fsp->lockdb_clean) {
+		/* We must be read/write to clean
+		   the dead entries. */
+		read_only = False;
 	}
+
+	if (read_only) {
+		br_lck->read_only = True;
+	} else {
+		if (tdb_chainlock(tdb, key) != 0) {
+			DEBUG(3, ("Could not lock byte range lock entry\n"));
+			TALLOC_FREE(br_lck);
+			return NULL;
+		}
+		br_lck->read_only = False;
+	}
+
+	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
 	data = tdb_fetch(tdb, key);
 	br_lck->lock_data = (void *)data.dptr;
@@ -1462,12 +1587,21 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 		/* Go through and ensure all entries exist - remove any that don't. */
 		/* Makes the lockdb self cleaning at low cost. */
 
-		if (!validate_lock_entries(&br_lck->num_locks, (struct lock_struct **)&br_lck->lock_data)) {
-			tdb_chainunlock(tdb, key);
+		struct lock_struct *locks =
+			(struct lock_struct *)br_lck->lock_data;
+
+		if (!validate_lock_entries(&br_lck->num_locks, &locks)) {
 			SAFE_FREE(br_lck->lock_data);
-			SAFE_FREE(br_lck);
+			TALLOC_FREE(br_lck);
 			return NULL;
 		}
+
+		/*
+		 * validate_lock_entries might have changed locks. We can't
+		 * use a direct pointer here because otherwise gcc warnes
+		 * about strict aliasing rules being violated.
+		 */
+		br_lck->lock_data = locks;
 
 		/* Mark the lockdb as "clean" as seen from this open file. */
 		fsp->lockdb_clean = True;
@@ -1476,7 +1610,7 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
 		struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-		DEBUG(10,("brl_get_locks: %u current locks on dev=%.0f, inode=%.0f\n",
+		DEBUG(10,("brl_get_locks_internal: %u current locks on dev=%.0f, inode=%.0f\n",
 			br_lck->num_locks,
 			(double)fsp->dev, (double)fsp->inode ));
 		for( i = 0; i < br_lck->num_locks; i++) {
@@ -1484,4 +1618,16 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 		}
 	}
 	return br_lck;
+}
+
+struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
+					files_struct *fsp)
+{
+	return brl_get_locks_internal(mem_ctx, fsp, False);
+}
+
+struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
+					files_struct *fsp)
+{
+	return brl_get_locks_internal(mem_ctx, fsp, True);
 }

@@ -27,7 +27,7 @@
 #define TIME_OFFSET_HIGH 0x01B21DD2
 #define TIME_OFFSET_LOW  0x13814000
 
-void smb_uuid_pack(const struct uuid uu, UUID_FLAT *ptr)
+void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr)
 {
 	SIVAL(ptr->info, 0, uu.time_low);
 	SSVAL(ptr->info, 4, uu.time_mid);
@@ -36,7 +36,7 @@ void smb_uuid_pack(const struct uuid uu, UUID_FLAT *ptr)
 	memcpy(ptr->info+10, uu.node, 6);
 }
 
-void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
+void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu)
 {
 	uu->time_low = IVAL(in.info, 0);
 	uu->time_mid = SVAL(in.info, 4);
@@ -45,15 +45,15 @@ void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
 	memcpy(uu->node, in.info+10, 6);
 }
 
-struct uuid smb_uuid_unpack_static(const UUID_FLAT in)
+struct GUID smb_uuid_unpack_static(const UUID_FLAT in)
 {
-	static struct uuid uu;
+	static struct GUID uu;
 
 	smb_uuid_unpack(in, &uu);
 	return uu;
 }
 
-void smb_uuid_generate_random(struct uuid *uu)
+void smb_uuid_generate_random(struct GUID *uu)
 {
 	UUID_FLAT tmp;
 
@@ -64,7 +64,7 @@ void smb_uuid_generate_random(struct uuid *uu)
 	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
 }
 
-char *smb_uuid_to_string(const struct uuid uu)
+char *smb_uuid_to_string(const struct GUID uu)
 {
 	char *out;
 
@@ -77,7 +77,7 @@ char *smb_uuid_to_string(const struct uuid uu)
 	return out;
 }
 
-const char *smb_uuid_string_static(const struct uuid uu)
+const char *smb_uuid_string_static(const struct GUID uu)
 {
 	static char out[37];
 
@@ -90,7 +90,7 @@ const char *smb_uuid_string_static(const struct uuid uu)
 	return out;
 }
 
-BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
+BOOL smb_string_to_uuid(const char *in, struct GUID* uu)
 {
 	BOOL ret = False;
 	const char *ptr = in;

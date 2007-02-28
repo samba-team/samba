@@ -108,7 +108,8 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
  Pull a security descriptor from the share tdb.
  ********************************************************************/
 
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
+			      size_t *psize)
 {
 	prs_struct ps;
 	fstring key;
@@ -122,12 +123,13 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 
 	/* Fetch security descriptor from tdb */
  
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", servicename);
  
 	if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
 		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
  
-		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
+		DEBUG(4, ("get_share_security: using default secdesc for %s\n",
+			  servicename));
  
 		return get_share_security_default(ctx, psize, GENERIC_ALL_ACCESS);
 	}
@@ -143,7 +145,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
  Store a security descriptor in the share db.
  ********************************************************************/
 
-BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
+BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 {
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -186,22 +188,54 @@ out:
  Delete a security descriptor.
 ********************************************************************/
 
-BOOL delete_share_security(int snum)
+BOOL delete_share_security(const struct share_params *params)
 {
 	TDB_DATA kbuf;
 	fstring key;
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s",
+		 lp_servicename(params->service));
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
-	if (tdb_delete(share_tdb, kbuf) != 0) {
+	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
 		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
-				lp_servicename(snum) ));
+			 lp_servicename(params->service) ));
 		return False;
 	}
 
 	return True;
+}
+
+/*******************************************************************
+ Can this user access with share with the required permissions ?
+********************************************************************/
+
+BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+			uint32 desired_access)
+{
+	uint32 granted;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	BOOL ret = True;
+
+	if (!(mem_ctx = talloc_init("share_access_check"))) {
+		return False;
+	}
+
+	psd = get_share_security(mem_ctx, sharename, &sd_size);
+
+	if (!psd) {
+		TALLOC_FREE(mem_ctx);
+		return True;
+	}
+
+	ret = se_access_check(psd, token, desired_access, &granted, &status);
+
+	talloc_destroy(mem_ctx);
+	return ret;
 }
 
 /***************************************************************************

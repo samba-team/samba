@@ -3,11 +3,10 @@
 # adssearch.pl 	- query an Active Directory server and
 #		  display objects in a human readable format
 #
-# Copyright (C) Guenther Deschner <gd@samba.org> 2003-2005
+# Copyright (C) Guenther Deschner <gd@samba.org> 2003-2007
 #
 # TODO: add range retrieval
 #	write sddl-converter, decode userParameters
-#	chase referrals
 #	apparently only win2k3 allows simple-binds with machine-accounts.
 #	make sasl support independent from Authen::SASL::Cyrus v >0.11
 use strict;
@@ -50,7 +49,6 @@ my $nmblookup	= "/usr/bin/nmblookup";
 my $secrets_tdb = "/etc/samba/secrets.tdb";
 my $klist	= "/usr/bin/klist";
 my $kinit	= "/usr/bin/kinit";
-my $ads_h 	= "/home/gd/ads.h";
 my $workgroup	= "";
 my $machine	= "";
 my $realm	= "";
@@ -148,7 +146,6 @@ my ($sasl_hd, $async_ldap_hd, $sync_ldap_hd);
 my ($mesg, $usn);
 my (%entry_store);
 my $async_search;
-my (%ads_atype, %ads_gtype, %ads_grouptype, %ads_uf);
 
 # fixed values and vars
 my $set   	= "X";
@@ -181,6 +178,7 @@ my %ads_controls = (
 "LDAP_SERVER_ASQ_OID"			=> "1.2.840.113556.1.4.1504",
 "NONE (Get stats control)"		=> "1.2.840.113556.1.4.970",
 "LDAP_SERVER_QUOTA_CONTROL_OID"		=> "1.2.840.113556.1.4.1852",
+"LDAP_SERVER_SHUTDOWN_NOTIFY_OID"	=> "1.2.840.113556.1.4.1907",
 );
 
 my %ads_capabilities = (
@@ -347,6 +345,74 @@ my %ads_gpo_default_guids = (
 "mist"					=> "61718096-3D3F-4398-8318-203A48976F9E",
 );
 
+my %ads_uf = (
+	"UF_SCRIPT"				=> 0x00000001,
+	"UF_ACCOUNTDISABLE"			=> 0x00000002,
+#	"UF_UNUSED_1"				=> 0x00000004,
+	"UF_HOMEDIR_REQUIRED"			=> 0x00000008,
+	"UF_LOCKOUT"				=> 0x00000010,
+	"UF_PASSWD_NOTREQD"			=> 0x00000020,
+	"UF_PASSWD_CANT_CHANGE"			=> 0x00000040,
+	"UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED"	=> 0x00000080,
+	"UF_TEMP_DUPLICATE_ACCOUNT"		=> 0x00000100,
+	"UF_NORMAL_ACCOUNT"			=> 0x00000200,
+#	"UF_UNUSED_2"				=> 0x00000400,
+	"UF_INTERDOMAIN_TRUST_ACCOUNT"		=> 0x00000800,
+	"UF_WORKSTATION_TRUST_ACCOUNT"		=> 0x00001000,
+	"UF_SERVER_TRUST_ACCOUNT"		=> 0x00002000,
+#	"UF_UNUSED_3"				=> 0x00004000,
+#	"UF_UNUSED_4"				=> 0x00008000,
+	"UF_DONT_EXPIRE_PASSWD"			=> 0x00010000,
+	"UF_MNS_LOGON_ACCOUNT"			=> 0x00020000,
+	"UF_SMARTCARD_REQUIRED"			=> 0x00040000,
+	"UF_TRUSTED_FOR_DELEGATION"		=> 0x00080000,
+	"UF_NOT_DELEGATED"			=> 0x00100000,
+	"UF_USE_DES_KEY_ONLY"			=> 0x00200000,
+	"UF_DONT_REQUIRE_PREAUTH"		=> 0x00400000,
+	"UF_PASSWORD_EXPIRED"			=> 0x00800000,
+	"UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION" => 0x01000000,
+	"UF_NO_AUTH_DATA_REQUIRED"		=> 0x02000000,
+#	"UF_UNUSED_8"				=> 0x04000000,
+#	"UF_UNUSED_9"				=> 0x08000000,
+#	"UF_UNUSED_10"				=> 0x10000000,
+#	"UF_UNUSED_11"				=> 0x20000000,
+#	"UF_UNUSED_12"				=> 0x40000000,
+#	"UF_UNUSED_13"				=> 0x80000000,
+);
+
+my %ads_grouptype = (
+	"GROUP_TYPE_BUILTIN_LOCAL_GROUP"	=> 0x00000001,
+	"GROUP_TYPE_ACCOUNT_GROUP"		=> 0x00000002,
+	"GROUP_TYPE_RESOURCE_GROUP"		=> 0x00000004,
+	"GROUP_TYPE_UNIVERSAL_GROUP"		=> 0x00000008,
+	"GROUP_TYPE_APP_BASIC_GROUP"		=> 0x00000010,
+	"GROUP_TYPE_APP_QUERY_GROUP"		=> 0x00000020,
+	"GROUP_TYPE_SECURITY_ENABLED"		=> 0x80000000,
+);
+
+my %ads_atype = (
+	"ATYPE_NORMAL_ACCOUNT"			=> 0x30000000,
+	"ATYPE_WORKSTATION_TRUST"		=> 0x30000001,
+	"ATYPE_INTERDOMAIN_TRUST"		=> 0x30000002,
+	"ATYPE_SECURITY_GLOBAL_GROUP"		=> 0x10000000,
+	"ATYPE_DISTRIBUTION_GLOBAL_GROUP"	=> 0x10000001,
+	"ATYPE_DISTRIBUTION_UNIVERSAL_GROUP"	=> 0x10000001, # ATYPE_DISTRIBUTION_GLOBAL_GROUP
+	"ATYPE_SECURITY_LOCAL_GROUP"		=> 0x20000000,
+	"ATYPE_DISTRIBUTION_LOCAL_GROUP"	=> 0x20000001,
+	"ATYPE_ACCOUNT"				=> 0x30000000, # ATYPE_NORMAL_ACCOUNT
+	"ATYPE_GLOBAL_GROUP"			=> 0x10000000, # ATYPE_SECURITY_GLOBAL_GROUP
+	"ATYPE_LOCAL_GROUP"			=> 0x20000000, # ATYPE_SECURITY_LOCAL_GROUP
+);
+
+my %ads_gtype = (
+	"GTYPE_SECURITY_BUILTIN_LOCAL_GROUP"	=> 0x80000005,
+	"GTYPE_SECURITY_DOMAIN_LOCAL_GROUP"	=> 0x80000004,
+	"GTYPE_SECURITY_GLOBAL_GROUP"		=> 0x80000002,
+	"GTYPE_DISTRIBUTION_GLOBAL_GROUP"	=> 0x00000002,
+	"GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP"	=> 0x00000004,
+	"GTYPE_DISTRIBUTION_UNIVERSAL_GROUP"	=> 0x00000008,
+);
+
 my %munged_dial = (
 	"CtxCfgPresent"		=> \&dump_int,
 	"CtxCfgFlags1"		=> \&dump_int,
@@ -371,9 +437,6 @@ $SIG{__WARN__} = sub {
 	Carp::cluck (shift);
 };
 
-# parse ads.h
-parse_ads_h();
-
 # if there is data missing, we try to autodetect with samba-tools (if installed)
 # this might fill up workgroup, machine, realm
 get_samba_info();
@@ -388,7 +451,7 @@ $server 	= process_servername($opt_host) ||
 
 
 # get the base
-$base 		= $opt_base || 
+$base 		= defined($opt_base)? $opt_base : "" || 
 	 	  get_base_from_rootdse($server,$dse);
 
 # get the realm
@@ -899,45 +962,6 @@ sub check_sasl_mech {
 	return 0;
 }
 
-
-sub parse_ads_h {
-
-	-e "$ads_h" || die "cannot open samba3 ads.h ($ads_h): $!";
-	open(ADSH,"$ads_h");
-	while (my $line = <ADSH>) {
-		chomp($line);
-		if ($line =~ /#define.UF.*0x/) {
-			my ($tmp, $name, $val) = split(/\s+/,$line);
-			next if ($name =~ /UNUSED/);
-#			$ads_uf{$name} = sprintf("%d", hex $val);
-			$ads_uf{$name} = hex $val;
-		}
-		if ($line =~ /#define.GROUP_TYPE.*0x/) {
-			my ($tmp, $name, $val) = split(/\s+/,$line);
-			$ads_grouptype{$name} = hex $val;
-		}
-		if ($line =~ /#define.ATYPE.*0x/) {
-			my ($tmp, $name, $val) = split(/\s+/,$line);
-			$ads_atype{$name} = 
-				(exists $ads_atype{$val}) ? $ads_atype{$val} : hex $val;
-		}
-		if ($line =~ /#define.GTYPE.*0x/) {
-			my ($val, $i);
-			my ($tmp, $name, @val) = split(/\s+/,$line);
-			foreach my $tempval (@val) {
-				if ($tempval =~ /^0x/) {
-					$val = $tempval;
-					last;
-				}
-			}
-			next if (!$val);
-			$ads_gtype{$name} = sprintf("%d", hex $val);
-		}
-
-	}
-	close(ADSH);
-}
-
 sub store_result ($) {
 
 	my $entry = shift;
@@ -1136,12 +1160,13 @@ sub dump_bitmask {
 	my $mod = shift || die "no mod";
         my (%header) = @_;
 	my %tmp;
-	$tmp{""} = $val;
+	$tmp{""} = sprintf("%s (0x%08x)", $val, $val);
 	foreach my $key (sort keys %header) {	# sort by val !
+		my $val_hex = sprintf("0x%08x", $header{$key});
 		if ($op eq "&") {
-			$tmp{$key} = ( $val & $header{$key} ) ? $set:$unset; 
+			$tmp{"$key ($val_hex)"} = ( $val & $header{$key} ) ? $set:$unset; 
 		} elsif ($op eq "==") {
-			$tmp{$key} = ( $val == $header{$key} ) ? $set:$unset; 
+			$tmp{"$key ($val_hex)"} = ( $val == $header{$key} ) ? $set:$unset; 
 		} else {
 			print "unknown operator: $op\n";
 			return;

@@ -31,7 +31,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 			    DOM_SID *sid, const char *name)
 {
 	POLICY_HND pol;
-	uint32 *sid_types;
+	enum lsa_SidType *sid_types;
 	NTSTATUS result;
 	DOM_SID *sids;
 
@@ -63,9 +63,9 @@ static void display_query_info_1(DOM_QUERY_1 d)
 {
 	d_printf("percent_full:\t%d\n", d.percent_full);
 	d_printf("log_size:\t%d\n", d.log_size);
-	d_printf("retention_time:\t%08x %08x\n", d.retention_time.high, d.retention_time.low);
+	d_printf("retention_time:\t%lld\n", (long long)d.retention_time);
 	d_printf("shutdown_in_progress:\t%d\n", d.shutdown_in_progress);
-	d_printf("time_to_shutdown:\t%08x %08x\n", d.time_to_shutdown.high, d.time_to_shutdown.low);
+	d_printf("time_to_shutdown:\t%lld\n", (long long)d.time_to_shutdown);
 	d_printf("next_audit_record:\t%d\n", d.next_audit_record);
 	d_printf("unknown:\t%d\n", d.unknown);
 }
@@ -223,7 +223,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
-	uint32 *types;
+	enum lsa_SidType *types;
 	int i;
 
 	if (argc == 1) {
@@ -272,7 +272,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	DOM_SID *sids;
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum lsa_SidType *types;
 	int i;
 
 	if (argc == 1) {

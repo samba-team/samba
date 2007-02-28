@@ -30,7 +30,7 @@ extern uint32 global_client_caps;
   into the dfs_path structure 
  **********************************************************************/
 
-static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
+static BOOL parse_dfs_path(const char *pathname, struct dfs_path *pdp)
 {
 	pstring pathname_local;
 	char *p, *temp;
@@ -73,26 +73,32 @@ static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
 }
 
 /**********************************************************************
-  Parse the pathname  of the form /hostname/service/reqpath
-  into the dfs_path structure 
+ Parse the pathname  of the form /hostname/service/reqpath
+ into the dfs_path structure 
+ This code is dependent on the fact that check_path_syntax() will
+ convert '\\' characters to '/'.
+ When POSIX pathnames have been selected this doesn't happen, so we
+ must look for the unaltered separator of '\\' instead of the modified '/'.
+ JRA.
  **********************************************************************/
 
 static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL allow_wcards)
 {
 	pstring pathname_local;
 	char *p,*temp;
+	const char sepchar = lp_posix_pathnames() ? '\\' : '/';
 
 	pstrcpy(pathname_local,pathname);
 	p = temp = pathname_local;
 
 	ZERO_STRUCTP(pdp);
 
-	trim_char(temp,'/','/');
+	trim_char(temp,sepchar,sepchar);
 	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		return False;
 	}
@@ -102,7 +108,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL 
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
@@ -135,7 +141,6 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
 
 	ZERO_STRUCTP(conn);
 
-	conn->service = snum;
 	pstrcpy(connpath, path);
 	pstring_sub(connpath , "%S", lp_servicename(snum));
 
@@ -145,6 +150,13 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
                 DEBUG(0,("talloc_init(connection_struct) failed!\n"));
                 return False;
         }
+
+	if (!(conn->params = TALLOC_P(conn->mem_ctx, struct share_params))) {
+		DEBUG(0, ("TALLOC failed\n"));
+		return False;
+	}
+	
+	conn->params->service = snum;
 	
 	set_conn_connectpath(conn, connpath);
 
@@ -249,7 +261,7 @@ static BOOL parse_symlink(TALLOC_CTX *ctx, char *buf, struct referral **preflist
  talloc CTX can be NULL here if reflistp and refcnt pointers are null.
  **********************************************************************/
 
-BOOL is_msdfs_link(TALLOC_CTX *ctx, connection_struct *conn, char *path,
+BOOL is_msdfs_link(TALLOC_CTX *ctx, connection_struct *conn, const char *path,
 		   struct referral **reflistp, int *refcnt,
 		   SMB_STRUCT_STAT *sbufp)
 {
@@ -305,16 +317,21 @@ TALLOC_CTX can be NULL here if struct referral **reflistpp, int *refcntp
 are also NULL.
 *****************************************************************/
 
-static BOOL resolve_dfs_path(TALLOC_CTX *ctx, pstring dfspath, struct dfs_path *dp, 
-		      connection_struct *conn, BOOL search_flag, 
-		      struct referral **reflistpp, int *refcntp,
-		      BOOL *self_referralp, int *consumedcntp)
+static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
+			const char *dfspath, 
+			struct dfs_path *dp, 
+			connection_struct *conn,
+			BOOL search_flag, 
+			struct referral **reflistpp,
+			int *refcntp,
+			BOOL *self_referralp,
+			int *consumedcntp)
 {
 	pstring localpath;
 	int consumed_level = 1;
 	char *p;
-	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
 	pstring reqpath;
 
 	if (!dp || !conn) {
@@ -336,9 +353,24 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, pstring dfspath, struct dfs_path *
 
 	DEBUG(10,("resolve_dfs_path: Conn path = %s req_path = %s\n", conn->connectpath, dp->reqpath));
 
-	unix_convert(dp->reqpath,conn,0,&bad_path,&sbuf);
-	/* JRA... should we strlower the last component here.... ? */
+	/* 
+ 	 * Note the unix path conversion here we're doing we can
+	 * throw away. We're looking for a symlink for a dfs
+	 * resolution, if we don't find it we'll do another
+	 * unix_convert later in the codepath.
+	 * If we needed to remember what we'd resolved in
+	 * dp->reqpath (as the original code did) we'd
+	 * pstrcpy(localhost, dp->reqpath) on any code
+	 * path below that returns True - but I don't
+	 * think this is needed. JRA.
+	 */
+
 	pstrcpy(localpath, dp->reqpath);
+
+	status = unix_convert(conn, localpath, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	/* check if need to redirect */
 	if (is_msdfs_link(ctx, conn, localpath, reflistpp, refcntp, NULL)) {
@@ -356,7 +388,7 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx, pstring dfspath, struct dfs_path *
 	}
 
 	/* redirect if any component in the path is a link */
-	pstrcpy(reqpath, dp->reqpath);
+	pstrcpy(reqpath, localpath);
 	p = strrchr_m(reqpath, '/');
 	while (p) {
 		*p = '\0';
@@ -433,9 +465,10 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
 		return True;
 	} else {
 		DEBUG(3,("dfs_redirect: Not redirecting %s.\n", pathname));
-		
+
 		/* Form non-dfs tcon-relative path */
 		pstrcpy(pathname, dp.reqpath);
+
 		DEBUG(3,("dfs_redirect: Path converted to non-dfs path %s\n", pathname));
 		return False;
 	}
@@ -447,7 +480,7 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
  Return a self referral.
 **********************************************************************/
 
-static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+static BOOL self_ref(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 			int *consumedcntp, BOOL *self_referralp)
 {
 	struct referral *ref;
@@ -478,7 +511,7 @@ static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
  junction_map structure.
 **********************************************************************/
 
-BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+BOOL get_referred_path(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 		       int *consumedcntp, BOOL *self_referralp)
 {
 	struct dfs_path dp;
@@ -640,7 +673,7 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 	/* add the unexplained 0x16 bytes */
 	reply_size += 0x16;
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("malloc failed for Realloc!\n"));
 		return -1;
@@ -725,7 +758,7 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
 		return -1;
@@ -832,8 +865,12 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
 
 	/* create the referral depeding on version */
 	DEBUG(10,("max_referral_level :%d\n",max_referral_level));
-	if(max_referral_level<2 || max_referral_level>3) {
+
+	if (max_referral_level < 2) {
 		max_referral_level = 2;
+	}
+	if (max_referral_level > 3) {
+		max_referral_level = 3;
 	}
 
 	switch(max_referral_level) {
@@ -868,7 +905,7 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
  Creates a junction structure from a Dfs pathname
 **********************************************************************/
 
-BOOL create_junction(char *pathname, struct junction_map *jucn)
+BOOL create_junction(const char *pathname, struct junction_map *jucn)
 {
         struct dfs_path dp;
  
@@ -1053,6 +1090,7 @@ static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, 
 	ref->ttl = REFERRAL_TTL;
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
+		cnt++;
 		goto out;
 	}
 		

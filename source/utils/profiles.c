@@ -27,34 +27,85 @@
 
 DOM_SID old_sid, new_sid;
 int change = 0, new_val = 0;
+BOOL opt_verbose = False;
 
+/********************************************************************
+********************************************************************/
+
+static void verbose_output(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+static void verbose_output(const char *format, ...)
+{
+	va_list args;
+	char *var = NULL;
+
+	if (!opt_verbose) {
+		return;
+	}
+
+	va_start(args, format);
+	if ((vasprintf(&var, format, args)) == -1) {
+		va_end(args);
+		return;
+	}
+
+	fprintf(stdout, var);
+	va_end(args);
+	SAFE_FREE(var);
+}
 
 /********************************************************************
 ********************************************************************/
 
 static BOOL swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 {
-	SEC_ACL *acl = sd->dacl;
+	SEC_ACL *acl;
 	int i;
 	BOOL update = False;
 
+	verbose_output("  Owner SID: %s\n", sid_string_static(sd->owner_sid));
 	if ( sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
 		update = True;
+		verbose_output("  New Owner SID: %s\n", 
+			sid_string_static(sd->owner_sid));
+
 	}
 
-	if ( sid_equal( sd->grp_sid, s1 ) ) {
-		sid_copy( sd->grp_sid, s2 );
+	verbose_output("  Group SID: %s\n", sid_string_static(sd->group_sid));
+	if ( sid_equal( sd->group_sid, s1 ) ) {
+		sid_copy( sd->group_sid, s2 );
 		update = True;
+		verbose_output("  New Group SID: %s\n", 
+			sid_string_static(sd->group_sid));
 	}
 
+	acl = sd->dacl;
+	verbose_output("  DACL: %d entries:\n", acl->num_aces);
 	for ( i=0; i<acl->num_aces; i++ ) {
-		if ( sid_equal( &acl->ace[i].trustee, s1 ) ) {
-			sid_copy( &acl->ace[i].trustee, s2 );
+		verbose_output("    Trustee SID: %s\n", 
+			sid_string_static(&acl->aces[i].trustee));
+		if ( sid_equal( &acl->aces[i].trustee, s1 ) ) {
+			sid_copy( &acl->aces[i].trustee, s2 );
 			update = True;
+			verbose_output("    New Trustee SID: %s\n", 
+				sid_string_static(&acl->aces[i].trustee));
 		}
 	}
 
+#if 0
+	acl = sd->sacl;
+	verbose_output("  SACL: %d entries: \n", acl->num_aces);
+	for ( i=0; i<acl->num_aces; i++ ) {
+		verbose_output("    Trustee SID: %s\n", 
+			sid_string_static(&acl->aces[i].trustee));
+		if ( sid_equal( &acl->aces[i].trustee, s1 ) ) {
+			sid_copy( &acl->aces[i].trustee, s2 );
+			update = True;
+			verbose_output("    New Trustee SID: %s\n", 
+				sid_string_static(&acl->aces[i].trustee));
+		}
+	}
+#endif
 	return update;
 }
 
@@ -79,8 +130,8 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		return False;
 	}
 
-	if ( swap_sid_in_acl( new_sd, &old_sid, &new_sid ) )
-		DEBUG(2,("Updating ACL for %s\n", nk->keyname ));
+	verbose_output("ACL for %s%s%s\n", parentpath, parent ? "\\" : "", nk->keyname);
+	swap_sid_in_acl( new_sd, &old_sid, &new_sid );
 
 	if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
@@ -121,7 +172,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 	TALLOC_FREE( subkeys );
 
-	DEBUG(1,("[%s]\n", path));
+	verbose_output("[%s]\n", path);
 
 	return True;
 }
@@ -139,6 +190,7 @@ int main( int argc, char *argv[] )
 		POPT_AUTOHELP
 		{ "change-sid", 'c', POPT_ARG_STRING, NULL, 'c', "Provides SID to change" },
 		{ "new-sid", 'n', POPT_ARG_STRING, NULL, 'n', "Provides SID to change to" },
+		{ "verbose", 'v', POPT_ARG_NONE, &opt_verbose, 'v', "Verbose output" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		POPT_TABLEEND

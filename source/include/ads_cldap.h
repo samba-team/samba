@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
 */
 
+#ifndef _INCLUDE_ADS_CLDAP_H_
+#define _INCLUDE_ADS_CLDAP_H_
+
 #define MAX_DNS_LABEL 255 + 1
 
 struct cldap_netlogon_reply {
@@ -35,8 +38,8 @@ struct cldap_netlogon_reply {
 
 	char unk[MAX_DNS_LABEL];
 	char user_name[MAX_DNS_LABEL];
-	char site_name[MAX_DNS_LABEL];
-	char site_name_2[MAX_DNS_LABEL];
+	char server_site_name[MAX_DNS_LABEL];
+	char client_site_name[MAX_DNS_LABEL];
 
 	uint32 version;
 	uint16 lmnt_token;
@@ -55,4 +58,4 @@ struct cldap_netlogon_reply {
 #define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock (and running time) */
 #define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced by LDAP server */
 
-
+#endif /* _INCLUDE_CLDAP_H_ */

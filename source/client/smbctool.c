@@ -3494,7 +3494,7 @@ static int do_message_op(void)
 
 	msg_port = port ? port : 139;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, msg_port) != msg_port) ||
+	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port) ||
 		!cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;

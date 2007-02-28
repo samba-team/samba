@@ -238,8 +238,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	if (!found)
 		return(False);
 
-	save_re_uid();
-	set_effective_uid(0);  
+	become_root_uid_only();
 
 	if (strcmp(mnt->mnt_type, "xfs")==0) {
 		r=get_smb_linux_xfs_quota(mnt->mnt_fsname, euser_id, egrp_id, &D);
@@ -252,7 +251,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 		}
 	}
 
-	restore_re_uid();
+	unbecome_root_uid_only();
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */
 	*bsize = D.bsize;
@@ -656,21 +655,20 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	if ( ! found )
 		return(False) ;
 
-	save_re_uid();
-	set_effective_uid(0);
+	become_root_uid_only();
 
 #if defined(SUNOS5)
 	if ( strcmp( mnt.mnt_fstype, "nfs" ) == 0) {
 		BOOL retval;
 		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n", mnt.mnt_special));
 		retval = nfs_quotas(mnt.mnt_special, euser_id, bsize, dfree, dsize);
-		restore_re_uid();
+		unbecome_root_uid_only();
 		return retval;
 	}
 
 	DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
 	if((file=sys_open(name, O_RDONLY,0))<0) {
-		restore_re_uid();
+		unbecome_root_uid_only();
 		return(False);
 	}
 	command.op = Q_GETQUOTA;
@@ -683,7 +681,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-	restore_re_uid();
+	unbecome_root_uid_only();
 
 	if (ret < 0) {
 		DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
@@ -843,8 +841,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   }
 
   euser_id=geteuid();
-  save_re_uid();
-  set_effective_uid(0);  
+  become_root_uid_only();
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 
@@ -854,7 +851,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   {
     r=quotactl (Q_GETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &D);
 
-    restore_re_uid();
+    unbecome_root_uid_only();
 
     if (r==-1)
       return(False);
@@ -885,7 +882,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   {
     r=quotactl (Q_XGETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &F);
 
-    restore_re_uid();
+    unbecome_root_uid_only();
 
     if (r==-1)
     {
@@ -919,7 +916,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   }
   else
   {
-	  restore_re_uid();
+	  unbecome_root_uid_only();
 	  return(False);
   }
 
@@ -1183,14 +1180,13 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
         return False;
 #endif
     
-    save_re_uid();
-    set_effective_uid(0);
+    become_root_uid_only();
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
     if (strcmp(mnts[i].f_fstypename,"nfs") == 0) {
         BOOL retval;
         retval = nfs_quotas(mnts[i].f_mntfromname,euser_id,bsize,dfree,dsize);
-        restore_re_uid();
+        unbecome_root_uid_only();
         return retval;
     }
 #endif
@@ -1204,7 +1200,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	    r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
     }
 
-    restore_re_uid();
+    unbecome_root_uid_only();
   }
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 

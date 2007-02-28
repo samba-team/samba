@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern uint16 global_smbpid;
+uint16 global_smbpid;
 extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
@@ -75,7 +75,6 @@ static BOOL push_queued_message(char *buf, int msg_len,
 				struct timeval end_time,
 				char *private_data, size_t private_len)
 {
-	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg;
 
 	msg = TALLOC_ZERO_P(NULL, struct pending_message_list);
@@ -105,7 +104,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 		}
 	}
 
-	DLIST_ADD_END(deferred_open_queue, msg, tmp_msg);
+	DLIST_ADD_END(deferred_open_queue, msg, struct pending_message_list *);
 
 	DEBUG(10,("push_message: pushed message length %u on "
 		  "deferred_open_queue\n", (unsigned int)msg_len));
@@ -172,7 +171,6 @@ BOOL open_was_deferred(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
-			set_saved_ntstatus(NT_STATUS_OK);
 			return True;
 		}
 	}
@@ -227,7 +225,8 @@ struct idle_event {
 	void *private_data;
 };
 
-static void idle_event_handler(struct timed_event *te,
+static void idle_event_handler(struct event_context *ctx,
+			       struct timed_event *te,
 			       const struct timeval *now,
 			       void *private_data)
 {
@@ -242,7 +241,8 @@ static void idle_event_handler(struct timed_event *te,
 		return;
 	}
 
-	event->te = add_timed_event(event, timeval_sum(now, &event->interval),
+	event->te = event_add_timed(smbd_event_context(), event,
+				    timeval_sum(now, &event->interval),
 				    "idle_event_handler",
 				    idle_event_handler, event);
 
@@ -269,11 +269,12 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 	result->handler = handler;
 	result->private_data = private_data;
 
-	result->te = add_timed_event(result, timeval_sum(&now, &interval),
+	result->te = event_add_timed(smbd_event_context(), result,
+				     timeval_sum(&now, &interval),
 				     "idle_event_handler",
 				     idle_event_handler, result);
 	if (result->te == NULL) {
-		DEBUG(0, ("add_timed_event failed\n"));
+		DEBUG(0, ("event_add_timed failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -302,9 +303,6 @@ static void async_processing(fd_set *pfds)
 	if (got_sig_term) {
 		exit_server_cleanly("termination signal");
 	}
-
-	/* check for async change notify events */
-	process_pending_change_notify_queue(0);
 
 	/* check for sighup processing */
 	if (reload_after_sighup) {
@@ -352,7 +350,7 @@ The timeout is in milliseconds
 
 static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 {
-	fd_set fds;
+	fd_set r_fds, w_fds;
 	int selrtn;
 	struct timeval to;
 	int maxfd = 0;
@@ -416,10 +414,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	}
 
 	/*
-	 * Setup the select read fd set.
+	 * Setup the select fd sets.
 	 */
 
-	FD_ZERO(&fds);
+	FD_ZERO(&r_fds);
+	FD_ZERO(&w_fds);
 
 	/*
 	 * Ensure we process oplock break messages by preference.
@@ -430,9 +429,9 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
 	 */
 
-	if (oplock_message_waiting(&fds)) {
+	if (oplock_message_waiting(&r_fds)) {
 		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing(&fds);
+		async_processing(&r_fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -447,30 +446,44 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
 
 	{
-		struct timeval tmp;
-		struct timeval *tp = get_timed_events_timeout(&tmp);
+		struct timeval now;
+		GetTimeOfDay(&now);
 
-		if (tp) {
-			to = timeval_min(&to, tp);
-			if (timeval_is_zero(&to)) {
-				/* Process a timed event now... */
-				run_events();
-			}
+		event_add_to_select_args(smbd_event_context(), &now,
+					 &r_fds, &w_fds, &to, &maxfd);
+	}
+
+	if (timeval_is_zero(&to)) {
+		/* Process a timed event now... */
+		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+			goto again;
 		}
 	}
 	
-	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
-	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
-	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
+	{
+		int sav;
+		START_PROFILE(smbd_idle);
 
-	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
+		maxfd = select_on_fd(smbd_server_fd(), maxfd, &r_fds);
+		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &r_fds);
+
+		selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&to);
+		sav = errno;
+
+		END_PROFILE(smbd_idle);
+		errno = sav;
+	}
+
+	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
+		goto again;
+	}
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
 	   is the best we can do until the oplock code knows more about
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		async_processing(&fds);
+		async_processing(&r_fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -498,8 +511,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * sending us an oplock break message. JRA.
 	 */
 
-	if (oplock_message_waiting(&fds)) {
-		async_processing(&fds);
+	if (oplock_message_waiting(&r_fds)) {
+		async_processing(&r_fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -507,7 +520,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		 */
 		goto again;
 	}
-	
+
 	return receive_smb(smbd_server_fd(), buffer, 0);
 }
 
@@ -600,7 +613,7 @@ static const struct smb_message_struct {
 /* 0x0d */ { "SMBunlock",reply_unlock,AS_USER},
 /* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER },
 /* 0x0f */ { "SMBmknew",reply_mknew,AS_USER}, 
-/* 0x10 */ { "SMBchkpth",reply_chkpth,AS_USER},
+/* 0x10 */ { "SMBcheckpath",reply_checkpath,AS_USER},
 /* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
 /* 0x12 */ { "SMBlseek",reply_lseek,AS_USER},
 /* 0x13 */ { "SMBlockread",reply_lockread,AS_USER},
@@ -885,7 +898,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		pid = sys_getpid();
 
 	errno = 0;
-	set_saved_ntstatus(NT_STATUS_OK);
 
 	last_message = type;
 
@@ -954,14 +966,14 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			}
 
 			if (!change_to_user(conn,session_tag)) {
-				return(ERROR_FORCE_DOS(ERRSRV,ERRbaduid));
+				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
 			}
 
 			/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
 
 			/* Does it need write permission? */
 			if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
-				return(ERROR_DOS(ERRSRV,ERRaccess));
+				return ERROR_NT(NT_STATUS_MEDIA_WRITE_PROTECTED);
 			}
 
 			/* IPC services are limited */
@@ -1025,60 +1037,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Keep track of the number of running smbd's. This functionality is used to
- 'hard' limit Samba overhead on resource constrained systems. 
-****************************************************************************/
-
-static BOOL process_count_update_successful = False;
-
-static int32 increment_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes()) {
-		total_smbds = 0;
-		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
-			return 1;
-		process_count_update_successful = True;
-		return total_smbds + 1;
-	}
-	return 1;
-}
-
-void decrement_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes() && process_count_update_successful) {
-		total_smbds = 1;
-		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
-	}
-}
-
-static BOOL smbd_process_limit(void)
-{
-	int32  total_smbds;
-	
-	if (lp_max_smbd_processes()) {
-
-		/* Always add one to the smbd process count, as exit_server() always
-		 * subtracts one.
-		 */
-
-		if (!conn_tdb_ctx()) {
-			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
-set. Ignoring max smbd restriction.\n"));
-			return False;
-		}
-
-		total_smbds = increment_smbd_process_count();
-		return total_smbds > lp_max_smbd_processes();
-	}
-	else
-		return False;
-}
-
-/****************************************************************************
  Process an smb from the client
 ****************************************************************************/
 
@@ -1096,8 +1054,8 @@ static void process_smb(char *inbuf, char *outbuf)
 		deny parameters before doing any parsing of the packet
 		passed to us by the client.  This prevents attacks on our
 		parsing code from hosts not in the hosts allow list */
-		if (smbd_process_limit() ||
-				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+				  lp_hostsdeny(-1))) {
 			/* send a negative session response "not listening on calling name" */
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
@@ -1160,7 +1118,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-void construct_reply_common(char *inbuf,char *outbuf)
+void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	set_message(outbuf,0,0,False);
 	
@@ -1269,24 +1227,18 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Setup the needed select timeout.
+ Setup the needed select timeout in milliseconds.
 ****************************************************************************/
 
 static int setup_select_timeout(void)
 {
 	int select_timeout;
-	int t;
 
-	select_timeout = blocking_locks_timeout(SMBD_SELECT_TIMEOUT);
-	select_timeout *= 1000;
+	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
 
-	t = change_notify_timeout();
-	DEBUG(10, ("change_notify_timeout: %d\n", t));
-	if (t != -1)
-		select_timeout = MIN(select_timeout, t*1000);
-
-	if (print_notify_messages_pending())
+	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
+	}
 
 	return select_timeout;
 }
@@ -1475,18 +1427,12 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 	 * Check to see if we have any blocking locks
 	 * outstanding on the queue.
 	 */
-	process_blocking_lock_queue(t);
+	process_blocking_lock_queue();
 
 	/* update printer queue caches if necessary */
   
 	update_monitored_printq_cache();
   
-	/*
-	 * Check to see if we have any change notifies 
-	 * outstanding on the queue.
-	 */
-	process_pending_change_notify_queue(t);
-
 	/*
 	 * Now we are root, check if the log files need pruning.
 	 * Force a log file check.
@@ -1517,45 +1463,9 @@ char *get_InBuffer(void)
 	return InBuffer;
 }
 
-void set_InBuffer(char *new_inbuf)
-{
-	InBuffer = new_inbuf;
-	current_inbuf = InBuffer;
-}
-
 char *get_OutBuffer(void)
 {
 	return OutBuffer;
-}
-
-void set_OutBuffer(char *new_outbuf)
-{
-	OutBuffer = new_outbuf;
-}
-
-/****************************************************************************
- Free an InBuffer. Checks if not in use by aio system.
- Must have been allocated by NewInBuffer.
-****************************************************************************/
-
-void free_InBuffer(char *inbuf)
-{
-	if (!aio_inbuffer_in_use(inbuf)) {
-		if (current_inbuf == inbuf) {
-			current_inbuf = NULL;
-		}
-		SAFE_FREE(inbuf);
-	}
-}
-
-/****************************************************************************
- Free an OutBuffer. No outbuffers currently stolen by aio system.
- Must have been allocated by NewInBuffer.
-****************************************************************************/
-
-void free_OutBuffer(char *outbuf)
-{
-	SAFE_FREE(outbuf);
 }
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
@@ -1564,7 +1474,7 @@ const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARG
  Allocate a new InBuffer. Returns the new and old ones.
 ****************************************************************************/
 
-char *NewInBuffer(char **old_inbuf)
+static char *NewInBuffer(char **old_inbuf)
 {
 	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
 	if (!new_inbuf) {
@@ -1584,7 +1494,7 @@ char *NewInBuffer(char **old_inbuf)
  Allocate a new OutBuffer. Returns the new and old ones.
 ****************************************************************************/
 
-char *NewOutBuffer(char **old_outbuf)
+static char *NewOutBuffer(char **old_outbuf)
 {
 	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
 	if (!new_outbuf) {
@@ -1637,7 +1547,7 @@ void smbd_process(void)
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
-		run_events();
+		run_events(smbd_event_context(), 0, NULL, NULL);
 
 #if defined(DEVELOPER)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);

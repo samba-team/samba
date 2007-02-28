@@ -29,6 +29,9 @@ static BOOL analyze;
 static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 
+extern char *optarg;
+extern int optind;
+
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
 #define LOCKBASE 0
@@ -135,6 +138,7 @@ static BOOL try_unlock(struct cli_state *c, int fstype,
 
 static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
 		      enum brl_type lock_type,
+		      enum brl_flavour lock_flav,
 		      br_off start, br_off size)
 {
 	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
@@ -470,8 +474,6 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share1, *share2, *nfspath1, *nfspath2;
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	int seed;

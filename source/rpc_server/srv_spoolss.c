@@ -910,6 +910,15 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 	
 	if(!spoolss_io_q_addprinterdriver("", &q_u, data, 0)) {
+		if (q_u.level != 3 && q_u.level != 6) {
+			/* Clever hack from Martin Zielinski <mz@seh.de>
+			 * to allow downgrade from level 8 (Vista).
+			 */
+			DEBUG(3,("api_spoolss_addprinterdriver: unknown SPOOL_Q_ADDPRINTERDRIVER level %u.\n",
+				(unsigned int)q_u.level ));
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
+			return True;
+		}
 		DEBUG(0,("spoolss_io_q_addprinterdriver: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVER.\n"));
 		return False;
 	}
@@ -1477,6 +1486,15 @@ static BOOL api_spoolss_addprinterdriverex(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 	
 	if(!spoolss_io_q_addprinterdriverex("", &q_u, data, 0)) {
+		if (q_u.level != 3 && q_u.level != 6) {
+			/* Clever hack from Martin Zielinski <mz@seh.de>
+			 * to allow downgrade from level 8 (Vista).
+			 */
+			DEBUG(3,("api_spoolss_addprinterdriverex: unknown SPOOL_Q_ADDPRINTERDRIVEREX level %u.\n",
+				(unsigned int)q_u.level ));
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
+			return True;
+		}
 		DEBUG(0,("spoolss_io_q_addprinterdriverex: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVEREX.\n"));
 		return False;
 	}

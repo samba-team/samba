@@ -190,6 +190,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	DATA_BLOB blob;
 	DATA_BLOB os1, os2, os3;
 	int i1;
+	/* half the time of a regular ldap timeout, not less than 3 seconds. */
+	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
 	char *p;
 
 	blob = data_blob(NULL, 8192);
@@ -202,7 +204,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-	alarm(lp_ldap_timeout());
+	alarm(al_secs);
 	/* End setup timeout. */
  
 	ret = read(sock, blob.data, blob.length);
@@ -262,8 +264,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 		*reply->user_name = 0;
 	}
 
-	p += pull_netlogon_string(reply->site_name, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->site_name_2, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->server_site_name, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->client_site_name, p, (const char *)os3.data);
 
 	reply->version = IVAL(p, 0);
 	reply->lmnt_token = SVAL(p, 4);
@@ -309,5 +311,3 @@ BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_net
 
 	return True;
 }
-
-

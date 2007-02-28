@@ -307,7 +307,7 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	DEBUG(10,("ntlmssp_unseal_data: seal\n"));
+	DEBUG(10,("ntlmssp_unseal_packet: seal\n"));
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {

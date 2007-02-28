@@ -27,8 +27,9 @@
     Note that results "res" may be allocated on return so that the
     results can be used.  It should be freed using ads_msgfree.
 */
-ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
-				      const char *printer, const char *servername)
+ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, LDAPMessage **res,
+				       const char *printer,
+				       const char *servername)
 {
 	ADS_STATUS status;
 	char *srv_dn, **srv_cn, *s;
@@ -63,7 +64,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 	return status;	
 }
 
-ADS_STATUS ads_find_printers(ADS_STRUCT *ads, void **res)
+ ADS_STATUS ads_find_printers(ADS_STRUCT *ads, LDAPMessage **res)
 {
 	const char *ldap_expr;
 	const char *attrs[] = { "objectClass", "printerName", "location", "driverName",

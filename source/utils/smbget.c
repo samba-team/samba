@@ -50,9 +50,9 @@ const char *username = NULL, *password = NULL, *workgroup = NULL;
 int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0, send_stdout = 0;
 int blocksize = SMB_DEFAULT_BLOCKSIZE;
 
-int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile);
+static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile);
 
-int get_num_cols(void)
+static int get_num_cols(void)
 {
 #ifdef TIOCGWINSZ
 	struct winsize ws;
@@ -68,12 +68,12 @@ int get_num_cols(void)
 #endif
 }
 
-void change_columns(int sig)
+static void change_columns(int sig)
 {
 	columns = get_num_cols();
 }
 
-void human_readable(off_t s, char *buffer, int l)
+static void human_readable(off_t s, char *buffer, int l)
 {
 	if(s > 1024 * 1024 * 1024) snprintf(buffer, l, "%.2fGb", 1.0 * s / (1024 * 1024 * 1024));
 	else if(s > 1024 * 1024) snprintf(buffer, l, "%.2fMb", 1.0 * s / (1024 * 1024));
@@ -81,7 +81,7 @@ void human_readable(off_t s, char *buffer, int l)
 	else snprintf(buffer, l, OFF_T_FORMAT"b", (OFF_T_FORMAT_CAST)s);
 }
 
-void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *un, int unlen, char *pw, int pwlen)
+static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *un, int unlen, char *pw, int pwlen)
 {
 	static char hasasked = 0;
 	char *wgtmp, *usertmp;
@@ -113,7 +113,7 @@ void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *
 	free(wgtmp); free(usertmp);
 }
 
-int smb_download_dir(const char *base, const char *name, int resume)
+static int smb_download_dir(const char *base, const char *name, int resume)
 {
 	char path[SMB_MAXPATHLEN];
 	int dirhandle;
@@ -199,7 +199,7 @@ int smb_download_dir(const char *base, const char *name, int resume)
 	return 1;
 }
 
-char *print_time(long t)
+static char *print_time(long t)
 {
 	static char buffer[100];
 	int secs, mins, hours;
@@ -215,7 +215,7 @@ char *print_time(long t)
 	return buffer;
 }
 
-void print_progress(const char *name, time_t start, time_t now, off_t start_pos, off_t pos, off_t total)
+static void print_progress(const char *name, time_t start, time_t now, off_t start_pos, off_t pos, off_t total)
 {
 	double avg = 0.0;
 	long  eta = -1; 
@@ -244,7 +244,7 @@ void print_progress(const char *name, time_t start, time_t now, off_t start_pos,
 	free(filename); free(status);
 }
 
-int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile) {
+static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile) {
 	int remotehandle, localhandle;
 	time_t start_time = time(NULL);
 	const char *newpath;
@@ -388,7 +388,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		offset_check = 0;
 	}
 
-	readbuf = SMB_MALLOC(blocksize);
+	readbuf = (char *)SMB_MALLOC(blocksize);
 
 	/* Now, download all bytes from offset_download to the end */
 	for(curpos = offset_download; curpos < remotestat.st_size; curpos+=blocksize) {
@@ -447,7 +447,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 	return 1;
 }
 
-void clean_exit(void)
+static void clean_exit(void)
 {
 	char bs[100];
 	human_readable(total_bytes, bs, sizeof(bs));
@@ -455,12 +455,12 @@ void clean_exit(void)
 	exit(0);
 }
 
-void signal_quit(int v)
+static void signal_quit(int v)
 {
 	clean_exit();
 }
 
-int readrcfile(const char *name, const struct poptOption long_options[])
+static int readrcfile(const char *name, const struct poptOption long_options[])
 {
 	FILE *fd = fopen(name, "r");
 	int lineno = 0, i;

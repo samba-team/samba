@@ -52,6 +52,7 @@ void copy_id20_to_sam_passwd(struct samu *to, SAM_USER_INFO_20 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		new_string = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_20 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
@@ -76,7 +77,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
-		unix_time=nt_time_to_unix(&from->logon_time);
+		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_21 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -84,7 +85,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 	}
 
 	if (from->fields_present & ACCT_LAST_LOGOFF) {
-		unix_time=nt_time_to_unix(&from->logoff_time);
+		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_21 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -92,35 +93,19 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 	}
 
 	if (from->fields_present & ACCT_EXPIRY) {
-		unix_time=nt_time_to_unix(&from->kickoff_time);
+		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_21 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_21 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_last_set_time);
+		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_21 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_21 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	if ((from->fields_present & ACCT_USERNAME) &&
@@ -195,14 +180,13 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
-		DEBUG(10,("INFO_21 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
+		DEBUG(10,("INFO_21 UNI_COMMENT: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to, new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&
@@ -211,6 +195,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
@@ -284,26 +269,16 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		}
 	}
 
-	DEBUG(10,("INFO_21 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
-	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-		pdb_set_pass_must_change_time(to,0, PDB_CHANGED);
-	} else {
-		uint32 expire;
-		time_t new_time;
-		if (pdb_get_pass_must_change_time(to) == 0) {
-			if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
-			    || expire == (uint32)-1) {
-				new_time = get_time_t_max();
-			} else {
-				time_t old_time = pdb_get_pass_last_set_time(to);
-				new_time = old_time + expire;
-				if ((new_time) < time(0)) {
-					new_time = time(0) + expire;
-				}
-			}
-			if (!pdb_set_pass_must_change_time (to, new_time, PDB_CHANGED)) {
-				DEBUG (0, ("pdb_set_pass_must_change_time failed!\n"));
-			}
+	/* If the must change flag is set, the last set time goes to zero.
+	   the must change and can change fields also do, but they are 
+	   calculated from policy, not set from the wire */
+
+	if (from->fields_present & ACCT_EXPIRED_FLAG) {
+		DEBUG(10,("INFO_21 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
+		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+		} else {
+			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
@@ -325,7 +300,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
-		unix_time=nt_time_to_unix(&from->logon_time);
+		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_23 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -333,7 +308,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 	}
 
 	if (from->fields_present & ACCT_LAST_LOGOFF) {
-		unix_time=nt_time_to_unix(&from->logoff_time);
+		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_23 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -341,35 +316,19 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 	}
 	
 	if (from->fields_present & ACCT_EXPIRY) {
-		unix_time=nt_time_to_unix(&from->kickoff_time);
+		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_23 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_23 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_last_set_time);
+		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_23 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_23 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	/* Backend should check this for sanity */
@@ -445,14 +404,13 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
 		DEBUG(10,("INFO_23 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&
@@ -461,6 +419,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
@@ -524,26 +483,16 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		}
 	}
 
-	DEBUG(10,("INFO_23 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
-	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-		pdb_set_pass_must_change_time(to,0, PDB_CHANGED);		
-	} else {
-		uint32 expire;
-		time_t new_time;
-		if (pdb_get_pass_must_change_time(to) == 0) {
-			if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
-			    || expire == (uint32)-1) {
-				new_time = get_time_t_max();
-			} else {
-				time_t old_time = pdb_get_pass_last_set_time(to);
-				new_time = old_time + expire;
-				if ((new_time) < time(0)) {
-					new_time = time(0) + expire;
-				}
-			}
-			if (!pdb_set_pass_must_change_time (to, new_time, PDB_CHANGED)) {
-				DEBUG (0, ("pdb_set_pass_must_change_time failed!\n"));
-			}
+	/* If the must change flag is set, the last set time goes to zero.
+	   the must change and can change fields also do, but they are 
+	   calculated from policy, not set from the wire */
+
+	if (from->fields_present & ACCT_EXPIRED_FLAG) {
+		DEBUG(10,("INFO_23 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
+		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+		} else {
+			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
@@ -564,7 +513,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
-		unix_time=nt_time_to_unix(&from->logon_time);
+		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_25 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -572,7 +521,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 	}
 
 	if (from->fields_present & ACCT_LAST_LOGOFF) {
-		unix_time=nt_time_to_unix(&from->logoff_time);
+		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_25 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
@@ -580,35 +529,19 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 	}
 
 	if (from->fields_present & ACCT_EXPIRY) {
-		unix_time=nt_time_to_unix(&from->kickoff_time);
+		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_25 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_25 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_last_set_time);
+		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_25 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_25 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	if ((from->fields_present & ACCT_USERNAME) &&
@@ -683,14 +616,13 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
 		DEBUG(10,("INFO_25 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&
@@ -699,6 +631,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(mung);
 		DEBUG(10,("INFO_25 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));

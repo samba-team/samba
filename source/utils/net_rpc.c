@@ -462,7 +462,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
 		d_printf("Domain SID: %s\n", sid_str);
-		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num.low);
+		d_printf("Sequence number: %llu\n", (unsigned long long)ctr.info.inf2.seq_num);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
 		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
 		d_printf("Num local groups: %u\n", ctr.info.inf2.num_local_grps);
@@ -1330,7 +1330,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID sid;
 	uint32 rid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc == 0) {
 		d_fprintf(stderr, "usage: %s <username>\n", ctx->whoami);
@@ -2008,10 +2008,10 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *name,
 				DOM_SID *sid,
-				enum SID_NAME_USE *type)
+				enum lsa_SidType *type)
 {
 	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
+	enum lsa_SidType *types = NULL;
 	struct rpc_pipe_client *pipe_hnd;
 	POLICY_HND lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -2131,7 +2131,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	POLICY_HND alias_pol;
 
 	DOM_SID member_sid;
-	enum SID_NAME_USE member_type;
+	enum lsa_SidType member_type;
 
 	DOM_SID sid;
 
@@ -2192,7 +2192,7 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	DOM_SID group_sid;
-	enum SID_NAME_USE group_type;
+	enum lsa_SidType group_type;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group addmem <group> <member>\n");
@@ -2308,7 +2308,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	POLICY_HND alias_pol;
 
 	DOM_SID member_sid;
-	enum SID_NAME_USE member_type;
+	enum lsa_SidType member_type;
 
 	DOM_SID sid;
 
@@ -2366,7 +2366,7 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	DOM_SID group_sid;
-	enum SID_NAME_USE group_type;
+	enum lsa_SidType group_type;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group delmem <group> <member>\n");
@@ -2717,7 +2717,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	DOM_SID *alias_sids;
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum lsa_SidType *types;
 	int i;
 
 	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, domain_pol,
@@ -5654,6 +5654,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
 			domain_name, nt_errstr(nt_status)));
+		return -1;
 	}
 
 	/*
@@ -5663,6 +5664,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (!cli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
 		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
 			 for domain %s\n", domain_name));
+		cli_shutdown(cli);
+		return -1;
 	}
 	 
 	if (!(mem_ctx = talloc_init("establishing trust relationship to "
@@ -6269,7 +6272,7 @@ static int rpc_trustdom(int argc, const char **argv)
  */
 BOOL net_rpc_check(unsigned flags)
 {
-	struct cli_state cli;
+	struct cli_state *cli;
 	BOOL ret = False;
 	struct in_addr server_ip;
 	char *server_name = NULL;
@@ -6278,23 +6281,23 @@ BOOL net_rpc_check(unsigned flags)
 	if (!net_find_server(NULL, flags, &server_ip, &server_name))
 		return False;
 
-	ZERO_STRUCT(cli);
-	if (cli_initialise(&cli) == False)
+	if ((cli = cli_initialise()) == NULL) {
 		return False;
+	}
 
-	if (!cli_connect(&cli, server_name, &server_ip))
+	if (!cli_connect(cli, server_name, &server_ip))
 		goto done;
 	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     server_name, &server_ip))
 		goto done;
-	if (!cli_negprot(&cli))
+	if (!cli_negprot(cli))
 		goto done;
-	if (cli.protocol < PROTOCOL_NT1)
+	if (cli->protocol < PROTOCOL_NT1)
 		goto done;
 
 	ret = True;
  done:
-	cli_shutdown(&cli);
+	cli_shutdown(cli);
 	return ret;
 }
 

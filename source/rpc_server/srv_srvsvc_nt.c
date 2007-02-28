@@ -44,7 +44,7 @@ static uint32 get_share_type(int snum)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(snum), "IPC"))
 		type = STYPE_IPC;
-	if (net_name[len_net_name] == '$')
+	if (net_name[len_net_name-1] == '$')
 		type |= STYPE_HIDDEN;
 
 	return type;
@@ -128,49 +128,12 @@ static void map_generic_share_sd_bits(SEC_DESC *psd)
 		return;
 
 	for (i = 0; i < ps_dacl->num_aces; i++) {
-		SEC_ACE *psa = &ps_dacl->ace[i];
-		uint32 orig_mask = psa->info.mask;
+		SEC_ACE *psa = &ps_dacl->aces[i];
+		uint32 orig_mask = psa->access_mask;
 
-		se_map_generic(&psa->info.mask, &file_generic_mapping);
-		psa->info.mask |= orig_mask;
+		se_map_generic(&psa->access_mask, &file_generic_mapping);
+		psa->access_mask |= orig_mask;
 	}	
-}
-
-/*******************************************************************
- Can this user access with share with the required permissions ?
-********************************************************************/
-
-BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, uint32 desired_access)
-{
-	uint32 granted;
-	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = NULL;
-	SEC_DESC *psd = NULL;
-	size_t sd_size;
-	NT_USER_TOKEN *token = NULL;
-	BOOL ret = True;
-
-	mem_ctx = talloc_init("share_access_check");
-	if (mem_ctx == NULL)
-		return False;
-
-	psd = get_share_security(mem_ctx, snum, &sd_size);
-
-	if (!psd)
-		goto out;
-
-	if (conn->nt_user_token)
-		token = conn->nt_user_token;
-	else 
-		token = vuser->nt_user_token;
-
-	ret = se_access_check(psd, token, desired_access, &granted, &status);
-
-out:
-
-	talloc_destroy(mem_ctx);
-
-	return ret;
 }
 
 /*******************************************************************
@@ -221,7 +184,7 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(passwd, "");
 
-	sd = get_share_security(ctx, snum, &sd_size);
+	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
 
 	init_srv_share_info502(&sh502->info_502, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
 	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
@@ -294,7 +257,7 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
 
 	ZERO_STRUCTP(sh1501);
 
-	sd = get_share_security(ctx, snum, &sd_size);
+	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
 
 	sh1501->sdb = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 }
@@ -1227,7 +1190,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 				become_root();
 			}
 
-			if (message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False))
+			if (NT_STATUS_IS_OK(message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False)))
 				r_u->status = WERR_OK;
 
 			if (not_root) 
@@ -1506,10 +1469,10 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		SEC_DESC *old_sd;
 		size_t sd_size;
 
-		old_sd = get_share_security(p->mem_ctx, snum, &sd_size);
+		old_sd = get_share_security(p->mem_ctx, lp_servicename(snum), &sd_size);
 
 		if (old_sd && !sec_desc_equal(old_sd, psd)) {
-			if (!set_share_security(p->mem_ctx, share_name, psd))
+			if (!set_share_security(share_name, psd))
 				DEBUG(0,("_srv_net_share_set_info: Failed to change security info in share %s.\n",
 					share_name ));
 		}
@@ -1661,7 +1624,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 
 	if (psd) {
-		if (!set_share_security(p->mem_ctx, share_name, psd)) {
+		if (!set_share_security(share_name, psd)) {
 			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n", share_name ));
 		}
 	}
@@ -1691,6 +1654,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	int snum;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op;
+	struct share_params *params;	
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
@@ -1703,10 +1667,11 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 	}
 
+        if (!(params = get_share_params(p->mem_ctx, share_name))) {		
+                return WERR_NO_SUCH_SHARE;
+        }
+	
 	snum = find_service(share_name);
-
-	if (snum < 0)
-		return WERR_NO_SUCH_SHARE;
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
@@ -1750,9 +1715,9 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 
 	/* Delete the SD in the database. */
-	delete_share_security(snum);
+	delete_share_security(params);
 
-	lp_killservice(snum);
+	lp_killservice(params->service);
 
 	return WERR_OK;
 }
@@ -1826,7 +1791,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	pstring qualname;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -1861,33 +1825,35 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	unix_convert(filename, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(conn, filename, False, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	if (!check_name(filename,conn)) {
+	nt_status = check_name(conn, filename);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	fsp = open_file_stat(conn, filename, &st);
-	if (!fsp) {
+	nt_status = open_file_stat(conn, filename, &st, &fsp);
+	if ( !NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+			nt_status = open_directory(conn, filename, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
 					0,
-					NULL);
+					FILE_ATTRIBUTE_DIRECTORY,
+					NULL, &fsp);
 
-		if (!fsp) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
-			r_u->status = WERR_ACCESS_DENIED;
+			r_u->status = ntstatus_to_werror(nt_status);
 			goto error_exit;
 		}
 	}
@@ -1941,7 +1907,6 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	BOOL bad_path;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -1976,35 +1941,37 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	unix_convert(filename, conn, NULL, &bad_path, &st);
-	if (bad_path) {
+	nt_status = unix_convert(conn, filename, False, NULL, &st);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	if (!check_name(filename,conn)) {
+	nt_status = check_name(conn, filename);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 
-	fsp = open_file_stat(conn, filename, &st);
+	nt_status = open_file_stat(conn, filename, &st, &fsp);
 
-	if (!fsp) {
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+			nt_status = open_directory(conn, filename, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
-						NULL);
+						FILE_ATTRIBUTE_DIRECTORY,
+						NULL, &fsp);
 
-		if (!fsp) {
+		if ( !NT_STATUS_IS_OK(nt_status) ) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
-			r_u->status = WERR_ACCESS_DENIED;
+			r_u->status = ntstatus_to_werror(nt_status);
 			goto error_exit;
 		}
 	}

@@ -37,9 +37,6 @@
 #define STATUS_NOTIFY_ENUM_DIR            NT_STATUS(0x010c)
 #define ERROR_INVALID_DATATYPE		  NT_STATUS(0x070c)
 
-/* Special "invalid" NT status code. */
-#define NT_STATUS_INVALID		  NT_STATUS(0xFFFFFFFF)
-
 /* Win32 Error codes extracted using a loop in smbclient then printing a
    netmon sniff to a file. */
 
@@ -562,7 +559,9 @@
 #define NT_STATUS_TOO_MANY_LINKS NT_STATUS(0xC0000000 | 0x0265)
 #define NT_STATUS_QUOTA_LIST_INCONSISTENT NT_STATUS(0xC0000000 | 0x0266)
 #define NT_STATUS_FILE_IS_OFFLINE NT_STATUS(0xC0000000 | 0x0267)
+#define NT_STATUS_DS_NO_MORE_RIDS NT_STATUS(0xC0000000 | 0x02a8)
 #define NT_STATUS_NOT_A_REPARSE_POINT NT_STATUS(0xC0000000 | 0x0275)
 #define NT_STATUS_NO_SUCH_JOB NT_STATUS(0xC0000000 | 0xEDE) /* scheduler */
+#define NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED NT_STATUS(0xC0000000 | 0x20004)
 
 #endif /* _NTERR_H */

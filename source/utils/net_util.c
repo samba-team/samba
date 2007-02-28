@@ -32,14 +32,14 @@ BOOL is_valid_policy_hnd(const POLICY_HND *hnd)
 NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     const char *name, const char **ret_domain,
 			     const char **ret_name, DOM_SID *ret_sid,
-			     enum SID_NAME_USE *ret_type)
+			     enum lsa_SidType *ret_type)
 {
 	struct rpc_pipe_client *lsa_pipe;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	const char **dom_names;
 	DOM_SID *sids;
-	uint32_t *types;
+	enum lsa_SidType *types;
 
 	ZERO_STRUCT(pol);
 

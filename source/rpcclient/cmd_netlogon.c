@@ -263,7 +263,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
         uint32 database_id, num_deltas, tmp;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
-        UINT64_S seqnum;
+        uint64 seqnum;
 
         if (argc != 3) {
                 fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
@@ -273,8 +273,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
         database_id = atoi(argv[1]);
         tmp = atoi(argv[2]);
 
-        seqnum.low = tmp & 0xffff;
-        seqnum.high = 0;
+        seqnum = tmp & 0xffff;
 
 	result = rpccli_netlogon_sam_deltas(cli, mem_ctx, database_id,
 					 seqnum, &num_deltas, 
@@ -302,11 +301,12 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	const char *username, *password;
 	int auth_level = 2;
 	uint32 logon_param = 0;
+	const char *workstation = NULL;
 
 	/* Check arguments */
 
-	if (argc < 3 || argc > 6) {
-		fprintf(stderr, "Usage: samlogon <username> <password> "
+	if (argc < 3 || argc > 7) {
+		fprintf(stderr, "Usage: samlogon <username> <password> [workstation]"
 			"[logon_type (1 or 2)] [auth level (2 or 3)] [logon_parameter]\n");
 		return NT_STATUS_OK;
 	}
@@ -314,18 +314,21 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	username = argv[1];
 	password = argv[2];
 
-	if (argc >= 4)
-		sscanf(argv[3], "%i", &logon_type);
+	if (argc >= 4) 
+		workstation = argv[3];
 
 	if (argc >= 5)
-		sscanf(argv[4], "%i", &auth_level);
+		sscanf(argv[4], "%i", &logon_type);
 
-	if (argc == 6)
-		sscanf(argv[5], "%x", &logon_param);
+	if (argc >= 6)
+		sscanf(argv[5], "%i", &auth_level);
+
+	if (argc == 7)
+		sscanf(argv[6], "%x", &logon_param);
 
 	/* Perform the sam logon */
 
-	result = rpccli_netlogon_sam_logon(cli, mem_ctx, logon_param, lp_workgroup(), username, password, logon_type);
+	result = rpccli_netlogon_sam_logon(cli, mem_ctx, logon_param, lp_workgroup(), username, password, workstation, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

@@ -60,7 +60,7 @@ struct sid_ctr {
 	BOOL finished;
 	const char *domain;
 	const char *name;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 };
 
 struct winbindd_cli_state {
@@ -107,21 +107,13 @@ struct getpwent_user {
 
 /* Server state structure */
 
-struct winbindd_state {
-
-	/* User and group id pool */
-
-	uid_t uid_low, uid_high;               /* Range of uids to allocate */
-	gid_t gid_low, gid_high;               /* Range of gids to allocate */
-};
-
-extern struct winbindd_state server_state;  /* Server information */
-
 typedef struct {
 	char *acct_name;
 	char *full_name;
 	char *homedir;
 	char *shell;
+	gid_t primary_gid;                   /* allow the nss_info
+						backend to set the primary group */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 } WINBIND_USERINFO;
@@ -151,7 +143,6 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	pstring logfilename;
 
-	TALLOC_CTX *mem_ctx;
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
 	struct winbindd_async_request *requests;
@@ -162,6 +153,7 @@ struct winbindd_child {
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	fstring alt_name;                      /* alt Domain name (if any) */
+	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
 	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
@@ -169,6 +161,8 @@ struct winbindd_domain {
 	BOOL primary;                          /* is this our primary domain ? */
 	BOOL internal;                         /* BUILTIN and member SAM */
 	BOOL online;			       /* is this domain available ? */
+	time_t startup_time;		       /* When we set "startup" true. */
+	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -198,6 +192,11 @@ struct winbindd_domain {
 	/* The child pid we're talking to */
 
 	struct winbindd_child child;
+
+	/* Callback we use to try put us back online. */
+
+	uint32 check_online_timeout;
+	struct timed_event *check_online_event;
 
 	/* Linked list info */
 
@@ -235,7 +234,7 @@ struct winbindd_methods {
 				const char *domain_name,
 				const char *name,
 				DOM_SID *sid,
-				enum SID_NAME_USE *type);
+				enum lsa_SidType *type);
 
 	/* convert a sid to a user or group name */
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
@@ -243,7 +242,16 @@ struct winbindd_methods {
 				const DOM_SID *sid,
 				char **domain_name,
 				char **name,
-				enum SID_NAME_USE *type);
+				enum lsa_SidType *type);
+
+	NTSTATUS (*rids_to_names)(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *domain_sid,
+				  uint32 *rids,
+				  size_t num_rids,
+				  char **domain_name,
+				  char ***names,
+				  enum lsa_SidType **types);
 
 	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 

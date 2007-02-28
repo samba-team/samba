@@ -181,47 +181,6 @@ static int net_cache_add(int argc, const char **argv)
 	return -1;
 }
 
-
-/**
- * Set new value of an existing entry in the cache. Fail If the entry doesn't
- * exist.
- * 
- * @param argv key being searched and new value and timeout to set in the entry
- * @return 0 on success, otherwise failure
- **/
-static int net_cache_set(int argc, const char **argv)
-{
-	const char *keystr, *datastr, *timeout_str;
-	time_t timeout;
-	
-	if (argc < 3) {
-		d_printf("\nUsage: net cache set <key string> <data string> <timeout>\n");
-		return -1;
-	}
-	
-	keystr = argv[0];
-	datastr = argv[1];
-	timeout_str = argv[2];
-	
-	/* parse timeout given in command line */
-	timeout = parse_timeout(timeout_str);
-	if (!timeout) {
-		d_fprintf(stderr, "Invalid timeout argument.\n");
-		return -1;
-	}
-	
-	if (gencache_set_only(keystr, datastr, timeout)) {
-		d_printf("Cache entry set successfully.\n");
-		gencache_shutdown();
-		return 0;
-	}
-
-	d_fprintf(stderr, "Entry couldn't be set. Perhaps there's no such a key.\n");
-	gencache_shutdown();
-	return -1;
-}
-
-
 /**
  * Delete an entry in the cache
  * 
@@ -334,7 +293,6 @@ static int net_cache_flush(int argc, const char **argv)
 static int net_cache_usage(int argc, const char **argv)
 {
 	d_printf("  net cache add \t add add new cache entry\n");
-	d_printf("  net cache set \t set new value for existing cache entry\n");
 	d_printf("  net cache del \t delete existing cache entry by key\n");
 	d_printf("  net cache flush \t delete all entries existing in the cache\n");
 	d_printf("  net cache get \t get cache entry by key\n");
@@ -354,7 +312,6 @@ int net_cache(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", net_cache_add},
-		{"set", net_cache_set},
 		{"del", net_cache_del},
 		{"get", net_cache_get},
 		{"search", net_cache_search},

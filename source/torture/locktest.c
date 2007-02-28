@@ -36,6 +36,9 @@ static unsigned min_length = 0;
 static BOOL exact_error_codes;
 static BOOL zero_zero;
 
+extern char *optarg;
+extern int optind;
+
 #define FILENAME "\\locktest.dat"
 
 #define READ_PCT 50
@@ -51,14 +54,14 @@ static BOOL zero_zero;
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
-const char *lock_op_type(int op)
+static const char *lock_op_type(int op)
 {
 	if (op == WRITE_LOCK) return "write";
 	else if (op == READ_LOCK) return "read";
 	else return "other";
 }
 
-const char *lock_op_name(enum lock_op op)
+static const char *lock_op_name(enum lock_op op)
 {
 	if (op == OP_LOCK) return "lock";
 	else if (op == OP_UNLOCK) return "unlock";
@@ -113,9 +116,13 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
-		      enum brl_type lock_type,
-		      br_off start, br_off size)
+static void print_brl(SMB_DEV_T dev,
+			SMB_INO_T ino,
+			struct process_id pid, 
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			br_off start,
+			br_off size)
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
@@ -178,7 +185,7 @@ static struct cli_state *connect_one(char *share, int snum)
         zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise()) || !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
@@ -216,10 +223,12 @@ static struct cli_state *connect_one(char *share, int snum)
 		fstrcpy(username[1], username[0]);
 	}
 
-	if (!cli_session_setup(c, username[snum], 
-			       password[snum], strlen(password[snum]),
-			       password[snum], strlen(password[snum]),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username[snum], 
+					       password[snum],
+					       strlen(password[snum]),
+					       password[snum],
+					       strlen(password[snum]),
+					       lp_workgroup()))) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
 	}
@@ -575,8 +584,6 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share[NSERVERS];
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	int seed, server;

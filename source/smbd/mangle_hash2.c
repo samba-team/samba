@@ -101,7 +101,7 @@ static unsigned mangle_prefix;
    hashing the resulting cache entry to match the known hash
 */
 static char **prefix_cache;
-static u32 *prefix_cache_hashes;
+static unsigned int *prefix_cache_hashes;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
 static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -119,10 +119,10 @@ static const char *reserved_names[] =
 
    this hash needs to be fast with a low collision rate (what hash doesn't?)
 */
-static u32 mangle_hash(const char *key, unsigned int length)
+static unsigned int mangle_hash(const char *key, unsigned int length)
 {
-	u32 value;
-	u32   i;
+	unsigned int value;
+	unsigned int   i;
 	fstring str;
 
 	/* we have to uppercase here to ensure that the mangled name
@@ -139,8 +139,8 @@ static u32 mangle_hash(const char *key, unsigned int length)
 
 	/* Set the initial value from the key size. */
 	for (value = FNV1_INIT, i=0; i < length; i++) {
-                value *= (u32)FNV1_PRIME;
-                value ^= (u32)(str[i]);
+                value *= (unsigned int)FNV1_PRIME;
+                value ^= (unsigned int)(str[i]);
         }
 
 	/* note that we force it to a 31 bit hash, to keep within the limits
@@ -162,7 +162,7 @@ static BOOL cache_init(void)
 		return False;
 	}
 
-	prefix_cache_hashes = SMB_CALLOC_ARRAY(u32, MANGLE_CACHE_SIZE);
+	prefix_cache_hashes = SMB_CALLOC_ARRAY(unsigned int, MANGLE_CACHE_SIZE);
 	if (!prefix_cache_hashes) {
 		return False;
 	}
@@ -173,7 +173,7 @@ static BOOL cache_init(void)
 /*
   insert an entry into the prefix cache. The string might not be null
   terminated */
-static void cache_insert(const char *prefix, int length, u32 hash)
+static void cache_insert(const char *prefix, int length, unsigned int hash)
 {
 	int i = hash % MANGLE_CACHE_SIZE;
 
@@ -188,7 +188,7 @@ static void cache_insert(const char *prefix, int length, u32 hash)
 /*
   lookup an entry in the prefix cache. Return NULL if not found.
 */
-static const char *cache_lookup(u32 hash)
+static const char *cache_lookup(unsigned int hash)
 {
 	int i = hash % MANGLE_CACHE_SIZE;
 
@@ -268,7 +268,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
    directory separators. It should return true if any component is
    mangled
  */
-static BOOL is_mangled(const char *name, int snum)
+static BOOL is_mangled(const char *name, const struct share_params *parm)
 {
 	const char *p;
 	const char *s;
@@ -293,7 +293,7 @@ static BOOL is_mangled(const char *name, int snum)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, int snum)
+static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, const struct share_params *p)
 {
 	int len, i;
 	char *dot_p;
@@ -370,15 +370,15 @@ static void mangle_reset(void)
   try to find a 8.3 name in the cache, and if found then
   replace the string with the original long name. 
 */
-static BOOL check_cache(char *name, size_t maxlen, int snum)
+static BOOL check_cache(char *name, size_t maxlen, const struct share_params *p)
 {
-	u32 hash, multiplier;
+	unsigned int hash, multiplier;
 	unsigned int i;
 	const char *prefix;
 	char extension[4];
 
 	/* make sure that this is a mangled name from this cache */
-	if (!is_mangled(name, snum)) {
+	if (!is_mangled(name, p)) {
 		M_DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
@@ -386,7 +386,7 @@ static BOOL check_cache(char *name, size_t maxlen, int snum)
 	/* we need to extract the hash from the 8.3 name */
 	hash = base_reverse[(unsigned char)name[7]];
 	for (multiplier=36, i=5;i>=mangle_prefix;i--) {
-		u32 v = base_reverse[(unsigned char)name[i]];
+		unsigned int v = base_reverse[(unsigned char)name[i]];
 		hash += multiplier * v;
 		multiplier *= 36;
 	}
@@ -465,7 +465,7 @@ static BOOL is_legal_name(const char *name)
 			 * for mb UNIX asian characters like Japanese (SJIS) here.
 			 * JRA.
 			 */
-			if (convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2, False) == 2) {
+			if (convert_string(CH_UNIX, CH_UTF16LE, name, 2, mbc, 2, False) == 2) {
 				/* Was a good mb string. */
 				name += 2;
 				continue;
@@ -510,21 +510,21 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, int snum)
+static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, const struct share_params *p)
 {
 	char *dot_p;
 	char lead_chars[7];
 	char extension[4];
 	unsigned int extension_length, i;
 	unsigned int prefix_len;
-	u32 hash, v;
+	unsigned int hash, v;
 	char new_name[13];
 
 	/* reserved names are handled specially */
 	if (!is_reserved_name(name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(name, False, False, snum)) {
+		if (is_8_3(name, False, False, p)) {
 			return;
 		}
 
@@ -724,22 +724,22 @@ struct mangle_fns *mangle_hash2_init(void)
 static void posix_mangle_reset(void)
 {;}
 
-static BOOL posix_is_mangled(const char *s, int snum)
+static BOOL posix_is_mangled(const char *s, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, int snum)
+static BOOL posix_is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_check_cache( char *s, size_t maxlen, int snum )
+static BOOL posix_check_cache( char *s, size_t maxlen, const struct share_params *p )
 {
 	return False;
 }
 
-static void posix_name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, int snum)
+static void posix_name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, const struct share_params *p)
 {
 	if (need83) {
 		memset(OutName, '\0', 13);

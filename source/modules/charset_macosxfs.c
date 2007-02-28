@@ -62,7 +62,7 @@ static inline void *resize_buffer (void *buffer, size_t *size, size_t newsize)
 {
 	if (newsize > *size) {
 		*size = newsize + 128;
-		buffer = realloc(buffer, *size);
+		buffer = SMB_REALLOC(buffer, *size);
 	}
 	return buffer;
 }
@@ -594,7 +594,7 @@ static struct charset_functions macosxfs_encoding_functions = {
 	"MACOSXFS", macosxfs_encoding_pull, macosxfs_encoding_push
 };
 
-NTSTATUS init_module(void)
+NTSTATUS charset_macosxfs_init(void)
 {
 	return smb_register_charset(&macosxfs_encoding_functions);
 }

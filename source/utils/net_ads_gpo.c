@@ -29,9 +29,9 @@ static int net_ads_gpo_usage(int argc, const char **argv)
 		"net ads gpo <COMMAND>\n"\
 "<COMMAND> can be either:\n"\
 "  ADDLINK      Link a container to a GPO\n"\
-"  APPLY        Apply all GPOs\n"\
-"  DELETELINK   Delete a gPLink from a container\n"\
-"  EFFECTIVE    Lists all GPOs assigned to a machine\n"\
+/* "  APPLY        Apply all GPOs\n"\ */
+/* "  DELETELINK   Delete a gPLink from a container\n"\ */
+"  REFRESH      Lists all GPOs assigned to an account and downloads them\n"\
 "  GETGPO       Lists specified GPO\n"\
 "  GETLINK      Lists gPLink of a containter\n"\
 "  HELP         Prints this help message\n"\
@@ -41,24 +41,27 @@ static int net_ads_gpo_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int net_ads_gpo_effective(int argc, const char **argv)
+static int net_ads_gpo_refresh(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	void *res = NULL;
+	const char *attrs[] = { "userAccountControl", NULL };
+	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	uint32 uac = 0;
 	uint32 flags = 0;
+	struct GROUP_POLICY_OBJECT *gpo;
+	NTSTATUS result;
 	
 	if (argc < 1) {
+		printf("usage: net ads gpo refresh <username|machinename>\n");
 		return -1;
 	}
 
-	mem_ctx = talloc_init("net_ads_gpo_effective");
+	mem_ctx = talloc_init("net_ads_gpo_refresh");
 	if (mem_ctx == NULL) {
 		return -1;
 	}
@@ -68,7 +71,8 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		goto out;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -98,7 +102,7 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n", 
+	printf("\n%s: '%s' has dn: '%s'\n\n", 
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
 		argv[0], dn);
 
@@ -107,19 +111,34 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		goto out;
 	}
 
-	printf("unsorted full dump of all GPOs for this machine:\n");
-
-	{
-		struct GROUP_POLICY_OBJECT *gpo = gpo_list;
-
-		for (gpo = gpo_list; gpo; gpo = gpo->next) {
-			dump_gpo(mem_ctx, gpo);
-		}
+	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx, gpo_list))) {
+		printf("failed to refresh GPOs: %s\n", nt_errstr(result));
+		goto out;
 	}
 
-	printf("sorted full dump of all GPOs valid for this machine:\n");
-      
-out:
+	for (gpo = gpo_list; gpo; gpo = gpo->next) {
+
+		char *server, *share, *nt_path, *unix_path;
+
+		printf("--------------------------------------\n");
+		printf("Name:\t\t\t%s\n", gpo->display_name);
+		printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
+			gpo->version,
+			GPO_VERSION_USER(gpo->version),
+			GPO_VERSION_MACHINE(gpo->version));
+
+		result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path,
+						     &server, &share, &nt_path, &unix_path);
+		if (!NT_STATUS_IS_OK(result)) {
+			printf("got: %s\n", nt_errstr(result));
+		}
+
+		printf("GPO stored on server: %s, share: %s\n", server, share);
+		printf("\tremote path:\t%s\n", nt_path);
+		printf("\tlocal path:\t%s\n", unix_path);
+	}
+
+ out:
 	ads_memfree(ads, dn);
 	ads_msgfree(ads, res);
 
@@ -132,24 +151,36 @@ static int net_ads_gpo_list(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	int num_reply = 0;
-	void *msg = NULL;
+	LDAPMessage *msg = NULL;
 	struct GROUP_POLICY_OBJECT gpo;
 	TALLOC_CTX *mem_ctx;
+	char *dn;
+	const char *attrs[] = {
+		"versionNumber",
+		"flags",
+		"gPCFileSysPath",
+		"displayName",
+		"name",
+		"gPCMachineExtensionNames",
+		"gPCUserExtensionNames",
+		NULL
+	};
 
 	mem_ctx = talloc_init("net_ads_gpo_list");
 	if (mem_ctx == NULL) {
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
 	status = ads_do_search_all(ads, ads->config.bind_path,
 				   LDAP_SCOPE_SUBTREE,
-				   "(objectclass=groupPolicyContainer)", NULL, &res);
+				   "(objectclass=groupPolicyContainer)", attrs, &res);
 	if (!ADS_ERR_OK(status)) {
 		d_printf("search failed: %s\n", ads_errstr(status));
 		goto out;
@@ -161,16 +192,21 @@ static int net_ads_gpo_list(int argc, const char **argv)
 
 	/* dump the results */
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-	
-		status = ads_parse_gpo(ads, mem_ctx, msg, ads_get_dn(ads, msg), &gpo);
+
+		if ((dn = ads_get_dn(ads, msg)) == NULL) {
+			goto out;
+		}
+
+		status = ads_parse_gpo(ads, mem_ctx, msg, dn, &gpo);
 
 		if (!ADS_ERR_OK(status)) {
 			d_printf("parse failed: %s\n", ads_errstr(status));
+			ads_memfree(ads, dn);
 			goto out;
 		}	
 
-		dump_gpo(mem_ctx, &gpo);
-
+		dump_gpo(mem_ctx, &gpo, 1);
+		ads_memfree(ads, dn);
 	}
 
 out:
@@ -182,13 +218,15 @@ out:
 	return 0;
 }
 
+#if 0 /* not yet */
+
 static int net_ads_gpo_apply(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
@@ -196,6 +234,7 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	uint32 flags = 0;
 	
 	if (argc < 1) {
+		printf("usage: net ads gpo apply <username|machinename>\n");
 		return -1;
 	}
 
@@ -209,7 +248,8 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		goto out;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -263,6 +303,7 @@ out:
 	return 0;
 }
 
+#endif
 
 static int net_ads_gpo_get_link(int argc, const char **argv)
 {
@@ -272,6 +313,7 @@ static int net_ads_gpo_get_link(int argc, const char **argv)
 	struct GP_LINK gp_link;
 
 	if (argc < 1) {
+		printf("usage: net ads gpo getlink <linkname>\n");
 		return -1;
 	}
 
@@ -280,7 +322,8 @@ static int net_ads_gpo_get_link(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -307,6 +350,7 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2) {
+		printf("usage: net ads gpo addlink <linkdn> <gpodn> [options]\n");
 		return -1;
 	}
 
@@ -319,7 +363,8 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 		gpo_opt = atoi(argv[2]);
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -336,6 +381,8 @@ out:
 	return 0;
 }
 
+#if 0 /* broken */
+
 static int net_ads_gpo_delete_link(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
@@ -351,7 +398,8 @@ static int net_ads_gpo_delete_link(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -368,15 +416,17 @@ out:
 	return 0;
 }
 
+#endif
+
 static int net_ads_gpo_get_gpo(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct GROUP_POLICY_OBJECT gpo;
-	uint32 sysvol_gpt_version;
 
 	if (argc < 1) {
+		printf("usage: net ads gpo getgpo <gpo>\n");
 		return -1;
 	}
 
@@ -385,7 +435,8 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -400,14 +451,7 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 		goto out;
 	}	
 
-	dump_gpo(mem_ctx, &gpo);
-
-	status = ADS_ERROR_NT(ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, gpo.file_sys_path, &sysvol_gpt_version)); 
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	printf("sysvol GPT version: %d\n", sysvol_gpt_version);
+	dump_gpo(mem_ctx, &gpo, 1);
 
 out:
 	talloc_destroy(mem_ctx);
@@ -420,17 +464,17 @@ int net_ads_gpo(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"LIST", net_ads_gpo_list},
-		{"EFFECTIVE", net_ads_gpo_effective},
+		{"REFRESH", net_ads_gpo_refresh},
 		{"ADDLINK", net_ads_gpo_add_link},
-		{"DELETELINK", net_ads_gpo_delete_link},
+		/* {"DELETELINK", net_ads_gpo_delete_link}, */
 		{"GETLINK", net_ads_gpo_get_link},
 		{"GETGPO", net_ads_gpo_get_gpo},
 		{"HELP", net_ads_gpo_usage},
-		{"APPLY", net_ads_gpo_apply},
+		/* {"APPLY", net_ads_gpo_apply}, */
 		{NULL, NULL}
 	};
 
 	return net_run_function(argc, argv, func, net_ads_gpo_usage);
 }
 
-#endif
+#endif /* HAVE_ADS */

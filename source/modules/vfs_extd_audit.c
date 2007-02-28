@@ -32,17 +32,17 @@ static int vfs_extd_audit_debug_level = DBGC_VFS;
 
 /* Function prototypes */
 
-static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, const char *svc, const char *user);
-static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn);
-static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr);
-static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
-static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path);
-static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode);
+static int audit_connect(vfs_handle_struct *handle, const char *svc, const char *user);
+static void audit_disconnect(vfs_handle_struct *handle);
+static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr);
+static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode);
+static int audit_rmdir(vfs_handle_struct *handle, const char *path);
+static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
-static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname);
-static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path);
-static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
-static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode);
+static int audit_rename(vfs_handle_struct *handle, const char *oldname, const char *newname);
+static int audit_unlink(vfs_handle_struct *handle, const char *path);
+static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode);
+static int audit_chmod_acl(vfs_handle_struct *handle, const char *name, mode_t mode);
 static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode);
 static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode);
 
@@ -123,7 +123,7 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
-static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, const char *svc, const char *user)
+static int audit_connect(vfs_handle_struct *handle, const char *svc, const char *user)
 {
 	int result;
 
@@ -134,25 +134,25 @@ static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, con
 	DEBUG(10, ("Connected to service %s as user %s\n",
 	       svc, user));
 
-	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
+	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
 
 	return result;
 }
 
-static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn)
+static void audit_disconnect(vfs_handle_struct *handle)
 {
 	syslog(audit_syslog_priority(handle), "disconnected\n");
 	DEBUG(10, ("Disconnected from VFS module extd_audit\n"));
-	SMB_VFS_NEXT_DISCONNECT(handle, conn);
+	SMB_VFS_NEXT_DISCONNECT(handle);
 
 	return;
 }
 
-static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
 	SMB_STRUCT_DIR *result;
 
-	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
+	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
 	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
 	       fname,
@@ -166,11 +166,11 @@ static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, connection_struc
 	return result;
 }
 
-static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
+static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_MKDIR(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
 	
 	syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
 	       path,
@@ -184,11 +184,11 @@ static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const
 	return result;
 }
 
-static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path)
+static int audit_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RMDIR(handle, conn, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, path);
 
 	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
 	       path, 
@@ -202,11 +202,11 @@ static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const
 	return result;
 }
 
-static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode)
+static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
+	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 
 	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
@@ -239,11 +239,11 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return result;
 }
 
-static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
+static int audit_rename(vfs_handle_struct *handle, const char *oldname, const char *newname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
+	result = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 
 	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
 	       oldname, newname,
@@ -257,11 +257,11 @@ static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, cons
 	return result;    
 }
 
-static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path)
+static int audit_unlink(vfs_handle_struct *handle, const char *path)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_UNLINK(handle, conn, path);
+	result = SMB_VFS_NEXT_UNLINK(handle, path);
 
 	syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
 	       path,
@@ -275,11 +275,11 @@ static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, cons
 	return result;
 }
 
-static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
+static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
 
 	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -293,11 +293,11 @@ static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const
 	return result;
 }
 
-static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
+static int audit_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD_ACL(handle, path, mode);
 
 	syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -347,6 +347,7 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
 	return result;
 }
 
+NTSTATUS vfs_extd_audit_init(void);
 NTSTATUS vfs_extd_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_op_tuples);

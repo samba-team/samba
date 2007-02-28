@@ -183,7 +183,6 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
 		SAFE_FREE(key);
-		SAFE_FREE(value);
 		return False;
 	} else {
 		SAFE_FREE(key);
@@ -251,24 +250,6 @@ BOOL trustdom_cache_store_timestamp( uint32 t, time_t timeout )
 }
 
 
-/*******************************************************************
- lock the timestamp entry in the trustdom_cache
-*******************************************************************/
-
-BOOL trustdom_cache_lock_timestamp( void )
-{
-	return gencache_lock_entry( TDOMTSKEY ) != -1;
-}
-
-/*******************************************************************
- unlock the timestamp entry in the trustdom_cache
-*******************************************************************/
-
-void trustdom_cache_unlock_timestamp( void )
-{
-	gencache_unlock_entry( TDOMTSKEY );
-}
-
 /**
  * Delete single trustdom entry. Look at the
  * gencache_iterate definition.
@@ -315,8 +296,7 @@ void update_trustdom_cache( void )
 	time_t now = time(NULL);
 	int i;
 	
-	/* get the timestamp.  We have to initialise it if the last timestamp == 0 */
-	
+	/* get the timestamp.  We have to initialise it if the last timestamp == 0 */	
 	if ( (last_check = trustdom_cache_fetch_timestamp()) == 0 ) 
 		trustdom_cache_store_timestamp(0, now+TRUSTDOM_UPDATE_INTERVAL);
 
@@ -326,11 +306,12 @@ void update_trustdom_cache( void )
 		DEBUG(10,("update_trustdom_cache: not time to update trustdom_cache yet\n"));
 		return;
 	}
+
+	/* note that we don't lock the timestamp. This prevents this
+	   smbd from blocking all other smbd daemons while we
+	   enumerate the trusted domains */
+	trustdom_cache_store_timestamp(now, now+TRUSTDOM_UPDATE_INTERVAL);
 		
-	/* lock the timestamp */
-	if ( !trustdom_cache_lock_timestamp() )
-		return;
-	
 	if ( !(mem_ctx = talloc_init("update_trustdom_cache")) ) {
 		DEBUG(0,("update_trustdom_cache: talloc_init() failed!\n"));
 		goto done;
@@ -339,20 +320,19 @@ void update_trustdom_cache( void )
 	/* get the domains and store them */
 	
 	if ( enumerate_domain_trusts(mem_ctx, lp_workgroup(), &domain_names, 
-		&num_domains, &dom_sids) ) 
-	{
+		&num_domains, &dom_sids)) {
 		for ( i=0; i<num_domains; i++ ) {
 			trustdom_cache_store( domain_names[i], NULL, &dom_sids[i], 
 				now+TRUSTDOM_UPDATE_INTERVAL);
-		}
-		
-		trustdom_cache_store_timestamp( now, now+TRUSTDOM_UPDATE_INTERVAL );
+		}		
+	} else {
+		/* we failed to fetch the list of trusted domains - restore the old
+		   timestamp */
+		trustdom_cache_store_timestamp(last_check, 
+					       last_check+TRUSTDOM_UPDATE_INTERVAL);
 	}
 
 done:	
-	/* unlock and we're done */
-	trustdom_cache_unlock_timestamp();
-	
 	talloc_destroy( mem_ctx );
 	
 	return;

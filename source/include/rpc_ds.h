@@ -49,7 +49,7 @@
 #define DSROLE_BDC			4
 #define DSROLE_PDC			5
 
-/* Settings for the domainFunctionality attribteu in the rootDSE */
+/* Settings for the domainFunctionality attribute in the rootDSE */
 
 #define DS_DOMAIN_FUNCTION_2000		0
 #define DS_DOMAIN_FUCNTION_2003_MIXED	1
@@ -68,7 +68,7 @@ typedef struct
 	uint32		dnsname_ptr;
 	uint32		forestname_ptr;
 	
-	struct uuid	domain_guid;
+	struct GUID	domain_guid;
 	
 	UNISTR2	netbios_domain;
 
@@ -114,7 +114,7 @@ typedef struct {
 	uint32		trust_type;
 	uint32		trust_attributes;
 	uint32		sid_ptr;
-	struct uuid	guid;
+	struct GUID	guid;
 	
 	UNISTR2		netbios_domain;
 	UNISTR2		dns_domain;
@@ -128,7 +128,7 @@ struct ds_domain_trust {
 	uint32		parent_index;
 	uint32		trust_type;
 	uint32		trust_attributes;
-	struct uuid	guid;
+	struct GUID	guid;
 	
 	DOM_SID	sid;
 	char *netbios_domain;

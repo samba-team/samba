@@ -226,7 +226,7 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 }
 
 /* Return a UNIX errno from a NT status code */
-static struct {
+static const struct {
 	NTSTATUS status;
 	int error;
 } nt_errno_map[] = {
@@ -450,4 +450,13 @@ NTSTATUS cli_get_nt_error(struct cli_state *cli)
 		/* Something went wrong, we don't know what. */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+}
+
+/* Push an error code into the inbuf to be returned on the next
+ * query. */
+
+void cli_set_nt_error(struct cli_state *cli, NTSTATUS status)
+{
+	SSVAL(cli->inbuf,smb_flg2, SVAL(cli->inbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
+	SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(status));
 }

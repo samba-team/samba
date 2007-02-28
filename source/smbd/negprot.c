@@ -33,7 +33,8 @@ static void get_challenge(char buff[8])
 	NTSTATUS nt_status;
 	const uint8 *cryptkey;
 
-	/* We might be called more than once, muliple negprots are premitted */
+	/* We might be called more than once, multiple negprots are
+	 * permitted */
 	if (negprot_global_auth_context) {
 		DEBUG(3, ("get challenge: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
@@ -168,22 +169,24 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p, uint8 *pkeylen)
+static DATA_BLOB negprot_spnego(void)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
 	fstring unix_name;
+#ifdef DEVELOPER
+	size_t slen;
+#endif
 	char guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	int len;
 
 	global_spnego_negotiated = True;
 
-	ZERO_STRUCT(guid);
+	memset(guid, '\0', sizeof(guid));
 
 	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
 	strlower_m(unix_name);
@@ -191,11 +194,10 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	safe_strcpy(guid, dos_name, sizeof(guid)-1);
 
 #ifdef DEVELOPER
-	/* valgrind fixer... */
-	{
-		size_t sl = strlen(guid);
-		if (sizeof(guid)-sl)
-			memset(&guid[sl], '\0', sizeof(guid)-sl);
+	/* Fix valgrind 'uninitialized bytes' issue. */
+	slen = strlen(dos_name);
+	if (slen < sizeof(guid)) {
+		memset(guid+slen, '\0', sizeof(guid) - slen);
 	}
 #endif
 
@@ -230,20 +232,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 		SAFE_FREE(host_princ_s);
 	}
 
-	memcpy(p, blob.data, blob.length);
-	len = blob.length;
-	if (len > 256) {
-		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
-		len = 255;
-	}
-	data_blob_free(&blob);
-
-	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		*pkeylen = 0;
-	} else {
-		*pkeylen = len;
-	}
-	return len;
+	return blob;
 }
 
 /****************************************************************************
@@ -262,6 +251,16 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	time_t t = time(NULL);
 
 	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
+
+	/* Check the flags field to see if this is Vista.
+	   WinXP sets it and Vista does not. But we have to 
+	   distinguish from NT which doesn't set it either. */
+
+	if ( (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY) &&
+		((SVAL(inbuf, smb_flg2) & FLAGS2_UNKNOWN_BIT4) == 0) ) 
+	{
+		set_remote_arch( RA_VISTA );		
+	}
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
@@ -315,7 +314,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
 			if (lp_server_signing() == Required) {
-				exit_server("reply_nt1: smb signing required and share level security selected.");
+				exit_server_cleanly("reply_nt1: smb signing required and share level security selected.");
 			}
 		}
 	}
@@ -349,11 +348,17 @@ static int reply_nt1(char *inbuf, char *outbuf)
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		uint8 keylen;
-		int len = negprot_spnego(p, &keylen);
-		
-		SCVAL(outbuf,smb_vwv16+1,keylen);
-		p += len;
+		DATA_BLOB spnego_blob = negprot_spnego();
+
+		if (spnego_blob.data == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		memcpy(p, spnego_blob.data, spnego_blob.length);
+		p += spnego_blob.length;
+		data_blob_free(&spnego_blob);
+
+		SCVAL(outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
 	}
 	
@@ -393,6 +398,15 @@ protocol [LM1.2X002]
 protocol [LANMAN2.1]
 protocol [NT LM 0.12]
 
+Vista:
+protocol [PC NETWORK PROGRAM 1.0]
+protocol [LANMAN1.0]
+protocol [Windows for Workgroups 3.1a]
+protocol [LM1.2X002]
+protocol [LANMAN2.1]
+protocol [NT LM 0.12]
+protocol [SMB 2.001]
+
 OS/2:
 protocol [PC NETWORK PROGRAM 1.0]
 protocol [XENIX CORE]
@@ -406,18 +420,19 @@ protocol [LANMAN2.1]
   *
   * This appears to be the matrix of which protocol is used by which
   * MS product.
-       Protocol                       WfWg    Win95   WinNT  Win2K  OS/2
-       PC NETWORK PROGRAM 1.0          1       1       1      1      1
+       Protocol                       WfWg    Win95   WinNT  Win2K  OS/2 Vista
+       PC NETWORK PROGRAM 1.0          1       1       1      1      1     1
        XENIX CORE                                      2             2
        MICROSOFT NETWORKS 3.0          2       2       
        DOS LM1.2X002                   3       3       
        MICROSOFT NETWORKS 1.03                         3
        DOS LANMAN2.1                   4       4       
-       LANMAN1.0                                       4      2      3
-       Windows for Workgroups 3.1a     5       5       5      3
-       LM1.2X002                                       6      4      4
-       LANMAN2.1                                       7      5      5
-       NT LM 0.12                              6       8      6
+       LANMAN1.0                                       4      2      3     2
+       Windows for Workgroups 3.1a     5       5       5      3            3
+       LM1.2X002                                       6      4      4     4
+       LANMAN2.1                                       7      5      5     5
+       NT LM 0.12                              6       8      6            6
+       SMB 2.001                                                           7
   *
   *  tim@fsg.com 09/29/95
   *  Win2K added by matty 17/7/99
@@ -430,6 +445,7 @@ protocol [LANMAN2.1]
 #define ARCH_OS2      0x14     /* Again OS/2 is like NT */
 #define ARCH_SAMBA    0x20
 #define ARCH_CIFSFS   0x40
+#define ARCH_VISTA    0x8C     /* Vista is like XP/2K */
  
 #define ARCH_ALL      0x7F
  
@@ -477,7 +493,7 @@ int reply_negprot(connection_struct *conn,
 
 	if (done_negprot) {
 		END_PROFILE(SMBnegprot);
-		exit_server("multiple negprot's are not permitted");
+		exit_server_cleanly("multiple negprot's are not permitted");
 	}
 	done_negprot = True;
 
@@ -493,6 +509,8 @@ int reply_negprot(connection_struct *conn,
 			arch &= ( ARCH_WFWG | ARCH_WIN95 );
 		else if (strcsequal(p,"NT LM 0.12"))
 			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K | ARCH_CIFSFS);
+		else if (strcsequal(p,"SMB 2.001"))
+			arch = ARCH_VISTA;		
 		else if (strcsequal(p,"LANMAN2.1"))
 			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
 		else if (strcsequal(p,"LM1.2X002"))
@@ -537,7 +555,13 @@ int reply_negprot(connection_struct *conn,
 				set_remote_arch(RA_WINNT);
 			break;
 		case ARCH_WIN2K:
-			set_remote_arch(RA_WIN2K);
+			/* Vista may have been set in the negprot so don't 
+			   override it here */
+			if ( get_remote_arch() != RA_VISTA )
+				set_remote_arch(RA_WIN2K);
+			break;
+		case ARCH_VISTA:
+			set_remote_arch(RA_VISTA);
 			break;
 		case ARCH_OS2:
 			set_remote_arch(RA_OS2);
@@ -586,7 +610,8 @@ int reply_negprot(connection_struct *conn,
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
 	if ((lp_server_signing() == Required) && (Protocol < PROTOCOL_NT1)) {
-		exit_server("SMB signing is required and client negotiated a downlevel protocol");
+		exit_server_cleanly("SMB signing is required and "
+			"client negotiated a downlevel protocol");
 	}
 
 	END_PROFILE(SMBnegprot);

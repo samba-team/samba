@@ -25,7 +25,8 @@
 /*
   find a user account
 */
-ADS_STATUS ads_find_user_acct(ADS_STRUCT *ads, void **res, const char *user)
+ ADS_STATUS ads_find_user_acct(ADS_STRUCT *ads, LDAPMessage **res,
+			       const char *user)
 {
 	ADS_STATUS status;
 	char *ldap_exp;

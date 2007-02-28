@@ -28,24 +28,6 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
- Reads or writes a SEC_ACCESS structure.
-********************************************************************/
-
-BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
-{
-	if (t == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "sec_io_access");
-	depth++;
-	
-	if(!prs_uint32("mask", ps, depth, &t->mask))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes a SEC_ACE structure.
 ********************************************************************/
 
@@ -71,7 +53,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!prs_uint16_pre("size ", ps, depth, &psa->size, &offset_ace_size))
 		return False;
 
-	if(!sec_io_access("info ", &psa->info, ps, depth))
+	if (!prs_uint32("access_mask", ps, depth, &psa->access_mask))
 		return False;
 
 	/* check whether object access is present */
@@ -170,14 +152,14 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		 * between a non-present DACL (allow all access) and a DACL with no ACE's
 		 * (allow no access).
 		 */
-		if((psa->ace = PRS_ALLOC_MEM(ps, SEC_ACE, psa->num_aces+1)) == NULL)
+		if((psa->aces = PRS_ALLOC_MEM(ps, SEC_ACE, psa->num_aces+1)) == NULL)
 			return False;
 	}
 
 	for (i = 0; i < psa->num_aces; i++) {
 		fstring tmp;
 		slprintf(tmp, sizeof(tmp)-1, "ace_list[%02d]: ", i);
-		if(!sec_io_ace(tmp, &psa->ace[i], ps, depth))
+		if(!sec_io_ace(tmp, &psa->aces[i], ps, depth))
 			return False;
 	}
 
@@ -270,9 +252,9 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			psd->off_owner_sid = 0;
 		}
 
-		if (psd->grp_sid != NULL) {
+		if (psd->group_sid != NULL) {
 			psd->off_grp_sid = offset;
-			offset += sid_size(psd->grp_sid);
+			offset += sid_size(psd->group_sid);
 		} else {
 			psd->off_grp_sid = 0;
 		}
@@ -321,11 +303,11 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			if((psd->grp_sid = PRS_ALLOC_MEM(ps,DOM_SID,1)) == NULL)
+			if((psd->group_sid = PRS_ALLOC_MEM(ps,DOM_SID,1)) == NULL)
 				return False;
 		}
 
-		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
+		if(!smb_io_dom_sid("group_sid", psd->group_sid, ps, depth))
 			return False;
 			
 		max_offset = MAX(max_offset, prs_offset(ps));

@@ -92,7 +92,7 @@ static int iprint_get_server_version(http_t *http, char* serviceUri)
 
 	request = ippNew();
 
-	request->request.op.operation_id = OPERATION_NOVELL_MGMT;
+	request->request.op.operation_id = (ipp_op_t)OPERATION_NOVELL_MGMT;
 	request->request.op.request_id   = 1;
 
 	language = cupsLangDefault();
@@ -343,7 +343,8 @@ BOOL iprint_cache_reload(void)
 
 	request = ippNew();
 
-	request->request.op.operation_id = OPERATION_NOVELL_LIST_PRINTERS;
+	request->request.op.operation_id =
+		(ipp_op_t)OPERATION_NOVELL_LIST_PRINTERS;
 	request->request.op.request_id   = 1;
 
 	language = cupsLangDefault();
@@ -1234,5 +1235,6 @@ struct printif	iprint_printif =
 
 #else
  /* this keeps fussy compilers happy */
+ void print_iprint_dummy(void);
  void print_iprint_dummy(void) {}
 #endif /* HAVE_IPRINT */

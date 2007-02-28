@@ -31,6 +31,21 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
+#define MAX_PIPE_NAME_LEN	24
+
+/* PIPE/<name>/<pid>/<pnum> */
+#define PIPEDB_KEY_FORMAT "PIPE/%s/%u/%d"
+
+struct pipe_dbrec {
+	struct process_id pid;
+	int pnum;
+	uid_t uid;
+
+	char name[MAX_PIPE_NAME_LEN];
+	fstring	user;
+};
+
+
 extern struct pipe_id_info pipe_names[];
 
 /****************************************************************************
@@ -284,6 +299,8 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 	if (!close_rpc_pipe_hnd(p)) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
+	
+	/* TODO: REMOVE PIPE FROM DB */
 
 	return(outsize);
 }

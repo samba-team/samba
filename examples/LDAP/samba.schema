@@ -14,6 +14,13 @@
 ## 1.3.6.1.4.1.7165.2.3.1.x - attributetypes
 ## 1.3.6.1.4.1.7165.2.3.2.x - objectclasses
 ##
+## Samba4
+## 1.3.6.1.4.1.7165.4.1.x - attributetypes
+## 1.3.6.1.4.1.7165.4.2.x - objectclasses
+## 1.3.6.1.4.1.7165.4.3.x - LDB/LDAP Controls
+## 1.3.6.1.4.1.7165.4.4.x - LDB/LDAP Extended Operations
+## 1.3.6.1.4.1.7165.4.255.x - mapped OIDs due to conflicts between AD and standards-track
+##
 ## ----- READ THIS WHEN ADDING A NEW ATTRIBUTE OR OBJECT CLASS ------
 ##
 ## Run the 'get_next_oid' bash script in this directory to find the 
@@ -38,6 +45,7 @@
 # objectIdentifier Samba3 SambaRoot:2
 # objectIdentifier Samba3Attrib Samba3:1
 # objectIdentifier Samba3ObjectClass Samba3:2
+# objectIdentifier Samba4 SambaRoot:4
 
 ########################################################################
 ##                            HISTORICAL                              ##
@@ -284,7 +292,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.47 NAME 'sambaMungedDial'
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
 
 attributetype ( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory'
-	DESC 'Concatenated MD4 hashes of the unicode passwords used on this account'
+	DESC 'Concatenated MD5 hashes of the salted NT passwords used on this account'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} )
 

@@ -49,9 +49,9 @@ struct file_info_struct {
 	uid_t uid;
 	gid_t gid;
 	/* These times are normally kept in GMT */
-	time_t mtime;
-	time_t atime;
-	time_t ctime;
+	struct timespec mtime_ts;
+	struct timespec atime_ts;
+	struct timespec ctime_ts;
 	char *name;     /* This is dynamically allocate */
 
 	file_info2 *next, *prev;  /* Used in the stack ... */
@@ -201,7 +201,11 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
 	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
 	oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
+#ifdef HAVE_LONGLONG
 	if (size > (SMB_BIG_UINT)077777777777LL) {    
+#else
+	if (size > (SMB_BIG_UINT)077777777777) {    
+#endif
 
 		/* This is a non-POSIX compatible extention to store files
 			greater than 8GB. */
@@ -308,8 +312,9 @@ of link other than a GNUtar Longlink - ignoring\n"));
 	 * We only get the modification time of the file; set the creation time
 	 * from the mod. time, and the access time to current time
 	 */
-	finfo->mtime = finfo->ctime = strtol(hb->dbuf.mtime, NULL, 8);
-	finfo->atime = time(NULL);
+	finfo->mtime_ts = finfo->ctime_ts =
+		convert_time_t_to_timespec((time_t)strtol(hb->dbuf.mtime, NULL, 8));
+	finfo->atime_ts = convert_time_t_to_timespec(time(NULL));
 	finfo->size = unoct(hb->dbuf.size, sizeof(hb->dbuf.size));
 
 	return True;
@@ -383,7 +388,7 @@ static void initarbuf(void)
 {
 	/* initialize tar buffer */
 	tbufsiz=blocksize*TBLOCK;
-	tarbuf=SMB_MALLOC(tbufsiz);      /* FIXME: We might not get the buffer */
+	tarbuf=(char *)SMB_MALLOC(tbufsiz);      /* FIXME: We might not get the buffer */
 
 	/* reset tar buffer pointer and tar file counter and total dumped */
 	tp=0; ntarf=0; ttarf=0;
@@ -621,18 +626,18 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		finfo.mode  = finfo1 -> mode;
 		finfo.uid   = finfo1 -> uid;
 		finfo.gid   = finfo1 -> gid;
-		finfo.mtime = finfo1 -> mtime;
-		finfo.atime = finfo1 -> atime;
-		finfo.ctime = finfo1 -> ctime;
+		finfo.mtime_ts = finfo1 -> mtime_ts;
+		finfo.atime_ts = finfo1 -> atime_ts;
+		finfo.ctime_ts = finfo1 -> ctime_ts;
 		finfo.name  = finfo1 -> name;
 	} else {
 		finfo.size  = def_finfo.size;
 		finfo.mode  = def_finfo.mode;
 		finfo.uid   = def_finfo.uid;
 		finfo.gid   = def_finfo.gid;
-		finfo.mtime = def_finfo.mtime;
-		finfo.atime = def_finfo.atime;
-		finfo.ctime = def_finfo.ctime;
+		finfo.mtime_ts = def_finfo.mtime_ts;
+		finfo.atime_ts = def_finfo.atime_ts;
+		finfo.ctime_ts = def_finfo.ctime_ts;
 		finfo.name  = def_finfo.name;
 	}
 
@@ -663,11 +668,14 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
 	safe_strcpy(finfo.name,rname, strlen(rname));
 	if (!finfo1) {
-		if (!cli_getattrE(cli, fnum, &finfo.mode, &finfo.size, NULL, &finfo.atime, &finfo.mtime)) {
+		time_t atime, mtime;
+		if (!cli_getattrE(cli, fnum, &finfo.mode, &finfo.size, NULL, &atime, &mtime)) {
 			DEBUG(0, ("getattrE: %s\n", cli_errstr(cli)));
 			return;
 		}
-		finfo.ctime = finfo.mtime;
+		finfo.atime_ts = convert_time_t_to_timespec(atime);
+		finfo.mtime_ts = convert_time_t_to_timespec(mtime);
+		finfo.ctime_ts = finfo.mtime_ts;
 	}
 
 	DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
@@ -703,7 +711,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 			/* Only if the first read succeeds, write out the tar header. */
 			if (!wrote_tar_header) {
 				/* write a tar header, don't bother with mode - just set to 100644 */
-				writetarheader(tarhandle, rname, finfo.size, finfo.mtime, "100644 \0", ftype);
+				writetarheader(tarhandle, rname, finfo.size,
+					finfo.mtime_ts.tv_sec, "100644 \0", ftype);
 				wrote_tar_header = True;
 			}
 
@@ -832,7 +841,7 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 
 		/* write a tar directory, don't bother with mode - just set it to
 			* 40755 */
-		writetarheader(tarhandle, cur_dir, 0, finfo->mtime, "040755 \0", '5');
+		writetarheader(tarhandle, cur_dir, 0, finfo->mtime_ts.tv_sec, "040755 \0", '5');
 		if (tar_noisy) {
 			DEBUG(0,("                directory %s\n", cur_dir));
 		}
@@ -1030,7 +1039,7 @@ static int get_file(file_info2 finfo)
 	/* Now we update the creation date ... */
 	DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-	if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime)) {
+	if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime_ts.tv_sec)) {
 		if (tar_real_noisy) {
 			DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
 			/*return(False); */ /* Ignore, as Win95 does not allow changes */
@@ -1066,7 +1075,7 @@ static char *get_longfilename(file_info2 finfo)
 	/* finfo.size here is the length of the filename as written by the "/./@LongLink" name
 	 * header call. */
 	int namesize = finfo.size + strlen(cur_dir) + 2;
-	char *longname = SMB_MALLOC(namesize);
+	char *longname = (char *)SMB_MALLOC(namesize);
 	int offset = 0, left = finfo.size;
 	BOOL first = True;
 
@@ -1514,7 +1523,7 @@ static int read_inclusion_file(char *filename)
 	while ((! error) && (x_fgets(buf, sizeof(buf)-1, inclusion))) {
 		if (inclusion_buffer == NULL) {
 			inclusion_buffer_size = 1024;
-			if ((inclusion_buffer = SMB_MALLOC(inclusion_buffer_size)) == NULL) {
+			if ((inclusion_buffer = (char *)SMB_MALLOC(inclusion_buffer_size)) == NULL) {
 				DEBUG(0,("failure allocating buffer to read inclusion file\n"));
 				error = 1;
 				break;
@@ -1527,7 +1536,7 @@ static int read_inclusion_file(char *filename)
     
 		if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
 			inclusion_buffer_size *= 2;
-			inclusion_buffer = SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
+			inclusion_buffer = (char *)SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
 			if (!inclusion_buffer) {
 				DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
 						inclusion_buffer_size));

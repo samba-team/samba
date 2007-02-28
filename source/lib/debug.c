@@ -236,7 +236,7 @@ static char *debug_list_class_names_and_levels(void)
 	}
 
 	/* create single string list - add space for newline */
-	b = buf = SMB_MALLOC(dim+1);
+	b = buf = (char *)SMB_MALLOC(dim+1);
 	if (!buf) {
 		err = True;
 		goto done;
@@ -320,7 +320,7 @@ int debug_add_class(const char *classname)
 	new_ptr = SMB_REALLOC_ARRAY(new_ptr, int, debug_num_classes + 1);
 	if (!new_ptr)
 		return -1;
-	DEBUGLEVEL_CLASS = new_ptr;
+	DEBUGLEVEL_CLASS = (int *)new_ptr;
 	DEBUGLEVEL_CLASS[ndx] = 0;
 
 	/* debug_level is the pointer used for the DEBUGLEVEL-thingy */
@@ -337,13 +337,13 @@ int debug_add_class(const char *classname)
 	new_ptr = SMB_REALLOC_ARRAY(new_ptr, BOOL, debug_num_classes + 1);
 	if (!new_ptr)
 		return -1;
-	DEBUGLEVEL_CLASS_ISSET = new_ptr;
+	DEBUGLEVEL_CLASS_ISSET = (int *)new_ptr;
 	DEBUGLEVEL_CLASS_ISSET[ndx] = False;
 
 	new_ptr = SMB_REALLOC_ARRAY(classname_table, char *, debug_num_classes + 1);
 	if (!new_ptr)
 		return -1;
-	classname_table = new_ptr;
+	classname_table = (char **)new_ptr;
 
 	classname_table[ndx] = SMB_STRDUP(classname);
 	if (! classname_table[ndx])
@@ -472,9 +472,9 @@ BOOL debug_parse_levels(const char *params_str)
 ****************************************************************************/
 
 static void debug_message(int msg_type, struct process_id src,
-			  void *buf, size_t len)
+			  void *buf, size_t len, void *private_data)
 {
-	const char *params_str = buf;
+	const char *params_str = (const char *)buf;
 
 	/* Check, it's a proper string! */
 	if (params_str[len-1] != '\0') {
@@ -509,7 +509,7 @@ void debug_message_send(pid_t pid, const char *params_str)
 ****************************************************************************/
 
 static void debuglevel_message(int msg_type, struct process_id src,
-			       void *buf, size_t len)
+			       void *buf, size_t len, void *private_data)
 {
 	char *message = debug_list_class_names_and_levels();
 
@@ -539,8 +539,8 @@ void debug_init(void)
 
 	initialised = True;
 
-	message_register(MSG_DEBUG, debug_message);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message);
+	message_register(MSG_DEBUG, debug_message, NULL);
+	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
 
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
@@ -981,7 +981,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
   
 		/* Print it all out at once to prevent split syslog output. */
 		(void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
-			timestring(lp_debug_hires_timestamp()), level,
+			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str, file, func, line );
 	}
 

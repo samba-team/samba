@@ -342,12 +342,19 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 	return fsp;
 }
 
-static void oplock_timeout_handler(struct timed_event *te,
+static void oplock_timeout_handler(struct event_context *ctx,
+				   struct timed_event *te,
 				   const struct timeval *now,
 				   void *private_data)
 {
-	files_struct *fsp = private_data;
+	files_struct *fsp = (files_struct *)private_data;
 
+	/* Ensure we always remove this event. */
+	if (fsp->oplock_timeout != NULL) {
+		/* Remove the timed event handler. */
+		TALLOC_FREE(fsp->oplock_timeout);
+		fsp->oplock_timeout = NULL;
+	}
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
@@ -366,7 +373,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		add_timed_event(NULL,
+		event_add_timed(smbd_event_context(), NULL,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				"oplock_timeout_handler",
 				oplock_timeout_handler, fsp);
@@ -385,7 +392,8 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 *******************************************************************/
 
 static void process_oplock_async_level2_break_message(int msg_type, struct process_id src,
-					 void *buf, size_t len)
+						      void *buf, size_t len,
+						      void *private_data)
 {
 	struct share_mode_entry msg;
 	files_struct *fsp;
@@ -403,7 +411,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -454,7 +462,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -471,7 +479,8 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 *******************************************************************/
 
 static void process_oplock_break_message(int msg_type, struct process_id src,
-					 void *buf, size_t len)
+					 void *buf, size_t len,
+					 void *private_data)
 {
 	struct share_mode_entry msg;
 	files_struct *fsp;
@@ -490,7 +499,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -504,13 +513,10 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		 * get to process this message, we have closed the file. Reply
 		 * with 'ok, oplock broken' */
 		DEBUG(3, ("Did not find fsp\n"));
-		become_root();
 
 		/* We just send the same message back. */
 		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
 				 buf, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-
-		unbecome_root();
 		return;
 	}
 
@@ -529,13 +535,9 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		DEBUG(3, ("Already downgraded oplock on 0x%x/%.0f: %s\n",
 			  (unsigned int)fsp->dev, (double)fsp->inode,
 			  fsp->fsp_name));
-		become_root();
-
 		/* We just send the same message back. */
 		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
 				 buf, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-
-		unbecome_root();
 		return;
 	}
 
@@ -563,7 +565,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -586,7 +588,8 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 *******************************************************************/
 
 static void process_kernel_oplock_break(int msg_type, struct process_id src,
-					void *buf, size_t len)
+					void *buf, size_t len,
+					void *private_data)
 {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -639,7 +642,7 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -656,7 +659,6 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 {
 	int i;
 
-	become_root();
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
 		struct share_mode_entry *e = &fsp->pending_break_messages[i];
 		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -666,7 +668,6 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 		message_send_pid(e->pid, MSG_SMB_BREAK_RESPONSE,
 				 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
 	}
-	unbecome_root();
 
 	SAFE_FREE(fsp->pending_break_messages);
 	fsp->num_pending_break_messages = 0;
@@ -679,7 +680,8 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 }
 
 static void process_oplock_break_response(int msg_type, struct process_id src,
-					  void *buf, size_t len)
+					  void *buf, size_t len,
+					  void *private_data)
 {
 	struct share_mode_entry msg;
 
@@ -694,7 +696,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break response from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -706,7 +708,8 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 }
 
 static void process_open_retry_message(int msg_type, struct process_id src,
-				       void *buf, size_t len)
+				       void *buf, size_t len,
+				       void *private_data)
 {
 	struct share_mode_entry msg;
 	
@@ -721,7 +724,7 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got open retry msg from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -801,10 +804,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 		share_mode_entry_to_message(msg, share_entry);
 
-		become_root();
 		message_send_pid(share_entry->pid, MSG_SMB_ASYNC_LEVEL2_BREAK,
 				 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-		unbecome_root();
 	}
 
 	/* We let the message receivers handle removing the oplock state
@@ -831,6 +832,7 @@ void share_mode_entry_to_message(char *msg, struct share_mode_entry *e)
 	SINO_T_VAL(msg,36,e->inode);
 	SIVAL(msg,44,e->share_file_id);
 	SIVAL(msg,48,e->uid);
+	SSVAL(msg,52,e->flags);
 }
 
 /****************************************************************************
@@ -851,6 +853,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 	e->inode = INO_T_VAL(msg,36);
 	e->share_file_id = (unsigned long)IVAL(msg,44);
 	e->uid = (uint32)IVAL(msg,48);
+	e->flags = (uint16)SVAL(msg,52);
 }
 
 /****************************************************************************
@@ -859,18 +862,23 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 
 BOOL init_oplocks(void)
 {
-	DEBUG(3,("open_oplock_ipc: initializing messages.\n"));
+	DEBUG(3,("init_oplocks: initializing messages.\n"));
 
 	message_register(MSG_SMB_BREAK_REQUEST,
-			 process_oplock_break_message);
+			 process_oplock_break_message,
+			 NULL);
 	message_register(MSG_SMB_ASYNC_LEVEL2_BREAK,
-			 process_oplock_async_level2_break_message);
+			 process_oplock_async_level2_break_message,
+			 NULL);
 	message_register(MSG_SMB_BREAK_RESPONSE,
-			 process_oplock_break_response);
+			 process_oplock_break_response,
+			 NULL);
 	message_register(MSG_SMB_KERNEL_BREAK,
-			 process_kernel_oplock_break);
+			 process_kernel_oplock_break,
+			 NULL);
 	message_register(MSG_SMB_OPEN_RETRY,
-			 process_open_retry_message);
+			 process_open_retry_message,
+			 NULL);
 
 	if (lp_kernel_oplocks()) {
 #if HAVE_KERNEL_OPLOCKS_IRIX

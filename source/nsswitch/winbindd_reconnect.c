@@ -87,7 +87,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
@@ -111,7 +111,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
@@ -121,6 +121,30 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
 		result = msrpc_methods.sid_to_name(domain, mem_ctx, sid,
 						   domain_name, name, type);
+
+	return result;
+}
+
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum lsa_SidType **types)
+{
+	NTSTATUS result;
+
+	result = msrpc_methods.rids_to_names(domain, mem_ctx, sid,
+					     rids, num_rids,
+					     domain_name, names, types);
+	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+		result = msrpc_methods.rids_to_names(domain, mem_ctx, sid,
+						     rids, num_rids,
+						     domain_name, names,
+						     types);
+	}
 
 	return result;
 }
@@ -280,6 +304,7 @@ struct winbindd_methods reconnect_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,

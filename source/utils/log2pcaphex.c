@@ -96,7 +96,7 @@ typedef struct {
 
 static hdr_tcp_t HDR_TCP = {139, 139, 0, 0, 0x50, 0, 0, 0, 0};
 
-void print_pcap_header(FILE *out)
+static void print_pcap_header(FILE *out)
 {
 	struct tcpdump_file_header h;
 	h.magic = TCPDUMP_MAGIC;
@@ -109,7 +109,7 @@ void print_pcap_header(FILE *out)
 	fwrite(&h, sizeof(struct tcpdump_file_header), 1, out);
 }
 
-void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
+static void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
 {
 	static int i = 0;
 	struct tcpdump_packet p;
@@ -122,7 +122,7 @@ void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
 	fwrite(data, sizeof(unsigned char), caplen, out);
 }
 
-void print_hex_packet(FILE *out, unsigned char *data, long length)
+static void print_hex_packet(FILE *out, unsigned char *data, long length)
 {
 	long i,cur = 0;
 	while(cur < length) {
@@ -136,13 +136,13 @@ void print_hex_packet(FILE *out, unsigned char *data, long length)
 	}
 }
 
-void print_netbios_packet(FILE *out, unsigned char *data, long length, long actual_length)
+static void print_netbios_packet(FILE *out, unsigned char *data, long length, long actual_length)
 {	
 	unsigned char *newdata; long offset = 0;
 	long newlen;
 	
 	newlen = length+sizeof(HDR_IP)+sizeof(HDR_TCP);
-	newdata = malloc(newlen);
+	newdata = (unsigned char *)malloc(newlen);
 
 	HDR_IP.packet_length = htons(newlen);
 	HDR_TCP.window = htons(0x2000);
@@ -159,13 +159,13 @@ void print_netbios_packet(FILE *out, unsigned char *data, long length, long actu
 unsigned char *curpacket = NULL;
 long curpacket_len = 0;
 
-void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *data_offset, long *data_length)
+static void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *data_offset, long *data_length)
 {
 	unsigned char *buffer;
 	int tmp; long i;
 	assert(fscanf(in, " size=%ld\n", buffersize));
 	*buffersize+=4; /* for netbios */
-	buffer = malloc(*buffersize);
+	buffer = (unsigned char *)malloc(*buffersize);
 	memset(buffer, 0, *buffersize);
 	/* NetBIOS */
 	buffer[0] = 0x00;
@@ -197,7 +197,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *dat
 	*_buffer = buffer;
 }
 
-long read_log_data(FILE *in, unsigned char *buffer, long data_length)
+static long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 {
 	long i, addr; char real[2][16]; int ret;
 	unsigned int tmp;

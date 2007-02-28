@@ -29,7 +29,7 @@ ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 				     char ***OIDs_out, char ***names, size_t *count)
 {
 	ADS_STATUS status;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	LDAPMessage *msg;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", "attributeId", NULL };
@@ -111,7 +111,7 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, const char *schema_path, TA
 {
 	ADS_STATUS rc;
 	int count = 0;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", NULL };
 	char *result;
@@ -155,7 +155,7 @@ failed:
 static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_path)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	const char *schema;
 	const char *attrs[] = { "schemaNamingContext", NULL };
 
@@ -165,10 +165,12 @@ static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **s
 	}
 
 	if ( (schema = ads_pull_string(ads, mem_ctx, res, "schemaNamingContext")) == NULL ) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
 	if ( (*schema_path = talloc_strdup(mem_ctx, schema)) == NULL ) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -184,7 +186,10 @@ static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **s
  * @return ADS_STATUS status of search (False if one or more attributes couldn't be
  * found in Active Directory)
  **/ 
-ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping map_type) 
+ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
+					  ADS_STRUCT *ads,
+					  enum wb_posix_mapping map_type,
+					  struct posix_schema **s ) 
 {
 	TALLOC_CTX *ctx = NULL; 
 	ADS_STATUS status;
@@ -192,6 +197,7 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 	size_t num_names;
 	char *schema_path = NULL;
 	int i;
+	struct posix_schema *schema = NULL;
 
 	const char *oids_sfu[] = { 	ADS_ATTR_SFU_UIDNUMBER_OID,
 					ADS_ATTR_SFU_GIDNUMBER_OID,
@@ -207,34 +213,15 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 
 	DEBUG(10,("ads_check_posix_schema_mapping\n"));
 
-	switch (map_type) {
-	
-		case WB_POSIX_MAP_TEMPLATE:
-		case WB_POSIX_MAP_UNIXINFO:
-			DEBUG(10,("ads_check_posix_schema_mapping: nothing to do\n"));
-			return ADS_ERROR(LDAP_SUCCESS);
-
-		case WB_POSIX_MAP_SFU:
-		case WB_POSIX_MAP_RFC2307:
-			break;
-
-		default:
-			DEBUG(0,("ads_check_posix_schema_mapping: "
-				 "unknown enum %d\n", map_type));
-			return ADS_ERROR(LDAP_PARAM_ERROR);
-	}
-
-	ads->schema.posix_uidnumber_attr = NULL;
-	ads->schema.posix_gidnumber_attr = NULL;
-	ads->schema.posix_homedir_attr = NULL;
-	ads->schema.posix_shell_attr = NULL;
-	ads->schema.posix_gecos_attr = NULL;
-
-	ctx = talloc_init("ads_check_posix_schema_mapping");
-	if (ctx == NULL) {
+	if ( (ctx = talloc_init("ads_check_posix_schema_mapping")) == NULL ) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
+	if ( (schema = TALLOC_P(mem_ctx, struct posix_schema)) == NULL ) {
+		TALLOC_FREE( ctx );
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	
 	status = ads_schema_path(ads, ctx, &schema_path);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(3,("ads_check_posix_mapping: Unable to retrieve schema DN!\n"));
@@ -255,10 +242,7 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 		DEBUG(3,("ads_check_posix_schema_mapping: failed %s\n", 
 			ads_errstr(status)));
 		goto done;
-	} 
-	
-	DEBUG(10,("ads_check_posix_schema_mapping: query succeeded, identified: %s\n",
-		wb_posix_map_str(map_type)));
+	}
 
 	for (i=0; i<num_names; i++) {
 
@@ -266,43 +250,48 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 
 		if (strequal(ADS_ATTR_RFC2307_UIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_UIDNUMBER_OID, oids_out[i])) {
-			SAFE_FREE(ads->schema.posix_uidnumber_attr);
-			ads->schema.posix_uidnumber_attr = SMB_STRDUP(names_out[i]);
+			schema->posix_uidnumber_attr = talloc_strdup(schema, names_out[i]);
+			continue;		       
 		}
+
 		if (strequal(ADS_ATTR_RFC2307_GIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_GIDNUMBER_OID, oids_out[i])) {
-			SAFE_FREE(ads->schema.posix_gidnumber_attr);
-			ads->schema.posix_gidnumber_attr = SMB_STRDUP(names_out[i]);
+			schema->posix_gidnumber_attr = talloc_strdup(schema, names_out[i]);
+			continue;		
 		}
+
 		if (strequal(ADS_ATTR_RFC2307_HOMEDIR_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_HOMEDIR_OID, oids_out[i])) {
-			SAFE_FREE(ads->schema.posix_homedir_attr);
-			ads->schema.posix_homedir_attr = SMB_STRDUP(names_out[i]);
+			schema->posix_homedir_attr = talloc_strdup(schema, names_out[i]);
+			continue;			
 		}
+
 		if (strequal(ADS_ATTR_RFC2307_SHELL_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_SHELL_OID, oids_out[i])) {
-			SAFE_FREE(ads->schema.posix_shell_attr);
-			ads->schema.posix_shell_attr = SMB_STRDUP(names_out[i]);
+			schema->posix_shell_attr = talloc_strdup(schema, names_out[i]);
+			continue;			
 		}
+
 		if (strequal(ADS_ATTR_RFC2307_GECOS_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_GECOS_OID, oids_out[i])) {
-			SAFE_FREE(ads->schema.posix_gecos_attr);
-			ads->schema.posix_gecos_attr = SMB_STRDUP(names_out[i]);
+			schema->posix_gecos_attr = talloc_strdup(schema, names_out[i]);
 		}
 	}
 
-	if (!ads->schema.posix_uidnumber_attr ||
-	    !ads->schema.posix_gidnumber_attr ||
-	    !ads->schema.posix_homedir_attr ||
-	    !ads->schema.posix_shell_attr ||
-	    !ads->schema.posix_gecos_attr) {
+	if (!schema->posix_uidnumber_attr ||
+	    !schema->posix_gidnumber_attr ||
+	    !schema->posix_homedir_attr ||
+	    !schema->posix_shell_attr ||
+	    !schema->posix_gecos_attr) {
 	    	status = ADS_ERROR(LDAP_NO_MEMORY);
+	        TALLOC_FREE( schema );		
 	    	goto done;
 	}
+
+	*s = schema;
 	
 	status = ADS_ERROR(LDAP_SUCCESS);
 	
-	ads->schema.map_type = map_type;
 done:
 	if (ctx) {
 		talloc_destroy(ctx);

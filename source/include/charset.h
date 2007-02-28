@@ -20,9 +20,9 @@
 */
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
+typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4, CH_UTF16BE=5} charset_t;
 
-#define NUM_CHARSETS 5
+#define NUM_CHARSETS 6
 
 /* 
  *   for each charset we have a function that pushes from that charset to a ucs2
@@ -119,6 +119,7 @@ static size_t CHARSETNAME ## _pull(void *cd, const char **inbuf, size_t *inbytes
 struct charset_functions CHARSETNAME ## _functions = 						\
 		{#CHARSETNAME, CHARSETNAME ## _pull, CHARSETNAME ## _push};			\
 												\
+NTSTATUS charset_ ## CHARSETNAME ## _init(void);							\
 NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
 {												\
 	return smb_register_charset(& CHARSETNAME ## _functions);				\

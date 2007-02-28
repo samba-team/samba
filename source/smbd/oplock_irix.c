@@ -38,16 +38,19 @@ static BOOL irix_oplocks_available(void)
 
 	set_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
-	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
+	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(),
+		 (int)sys_getpid());
 
 	if(pipe(pfd) != 0) {
-		DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
+		DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error "
+			 "was %s\n",
 			 strerror(errno) ));
 		return False;
 	}
 
 	if((fd = sys_open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
-		DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
+		DEBUG(0,("check_kernel_oplocks: Unable to open temp test file "
+			 "%s. Error was %s\n",
 			 tmpname, strerror(errno) ));
 		unlink( tmpname );
 		close(pfd[0]);
@@ -58,8 +61,9 @@ static BOOL irix_oplocks_available(void)
 	unlink(tmpname);
 
 	if(sys_fcntl_long(fd, F_OPLKREG, pfd[1]) == -1) {
-		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
-Disabling kernel oplock support.\n" ));
+		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not "
+			 "available on this machine. Disabling kernel oplock "
+			 "support.\n" ));
 		close(pfd[0]);
 		close(pfd[1]);
 		close(fd);
@@ -67,8 +71,9 @@ Disabling kernel oplock support.\n" ));
 	}
 
 	if(sys_fcntl_long(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
-		DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
-Disabling kernel oplock support.\n", strerror(errno) ));
+		DEBUG(0,("check_kernel_oplocks: Error when removing kernel "
+			 "oplock. Error was %s. Disabling kernel oplock "
+			 "support.\n", strerror(errno) ));
 		close(pfd[0]);
 		close(pfd[1]);
 		close(fd);
@@ -145,7 +150,8 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
      
 	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request "
 		 "received for dev = %x, inode = %.0f\n, file_id = %ul",
-		 (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id ));
+		 (unsigned int)fsp->dev, (double)fsp->inode,
+		 fsp->fh->file_id ));
 
 	return fsp;
 }
@@ -158,20 +164,28 @@ static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if (sys_fcntl_long(fsp->fh->fd, F_OPLKREG, oplock_pipe_write) == -1) {
 		if(errno != EAGAIN) {
-			DEBUG(0,("irix_set_kernel_oplock: Unable to get kernel oplock on file %s, dev = %x, \
-inode = %.0f, file_id = %ul. Error was %s\n", 
-				 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id,
+			DEBUG(0,("irix_set_kernel_oplock: Unable to get "
+				 "kernel oplock on file %s, dev = %x, inode "
+				 "= %.0f, file_id = %ul. Error was %s\n", 
+				 fsp->fsp_name, (unsigned int)fsp->dev,
+				 (double)fsp->inode, fsp->fh->file_id,
 				 strerror(errno) ));
 		} else {
-			DEBUG(5,("irix_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
-inode = %.0f, file_id = %ul. Another process had the file open.\n",
-				 fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id ));
+			DEBUG(5,("irix_set_kernel_oplock: Refused oplock on "
+				 "file %s, fd = %d, dev = %x, inode = %.0f, "
+				 "file_id = %ul. Another process had the file "
+				 "open.\n",
+				 fsp->fsp_name, fsp->fh->fd,
+				 (unsigned int)fsp->dev, (double)fsp->inode,
+				 fsp->fh->file_id ));
 		}
 		return False;
 	}
 	
-	DEBUG(10,("irix_set_kernel_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %ul\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id));
+	DEBUG(10,("irix_set_kernel_oplock: got kernel oplock on file %s, dev "
+		  "= %x, inode = %.0f, file_id = %ul\n",
+		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
+		  fsp->fh->file_id));
 
 	return True;
 }
@@ -188,8 +202,9 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 		 * oplock state of this file.
 		 */
 		int state = sys_fcntl_long(fsp->fh->fd, F_OPLKACK, -1);
-		dbgtext("irix_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %ul, has kernel \
-oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
+		dbgtext("irix_release_kernel_oplock: file %s, dev = %x, "
+			"inode = %.0f file_id = %ul, has kernel oplock state "
+			"of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->fh->file_id, state );
 	}
 
@@ -198,10 +213,13 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	 */
 	if(sys_fcntl_long(fsp->fh->fd, F_OPLKACK, OP_REVOKE) < 0) {
 		if( DEBUGLVL( 0 )) {
-			dbgtext("irix_release_kernel_oplock: Error when removing kernel oplock on file " );
-			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. Error was %s\n",
+			dbgtext("irix_release_kernel_oplock: Error when "
+				"removing kernel oplock on file " );
+			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. "
+				"Error was %s\n",
 				fsp->fsp_name, (unsigned int)fsp->dev, 
-				(double)fsp->inode, fsp->fh->file_id, strerror(errno) );
+				(double)fsp->inode, fsp->fh->file_id,
+				strerror(errno) );
 		}
 	}
 }
@@ -249,8 +267,8 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 		return NULL;
 
 	if(pipe(pfd) != 0) {
-		DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. Error was %s\n",
-			 strerror(errno) ));
+		DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. "
+			 "Error was %s\n", strerror(errno) ));
 		return False;
 	}
 
@@ -266,5 +284,6 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 	return &koplocks;
 }
 #else
+ void oplock_irix_dummy(void);
  void oplock_irix_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */

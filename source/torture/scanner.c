@@ -49,7 +49,7 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 			 int op,
 			 char *param, char *data,
 			 int param_len, int data_len,
-			 int *rparam_len, int *rdata_len)
+			 unsigned int *rparam_len, unsigned int *rdata_len)
 {
 	uint16 setup = op;
 	char *rparam=NULL, *rdata=NULL;
@@ -80,7 +80,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
-			     int *rparam_len, int *rdata_len)
+			     unsigned int *rparam_len, unsigned int *rdata_len)
 {
 	NTSTATUS ret=NT_STATUS_OK;
 
@@ -115,7 +115,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 {
 	int data_len = 0;
 	int param_len = 0;
-	int rparam_len, rdata_len;
+	unsigned int rparam_len, rdata_len;
 	pstring param, data;
 	NTSTATUS status;
 
@@ -196,7 +196,7 @@ BOOL torture_trans2_scan(int dummy)
 
 	printf("starting trans2 scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -253,7 +253,7 @@ static NTSTATUS try_nttrans(struct cli_state *cli,
 			 int op,
 			 char *param, char *data,
 			 int param_len, int data_len,
-			 int *rparam_len, int *rdata_len)
+			 unsigned int *rparam_len, unsigned int *rdata_len)
 {
 	char *rparam=NULL, *rdata=NULL;
 
@@ -282,7 +282,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
-			     int *rparam_len, int *rdata_len)
+			     unsigned int *rparam_len, unsigned int *rdata_len)
 {
 	NTSTATUS ret=NT_STATUS_OK;
 
@@ -317,7 +317,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 {
 	int data_len = 0;
 	int param_len = 0;
-	int rparam_len, rdata_len;
+	unsigned int rparam_len, rdata_len;
 	pstring param, data;
 	NTSTATUS status;
 
@@ -398,7 +398,7 @@ BOOL torture_nttrans_scan(int dummy)
 
 	printf("starting nttrans scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

@@ -20,11 +20,11 @@
 
 
 enum GPO_LINK_TYPE {
-	GP_LINK_UNKOWN,
-	GP_LINK_MACHINE,
-	GP_LINK_SITE,
-	GP_LINK_DOMAIN,
-	GP_LINK_OU
+	GP_LINK_UNKOWN	= 0,
+	GP_LINK_MACHINE	= 1,
+	GP_LINK_SITE	= 2,
+	GP_LINK_DOMAIN	= 3,
+	GP_LINK_OU	= 4
 };
 
 /* GPO_OPTIONS */
@@ -35,11 +35,12 @@ enum GPO_LINK_TYPE {
 #define GPO_LIST_FLAG_MACHINE	0x00000001
 #define GPO_LIST_FLAG_SITEONLY	0x00000002
 
+#define GPO_VERSION_USER(x) (x >> 16)
+#define GPO_VERSION_MACHINE(x) (x & 0xffff)
+
 struct GROUP_POLICY_OBJECT {
 	uint32 options;	/* GPFLAGS_* */ 
 	uint32 version;
-	uint16 version_user;
-	uint16 version_machine;
 	const char *ds_path;
 	const char *file_sys_path;
 	const char *display_name;
@@ -62,8 +63,8 @@ struct GROUP_POLICY_OBJECT {
 
 /* 'gPOptions', maybe a bitmask as well */
 enum GPO_INHERIT {
-	GPOPTIONS_INHERIT,
-	GPOPTIONS_BLOCK_INHERITANCE
+	GPOPTIONS_INHERIT		= 0,
+	GPOPTIONS_BLOCK_INHERITANCE	= 1
 };
 
 /* 'flags' in a 'groupPolicyContainer' object */
@@ -89,3 +90,6 @@ struct GP_EXT {
 	char **snapins;
 	char **snapins_guid;
 };
+
+#define GPO_CACHE_DIR "gpo_cache"
+#define GPT_INI "GPT.INI"

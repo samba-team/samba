@@ -23,14 +23,13 @@
 /* users from session setup */
 static char *session_userlist = NULL;
 static int len_session_userlist = 0;
+/* workgroup from session setup. */
+static char *session_workgroup = NULL;
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users;
 static int next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
-
-extern userdom_struct current_user_info;
-
 
 /****************************************************************************
  Check if a uid has been validated, and return an pointer to the user_struct
@@ -112,6 +111,7 @@ void invalidate_vuid(uint16 vuid)
 
 	SAFE_FREE(vuser->groups);
 	TALLOC_FREE(vuser->nt_user_token);
+
 	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
@@ -406,6 +406,29 @@ void add_session_user(const char *user)
 }
 
 /****************************************************************************
+ In security=share mode we need to store the client workgroup, as that's
+  what Vista uses for the NTLMv2 calculation.
+****************************************************************************/
+
+void add_session_workgroup(const char *workgroup)
+{
+	if (session_workgroup) {
+		SAFE_FREE(session_workgroup);
+	}
+	session_workgroup = smb_xstrdup(workgroup);
+}
+
+/****************************************************************************
+ In security=share mode we need to return the client workgroup, as that's
+  what Vista uses for the NTLMv2 calculation.
+****************************************************************************/
+
+const char *get_session_workgroup(void)
+{
+	return session_workgroup;
+}
+
+/****************************************************************************
  Check if a user is in a netgroup user list. If at first we don't succeed,
  try lower case.
 ****************************************************************************/
@@ -549,9 +572,11 @@ static BOOL user_ok(const char *user, int snum)
 		str_list_copy(&invalid, lp_invalid_users(snum));
 		if (invalid &&
 		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
-			if ( invalid &&
-			     str_list_sub_basic(invalid,
-						current_user_info.smb_name) ) {
+
+			/* This is used in sec=share only, so no current user
+			 * around to pass to str_list_sub_basic() */
+
+			if ( invalid && str_list_sub_basic(invalid, "", "") ) {
 				ret = !user_in_list(user,
 						    (const char **)invalid);
 			}
@@ -564,9 +589,11 @@ static BOOL user_ok(const char *user, int snum)
 		str_list_copy(&valid, lp_valid_users(snum));
 		if ( valid &&
 		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
-			if ( valid &&
-			     str_list_sub_basic(valid,
-						current_user_info.smb_name) ) {
+
+			/* This is used in sec=share only, so no current user
+			 * around to pass to str_list_sub_basic() */
+
+			if ( valid && str_list_sub_basic(valid, "", "") ) {
 				ret = user_in_list(user, (const char **)valid);
 			}
 		}

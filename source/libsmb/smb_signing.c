@@ -327,7 +327,8 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
-	struct smb_basic_signing_context *data = si->signing_context;
+	struct smb_basic_signing_context *data =
+		(struct smb_basic_signing_context *)si->signing_context;
 
 	if (!si->doing_signing)
 		return;
@@ -382,7 +383,8 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 
-	struct smb_basic_signing_context *data = si->signing_context;
+	struct smb_basic_signing_context *data =
+		(struct smb_basic_signing_context *)si->signing_context;
 
 	if (!si->doing_signing)
 		return True;
@@ -437,7 +439,8 @@ We were expecting seq %u\n", reply_seq_number+i, reply_seq_number ));
 
 static void simple_free_signing_context(struct smb_sign_info *si)
 {
-	struct smb_basic_signing_context *data = si->signing_context;
+	struct smb_basic_signing_context *data =
+		(struct smb_basic_signing_context *)si->signing_context;
 	struct outstanding_packet_lookup *list;
 	struct outstanding_packet_lookup *next;
 	
@@ -661,7 +664,8 @@ BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
 static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
-	struct smb_basic_signing_context *data = si->signing_context;
+	struct smb_basic_signing_context *data =
+		(struct smb_basic_signing_context *)si->signing_context;
 	uint32 send_seq_number = data->send_seq_num-1;
 	uint16 mid;
 
@@ -702,7 +706,8 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
 {
 	BOOL good;
-	struct smb_basic_signing_context *data = si->signing_context;
+	struct smb_basic_signing_context *data =
+		(struct smb_basic_signing_context *)si->signing_context;
 	uint32 reply_seq_number = data->send_seq_num;
 	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];

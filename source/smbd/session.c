@@ -1,8 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    session handling for utmp and PAM
-   Copyright (C) tridge@samba.org 2001
-   Copyright (C) abartlet@pcug.org.au 2001
+
+   Copyright (C) tridge@samba.org       2001
+   Copyright (C) abartlet@samba.org     2001
+   Copyright (C) Gerald (Jerry) Carter  2006   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +31,9 @@
 
 static TDB_CONTEXT *tdb;
 
+/********************************************************************
+********************************************************************/
+
 BOOL session_init(void)
 {
 	if (tdb)
@@ -44,7 +49,10 @@ BOOL session_init(void)
 	return True;
 }
 
-/* called when a session is created */
+/********************************************************************
+ called when a session is created
+********************************************************************/
+
 BOOL session_claim(user_struct *vuser)
 {
 	int i = 0;
@@ -126,6 +134,7 @@ BOOL session_claim(user_struct *vuser)
 	sessionid.gid = vuser->gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr, client_addr());
+	sessionid.connect_start = time(NULL);
 
 	client_ip = client_inaddr(&sa);
 
@@ -159,7 +168,10 @@ BOOL session_claim(user_struct *vuser)
 	return True;
 }
 
-/* called when a session is destroyed */
+/********************************************************************
+ called when a session is destroyed
+********************************************************************/
+
 void session_yield(user_struct *vuser)
 {
 	TDB_DATA dbuf;
@@ -198,6 +210,9 @@ void session_yield(user_struct *vuser)
 	tdb_delete(tdb, key);
 }
 
+/********************************************************************
+********************************************************************/
+
 BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *),
 		      void *state)
 {
@@ -210,31 +225,39 @@ BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *),
 	return True;
 }
 
+/********************************************************************
+********************************************************************/
+
 struct session_list {
 	int count;
 	struct sessionid *sessions;
 };
 
-static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf,
-			      void *state)
+static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
+	uint32 i;	
 	struct session_list *sesslist = (struct session_list *) state;
 	const struct sessionid *current = (const struct sessionid *) dbuf.dptr;
 
-	sesslist->count += 1;
-	sesslist->sessions = SMB_REALLOC_ARRAY(sesslist->sessions, struct sessionid,
-					sesslist->count);
+	i = sesslist->count;
+	
+	sesslist->sessions = SMB_REALLOC_ARRAY(sesslist->sessions, struct sessionid, i+1);
 	if (!sesslist->sessions) {
 		sesslist->count = 0;
 		return -1;
 	}
 
-	memcpy(&sesslist->sessions[sesslist->count - 1], current, 
-	       sizeof(struct sessionid));
+	memcpy(&sesslist->sessions[i], current, sizeof(struct sessionid));
+	sesslist->count++;
+
 	DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
 		 current->username, current->remote_machine));
+
 	return 0;
 }
+
+/********************************************************************
+********************************************************************/
 
 int list_sessions(struct sessionid **session_list)
 {

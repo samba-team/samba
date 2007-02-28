@@ -24,11 +24,11 @@ tests="$tests UNLINK BROWSE ATTR TRANS2 MAXFID TORTURE "
 tests="$tests OPLOCK1 OPLOCK2 OPLOCK3"
 tests="$tests DIR DIR1 TCON TCONDEV RW1 RW2 RW3"
 tests="$tests OPEN XCOPY RENAME DELETE PROPERTIES W2K"
-tests="$tests PIPE_NUMBER TCON2 IOCTL CHKPATH FDSESS"
+tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE"
 
 skipped1="RANDOMIPC NEGNOWAIT NBENCH ERRMAPEXTRACT TRANS2SCAN NTTRANSSCAN"
 skipped2="DENY1 DENY2 OPENATTR CASETABLE EATEST"
-skipped3="MANGLE UTABLE"
+skipped3="MANGLE UTABLE PIPE_NUMBER"
 echo "Skipping the following tests:"
 echo "$skipped1"
 echo "$skipped2"
@@ -41,7 +41,7 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND $SRCDIR/bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    testit "$name" $VALGRIND $BINDIR/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed

@@ -115,7 +115,7 @@ void send_trans_reply(char *outbuf,
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_trans_reply: send_smb failed.");
+		exit_server_cleanly("send_trans_reply: send_smb failed.");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -149,7 +149,7 @@ void send_trans_reply(char *outbuf,
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("send_trans_reply: send_smb failed.");
+			exit_server_cleanly("send_trans_reply: send_smb failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -447,7 +447,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(result);
 	}
 
-	if ((state = TALLOC_P(NULL, struct trans_state)) == NULL) {
+	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		END_PROFILE(SMBtrans);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -458,6 +458,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	state->mid = SVAL(inbuf, smb_mid);
 	state->vuid = SVAL(inbuf, smb_uid);
 	state->setup_count = CVAL(inbuf, smb_suwcnt);
+	state->setup = NULL;
 	state->total_param = SVAL(inbuf, smb_tpscnt);
 	state->param = NULL;
 	state->total_data = SVAL(inbuf, smb_tdscnt);
@@ -478,7 +479,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_data)  {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->data = SMB_MALLOC(state->total_data);
+		state->data = (char *)SMB_MALLOC(state->total_data);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
@@ -498,7 +499,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_param) {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->param = SMB_MALLOC(state->total_param);
+		state->param = (char *)SMB_MALLOC(state->total_param);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_param));

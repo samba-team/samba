@@ -61,7 +61,7 @@ extern fstring remote_arch;
 enum protocol_types Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
-file_info def_finfo = {-1,0,0,0,0,0,0,"",""};
+file_info def_finfo;
 
 /* this is used by the chaining code */
 int chain_size = 0;
@@ -199,10 +199,10 @@ void gfree_all( void )
 	gfree_case_tables();
 	gfree_debugsyms();
 	gfree_charcnv();
-	gfree_messsges();
+	gfree_messages();
 
 	/* release the talloc null_context memory last */
-	talloc_nc_free();
+	talloc_disable_null_tracking();
 }
 
 const char *my_netbios_names(int i)
@@ -307,7 +307,7 @@ const char *tmpdir(void)
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
-void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+BOOL add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids)
 {
 	int i;
@@ -316,26 +316,24 @@ void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 		/*
 		 * A former call to this routine has failed to allocate memory
 		 */
-		return;
+		return False;
 	}
 
 	for (i=0; i<*num_gids; i++) {
-		if ((*gids)[i] == gid)
-			return;
+		if ((*gids)[i] == gid) {
+			return True;
+		}
 	}
 
-	if (mem_ctx != NULL) {
-		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
-	} else {
-		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num_gids+1);
-	}
-
+	*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
 	if (*gids == NULL) {
-		return;
+		*num_gids = 0;
+		return False;
 	}
 
 	(*gids)[*num_gids] = gid;
 	*num_gids += 1;
+	return True;
 }
 
 /****************************************************************************
@@ -760,7 +758,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
-	if ((buf = SMB_MALLOC(TRANSFER_BUF_SIZE)) == NULL)
+	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL)
 		return -1;
 
 	while (total < n) {
@@ -915,6 +913,17 @@ void *malloc_(size_t size)
 }
 
 /****************************************************************************
+ Internal malloc wrapper. Externally visible.
+****************************************************************************/
+
+void *memalign_(size_t align, size_t size)
+{
+#undef memalign
+	return memalign(align, size);
+#define memalign(align, s) __ERROR_DONT_USE_MEMALIGN_DIRECTLY
+}
+
+/****************************************************************************
  Internal calloc wrapper. Not externally visible.
 ****************************************************************************/
 
@@ -952,6 +961,23 @@ void *malloc_array(size_t el_size, unsigned int count)
 	return malloc_(el_size*count);
 #else
 	return malloc(el_size*count);
+#endif
+}
+
+/****************************************************************************
+ Type-safe memalign
+****************************************************************************/
+
+void *memalign_array(size_t el_size, size_t align, unsigned int count)
+{
+	if (count >= MAX_ALLOC_SIZE/el_size) {
+		return NULL;
+	}
+
+#if defined(PARANOID_MALLOC_CHECKER)
+	return memalign_(align, el_size*count);
+#else
+	return sys_memalign(align, el_size*count);
 #endif
 }
 
@@ -1059,9 +1085,11 @@ void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_o
 ****************************************************************************/
 
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
-			void *element, void **array, uint32 *num_elements,
+			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size)
 {
+	void **array = (void **)_array;
+
 	if (*array_size < 0) {
 		return;
 	}
@@ -1075,12 +1103,7 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL) {
-			*array = TALLOC(mem_ctx, element_size * (*array_size));
-		} else {
-			*array = SMB_MALLOC(element_size * (*array_size));
-		}
-
+		*array = TALLOC(mem_ctx, element_size * (*array_size));
 		if (*array == NULL) {
 			goto error;
 		}
@@ -1093,13 +1116,8 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL) {
-			*array = TALLOC_REALLOC(mem_ctx, *array,
-						element_size * (*array_size));
-		} else {
-			*array = SMB_REALLOC(*array,
-					     element_size * (*array_size));
-		}
+		*array = TALLOC_REALLOC(mem_ctx, *array,
+					element_size * (*array_size));
 
 		if (*array == NULL) {
 			goto error;
@@ -1479,6 +1497,10 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 
 BOOL process_exists(const struct process_id pid)
 {
+	if (procid_is_me(&pid)) {
+		return True;
+	}
+
 	if (!procid_is_local(&pid)) {
 		/* This *SEVERELY* needs fixing. */
 		return True;
@@ -1598,9 +1620,6 @@ void smb_panic(const char *const why)
 	DEBUG(0,("PANIC (pid %llu): %s\n",
 		    (unsigned long long)sys_getpid(), why));
 	log_stack_trace();
-
-	/* only smbd needs to decrement the smbd counter in connections.tdb */
-	decrement_smbd_process_count();
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
@@ -2138,6 +2157,7 @@ BOOL is_myworkgroup(const char *s)
 /*******************************************************************
  we distinguish between 2K and XP by the "Native Lan Manager" string
    WinXP => "Windows 2002 5.1"
+   WinXP 64bit => "Windows XP 5.2"
    Win2k => "Windows 2000 5.0"
    NT4   => "Windows NT 4.0" 
    Win9x => "Windows 4.0"
@@ -2146,8 +2166,10 @@ BOOL is_myworkgroup(const char *s)
 ********************************************************************/
 
 void ra_lanman_string( const char *native_lanman )
-{		 
+{	
 	if ( strcmp( native_lanman, "Windows 2002 5.1" ) == 0 )
+		set_remote_arch( RA_WINXP );
+	else if ( strcmp( native_lanman, "Windows XP 5.2" ) == 0 )
 		set_remote_arch( RA_WINXP );
 	else if ( strcmp( native_lanman, "Windows Server 2003 5.2" ) == 0 )
 		set_remote_arch( RA_WIN2K3 );
@@ -2181,6 +2203,9 @@ void set_remote_arch(enum remote_arch_types type)
 		break;
 	case RA_WIN2K3:
 		fstrcpy(remote_arch, "Win2K3");
+		break;
+	case RA_VISTA:
+		fstrcpy(remote_arch, "Vista");
 		break;
 	case RA_SAMBA:
 		fstrcpy(remote_arch,"Samba");
@@ -2443,8 +2468,16 @@ char *smb_xstrdup(const char *s)
 #undef strdup
 #endif
 #endif
+
+#ifndef HAVE_STRDUP
+#define strdup rep_strdup
+#endif
+
 	char *s1 = strdup(s);
 #if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strdup
+#undef strdup
+#endif
 #define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
 #endif
 	if (!s1)
@@ -2464,8 +2497,17 @@ char *smb_xstrndup(const char *s, size_t n)
 #undef strndup
 #endif
 #endif
+
+#if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
+#undef HAVE_STRNDUP
+#define strndup rep_strndup
+#endif
+
 	char *s1 = strndup(s, n);
 #if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strndup
+#undef strndup
+#endif
 #define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
 #endif
 	if (!s1)
@@ -2612,6 +2654,37 @@ char *parent_dirname(const char *path)
 	return dirpath;
 }
 
+BOOL parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
+			   char **parent, const char **name)
+{
+	char *p;
+	ptrdiff_t len;
+ 
+	p = strrchr_m(dir, '/'); /* Find final '/', if any */
+
+	if (p == NULL) {
+		if (!(*parent = talloc_strdup(mem_ctx, "."))) {
+			return False;
+		}
+		if (name) {
+			*name = "";
+		}
+		return True;
+	}
+
+	len = p-dir;
+
+	if (!(*parent = TALLOC_ARRAY(mem_ctx, char, len+1))) {
+		return False;
+	}
+	memcpy(*parent, dir, len);
+	(*parent)[len] = '\0';
+
+	if (name) {
+		*name = p+1;
+	}
+	return True;
+}
 
 /*******************************************************************
  Determine if a pattern contains any Microsoft wildcard characters.
@@ -2829,10 +2902,11 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 }
 
 /**********************************************************************
- Converts a name to a fully qalified domain name.
+ Converts a name to a fully qualified domain name.
+ Returns True if lookup succeeded, False if not (then fqdn is set to name)
 ***********************************************************************/
                                                                                                                                                    
-void name_to_fqdn(fstring fqdn, const char *name)
+BOOL name_to_fqdn(fstring fqdn, const char *name)
 {
 	struct hostent *hp = sys_gethostbyname(name);
 
@@ -2854,7 +2928,7 @@ void name_to_fqdn(fstring fqdn, const char *name)
 		if (full && (StrCaseCmp(full, "localhost.localdomain") == 0)) {
 			DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
 			DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
-			DEBUGADD(1, ("    to Kerberos authentication probelms as localhost.localdomain\n"));
+			DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
 			DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
 			full = hp->h_name;
 		}
@@ -2865,9 +2939,11 @@ void name_to_fqdn(fstring fqdn, const char *name)
 
 		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
 		fstrcpy(fqdn, full);
+		return True;
 	} else {
 		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
 		fstrcpy(fqdn, name);
+		return False;
 	}
 }
 
@@ -2968,9 +3044,22 @@ struct process_id procid_self(void)
 	return pid_to_procid(sys_getpid());
 }
 
+struct server_id server_id_self(void)
+{
+	struct server_id id;
+	id.id = procid_self();
+	return id;
+}
+
 BOOL procid_equal(const struct process_id *p1, const struct process_id *p2)
 {
 	return (p1->pid == p2->pid);
+}
+
+BOOL cluster_id_equal(const struct server_id *id1,
+		      const struct server_id *id2)
+{
+	return procid_equal(&id1->id, &id2->id);
 }
 
 BOOL procid_is_me(const struct process_id *pid)

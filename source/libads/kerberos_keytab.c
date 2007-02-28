@@ -408,12 +408,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	DEBUG(3,("ads_keytab_flush: Using default keytab: %s\n", (char *) &keytab_name));
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: krb5_kt_resolve failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
@@ -530,12 +525,17 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	}
 
 	/* now add the userPrincipalName and sAMAccountName entries */
-	
+
 	if ( (sam_account_name = ads_get_samaccountname( ads, ctx, machine_name)) == NULL ) {
 		DEBUG(0,("ads_keytab_add_entry: unable to determine machine account's name in AD!\n"));
 		TALLOC_FREE( ctx );
 		return -1;	
 	}
+
+	/* upper case the sAMAccountName to make it easier for apps to 
+	   know what case to use in the keytab file */
+
+	strupper_m( sam_account_name );	
 
 	if ( (ret = ads_keytab_add_entry(ads, sam_account_name )) != 0 ) {
 		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding sAMAccountName (%s)\n",

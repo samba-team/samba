@@ -7,6 +7,7 @@
    Copyright (C) Andrew Bartlett           2002
    Copyright (C) Gerald (Jerry) Carter     2003-2005.
    Copyright (C) Volker Lendecke           2004-2005
+   Copyright (C) Jeremy Allison		   2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,6 +65,424 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+struct dc_name_ip {
+	fstring name;
+	struct in_addr ip;
+};
+
+extern struct winbindd_methods reconnect_methods;
+extern BOOL override_logfile;
+
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
+static void set_dc_type_and_flags( struct winbindd_domain *domain );
+static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+		    struct dc_name_ip **dcs, int *num_dcs);
+
+/****************************************************************
+ Child failed to find DC's. Reschedule check.
+****************************************************************/
+
+static void msg_failed_to_go_online(int msg_type, struct process_id src,
+				    void *buf, size_t len, void *private_data)
+{
+	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
+
+	if (buf == NULL || len == 0) {
+		return;
+	}
+
+	DEBUG(5,("msg_fail_to_go_online: received for domain %s.\n", domainname));
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+
+		if (strequal(domain->name, domainname)) {
+			if (domain->online) {
+				/* We're already online, ignore. */
+				DEBUG(5,("msg_fail_to_go_online: domain %s "
+					"already online.\n", domainname));
+				continue;
+			}
+
+			/* Reschedule the online check. */
+			set_domain_offline(domain);
+			break;
+		}
+	}
+}
+
+/****************************************************************
+ Actually cause a reconnect from a message.
+****************************************************************/
+
+static void msg_try_to_go_online(int msg_type, struct process_id src,
+				 void *buf, size_t len, void *private_data)
+{
+	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
+
+	if (buf == NULL || len == 0) {
+		return;
+	}
+
+	DEBUG(5,("msg_try_to_go_online: received for domain %s.\n", domainname));
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+
+		if (strequal(domain->name, domainname)) {
+
+			if (domain->online) {
+				/* We're already online, ignore. */
+				DEBUG(5,("msg_try_to_go_online: domain %s "
+					"already online.\n", domainname));
+				continue;
+			}
+
+			/* This call takes care of setting the online
+			   flag to true if we connected, or re-adding
+			   the offline handler if false. Bypasses online
+			   check so always does network calls. */
+
+			init_dc_connection_network(domain);
+			break;
+		}
+	}
+}
+
+/****************************************************************
+ Fork a child to try and contact a DC. Do this as contacting a
+ DC requires blocking lookups and we don't want to block our
+ parent.
+****************************************************************/
+
+static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
+{
+	struct dc_name_ip *dcs = NULL;
+	int num_dcs = 0;
+	TALLOC_CTX *mem_ctx = NULL;
+	pid_t child_pid;
+	pid_t parent_pid = sys_getpid();
+
+	/* Stop zombies */
+	CatchChild();
+
+	message_block();
+
+	child_pid = sys_fork();
+
+	if (child_pid == -1) {
+		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
+		message_unblock();
+		return False;
+	}
+
+	if (child_pid != 0) {
+		/* Parent */
+		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,
+				 msg_try_to_go_online, NULL);
+		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				 msg_failed_to_go_online, NULL);
+		message_unblock();
+		return True;
+	}
+
+	/* Child. */
+
+	/* Leave messages blocked - we will never process one. */
+
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all(1) == -1) {
+		DEBUG(0,("tdb_reopen_all failed.\n"));
+		_exit(0);
+	}
+
+	close_conns_after_fork();
+
+	if (!override_logfile) {
+		pstring logfile;
+		pstr_sprintf(logfile, "%s/log.winbindd-dc-connect", dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
+		reopen_logs();
+	}
+
+	mem_ctx = talloc_init("fork_child_dc_connect");
+	if (!mem_ctx) {
+		DEBUG(0,("talloc_init failed.\n"));
+		_exit(0);
+	}
+
+	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs)) || (num_dcs == 0)) {
+		/* Still offline ? Can't find DC's. */
+		message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				domain->name,
+				strlen(domain->name)+1, False);
+		_exit(0);
+	}
+
+	/* We got a DC. Send a message to our parent to get it to
+	   try and do the same. */
+
+	message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_TRY_TO_GO_ONLINE,
+				domain->name,
+				strlen(domain->name)+1, False);
+	_exit(0);
+}
+
+/****************************************************************
+ Handler triggered if we're offline to try and detect a DC.
+****************************************************************/
+
+static void check_domain_online_handler(struct event_context *ctx,
+					struct timed_event *te,
+					const struct timeval *now,
+					void *private_data)
+{
+        struct winbindd_domain *domain =
+                (struct winbindd_domain *)private_data;
+
+	DEBUG(10,("check_domain_online_handler: called for domain %s\n",
+		domain->name ));
+
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	/* Are we still in "startup" mode ? */
+
+	if (domain->startup && (now->tv_sec > domain->startup_time + 30)) {
+		/* No longer in "startup" mode. */
+		DEBUG(10,("check_domain_online_handler: domain %s no longer in 'startup' mode.\n",
+			domain->name ));
+		domain->startup = False;
+	}
+
+	/* We've been told to stay offline, so stay
+	   that way. */
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("check_domain_online_handler: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* Fork a child to test if it can contact a DC. 
+	   If it can then send ourselves a message to
+	   cause a reconnect. */
+
+	fork_child_dc_connect(domain);
+}
+
+/****************************************************************
+ If we're still offline setup the timeout check.
+****************************************************************/
+
+static void calc_new_online_timeout_check(struct winbindd_domain *domain)
+{
+	int wbc = lp_winbind_cache_time();
+
+	if (domain->startup) {
+		domain->check_online_timeout = 10;
+	} else if (domain->check_online_timeout < wbc) {
+		domain->check_online_timeout = wbc;
+	}
+}
+
+/****************************************************************
+ Set domain offline and also add handler to put us back online
+ if we detect a DC.
+****************************************************************/
+
+void set_domain_offline(struct winbindd_domain *domain)
+{
+	DEBUG(10,("set_domain_offline: called for domain %s\n",
+		domain->name ));
+
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	if (domain->internal) {
+		DEBUG(3,("set_domain_offline: domain %s is internal - logic error.\n",
+			domain->name ));
+		return;
+	}
+
+	domain->online = False;
+
+	/* Offline domains are always initialized. They're
+	   re-initialized when they go back online. */
+
+	domain->initialized = True;
+
+	/* We only add the timeout handler that checks and
+	   allows us to go back online when we've not
+	   been told to remain offline. */
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_offline: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* If we're in statup mode, check again in 10 seconds, not in
+	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
+
+	calc_new_online_timeout_check(domain);
+
+	domain->check_online_event = event_add_timed(winbind_event_context(),
+						NULL,
+						timeval_current_ofs(domain->check_online_timeout,0),
+						"check_domain_online_handler",
+						check_domain_online_handler,
+						domain);
+
+	/* The above *has* to succeed for winbindd to work. */
+	if (!domain->check_online_event) {
+		smb_panic("set_domain_offline: failed to add online handler.\n");
+	}
+
+	DEBUG(10,("set_domain_offline: added event handler for domain %s\n",
+		domain->name ));
+}
+
+/****************************************************************
+ Set domain online - if allowed.
+****************************************************************/
+
+static void set_domain_online(struct winbindd_domain *domain)
+{
+	struct timeval now;
+
+	DEBUG(10,("set_domain_online: called for domain %s\n",
+		domain->name ));
+
+	if (domain->internal) {
+		DEBUG(3,("set_domain_online: domain %s is internal - logic error.\n",
+			domain->name ));
+		return;
+	}
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_online: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* If we are waiting to get a krb5 ticket, trigger immediately. */
+	GetTimeOfDay(&now);
+	set_event_dispatch_time(winbind_event_context(),
+				"krb5_ticket_gain_handler", now);
+
+	/* Ok, we're out of any startup mode now... */
+	domain->startup = False;
+
+	if (domain->online == False) {
+		/* We were offline - now we're online. We default to
+		   using the MS-RPC backend if we started offline,
+		   and if we're going online for the first time we
+		   should really re-initialize the backends and the
+		   checks to see if we're talking to an AD or NT domain.
+		*/
+
+		domain->initialized = False;
+
+		/* 'reconnect_methods' is the MS-RPC backend. */
+		if (domain->backend == &reconnect_methods) {
+			domain->backend = NULL;
+		}
+	}
+
+	/* Ensure we have no online timeout checks. */
+	domain->check_online_timeout = 0;
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	/* Ensure we ignore any pending child messages. */
+	message_deregister(MSG_WINBIND_TRY_TO_GO_ONLINE);
+	message_deregister(MSG_WINBIND_FAILED_TO_GO_ONLINE);
+
+	domain->online = True;
+}
+
+/****************************************************************
+ Requested to set a domain online.
+****************************************************************/
+
+void set_domain_online_request(struct winbindd_domain *domain)
+{
+	struct timeval tev;
+
+	DEBUG(10,("set_domain_online_request: called for domain %s\n",
+		domain->name ));
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_online_request: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* We've been told it's safe to go online and
+	   try and connect to a DC. But I don't believe it
+	   because network manager seems to lie.
+	   Wait at least 5 seconds. Heuristics suck... */
+
+	if (!domain->check_online_event) {
+		/* If we've come from being globally offline we
+		   don't have a check online event handler set.
+		   We need to add one now we're trying to go
+		   back online. */
+
+		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
+			domain->name ));
+
+		domain->check_online_event = event_add_timed(winbind_event_context(),
+								NULL,
+								timeval_current_ofs(5, 0),
+								"check_domain_online_handler",
+								check_domain_online_handler,
+								domain);
+
+		/* The above *has* to succeed for winbindd to work. */
+		if (!domain->check_online_event) {
+			smb_panic("set_domain_online_request: failed to add online handler.\n");
+		}
+	}
+
+	GetTimeOfDay(&tev);
+
+	/* Go into "startup" mode again. */
+	domain->startup_time = tev.tv_sec;
+	domain->startup = True;
+
+	tev.tv_sec += 5;
+
+	set_event_dispatch_time(winbind_event_context(), "check_domain_online_handler", tev);
+}
+
+/****************************************************************
+ Add -ve connection cache entries for domain and realm.
+****************************************************************/
+
+void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
+					const char *server,
+					NTSTATUS result)
+{
+	add_failed_connection_entry(domain->name, server, result);
+	/* If this was the saf name for the last thing we talked to,
+	   remove it. */
+	saf_delete(domain->name);
+	if (*domain->alt_name) {
+		add_failed_connection_entry(domain->alt_name, server, result);
+		saf_delete(domain->alt_name);
+	}
+}
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -75,9 +494,9 @@
 
 static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 {
-	*username = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	*domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
-	*password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+	*username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
+	*domain = (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	*password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
 	
 	if (*username && **username) {
 
@@ -106,7 +525,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	NTSTATUS result;
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
-
+	unsigned int orig_timeout;
 	fstring tmp;
 	char *p;
 
@@ -129,11 +548,20 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	result = cm_connect_netlogon(our_domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 
+	/* This call can take a long time - allow the server to time out.
+	   35 seconds should do it. */
+
+	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+	
 	werr = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, our_domain->dcname,
 					   domain->name, tmp);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
 	talloc_destroy(mem_ctx);
 
@@ -186,6 +614,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	struct sockaddr_in *peeraddr_in = (struct sockaddr_in *)&peeraddr;
 
+	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
+		controller, domain->name ));
+
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
 							  NULL);
 	
@@ -215,7 +646,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((*cli = cli_initialise(NULL)) == NULL) {
+	if ((*cli = cli_initialise()) == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -327,10 +758,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			  "[%s]\\[%s]\n",  controller, global_myname(),
 			  ipc_domain, ipc_username));
 
-		if (cli_session_setup(*cli, ipc_username,
-				      ipc_password, strlen(ipc_password)+1,
-				      ipc_password, strlen(ipc_password)+1,
-				      ipc_domain)) {
+		if (NT_STATUS_IS_OK(cli_session_setup(
+					    *cli, ipc_username,
+					    ipc_password, strlen(ipc_password)+1,
+					    ipc_password, strlen(ipc_password)+1,
+					    ipc_domain))) {
 			/* Successful logon with given username. */
 			cli_init_creds(*cli, ipc_username, ipc_domain, ipc_password);
 			goto session_setup_done;
@@ -342,7 +774,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	/* Fall back to anonymous connection, this might fail later */
 
-	if (cli_session_setup(*cli, "", NULL, 0, NULL, 0, "")) {
+	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
+					      NULL, 0, ""))) {
 		DEBUG(5, ("Connected anonymously\n"));
 		cli_init_creds(*cli, "", "", "");
 		goto session_setup_done;
@@ -362,6 +795,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	/* cache the server name for later connections */
 
 	saf_store( domain->name, (*cli)->desthost );
+	if (domain->alt_name && (*cli)->use_kerberos) {
+		saf_store( domain->alt_name, (*cli)->desthost );
+	}
 
 	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
 
@@ -399,7 +835,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		add_failed_connection_entry(domain->name, controller, result);
+		winbind_add_failed_connection_entry(domain, controller, result);
 		if ((*cli) != NULL) {
 			cli_shutdown(*cli);
 			*cli = NULL;
@@ -408,11 +844,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	return result;
 }
-
-struct dc_name_ip {
-	fstring name;
-	struct in_addr ip;
-};
 
 static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      const char *dcname, struct in_addr ip,
@@ -440,8 +871,10 @@ static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 {
 	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_in, (*num)+1);
 
-	if (*addrs == NULL)
+	if (*addrs == NULL) {
+		*num = 0;
 		return False;
+	}
 
 	(*addrs)[*num].sin_family = PF_INET;
 	putip((char *)&((*addrs)[*num].sin_addr), (char *)&ip);
@@ -581,21 +1014,63 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
  convert an ip to a name
 *******************************************************************/
 
-static BOOL dcip_to_name( const char *domainname, const char *realm, 
-                          const DOM_SID *sid, struct in_addr ip, fstring name )
+static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip, fstring name )
 {
 	struct ip_service ip_list;
 
 	ip_list.ip = ip;
 	ip_list.port = 0;
 
-	/* try GETDC requests first */
+#ifdef WITH_ADS
+	/* For active directory servers, try to get the ldap server name.
+	   None of these failures should be considered critical for now */
+
+	if (lp_security() == SEC_ADS) {
+		ADS_STRUCT *ads;
+
+		ads = ads_init(domain->alt_name, domain->name, NULL);
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
+			/* We got a cldap packet. */
+			fstrcpy(name, ads->config.ldap_server_name);
+			namecache_store(name, 0x20, 1, &ip_list);
+
+			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
+
+			if (domain->primary && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
+				char *sitename = sitename_fetch(ads->config.realm);
+
+				/* We're going to use this KDC for this realm/domain.
+				   If we are using sites, then force the krb5 libs
+				   to use this KDC. */
+
+				create_local_private_krb5_conf_for_domain(domain->alt_name,
+								domain->name,
+								sitename,
+								ip);
+
+				SAFE_FREE(sitename);
+				/* Ensure we contact this DC also. */
+				saf_store( domain->name, name);
+				saf_store( domain->alt_name, name);
+			}
+
+			ads_destroy( &ads );
+			return True;
+		}
+
+		ads_destroy( &ads );
+	}
+#endif
+
+	/* try GETDC requests next */
 	
-	if (send_getdc_request(ip, domainname, sid)) {
+	if (send_getdc_request(ip, domain->name, &domain->sid)) {
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(ip, domainname, name)) {
+			if (receive_getdc_response(ip, domain->name, name)) {
 				namecache_store(name, 0x20, 1, &ip_list);
 				return True;
 			}
@@ -605,35 +1080,10 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 
 	/* try node status request */
 
-	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) ) {
+	if ( name_status_find(domain->name, 0x1c, 0x20, ip, name) ) {
 		namecache_store(name, 0x20, 1, &ip_list);
 		return True;
 	}
-
-#ifdef WITH_ADS
-	/* for active directory servers, try to get the ldap server name.
-	   None of these failure should be considered critical for now */
-
-	if ( lp_security() == SEC_ADS ) 
-	{
-		ADS_STRUCT *ads;
-
-		ads = ads_init( realm, domainname, NULL );
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-		if ( !ads_try_connect( ads, inet_ntoa(ip) ) )  {
-			ads_destroy( &ads );
-			return False;
-		}
-
-		fstrcpy(name, ads->config.ldap_server_name);
-		namecache_store(name, 0x20, 1, &ip_list);
-
-		ads_destroy( &ads );
-		return True;
-	}
-#endif
-
 	return False;
 }
 
@@ -651,7 +1101,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	int     iplist_size = 0;
 	int     i;
 	BOOL    is_our_domain;
-
+	enum security_types sec = (enum security_types)lp_security();
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
@@ -664,14 +1114,50 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		return True;
 	}
 
-	/* try standard netbios queries first */
+	if (sec == SEC_ADS) {
+		char *sitename = NULL;
 
-	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
+		/* We need to make sure we know the local site before
+		   doing any DNS queries, as this will restrict the
+		   get_sorted_dc_list() call below to only fetching
+		   DNS records for the correct site. */
 
-	/* check for security = ads and use DNS if we can */
+		/* Find any DC to get the site record.
+		   We deliberately don't care about the
+		   return here. */
 
-	if ( iplist_size==0 && lp_security() == SEC_ADS ) 
-		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
+		get_dc_name(domain->name, domain->alt_name, dcname, &ip);
+
+		sitename = sitename_fetch(domain->alt_name);
+		if (sitename) {
+
+			/* Do the site-specific AD dns lookup first. */
+			get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
+
+			for ( i=0; i<iplist_size; i++ ) {
+				add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
+							ip_list[i].ip, dcs, num_dcs);
+			}
+
+			SAFE_FREE(ip_list);
+			SAFE_FREE(sitename);
+			iplist_size = 0;
+		}
+
+		/* Now we add DCs from the main AD dns lookup. */
+		get_sorted_dc_list(domain->alt_name, NULL, &ip_list, &iplist_size, True);
+
+		for ( i=0; i<iplist_size; i++ ) {
+			add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
+						ip_list[i].ip, dcs, num_dcs);
+		}
+        }
+
+	/* try standard netbios queries if no ADS */
+
+	if (iplist_size==0) {
+		get_sorted_dc_list(domain->name, NULL, &ip_list, &iplist_size, False);
+	}
 
 	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */
 
@@ -710,15 +1196,23 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 
-		add_string_to_array(mem_ctx, dcs[i].name,
-				    &dcnames, &num_dcnames);
-		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
-				      &addrs, &num_addrs);
+		if (!add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames)) {
+			return False;
+		}
+		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
+				      &addrs, &num_addrs)) {
+			return False;
+		}
 
-		add_string_to_array(mem_ctx, dcs[i].name,
-				    &dcnames, &num_dcnames);
-		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
-				      &addrs, &num_addrs);
+		if (!add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames)) {
+			return False;
+		}
+		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
+				      &addrs, &num_addrs)) {
+			return False;
+		}
 	}
 
 	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
@@ -727,10 +1221,14 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ((addrs == NULL) || (dcnames == NULL))
 		return False;
 
-	if ( !open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd) ) 
+	/* 5 second timeout. */
+	if ( !open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) 
 	{
 		for (i=0; i<num_dcs; i++) {
-			add_failed_connection_entry(domain->name,
+			DEBUG(10, ("find_new_dc: open_any_socket_out failed for "
+				"domain %s address %s. Error was %s\n",
+				domain->name, inet_ntoa(dcs[i].ip), strerror(errno) ));
+			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
 		return False;
@@ -745,13 +1243,12 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name( domain->name, domain->alt_name, &domain->sid,
-			  addr->sin_addr, dcname )) {
+	if (dcip_to_name( domain, addr->sin_addr, dcname )) {
 		return True;
 	}
 
 	/* We can not continue without the DC's name */
-	add_failed_connection_entry(domain->name, dcs[fd_index].name,
+	winbind_add_failed_connection_entry(domain, dcs[fd_index].name,
 				    NT_STATUS_UNSUCCESSFUL);
 	goto again;
 }
@@ -764,32 +1261,38 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	char *saf_servername = saf_fetch( domain->name );
 	int retries;
 
-	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL)
+	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
+		SAFE_FREE(saf_servername);
+		set_domain_offline(domain);
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* we have to check the server affinity cache here since 
 	   later we selecte a DC based on response time and not preference */
 	   
-	if ( saf_servername ) 
-	{
+	/* Check the negative connection cache
+	   before talking to it. It going down may have
+	   triggered the reconnection. */
+
+	if ( saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, saf_servername))) {
+
+		DEBUG(10,("cm_open_connection: saf_servername is '%s' for domain %s\n",
+			saf_servername, domain->name ));
+
 		/* convert an ip address to a name */
-		if ( is_ipaddress( saf_servername ) )
-		{
+		if ( is_ipaddress( saf_servername ) ) {
 			fstring saf_name;
 			struct in_addr ip;
 
 			ip = *interpret_addr2( saf_servername );
-			if (dcip_to_name( domain->name, domain->alt_name,
-					  &domain->sid, ip, saf_name )) {
+			if (dcip_to_name( domain, ip, saf_name )) {
 				fstrcpy( domain->dcname, saf_name );
 			} else {
-				add_failed_connection_entry(
-					domain->name, saf_servername,
+				winbind_add_failed_connection_entry(
+					domain, saf_servername,
 					NT_STATUS_UNSUCCESSFUL);
 			}
-		} 
-		else 
-		{
+		} else {
 			fstrcpy( domain->dcname, saf_servername );
 		}
 
@@ -803,7 +1306,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		if ((strlen(domain->dcname) > 0)
+		DEBUG(10,("cm_open_connection: dcname is '%s' for domain %s\n",
+			domain->dcname, domain->name ));
+
+		if (*domain->dcname 
 			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
 			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20)))
 		{
@@ -811,11 +1317,19 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			int num_addrs = 0;
 			int dummy = 0;
 
-			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
-			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
+			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs)) {
+				set_domain_offline(domain);
+				talloc_destroy(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs)) {
+				set_domain_offline(domain);
+				talloc_destroy(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 
-			if (!open_any_socket_out(addrs, num_addrs, 10000, &dummy, &fd)) {
-				domain->online = False;
+			/* 5 second timeout. */
+			if (!open_any_socket_out(addrs, num_addrs, 5000, &dummy, &fd)) {
 				fd = -1;
 			}
 		}
@@ -828,7 +1342,6 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			   to true, if a "WINBINDD_OFFLINE" entry
 			   is found in the winbindd cache. */
 			set_global_winbindd_state_offline();
-			domain->online = False;
 			break;
 		}
 
@@ -846,7 +1359,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			/* We're changing state from offline to online. */
 			set_global_winbindd_state_online();
 		}
-		domain->online = True;
+		set_domain_online(domain);
+	} else {
+		/* Ensure we setup the retry handler. */
+		set_domain_offline(domain);
 	}
 
 	talloc_destroy(mem_ctx);
@@ -857,18 +1373,40 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {
+	/* We're closing down a possibly dead
+	   connection. Don't have impossibly long (10s) timeouts. */
+
+	if (conn->cli) {
+		cli_set_timeout(conn->cli, 1000); /* 1 second. */
+	}
+
 	if (conn->samr_pipe != NULL) {
-		cli_rpc_pipe_close(conn->samr_pipe);
+		if (!cli_rpc_pipe_close(conn->samr_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->samr_pipe = NULL;
 	}
 
 	if (conn->lsa_pipe != NULL) {
-		cli_rpc_pipe_close(conn->lsa_pipe);
+		if (!cli_rpc_pipe_close(conn->lsa_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->lsa_pipe = NULL;
 	}
 
 	if (conn->netlogon_pipe != NULL) {
-		cli_rpc_pipe_close(conn->netlogon_pipe);
+		if (!cli_rpc_pipe_close(conn->netlogon_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->netlogon_pipe = NULL;
 	}
 
@@ -898,37 +1436,71 @@ void close_conns_after_fork(void)
 static BOOL connection_ok(struct winbindd_domain *domain)
 {
 	if (domain->conn.cli == NULL) {
-		DEBUG(8, ("Connection to %s for domain %s has NULL "
+		DEBUG(8, ("connection_ok: Connection to %s for domain %s has NULL "
 			  "cli!\n", domain->dcname, domain->name));
 		return False;
 	}
 
 	if (!domain->conn.cli->initialised) {
-		DEBUG(3, ("Connection to %s for domain %s was never "
+		DEBUG(3, ("connection_ok: Connection to %s for domain %s was never "
 			  "initialised!\n", domain->dcname, domain->name));
 		return False;
 	}
 
 	if (domain->conn.cli->fd == -1) {
-		DEBUG(3, ("Connection to %s for domain %s has died or was "
+		DEBUG(3, ("connection_ok: Connection to %s for domain %s has died or was "
 			  "never started (fd == -1)\n", 
 			  domain->dcname, domain->name));
 		return False;
 	}
 
+	if (domain->online == False) {
+		DEBUG(3, ("connection_ok: Domain %s is offline\n", domain->name));
+		return False;
+	}
+
 	return True;
 }
-	
-/* Initialize a new connection up to the RPC BIND. */
 
-static NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+/* Initialize a new connection up to the RPC BIND.
+   Bypass online status check so always does network calls. */
+
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 {
-	if (connection_ok(domain))
+	NTSTATUS result;
+
+	/* Internal connections never use the network. */
+	if (domain->internal) {
+		domain->initialized = True;
 		return NT_STATUS_OK;
+	}
+
+	if (connection_ok(domain)) {
+		if (!domain->initialized) {
+			set_dc_type_and_flags(domain);
+		}
+		return NT_STATUS_OK;
+	}
 
 	invalidate_cm_connection(&domain->conn);
 
-	return cm_open_connection(domain, &domain->conn);
+	result = cm_open_connection(domain, &domain->conn);
+
+	if (NT_STATUS_IS_OK(result) && !domain->initialized) {
+		set_dc_type_and_flags(domain);
+	}
+
+	return result;
+}
+
+NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+{
+	if (domain->initialized && !domain->online) {
+		/* We check for online status elsewhere. */
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	return init_dc_connection_network(domain);
 }
 
 /******************************************************************************
@@ -939,35 +1511,26 @@ static NTSTATUS init_dc_connection(struct winbindd_domain *domain)
  is native mode.
 ******************************************************************************/
 
-void set_dc_type_and_flags( struct winbindd_domain *domain )
+static void set_dc_type_and_flags( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
 	DS_DOMINFO_CTR		ctr;
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli;
 	POLICY_HND pol;
-	
+
 	char *domain_name = NULL;
 	char *dns_name = NULL;
-	DOM_SID *dom_sid = NULL;
+	char *forest_name = NULL;	
+	DOM_SID *dom_sid = NULL;	
 
 	ZERO_STRUCT( ctr );
 	
-	domain->native_mode = False;
-	domain->active_directory = False;
-
-	if (domain->internal) {
-		domain->initialized = True;
+	if (!connection_ok(domain)) {
 		return;
 	}
 
-	result = init_dc_connection(domain);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection "
-			  "to %s: (%s)\n", domain->name, nt_errstr(result)));
-		domain->initialized = True;
-		return;
-	}
+	DEBUG(5, ("set_dc_type_and_flags: domain %s\n", domain->name ));
 
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC_DS,
 				       &result);
@@ -976,8 +1539,12 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
 			  "PI_LSARPC_DS on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
-		domain->initialized = True;
-		return;
+
+		/* if this is just a non-AD domain we need to continue
+		 * identifying so that we can in the end return with
+		 * domain->initialized = True - gd */
+
+		goto no_lsarpc_ds;
 	}
 
 	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
@@ -986,18 +1553,27 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	cli_rpc_pipe_close(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		domain->initialized = True;
+		DEBUG(5, ("set_dc_type_and_flags: rpccli_ds_getprimarydominfo "
+			  "on domain %s failed: (%s)\n",
+			  domain->name, nt_errstr(result)));
 		return;
 	}
 	
 	if ((ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) &&
-	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
+	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE)) {
 		domain->native_mode = True;
+	} else {
+		domain->native_mode = False;
+	}
 
+no_lsarpc_ds:
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
 
 	if (cli == NULL) {
-		domain->initialized = True;
+		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
+			  "PI_LSARPC on domain %s: (%s)\n",
+			  domain->name, nt_errstr(result)));
+		cli_rpc_pipe_close(cli);
 		return;
 	}
 
@@ -1017,23 +1593,27 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		   to determine that the DC is active directory */
 		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
 						       12, &domain_name,
-						       &dns_name, NULL,
+						       &dns_name, &forest_name,
 						       NULL, &dom_sid);
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
+		domain->active_directory = True;
+
 		if (domain_name)
 			fstrcpy(domain->name, domain_name);
 
 		if (dns_name)
 			fstrcpy(domain->alt_name, dns_name);
 
+		if ( forest_name )
+			fstrcpy(domain->forest_name, forest_name);		
+
 		if (dom_sid) 
 			sid_copy(&domain->sid, dom_sid);
-
-		domain->active_directory = True;
 	} else {
-		
+		domain->active_directory = False;
+
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
 						SEC_RIGHTS_MAXIMUM_ALLOWED,
 						&pol);
@@ -1055,13 +1635,17 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	}
 done:
 
+	DEBUG(5, ("set_dc_type_and_flags: domain %s is %sin native mode.\n",
+		  domain->name, domain->native_mode ? "" : "NOT "));
+
+	DEBUG(5,("set_dc_type_and_flags: domain %s is %srunning active directory.\n",
+		  domain->name, domain->active_directory ? "" : "NOT "));
+
 	cli_rpc_pipe_close(cli);
 	
 	talloc_destroy(mem_ctx);
 
 	domain->initialized = True;
-	
-	return;
 }
 
 static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
@@ -1090,7 +1674,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 
@@ -1160,8 +1744,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", conn->cli->domain));
+			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
 	conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key
@@ -1233,7 +1818,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 
@@ -1292,8 +1877,9 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", conn->cli->domain));
+			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
 	conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key
@@ -1336,7 +1922,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(conn);
-		return NT_STATUS_UNSUCCESSFUL;
+		return result;
 	}
 
 	*cli = conn->lsa_pipe;

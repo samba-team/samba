@@ -479,6 +479,27 @@ BOOL reload_services(BOOL test)
 	return (ret);
 }
 
+struct event_context *smbd_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init smbd event context\n");
+	}
+	return ctx;
+}
+
+struct messaging_context *smbd_messaging_context(void)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
+					   smbd_event_context()))) {
+		smb_panic("Could not init smbd messaging context\n");
+	}
+	return ctx;
+}
+
 /* Main function */
 
 int main(int argc, char *argv[])
@@ -575,6 +596,6 @@ int main(int argc, char *argv[])
 			process_cmd(&vfs, line);
 	}
 	
-	free(vfs.conn);
+	conn_free(vfs.conn);
 	return 0;
 }

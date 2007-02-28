@@ -72,12 +72,59 @@ time_t pdb_get_pass_last_set_time(const struct samu *sampass)
 
 time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 {
+	uint32 allow;
+
+	/* if the last set time is zero, it means the user cannot 
+	   change their password, and this time must be zero.   jmcd 
+	*/
+	if (sampass->pass_last_set_time == 0)
+		return (time_t) 0;
+	
+	/* if the time is max, and the field has been changed,
+	   we're trying to update this real value from the sampass
+	   to indicate that the user cannot change their password.  jmcd
+	*/
+	if (sampass->pass_can_change_time == get_time_t_max() &&
+	    pdb_get_init_flags(sampass, PDB_CANCHANGETIME) == PDB_CHANGED)
+		return sampass->pass_can_change_time;
+
+	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &allow))
+		allow = 0;
+
+	/* in normal cases, just calculate it from policy */
+	return sampass->pass_last_set_time + allow;
+}
+
+/* we need this for loading from the backend, so that we don't overwrite
+   non-changed max times, otherwise the pass_can_change checking won't work */
+time_t pdb_get_pass_can_change_time_noncalc(const struct samu *sampass)
+{
 	return sampass->pass_can_change_time;
 }
 
 time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 {
-	return sampass->pass_must_change_time;
+	uint32 expire;
+
+	if (sampass->pass_last_set_time == 0)
+		return (time_t) 0;
+
+	if (sampass->acct_ctrl & ACB_PWNOEXP)
+		return get_time_t_max();
+
+	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
+	    || expire == (uint32)-1 || expire == 0) 
+		return get_time_t_max();
+
+	return sampass->pass_last_set_time + expire;
+}
+
+BOOL pdb_get_pass_can_change(const struct samu *sampass)
+{
+	if (sampass->pass_can_change_time == get_time_t_max() &&
+	    sampass->pass_last_set_time != 0)
+		return False;
+	return True;
 }
 
 uint16 pdb_get_logon_divs(const struct samu *sampass)
@@ -166,7 +213,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 	}
 	
 	if ( pdb_gid_to_sid(pwd->pw_gid, gsid) ) {
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 		TALLOC_CTX *mem_ctx = talloc_init("pdb_get_group_sid");
 		BOOL lookup_ret;
 		
@@ -288,9 +335,9 @@ const char *pdb_get_workstations(const struct samu *sampass)
 	return sampass->workstations;
 }
 
-const char *pdb_get_unknown_str(const struct samu *sampass)
+const char *pdb_get_comment(const struct samu *sampass)
 {
-	return sampass->unknown_str;
+	return sampass->comment;
 }
 
 const char *pdb_get_munged_dial(const struct samu *sampass)
@@ -752,23 +799,22 @@ BOOL pdb_set_workstations(struct samu *sampass, const char *workstations, enum p
 }
 
 /*********************************************************************
- Set the user's 'unknown_str', whatever the heck this actually is...
  ********************************************************************/
 
-BOOL pdb_set_unknown_str(struct samu *sampass, const char *unknown_str, enum pdb_value_state flag)
+BOOL pdb_set_comment(struct samu *sampass, const char *comment, enum pdb_value_state flag)
 {
-	if (unknown_str) { 
-		sampass->unknown_str = talloc_strdup(sampass, unknown_str);
+	if (comment) { 
+		sampass->comment = talloc_strdup(sampass, comment);
 		
-		if (!sampass->unknown_str) {
-			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
+		if (!sampass->comment) {
+			DEBUG(0, ("pdb_set_comment: talloc_strdup() failed!\n"));
 			return False;
 		}
 	} else {
-		sampass->unknown_str = PDB_NOT_QUITE_NULL;
+		sampass->comment = PDB_NOT_QUITE_NULL;
 	}
 
-	return pdb_set_init_flags(sampass, PDB_UNKNOWNSTR, flag);
+	return pdb_set_init_flags(sampass, PDB_COMMENT, flag);
 }
 
 /*********************************************************************
@@ -925,42 +971,13 @@ BOOL pdb_set_backend_private_data(struct samu *sampass, void *private_data,
 
 /* Helpful interfaces to the above */
 
-/*********************************************************************
- Sets the last changed times and must change times for a normal
- password change.
- ********************************************************************/
-
-BOOL pdb_set_pass_changed_now(struct samu *sampass)
+BOOL pdb_set_pass_can_change(struct samu *sampass, BOOL canchange)
 {
-	uint32 expire;
-	uint32 min_age;
-
-	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED))
-		return False;
-
-	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire) 
-	    || (expire==(uint32)-1) || (expire == 0)) {
-		if (!pdb_set_pass_must_change_time (sampass, get_time_t_max(), PDB_CHANGED))
-			return False;
-	} else {
-		if (!pdb_set_pass_must_change_time (sampass, 
-						    pdb_get_pass_last_set_time(sampass)
-						    + expire, PDB_CHANGED))
-			return False;
-	}
-	
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age) 
-	    || (min_age==(uint32)-1)) {
-		if (!pdb_set_pass_can_change_time (sampass, 0, PDB_CHANGED))
-			return False;
-	} else {
-		if (!pdb_set_pass_can_change_time (sampass, 
-						    pdb_get_pass_last_set_time(sampass)
-						    + min_age, PDB_CHANGED))
-			return False;
-	}
-	return True;
+	return pdb_set_pass_can_change_time(sampass, 
+				     canchange ? 0 : get_time_t_max(),
+				     PDB_CHANGED);
 }
+
 
 /*********************************************************************
  Set the user's PLAINTEXT password.  Used as an interface to the above.
@@ -997,7 +1014,7 @@ BOOL pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	if (!pdb_set_plaintext_pw_only (sampass, plaintext, PDB_CHANGED)) 
 		return False;
 
-	if (!pdb_set_pass_changed_now (sampass))
+	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED))
 		return False;
 
 	/* Store the password history. */
@@ -1021,7 +1038,7 @@ BOOL pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 
 				if (current_history_len < pwHistLen) {
 					/* Ensure we have space for the needed history. */
-					uchar *new_history = TALLOC(sampass,
+					uchar *new_history = (uchar *)TALLOC(sampass,
 								pwHistLen*PW_HISTORY_ENTRY_LEN);
 					if (!new_history) {
 						return False;

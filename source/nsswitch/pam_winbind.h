@@ -4,23 +4,9 @@
    Shirish Kalele 2000
 */
 
-#ifdef HAVE_FEATURES_H
-#include <features.h>
-#endif
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <limits.h>
-#include <string.h>
-#include <syslog.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <time.h>
-
-#include <config.h>
+#include "lib/replace/replace.h"
+#include "system/syslog.h"
+#include "system/time.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -33,7 +19,7 @@
 
 #include <iniparser.h>
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
+#ifndef LINUX
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
@@ -43,7 +29,7 @@
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
 #endif
 
-#endif
+#endif /* defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX) */
 
 #ifdef HAVE_SECURITY_PAM_MODULES_H
 #include <security/pam_modules.h>
@@ -82,6 +68,10 @@ do {                             \
 #define _pam_drop(X) SAFE_FREE(X)
 
 #define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
+#endif /* HAVE_SECURITY__PAM_MACROS_H */
+
+#ifdef HAVE_SECURITY_PAM_EXT_H
+#include <security/pam_ext.h>
 #endif
 
 #define WINBIND_DEBUG_ARG (1<<0)
@@ -95,6 +85,8 @@ do {                             \
 #define WINBIND_KRB5_CCACHE_TYPE (1<<8)
 #define WINBIND_CACHED_LOGIN (1<<9)
 #define WINBIND_CONFIG_FILE (1<<10)
+#define WINBIND_SILENT (1<<11)
+#define WINBIND_DEBUG_STATE (1<<12)
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -107,8 +99,10 @@ do {                             \
 #define off(x, y) (!(x & y))
 
 #define PAM_WINBIND_NEW_AUTHTOK_REQD "PAM_WINBIND_NEW_AUTHTOK_REQD"
+#define PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH "PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH"
 #define PAM_WINBIND_HOMEDIR "PAM_WINBIND_HOMEDIR"
 #define PAM_WINBIND_LOGONSCRIPT "PAM_WINBIND_LOGONSCRIPT"
+#define PAM_WINBIND_LOGONSERVER "PAM_WINBIND_LOGONSERVER"
 #define PAM_WINBIND_PROFILEPATH "PAM_WINBIND_PROFILEPATH"
 #define PAM_WINBIND_PWD_LAST_SET "PAM_WINBIND_PWD_LAST_SET"
 
@@ -118,44 +112,60 @@ do {                             \
 
 #include "winbind_client.h"
 
-#define PAM_WB_REMARK_DIRECT(h,x)\
+#define PAM_WB_REMARK_DIRECT(h,f,x)\
 {\
 	const char *error_string = NULL; \
 	error_string = _get_ntstatus_error_string(x);\
 	if (error_string != NULL) {\
-		_make_remark(h, PAM_ERROR_MSG, error_string);\
+		_make_remark(h, f, PAM_ERROR_MSG, error_string);\
 	} else {\
-		_make_remark(h, PAM_ERROR_MSG, x);\
+		_make_remark(h, f, PAM_ERROR_MSG, x);\
 	};\
 };
 
-#define PAM_WB_REMARK_DIRECT_RET(h,x)\
+#define PAM_WB_REMARK_DIRECT_RET(h,f,x)\
 {\
 	const char *error_string = NULL; \
 	error_string = _get_ntstatus_error_string(x);\
 	if (error_string != NULL) {\
-		_make_remark(h, PAM_ERROR_MSG, error_string);\
+		_make_remark(h, f, PAM_ERROR_MSG, error_string);\
 		return ret;\
 	};\
-	_make_remark(h, PAM_ERROR_MSG, x);\
+	_make_remark(h, f, PAM_ERROR_MSG, x);\
 	return ret;\
 };
-	
-#define PAM_WB_REMARK_CHECK_RESPONSE_RET(h,x,y)\
+
+#define PAM_WB_REMARK_CHECK_RESPONSE(h,f,x,y)\
 {\
 	const char *ntstatus = x.data.auth.nt_status_string; \
 	const char *error_string = NULL; \
 	if (!strcasecmp(ntstatus,y)) {\
 		error_string = _get_ntstatus_error_string(y);\
 		if (error_string != NULL) {\
-			_make_remark(h, PAM_ERROR_MSG, error_string);\
+			_make_remark(h, f, PAM_ERROR_MSG, error_string);\
+		};\
+		if (x.data.auth.error_string[0] != '\0') {\
+			_make_remark(h, f, PAM_ERROR_MSG, x.data.auth.error_string);\
+		};\
+		_make_remark(h, f, PAM_ERROR_MSG, y);\
+	};\
+};
+
+#define PAM_WB_REMARK_CHECK_RESPONSE_RET(h,f,x,y)\
+{\
+	const char *ntstatus = x.data.auth.nt_status_string; \
+	const char *error_string = NULL; \
+	if (!strcasecmp(ntstatus,y)) {\
+		error_string = _get_ntstatus_error_string(y);\
+		if (error_string != NULL) {\
+			_make_remark(h, f, PAM_ERROR_MSG, error_string);\
 			return ret;\
 		};\
 		if (x.data.auth.error_string[0] != '\0') {\
-			_make_remark(h, PAM_ERROR_MSG, x.data.auth.error_string);\
+			_make_remark(h, f, PAM_ERROR_MSG, x.data.auth.error_string);\
 			return ret;\
 		};\
-		_make_remark(h, PAM_ERROR_MSG, y);\
+		_make_remark(h, f, PAM_ERROR_MSG, y);\
 		return ret;\
 	};\
 };
@@ -173,4 +183,7 @@ do {                             \
 
 /* from include/rpc_netlogon.h */
 #define LOGON_CACHED_ACCOUNT		0x00000004
+#define LOGON_GRACE_LOGON		0x01000000
 
+#define PAM_WB_CACHED_LOGON(x) (x & LOGON_CACHED_ACCOUNT)
+#define PAM_WB_GRACE_LOGON(x)  ((LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON) == ( x & (LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON)))

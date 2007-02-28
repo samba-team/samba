@@ -47,6 +47,14 @@ static void display_sam_user_info_9(SAM_USER_INFO_9 *usr)
 }
 
 /****************************************************************************
+ display sam_user_info_16 structure
+ ****************************************************************************/
+static void display_sam_user_info_16(SAM_USER_INFO_16 *usr)
+{
+	printf("\tAcct Flags   :\tox%x\n", usr->acb_info);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -77,24 +85,24 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp)-1);
 	printf("\tWorkstations:\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp)-1);
+	unistr2_to_ascii(temp, &usr->uni_comment, sizeof(temp)-1);
 	printf("\tUnknown Str :\t%s\n", temp);
 	
 	unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp)-1);
 	printf("\tRemote Dial :\t%s\n", temp);
 	
 	printf("\tLogon Time               :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->logon_time)));
+	       http_timestring(nt_time_to_unix(usr->logon_time)));
 	printf("\tLogoff Time              :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->logoff_time)));
+	       http_timestring(nt_time_to_unix(usr->logoff_time)));
 	printf("\tKickoff Time             :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->kickoff_time)));
+	       http_timestring(nt_time_to_unix(usr->kickoff_time)));
 	printf("\tPassword last set Time   :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_last_set_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_last_set_time)));
 	printf("\tPassword can change Time :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_can_change_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_can_change_time)));
 	printf("\tPassword must change Time:\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_must_change_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_must_change_time)));
 	
 	printf("\tunknown_2[0..31]...\n"); /* user passwords? */
 	
@@ -114,40 +122,6 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
-static const char *display_time(NTTIME nttime)
-{
-	static fstring string;
-
-	float high;
-	float low;
-	int sec;
-	int days, hours, mins, secs;
-
-	if (nttime.high==0 && nttime.low==0)
-		return "Now";
-
-	if (nttime.high==0x80000000 && nttime.low==0)
-		return "Never";
-
-	high = 65536;	
-	high = high/10000;
-	high = high*65536;
-	high = high/1000;
-	high = high * (~nttime.high);
-
-	low = ~nttime.low;	
-	low = low/(1000*1000*10);
-
-	sec=high+low;
-
-	days=sec/(60*60*24);
-	hours=(sec - (days*60*60*24)) / (60*60);
-	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
-	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
-
-	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
-	return (string);
-}
 
 static void display_password_properties(uint32 password_properties) 
 {
@@ -199,7 +173,7 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Total Groups:\t%d\n", info2->num_domain_grps);
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
 	
-	printf("Sequence No:\t%d\n", info2->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info2->seq_num);
 
 	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
 
@@ -244,9 +218,9 @@ static void display_sam_unk_info_7(SAM_UNK_INFO_7 *info7)
 
 static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
 {
-	printf("Sequence No:\t%d\n", info8->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info8->seq_num);
 	printf("Domain Create Time:\t%s\n", 
-		http_timestring(nt_time_to_unix(&info8->domain_create_time)));
+		http_timestring(nt_time_to_unix(info8->domain_create_time)));
 }
 
 static void display_sam_unk_info_9(SAM_UNK_INFO_9 *info9)
@@ -263,9 +237,9 @@ static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
 
 static void display_sam_unk_info_13(SAM_UNK_INFO_13 *info13)
 {
-	printf("Sequence No:\t%d\n", info13->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info13->seq_num);
 	printf("Domain Create Time:\t%s\n", 
-		http_timestring(nt_time_to_unix(&info13->domain_create_time)));
+		http_timestring(nt_time_to_unix(info13->domain_create_time)));
 	printf("Unknown1:\t%d\n", info13->unknown1);
 	printf("Unknown2:\t%d\n", info13->unknown2);
 
@@ -376,14 +350,14 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_USERINFO_CTR *user_ctr;
 	fstring server;
-	uint32 user_rid;
+	uint32 user_rid = 0;
 	
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s rid [info level] [access mask] \n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
-	user_rid = strtoul(argv[1], NULL, 10);
+	sscanf(argv[1], "%i", &user_rid);
 	
 	if (argc > 2)
 		sscanf(argv[2], "%i", &info_level);
@@ -445,14 +419,17 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		goto done;
 
 	switch (user_ctr->switch_value) {
-	case 21:
-		display_sam_user_info_21(user_ctr->info.id21);
-		break;
 	case 7:
 		display_sam_user_info_7(user_ctr->info.id7);
 		break;
 	case 9:
 		display_sam_user_info_9(user_ctr->info.id9);
+		break;
+	case 16:
+		display_sam_user_info_16(user_ctr->info.id16);
+		break;
+	case 21:
+		display_sam_user_info_21(user_ctr->info.id21);
 		break;
 	default:
 		printf("Unsupported infolevel: %d\n", info_level);
@@ -718,7 +695,9 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 			printf("%s is not a legal SID\n", argv[i]);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		add_sid_to_array(mem_ctx, &tmp_sid, &sids, &num_sids);
+		if (!add_sid_to_array(mem_ctx, &tmp_sid, &sids, &num_sids)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
@@ -821,7 +800,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,
@@ -2072,6 +2051,60 @@ done:
 
 /* Change user password */
 
+static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli, 
+				    TALLOC_CTX *mem_ctx,
+				    int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *user, *oldpass, *newpass;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+
+	if (argc < 3) {
+		printf("Usage: %s username oldpass newpass\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = argv[1];
+	oldpass = argv[2];
+	newpass = argv[3];
+	
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get domain policy handle */
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Change user password */
+	result = rpccli_samr_chgpasswd_user(cli, mem_ctx, user, newpass, oldpass);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+ done:
+	return result;
+}
+
+
+/* Change user password */
+
 static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli, 
 				    TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv) 
@@ -2178,6 +2211,7 @@ struct cmd_set samr_commands[] = {
 	{ "getusrdompwinfo",    RPC_RTYPE_NTSTATUS, cmd_samr_get_usrdom_pwinfo,     NULL, PI_SAMR, NULL, "Retrieve user domain password info", "" },
 
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
+	{ "chgpasswd2",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd2,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ NULL }
 };

@@ -23,6 +23,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+extern userdom_struct current_user_info;
+
 /**********************************************************
   Under mapfile we expect a table of the following format:
 
@@ -135,7 +137,11 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 		return False;
 	}
 
-	standard_sub_conn(conn, mapfilename, sizeof(mapfilename));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      mapfilename, sizeof(mapfilename));
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));
 
@@ -150,13 +156,12 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 }
 
 static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
-				 struct connection_struct *conn,
 				 const char *path, char *buf, size_t bufsiz)
 {
 	pstring target;
 	int result;
 
-	result = SMB_VFS_NEXT_READLINK(handle, conn, path, target,
+	result = SMB_VFS_NEXT_READLINK(handle, path, target,
 				       sizeof(target));
 
 	if (result < 0)
@@ -166,7 +171,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
 	    (strchr_m(target, '@') != NULL)) {
-		if (!expand_msdfs_target(conn, target)) {
+		if (!expand_msdfs_target(handle->conn, target)) {
 			errno = ENOENT;
 			return -1;
 		}
@@ -184,6 +189,7 @@ static vfs_op_tuple expand_msdfs_ops[] = {
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_expand_msdfs_init(void);
 NTSTATUS vfs_expand_msdfs_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "expand_msdfs",

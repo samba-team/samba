@@ -34,6 +34,16 @@ static BOOL interactive = False;
 
 extern BOOL override_logfile;
 
+struct event_context *winbind_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init winbind event context\n");
+	}
+	return ctx;
+}
+
 /* Reload configuration */
 
 static BOOL reload_services_file(void)
@@ -65,9 +75,7 @@ static BOOL reload_services_file(void)
 
 static void fault_quit(void)
 {
-#if DUMP_CORE
 	dump_core();
-#endif
 }
 
 static void winbindd_status(void)
@@ -113,12 +121,14 @@ static void terminate(void)
 {
 	pstring path;
 
-	idmap_close();
-	
 	/* Remove socket file */
 	pstr_sprintf(path, "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
+
+	idmap_close();
+	
+	trustdom_cache_shutdown();
 
 #if 0
 	if (interactive) {
@@ -166,7 +176,8 @@ static void sigchld_handler(int signum)
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_reload_services(int msg_type, struct process_id src,
+				void *buf, size_t len, void *private_data)
 {
         /* Flush various caches */
 	flush_caches();
@@ -174,7 +185,8 @@ static void msg_reload_services(int msg_type, struct process_id src, void *buf, 
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
+static void msg_shutdown(int msg_type, struct process_id src,
+			 void *buf, size_t len, void *private_data)
 {
 	do_sigterm = True;
 }
@@ -214,6 +226,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 	{ WINBINDD_PAM_LOGOFF, winbindd_pam_logoff, "PAM_LOGOFF" },
+	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, winbindd_pam_chng_pswd_auth_crap, "CHNG_PSWD_AUTH_CRAP" },
 
 	/* Enumeration functions */
 
@@ -227,6 +240,7 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPRIDS, winbindd_lookuprids, "LOOKUPRIDS" },
 
 	/* Lookup related functions */
 
@@ -234,10 +248,15 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+	{ WINBINDD_SIDS_TO_XIDS, winbindd_sids_to_unixids, "SIDS_TO_XIDS" },
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
+	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
+	{ WINBINDD_SET_HWM, winbindd_set_hwm, "SET_HWMS" },
 
 	/* Miscellaneous */
+
+	{ WINBINDD_DUMP_MAPS, winbindd_dump_maps, "DUMP_MAPS" },
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
@@ -250,6 +269,9 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
 	  "WINBINDD_PRIV_PIPE_DIR" },
 	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
+
+	/* Credential cache access */
+	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
 
 	/* WINS functions */
 
@@ -602,8 +624,10 @@ static void new_connection(int listen_sock, BOOL privileged)
 	
 	/* Create new connection structure */
 	
-	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL)
+	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
+		close(sock);
 		return;
+	}
 	
 	state->sock = sock;
 
@@ -629,36 +653,36 @@ static void remove_client(struct winbindd_cli_state *state)
 {
 	/* It's a dead client - hold a funeral */
 	
-	if (state != NULL) {
-		
-		/* Close socket */
-		
-		close(state->sock);
-		
-		/* Free any getent state */
-		
-		free_getent_state(state->getpwent_state);
-		free_getent_state(state->getgrent_state);
-		
-		/* We may have some extra data that was not freed if the
-		   client was killed unexpectedly */
-
-		SAFE_FREE(state->response.extra_data.data);
-
-		if (state->mem_ctx != NULL) {
-			talloc_destroy(state->mem_ctx);
-			state->mem_ctx = NULL;
-		}
-
-		remove_fd_event(&state->fd_event);
-		
-		/* Remove from list and free */
-		
-		winbindd_remove_client(state);
-		TALLOC_FREE(state);
+	if (state == NULL) {
+		return;
 	}
-}
+		
+	/* Close socket */
+		
+	close(state->sock);
+		
+	/* Free any getent state */
+		
+	free_getent_state(state->getpwent_state);
+	free_getent_state(state->getgrent_state);
+		
+	/* We may have some extra data that was not freed if the client was
+	   killed unexpectedly */
 
+	SAFE_FREE(state->response.extra_data.data);
+
+	if (state->mem_ctx != NULL) {
+		talloc_destroy(state->mem_ctx);
+		state->mem_ctx = NULL;
+	}
+
+	remove_fd_event(&state->fd_event);
+		
+	/* Remove from list and free */
+		
+	winbindd_remove_client(state);
+	TALLOC_FREE(state);
+}
 
 /* Shutdown client connection which has been idle for the longest time */
 
@@ -700,7 +724,7 @@ static void process_loop(void)
 	struct fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd, listen_sock, listen_priv_sock, selret;
-	struct timeval timeout;
+	struct timeval timeout, ev_timeout;
 
 	/* We'll be doing this a lot */
 
@@ -708,8 +732,10 @@ static void process_loop(void)
 
 	message_dispatch();
 
+	run_events(winbind_event_context(), 0, NULL, NULL);
+
 	/* refresh the trusted domain cache */
-		   
+
 	rescan_trusted_domains();
 
 	/* Free up temporary memory */
@@ -736,6 +762,11 @@ static void process_loop(void)
 
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
+
+	/* Check for any event timeouts. */
+	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
+		timeout = timeval_min(&timeout, &ev_timeout);
+	}
 
 	/* Set up client readers and writers */
 
@@ -852,7 +883,7 @@ static void process_loop(void)
 
 		DEBUG(3, ("got SIGHUP\n"));
 
-		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0);
+		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0, NULL);
 		do_sighup = False;
 	}
 
@@ -874,9 +905,7 @@ static void process_loop(void)
 
 /* Main function */
 
-struct winbindd_state server_state;   /* Server state information */
-
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
 	static BOOL Fork = True;
@@ -950,12 +979,17 @@ int main(int argc, char **argv)
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
-	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2004\n" ) );
+	DEBUG(1, ("winbindd version %s started.\n%s\n", 
+		  SAMBA_VERSION_STRING, 
+		  COPYRIGHT_STARTUP_MESSAGE) );
 
 	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
+	}
+
+	if (!directory_exist(lp_lockdir(), NULL)) {
+		mkdir(lp_lockdir(), 0755);
 	}
 
 	/* Setup names. */
@@ -975,17 +1009,15 @@ int main(int argc, char **argv)
 
 	namecache_enable();
 
-	/* Check winbindd parameters are valid */
-
-	ZERO_STRUCT(server_state);
-
 	/* Winbind daemon initialisation */
 
-	if ( (!winbindd_param_init()) || (!winbindd_upgrade_idmap()) ||
-	     (!idmap_init(lp_idmap_backend())) ) {
-		DEBUG(1, ("Could not init idmap -- netlogon proxy only\n"));
-		idmap_set_proxyonly();
+	if ( ! NT_STATUS_IS_OK(idmap_init()) ) {
+		DEBUG(1, ("Could not init idmap! - Sid/[UG]id mapping will not be available\n"));
 	}
+
+#ifdef WITH_ADS
+	nss_init( lp_winbind_nss_info() );
+#endif
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
@@ -1035,13 +1067,14 @@ int main(int argc, char **argv)
 	
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
-	message_register(MSG_SHUTDOWN, msg_shutdown);
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services, NULL);
+	message_register(MSG_SHUTDOWN, msg_shutdown, NULL);
 
 	/* Handle online/offline messages. */
-	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
-	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
-	message_register(MSG_WINBIND_ONLINESTATUS,winbind_msg_onlinestatus);
+	message_register(MSG_WINBIND_OFFLINE, winbind_msg_offline, NULL);
+	message_register(MSG_WINBIND_ONLINE, winbind_msg_online, NULL);
+	message_register(MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus,
+			 NULL);
 
 	poptFreeContext(pc);
 
@@ -1061,8 +1094,6 @@ int main(int argc, char **argv)
 
 	while (1)
 		process_loop();
-
-	trustdom_cache_shutdown();
 
 	return 0;
 }

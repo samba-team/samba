@@ -265,11 +265,11 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	BOOL large_writex = False;
 
 	if (size > cli->bufsize) {
-		cli->outbuf = SMB_REALLOC(cli->outbuf, size + 1024);
+		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);
 		if (!cli->outbuf) {
 			return False;
 		}
-		cli->inbuf = SMB_REALLOC(cli->inbuf, size + 1024);
+		cli->inbuf = (char *)SMB_REALLOC(cli->inbuf, size + 1024);
 		if (cli->inbuf == NULL) {
 			SAFE_FREE(cli->outbuf);
 			return False;

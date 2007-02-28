@@ -319,7 +319,8 @@ BOOL smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 
 			/* Yes this should be malloc not talloc. Don't change. */
 
-			chaine.buffer = SMB_MALLOC((q-p+1)*sizeof(uint16));
+			chaine.buffer = (uint16 *)
+				SMB_MALLOC((q-p+1)*sizeof(uint16));
 			if (chaine.buffer == NULL)
 				return False;
 

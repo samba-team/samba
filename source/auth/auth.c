@@ -432,7 +432,6 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 {
 	auth_methods *list = NULL;
 	auth_methods *t = NULL;
-	auth_methods *tmp;
 	NTSTATUS nt_status;
 
 	if (!text_list) {
@@ -445,7 +444,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 
 	for (;*text_list; text_list++) { 
 		if (load_auth_module(*auth_context, *text_list, &t)) {
-		    DLIST_ADD_END(list, t, tmp);
+		    DLIST_ADD_END(list, t, auth_methods *);
 		}
 	}
 	

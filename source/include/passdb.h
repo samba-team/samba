@@ -34,8 +34,8 @@
 #define ACCT_FULL_NAME		0x00000002
 #define ACCT_RID		0x00000004
 #define ACCT_PRIMARY_GID	0x00000008
-#define ACCT_ADMIN_DESC		0x00000010
-#define ACCT_DESCRIPTION	0x00000020
+#define ACCT_DESCRIPTION	0x00000010
+#define ACCT_COMMENT		0x00000020
 #define ACCT_HOME_DIR		0x00000040
 #define ACCT_HOME_DRIVE		0x00000080
 #define ACCT_LOGON_SCRIPT	0x00000100
@@ -90,7 +90,7 @@ enum pdb_elements {
 	PDB_UNIXHOMEDIR,
 	PDB_ACCTDESC,
 	PDB_WORKSTATIONS,
-	PDB_UNKNOWNSTR,
+	PDB_COMMENT,
 	PDB_MUNGEDDIAL,
 	PDB_HOURS,
 	PDB_FIELDS_PRESENT,
@@ -160,7 +160,7 @@ struct samu {
 	const char *profile_path; /* profile path string */
 	const char *acct_desc;    /* user description string */
 	const char *workstations; /* login from workstations string */
-	const char *unknown_str;  /* don't know what this is, yet. */
+	const char *comment;
 	const char *munged_dial;  /* munged path name and dial-back tel number */
 		
 	DOM_SID user_sid;  
@@ -240,9 +240,11 @@ struct pdb_search {
  * There's no point in allocating arrays in
  * samr_lookup_rids twice. It was done in the srv_samr_nt.c code as well as in
  * the pdb module. Remove the latter, this might happen more often. VL.
+ * changed to version 14 to move lookup_rids and lookup_names to return
+ * enum lsa_SidType rather than uint32.
  */
 
-#define PASSDB_INTERFACE_VERSION 13
+#define PASSDB_INTERFACE_VERSION 15
 
 struct pdb_methods 
 {
@@ -298,7 +300,7 @@ struct pdb_methods
 					       DOM_SID sid);
 
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
-				       const DOM_SID *sid, enum SID_NAME_USE sid_name_use,
+				       const DOM_SID *sid, enum lsa_SidType sid_name_use,
 				       GROUP_MAP **pp_rmap, size_t *p_num_entries,
 				       BOOL unix_only);
 
@@ -363,14 +365,14 @@ struct pdb_methods
 				int num_rids,
 				uint32 *rids,
 				const char **pp_names,
-				uint32 *attrs);
+				enum lsa_SidType *attrs);
 
 	NTSTATUS (*lookup_names)(struct pdb_methods *methods,
 				 const DOM_SID *domain_sid,
 				 int num_names,
 				 const char **pp_names,
 				 uint32 *rids,
-				 uint32 *attrs);
+				 enum lsa_SidType *attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, uint32 *value);
@@ -391,10 +393,12 @@ struct pdb_methods
 
 	BOOL (*uid_to_rid)(struct pdb_methods *methods, uid_t uid,
 			   uint32 *rid);
+	BOOL (*uid_to_sid)(struct pdb_methods *methods, uid_t uid,
+			   DOM_SID *sid);
 	BOOL (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
 			   DOM_SID *sid);
 	BOOL (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,
-			  union unid_t *id, enum SID_NAME_USE *type);
+			  union unid_t *id, enum lsa_SidType *type);
 
 	BOOL (*rid_algorithm)(struct pdb_methods *methods);
 	BOOL (*new_rid)(struct pdb_methods *methods, uint32 *rid);

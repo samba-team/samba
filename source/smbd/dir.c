@@ -382,21 +382,24 @@ static void dptr_close_oldest(BOOL old)
  wcard must not be zero.
 ****************************************************************************/
 
-int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		const char *wcard, BOOL wcard_has_wild, uint32 attr)
+NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
+		const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
         const char *dir2;
+	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
 
 	if (!wcard) {
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!check_name(path,conn))
-		return(-2); /* Code to say use a unix error return code. */
+	status = check_name(conn,path);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* use a const pointer from here on */
 	dir2 = path;
@@ -405,19 +408,20 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 	dir_hnd = OpenDir(conn, dir2, wcard, attr);
 	if (!dir_hnd) {
-		return (-2);
+		return map_nt_error_from_unix(errno);
 	}
 
 	string_set(&conn->dirpath,dir2);
 
-	if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
+	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest();
+	}
 
 	dptr = SMB_MALLOC_P(struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("malloc fail in dptr_create.\n"));
 		CloseDir(dir_hnd);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(dptr);
@@ -447,7 +451,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
 				CloseDir(dir_hnd);
-				return -1;
+				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
 	} else {
@@ -477,7 +481,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
 				CloseDir(dir_hnd);
-				return -1;
+				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
 	}
@@ -496,7 +500,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 		bitmap_clear(dptr_bmap, dptr->dnum - 1);
 		SAFE_FREE(dptr);
 		CloseDir(dir_hnd);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
@@ -511,9 +515,9 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
 
-	conn->dirptr = dptr;
+	*dptr_ret = dptr;
 
-	return(dptr->dnum);
+	return NT_STATUS_OK;
 }
 
 
@@ -523,6 +527,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 int dptr_CloseDir(struct dptr_struct *dptr)
 {
+	DLIST_REMOVE(dirptrs, dptr);
 	return CloseDir(dptr->dir_hnd);
 }
 
@@ -539,6 +544,11 @@ long dptr_TellDir(struct dptr_struct *dptr)
 BOOL dptr_has_wild(struct dptr_struct *dptr)
 {
 	return dptr->has_wild;
+}
+
+int dptr_dnum(struct dptr_struct *dptr)
+{
+	return dptr->dnum;
 }
 
 /****************************************************************************
@@ -752,7 +762,7 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 
 static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
 {
-	mangle_map(filename,True,False,SNUM(conn));
+	mangle_map(filename,True,False,conn->params);
 	return mask_match_search(filename,mask,False);
 }
 
@@ -798,8 +808,9 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False, SNUM(conn)))
-				mangle_map(filename,True,False,SNUM(conn));
+			if (!mangle_is_8_3(filename, False, conn->params))
+				mangle_map(filename,True,False,
+					   conn->params);
 
 			pstrcpy(fname,filename);
 			*path = 0;
@@ -868,17 +879,18 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(pst->st_mode)) {
-		 fsp = open_directory(conn, name, pst,
+		 status = open_directory(conn, name, pst,
 			READ_CONTROL_ACCESS,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0, /* no create options. */
-			NULL);
+			FILE_ATTRIBUTE_DIRECTORY,
+			NULL, &fsp);
 	} else {
-		fsp = open_file_stat(conn, name, pst);
+		status = open_file_stat(conn, name, pst, &fsp);
 	}
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
@@ -931,17 +943,17 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	if(S_ISDIR(pst->st_mode)) {
 		return True;
 	} else {
-		fsp = open_file_ntcreate(conn, name, pst,
+		status = open_file_ntcreate(conn, name, pst,
 			FILE_WRITE_ATTRIBUTES,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0,
 			FILE_ATTRIBUTE_NORMAL,
 			INTERNAL_OPEN_ONLY,
-			&info);
+			&info, &fsp);
 	}
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
@@ -1010,6 +1022,18 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
 			return False;
 		}
+
+		/* If it's a dfs symlink, ignore _hide xxxx_ options */
+		if (lp_host_msdfs() &&
+				lp_msdfs_root(SNUM(conn)) &&
+					/* We get away with NULL talloc ctx here as
+					   we're not interested in the link contents
+					   so we have nothing to free. */
+				is_msdfs_link(NULL, conn, entry, NULL, NULL, NULL)) {
+			SAFE_FREE(entry);
+			return True;
+		}
+
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
@@ -1254,4 +1278,43 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 		}
 	}
 	return False;
+}
+
+/*****************************************************************
+ Is this directory empty ?
+*****************************************************************/
+
+NTSTATUS can_delete_directory(struct connection_struct *conn,
+				const char *dirname)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	long dirpos = 0;
+	const char *dname;
+	struct smb_Dir *dir_hnd = OpenDir(conn, dirname, NULL, 0);
+
+	if (!dir_hnd) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	while ((dname = ReadDirName(dir_hnd,&dirpos))) {
+		SMB_STRUCT_STAT st;
+
+		/* Quick check for "." and ".." */
+		if (dname[0] == '.') {
+			if (!dname[1] || (dname[1] == '.' && !dname[2])) {
+				continue;
+			}
+		}
+
+		if (!is_visible_file(conn, dirname, dname, &st, True)) {
+			continue;
+		}
+
+		DEBUG(10,("can_delete_directory: got name %s - can't delete\n", dname ));
+		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
+		break;
+	}
+	CloseDir(dir_hnd);
+
+	return status;
 }

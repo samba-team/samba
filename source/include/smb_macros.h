@@ -83,30 +83,32 @@
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
 /* you must add the following extern declaration to files using this macro
+ * (do not add it to the macro as that causes nested extern declaration warnings)
  * extern struct current_user current_user;
  */
 #define FSP_BELONGS_CONN(fsp,conn) do {\
-			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid));\
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
+#define FNUM_OK(fsp,c) ((fsp) && !(fsp)->is_directory && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
 /* you must add the following extern declaration to files using this macro
+ * (do not add it to the macro as that causes nested extern declaration warnings)
  * extern struct current_user current_user;
  */
 #define CHECK_FSP(fsp,conn) do {\
-			extern struct current_user current_user;\
-			if (!FNUM_OK(fsp,conn)) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-			else if((fsp)->fh->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+			if (!(fsp) || !(conn)) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
+			else if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
+			else if ((fsp)->is_directory) \
+				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
+			else if ((fsp)->fh->fd == -1) \
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED); \
 			(fsp)->num_smb_operations++;\
 			} while(0)
 
@@ -122,7 +124,7 @@
 /* the service number for the [globals] defaults */ 
 #define GLOBAL_SECTION_SNUM	(-1)
 /* translates a connection number into a service number */
-#define SNUM(conn)         	((conn)?(conn)->service:GLOBAL_SECTION_SNUM)
+#define SNUM(conn)         	((conn)?(conn)->params->service:GLOBAL_SECTION_SNUM)
 
 
 /* access various service details */
@@ -133,10 +135,10 @@
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
 #define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
-#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
-#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
-#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
+#define CAN_PRINT(conn)    ((conn) && lp_print_ok(SNUM(conn)))
+#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden(SNUM(conn)))
+#define MAP_SYSTEM(conn)   ((conn) && lp_map_system(SNUM(conn)))
+#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive(SNUM(conn)))
 #define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list,(conn)->case_sensitive))
 #define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list,(conn)->case_sensitive))
 #define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list,(conn)->case_sensitive))
@@ -182,7 +184,6 @@
 #define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
 #define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_INVALID,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
@@ -275,6 +276,7 @@ copy an IP address from one buffer to another
 *****************************************************************************/
 
 #define SMB_MALLOC_ARRAY(type,count) (type *)malloc_array(sizeof(type),(count))
+#define SMB_MEMALIGN_ARRAY(type,align,count) (type *)memalign_array(sizeof(type),align,(count))
 #define SMB_REALLOC(p,s) Realloc((p),(s),True)	/* Always frees p on error or s == 0 */
 #define SMB_REALLOC_KEEP_OLD_ON_ERROR(p,s) Realloc((p),(s),False) /* Never frees p on error or s == 0 */
 #define SMB_REALLOC_ARRAY(p,type,count) (type *)realloc_array((p),sizeof(type),(count),True) /* Always frees p on error or s == 0 */
@@ -284,7 +286,7 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
 /* limiting size of ipc replies */
-#define SMB_REALLOC_LIMIT(ptr,size) SMB_REALLOC(ptr,MAX((size),4*1024))
+#define SMB_REALLOC_LIMIT(ptr,size) (char *)SMB_REALLOC(ptr,MAX((size),4*1024))
 
 /* The new talloc is paranoid malloc checker safe. */
 
@@ -377,6 +379,14 @@ do { \
 } while (0)
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
-	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void **)(array), (num), (size));
+	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
+
+#ifndef ISDOT
+#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
+#endif /* ISDOT */
+
+#ifndef ISDOTDOT
+#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
+#endif /* ISDOTDOT */
 
 #endif /* _SMB_MACROS_H */

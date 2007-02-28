@@ -19,13 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct timed_event {
-	struct timed_event *next, *prev;
-	struct timeval when;
-	const char *event_name;
-	void (*handler)(struct timed_event *te,
-			const struct timeval *now,
-			void *private_data);
-	void *private_data;
-};
+/* bits for file descriptor event flags */
+#define EVENT_FD_READ 1
+#define EVENT_FD_WRITE 2
 

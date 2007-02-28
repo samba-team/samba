@@ -126,6 +126,10 @@ BOOL namecache_store(const char *name, int name_type,
 	 */
 	if (!gencache_init()) return False;
 
+	if (name_type > 255) {
+		return False; /* Don't store non-real name types. */
+	}
+
 	if ( DEBUGLEVEL >= 5 ) {
 		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
 			num_names, num_names == 1 ? "": "es", name, name_type));
@@ -138,6 +142,10 @@ BOOL namecache_store(const char *name, int name_type,
 	}
 	
 	key = namecache_key(name, name_type);
+	if (!key) {
+		return False;
+	}
+
 	expiry = time(NULL) + lp_name_cache_timeout();
 
 	/*
@@ -184,18 +192,23 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
 	if (!gencache_init())
 		return False;
 
+	if (name_type > 255) {
+		return False; /* Don't fetch non-real name types. */
+	}
+
 	*num_names = 0;
 
 	/* 
 	 * Use gencache interface - lookup the key
 	 */
 	key = namecache_key(name, name_type);
+	if (!key) {
+		return False;
+	}
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
-		gencache_del(key);
 		SAFE_FREE(key);
-		SAFE_FREE(value);		 
 		return False;
 	} else {
 		DEBUG(5, ("name %s#%02X found.\n", name, name_type));
@@ -212,6 +225,31 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
 	return *num_names > 0;		/* true only if some ip has been fetched */
 }
 
+/**
+ * Remove a namecache entry. Needed for site support.
+ *
+ **/
+
+BOOL namecache_delete(const char *name, int name_type)
+{
+	BOOL ret;
+	char *key;
+
+	if (!gencache_init())
+		return False;
+
+	if (name_type > 255) {
+		return False; /* Don't fetch non-real name types. */
+	}
+
+	key = namecache_key(name, name_type);
+	if (!key) {
+		return False;
+	}
+	ret = gencache_del(key);
+	SAFE_FREE(key);
+	return ret;
+}
 
 /**
  * Delete single namecache entry. Look at the
@@ -306,9 +344,7 @@ BOOL namecache_status_fetch(const char *keyname, int keyname_type,
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n", key));
-		gencache_del(key);
 		SAFE_FREE(key);
-		SAFE_FREE(value);
 		return False;
 	} else {
 		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n", key, value ));

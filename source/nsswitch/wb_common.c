@@ -26,6 +26,10 @@
 
 #include "winbind_client.h"
 
+BOOL winbind_env_set( void );
+BOOL winbind_off( void );
+BOOL winbind_on( void );
+
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
@@ -53,7 +57,7 @@ void init_request(struct winbindd_request *request, int request_type)
 
 /* Initialise a response structure */
 
-void init_response(struct winbindd_response *response)
+static void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 
@@ -71,8 +75,6 @@ void close_sock(void)
 }
 
 #define CONNECT_TIMEOUT 30
-#define WRITE_TIMEOUT CONNECT_TIMEOUT
-#define READ_TIMEOUT CONNECT_TIMEOUT
 
 /* Make sure socket handle isn't stdin, stdout or stderr */
 #define RECURSION_LIMIT 3
@@ -324,7 +326,7 @@ static int winbind_open_pipe_sock(int recursing)
 	request.flags = WBFLAG_RECURSE;
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
-		if ((fd = winbind_named_pipe_sock(response.extra_data.data)) != -1) {
+		if ((fd = winbind_named_pipe_sock((char *)response.extra_data.data)) != -1) {
 			close(winbindd_fd);
 			winbindd_fd = fd;
 		}

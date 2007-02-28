@@ -21,10 +21,13 @@
 /* To use these macros you must have a structure containing a next and
    prev pointer */
 
+#ifndef _DLINKLIST_H
+#define _DLINKLIST_H
+
 
 /* hook into the front of the list */
 #define DLIST_ADD(list, p) \
-{ \
+do { \
         if (!(list)) { \
 		(list) = (p); \
 		(p)->next = (p)->prev = NULL; \
@@ -34,11 +37,11 @@
 		(p)->prev = NULL; \
 		(list) = (p); \
 	}\
-}
+} while (0)
 
 /* remove an element from a list - element doesn't have to be in list. */
 #define DLIST_REMOVE(list, p) \
-{ \
+do { \
 	if ((p) == (list)) { \
 		(list) = (p)->next; \
 		if (list) (list)->prev = NULL; \
@@ -47,28 +50,29 @@
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 	} \
 	if ((p) != (list)) (p)->next = (p)->prev = NULL; \
-}
+} while (0)
 
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
-{ \
-          DLIST_REMOVE(list, p) \
-          DLIST_ADD(list, p) \
-}
+do { \
+          DLIST_REMOVE(list, p); \
+          DLIST_ADD(list, p); \
+} while (0)
 
-/* hook into the end of the list - needs a tmp pointer */
-#define DLIST_ADD_END(list, p, tmp) \
-{ \
+/* hook into the end of the list - needs the entry type */
+#define DLIST_ADD_END(list, p, type) \
+do { \
 		if (!(list)) { \
 			(list) = (p); \
 			(p)->next = (p)->prev = NULL; \
 		} else { \
-			for ((tmp) = (list); (tmp)->next; (tmp) = (tmp)->next) ; \
-			(tmp)->next = (p); \
+			type tmp; \
+			for (tmp = (list); tmp->next; tmp = tmp->next) ; \
+			tmp->next = (p); \
 			(p)->next = NULL; \
-			(p)->prev = (tmp); \
+			(p)->prev = tmp; \
 		} \
-}
+} while (0)
 
 /* insert 'p' after the given element 'el' in a list. If el is NULL then
    this is the same as a DLIST_ADD() */
@@ -84,9 +88,27 @@ do { \
 	}\
 } while (0)
 
-/* demote an element to the top of the list, needs a tmp pointer */
+/* demote an element to the end of the list, needs a tmp pointer */
 #define DLIST_DEMOTE(list, p, tmp) \
-{ \
-		DLIST_REMOVE(list, p) \
-		DLIST_ADD_END(list, p, tmp) \
-}
+do { \
+		DLIST_REMOVE(list, p); \
+		DLIST_ADD_END(list, p, tmp); \
+} while (0)
+
+/* concatenate two lists - putting all elements of the 2nd list at the
+   end of the first list */
+#define DLIST_CONCATENATE(list1, list2, type) \
+do { \
+		if (!(list1)) { \
+			(list1) = (list2); \
+		} else { \
+			type tmp; \
+			for (tmp = (list1); tmp->next; tmp = tmp->next) ; \
+			tmp->next = (list2); \
+			if (list2) { \
+				(list2)->prev = tmp;	\
+			} \
+		} \
+} while (0)
+
+#endif /* _DLINKLIST_H */

@@ -99,7 +99,7 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = TALLOC_REALLOC(send_ctx, buf, len);
+		buf = (char *)TALLOC_REALLOC(send_ctx, buf, len);
 		if (!buf)
 			return False;
 		buflen = len;
@@ -140,7 +140,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 	}
 	offset += 4; /* For count. */
 
-	buf = TALLOC(send_ctx, offset);
+	buf = (char *)TALLOC(send_ctx, offset);
 	if (!buf) {
 		DEBUG(0,("print_notify_send_messages: Out of memory\n"));
 		talloc_free_children(send_ctx);
@@ -220,7 +220,7 @@ static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 	memcpy( to, from, sizeof(SPOOLSS_NOTIFY_MSG) );
 	
 	if ( from->len ) {
-		to->notify.data = TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
+		to->notify.data = (char *)TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
 		if ( !to->notify.data ) {
 			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
 			return False;
@@ -295,7 +295,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	 * the messages are sent in the order they were received. JRA.
 	 */
 
-	DLIST_ADD_END(notify_queue_head, pnqueue, tmp_ptr);
+	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
 }
 

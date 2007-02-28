@@ -407,12 +407,40 @@ int net_rap_server_usage(int argc, const char **argv)
 	net_common_flags_usage(argc, argv);
 	return -1;
 }
+
+static int net_rap_server_name(int argc, const char *argv[])
+{
+	struct cli_state *cli;
+	char *name;
+
+	if (!(cli = net_make_ipc_connection(0))) 
+                return -1;
+
+	if (!cli_get_server_name(NULL, cli, &name)) {
+		d_fprintf(stderr, "cli_get_server_name failed\n");
+		cli_shutdown(cli);
+		return -1;
+	}
+
+	d_printf("Server name = %s\n", name);
+
+	TALLOC_FREE(name);
+	cli_shutdown(cli);
+	return 0;
+}
 		    
 int net_rap_server(int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	
+
+	if (argc > 0) {
+		if (!strequal(argv[0], "name")) {
+			return net_rap_server_usage(argc-1, argv+1);
+		}
+		return net_rap_server_name(argc, argv);
+	}
+
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 

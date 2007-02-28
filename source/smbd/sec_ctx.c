@@ -252,13 +252,30 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	ctx_p->ut.ngroups = ngroups;
 
 	SAFE_FREE(ctx_p->ut.groups);
-	if (token && (token == ctx_p->token))
+	if (token && (token == ctx_p->token)) {
 		smb_panic("DUPLICATE_TOKEN");
+	}
 
 	TALLOC_FREE(ctx_p->token);
 	
-	ctx_p->ut.groups = memdup(groups, sizeof(gid_t) * ngroups);
-	ctx_p->token = dup_nt_token(NULL, token);
+	if (ngroups) {
+		ctx_p->ut.groups = (gid_t *)memdup(groups,
+						   sizeof(gid_t) * ngroups);
+		if (!ctx_p->ut.groups) {
+			smb_panic("memdup failed");
+		}
+	} else {
+		ctx_p->ut.groups = NULL;
+	}
+
+	if (token) {
+		ctx_p->token = dup_nt_token(NULL, token);
+		if (!ctx_p->token) {
+			smb_panic("dup_nt_token failed");
+		}
+	} else {
+		ctx_p->token = NULL;
+	}
 
 	become_id(uid, gid);
 

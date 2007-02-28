@@ -281,7 +281,7 @@ static int elog_size( EVENTLOG_INFO *info )
   Eventlog_entry.  returns NULL if it can't get the record for some reason.
  ********************************************************************/
 
-Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
+static Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 				     int recno, Eventlog_entry * ee )
 {
 	TDB_DATA ret, key;

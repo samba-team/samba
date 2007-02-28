@@ -10,7 +10,7 @@
 
 
 struct _SMBCSRV {
-	struct cli_state cli;
+	struct cli_state *cli;
 	dev_t dev;
 	BOOL no_pathinfo;
 	BOOL no_pathinfo2;
@@ -79,6 +79,21 @@ struct smbc_internal_data {
          * Log to standard error instead of the more typical standard output
          */
         BOOL _debug_stderr;
+
+        /*
+         * Support "Create Time" in get/set with the *xattr() functions, if
+         * true.  This replaces the dos attribute strings C_TIME, A_TIME and
+         * M_TIME with CHANGE_TIME, ACCESS_TIME and WRITE_TIME, and adds
+         * CREATE_TIME.  Default is FALSE, i.e.  to use the old-style shorter
+         * names and to not support CREATE time, for backward compatibility.
+         */
+        BOOL _full_time_names;
+
+        /*
+         * The share mode of a file being opened.  To match POSIX semantics
+         * (and maintain backward compatibility), DENY_NONE is the default.
+         */
+         smbc_share_mode _share_mode;
 
         /*
          * Authentication function which includes the context.  This will be

@@ -181,11 +181,18 @@ BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 	groups = NULL;
 
 	/* Add in primary group first */
-	add_gid_to_array_unique(mem_ctx, primary_gid, &groups, &ngrp);
+	if (!add_gid_to_array_unique(mem_ctx, primary_gid, &groups, &ngrp)) {
+		SAFE_FREE(temp_groups);
+		return False;
+	}
 
-	for (i=0; i<max_grp; i++)
-		add_gid_to_array_unique(mem_ctx, temp_groups[i],
-					&groups, &ngrp);
+	for (i=0; i<max_grp; i++) {
+		if (!add_gid_to_array_unique(mem_ctx, temp_groups[i],
+					&groups, &ngrp)) {
+			SAFE_FREE(temp_groups);
+			return False;
+		}
+	}
 
 	*p_ngroups = ngrp;
 	*ret_groups = groups;

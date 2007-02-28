@@ -40,12 +40,12 @@
 		( READ_CONTROL_ACCESS		| \
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
+#define SAMR_USR_RIGHTS_CANT_WRITE_PW \
+		( READ_CONTROL_ACCESS | SA_RIGHT_USER_SET_LOC_COM )
 
 #define DISP_INFO_CACHE_TIMEOUT 10
 
 typedef struct disp_info {
-	struct disp_info *next, *prev;
-	TALLOC_CTX *mem_ctx;
 	DOM_SID sid; /* identify which domain this is. */
 	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
@@ -62,8 +62,6 @@ typedef struct disp_info {
 
 /* We keep a static list of these by SID as modern clients close down
    all resources between each request in a complete enumeration. */
-
-static DISP_INFO *disp_info_list;
 
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
@@ -89,6 +87,11 @@ static struct generic_mapping usr_generic_mapping = {
 	GENERIC_RIGHTS_USER_READ,
 	GENERIC_RIGHTS_USER_WRITE,
 	GENERIC_RIGHTS_USER_EXECUTE,
+	GENERIC_RIGHTS_USER_ALL_ACCESS};
+static struct generic_mapping usr_nopwchange_generic_mapping = {
+	GENERIC_RIGHTS_USER_READ,
+	GENERIC_RIGHTS_USER_WRITE,
+	GENERIC_RIGHTS_USER_EXECUTE & ~SA_RIGHT_USER_CHANGE_PASSWORD,
 	GENERIC_RIGHTS_USER_ALL_ACCESS};
 static struct generic_mapping grp_generic_mapping = {
 	GENERIC_RIGHTS_GROUP_READ,
@@ -247,49 +250,59 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
  Fetch or create a dispinfo struct.
 ********************************************************************/
 
-static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
+static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 {
-	TALLOC_CTX *mem_ctx;
-	DISP_INFO *dpi;
+	/*
+	 * We do a static cache for DISP_INFO's here. Explanation can be found
+	 * in Jeremy's checkin message to r11793:
+	 *
+	 * Fix the SAMR cache so it works across completely insane
+	 * client behaviour (ie.:
+	 * open pipe/open SAMR handle/enumerate 0 - 1024
+	 * close SAMR handle, close pipe.
+	 * open pipe/open SAMR handle/enumerate 1024 - 2048...
+	 * close SAMR handle, close pipe.
+	 * And on ad-nausium. Amazing.... probably object-oriented
+	 * client side programming in action yet again.
+	 * This change should *massively* improve performance when
+	 * enumerating users from an LDAP database.
+	 * Jeremy.
+	 *
+	 * "Our" and the builtin domain are the only ones where we ever
+	 * enumerate stuff, so just cache 2 entries.
+	 */
+
+	static struct disp_info builtin_dispinfo;
+	static struct disp_info domain_dispinfo;
 
 	/* There are two cases to consider here:
 	   1) The SID is a domain SID and we look for an equality match, or
 	   2) This is an account SID and so we return the DISP_INFO* for our 
 	      domain */
 
-	if ( psid && sid_check_is_in_our_domain( psid ) ) {
-		DEBUG(10,("get_samr_dispinfo_by_sid: Replacing %s with our domain SID\n",
-			sid_str));
-		psid = get_global_sam_sid();
-	}
-
-	for (dpi = disp_info_list; dpi; dpi = dpi->next) {
-		if (sid_equal(psid, &dpi->sid)) {
-			return dpi;
-		}
-	}
-
-	/* This struct is never free'd - I'm using talloc so we
-	   can get a list out of smbd using smbcontrol. There will
-	   be one of these per SID we're authorative for. JRA. */
-
-	mem_ctx = talloc_init("DISP_INFO for domain sid %s", sid_str);
-
-	if ((dpi = TALLOC_ZERO_P(mem_ctx, DISP_INFO)) == NULL)
+	if (psid == NULL) {
 		return NULL;
-
-	dpi->mem_ctx = mem_ctx;
-
-	if (psid) {
-		sid_copy( &dpi->sid, psid);
-		dpi->builtin_domain = sid_check_is_builtin(psid);
-	} else {
-		dpi->builtin_domain = False;
 	}
 
-	DLIST_ADD(disp_info_list, dpi);
+	if (sid_check_is_builtin(psid) || sid_check_is_in_builtin(psid)) {
+		/*
+		 * Necessary only once, but it does not really hurt.
+		 */
+		sid_copy(&builtin_dispinfo.sid, &global_sid_Builtin);
 
-	return dpi;
+		return &builtin_dispinfo;
+	}
+		
+	if (sid_check_is_domain(psid) || sid_check_is_in_our_domain(psid)) {
+		/*
+		 * Necessary only once, but it does not really hurt.
+		 */
+		sid_copy(&domain_dispinfo.sid, get_global_sam_sid());
+
+		return &domain_dispinfo;
+	}
+
+	return NULL;
 }
 
 /*******************************************************************
@@ -323,12 +336,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	}
 	info->mem_ctx = mem_ctx;
 
-	info->disp_info = get_samr_dispinfo_by_sid(psid, sid_str);
-
-	if (!info->disp_info) {
-		talloc_destroy(mem_ctx);
-		return NULL;
-	}
+	info->disp_info = get_samr_dispinfo_by_sid(psid);
 
 	return info;
 }
@@ -657,16 +665,6 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 }
 
 /*******************************************************************
- _samr_set_sec_obj
- ********************************************************************/
-
-NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
-{
-	DEBUG(0,("_samr_set_sec_obj: Not yet implemented!\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*******************************************************************
 ********************************************************************/
 
 static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol, 
@@ -690,6 +688,97 @@ static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 
 	return True;
 }
+
+/*******************************************************************
+ _samr_set_sec_obj
+ ********************************************************************/
+
+NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
+{
+	DOM_SID pol_sid;
+	uint32 acc_granted, i;
+	SEC_ACL *dacl;
+	BOOL ret;
+	struct samu *sampass=NULL;
+	NTSTATUS status;
+
+	r_u->status = NT_STATUS_OK;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!(sampass = samu_new( p->mem_ctx))) {
+		DEBUG(0,("No memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* get the user record */
+	become_root();
+	ret = pdb_getsampwsid(sampass, &pol_sid);
+	unbecome_root();
+
+	if (!ret) {
+		DEBUG(4, ("User %s not found\n", sid_string_static(&pol_sid)));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	dacl = q_u->buf->sec->dacl;
+	for (i=0; i < dacl->num_aces; i++) {
+		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
+			ret = pdb_set_pass_can_change(sampass, 
+				(dacl->aces[i].access_mask & 
+				 SA_RIGHT_USER_CHANGE_PASSWORD) ? 
+						      True: False);
+			break;
+		}
+	}
+
+	if (!ret) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = pdb_update_sam_account(sampass);
+
+	TALLOC_FREE(sampass);
+
+	return status;
+}
+
+/*******************************************************************
+  build correct perms based on policies and password times for _samr_query_sec_obj
+*******************************************************************/
+static BOOL check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
+{
+	struct samu *sampass=NULL;
+	BOOL ret;
+
+	if ( !(sampass = samu_new( mem_ctx )) ) {
+		DEBUG(0,("No memory!\n"));
+		return False;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(sampass, user_sid);
+	unbecome_root();
+
+	if (ret == False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		TALLOC_FREE(sampass);
+		return False;
+	}
+
+	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
+
+	if (pdb_get_pass_can_change(sampass)) {
+		TALLOC_FREE(sampass);
+		return True;
+	}
+	TALLOC_FREE(sampass);
+	return False;
+}
+
 
 /*******************************************************************
  _samr_query_sec_obj
@@ -731,7 +820,13 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
 		DEBUG(10,("_samr_query_sec_obj: querying security on Object with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
+		if (check_change_pw_access(p->mem_ctx, &pol_sid)) {
+			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, 
+							  &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
+		} else {
+			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_nopwchange_generic_mapping, 
+							  &pol_sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
+		}
 	} else {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
@@ -1377,7 +1472,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
-	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
+	enum lsa_SidType type[MAX_SAM_ENTRIES];
 	int i;
 	int num_rids = q_u->num_names2;
 	DOM_SID pol_sid;
@@ -1435,7 +1530,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		}
 	}
 
-	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
+	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, type, r_u->status);
 
 	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
@@ -1618,12 +1713,14 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
 	const char **names;
-	uint32 *attrs = NULL;
+	enum lsa_SidType *attrs = NULL;
+	uint32 *wire_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
 	int num_rids = q_u->num_rids1;
 	uint32 acc_granted;
+	int i;
 	
 	r_u->status = NT_STATUS_OK;
 
@@ -1640,9 +1737,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
+	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum lsa_SidType, num_rids);
+	wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
 
-	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL)))
+	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL)))
 		return NT_STATUS_NO_MEMORY;
 
 	become_root();  /* lookup_sid can require root privs */
@@ -1658,7 +1756,12 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 				  &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, attrs);
+	/* Convert from enum lsa_SidType to uint32 for wire format. */
+	for (i = 0; i < num_rids; i++) {
+		wire_attrs[i] = (uint32)attrs[i];
+	}
+
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, wire_attrs);
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
@@ -2077,6 +2180,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
+	BOOL success = False;
 
 	/*
 	 * from the SID in the request:
@@ -2121,9 +2225,15 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 	sids = NULL;
 
+	/* make both calls inside the root block */
 	become_root();
 	result = pdb_enum_group_memberships(p->mem_ctx, sam_pass,
 					    &sids, &unix_gids, &num_groups);
+	if ( NT_STATUS_IS_OK(result) ) {
+		success = sid_peek_check_rid(get_global_sam_sid(), 
+					     pdb_get_group_sid(sam_pass),
+					     &primary_group_rid);
+	}
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2132,15 +2242,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return result;
 	}
 
-	gids = NULL;
-	num_gids = 0;
-
-	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
-			SE_GROUP_ENABLED);
-
-	if (!sid_peek_check_rid(get_global_sam_sid(),
-				pdb_get_group_sid(sam_pass),
-				&primary_group_rid)) {
+	if ( !success ) {
 		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
 			  sid_string_static(pdb_get_group_sid(sam_pass)),
 			  pdb_get_username(sam_pass)));
@@ -2148,8 +2250,12 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dom_gid.g_rid = primary_group_rid;
+	gids = NULL;
+	num_gids = 0;
 
+	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			SE_GROUP_ENABLED);
+	dom_gid.g_rid = primary_group_rid;
 	ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
 
 	for (i=0; i<num_groups; i++) {
@@ -2383,7 +2489,7 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 
 static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 {
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	BOOL result;
 
 	DEBUG(10, ("Checking whether [%s] can be created\n", new_name));
@@ -2498,7 +2604,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	}
 		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
-		p->pipe_user_name, can_add_account ? "True":"False" ));
+		  uidtoname(p->pipe_user.ut.uid),
+		  can_add_account ? "True":"False" ));
 		
 	/********** BEGIN Admin BLOCK **********/
 
@@ -2924,7 +3031,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 
 	{
 		/* Check we actually have the requested alias */
-		enum SID_NAME_USE type;
+		enum lsa_SidType type;
 		BOOL result;
 		gid_t gid;
 
@@ -3047,7 +3154,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
 		TALLOC_FREE(pwd);
 		return False;
 	}
- 	if (!pdb_set_pass_changed_now (pwd)) {
+ 	if (!pdb_set_pass_last_set_time (pwd, time(NULL), PDB_CHANGED)) {
 		TALLOC_FREE(pwd);
 		return False; 
 	}
@@ -3100,9 +3207,11 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	}
 
 	/* we need to separately check for an account rename first */
+	
 	if (rpcstr_pull(new_name, id21->uni_user_name.buffer, 
-			sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) && 
-	   (!strequal(new_name, pdb_get_username(pwd)))) {
+		sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) 
+		&& (!strequal(new_name, pdb_get_username(pwd)))) 
+	{
 
 		/* check to see if the new username already exists.  Note: we can't
 		   reliably lock all backends, so there is potentially the 
@@ -3327,11 +3436,18 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 
 	copy_id25_to_sam_passwd(pwd, id25);
  
+	/* write the change out */
+	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
+		TALLOC_FREE(pwd);
+		return status;
+ 	}
+
 	/*
-	 * The funny part about the previous two calls is
-	 * that pwd still has the password hashes from the
-	 * passdb entry.  These have not been updated from
-	 * id21.  I don't know if they need to be set.    --jerry
+	 * We need to "pdb_update_sam_account" before the unix primary group
+	 * is set, because the idealx scripts would also change the
+	 * sambaPrimaryGroupSid using the ldap replace method. pdb_ldap uses
+	 * the delete explicit / add explicit, which would then fail to find
+	 * the previous primaryGroupSid value.
 	 */
  
 	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
@@ -3341,16 +3457,6 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 		}
 	}
 	
-	/* Don't worry about writing out the user account since the
-	   primary group SID is generated solely from the user's Unix 
-	   primary group. */
-
-	/* write the change out */
-	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
-		return status;
- 	}
-
 	/* WARNING: No TALLOC_FREE(pwd), we are about to set the password
 	 * hereafter! */
 
@@ -3440,7 +3546,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
@@ -3598,7 +3705,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo2: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
@@ -4601,6 +4709,10 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 
 	switch (ctr->level) {
 		case 2:
+		{
+			fstring group_name, acct_name;
+			NTSTATUS status;
+
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand 
 			   why.  The eventually needs to be fixed to be like Windows
@@ -4610,13 +4722,31 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 				return NT_STATUS_SPECIAL_ACCOUNT;
 			}
 
-			if ( ctr->alias.info2.name.string ) {
-				unistr2_to_ascii( info.acct_name, ctr->alias.info2.name.string, 
-					sizeof(info.acct_name)-1 );
-			}
-			else
-				fstrcpy( info.acct_name, "" );
+			/* There has to be a valid name (and it has to be different) */
+
+			if ( !ctr->alias.info2.name.string ) 
+				return NT_STATUS_INVALID_PARAMETER;
+
+			unistr2_to_ascii( acct_name, ctr->alias.info2.name.string, 
+				sizeof(acct_name)-1 );
+
+			/* If the name is the same just reply "ok".  Yes this
+			   doesn't allow you to change the case of a group name. */
+
+			if ( strequal( acct_name, info.acct_name ) )
+				return NT_STATUS_OK;
+
+			fstrcpy( info.acct_name, acct_name );
+
+			/* make sure the name doesn't already exist as a user 
+			   or local group */
+
+			fstr_sprintf( group_name, "%s\\%s", global_myname(), info.acct_name );
+			status = can_create( p->mem_ctx, group_name );
+			if ( !NT_STATUS_IS_OK( status ) ) 
+				return status;
 			break;
+			}
 		case 3:
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 

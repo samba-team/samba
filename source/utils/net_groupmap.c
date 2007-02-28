@@ -188,11 +188,19 @@ static int net_groupmap_add(int argc, const char **argv)
 	fstring string_sid = "";
 	fstring type = "";
 	fstring ntcomment = "";
-	enum SID_NAME_USE sid_type = SID_NAME_DOM_GRP;
+	enum lsa_SidType sid_type = SID_NAME_DOM_GRP;
 	uint32 rid = 0;	
 	gid_t gid;
 	int i;
-	const char *name_type = "domain group";
+	GROUP_MAP map;
+	
+	const char *name_type;
+
+	ZERO_STRUCT(map);
+
+	/* Default is domain group. */
+	map.sid_name_use = SID_NAME_DOM_GRP;
+	name_type = "domain group";
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
@@ -271,7 +279,6 @@ static int net_groupmap_add(int argc, const char **argv)
 	}
 
 	{
-		GROUP_MAP map;
 		if (pdb_getgrgid(&map, gid)) {
 			d_printf("Unix group %s already mapped to SID %s\n",
 				 unixgrp, sid_string_static(&map.sid));
@@ -325,7 +332,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	}
 
 	d_printf("Successfully added group %s to the mapping db as a %s\n",
-		ntgroup, name_type);
+		 ntgroup, name_type);
 	return 0;
 }
 
@@ -338,7 +345,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	fstring ntgroup = "";
 	fstring unixgrp = "";
 	fstring sid_string = "";
-	enum SID_NAME_USE sid_type = SID_NAME_UNKNOWN;
+	enum lsa_SidType sid_type = SID_NAME_UNKNOWN;
 	int i;
 	gid_t gid;
 
@@ -424,13 +431,13 @@ static int net_groupmap_modify(int argc, const char **argv)
 	if (sid_type == SID_NAME_UNKNOWN) {
 		d_fprintf(stderr, "Can't map to an unknown group type.\n");
 		return -1;
-	}
+        }
 
 	if (map.sid_name_use == SID_NAME_WKN_GRP) {
 		d_fprintf(stderr, "You can only change between domain and local groups.\n");
 		return -1;
 	}
-		
+
 	map.sid_name_use=sid_type;
 
 	/* Change comment if new one */

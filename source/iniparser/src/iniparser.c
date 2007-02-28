@@ -230,7 +230,7 @@ void iniparser_dump_ini(dictionary * d, FILE * f)
   iniparser_getstring() instead.
  */
 /*--------------------------------------------------------------------------*/
-char * iniparser_getstr(dictionary * d, char * key)
+char * iniparser_getstr(dictionary * d, const char * key)
 {
     return iniparser_getstring(d, key, NULL);
 }
@@ -251,7 +251,7 @@ char * iniparser_getstr(dictionary * d, char * key)
   the dictionary, do not free or modify it.
  */
 /*--------------------------------------------------------------------------*/
-char * iniparser_getstring(dictionary * d, char * key, char * def)
+char * iniparser_getstring(dictionary * d, const char * key, char * def)
 {
     char * lc_key ;
     char * sval ;
@@ -259,7 +259,9 @@ char * iniparser_getstring(dictionary * d, char * key, char * def)
     if (d==NULL || key==NULL)
         return def ;
 
-    lc_key = strdup(strlwc(key));
+    if (!(lc_key = strdup(strlwc(key)))) {
+	    return NULL;
+    }
     sval = dictionary_get(d, lc_key, def);
     free(lc_key);
     return sval ;
@@ -280,7 +282,7 @@ char * iniparser_getstring(dictionary * d, char * key, char * def)
   the notfound value is returned.
  */
 /*--------------------------------------------------------------------------*/
-int iniparser_getint(dictionary * d, char * key, int notfound)
+int iniparser_getint(dictionary * d, const char * key, int notfound)
 {
     char    *   str ;
 
@@ -346,7 +348,7 @@ double iniparser_getdouble(dictionary * d, char * key, double notfound)
   necessarily have to be 0 or 1.
  */
 /*--------------------------------------------------------------------------*/
-int iniparser_getboolean(dictionary * d, char * key, int notfound)
+int iniparser_getboolean(dictionary * d, const char * key, int notfound)
 {
     char    *   c ;
     int         ret ;
@@ -442,7 +444,7 @@ void iniparser_unset(dictionary * ini, char * entry)
  */
 /*--------------------------------------------------------------------------*/
 
-dictionary * iniparser_load(char * ininame)
+dictionary * iniparser_load(const char * ininame)
 {
     dictionary  *   d ;
     char        lin[ASCIILINESZ+1];
@@ -462,7 +464,10 @@ dictionary * iniparser_load(char * ininame)
     /*
      * Initialize a new dictionary entry
      */
-    d = dictionary_new(0);
+    if (!(d = dictionary_new(0))) {
+	    fclose(ini);
+	    return NULL;
+    }
     lineno = 0 ;
     while (fgets(lin, ASCIILINESZ, ini)!=NULL) {
         lineno++ ;

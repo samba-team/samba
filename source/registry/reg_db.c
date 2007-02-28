@@ -96,6 +96,20 @@ static BOOL init_registry_data( void )
 	int i;
 	const char *p, *p2;
 	UNISTR2 data;
+
+	/*
+	 * There are potentially quite a few store operations which are all
+	 * indiviually wrapped in tdb transactions. Wrapping them in a single
+	 * transaction gives just a single transaction_commit() to actually do
+	 * its fsync()s. See tdb/common/transaction.c for info about nested
+	 * transaction behaviour.
+	 */
+
+	if ( tdb_transaction_start( tdb_reg ) == -1 ) {
+		DEBUG(0, ("init_registry_data: tdb_transaction_start "
+			  "failed\n"));
+		return False;
+	}
 	
 	/* loop over all of the predefined paths and add each component */
 	
@@ -135,14 +149,14 @@ static BOOL init_registry_data( void )
 			
 			if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
 				DEBUG(0,("talloc() failure!\n"));
-				return False;
+				goto fail;
 			}
 
 			regdb_fetch_keys( base, subkeys );
 			if ( *subkeyname ) 
 				regsubkey_ctr_addkey( subkeys, subkeyname );
 			if ( !regdb_store_keys( base, subkeys ))
-				return False;
+				goto fail;
 			
 			TALLOC_FREE( subkeys );
 		}
@@ -153,7 +167,7 @@ static BOOL init_registry_data( void )
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
 		if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
 			DEBUG(0,("talloc() failure!\n"));
-			return False;
+			goto fail;
 		}
 
 		regdb_fetch_values( builtin_registry_values[i].path, values );
@@ -190,7 +204,22 @@ static BOOL init_registry_data( void )
 		TALLOC_FREE( values );
 	}
 	
+	if (tdb_transaction_commit( tdb_reg ) == -1) {
+		DEBUG(0, ("init_registry_data: Could not commit "
+			  "transaction\n"));
+		return False;
+	}
+
 	return True;
+
+ fail:
+
+	if (tdb_transaction_cancel( tdb_reg ) == -1) {
+		smb_panic("init_registry_data: tdb_transaction_cancel "
+			  "failed\n");
+	}
+
+	return False;
 }
 
 /***********************************************************************
@@ -229,7 +258,7 @@ BOOL regdb_init( void )
 	/* always setup the necessary keys and values */
 
 	if ( !init_registry_data() ) {
-		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+		DEBUG(0,("init_registry: Failed to initialize data in registry!\n"));
 		return False;
 	}
 
@@ -313,7 +342,9 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 
 	/* allocate some initial memory */
 		
-	buffer = SMB_MALLOC(sizeof(pstring));
+	if (!(buffer = (char *)SMB_MALLOC(sizeof(pstring)))) {
+		return False;
+	}
 	buflen = sizeof(pstring);
 	len = 0;
 	
@@ -327,7 +358,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((buffer = SMB_REALLOC( buffer, len*2 )) == NULL) {
+			if ((buffer = (char *)SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;

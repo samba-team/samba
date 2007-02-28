@@ -547,7 +547,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 				       POLICY_HND *pol, uint16 info_class, 
 				       char **domain_name, char **dns_name,
 				       char **forest_name,
-				       struct uuid **domain_guid,
+				       struct GUID **domain_guid,
 				       DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
@@ -606,13 +606,13 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	}
 	
 	if (domain_guid) {
-		*domain_guid = TALLOC_P(mem_ctx, struct uuid);
+		*domain_guid = TALLOC_P(mem_ctx, struct GUID);
 		if (!*domain_guid) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		memcpy(*domain_guid, 
 		       &r.ctr.info.id12.dom_guid, 
-		       sizeof(struct uuid));
+		       sizeof(struct GUID));
 	}
 
 	if (domain_sid && r.ctr.info.id12.ptr_dom_sid != 0) {

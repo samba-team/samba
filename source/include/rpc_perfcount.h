@@ -1,5 +1,26 @@
 #ifndef _RPC_PERFCOUNT_H
 #define _RPC_PERFCOUNT_H
+/* 
+ *  Unix SMB/CIFS implementation.
+ *  Virtual Windows Registry Layer
+ *
+ *  Copyright (C) Marcin Krzysztof Porwit    2005,
+ *  Copyright (C) Gerald (Jerry) Carter      2005.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 
 typedef struct perf_counter_definition
 {
@@ -59,8 +80,8 @@ typedef struct perf_object_type
 	uint32 DefaultCounter;
 	uint32 NumInstances;
 	uint32 CodePage;
-	UINT64_S PerfTime;
-	UINT64_S PerfFreq;
+	uint64 PerfTime;
+	uint64 PerfFreq;
 	PERF_COUNTER_DEFINITION *counters;
 	PERF_INSTANCE_DEFINITION *instances;
 	PERF_COUNTER_BLOCK counter_data;
@@ -88,13 +109,13 @@ typedef struct perf_data_block
 	   PerfTime, and having it there will make my offset math much easier. */
 	uint32 Padding;
 	/* Now when I'm marshalling this, I'll need to call prs_align_uint64() 
-	   before I start encodint the UINT64_S structs */
+	   before I start encodint the uint64 structs */
 	/* clock rate * seconds uptime */
-	UINT64_S PerfTime;
+	uint64 PerfTime;
 	/* The clock rate of the CPU */
-	UINT64_S PerfFreq; 
+	uint64 PerfFreq; 
 	/* used for high-res timers -- for now PerfTime * 10e7 */
-	UINT64_S PerfTime100nSec;
+	uint64 PerfTime100nSec;
 	uint32 SystemNameLength;
 	uint32 SystemNameOffset;
 	/* The SystemName, in unicode, terminated */

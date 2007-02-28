@@ -25,6 +25,8 @@
 
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
+extern struct current_user current_user;
+extern userdom_struct current_user_info;
 
 /* Current printer interface */
 static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
@@ -271,7 +273,7 @@ static TDB_DATA print_key(uint32 jobid)
 	TDB_DATA ret;
 
 	SIVAL(&j, 0, jobid);
-	ret.dptr = (void *)&j;
+	ret.dptr = (char *)&j;
 	ret.dsize = sizeof(j);
 	return ret;
 }
@@ -839,10 +841,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
  Check if the print queue has been updated recently enough.
 ****************************************************************************/
 
-static void print_cache_flush(int snum)
+static void print_cache_flush(const char *sharename)
 {
 	fstring key;
-	const char *sharename = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 
 	if (!pdb)
@@ -918,7 +919,7 @@ static void set_updating_pid(const fstring sharename, BOOL updating)
 	}
 	
 	SIVAL( buffer, 0, updating_pid);
-	data.dptr = (void *)buffer;
+	data.dptr = (char *)buffer;
 	data.dsize = 4;		/* we always assume this is a 4 byte value */
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
@@ -985,7 +986,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 				queue[i].fs_file);
 	}
 
-	if ((data.dptr = SMB_MALLOC(data.dsize)) == NULL)
+	if ((data.dptr = (char *)SMB_MALLOC(data.dsize)) == NULL)
 		return;
 
         len = 0;
@@ -1236,7 +1237,7 @@ static void print_queue_update_internal( const char *sharename,
 	key.dsize = strlen(keystr);
 
 	status.qcount = qcount;
-	data.dptr = (void *)&status;
+	data.dptr = (char *)&status;
 	data.dsize = sizeof(status);
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
 
@@ -1351,14 +1352,15 @@ static void print_queue_update_with_lock( const char *sharename,
 this is the receive function of the background lpq updater
 ****************************************************************************/
 static void print_queue_receive(int msg_type, struct process_id src,
-				void *buf, size_t msglen)
+				void *buf, size_t msglen,
+				void *private_data)
 {
 	fstring sharename;
 	pstring lpqcommand, lprmcommand;
 	int printing_type;
 	size_t len;
 
-	len = tdb_unpack( buf, msglen, "fdPP",
+	len = tdb_unpack( (char *)buf, msglen, "fdPP",
 		sharename,
 		&printing_type,
 		lpqcommand,
@@ -1402,7 +1404,8 @@ void start_background_queue(void)
 			exit(1);
 		}
 
-		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
+		message_register(MSG_PRINTER_UPDATE, print_queue_receive,
+				 NULL);
 		
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
@@ -1456,12 +1459,22 @@ static void print_queue_update(int snum, BOOL force)
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
 	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
 		     False, False, False );
-	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
+	standard_sub_advanced(lp_servicename(snum),
+			      current_user_info.unix_name, "",
+			      current_user.ut.gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      lpqcommand, sizeof(lpqcommand) );
 	
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
 	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
 		     False, False, False );
-	standard_sub_snum( snum, lprmcommand, sizeof(lprmcommand) );
+	standard_sub_advanced(lp_servicename(snum),
+			      current_user_info.unix_name, "",
+			      current_user.ut.gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      lprmcommand, sizeof(lprmcommand) );
 	
 	/* 
 	 * Make sure that the background queue process exists.  
@@ -1524,10 +1537,8 @@ static void print_queue_update(int snum, BOOL force)
 
 	/* finally send the message */
 	
-	become_root();
 	message_send_pid(pid_to_procid(background_lpq_updater_pid),
 		 MSG_PRINTER_UPDATE, buffer, len, False);
-	unbecome_root();
 
 	SAFE_FREE( buffer );
 
@@ -1596,7 +1607,7 @@ BOOL print_notify_register_pid(int snum)
 
 	if (i == data.dsize) {
 		/* We weren't in the list. Realloc. */
-		data.dptr = SMB_REALLOC(data.dptr, data.dsize + 8);
+		data.dptr = (char *)SMB_REALLOC(data.dptr, data.dsize + 8);
 		if (!data.dptr) {
 			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n",
 						printername));
@@ -1781,7 +1792,7 @@ NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
  Set the place in the queue for a job.
 ****************************************************************************/
 
-BOOL print_job_set_place(int snum, uint32 jobid, int place)
+BOOL print_job_set_place(const char *sharename, uint32 jobid, int place)
 {
 	DEBUG(2,("print_job_set_place not implemented yet\n"));
 	return False;
@@ -1791,9 +1802,8 @@ BOOL print_job_set_place(int snum, uint32 jobid, int place)
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 
-BOOL print_job_set_name(int snum, uint32 jobid, char *name)
+BOOL print_job_set_name(const char *sharename, uint32 jobid, char *name)
 {
-	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 
 	pjob = print_job_find(sharename, jobid);
@@ -1930,9 +1940,10 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
  Return true if the current user owns the print job.
 ****************************************************************************/
 
-static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
+static BOOL is_owner(struct current_user *user, const char *servicename,
+		     uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(lp_const_servicename(snum), jobid);
+	struct printjob *pjob = print_job_find(servicename, jobid);
 	user_struct *vuser;
 
 	if (!pjob || !user)
@@ -1958,7 +1969,7 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 
 	*errcode = WERR_OK;
 		
-	owner = is_owner(user, snum, jobid);
+	owner = is_owner(user, lp_const_servicename(snum), jobid);
 	
 	/* Check access against security descriptor or whether the user
 	   owns their job. */
@@ -2037,7 +2048,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 		return False;
 	}
 
-	if (!is_owner(user, snum, jobid) &&
+	if (!is_owner(user, lp_const_servicename(snum), jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 
@@ -2061,7 +2072,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
@@ -2097,7 +2108,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 		return False;
 	}
 
-	if (!is_owner(user, snum, jobid) &&
+	if (!is_owner(user, lp_const_servicename(snum), jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;
@@ -2119,7 +2130,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
@@ -2325,7 +2336,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 		return (uint32)-1;
 	}
 
-	if (!print_time_access_check(snum)) {
+	if (!print_time_access_check(lp_servicename(snum))) {
 		DEBUG(3, ("print_job_start: job start denied by time check\n"));
 		release_print_db(pdb);
 		return (uint32)-1;
@@ -2385,7 +2396,11 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		fstrcpy(pjob.user, vuser->user.smb_name);
+		fstrcpy(pjob.user, lp_printjob_username(snum));
+		standard_sub_basic(vuser->user.smb_name, vuser->user.domain, 
+				   pjob.user, sizeof(pjob.user)-1);
+		/* ensure NULL termination */ 
+		pjob.user[sizeof(pjob.user)-1] = '\0'; 
 	} else {
 		fstrcpy(pjob.user, uidtoname(user->ut.uid));
 	}
@@ -2739,7 +2754,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
@@ -2805,7 +2820,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 		become_root();
 
 	for (i=0;i<njobs;i++) {
-		BOOL owner = is_owner(user, snum, queue[i].job);
+		BOOL owner = is_owner(user, lp_const_servicename(snum), queue[i].job);
 
 		if (owner || can_job_admin) {
 			print_job_delete1(snum, queue[i].job);

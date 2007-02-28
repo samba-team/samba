@@ -23,6 +23,12 @@
 
 #include "includes.h"
 
+extern struct auth_context *negprot_global_auth_context;
+extern BOOL global_encrypted_passwords_negotiated;
+extern BOOL global_spnego_negotiated;
+extern enum protocol_types Protocol;
+extern int max_send;
+
 uint32 global_client_caps = 0;
 
 /*
@@ -292,6 +298,21 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	username_was_mapped = map_username( user );
 
 	pw = smb_getpwnam( mem_ctx, user, real_username, True );
+
+	if (pw) {
+		/* if a real user check pam account restrictions */
+		/* only really perfomed if "obey pam restriction" is true */
+		/* do this before an eventual mappign to guest occurs */
+		ret = smb_pam_accountcheck(pw->pw_name);
+		if (  !NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, ("PAM account restriction prevents user login\n"));
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			TALLOC_FREE(mem_ctx);
+			return ERROR_NT(nt_status_squash(ret));
+		}
+	}
+
 	if (!pw) {
 
 		/* this was originally the behavior of Samba 2.2, if a user
@@ -311,7 +332,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 	}
@@ -335,7 +356,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -348,7 +369,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -415,7 +436,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
 	data_blob_free(&response);
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return -1; /* already replied */
 }
@@ -638,6 +659,200 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 }
 
 /****************************************************************************
+ List to store partial SPNEGO auth fragments.
+****************************************************************************/
+
+static struct pending_auth_data *pd_list;
+
+/****************************************************************************
+ Delete an entry on the list.
+****************************************************************************/
+
+static void delete_partial_auth(struct pending_auth_data *pad)
+{
+	if (!pad) {
+		return;
+	}
+	DLIST_REMOVE(pd_list, pad);
+	data_blob_free(&pad->partial_data);
+	SAFE_FREE(pad);
+}
+
+/****************************************************************************
+ Search for a partial SPNEGO auth fragment matching an smbpid.
+****************************************************************************/
+
+static struct pending_auth_data *get_pending_auth_data(uint16 smbpid)
+{
+	struct pending_auth_data *pad;
+
+	for (pad = pd_list; pad; pad = pad->next) {
+		if (pad->smbpid == smbpid) {
+			break;
+		}
+	}
+	return pad;
+}
+
+/****************************************************************************
+ Check the size of an SPNEGO blob. If we need more return NT_STATUS_MORE_PROCESSING_REQUIRED,
+ else return NT_STATUS_OK. Don't allow the blob to be more than 64k.
+****************************************************************************/
+
+static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB *pblob)
+{
+	struct pending_auth_data *pad = NULL;
+	ASN1_DATA data;
+	size_t needed_len = 0;
+
+	pad = get_pending_auth_data(smbpid);
+
+	/* Ensure we have some data. */
+	if (pblob->length == 0) {
+		/* Caller can cope. */
+		DEBUG(2,("check_spnego_blob_complete: zero blob length !\n"));
+		delete_partial_auth(pad);
+		return NT_STATUS_OK;
+	}
+
+	/* Were we waiting for more data ? */
+	if (pad) {
+		DATA_BLOB tmp_blob;
+		size_t copy_len = MIN(65536, pblob->length);
+
+		/* Integer wrap paranoia.... */
+
+		if (pad->partial_data.length + copy_len < pad->partial_data.length ||
+		    pad->partial_data.length + copy_len < copy_len) {
+
+			DEBUG(2,("check_spnego_blob_complete: integer wrap "
+				"pad->partial_data.length = %u, "
+				"copy_len = %u\n",
+				(unsigned int)pad->partial_data.length,
+				(unsigned int)copy_len ));
+
+			delete_partial_auth(pad);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		DEBUG(10,("check_spnego_blob_complete: "
+			"pad->partial_data.length = %u, "
+			"pad->needed_len = %u, "
+			"copy_len = %u, "
+			"pblob->length = %u,\n",
+			(unsigned int)pad->partial_data.length,
+			(unsigned int)pad->needed_len,
+			(unsigned int)copy_len,
+			(unsigned int)pblob->length ));
+
+		tmp_blob = data_blob(NULL,
+				pad->partial_data.length + copy_len);
+
+		/* Concatenate the two (up to copy_len) bytes. */
+		memcpy(tmp_blob.data,
+			pad->partial_data.data,
+			pad->partial_data.length);
+		memcpy(tmp_blob.data + pad->partial_data.length,
+			pblob->data,
+			copy_len);
+
+		/* Replace the partial data. */
+		data_blob_free(&pad->partial_data);
+		pad->partial_data = tmp_blob;
+		ZERO_STRUCT(tmp_blob);
+
+		/* Are we done ? */
+		if (pblob->length >= pad->needed_len) {
+			/* Yes, replace pblob. */
+			data_blob_free(pblob);
+			*pblob = pad->partial_data;
+			ZERO_STRUCT(pad->partial_data);
+			delete_partial_auth(pad);
+			return NT_STATUS_OK;
+		}
+
+		/* Still need more data. */
+		pad->needed_len -= copy_len;
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	if ((pblob->data[0] != ASN1_APPLICATION(0)) &&
+	    (pblob->data[0] != ASN1_CONTEXT(1))) {
+		/* Not something we can determine the
+		 * length of.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	/* This is a new SPNEGO sessionsetup - see if
+	 * the data given in this blob is enough.
+	 */
+
+	asn1_load(&data, *pblob);
+	asn1_start_tag(&data, pblob->data[0]);
+	if (data.has_error || data.nesting == NULL) {
+		asn1_free(&data);
+		/* Let caller catch. */
+		return NT_STATUS_OK;
+	}
+
+	/* Integer wrap paranoia.... */
+
+	if (data.nesting->taglen + data.nesting->start < data.nesting->taglen ||
+	    data.nesting->taglen + data.nesting->start < data.nesting->start) {
+
+		DEBUG(2,("check_spnego_blob_complete: integer wrap "
+			"data.nesting->taglen = %u, "
+			"data.nesting->start = %u\n",
+			(unsigned int)data.nesting->taglen,
+			(unsigned int)data.nesting->start ));
+
+		asn1_free(&data);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Total length of the needed asn1 is the tag length
+	 * plus the current offset. */
+
+	needed_len = data.nesting->taglen + data.nesting->start;
+	asn1_free(&data);
+
+	DEBUG(10,("check_spnego_blob_complete: needed_len = %u, "
+		"pblob->length = %u\n",
+		(unsigned int)needed_len,
+		(unsigned int)pblob->length ));
+
+	if (needed_len <= pblob->length) {
+		/* Nothing to do - blob is complete. */
+		return NT_STATUS_OK;
+	}
+
+	/* Refuse the blob if it's bigger than 64k. */
+	if (needed_len > 65536) {
+		DEBUG(2,("check_spnego_blob_complete: needed_len too large (%u)\n",
+			(unsigned int)needed_len ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* We must store this blob until complete. */
+	pad = SMB_MALLOC(sizeof(struct pending_auth_data));
+	if (!pad) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pad->needed_len = needed_len - pblob->length;
+	pad->partial_data = data_blob(pblob->data, pblob->length);
+	if (pad->partial_data.data == NULL) {
+		SAFE_FREE(pad);
+		return NT_STATUS_NO_MEMORY;
+	}
+	pad->smbpid = smbpid;
+	pad->vuid = vuid;
+	DLIST_ADD(pd_list, pad);
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+/****************************************************************************
  Reply to a session setup command.
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
@@ -656,6 +871,8 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	enum remote_arch_types ra_type = get_remote_arch();
 	int vuid = SVAL(inbuf,smb_uid);
 	user_struct *vuser = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	uint16 smbpid = SVAL(inbuf,smb_pid);
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -694,16 +911,28 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		/* Windows 2003 doesn't set the native lanman string, 
 		   but does set primary domain which is a bug I think */
 			   
-		if ( !strlen(native_lanman) )
+		if ( !strlen(native_lanman) ) {
 			ra_lanman_string( primary_domain );
-		else
+		} else {
 			ra_lanman_string( native_lanman );
+		}
 	}
 		
 	vuser = get_partial_auth_user_struct(vuid);
 	if (!vuser) {
+		struct pending_auth_data *pad = get_pending_auth_data(smbpid);
+		if (pad) {
+			DEBUG(10,("reply_sesssetup_and_X_spnego: found pending vuid %u\n",
+				(unsigned int)pad->vuid ));
+			vuid = pad->vuid;
+			vuser = get_partial_auth_user_struct(vuid);
+		}
+	}
+
+	if (!vuser) {
 		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
 		if (vuid == UID_FIELD_INVALID ) {
+			data_blob_free(&blob1);
 			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
 	
@@ -711,11 +940,27 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	}
 
 	if (!vuser) {
+		data_blob_free(&blob1);
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
 	
 	SSVAL(outbuf,smb_uid,vuid);
-	
+
+	/* Large (greater than 4k) SPNEGO blobs are split into multiple
+	 * sessionsetup requests as the Windows limit on the security blob
+	 * field is 4k. Bug #4400. JRA.
+	 */
+
+	status = check_spnego_blob_complete(smbpid, vuid, &blob1);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/* Real error - kill the intermediate vuid */
+			invalidate_vuid(vuid);
+		}
+		data_blob_free(&blob1);
+		return ERROR_NT(nt_status_squash(status));
+	}
+
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
 		ret = reply_spnego_negotiate(conn, inbuf, outbuf, vuid, length, bufsize, blob1,
@@ -734,25 +979,24 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 	if (strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
 		DATA_BLOB chal;
-		NTSTATUS nt_status;
 		if (!vuser->auth_ntlmssp_state) {
-			nt_status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
-			if (!NT_STATUS_IS_OK(nt_status)) {
+			status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
+			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(vuid);
-				
-				return ERROR_NT(nt_status_squash(nt_status));
+				data_blob_free(&blob1);
+				return ERROR_NT(nt_status_squash(status));
 			}
 		}
 
-		nt_status = auth_ntlmssp_update(vuser->auth_ntlmssp_state,
+		status = auth_ntlmssp_update(vuser->auth_ntlmssp_state,
 						blob1, &chal);
 		
 		data_blob_free(&blob1);
 		
 		reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
 					   &vuser->auth_ntlmssp_state,
-					   &chal, nt_status, False);
+					   &chal, status, False);
 		data_blob_free(&chal);
 		return -1;
 	}
@@ -825,13 +1069,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	fstring native_lanman;
 	fstring primary_domain;
 	static BOOL done_sesssetup = False;
-	extern BOOL global_encrypted_passwords_negotiated;
-	extern BOOL global_spnego_negotiated;
-	extern enum protocol_types Protocol;
-	extern int max_send;
-
 	auth_usersupplied_info *user_info = NULL;
-	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;
@@ -1035,6 +1273,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 		map_username(sub_user);
 		add_session_user(sub_user);
+		add_session_workgroup(domain);
 		/* Then force it to null for the benfit of the code below */
 		*user = 0;
 	}

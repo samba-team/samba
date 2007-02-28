@@ -35,14 +35,6 @@ static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
  Work out whether this file is offline
 ****************************************************************************/
 
-#ifndef ISDOT
-#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
-#endif /* ISDOT */
-
-#ifndef ISDOTDOT
-#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
-#endif /* ISDOTDOT */
-
 static uint32 set_offline_flag(connection_struct *conn, const char *const path)
 {
 	if (ISDOT(path) || ISDOTDOT(path)) {
@@ -59,7 +51,7 @@ static uint32 set_offline_flag(connection_struct *conn, const char *const path)
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
-         if creating file and inheriting
+         if creating file and inheriting (i.e. parent_dir != NULL)
            apply read/write bits from parent directory.
          else   
            everybody gets read bit set
@@ -79,23 +71,26 @@ static uint32 set_offline_flag(connection_struct *conn, const char *const path)
          }
 ****************************************************************************/
 
-mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL creating_file)
+mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
+		 const char *inherit_from_dir)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
-	mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
+	mode_t dir_mode = 0; /* Mode of the inherit_from directory if
+			      * inheriting. */
 
 	if (!lp_store_dos_attributes(SNUM(conn)) && IS_DOS_READONLY(dosmode)) {
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if (fname && creating_file && lp_inherit_perms(SNUM(conn))) {
-		char *dname;
+	if (fname && (inherit_from_dir != NULL)
+	    && lp_inherit_perms(SNUM(conn))) {
 		SMB_STRUCT_STAT sbuf;
 
-		dname = parent_dirname(fname);
-		DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
-		if (SMB_VFS_STAT(conn,dname,&sbuf) != 0) {
-			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
+		DEBUG(2, ("unix_mode(%s) inheriting from %s\n", fname,
+			  inherit_from_dir));
+		if (SMB_VFS_STAT(conn, inherit_from_dir, &sbuf) != 0) {
+			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n", fname,
+				 inherit_from_dir, strerror(errno)));
 			return(0);      /* *** shouldn't happen! *** */
 		}
 
@@ -300,8 +295,7 @@ static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 		 * are not violating security in doing the setxattr.
 		 */
 
-		fsp = open_file_fchmod(conn,path,sbuf);
-		if (!fsp)
+		if (!NT_STATUS_IS_OK(open_file_fchmod(conn,path,sbuf,&fsp)))
 			return ret;
 		become_root();
 		if (SMB_VFS_SETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr), 0) == 0) {
@@ -430,7 +424,9 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
  chmod a file - but preserve some bits.
 ********************************************************************/
 
-int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode, SMB_STRUCT_STAT *st, BOOL creating_file)
+int file_set_dosmode(connection_struct *conn, const char *fname,
+		     uint32 dosmode, SMB_STRUCT_STAT *st,
+		     const char *parent_dir)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
@@ -463,7 +459,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		return 0;
 	}
 
-	unixmode = unix_mode(conn,dosmode,fname, creating_file);
+	unixmode = unix_mode(conn,dosmode,fname, parent_dir);
 
 	/* preserve the s bits */
 	mask |= (S_ISUID | S_ISGID);
@@ -495,8 +491,11 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
-	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0)
+	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		return 0;
+	}
 
 	if((errno != EPERM) && (errno != EACCES))
 		return -1;
@@ -518,13 +517,15 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		 * holding. We need to review this.... may need to
 		 * break batch oplocks open by others. JRA.
 		 */
-		files_struct *fsp = open_file_fchmod(conn,fname,st);
-		if (!fsp)
+		files_struct *fsp;
+		if (!NT_STATUS_IS_OK(open_file_fchmod(conn,fname,st,&fsp)))
 			return -1;
 		become_root();
 		ret = SMB_VFS_FCHMOD(fsp, fsp->fh->fd, unixmode);
 		unbecome_root();
 		close_file_fchmod(fsp);
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 	}
 
 	return( ret );
@@ -597,6 +598,9 @@ BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
 		DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
 		return False;
 	}
+
+	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+		     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
   
 	return(True);
 } 

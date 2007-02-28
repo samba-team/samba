@@ -445,10 +445,11 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	char *password;
+	smb_ucs2_t *nt_response_ucs2;
 
 	uchar user_session_key[16];
 	uchar lm_key[16];
-	static const uchar zeros[8];
+	static const uchar zeros[8] = { 0, };
 	DATA_BLOB chall = data_blob(zeros, sizeof(zeros));
 	char *error_string;
 
@@ -457,12 +458,13 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 	flags |= WBFLAG_PAM_LMKEY;
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
-	if ((push_ucs2_allocate((smb_ucs2_t **)&nt_response.data, opt_password)) == -1) {
+	if ((push_ucs2_allocate(&nt_response_ucs2, opt_password)) == -1) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		exit(1);
 	}
 
-	nt_response.length = strlen_w(((void *)nt_response.data))*sizeof(smb_ucs2_t);
+	nt_response.data = (unsigned char *)nt_response_ucs2;
+	nt_response.length = strlen_w(nt_response_ucs2)*sizeof(smb_ucs2_t);
 
 	if ((password = strdup_upper(opt_password)) == NULL) {
 		DEBUG(0, ("strdup_upper failed!\n"));
@@ -472,7 +474,7 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 	if ((convert_string_allocate(NULL, CH_UNIX, 
 				     CH_DOS, password,
 				     strlen(password)+1, 
-				     (void**)&lm_response.data,True)) == -1) {
+				     &lm_response.data,True)) == -1) {
 		DEBUG(0, ("convert_string_allocate failed!\n"));
 		exit(1);
 	}

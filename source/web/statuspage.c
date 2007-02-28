@@ -106,7 +106,10 @@ static char *tstring(time_t t)
 	return buf;
 }
 
-static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
+static void print_share_mode(const struct share_mode_entry *e,
+			     const char *sharepath,
+			     const char *fname,
+			     void *dummy)
 {
 	char           *utf8_fname;
 	int deny_mode;
@@ -434,7 +437,7 @@ void status_page(void)
 	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n", _("PID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
 
 	locking_init(1);
-	share_mode_forall(print_share_mode);
+	share_mode_forall(print_share_mode, NULL);
 	locking_end();
 	printf("</table>\n");
 

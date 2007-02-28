@@ -36,6 +36,7 @@ extern struct auth_context *negprot_global_auth_context;
 extern pstring user_socket_options;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
+static SIG_ATOMIC_T got_sig_cld;
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
@@ -60,17 +61,50 @@ static void smbd_set_server_fd(int fd)
 	client_setfd(fd);
 }
 
+struct event_context *smbd_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init smbd event context\n");
+	}
+	return ctx;
+}
+
+struct messaging_context *smbd_messaging_context(void)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
+					   smbd_event_context()))) {
+		smb_panic("Could not init smbd messaging context\n");
+	}
+	return ctx;
+}
+
 /*******************************************************************
  What to do when smb.conf is updated.
  ********************************************************************/
 
 static void smb_conf_updated(int msg_type, struct process_id src,
-			     void *buf, size_t len)
+			     void *buf, size_t len, void *private_data)
 {
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
 	reload_services(False);
 }
 
+
+/*******************************************************************
+ Delete a statcache entry.
+ ********************************************************************/
+
+static void smb_stat_cache_delete(int msg_type, struct process_id src,
+				  void *buf, size_t len, void *private_data)
+{
+	const char *name = (const char *)buf;
+	DEBUG(10,("smb_stat_cache_delete: delete name %s\n", name));
+	stat_cache_delete(name);
+}
 
 /****************************************************************************
  Terminate signal.
@@ -93,6 +127,15 @@ static void sig_hup(int sig)
 }
 
 /****************************************************************************
+ Catch a sigcld
+****************************************************************************/
+static void sig_cld(int sig)
+{
+	got_sig_cld = 1;
+	sys_select_signal(SIGCLD);
+}
+
+/****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
 
@@ -107,7 +150,8 @@ static void  killkids(void)
 ****************************************************************************/
 
 static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
-			 void *UNUSED(buf), size_t UNUSED(len))
+			 void *UNUSED(buf), size_t UNUSED(len),
+			 void *private_data)
 {
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
@@ -118,7 +162,7 @@ static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
 ****************************************************************************/
 
 static void msg_sam_repl(int msg_type, struct process_id pid,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
         uint32 low_serial;
 
@@ -152,7 +196,7 @@ static BOOL open_sockets_inetd(void)
 }
 
 static void msg_exit_server(int msg_type, struct process_id src,
-			    void *buf, size_t len)
+			    void *buf, size_t len, void *private_data)
 {
 	DEBUG(3, ("got a SHUTDOWN message\n"));
 	exit_server_cleanly(NULL);
@@ -160,7 +204,7 @@ static void msg_exit_server(int msg_type, struct process_id src,
 
 #ifdef DEVELOPER
 static void msg_inject_fault(int msg_type, struct process_id src,
-			    void *buf, size_t len)
+			    void *buf, size_t len, void *private_data)
 {
 	int sig;
 
@@ -189,6 +233,54 @@ static void msg_inject_fault(int msg_type, struct process_id src,
 }
 #endif /* DEVELOPER */
 
+struct child_pid {
+	struct child_pid *prev, *next;
+	pid_t pid;
+};
+
+static struct child_pid *children;
+static int num_children;
+
+static void add_child_pid(pid_t pid)
+{
+	struct child_pid *child;
+
+	if (lp_max_smbd_processes() == 0) {
+		/* Don't bother with the child list if we don't care anyway */
+		return;
+	}
+
+	child = SMB_MALLOC_P(struct child_pid);
+	if (child == NULL) {
+		DEBUG(0, ("Could not add child struct -- malloc failed\n"));
+		return;
+	}
+	child->pid = pid;
+	DLIST_ADD(children, child);
+	num_children += 1;
+}
+
+static void remove_child_pid(pid_t pid)
+{
+	struct child_pid *child;
+
+	if (lp_max_smbd_processes() == 0) {
+		/* Don't bother with the child list if we don't care anyway */
+		return;
+	}
+
+	for (child = children; child != NULL; child = child->next) {
+		if (child->pid == pid) {
+			struct child_pid *tmp = child;
+			DLIST_REMOVE(children, child);
+			SAFE_FREE(tmp);
+			num_children -= 1;
+			return;
+		}
+	}
+
+	DEBUG(0, ("Could not find child %d -- ignoring\n", (int)pid));
+}
 
 /****************************************************************************
  Have we reached the process limit ?
@@ -201,27 +293,7 @@ static BOOL allowable_number_of_smbd_processes(void)
 	if (!max_processes)
 		return True;
 
-	{
-		TDB_CONTEXT *tdb = conn_tdb_ctx();
-		int32 val;
-		if (!tdb) {
-			DEBUG(0,("allowable_number_of_smbd_processes: can't open connection tdb.\n" ));
-			return False;
-		}
-
-		val = tdb_fetch_int32(tdb, "INFO/total_smbds");
-		if (val == -1 && (tdb_error(tdb) != TDB_ERR_NOEXIST)) {
-			DEBUG(0,("allowable_number_of_smbd_processes: can't fetch INFO/total_smbds. Error %s\n",
-				tdb_errorstr(tdb) ));
-			return False;
-		}
-		if (val > max_processes) {
-			DEBUG(0,("allowable_number_of_smbd_processes: number of processes (%d) is over allowed limit (%d)\n",
-				val, max_processes ));
-			return False;
-		}
-	}
-	return True;
+	return num_children < max_processes;
 }
 
 /****************************************************************************
@@ -255,7 +327,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 #endif
 
 	/* Stop zombies */
-	CatchChild();
+	CatchSignal(SIGCLD, sig_cld);
 				
 	FD_ZERO(&listen_set);
 
@@ -369,14 +441,16 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
         /* Listen to messages */
 
-        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
-        message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
-        message_register(MSG_SHUTDOWN, msg_exit_server);
-        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
-	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
+        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync, NULL);
+        message_register(MSG_SMB_SAM_REPL, msg_sam_repl, NULL);
+        message_register(MSG_SHUTDOWN, msg_exit_server, NULL);
+        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed, NULL);
+	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated, NULL); 
+	message_register(MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete,
+			 NULL);
 
 #ifdef DEVELOPER
-	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault); 
+	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault, NULL); 
 #endif
 
 	/* now accept incoming connections - forking a new process
@@ -391,6 +465,15 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
 		message_dispatch();
+
+		if (got_sig_cld) {
+			pid_t pid;
+			got_sig_cld = False;
+
+			while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
+				remove_child_pid(pid);
+			}
+		}
 
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
@@ -421,6 +504,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
 			socklen_t in_addrlen = sizeof(addr);
+			pid_t child = 0;
 
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
@@ -450,8 +534,14 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
 			
-			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
+			if (allowable_number_of_smbd_processes() &&
+			    smbd_server_fd() != -1 &&
+			    ((child = sys_fork())==0)) {
 				/* Child code ... */
+
+				/* Stop zombies, the parent explicitly handles
+				 * them, counting worker smbds. */
+				CatchChild();
 				
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
@@ -467,7 +557,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd()), False);
+				set_remote_machine_name(get_peer_addr(smbd_server_fd()),
+							False);
 				
 				/* Reset the state of the random
 				 * number generation system, so
@@ -475,7 +566,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				 * numbers as each other */
 
 				set_need_random_reseed();
-				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
+				/* tdb needs special fork handling - remove
+				 * CLEAR_IF_FIRST flags */
 				if (tdb_reopen_all(1) == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
 					smb_panic("tdb_reopen_all failed.");
@@ -495,6 +587,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			*/
 
 			smbd_set_server_fd(-1);
+
+			if (child != 0) {
+				add_child_pid(child);
+			}
 
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
@@ -637,7 +733,6 @@ static void exit_server_common(enum server_exit_reason how,
 	yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
-	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
@@ -666,9 +761,7 @@ static void exit_server_common(enum server_exit_reason how,
 		}
 
 		DEBUGLEVEL = oldlevel;
-#if DUMP_CORE
 		dump_core();
-#endif
 
 	} else {    
 		DEBUG(3,("Server exit (%s)\n",
@@ -729,7 +822,7 @@ static BOOL init_structs(void )
    mkproto.h.  Mixing $(builddir) and $(srcdir) source files in the current
    prototype generation system is too complicated. */
 
-void build_options(BOOL screen);
+extern void build_options(BOOL screen);
 
  int main(int argc,const char *argv[])
 {
@@ -758,6 +851,8 @@ void build_options(BOOL screen);
 	};
 
 	load_case_tables();
+
+	TimeInit();
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
@@ -912,17 +1007,11 @@ void build_options(BOOL screen);
 	if (!message_init())
 		exit(1);
 
-	/* Initialize our global sam sid first -- quite a lot of the other
-	 * initialization routines further down depend on it.
-	 */
-
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
 	if(!initialize_password_db(False))
 		exit(1);
-
-	/* Fail gracefully if we can't open secrets.tdb */
 
 	if (!secrets_init()) {
 		DEBUG(0, ("ERROR: smbd can not open secrets.tdb\n"));
@@ -991,8 +1080,12 @@ void build_options(BOOL screen);
 
 	init_modules();
 
-	/* possibly reload the services file. */
-	reload_services(True);
+	/* Possibly reload the services file. Only worth doing in
+	 * daemon mode. In inetd mode, we know we only just loaded this.
+	 */
+	if (is_daemon) {
+		reload_services(True);
+	}
 
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
@@ -1008,18 +1101,11 @@ void build_options(BOOL screen);
 	if (!init_oplocks())
 		exit(1);
 	
-	/* Setup change notify */
-	if (!init_change_notify())
-		exit(1);
-
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
 
-	/* re-initialise the timezone */
-	TimeInit();
-
 	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis, NULL);
 
 	smbd_process();
 

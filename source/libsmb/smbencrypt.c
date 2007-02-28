@@ -25,6 +25,23 @@
 #include "includes.h"
 #include "byteorder.h"
 
+void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24])
+{
+	uchar p21[21];
+
+	memset(p21,'\0',21);
+	memcpy(p21, lm_hash, 16);
+
+	SMBOWFencrypt(p21, c8, p24);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBencrypt_hash: lm#, challenge, response\n"));
+	dump_data(100, (const char *)p21, 16);
+	dump_data(100, (const char *)c8, 8);
+	dump_data(100, (const char *)p24, 24);
+#endif
+}
+
 /*
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
@@ -32,23 +49,14 @@
 
    Returns False if password must have been truncated to create LM hash
 */
+
 BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
 	BOOL ret;
-	uchar p21[21];
+	uchar lm_hash[16];
 
-	memset(p21,'\0',21);
-	ret = E_deshash(passwd, p21); 
-
-	SMBOWFencrypt(p21, c8, p24);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
-	dump_data(100, (const char *)p21, 16);
-	dump_data(100, (const char *)c8, 8);
-	dump_data(100, (const char *)p24, 24);
-#endif
-
+	ret = E_deshash(passwd, lm_hash); 
+	SMBencrypt_hash(lm_hash, c8, p24);
 	return ret;
 }
 
@@ -237,15 +245,14 @@ void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p
 }
 
 
-/* Does the NT MD4 hash then des encryption. */
+/* Does the des encryption. */
  
-void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt_hash(const uchar nt_hash[16], uchar *c8, uchar *p24)
 {
 	uchar p21[21];
  
 	memset(p21,'\0',21);
- 
-	E_md4hash(passwd, p21);    
+	memcpy(p21, nt_hash, 16);
 	SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
@@ -254,6 +261,15 @@ void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 	dump_data(100, (char *)c8, 8);
 	dump_data(100, (char *)p24, 24);
 #endif
+}
+
+/* Does the NT MD4 hash then des encryption. Plaintext version of the above. */
+
+void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
+{
+	uchar nt_hash[16];
+	E_md4hash(passwd, nt_hash);    
+	SMBNTencrypt_hash(nt_hash, c8, p24);
 }
 
 /* Does the md5 encryption from the Key Response for NTLMv2. */
@@ -416,15 +432,13 @@ static DATA_BLOB LMv2_generate_response(const uchar ntlm_v2_hash[16],
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_hash[16], 
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
 		      DATA_BLOB *user_session_key) 
 {
-	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
-	E_md4hash(password, nt_hash);
 
 	/* We don't use the NT# directly.  Instead we use it mashed up with
 	   the username and domain.
@@ -453,6 +467,24 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	}
 	
 	return True;
+}
+
+/* Plaintext version of the above. */
+
+BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+		      const DATA_BLOB *server_chal, 
+		      const DATA_BLOB *names_blob,
+		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
+		      DATA_BLOB *user_session_key) 
+{
+	uchar nt_hash[16];
+	E_md4hash(password, nt_hash);
+
+	return SMBNTLMv2encrypt_hash(user, domain, nt_hash,
+				server_chal,
+				names_blob,
+				lm_response, nt_response,
+				user_session_key);
 }
 
 /***********************************************************

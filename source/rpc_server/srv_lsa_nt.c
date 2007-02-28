@@ -164,7 +164,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 		int dom_idx;
 		char *full_name;
 		const char *domain;
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 
 		/* Split name into domain and user component */
 
@@ -239,7 +239,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 		int dom_idx;
 		char *full_name;
 		const char *domain;
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 
 		/* Split name into domain and user component */
 
@@ -487,7 +487,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 
 static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 			      const char *dns_name, const char *forest_name,
-			      struct uuid *dom_guid, DOM_SID *dom_sid)
+			      struct GUID *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
 		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
@@ -512,7 +512,7 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 
 	/* how do we init the guid ? probably should write an init fn */
 	if (dom_guid) {
-		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct uuid));
+		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct GUID));
 	}
 	
 	if (dom_sid) {
@@ -1866,7 +1866,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 	char *dns_name = NULL;
 	char *forest_name = NULL;
 	DOM_SID *sid = NULL;
-	struct uuid guid;
+	struct GUID guid;
 	fstring dnsdomname;
 
 	ZERO_STRUCT(guid);

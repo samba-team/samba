@@ -372,7 +372,7 @@ static int info_fn(struct file_list *fl, void *priv)
 		const char *name;
 		NTSTATUS ntstatus;
 
-		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name);
+		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->aces[num_aces].trustee, &domain, &name);
 
 		if (NT_STATUS_IS_OK(ntstatus)) {
 			if (domain && *domain) {
@@ -382,15 +382,15 @@ static int info_fn(struct file_list *fl, void *priv)
 			pstrcat(acl_str,name);
 		} else {
 			fstring sidstr;
-			sid_to_string(sidstr, &psd->dacl->ace[num_aces].trustee);
+			sid_to_string(sidstr, &psd->dacl->aces[num_aces].trustee);
 			pstrcat(acl_str,sidstr);
 		}
 		pstrcat(acl_str, ":");
 
-		if (psd->dacl->ace[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
+		if (psd->dacl->aces[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
 			pstrcat(acl_str, "D,");
 		} else {
-			if (psd->dacl->ace[num_aces].info.mask & GENERIC_ALL_ACCESS) {
+			if (psd->dacl->aces[num_aces].access_mask & GENERIC_ALL_ACCESS) {
 				pstrcat(acl_str, "F,");
 			} else {
 				pstrcat(acl_str, "R,");
@@ -568,6 +568,9 @@ static int net_usershare_add(int argc, const char **argv)
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
+			if (strlen(arg_acl) == 0) {
+				arg_acl = "S-1-1-0:R";
+			}
 			if (!strnequal(argv[4], "guest_ok=", 9)) {
 				return net_usershare_add_usage(argc, argv);
 			}
@@ -588,10 +591,9 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Ensure we're under the "usershare max shares" number. Advisory only. */
 	num_usershares = count_num_usershares();
-	if (num_usershares > lp_usershare_max_shares()) {
-		d_fprintf(stderr, "net usershare add: too many usershares already defined (%d), "
-			"maximum number allowed is %d.\n",
-			num_usershares, lp_usershare_max_shares() );
+	if (num_usershares >= lp_usershare_max_shares()) {
+		d_fprintf(stderr, "net usershare add: maximum number of allowed usershares (%d) reached\n",
+			lp_usershare_max_shares() );
 		SAFE_FREE(sharename);
 		return -1;
 	}

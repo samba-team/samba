@@ -69,7 +69,7 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 			48 + 1 + /* 24 bytes of challenge going to 48 */
 			48 + 1;
 
-	secret_str = malloc(secret_str_len);
+	secret_str = (char *)malloc(secret_str_len);
 	if (!secret_str) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -132,14 +132,16 @@ static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *
 	if (param && *param) {
 		/* we load the 'fallback' module - if script isn't here, call this
 		   module */
-		if (!load_auth_module(auth_context, param, (auth_methods **)&(*auth_method)->private_data)) {
+		auth_methods *priv;
+		if (!load_auth_module(auth_context, param, &priv)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
+		(*auth_method)->private_data = (void *)priv;
 	}
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_script_init(void);
 NTSTATUS auth_script_init(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);

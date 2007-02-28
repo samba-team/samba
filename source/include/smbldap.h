@@ -158,8 +158,12 @@ struct smbldap_state {
 	time_t last_ping;
 	/* retrive-once info */
 	const char *uri;
+
+	/* credentials */
+	BOOL anonymous;
 	char *bind_dn;
 	char *bind_secret;
+
 	BOOL paged_results;
 
 	unsigned int num_failures;

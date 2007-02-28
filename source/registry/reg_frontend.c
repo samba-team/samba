@@ -368,9 +368,11 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 	/* initialization */
 	
 	keyinfo->type = REG_KEY_GENERIC;
-	keyinfo->name = talloc_strdup( keyinfo, path );
-	
-	
+	if (!(keyinfo->name = talloc_strdup(keyinfo, path))) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	/* Tag this as a Performance Counter Key */
 
 	if( StrnCaseCmp(path, KEY_HKPD, strlen(KEY_HKPD)) == 0 )

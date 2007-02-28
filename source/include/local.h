@@ -247,4 +247,7 @@
 /* Default hash size for the winbindd cache. */
 #define WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE 5000
 
+/* Windows minimum lock resolution timeout in ms */
+#define WINDOWS_MINIMUM_LOCK_TIMEOUT_MS 200
+
 #endif

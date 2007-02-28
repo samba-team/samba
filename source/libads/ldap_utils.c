@@ -29,7 +29,8 @@
 */
 static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind_path, int scope, 
 					       const char *expr,
-					       const char **attrs, void *args, void **res)
+					       const char **attrs, void *args,
+					       LDAPMessage **res)
 {
 	ADS_STATUS status = ADS_SUCCESS;
 	int count = 3;
@@ -59,8 +60,8 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
 	}
 	if (ADS_ERR_OK(status)) {
-		DEBUG(5,("Search for %s gave %d replies\n",
-			 expr, ads_count_replies(ads, *res)));
+               DEBUG(5,("Search for %s in <%s> gave %d replies\n",
+                        expr, bp, ads_count_replies(ads, *res)));
 		SAFE_FREE(bp);
 		return status;
 	}
@@ -109,48 +110,48 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	}
         SAFE_FREE(bp);
 
-	if (!ADS_ERR_OK(status))
+	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads reopen failed after error %s\n", 
 			 ads_errstr(status)));
-
+	}
 	return status;
 }
 
-ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			       const char *expr,
-			       const char **attrs, void **res)
+ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path,
+				int scope, const char *expr,
+				const char **attrs, LDAPMessage **res)
 {
 	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, NULL, res);
 }
 
-ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path, int scope, 
-				    const char *expr,
-				    const char **attrs, void *args, void **res)
+ ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path,
+				     int scope, const char *expr,
+				     const char **attrs, void *args,
+				     LDAPMessage **res)
 {
 	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, args, res);
 }
 
 
-ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res, 
-			    const char *expr, 
-			    const char **attrs)
+ ADS_STATUS ads_search_retry(ADS_STRUCT *ads, LDAPMessage **res, 
+			     const char *expr, const char **attrs)
 {
 	return ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
 				   expr, attrs, res);
 }
 
-ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
-			       const char *dn, 
-			       const char **attrs)
+ ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, LDAPMessage **res, 
+				const char *dn, 
+				const char **attrs)
 {
 	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
 }
 
-ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, void **res, 
-					const char *dn, 
-					const char **attrs,
-					enum ads_extended_dn_flags flags)
+ ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, LDAPMessage **res, 
+					 const char *dn, 
+					 const char **attrs,
+					 enum ads_extended_dn_flags flags)
 {
 	ads_control args;
 
@@ -162,9 +163,9 @@ ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, void **res,
 					"(objectclass=*)", attrs, &args, res);
 }
 
-ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, void **res, 
-				const DOM_SID *sid,
-				const char **attrs)
+ ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
+				 const DOM_SID *sid,
+				 const char **attrs)
 {
 	char *dn, *sid_string;
 	ADS_STATUS status;

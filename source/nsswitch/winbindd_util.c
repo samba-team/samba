@@ -27,6 +27,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern struct winbindd_methods cache_methods;
+extern struct winbindd_methods passdb_methods;
+
 /**
  * @file winbindd_util.c
  *
@@ -163,6 +166,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->last_seq_check = 0;
 	domain->initialized = False;
 	domain->online = is_internal_domain(sid);
+	domain->check_online_timeout = 0;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
@@ -224,7 +228,6 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 
 static void trustdom_recv(void *private_data, BOOL success)
 {
-	extern struct winbindd_methods cache_methods;
 	struct trustdom_state *state =
 		talloc_get_type_abort(private_data, struct trustdom_state);
 	struct winbindd_response *response = state->response;
@@ -236,7 +239,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	p = response->extra_data.data;
+	p = (char *)response->extra_data.data;
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
@@ -265,8 +268,13 @@ static void trustdom_recv(void *private_data, BOOL success)
 			*q = '\0';
 
 		if (!string_to_sid(&sid, sidstr)) {
-			DEBUG(0, ("Got invalid trustdom response\n"));
-			break;
+			/* Allow NULL sid for sibling domains */
+			if ( strcmp(sidstr,"S-0-0") == 0) {
+				sid_copy( &sid, &global_sid_NULL);				
+			} else {				
+				DEBUG(0, ("Got invalid trustdom response\n"));
+				break;
+			}			
 		}
 
 		if (find_domain_from_name_noinit(p) == NULL) {
@@ -350,6 +358,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 
 	if ((request == NULL) || (response == NULL) || (state == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(mem_ctx);
 		continuation(private_data, False);
 		return WINBINDD_ERROR;
 	}
@@ -439,7 +448,7 @@ static void init_child_recv(void *private_data, BOOL success)
 	state->domain->sequence_number =
 		state->response->data.domain_info.sequence_number;
 
-	state->domain->initialized = 1;
+	init_dc_connection(state->domain);
 
 	if (state->continuation != NULL)
 		state->continuation(state->private_data, True);
@@ -449,8 +458,6 @@ static void init_child_recv(void *private_data, BOOL success)
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state)
 {
-	struct in_addr ipaddr;
-
 	/* Ensure null termination */
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1]='\0';
@@ -461,24 +468,16 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
 	}
 
-	if (strlen(domain->dcname) > 0) {
-		if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
-			DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
-				  domain->dcname, domain->name));
-			return WINBINDD_ERROR;
-		}
-
-		domain->dcaddr.sin_family = PF_INET;
-		putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
-		domain->dcaddr.sin_port = 0;
-	}
-
-	set_dc_type_and_flags(domain);
+	init_dc_connection(domain);
 
 	if (!domain->initialized) {
-		DEBUG(1, ("Could not initialize domain %s\n",
-			  state->request.domain_name));
-		return WINBINDD_ERROR;
+		/* If we return error here we can't do any cached authentication,
+		   but we may be in disconnected mode and can't initialize correctly.
+		   Do what the previous code did and just return without initialization,
+		   once we go online we'll re-initialize.
+		*/
+		DEBUG(5, ("winbindd_dual_init_connection: %s returning without initialization "
+			"online = %d\n", domain->name, (int)domain->online ));
 	}
 
 	fstrcpy(state->response.data.domain_info.name, domain->name);
@@ -501,8 +500,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 /* Look up global info for the winbind daemon */
 BOOL init_domain_list(void)
 {
-	extern struct winbindd_methods cache_methods;
-	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
 	int role = lp_server_role();
 
@@ -523,6 +520,14 @@ BOOL init_domain_list(void)
 					     &cache_methods, &our_sid);
 		domain->primary = True;
 		setup_domain_child(domain, &domain->child, NULL);
+		
+		/* Even in the parent winbindd we'll need to
+		   talk to the DC, so try and see if we can
+		   contact it. Theoretically this isn't neccessary
+		   as the init_dc_connection() in init_child_recv()
+		   will do this, but we can start detecting the DC
+		   early here. */
+		set_domain_online_request(domain);
 	}
 
 	/* Local SAM */
@@ -584,7 +589,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
@@ -619,7 +624,7 @@ struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
@@ -637,6 +642,19 @@ struct winbindd_domain *find_our_domain(void)
 
 	smb_panic("Could not find our domain\n");
 	return NULL;
+}
+
+struct winbindd_domain *find_root_domain(void)
+{
+	struct winbindd_domain *ours = find_our_domain();	
+	
+	if ( !ours )
+		return NULL;
+	
+	if ( strlen(ours->forest_name) == 0 )
+		return NULL;
+	
+	return find_domain_from_name( ours->forest_name );
 }
 
 struct winbindd_domain *find_builtin_domain(void)
@@ -691,14 +709,14 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain, 
 				 const char *domain_name,
 				 const char *name, DOM_SID *sid, 
-				 enum SID_NAME_USE *type)
+				 enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
 	/* Lookup name */
 	result = domain->methods->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
-	/* Return rid and type if lookup successful */
+	/* Return sid and type if lookup successful */
 	if (!NT_STATUS_IS_OK(result)) {
 		*type = SID_NAME_UNKNOWN;
 	}
@@ -719,15 +737,15 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
  **/
 BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 				 DOM_SID *sid,
-				 fstring dom_name,
-				 fstring name,
-				 enum SID_NAME_USE *type)
+				 char **dom_name,
+				 char **name,
+				 enum lsa_SidType *type)
 {
-	char *names;
-	char *dom_names;
 	NTSTATUS result;
-	BOOL rv = False;
 	struct winbindd_domain *domain;
+
+	*dom_name = NULL;
+	*name = NULL;
 
 	domain = find_lookup_domain_from_sid(sid);
 
@@ -738,19 +756,17 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 
 	/* Lookup name */
 
-	result = domain->methods->sid_to_name(domain, mem_ctx, sid, &dom_names, &names, type);
+	result = domain->methods->sid_to_name(domain, mem_ctx, sid, dom_name, name, type);
 
 	/* Return name and type if successful */
         
-	if ((rv = NT_STATUS_IS_OK(result))) {
-		fstrcpy(dom_name, dom_names);
-		fstrcpy(name, names);
-	} else {
-		*type = SID_NAME_UNKNOWN;
-		fstrcpy(name, name_deadbeef);
+	if (NT_STATUS_IS_OK(result)) {
+		return True;
 	}
+
+	*type = SID_NAME_UNKNOWN;
         
-	return rv;
+	return False;
 }
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
@@ -775,39 +791,6 @@ void free_getent_state(struct getent_state *state)
 		SAFE_FREE(temp);
 		temp = next;
 	}
-}
-
-/* Parse winbindd related parameters */
-
-BOOL winbindd_param_init(void)
-{
-	/* Parse winbind uid and winbind_gid parameters */
-
-	if (!lp_idmap_uid(&server_state.uid_low, &server_state.uid_high)) {
-		DEBUG(0, ("winbindd: idmap uid range missing or invalid\n"));
-		DEBUG(0, ("winbindd: cannot continue, exiting.\n"));
-		return False;
-	}
-	
-	if (!lp_idmap_gid(&server_state.gid_low, &server_state.gid_high)) {
-		DEBUG(0, ("winbindd: idmap gid range missing or invalid\n"));
-		DEBUG(0, ("winbindd: cannot continue, exiting.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-BOOL is_in_uid_range(uid_t uid)
-{
-	return ((uid >= server_state.uid_low) &&
-		(uid <= server_state.uid_high));
-}
-
-BOOL is_in_gid_range(gid_t gid)
-{
-	return ((gid >= server_state.gid_low) &&
-		(gid <= server_state.gid_high));
 }
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
@@ -873,6 +856,26 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 	*domain = talloc_strdup(mem_ctx, fstr_domain);
 	*user = talloc_strdup(mem_ctx, fstr_user);
 	return ((*domain != NULL) && (*user != NULL));
+}
+
+/* Ensure an incoming username from NSS is fully qualified. Replace the
+   incoming fstring with DOMAIN <separator> user. Returns the same
+   values as parse_domain_user() but also replaces the incoming username.
+   Used to ensure all names are fully qualified within winbindd.
+   Used by the NSS protocols of auth, chauthtok, logoff and ccache_ntlm_auth.
+   The protocol definitions of auth_crap, chng_pswd_auth_crap
+   really should be changed to use this instead of doing things
+   by hand. JRA. */
+
+BOOL canonicalize_username(fstring username_inout, fstring domain, fstring user)
+{
+	if (!parse_domain_user(username_inout, domain, user)) {
+		return False;
+	}
+	slprintf(username_inout, sizeof(fstring) - 1, "%s%c%s",
+		 domain, *lp_winbind_separator(),
+		 user);
+	return True;
 }
 
 /*
@@ -1015,209 +1018,6 @@ int winbindd_num_clients(void)
 	return _num_clients;
 }
 
-/*****************************************************************************
- For idmap conversion: convert one record to new format
- Ancient versions (eg 2.2.3a) of winbindd_idmap.tdb mapped DOMAINNAME/rid
- instead of the SID.
-*****************************************************************************/
-static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state)
-{
-	struct winbindd_domain *domain;
-	char *p;
-	DOM_SID sid;
-	uint32 rid;
-	fstring keystr;
-	fstring dom_name;
-	TDB_DATA key2;
-	BOOL *failed = (BOOL *)state;
-
-	DEBUG(10,("Converting %s\n", key.dptr));
-
-	p = strchr(key.dptr, '/');
-	if (!p)
-		return 0;
-
-	*p = 0;
-	fstrcpy(dom_name, key.dptr);
-	*p++ = '/';
-
-	domain = find_domain_from_name(dom_name);
-	if (domain == NULL) {
-		/* We must delete the old record. */
-		DEBUG(0,("Unable to find domain %s\n", dom_name ));
-		DEBUG(0,("deleting record %s\n", key.dptr ));
-
-		if (tdb_delete(tdb, key) != 0) {
-			DEBUG(0, ("Unable to delete record %s\n", key.dptr));
-			*failed = True;
-			return -1;
-		}
-
-		return 0;
-	}
-
-	rid = atoi(p);
-
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
-
-	sid_to_string(keystr, &sid);
-	key2.dptr = keystr;
-	key2.dsize = strlen(keystr) + 1;
-
-	if (tdb_store(tdb, key2, data, TDB_INSERT) != 0) {
-		DEBUG(0,("Unable to add record %s\n", key2.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	if (tdb_store(tdb, data, key2, TDB_REPLACE) != 0) {
-		DEBUG(0,("Unable to update record %s\n", data.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	if (tdb_delete(tdb, key) != 0) {
-		DEBUG(0,("Unable to delete record %s\n", key.dptr ));
-		*failed = True;
-		return -1;
-	}
-
-	return 0;
-}
-
-/* These definitions are from sam/idmap_tdb.c. Replicated here just
-   out of laziness.... :-( */
-
-/* High water mark keys */
-#define HWM_GROUP  "GROUP HWM"
-#define HWM_USER   "USER HWM"
-
-/*****************************************************************************
- Convert the idmap database from an older version.
-*****************************************************************************/
-
-static BOOL idmap_convert(const char *idmap_name)
-{
-	int32 vers;
-	BOOL bigendianheader;
-	BOOL failed = False;
-	TDB_CONTEXT *idmap_tdb;
-
-	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
-					TDB_DEFAULT, O_RDWR,
-					0600))) {
-		DEBUG(0, ("idmap_convert: Unable to open idmap database\n"));
-		return False;
-	}
-
-	bigendianheader = (idmap_tdb->flags & TDB_BIGENDIAN) ? True : False;
-
-	vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
-
-	if (((vers == -1) && bigendianheader) || (IREV(vers) == IDMAP_VERSION)) {
-		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
-		/*
-		 * high and low records were created on a
-		 * big endian machine and will need byte-reversing.
-		 */
-
-		int32 wm;
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
-
-		if (wm != -1) {
-			wm = IREV(wm);
-		}  else {
-			wm = server_state.uid_low;
-		}
-
-		if (tdb_store_int32(idmap_tdb, HWM_USER, wm) == -1) {
-			DEBUG(0, ("idmap_convert: Unable to byteswap user hwm in idmap database\n"));
-			tdb_close(idmap_tdb);
-			return False;
-		}
-
-		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (wm != -1) {
-			wm = IREV(wm);
-		} else {
-			wm = server_state.gid_low;
-		}
-
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, wm) == -1) {
-			DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
-			tdb_close(idmap_tdb);
-			return False;
-		}
-	}
-
-	/* the old format stored as DOMAIN/rid - now we store the SID direct */
-	tdb_traverse(idmap_tdb, convert_fn, &failed);
-
-	if (failed) {
-		DEBUG(0, ("Problem during conversion\n"));
-		tdb_close(idmap_tdb);
-		return False;
-	}
-
-	if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
-		DEBUG(0, ("idmap_convert: Unable to dtore idmap version in databse\n"));
-		tdb_close(idmap_tdb);
-		return False;
-	}
-
-	tdb_close(idmap_tdb);
-	return True;
-}
-
-/*****************************************************************************
- Convert the idmap database from an older version if necessary
-*****************************************************************************/
-
-BOOL winbindd_upgrade_idmap(void)
-{
-	pstring idmap_name;
-	pstring backup_name;
-	SMB_STRUCT_STAT stbuf;
-	TDB_CONTEXT *idmap_tdb;
-
-	pstrcpy(idmap_name, lock_path("winbindd_idmap.tdb"));
-
-	if (!file_exist(idmap_name, &stbuf)) {
-		/* nothing to convert return */
-		return True;
-	}
-
-	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
-					TDB_DEFAULT, O_RDWR,
-					0600))) {
-		DEBUG(0, ("idmap_convert: Unable to open idmap database\n"));
-		return False;
-	}
-
-	if (tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION") == IDMAP_VERSION) {
-		/* nothing to convert return */
-		tdb_close(idmap_tdb);
-		return True;
-	}
-
-	/* backup_tdb expects the tdb not to be open */
-	tdb_close(idmap_tdb);
-
-	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
-
-	pstrcpy(backup_name, idmap_name);
-	pstrcat(backup_name, ".bak");
-
-	if (backup_tdb(idmap_name, backup_name) != 0) {
-		DEBUG(0, ("Could not backup idmap database\n"));
-		return False;
-	}
-
-	return idmap_convert(idmap_name);
-}
-
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid,
@@ -1249,14 +1049,20 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	/* always add the primary group to the sid array */
 	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
 	
-	add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups);
+	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
+		SAFE_FREE(info3);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<info3->num_groups; i++) {
 		sid_copy(&group_sid, &info3->dom_sid.sid);
 		sid_append_rid(&group_sid, info3->gids[i].g_rid);
 
-		add_sid_to_array(mem_ctx, &group_sid, user_sids,
-				 &num_groups);
+		if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
+				 &num_groups)) {
+			SAFE_FREE(info3);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	SAFE_FREE(info3);
@@ -1266,4 +1072,38 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	DEBUG(3,(": lookup_usergroups_cached succeeded\n"));
 
 	return status;
+}
+
+/*********************************************************************
+ We use this to remove spaces from user and group names
+********************************************************************/
+
+void ws_name_replace( char *name, char replace )
+{
+	char replace_char[2] = { 0x0, 0x0 };
+    
+	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
+		return;
+
+	replace_char[0] = replace;	
+	all_string_sub( name, " ", replace_char, 0 );
+
+	return;	
+}
+
+/*********************************************************************
+ We use this to do the inverse of ws_name_replace()
+********************************************************************/
+
+void ws_name_return( char *name, char replace )
+{
+	char replace_char[2] = { 0x0, 0x0 };
+    
+	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
+		return;
+	
+	replace_char[0] = replace;	
+	all_string_sub( name, replace_char, " ", 0 );
+
+	return;	
 }

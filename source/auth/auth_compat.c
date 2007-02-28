@@ -92,18 +92,28 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 check if a username/password pair is ok via the auth subsystem.
 return True if the password is correct, False otherwise
 ****************************************************************************/
+
 BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob(NULL, 0);
-	BOOL encrypted = (global_encrypted_passwords_negotiated && password_blob.length == 24);
+	BOOL encrypted = (global_encrypted_passwords_negotiated && (password_blob.length == 24 || password_blob.length > 46));
 	
 	if (encrypted) {
 		/* 
 		 * The password could be either NTLM or plain LM.  Try NTLM first, 
 		 * but fall-through as required.
-		 * NTLMv2 makes no sense here.
+		 * Vista sends NTLMv2 here - we need to try the client given workgroup.
 		 */
+		if (get_session_workgroup()) {
+			if (NT_STATUS_IS_OK(pass_check_smb(smb_name, get_session_workgroup(), null_password, password_blob, null_password, encrypted))) {
+				return True;
+			}
+			if (NT_STATUS_IS_OK(pass_check_smb(smb_name, get_session_workgroup(), password_blob, null_password, null_password, encrypted))) {
+				return True;
+			}
+		}
+
 		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
 			return True;
 		}
@@ -119,5 +129,3 @@ BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
 
 	return False;
 }
-
-

@@ -45,13 +45,8 @@
 
 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <usersec.h>
-#include <errno.h>
-#include <stdarg.h>
-
 #include "winbind_client.h"
+#include <usersec.h>
 
 #define WB_AIX_ENCODED '_'
 

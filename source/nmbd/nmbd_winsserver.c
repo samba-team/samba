@@ -159,7 +159,7 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	len = (2 + 1 + (7*4)); /* "wbddddddd" */
 	len += (namerec->data.num_ips * 4);
 
-	data.dptr = SMB_MALLOC(len);
+	data.dptr = (char *)SMB_MALLOC(len);
 	if (!data.dptr) {
 		return data;
 	}
@@ -2371,7 +2371,7 @@ void wins_write_database(time_t t, BOOL background)
 ***************************************************************************/
 
 void nmbd_wins_new_entry(int msg_type, struct process_id src,
-			 void *buf, size_t len)
+			 void *buf, size_t len, void *private_data)
 {
 	WINS_RECORD *record;
 	struct name_record *namerec = NULL;

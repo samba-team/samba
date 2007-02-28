@@ -26,6 +26,9 @@
 
 #include "include/libsmbclient.h"
 #include "../include/libsmb_internal.h"
+
+int smbc_default_cache_functions(SMBCCTX * context);
+
 /*
  * Structure we use if internal caching mechanism is used 
  * nothing fancy here.
@@ -150,9 +153,10 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                                  * doesn't match the requested share, so
                                  * disconnect from the current share.
                                  */
-                                if (! cli_tdis(&srv->server->cli)) {
+                                if (! cli_tdis(srv->server->cli)) {
                                         /* Sigh. Couldn't disconnect. */
-                                        cli_shutdown(&srv->server->cli);
+                                        cli_shutdown(srv->server->cli);
+					srv->server->cli = NULL;
                                         context->callbacks.remove_cached_srv_fn(context, srv->server);
                                         continue;
                                 }
@@ -166,7 +170,8 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                                 srv->share_name = SMB_STRDUP(share);
                                 if (!srv->share_name) {
                                         /* Out of memory. */
-                                        cli_shutdown(&srv->server->cli);
+                                        cli_shutdown(srv->server->cli);
+					srv->server->cli = NULL;
                                         context->callbacks.remove_cached_srv_fn(context, srv->server);
                                         continue;
                                 }

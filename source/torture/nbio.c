@@ -34,7 +34,7 @@ static struct {
 	int handle;
 } ftable[MAX_FILES];
 
-static struct {
+static struct children {
 	double bytes_in, bytes_out;
 	int line;
 	int done;
@@ -70,7 +70,7 @@ void nb_alarm(int ignore)
 void nbio_shmem(int n)
 {
 	nprocs = n;
-	children = shm_setup(sizeof(*children) * nprocs);
+	children = (struct children *)shm_setup(sizeof(*children) * nprocs);
 	if (!children) {
 		printf("Failed to setup shared memory!\n");
 		exit(1);

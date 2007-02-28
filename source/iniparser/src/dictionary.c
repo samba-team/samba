@@ -114,11 +114,13 @@ dictionary * dictionary_new(int size)
 	/* If no size was specified, allocate space for DICTMINSZ */
 	if (size<DICTMINSZ) size=DICTMINSZ ;
 
-	d = calloc(1, sizeof(dictionary));
+	if (!(d = (dictionary *)calloc(1, sizeof(dictionary)))) {
+		return NULL;
+	}
 	d->size = size ;
-	d->val  = calloc(size, sizeof(char*));
-	d->key  = calloc(size, sizeof(char*));
-	d->hash = calloc(size, sizeof(unsigned));
+	d->val  = (char **)calloc(size, sizeof(char*));
+	d->key  = (char **)calloc(size, sizeof(char*));
+	d->hash = (unsigned int *)calloc(size, sizeof(unsigned));
 	return d ;
 }
 
@@ -316,9 +318,9 @@ void dictionary_set(dictionary * d, char * key, char * val)
 	if (d->n==d->size) {
 
 		/* Reached maximum size: reallocate blackboard */
-		d->val  = mem_double(d->val,  d->size * sizeof(char*)) ;
-		d->key  = mem_double(d->key,  d->size * sizeof(char*)) ;
-		d->hash = mem_double(d->hash, d->size * sizeof(unsigned)) ;
+		d->val  = (char **)mem_double(d->val,  d->size * sizeof(char*)) ;
+		d->key  = (char **)mem_double(d->key,  d->size * sizeof(char*)) ;
+		d->hash = (unsigned int *)mem_double(d->hash, d->size * sizeof(unsigned)) ;
 
 		/* Double size */
 		d->size *= 2 ;
@@ -354,6 +356,10 @@ void dictionary_unset(dictionary * d, char * key)
 {
 	unsigned	hash ;
 	int			i ;
+
+	if (key == NULL) {
+		return;
+	}
 
 	hash = dictionary_hash(key);
 	for (i=0 ; i<d->size ; i++) {

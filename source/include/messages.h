@@ -70,6 +70,13 @@
 #define MSG_SMB_KERNEL_BREAK 3010
 #define MSG_SMB_FILE_RENAME  3011
 #define MSG_SMB_INJECT_FAULT 3012
+#define MSG_SMB_BLOCKING_LOCK_CANCEL 3013
+#define MSG_SMB_NOTIFY       3014
+#define MSG_SMB_STAT_CACHE_DELETE 3015
+/*
+ * Samba4 compatibility
+ */
+#define MSG_PVFS_NOTIFY       3016
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001
@@ -77,6 +84,8 @@
 #define MSG_WINBIND_ONLINE       4003
 #define MSG_WINBIND_OFFLINE      4004
 #define MSG_WINBIND_ONLINESTATUS 4005
+#define MSG_WINBIND_TRY_TO_GO_ONLINE 4006
+#define MSG_WINBIND_FAILED_TO_GO_ONLINE 4007
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */
@@ -89,6 +98,14 @@
 
 struct process_id {
 	pid_t pid;
+};
+
+/*
+ * Samba4 API compatibility layer
+ */
+
+struct server_id {
+	struct process_id id;
 };
 
 #endif

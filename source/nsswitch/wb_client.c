@@ -35,7 +35,7 @@ NSS_STATUS winbindd_request_response(int req_type,
 /* Call winbindd to convert a name to a sid */
 
 BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
-                         enum SID_NAME_USE *name_type)
+                         enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -56,7 +56,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 				       &response)) == NSS_STATUS_SUCCESS) {
 		if (!string_to_sid(sid, response.data.sid.sid))
 			return False;
-		*name_type = (enum SID_NAME_USE)response.data.sid.type;
+		*name_type = (enum lsa_SidType)response.data.sid.type;
 	}
 
 	return result == NSS_STATUS_SUCCESS;
@@ -66,7 +66,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 			const char **domain, const char **name,
-                        enum SID_NAME_USE *name_type)
+                        enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -105,12 +105,122 @@ BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		}
 	}
 
-	*name_type = (enum SID_NAME_USE)response.data.name.type;
+	*name_type = (enum lsa_SidType)response.data.name.type;
 
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
 		   sid_string_static(sid), response.data.name.dom_name,
 		   response.data.name.name));
 	return True;
+}
+
+BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
+			 const DOM_SID *domain_sid,
+			 int num_rids, uint32 *rids,
+			 const char **domain_name,
+			 const char ***names, enum lsa_SidType **types)
+{
+	size_t i, buflen;
+	ssize_t len;
+	char *ridlist;
+	char *p;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	if (num_rids == 0) {
+		return False;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.sid, sid_string_static(domain_sid));
+	
+	len = 0;
+	buflen = 0;
+	ridlist = NULL;
+
+	for (i=0; i<num_rids; i++) {
+		sprintf_append(mem_ctx, &ridlist, &len, &buflen,
+			       "%ld\n", rids[i]);
+	}
+
+	if ((num_rids != 0) && (ridlist == NULL)) {
+		return False;
+	}
+
+	request.extra_data.data = ridlist;
+	request.extra_len = strlen(ridlist)+1;
+
+	result = winbindd_request_response(WINBINDD_LOOKUPRIDS,
+					   &request, &response);
+
+	TALLOC_FREE(ridlist);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	*domain_name = talloc_strdup(mem_ctx, response.data.domain_name);
+
+	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+
+	if ((*names == NULL) || (*types == NULL)) {
+		goto fail;
+	}
+
+	p = (char *)response.extra_data.data;
+
+	for (i=0; i<num_rids; i++) {
+		char *q;
+
+		if (*p == '\0') {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+			
+		(*types)[i] = (enum lsa_SidType)strtoul(p, &q, 10);
+
+		if (*q != ' ') {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+
+		p = q+1;
+
+		q = strchr(p, '\n');
+		if (q == NULL) {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+
+		*q = '\0';
+
+		(*names)[i] = talloc_strdup(*names, p);
+
+		p = q+1;
+	}
+
+	if (*p != '\0') {
+		DEBUG(10, ("Got invalid reply: %s\n",
+			   (char *)response.extra_data.data));
+		goto fail;
+	}
+
+	SAFE_FREE(response.extra_data.data);
+
+	return True;
+
+ fail:
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+	return False;
 }
 
 /* Call winbindd to convert SID to uid */
@@ -247,6 +357,74 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
+/* Call winbindd to convert SID to uid */
+
+BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+	DOM_SID *sids;
+	int i;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_len = num_ids * sizeof(DOM_SID);
+
+	sids = (DOM_SID *)SMB_MALLOC(request.extra_len);
+	for (i = 0; i < num_ids; i++) {
+		sid_copy(&sids[i], ids[i].sid);
+	}
+
+	request.extra_data.data = (char *)sids;
+	
+	/* Make request */
+
+	result = winbindd_request_response(WINBINDD_SIDS_TO_XIDS, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		struct unixid *wid = (struct unixid *)response.extra_data.data;
+		
+		for (i = 0; i < num_ids; i++) {
+			if (wid[i].type == -1) {
+				ids[i].status = ID_UNMAPPED;
+			} else {
+				ids[i].status = ID_MAPPED;
+				ids[i].xid.type = wid[i].type;
+				ids[i].xid.id = wid[i].id;
+			}
+		}
+	}
+
+	SAFE_FREE(request.extra_data.data);
+	SAFE_FREE(response.extra_data.data);
+
+	return (result == NSS_STATUS_SUCCESS);
+}
+
+BOOL winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_data.data = SMB_STRDUP(file);
+	request.extra_len = strlen(request.extra_data.data) + 1;
+
+	result = winbindd_request_response(WINBINDD_DUMP_MAPS, &request, &response);
+
+	SAFE_FREE(request.extra_data.data);
+	return (result == NSS_STATUS_SUCCESS);
+}
+
 BOOL winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;
@@ -297,126 +475,68 @@ BOOL winbind_allocate_gid(gid_t *gid)
 	return True;
 }
 
-/* Fetch the list of groups a user is a member of from winbindd.  This is
-   used by winbind_getgroups. */
-
-static int wb_getgroups(const char *user, gid_t **groups)
+BOOL winbind_set_mapping(const struct id_map *map)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int result;
 
-	/* Call winbindd */
+	/* Initialise request */
 
 	ZERO_STRUCT(request);
-	fstrcpy(request.data.username, user);
-
 	ZERO_STRUCT(response);
 
-	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
+	/* Make request */
 
-	if (result == NSS_STATUS_SUCCESS) {
-		
-		/* Return group list.  Don't forget to free the group list
-		   when finished. */
+	request.data.dual_idmapset.id = map->xid.id;
+	request.data.dual_idmapset.type = map->xid.type;
+	sid_to_string(request.data.dual_idmapset.sid, map->sid);
 
-		*groups = (gid_t *)response.extra_data.data;
-		return response.data.num_entries;
-	}
+	result = winbindd_request_response(WINBINDD_SET_MAPPING, &request, &response);
 
-	return -1;
+	return (result == NSS_STATUS_SUCCESS);
 }
 
-/* Call winbindd to initialise group membership.  This is necessary for
-   some systems (i.e RH5.2) that do not have an initgroups function as part
-   of the nss extension.  In RH5.2 this is implemented using getgrent()
-   which can be amazingly inefficient as well as having problems with
-   username case. */
-
-int winbind_initgroups(char *user, gid_t gid)
+BOOL winbind_set_uid_hwm(unsigned long id)
 {
-	gid_t *groups = NULL;
+	struct winbindd_request request;
+	struct winbindd_response response;
 	int result;
 
-	/* Call normal initgroups if we are a local user */
+	/* Initialise request */
 
-	if (!strchr(user, *lp_winbind_separator())) {
-		return initgroups(user, gid);
-	}
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
 
-	result = wb_getgroups(user, &groups);
+	/* Make request */
 
-	DEBUG(10,("winbind_getgroups: %s: result = %s\n", user, 
-		  result == -1 ? "FAIL" : "SUCCESS"));
+	request.data.dual_idmapset.id = id;
+	request.data.dual_idmapset.type = ID_TYPE_UID;
 
-	if (result != -1) {
-		int ngroups = result, i;
-		BOOL is_member = False;
+	result = winbindd_request_response(WINBINDD_SET_HWM, &request, &response);
 
-		/* Check to see if the passed gid is already in the list */
-
-		for (i = 0; i < ngroups; i++) {
-			if (groups[i] == gid) {
-				is_member = True;
-			}
-		}
-
-		/* Add group to list if necessary */
-
-		if (!is_member) {
-			groups = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
-			if (!groups) {
-				errno = ENOMEM;
-				result = -1;
-				goto done;
-			}
-
-			groups[ngroups] = gid;
-			ngroups++;
-		}
-
-		/* Set the groups */
-
-		if (sys_setgroups(ngroups, groups) == -1) {
-			errno = EPERM;
-			result = -1;
-			goto done;
-		}
-
-	} else {
-		
-		/* The call failed.  Set errno to something so we don't get
-		   a bogus value from the last failed system call. */
-
-		errno = EIO;
-	}
-
-	/* Free response data if necessary */
-
- done:
-	SAFE_FREE(groups);
-
-	return result;
+	return (result == NSS_STATUS_SUCCESS);
 }
 
-/* Return a list of groups the user is a member of.  This function is
-   useful for large systems where inverting the group database would be too
-   time consuming.  If size is zero, list is not modified and the total
-   number of groups for the user is returned. */
-
-int winbind_getgroups(const char *user, gid_t **list)
+BOOL winbind_set_gid_hwm(unsigned long id)
 {
-	/*
-	 * Don't do the lookup if the name has no separator _and_ we are not in
-	 * 'winbind use default domain' mode.
-	 */
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
 
-	if (!(strchr(user, *lp_winbind_separator()) || lp_winbind_use_default_domain()))
-		return -1;
+	/* Initialise request */
 
-	/* Fetch list of groups */
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
 
-	return wb_getgroups(user, list);
+	/* Make request */
+
+	request.data.dual_idmapset.id = id;
+	request.data.dual_idmapset.type = ID_TYPE_GID;
+
+	result = winbindd_request_response(WINBINDD_SET_HWM, &request, &response);
+
+	return (result == NSS_STATUS_SUCCESS);
 }
 
 /**********************************************************************

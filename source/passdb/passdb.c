@@ -50,10 +50,8 @@ const char *my_sam_name(void)
 /**********************************************************************
 ***********************************************************************/
 
-static int samu_destroy(void *p) 
+static int samu_destroy(struct samu *user) 
 {
-	struct samu *user = p;
-
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
 
@@ -111,7 +109,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	user->profile_path = "";
 	user->acct_desc = "";
 	user->workstations = "";
-	user->unknown_str = "";
+	user->comment = "";
 	user->munged_dial = "";
 
 	user->plaintext_pw = NULL;
@@ -348,9 +346,9 @@ void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
 			slprintf(&p[i*2], 3, "%02X", pwd[i]);
 	} else {
 		if (acct_ctrl & ACB_PWNOTREQ)
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
+			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
 		else
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
+			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
 	}
 }
 
@@ -553,7 +551,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  ********************************************************************/
 
 BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	GROUP_MAP map;
 	BOOL ret;
@@ -932,14 +930,15 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (homedir) {
 		fstrcpy( tmpstring, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -951,28 +950,29 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (logon_script) {
 		fstrcpy( tmpstring, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
 	if (profile_path) {	
 		fstrcpy( tmpstring, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, domain, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -996,7 +996,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = (uint8 *)SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
@@ -1023,7 +1023,6 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	}
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -1107,7 +1106,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	logoff_time = (uint32)pdb_get_logoff_time(sampass);
 	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
 	bad_password_time = (uint32)pdb_get_bad_password_time(sampass);
-	pass_can_change_time = (uint32)pdb_get_pass_can_change_time(sampass);
+	pass_can_change_time = (uint32)pdb_get_pass_can_change_time_noncalc(sampass);
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
 
@@ -1367,6 +1366,7 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 	time_t LastBadPassword;
 	uint16 BadPasswordCount;
 	uint32 resettime; 
+	BOOL res;
 
 	BadPasswordCount = pdb_get_bad_password_count(sampass);
 	if (!BadPasswordCount) {
@@ -1374,7 +1374,11 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime)) {
+	become_root();
+	res = pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime);
+	unbecome_root();
+
+	if (!res) {
 		DEBUG(0, ("pdb_update_bad_password_count: pdb_get_account_policy failed.\n"));
 		return False;
 	}
@@ -1407,6 +1411,7 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 {
 	uint32 duration;
 	time_t LastBadPassword;
+	BOOL res;
 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
 		DEBUG(9, ("pdb_update_autolock_flag: Account %s not autolocked, no check needed\n",
@@ -1414,7 +1419,11 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration)) {
+	become_root();
+	res = pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration);
+	unbecome_root();
+
+	if (!res) {
 		DEBUG(0, ("pdb_update_autolock_flag: pdb_get_account_policy failed.\n"));
 		return False;
 	}

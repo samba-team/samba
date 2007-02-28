@@ -35,7 +35,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 14
+#define WINBIND_INTERFACE_VERSION 18
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -77,6 +77,7 @@ enum winbindd_cmd {
 	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 	WINBINDD_PAM_LOGOFF,
+	WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,
 
 	/* List various things */
 
@@ -88,18 +89,24 @@ enum winbindd_cmd {
 
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
+	WINBINDD_LOOKUPRIDS,
 
 	/* Lookup functions */
 
 	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
+	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
 
 	WINBINDD_ALLOCATE_UID,
 	WINBINDD_ALLOCATE_GID,
+	WINBINDD_SET_MAPPING,
+	WINBINDD_SET_HWM,
 
 	/* Miscellaneous other stuff */
+
+	WINBINDD_DUMP_MAPS,
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
@@ -138,9 +145,12 @@ enum winbindd_cmd {
 	 * between parent and children */
 	WINBINDD_DUAL_SID2UID,
 	WINBINDD_DUAL_SID2GID,
+	WINBINDD_DUAL_SIDS2XIDS,
 	WINBINDD_DUAL_UID2SID,
 	WINBINDD_DUAL_GID2SID,
-	WINBINDD_DUAL_IDMAPSET,
+	WINBINDD_DUAL_SET_MAPPING,
+	WINBINDD_DUAL_SET_HWM,
+	WINBINDD_DUAL_DUMP_MAPS,
 
 	/* Wrapper around possibly blocking unix nss calls */
 	WINBINDD_DUAL_UID2NAME,
@@ -150,6 +160,10 @@ enum winbindd_cmd {
 
 	WINBINDD_DUAL_USERINFO,
 	WINBINDD_DUAL_GETSIDALIASES,
+
+	/* Complete the challenge phase of the NTLM authentication
+	   protocol using cached password. */
+	WINBINDD_CCACHE_NTLMAUTH,
 
 	WINBINDD_NUM_CMDS
 };
@@ -225,7 +239,7 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
-		        fstring require_membership_of_sid;
+			pstring require_membership_of_sid;
 			fstring krb5_cc_type;
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
@@ -248,6 +262,18 @@ struct winbindd_request {
                 } chauthtok;         /* pam_winbind passwd module */
 		struct {
 			fstring user;
+			fstring domain;
+			unsigned char new_nt_pswd[516];
+			uint16	new_nt_pswd_len;
+			unsigned char old_nt_hash_enc[16];
+			uint16 	old_nt_hash_enc_len;
+			unsigned char new_lm_pswd[516];
+			uint16	new_lm_pswd_len;
+			unsigned char old_lm_hash_enc[16];
+			uint16	old_lm_hash_enc_len;
+		} chng_pswd_auth_crap;/* pam_winbind passwd module */
+		struct {
+			fstring user;
 			fstring krb5ccname;
 			uid_t uid;
 		} logoff;              /* pam_winbind session module */
@@ -268,18 +294,29 @@ struct winbindd_request {
 		struct {
 			fstring sid;
 			fstring name;
-			BOOL alloc;
 		} dual_sid2id;
 		struct {
-			int type;
-			uid_t uid;
-			gid_t gid;
 			fstring sid;
+			uint32 type;
+			uint32 id;
 		} dual_idmapset;
 		BOOL list_all_domains;
 
+		struct {
+			uid_t uid;
+			fstring user;
+			/* the effective uid of the client, must be the uid for 'user'.
+			   This is checked by the main daemon, trusted by children. */
+			/* if the blobs are length zero, then this doesn't
+			   produce an actual challenge response. It merely
+			   succeeds if there are cached credentials available
+			   that could be used. */
+			uint32 initial_blob_len; /* blobs in extra_data */
+			uint32 challenge_blob_len;
+		} ccache_ntlm_auth;
+
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
-		   The size if the sizeof the union without the padding aligned on 
+		   The size is the sizeof the union without the padding aligned on 
 		   an 8 byte boundary.   --jerry */
 
 		char padding[1560];
@@ -410,8 +447,12 @@ struct winbindd_response {
 			fstring full_name;
 			fstring homedir;
 			fstring shell;
+			uint32 primary_gid;			
 			uint32 group_rid;
 		} user_info;
+		struct {
+			uint32 auth_blob_len; /* blob in extra_data */
+		} ccache_ntlm_auth;
 	} data;
 
 	/* Variable length return data */
@@ -422,20 +463,31 @@ struct winbindd_response {
 	} extra_data;
 };
 
+struct WINBINDD_MEMORY_CREDS {
+	struct WINBINDD_MEMORY_CREDS *next, *prev;
+	const char *username; /* lookup key. */
+	uid_t uid;
+	int ref_count;
+	size_t len;
+	unsigned char *nt_hash; /* Base pointer for the following 2 */
+	unsigned char *lm_hash;
+	char *pass;
+};
+
 struct WINBINDD_CCACHE_ENTRY {
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
 	const char *principal_name;
 	const char *ccname;
 	const char *service;
 	const char *username;
-	const char *sid_string;
-	char *pass;
+	const char *realm;
+	struct WINBINDD_MEMORY_CREDS *cred_ptr;
+	int ref_count;
 	uid_t uid;
 	time_t create_time;
 	time_t renew_until;
-	BOOL refresh_tgt;
 	time_t refresh_time;
 	struct timed_event *event;
-	struct WINBINDD_CCACHE_ENTRY *next, *prev;
 };
 
 #endif

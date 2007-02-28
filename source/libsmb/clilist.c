@@ -49,9 +49,9 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 		case 1: /* OS/2 understands this */
 			/* these dates are converted to GMT by
                            make_unix_date */
-			finfo->ctime = cli_make_unix_date2(cli, p+4);
-			finfo->atime = cli_make_unix_date2(cli, p+8);
-			finfo->mtime = cli_make_unix_date2(cli, p+12);
+			finfo->ctime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+4));
+			finfo->atime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+8));
+			finfo->mtime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+12));
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
@@ -70,9 +70,9 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 		case 2: /* this is what OS/2 uses mostly */
 			/* these dates are converted to GMT by
                            make_unix_date */
-			finfo->ctime = cli_make_unix_date2(cli, p+4);
-			finfo->atime = cli_make_unix_date2(cli, p+8);
-			finfo->mtime = cli_make_unix_date2(cli, p+12);
+			finfo->ctime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+4));
+			finfo->atime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+8));
+			finfo->mtime_ts = convert_time_t_to_timespec(cli_make_unix_date2(cli, p+12));
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
@@ -96,11 +96,11 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 				
 			/* Offset zero is "create time", not "change time". */
 			p += 8;
-			finfo->atime = interpret_long_date(p);
+			finfo->atime_ts = interpret_long_date(p);
 			p += 8;
-			finfo->mtime = interpret_long_date(p);
+			finfo->mtime_ts = interpret_long_date(p);
 			p += 8;
-			finfo->ctime = interpret_long_date(p);
+			finfo->ctime_ts = interpret_long_date(p);
 			p += 8;
 			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
 			p += 8;
@@ -321,7 +321,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* grab the data for later use */
 		/* and add them to the dirlist pool */
-		dirlist = SMB_REALLOC(dirlist,dirlist_len + data_len);
+		dirlist = (char *)SMB_REALLOC(dirlist,dirlist_len + data_len);
 
 		if (!dirlist) {
 			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
@@ -349,10 +349,17 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	mnt = cli_cm_get_mntpoint( cli );
 
-	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(cli,info_level,p,&finfo,NULL,NULL,NULL);
-		fn( mnt,&finfo, Mask, state );
-	}
+        /* see if the server disconnected or the connection otherwise failed */
+        if (cli_is_error(cli)) {
+                total_received = -1;
+        } else {
+                /* no connection problem.  let user function add each entry */
+                for (p=dirlist,i=0;i<total_received;i++) {
+                        p += interpret_long_filename(cli, info_level, p,
+                                                     &finfo,NULL,NULL,NULL);
+                        fn( mnt,&finfo, Mask, state );
+                }
+        }
 
 	/* free up the dirlist buffer and last name raw blob */
 	SAFE_FREE(dirlist);
@@ -373,8 +380,10 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->mode = CVAL(p,21);
 	
 	/* this date is converted to GMT by make_unix_date */
-	finfo->ctime = cli_make_unix_date(cli, p+22);
-	finfo->mtime = finfo->atime = finfo->ctime;
+	finfo->ctime_ts.tv_sec = cli_make_unix_date(cli, p+22);
+	finfo->ctime_ts.tv_nsec = 0;
+	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
+	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
 	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
@@ -447,7 +456,8 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		first = False;
 
-		dirlist = SMB_REALLOC(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
+		dirlist = (char *)SMB_REALLOC(
+			dirlist,(num_received + received)*DIR_STRUCT_SIZE);
 		if (!dirlist) {
 			DEBUG(0,("cli_list_old: failed to expand dirlist"));
 			return 0;
