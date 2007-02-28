@@ -56,7 +56,8 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
 					  struct dcerpc_pipe **p, 
 					  const struct dcerpc_interface_table *table,
-					  enum dcerpc_transport_t transport)
+					  enum dcerpc_transport_t transport,
+					  uint32_t assoc_group_id)
 {
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -77,6 +78,7 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 	}
 
 	b->transport = transport;
+	b->assoc_group_id = assoc_group_id;
 
 	status = dcerpc_pipe_connect_b(mem_ctx, p, b, table,
 				       cmdline_credentials, NULL);
