@@ -517,19 +517,78 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 }
 
 #ifdef HAVE_KRB5
-
 /****************************************************************************
  Send a extended security session setup blob, returning a reply blob.
 ****************************************************************************/
 
-static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
+#define MAX_SESSION_SECURITY_BLOB	4000
+
+/* The following is calculated from :
+ * (smb_size-4) = 35
+ * (smb_wcnt * 2) = 24 (smb_wcnt == 12 in cli_session_setup_blob_send() )
+ * (strlen("Unix") + 1 + strlen("Samba") + 1) * 2 = 22 (unicode strings at
+ * end of packet.
+ */
+
+#define BASE_SESSSETUP_BLOB_PACKET_SIZE (35 + 24 + 22)
+
+static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_BLOB session_key_krb5)
 {
-	DATA_BLOB blob2 = data_blob(NULL, 0);
-	if (!cli_session_setup_blob_send(cli, blob)) {
-		return blob2;
+	int32 remaining = blob.length;
+	int32 cur = 0;
+	DATA_BLOB send_blob = data_blob(NULL, 0);
+	int32 max_blob_size = 0;
+
+	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
+		DEBUG(0,("cli_session_setup_blob: cli->max_xmit too small "
+			"(was %u, need minimum %u)\n",
+			(unsigned int)cli->max_xmit,
+			BASE_SESSSETUP_BLOB_PACKET_SIZE));
+		cli_set_nt_error(cli, NT_STATUS_INVALID_PARAMETER);
+		return False;
 	}
-		
-	return cli_session_setup_blob_receive(cli);
+
+	max_blob_size = cli->max_xmit - BASE_SESSSETUP_BLOB_PACKET_SIZE;
+
+	while ( remaining > 0) {
+		if (remaining >= max_blob_size) {
+			send_blob.length = max_blob_size;
+			remaining -= max_blob_size;
+		} else {
+			DATA_BLOB null_blob = data_blob(NULL, 0);
+
+			send_blob.length = remaining; 
+                        remaining = 0;
+
+			/* This is the last packet in the sequence - turn signing on. */
+			cli_simple_set_signing(cli, session_key_krb5, null_blob); 
+		}
+
+		send_blob.data =  &blob.data[cur];
+		cur += send_blob.length;
+
+		DEBUG(10, ("cli_session_setup_blob: Remaining (%u) sending (%u) current (%u)\n", 
+			(unsigned int)remaining,
+			(unsigned int)send_blob.length,
+			(unsigned int)cur ));
+
+		if (!cli_session_setup_blob_send(cli, send_blob)) {
+			DEBUG(0, ("cli_session_setup_blob: send failed\n"));
+			return False;
+		}
+
+		cli_session_setup_blob_receive(cli);
+
+		if (cli_is_error(cli) &&
+				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
+					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
+				nt_errstr(cli_get_nt_error(cli)) ));
+			return False;
+		}
+	}
+
+	return True;
 }
 
 /****************************************************************************
@@ -546,9 +605,8 @@ static void use_in_memory_ccache(void) {
 
 static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
 {
-	DATA_BLOB blob2, negTokenTarg;
+	DATA_BLOB negTokenTarg;
 	DATA_BLOB session_key_krb5;
-	DATA_BLOB null_blob = data_blob(NULL, 0);
 	int rc;
 
 	DEBUG(2,("Doing kerberos session setup\n"));
@@ -557,7 +615,8 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5, 0, NULL);
 
 	if (rc) {
-		DEBUG(1, ("spnego_gen_negTokenTarg failed: %s\n", error_message(rc)));
+		DEBUG(1, ("cli_session_setup_kerberos: spnego_gen_negTokenTarg failed: %s\n",
+			error_message(rc)));
 		return ADS_ERROR_KRB5(rc);
 	}
 
@@ -565,12 +624,11 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
-	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
-			
-	blob2 = cli_session_setup_blob(cli, negTokenTarg);
-
-	/* we don't need this blob for kerberos */
-	data_blob_free(&blob2);
+	if (!cli_session_setup_blob(cli, negTokenTarg, session_key_krb5)) {
+		data_blob_free(&negTokenTarg);
+		data_blob_free(&session_key_krb5);
+		ADS_ERROR_NT(cli_nt_error(cli));
+	}
 
 	cli_set_session_key(cli, session_key_krb5);
 
