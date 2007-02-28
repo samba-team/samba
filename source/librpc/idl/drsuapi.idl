@@ -1023,6 +1023,18 @@ interface drsuapi
 	} drsuapi_DsReplicaObjectListItem;
 
 	/*
+	 * The DsAddEntry() call which creates a nTDSDSA object,
+	 * also adds a servicePrincipalName in the following form
+	 * to the computer account of the new domain controller
+	 * referenced by the "serverReferenece" attribute.
+	 *
+	 * E3514235-4B06-11D1-AB04-00C04FC2DCD2/<new-ntdsdsa-object-guid-as-string>/<domain-dns-name>
+	 *
+	 * also note that the "serverReference" isn't added to the new object!
+	 */
+	const char *DRSUAPI_NTDSDSA_KRB5_SERVICE_GUID = "E3514235-4B06-11D1-AB04-00C04FC2DCD2";
+
+	/*
 	 * please note the the current idl
 	 * for DsAddEntry does only parse 
 	 * what I saw between 2 w2k3 boxes
