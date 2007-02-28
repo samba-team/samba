@@ -10,7 +10,7 @@
 
 <refnamediv>
 	<refname>cap</refname>
-	<refpurpose>make a Samba share read only for a specified time period</refpurpose>
+	<refpurpose>CAP encode filenames</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
