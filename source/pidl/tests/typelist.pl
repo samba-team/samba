@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 52;
+use Test::More tests => 53;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -60,6 +60,7 @@ is(1, is_scalar({TYPE => "DECLARE", DATA => {TYPE => "ENUM" }}));
 
 is(1, scalar_is_reference("string"));
 is(0, scalar_is_reference("uint32"));
+is(0, scalar_is_reference({TYPE => "STRUCT", NAME => "echo_foobar"}));
 
 is("uint8", enum_type_fn({TYPE => "ENUM", PARENT=>{PROPERTIES => {enum8bit => 1}}}));
 is("uint32", enum_type_fn({TYPE => "ENUM", PARENT=>{PROPERTIES => {v1_enum => 1}}}));
