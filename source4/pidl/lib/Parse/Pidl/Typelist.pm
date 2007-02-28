@@ -138,7 +138,8 @@ sub is_scalar($)
 	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
 
 	if (my $dt = getType($type)) {
-		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF");
+		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF" or 
+		                                  $dt->{TYPE} eq "DECLARE");
 		return 1 if ($dt->{TYPE} eq "SCALAR" or $dt->{TYPE} eq "ENUM" or 
 			         $dt->{TYPE} eq "BITMAP");
 	}
