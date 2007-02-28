@@ -126,6 +126,15 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 		if (composite_nomem(state->name.scope, c)) return c;
 	}
 
+	/*
+	 * we can't push long names on the wire,
+	 * so bail out here to give a useful error message
+	 */
+	if (strlen(state->name.name) > 15) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
+
 	state->nbtsock = nbt_name_socket_init(state, event_ctx);
 	if (composite_nomem(state->nbtsock, c)) return c;
 
