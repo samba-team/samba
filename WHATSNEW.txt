@@ -11,19 +11,19 @@ We would like to ask the Samba community for help in testing
 these changes as we work towards the next significant production
 upgrade Samba 3.0 release.
 
-Major Featuers included in the 3.0.25 code base include:
+Major Features included in the 3.0.25 code base include:
 
   o Significant improvements in the winbind offline logon 
     support
   o Support for secure DDNS updates as part of the 'net 
     ads join' process
-  o Rewriten IdMap interface which allows for TTL based 
+  o Rewritten IdMap interface which allows for TTL based 
     caching and per domain backends.
   o New plugin interface for the "winbind nss info" parameter.
 
 Major bug fixes in 3.0.25pre1 include:
 
-  o Compatibilities issues with Windows Vista
+  o Compatibility issues with Windows Vista
 
 
 
@@ -51,7 +51,7 @@ o   Michael Adam <ma@sernet.de>
       and set calls for SMB_USER_FS_QUOTA_TYPE and 
       SMB_GROUP_FS_QUOTA_TYPE. 
     * Prevent collision from config.h created by standalone
-      compnent builds.
+      component builds.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -61,7 +61,7 @@ o   Jeremy Allison <jra@samba.org>
       that need a leading / in OpenAndX calls. 
     * BUG 4187: Possible crash in signing on/off code.
     * Fix memory leaks in pam_winbind.c.
-    * Fix a bugin the sequence number store/fetch routines in 
+    * Fix a bug in the sequence number store/fetch routines in 
       winbindd_cache.tdb.
     * Fix the problem with Linux clients requesting O_WRONLY
       on write-only files.
