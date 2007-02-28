@@ -9,7 +9,7 @@ schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 3
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
-serverName: CN=${NETBIOSNAME},CN=Servers,${DEFAULTSITE},CN=Sites,${CONFIGDN}
+serverName: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 domainFunctionality: 0
 forestFunctionality: 0
 domainControllerFunctionality: 2
