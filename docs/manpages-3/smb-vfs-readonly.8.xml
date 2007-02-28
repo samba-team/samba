@@ -10,7 +10,7 @@
 
 <refnamediv>
 	<refname>readonly</refname>
-	<refpurpose>Make a Samba share read only for a specified time period</refpurpose>
+	<refpurpose>make a Samba share read only for a specified time period</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
