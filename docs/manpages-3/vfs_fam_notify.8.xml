@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-fam_notify.8">
+<refentry id="vfs_fam_notify.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-fam_notify</refentrytitle>
+	<refentrytitle>vfs_fam_notify</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>fam_notify</refname>
+	<refname>vfs_fam_notify</refname>
 	<refpurpose>FAM support for file change notifications</refpurpose>
 </refnamediv>
 
@@ -22,10 +22,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>fam_notify</command> module makes use of
+	<para>The <command>vfs_fam_notify</command> module makes use of
 	the system FAM (File Alteration Monitor) daemon to implement
 	file change notifications for Windows clients. FAM is generally
 	present only on IRIX and some BSD systems.</para>

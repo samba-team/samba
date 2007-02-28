@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-shadow_copy.8">
+<refentry id="vfs_shadow_copy.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-shadow_copy</refentrytitle>
+	<refentrytitle>vfs_shadow_copy</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>shadow_copy</refname>
+	<refname>vfs_shadow_copy</refname>
 	<refpurpose>Make a Samba share read only for a specified time period</refpurpose>
 </refnamediv>
 
@@ -22,10 +22,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>shadow_copy</command> VFS module functionality
+	<para>The <command>vfs_shadow_copy</command> VFS module functionality
 	that is similar to Microsoft Shadow Copy services. When setup properly,
 	this module allows Microsoft Shadow Copy clients to browse
 	"shadow copies" on Samba shares.
@@ -38,14 +39,14 @@
 <refsect1>
 	<title>CONFIGURATION</title>
 
-	<para><command>shadow_copy</command> relies on a filesystem
+	<para><command>vfs_shadow_copy</command> relies on a filesystem
 	snapshot implementation. Many common filesystems have native
 	support for this.
 	</para>
 
 	<para>Filesystem snapshots must be mounted on
 	specially named directories in order to be recognized by
-	<command>shadow_copy</command>. The snapshot mount points must
+	<command>vfs_shadow_copy</command>. The snapshot mount points must
 	be immediate children of a the directory being shared.</para>
 
 	<para>The snapshot naming convention is @GMT-YYYY.MM.DD-hh.mm.ss,
@@ -60,7 +61,7 @@
        	</itemizedlist>
 	</para>
 
-       	<para>The <command>shadow_copy</command> snapshot naming convention can be produced with the following 
+       	<para>The <command>vfs_shadow_copy</command> snapshot naming convention can be produced with the following 
 	<citerefentry><refentrytitle>date</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> command:
 	<programlisting>
@@ -87,7 +88,7 @@
 	</para>
 
 	<para>With Samba or Windows servers,
-	<command>shadow_copy</command> is designed to be an end-user
+	<command>vfs_shadow_copy</command> is designed to be an end-user
 	tool only. It does not replace or enhance your backup and
 	archival solutions and should in no way be considered as
 	such. Additionally, if you need version control, implement a
