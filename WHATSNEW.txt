@@ -13,17 +13,19 @@ upgrade Samba 3.0 release.
 
 Major Features included in the 3.0.25 code base include:
 
-  o Significant improvements in the winbind offline logon 
+  o Significant improvements in the winbind off-line logon 
     support
   o Support for secure DDNS updates as part of the 'net 
     ads join' process
   o Rewritten IdMap interface which allows for TTL based 
     caching and per domain backends.
-  o New plugin interface for the "winbind nss info" parameter.
-
-Major bug fixes in 3.0.25pre1 include:
-
-  o Compatibility issues with Windows Vista
+  o New plug-in interface for the "winbind nss info" parameter.
+  o New file change notify subsystem which is able to make use 
+    of inotify on Linux.
+  o Support for passing Windows security descriptors to
+    a VFS plug-in allowing for multiple Unix ACL implements
+    to running side by side on the Same server.
+  o Improved compatibility with Windows Vista clients.
 
 
 
@@ -50,12 +52,12 @@ o   Michael Adam <ma@sernet.de>
       by "set"s.  This makes the difference between the get 
       and set calls for SMB_USER_FS_QUOTA_TYPE and 
       SMB_GROUP_FS_QUOTA_TYPE. 
-    * Prevent collision from config.h created by standalone
+    * Prevent collision from config.h created by stand alone
       component builds.
 
 
 o   Jeremy Allison <jra@samba.org>
-    * winbind offline logon fixes.
+    * winbind off-line logon fixes.
     * Support for AD sites when locating domain controllers.
     * Fix libsmbclient bug with Konqueror and NetApp filers
       that need a leading / in OpenAndX calls. 
@@ -75,12 +77,12 @@ o   Jeremy Allison <jra@samba.org>
     * Fixes for pathname handling code.
     * Add in the wdel smbclient command to perform wildcard deletes.
     * Fix a bug that causes smbd to 'hang' intermittently while
-      updatign the trusted domain cache.
-    * CLeanup error path processing in reduce_name().
+      updating the trusted domain cache.
+    * Cleanup error path processing in reduce_name().
     * Fixes for smbtorture tests (BASE-DELETE, ...)
     * Delete on close fixes ("I completely understand it this time").
     * Remove unneeded checks on incoming uid/gid for mknod 
-      (fifo) unix extensions code.
+      (fifo) Unix extensions code.
     * More fixes for Unix Extensions include support for POSIX locking.
     * NTLMv2 fixes for Vista clients.
     * Add an optimized lookup for Domain Users and only report 
@@ -89,7 +91,10 @@ o   Jeremy Allison <jra@samba.org>
     * Fixes for supporting the Vista backup utility based on work 
       by Joe Meadows <jameadows@webopolis.com>.
     * Fix 4377: Fix rename of "foo" -> "Foo".
-   
+    * BUG 4188: Fix for Vista delete directory bug.
+    * BUG 4400: Add support for processing large Krb5 tickets
+      in SMBsesssetup&X.  Basic on work by Todd Stecher 
+      <todd.stecher@isilon.com>.
 
 
 o   Danilo Almeida <dalmeida@centeris.com>
@@ -103,13 +108,16 @@ o   Andrew Benham <andrew.benham@thus.net>
       in message from pam_winbind.
 
 
+o   Alexander Bokovoy <ab@samba.org>
+    * Add GPFS-provided DMAPI support
+
 
 o   Kai Blin <kai.blin@gmail.com>
     * Match Windows NTLMSSP flags.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Implement plugable "winbind nss info" interface.
+    * Implement pluggable "winbind nss info" interface.
     * Removal of unmaintained smbwrapper utility.
     * Fix server affinity bugs in the 'net ads join' 
       code to include support for AD sites.
@@ -120,7 +128,12 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix password changes against a Windows 2000 DC using pam_winbind.
     * Fix crash in "pdbedit -L -w"
     * Add "winbind normalize names" option.
-
+    * BUG 4093: Make %a resolve correctly for Windows Vista and Windows 
+      XP 64bit clients.
+    * Printing fixes for Windows Vista.
+    * Protect the sasl bind against a NULL principal string in the 
+      SPNEGO negTokenInit
+    * Fix some "cannot access LDAP when no root" bugs.
 
 
 o   Mathias Dietz <mdietz@de.ibm.com>
@@ -130,10 +143,10 @@ o   Mathias Dietz <mdietz@de.ibm.com>
 
 
 o   Guenther Deschner <gd@samba.org>
-    * winbind offline logon fixes.
+    * winbind off-line logon fixes.
     * Support for AD sites when locating domain controllers.
     * Various fixes for 'net ads' user management functions.
-    * Add an CLDAP client written in perl.
+    * Add an CLDAP client written in Perl.
     * Cleanups to the Krb5 ticket refresh code in winbindd.
     * Fixes for various error messages from pam_winbind when password
       policies are being enforced.
@@ -142,6 +155,7 @@ o   Guenther Deschner <gd@samba.org>
     * Memory leak fixes.
     * BUG 4009: Fixes leaking file descriptors (CLOSE_WAIT) in 
       winbindd with short lived service tickets
+    * Implement basic AD group policy library
 
 
 o   dleonard@vintela.com
@@ -169,7 +183,12 @@ o   Bjoern Jacke <bj@sernet.de>
     * BUG 4244: Limit stat cache to a default of 1MB.
 
 
+o   William Jojo <jojowil@hvcc.edu>
+    * BUG 3713: Re-add reporting what the profiles tool does (-v).
+
+
 o   Volker Lendecke <vl@samba.org>
+    * Replace snum references with a structure based array.
     * Allow changing of the hashsize when running tdbbackup.
     * Implement secure DDNS update code
     * Klocwork, Coverity, and IBM Checker fixes.
@@ -182,6 +201,15 @@ o   Volker Lendecke <vl@samba.org>
       (RAW-OPEN, RAW-UNLINK, RAW-CLOSE, ...)
     * Refactor delete on close file server code.
     * MS-DFS fixes for Vista clients.
+    * BUG 4372: Long timeout in LDAP setup when accessing files after 
+      10 secs.
+    * Change the static array for the in-memory mirrors of the hash 
+      chain locks to a dynamically allocated one.
+    * Use inotify for file change notification on Linux.
+    * Revert "msdfs root" to default to "no".
+    * Refactor AIO code.
+    * Fix memory leaks when returning user lists to clients via 
+      the SAMR calls.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -198,19 +226,23 @@ o   Stefan Metzmacher <metze@samba.org>
     [merges from SAMBA_4_0]
     * Portability fixes for dlopen()
     * Sync libreplace
-   
 
 
 o   Gomati Mohanan <gomati.mohanan@in.ibm.com>
     * Work on NFSv4 ACL VFS plugin.
 
 
-o   James Peach <jpeach@samba.org>
+o   Lars Mueller <lmuelle@samba.org>
+    * Provide better feedback about deprecated use of multiple passdb
+      backends.
+
+
+o   James Peach <jpeach@apple.com>
     * Replace exit_server with exit_server_cleanly where appropriate.
     * Add docs for VFS modules.
     * Portability fixes for autoconf and character set modules on 
       OS X.
-    * Only attempt to reload the config file atfer the fork point 
+    * Only attempt to reload the config file after the fork point 
       if we are in daemon mode.
 
 
@@ -236,9 +268,6 @@ o   Simo Sorce <idra@samba.org>
 
 o   Peter Somogyi <SOMOGYI@de.ibm.com>
     * Work on NFSv4 ACL VFS plugin.
-
-
-o   Andrew Tridgell <tridge@samba.org>
 
 
 o   Jelmer Vernooij <jelmer@samba.org>
