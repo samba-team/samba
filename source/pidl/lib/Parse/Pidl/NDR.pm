@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -880,17 +880,19 @@ sub ValidProperties($$)
 
 sub mapToScalar($)
 {
+	sub mapToScalar($);
 	my $t = shift;
+	return $t->{NAME} if (ref($t) eq "HASH" and $t->{TYPE} eq "SCALAR");
 	my $ti = getType($t);
 
 	if (not defined ($ti)) {
 		return undef;
-	} elsif ($ti->{DATA}->{TYPE} eq "ENUM") {
-		return Parse::Pidl::Typelist::enum_type_fn($ti->{DATA});
-	} elsif ($ti->{DATA}->{TYPE} eq "BITMAP") {
-		return Parse::Pidl::Typelist::enum_type_fn($ti->{DATA});
-	} elsif ($ti->{DATA}->{TYPE} eq "SCALAR") {
-		return $t;
+	} elsif ($ti->{TYPE} eq "TYPEDEF") {
+		return mapToScalar($ti->{DATA});
+	} elsif ($ti->{TYPE} eq "ENUM") {
+		return Parse::Pidl::Typelist::enum_type_fn($ti);
+	} elsif ($ti->{TYPE} eq "BITMAP") {
+		return Parse::Pidl::Typelist::bitmap_type_fn($ti);
 	}
 
 	return undef;

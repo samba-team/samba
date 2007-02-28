@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 17;
+use Test::More tests => 22;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement align_type);
+use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement align_type mapToScalar);
 
 # Case 1
 
@@ -211,3 +211,10 @@ is(align_type({ TYPE => "STRUCT", "NAME" => "bla",
 			    ELEMENTS => [ { TYPE => "uint16" } ] }), 4);
 is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
 			    ELEMENTS => [ { TYPE => "uint8" } ] }), 4);
+
+is(mapToScalar("someverymuchnotexistingtype"), undef);
+is(mapToScalar("uint32"), "uint32");
+is(mapToScalar({TYPE => "ENUM", PARENT => { PROPERTIES => { enum8bit => 1 } } }), "uint8");
+is(mapToScalar({TYPE => "BITMAP", PROPERTIES => { bitmap64bit => 1 } }),
+	"hyper");
+is(mapToScalar({TYPE => "TYPEDEF", DATA => {TYPE => "ENUM", PARENT => { PROPERTIES => { enum8bit => 1 } } }}), "uint8");
