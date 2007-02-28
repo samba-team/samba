@@ -365,3 +365,5 @@ lcov: test_cov
 	rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
+
+testcov-html:: lcov
