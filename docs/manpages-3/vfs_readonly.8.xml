@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-readonly.8">
+<refentry id="vfs_readonly.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-readonly</refentrytitle>
+	<refentrytitle>vfs_readonly</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>readonly</refname>
+	<refname>vfs_readonly</refname>
 	<refpurpose>make a Samba share read only for a specified time period</refpurpose>
 </refnamediv>
 
@@ -22,10 +22,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>readonly</command> VFS module marks a share
+	<para>The <command>vfs_readonly</command> VFS module marks a share
 	as read only for all clients connecting within the configured
 	time period. Clients connecting during this time will be denied
 	write access to all files in the share, irrespective of ther

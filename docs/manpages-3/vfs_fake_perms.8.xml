@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-fake_perms.8">
+<refentry id="vfs_fake_perms.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-fake_perms</refentrytitle>
+	<refentrytitle>vfs_fake_perms</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>fake_perms</refname>
+	<refname>vfs_fake_perms</refname>
 	<refpurpose>enable read only Roaming Profiles</refpurpose>
 </refnamediv>
 
@@ -22,10 +22,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>fake_perms</command> VFS module was created
+	<para>The <command>vfs_fake_perms</command> VFS module was created
 	to allow Roaming Profile files and directories to be set (on
 	the Samba server under UNIX) as read only. This module will,
 	if installed on the Profiles share, report to the client that
