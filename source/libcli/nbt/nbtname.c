@@ -332,6 +332,12 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const s
 		return NT_STATUS_OK;
 	}
 
+	if (strlen(r->name) > 15) {
+		return ndr_push_error(ndr, NDR_ERR_STRING,
+				      "nbt_name longer as 15 chars: %s",
+				      r->name);
+	}
+
 	cname = compress_name(ndr, (const uint8_t *)r->name, r->type);
 	NT_STATUS_HAVE_NO_MEMORY(cname);
 
