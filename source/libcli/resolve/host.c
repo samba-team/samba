@@ -101,7 +101,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	   the right thing to do */
 	ret = read(state->child_fd, address, sizeof(address)-1);
 	if (ret <= 0) {
-		composite_error(c, NT_STATUS_BAD_NETWORK_NAME);
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -109,7 +109,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	address[ret] = 0;
 	if (strcmp(address, "0.0.0.0") == 0 ||
 	    inet_addr(address) == INADDR_NONE) {
-		composite_error(c, NT_STATUS_BAD_NETWORK_NAME);
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
