@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-cacheprime.8">
+<refentry id="vfs_cacheprime.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-cacheprime</refentrytitle>
+	<refentrytitle>vfs_cacheprime</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>cacheprime</refname>
+	<refname>vfs_cacheprime</refname>
 	<refpurpose>prime the kernel file data cache</refpurpose>
 </refnamediv>
 
@@ -22,16 +22,17 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>cacheprime</command> VFS module reads chunks
+	<para>The <command>vfs_cacheprime</command> VFS module reads chunks
 	of file data near the range requested by clients in order to
 	make sure the data is present in the kernel file data cache at
 	the time when it is actually requested by clients. </para>
 
 	<para>The size of the disk read operations performed
-	by <command>cacheprime</command> is determined by the
+	by <command>vfs_cacheprime</command> is determined by the
 	cacheprime:rsize option. All disk read operations are aligned
 	on boundaries that are a multiple of this size. Each range of
 	the file data is primed at most once during the time the client
