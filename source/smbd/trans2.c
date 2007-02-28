@@ -2882,7 +2882,7 @@ static char *store_file_unix_basic(connection_struct *conn,
 	SOFF_T(pdata,0,get_allocation_size(conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
 	pdata += 8;
 
-	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Creation Time 64 Bit */
+	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Change Time 64 Bit */
 	put_long_date_timespec(pdata+8,get_atimespec(psbuf));     /* Last access time 64 Bit */
 	put_long_date_timespec(pdata+16,get_mtimespec(psbuf));    /* Last modification time 64 Bit */
 	pdata += 24;
@@ -4804,6 +4804,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		 */
 		delete_on_fail = True;
 	}
+
+#if 1
+	/* Horrible backwards compatibility hack as an old server bug
+	 * allowed a CIFS client bug to remain unnoticed :-(. JRA.
+	 * */
+
+	if (!size) {
+		size = get_file_size(*psbuf);
+	}
+#endif
 
 	/*
 	 * Deal with the UNIX specific mode set.
