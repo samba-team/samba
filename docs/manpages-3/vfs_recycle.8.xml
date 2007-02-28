@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-recycle.8">
+<refentry id="vfs_recycle.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-recycle</refentrytitle>
+	<refentrytitle>vfs_recycle</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>recycle</refname>
+	<refname>vfs_recycle</refname>
 	<refpurpose>Samba VFS recycle bin</refpurpose>
 </refnamediv>
 
@@ -22,10 +22,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>recycle</command> intercepts file deletion
+	<para>The <command>vfs_recycle</command> intercepts file deletion
 	requests and moves the affected files to a temporary repository
 	rather than deleting them immediately. This gives the same effect
 	as the Recycle Bin on Windows computers. </para>
