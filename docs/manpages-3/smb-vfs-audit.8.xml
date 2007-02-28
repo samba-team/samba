@@ -28,7 +28,7 @@
 	<para>The <command>audit</command> VFS module records selected
 	client operations to the system log using
 	<citerefentry><refentrytitle>syslog</refentrytitle>
-	<manvolnum>3</manvolnum></citerefentry> suite.</para>
+	<manvolnum>3</manvolnum></citerefentry>.</para>
 
 	<para>The following Samba VFS operations are recorded:</para>
 	<simplelist>
