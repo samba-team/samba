@@ -17,7 +17,10 @@ Major Featuers included in the 3.0.25 code base include:
     support
   o Support for secure DDNS updates as part of the 'net 
     ads join' process
-  o 
+  o Rewriteen IdMap interface which allows for TTL based 
+    caching and per domain backends.
+  o Support for storing password policies in the passdb 
+    backend.
 
 Major bug fixes in 3.0.25pre1 include:
 
@@ -32,6 +35,13 @@ Changes
 Changes since 3.0.24
 --------------------
 
+smb.conf changes
+----------------
+
+    Parameter Name                      Description	  Default
+    --------------                      -----------	  -------
+
+
 commits
 -------
 
@@ -41,6 +51,9 @@ o   Michael Adam <ma@sernet.de>
       by "set"s.  This makes the difference between the get 
       and set calls for SMB_USER_FS_QUOTA_TYPE and 
       SMB_GROUP_FS_QUOTA_TYPE. 
+    * Prevent collision from config.h created by standalone
+      compnent builds.
+    * Store account policy settings in the passdb backend.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -61,6 +74,21 @@ o   Jeremy Allison <jra@samba.org>
     * Fix memory bloat in trans calls caused by talloc()'ing 
       memory off the wrong context.
     * Fix wildcard renames with SMBmv.
+    * Fixes for pathname handling code.
+    * Add in the wdel smbclient command to perform wildcard deletes.
+    * Fix a bug that causes smbd to 'hang' intermittently while
+      updatign the trusted domain cache.
+    * CLeanup error path processing in reduce_name().
+    * Fixes for smbtorture tests (BASE-DELETE, ...)
+    * Delete on close fixes ("I completely understand it this time").
+    * Remove unneeded checks on incoming uid/gid for mknod 
+      (fifo) unix extensions code.
+    * More fixes for Unix Extensions support.
+    * NTLMv2 fixes for Vista clients.
+    * Add an optimized lookup for Domain Users and only report 
+      the current user (which is generally what the calling 
+      application wants to know anyways).
+   
 
 
 o   Danilo Almeida <dalmeida@centeris.com>
@@ -85,14 +113,19 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix server affinity bugs in the 'net ads join' 
       code to include support for AD sites.
     * Implement DDNS update client code.
+    * Upper case the host/sAMAccountName in the keytab file.
+    * Fix lookupname call in winbindd when joined to a child 
+      domain and trying to resolve a SID in a sibling domain.
+    * Fix password changes against a Windows 2000 DC using pam_winbind.
+    * Fix crash in "pdbedit -L -w"
+    * Add "winbind normalize names" option.
 
-
-o   Alex Deiter <tiamat@komi.mts.ru>
 
 
 o   Mathias Dietz <mdietz@de.ibm.com>
     * Initial implementation of the GPFS VFS module.
     * Work on NFSv4 ACL VFS plugin.
+    * Add support for share modes to the GPFS VFS plugin.
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -101,11 +134,25 @@ o   Guenther Deschner <gd@samba.org>
     * Various fixes for 'net ads' user management functions.
     * Add an CLDAP client written in perl.
     * Cleanups to the Krb5 ticket refresh code in winbindd.
+    * Fixes for various error messages from pam_winbind when password
+      policies are being enforced.
+    * Implement grace logons for offline authentications in pam_winbind.
+    * Fixes for idmap_ad.
+    * Mem leak fixes.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 3319: Ensure that 'hide unreadable' does not filter
+      MS-DFS links.
 
 
 o   Krishna Ganugapati <krishnag@centeris.com>
     * Implement DDNS update client code.
    
+
+o   YAMASAKI Hiroyuki <h-yamasaki@pd.jp.nec.com>
+    * BUG 4346: Fix type reported for hidden shares via MS-RPC.
+
 
 o   David Hu <david.hu@hp.com>
     * BUG 4267: Fix memory leaks in ldpasam.
@@ -118,11 +165,16 @@ o   Bjoern Jacke <bj@sernet.de>
 o   Volker Lendecke <vl@samba.org>
     * Allow changing of the hashsize when runing tdbbackup.
     * Implement secure DDNS update code
-    * Klocwork fixes.
+    * Klocwork, Covrity, and IBM Checker fixes.
     * BUG 4273: Fix crash in 'net rpc vampire'
     * Refactor older SMB file serving code.
+    * Refactor open directory file serving code.
     * Implement support for inotify when serving CIFS change 
       notification requests.
+    * Fixes to allow Samba 3.0 to pass various smbtorture tests
+      (RAW-OPEN, RAW-UNLINK, RAW-CLOSE, ...)
+    * Refactor delete on close file server code.
+    * MS-DFS fixes for Vista clients.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -134,6 +186,14 @@ o   Jim McDonough <jmcd@us.ibm.com>
     * Bug fixes for GPFS VFS module.
 
 
+
+o   Stefan Metzmacher <metze@samba.org>
+    [merges from SAMBA_4_0]
+    * Portability fixes for dlopen()
+    * Sync libreplace
+   
+
+
 o   Gomati Mohanan <gomati.mohanan@in.ibm.com>
     * Work on NFSv4 ACL VFS plugin.
 
@@ -141,6 +201,10 @@ o   Gomati Mohanan <gomati.mohanan@in.ibm.com>
 o   James Peach <jpeach@samba.org>
     * Replace exit_server with exit_server_cleanly where appropriate.
     * Add docs for VFS modules.
+    * Portability fixes for autoconf and character set modules on 
+      OS X.
+    * Only attempt to reload the config file atfer the fork point 
+      if we are in daemon mode.
 
 
 o   J Raynor <raynorj@mn.rr.com>
@@ -148,8 +212,13 @@ o   J Raynor <raynorj@mn.rr.com>
       on systems that don't have capability support.
 
 
+o   Jiri Sasek <Jiri.Sasek@Sun.COM>
+    Fix possible NULL dereference in adt_tree.c
+
+
 o   Karolin Seeger <ks@sernet.de>
     * Improvements to 'net sam policy'
+    * Fixes for "net usershare" and "guest_ok=y"
 
 
 o   Simo Sorce <idra@samba.org>
@@ -168,6 +237,9 @@ o   Andrew Tridgell <tridge@samba.org>
 o   Don Watson <dwwatson@us.ibm.com>
     * Fixes for 'net rpc vampire' and the guest account
 
+
+o   Martin Zielinski <mz@seh.de>
+    * Printing fixes for Windows Vista clients.
 
 
 Release Notes for older release follow:
