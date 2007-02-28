@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smb-vfs-cacheprime.8">
+<refentry id="smb-vfs-commit.8">
 
 <refmeta>
-	<refentrytitle>smb-vfs-cacheprime</refentrytitle>
+	<refentrytitle>smb-vfs-commit</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>cacheprime</refname>
-	<refpurpose>prime the kernel file data cache</refpurpose>
+	<refname>commit</refname>
+	<refpurpose>flush dirty data at specified intervals</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>vfs objects = cacheprime</command>
+		<command>vfs objects = commit</command>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -25,20 +25,22 @@
 	<para>This module is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The <command>cacheprime</command> VFS module reads chunks
-	of file data near the range requested by clients in order to
-	make sure the data is present in the kernel file data cache at
-	the time when it is actually requested by clients. </para>
+	<para>The <command>commit</command> VFS module keeps track of
+	the amount of data written to a file and synchronizes it to
+	disk when a specified amount accumulates.
+	</para>
 
-	<para>The size of the disk read operations performed
-	by <command>cacheprime</command> is determined by the
-	cacheprime:rsize option. All disk read operations are aligned
-	on boundaries that are a multiple of this size. Each range of
-	the file data is primed at most once during the time the client
-	has the file open. </para>
+	<para><command>commit</command> is useful in two
+	circumstances. First, if you have very precious data, the
+	impact of unexpected power loss can be minimized by a small
+	commit:dthresh value. Secondly, write performance can be
+	improved on some systems by flushing file data early and at
+	regular intervals.</para>
 
 	<para>This module is stackable.</para>
+
 </refsect1>
+
 
 <refsect1>
 	<title>OPTIONS</title>
@@ -46,10 +48,12 @@
 	<variablelist>
 
 		<varlistentry>
-		<term>cacheprime:rsize = BYTES</term>
+		<term>commit:dthresh = BYTES</term>
 		<listitem>
-		<para>The number of bytes with which to prime
-		the kernel data cache.</para>
+		<para>Synchronize file data each time the specified
+		number of bytes has been written.
+		</para>
+
 		<para>The following suffixes may be applied to BYTES:</para>
 		<itemizedlist>
 		<listitem><para><command>K</command> - BYTES is a number of kilobytes</para></listitem>
@@ -66,24 +70,20 @@
 <refsect1>
 	<title>EXAMPLES</title>
 
-	<para>For a hypothetical disk array, it is necessary to ensure
-	that all read operations are of size 1 megabyte (1048576 bytes),
-	and aligned on 1 megabyte boundaries:
-	</para>
+	<para>Synchronize the file data on the [precious] share after
+	every 512 kilobytes (524288 bytes) of data is written:</para>
 <programlisting>
-	<smbconfsection name="[hypothetical]"/>
-	<smbconfoption name="vfs objects">cacheprime</smbconfoption>
-	<smbconfoption name="cacheprime:rsize">1M</smbconfoption>
+        <smbconfsection name="[precious]"/>
+	<smbconfoption name="path">/data/precious</smbconfoption>
+	<smbconfoption name="vfs objects">commit</smbconfoption>
+	<smbconfoption name="commit:dthresh">512K</smbconfoption>
 </programlisting>
-
 </refsect1>
 
 <refsect1>
 	<title>CAVEATS</title>
-	<para><command>cacheprime</command> is not a a substitute for
-	a general-purpose readahead mechanism. It is intended for use
-	only in very specific environments where disk operations must
-	be aligned and sized to known values (as much as that is possible).
+	<para>On some systems, the data synchronization performed by
+	<command>commit</command> may reduce performance.
 	</para>
 </refsect1>
 
