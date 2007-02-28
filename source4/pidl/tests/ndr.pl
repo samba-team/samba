@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 22;
+use Test::More tests => 25;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -204,11 +204,17 @@ $e = {
 $ne = ParseElement($e, undef);
 is($ne->{REPRESENTATION_TYPE}, "uint8");
 
+is(align_type("hyper"), 8);
 is(align_type("uint32"), 4);
 is(align_type("uint16"), 2);
 is(align_type("uint8"), 1);
 is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
 			    ELEMENTS => [ { TYPE => "uint16" } ] }), 4);
+is(align_type({ TYPE => "STRUCT", 
+			    ELEMENTS => [ { TYPE => "hyper" } ] }), 8);
+is(align_type({ TYPE => "DECLARE", DATA => { 
+				TYPE => "STRUCT", 
+			    ELEMENTS => [ { TYPE => "hyper" } ] }}), 8);
 is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
 			    ELEMENTS => [ { TYPE => "uint8" } ] }), 4);
 
