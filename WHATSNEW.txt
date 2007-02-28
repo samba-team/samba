@@ -1,13 +1,183 @@
+                   ==================================
+                   Release Notes for Samba 3.0.25pre1
+                              Feb 28, 2007
+                   ==================================
+
+This is a preview release of the Samba 3.0.25 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  There has been a substantial amount
+of development since the 3.0.23/3.0.24 series of stable releases.
+We would like to ask the Samba community for help in testing
+these changes as we work towards the next significant production
+upgrade Samba 3.0 release.
+
+Major Featuers included in the 3.0.25 code base include:
+
+  o Significant improvements in the winbind offline logon 
+    support
+  o Support for secure DDNS updates as part of the 'net 
+    ads join' process
+  o 
+
+Major bug fixes in 3.0.25pre1 include:
+
+  o Compatibilities issues with Windows Vista
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.24
+--------------------
+
+commits
+-------
+
+
+o   Michael Adam <ma@sernet.de>
+    * Patch to lib/sysquotas_linux.c replacing some "get"s 
+      by "set"s.  This makes the difference between the get 
+      and set calls for SMB_USER_FS_QUOTA_TYPE and 
+      SMB_GROUP_FS_QUOTA_TYPE. 
+
+
+o   Jeremy Allison <jra@samba.org>
+    * winbind offline logon fixes.
+    * Support for AD sites when locating domain controllers.
+    * Fix libsmbclient bug with Konqueror and NetApp filers
+      that need a leading / in OpenAndX calls. 
+    * BUG 4187: Possible crash in signing on/off code.
+    * Fix memory leaks in pam_winbind.c.
+    * Fix a bugin the sequence number store/fetch routines in 
+      winbindd_cache.tdb.
+    * Fix the problem with Linux clients requesting O_WRONLY
+      on write-only files.
+    * Fix a class of memory allocation bugs in the handling 
+      of user tokens.
+    * Fix crash bug in winbindd caused by a bug ni the 
+      messaging dispatch code.
+    * Fix memory bloat in trans calls caused by talloc()'ing 
+      memory off the wrong context.
+    * Fix wildcard renames with SMBmv.
+
+
+o   Danilo Almeida <dalmeida@centeris.com>
+    * Add additional debug support for pam_winbind.
+    * Add support for listing multiple groups in pam_winbind's
+      require-membership-of option which act as a logical OR.
+
+
+o   Andrew Benham <andrew.benham@thus.net>
+    * BUG 4290: Properly compute time to password expiration 
+      in message from pam_winbind.
+
+
+
+o   Kai Blin <kai.blin@gmail.com>
+    * Match Windows NTLMSSP flags.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Implement plugable "winbind nss info" interface.
+    * Removal of unmaintained smbwrapper utility.
+    * Fix server affinity bugs in the 'net ads join' 
+      code to include support for AD sites.
+    * Implement DDNS update client code.
+
+
+o   Alex Deiter <tiamat@komi.mts.ru>
+
+
+o   Mathias Dietz <mdietz@de.ibm.com>
+    * Initial implementation of the GPFS VFS module.
+    * Work on NFSv4 ACL VFS plugin.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * winbind offline logon fixes.
+    * Support for AD sites when locating domain controllers.
+    * Various fixes for 'net ads' user management functions.
+    * Add an CLDAP client written in perl.
+    * Cleanups to the Krb5 ticket refresh code in winbindd.
+
+
+o   Krishna Ganugapati <krishnag@centeris.com>
+    * Implement DDNS update client code.
+   
+
+o   David Hu <david.hu@hp.com>
+    * BUG 4267: Fix memory leaks in ldpasam.
+
+
+o   Bjoern Jacke <bj@sernet.de>
+    * BUG 4244: Limit stat cache to a default of 1MB.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Allow changing of the hashsize when runing tdbbackup.
+    * Implement secure DDNS update code
+    * Klocwork fixes.
+    * BUG 4273: Fix crash in 'net rpc vampire'
+    * Refactor older SMB file serving code.
+    * Implement support for inotify when serving CIFS change 
+      notification requests.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Cleanups to sharesec utility.
+    * Compilter warning cleanups.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Bug fixes for GPFS VFS module.
+
+
+o   Gomati Mohanan <gomati.mohanan@in.ibm.com>
+    * Work on NFSv4 ACL VFS plugin.
+
+
+o   James Peach <jpeach@samba.org>
+    * Replace exit_server with exit_server_cleanly where appropriate.
+    * Add docs for VFS modules.
+
+
+o   J Raynor <raynorj@mn.rr.com>
+    * Make sure we are privileged when doing DMAPI operations 
+      on systems that don't have capability support.
+
+
+o   Karolin Seeger <ks@sernet.de>
+    * Improvements to 'net sam policy'
+
+
+o   Simo Sorce <idra@samba.org>
+    * Initial implementation of new IdMap interface.
+    * Fix crash in pam_winbind caused by referencing a 
+      pointer after the memory had been freed.
+
+
+o   Peter Somogyi <SOMOGYI@de.ibm.com>
+    * Work on NFSv4 ACL VFS plugin.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+
+
+o   Don Watson <dwwatson@us.ibm.com>
+    * Fixes for 'net rpc vampire' and the guest account
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.24
                              Feb 5, 2007
                    ==============================
 
-This is the latest stable release of Samba. This is the version 
-that production Samba servers should be running for all current 
-bug-fixes.  Please read the changes in this section and for the 
-original 3.0.23 release regarding new features and difference 
-in behavior from previous releases.
 
 Important issues addressed in 3.0.24 include:
 
