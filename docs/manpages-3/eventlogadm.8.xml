@@ -42,8 +42,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the
-	<citerefentry><refentrytitle>samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
 	<para><command>eventlogadm</command> is a filter that accepts
@@ -62,8 +61,7 @@
 		<varlistentry>
 		<term><option>-d</option></term>
 		<listitem><para>
-		The <command>-d</command> option causes
-		<command>eventlogadm</command> to emit debugging
+		The <command>-d</command> option causes <command>eventlogadm</command> to emit debugging
 		information.
 		</para></listitem>
 		</varlistentry>
@@ -119,8 +117,7 @@
 	<itemizedlist>
 
 		<listitem><para>
-		<command>LEN</command> - This field should be 0, since
-		<command>eventlogadm</command> will calculate this value.
+		<command>LEN</command> - This field should be 0, since <command>eventlogadm</command> will calculate this value.
 		</para></listitem>
 
 		<listitem><para>
@@ -200,8 +197,7 @@
 
 <refsect1>
 	<title>EXAMPLES</title>
-	<para>An example of the record format accepted by
-	<command>eventlogadm</command>:</para>
+	<para>An example of the record format accepted by <command>eventlogadm</command>:</para>
 
 	<programlisting>
 	LEN: 0
