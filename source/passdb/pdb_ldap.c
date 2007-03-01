@@ -2049,14 +2049,25 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	TALLOC_FREE( attr_list );
 
 	if (num_result == 0) {
+		char *escape_username;
 		/* Check if we need to add an entry */
 		DEBUG(3,("ldapsam_add_sam_account: Adding new user\n"));
 		ldap_op = LDAP_MOD_ADD;
-		if (username[strlen(username)-1] == '$') {
-			slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", username, lp_ldap_machine_suffix ());
-		} else {
-			slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", username, lp_ldap_user_suffix ());
+
+		escape_username = escape_rdn_val_string_alloc(username);
+		if (!escape_username) {
+			DEBUG(0, ("Out of memory!\n"));
+			ldap_msgfree(result);
+			return NT_STATUS_NO_MEMORY;
 		}
+
+		if (username[strlen(username)-1] == '$') {
+			slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", escape_username, lp_ldap_machine_suffix ());
+		} else {
+			slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", escape_username, lp_ldap_user_suffix ());
+		}
+
+		SAFE_FREE(escape_username);
 	}
 
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
@@ -2415,11 +2426,21 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		}
 
 		for (memberuid = values; *memberuid != NULL; memberuid += 1) {
-			filter = talloc_asprintf_append(filter, "(uid=%s)", *memberuid);
+			char *escape_memberuid;
+
+			escape_memberuid = escape_ldap_string_alloc(*memberuid);
+			if (escape_memberuid == NULL) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			
+			filter = talloc_asprintf_append(filter, "(uid=%s)", escape_memberuid);
 			if (filter == NULL) {
 				ret = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
+
+			SAFE_FREE(escape_memberuid);
 		}
 
 		filter = talloc_asprintf_append(filter, "))");
@@ -4773,6 +4794,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
 
 	if (add_posix) {
+		char *escape_name;
+
 		DEBUG(3,("ldapsam_create_user: Creating new posix user\n"));
 
 		/* retrieve the Domain Users group gid */
@@ -4799,11 +4822,20 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		}
 		uidstr = talloc_asprintf(tmp_ctx, "%d", uid);
 		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
-		if (is_machine) {
-			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_machine_suffix ());
-		} else {
-			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_user_suffix ());
+
+		escape_name = escape_rdn_val_string_alloc(name);
+		if (!escape_name) {
+			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
 		}
+
+		if (is_machine) {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_machine_suffix ());
+		} else {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_user_suffix ());
+		}
+
+		SAFE_FREE(escape_name);
 
 		if (!homedir || !shell || !uidstr || !gidstr || !dn) {
 			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
@@ -4986,6 +5018,8 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	}
 
 	if (num_result == 0) {
+		char *escape_name;
+
 		DEBUG(3,("ldapsam_create_user: Creating new posix group\n"));
 
 		is_new_entry = True;
@@ -4997,7 +5031,16 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		}
 
 		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
-		dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, lp_ldap_group_suffix());
+
+		escape_name = escape_rdn_val_string_alloc(name);
+		if (!escape_name) {
+			DEBUG (0, ("ldapsam_create_group: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", escape_name, lp_ldap_group_suffix());
+
+		SAFE_FREE(escape_name);
 
 		if (!gidstr || !dn) {
 			DEBUG (0, ("ldapsam_create_group: Out of memory!\n"));
@@ -5335,6 +5378,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	uint32 num_result;
 	LDAPMod **mods = NULL;
 	char *filter;
+	char *escape_username;
 	char *gidstr;
 	const char *dn = NULL;
 	gid_t gid;
@@ -5351,14 +5395,22 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_set_primary_group: Out of Memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
+	escape_username = escape_ldap_string_alloc(pdb_get_username(sampass));
+	if (escape_username== NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(uid=%s)"
 				 "(objectClass=%s)"
 				 "(objectClass=%s))",
-				 pdb_get_username(sampass),
+				 escape_username,
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
+
+	SAFE_FREE(escape_username);
+
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

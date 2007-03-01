@@ -3034,7 +3034,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 {
 	ADS_STATUS ads_rc;
 	LDAPMessage *res;
-	char *prt_dn = NULL, *srv_dn, *srv_cn_0;
+	char *prt_dn = NULL, *srv_dn, *srv_cn_0, *srv_cn_escaped, *sharename_escaped;
 	char *srv_dn_utf8, **srv_cn_utf8;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
@@ -3080,11 +3080,29 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	ldap_memfree(srv_dn_utf8);
 	ldap_memfree(srv_cn_utf8);
 
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_0, 
-		 printer->info_2->sharename, srv_dn);
+	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
+	if (!srv_cn_escaped) {
+		SAFE_FREE(srv_cn_0);
+		ldap_memfree(srv_dn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	sharename_escaped = escape_rdn_val_string_alloc(printer->info_2->sharename);
+	if (!sharename_escaped) {
+		SAFE_FREE(srv_cn_escaped);
+		SAFE_FREE(srv_cn_0);
+		ldap_memfree(srv_dn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
 
 	SAFE_FREE(srv_dn);
 	SAFE_FREE(srv_cn_0);
+	SAFE_FREE(srv_cn_escaped);
+	SAFE_FREE(sharename_escaped);
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
