@@ -535,7 +535,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	request.cmd = WINBINDD_DUAL_SID2GID;
 	sid_to_string(request.data.dual_sid2id.sid, sid);
 
-	DEBUG(7,("idmap_sid2gid_async: Resolving %s to a gid\n", 
+	DEBUG(7,("winbindd_sid2gid_async: Resolving %s to a gid\n", 
 		request.data.dual_sid2id.sid));
 
 	do_async(mem_ctx, idmap_child(), &request, winbindd_sid2gid_recv,
