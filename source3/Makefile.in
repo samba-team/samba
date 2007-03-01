@@ -1372,8 +1372,8 @@ bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
-		@SONAMEFLAG@`basename $@` -lpam @INIPARSERLIBS@
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ $(GPLIBS) \
+		@SONAMEFLAG@`basename $@` 
 
 bin/builtin.@SHLIBEXT@: proto_exists $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
