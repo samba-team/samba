@@ -604,7 +604,7 @@ number of entries sent will be zero.
 
 #define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
 
-/* Definition of parameter block of SMB_SET_POSIX_LOCK */
+/* Definition of data block of SMB_SET_POSIX_LOCK */
 /*
   [2 bytes] lock_type - 0 = Read, 1 = Write, 2 = Unlock
   [2 bytes] lock_flags - 1 = Wait (only valid for setlock)
@@ -643,7 +643,7 @@ number of entries sent will be zero.
 #define SMB_O_NOFOLLOW			0x400
 #define SMB_O_DIRECT			0x800
 
-/* Definition of request parameter block for SMB_POSIX_PATH_OPEN */
+/* Definition of request data block for SMB_POSIX_PATH_OPEN */
 /*
   [4 bytes] flags (as smb_ntcreate_Flags).
   [4 bytes] open_mode
@@ -659,5 +659,13 @@ number of entries sent will be zero.
   [2 bytes] reply info level    - as requested or 0xFFFF if not available.
   [n bytes] - info level reply  - if available.
 */
+
+/* Definition of request data block for SMB_POSIX_UNLINK */
+/*
+  [2 bytes] flags (defined below).
+*/
+
+#define SMB_POSIX_UNLINK_FILE_TARGET 0
+#define SMB_POSIX_UNLINK_DIRECTORY_TARGET 1
 
 #endif
