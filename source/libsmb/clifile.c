@@ -1775,3 +1775,179 @@ BOOL cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
 
 	return cli_get_ea_list(cli, setup, param, 6, ctx, pnum_eas, pea_list);
 }
+
+/****************************************************************************
+ Convert open "flags" arg to uint32 on wire.
+****************************************************************************/
+
+static uint32 open_flags_to_wire(int flags)
+{
+	int open_mode = flags & O_ACCMODE;
+	uint32 ret = 0;
+
+	switch (open_mode) {
+		case O_WRONLY:
+			ret |= SMB_O_WRONLY;
+			break;
+		case O_RDWR:
+			ret |= SMB_O_RDWR;
+			break;
+		case O_RDONLY:
+		default:
+			ret |= SMB_O_RDONLY;
+			break;
+	}
+
+	if (flags & O_CREAT) {
+		ret |= SMB_O_CREAT;
+	}
+	if (flags & O_EXCL) {
+		ret |= SMB_O_EXCL;
+	}
+	if (flags & O_TRUNC) {
+		ret |= SMB_O_TRUNC;
+	}
+	if (flags & O_SYNC) {
+		ret |= SMB_O_SYNC;
+	}
+	if (flags & O_APPEND) {
+		ret |= SMB_O_APPEND;
+	}
+	if (flags & O_DIRECT) {
+		ret |= SMB_O_DIRECT;
+	}
+	if (flags & O_DIRECTORY) {
+		ret |= SMB_O_DIRECTORY;
+	}
+	return ret;
+}
+
+/****************************************************************************
+ Open a file - POSIX semantics. Returns fnum. Doesn't request oplock.
+****************************************************************************/
+
+int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode)
+{
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	char param[sizeof(pstring)+6];
+	char data[14];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+	int fnum = -1;
+
+	memset(param, 0, sizeof(param));
+	SSVAL(param,0, SMB_POSIX_PATH_OPEN);
+	p = &param[6];
+
+	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	/* Convert flags to wire_open_mode. */
+
+	p = data;
+	SIVAL(p,0,0); /* No oplock. */
+	SIVAL(p,4,open_flags_to_wire(flags));
+	SIVAL(p,8,unix_perms_to_wire(mode));
+	SSVAL(p,12,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
+
+	data_len = 14;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return -1;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return -1;
+	}
+
+	fnum = SVAL(rdata,2);
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return fnum;
+}
+
+/****************************************************************************
+ mkdir - POSIX semantics.
+****************************************************************************/
+
+int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
+{
+	return (cli_posix_open(cli, fname, O_CREAT|O_DIRECTORY, mode) == -1) ? -1 : 0;
+}
+
+/****************************************************************************
+ unlink or rmdir - POSIX semantics.
+****************************************************************************/
+
+static BOOL cli_posix_unlink_internal(struct cli_state *cli, const char *fname, BOOL is_dir)
+{
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	char param[sizeof(pstring)+6];
+	char data[2];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	memset(param, 0, sizeof(param));
+	SSVAL(param,0, SMB_POSIX_PATH_UNLINK);
+	p = &param[6];
+
+	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	SSVAL(data, 0, is_dir ? SMB_POSIX_UNLINK_DIRECTORY_TARGET :
+			SMB_POSIX_UNLINK_FILE_TARGET);
+	data_len = 2;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+/****************************************************************************
+ unlink - POSIX semantics.
+****************************************************************************/
+
+BOOL cli_posix_unlink(struct cli_state *cli, const char *fname)
+{
+	return cli_posix_unlink_internal(cli, fname, False);
+}
+
+/****************************************************************************
+ rmdir - POSIX semantics.
+****************************************************************************/
+
+int cli_posix_rmdir(struct cli_state *cli, const char *fname)
+{
+	return cli_posix_unlink_internal(cli, fname, True);
+}
