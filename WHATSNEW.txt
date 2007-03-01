@@ -304,7 +304,7 @@ o   J Raynor <raynorj@mn.rr.com>
 
 
 o   Jiri Sasek <Jiri.Sasek@Sun.COM>
-    I Fix possible NULL dereference in adt_tree.c
+    * I Fix possible NULL dereference in adt_tree.c
 
 
 o   Karolin Seeger <ks@sernet.de>
