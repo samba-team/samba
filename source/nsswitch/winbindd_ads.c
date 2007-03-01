@@ -40,6 +40,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	fstring dc_name;
+	struct in_addr dc_ip;	
 
 	DEBUG(10,("ads_cached_connection\n"));
 
@@ -114,6 +116,12 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	ads->auth.renewable = WINBINDD_PAM_AUTH_KRB5_RENEW_TIME;
 
+	/* Setup the server affinity cache.  We don't reaally care
+	   about the name.  Just setup affinity and the KRB5_CONFIG 
+	   file. */
+
+	get_dc_name( "", ads->auth.realm, dc_name, &dc_ip );
+	
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
