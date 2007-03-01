@@ -1080,7 +1080,6 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0,("unable to initalize domain list\n"));
 		exit(1);
 	}
-#endif
 
 	init_idmap_child();
 
