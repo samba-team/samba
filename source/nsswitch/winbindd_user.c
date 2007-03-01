@@ -41,20 +41,21 @@ static BOOL fillup_pw_field(const char *lp_template,
 	if (out == NULL)
 		return False;
 
+	/* The substitution of %U and %D in the 'template 
+	   homedir' is done by talloc_sub_specified() below.
+	   If we have an in string (which means the value has already
+	   been set in the nss_info backend), then use that.
+	   Otherwise use the template value passed in. */
+
 	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
-		safe_strcpy(out, in, sizeof(fstring) - 1);
-		return True;
-	}
-
-	/* Home directory and shell - use template config parameters.  The
-	   defaults are /tmp for the home directory and /bin/false for
-	   shell. */
-	
-	/* The substitution of %U and %D in the 'template homedir' is done
-	   by talloc_sub_specified() below. */
-
-	templ = talloc_sub_specified(NULL, lp_template, username, domname,
+		templ = talloc_sub_specified(NULL, in, 
+					     username, domname,
 				     uid, gid);
+	} else {
+		templ = talloc_sub_specified(NULL, lp_template, 
+					     username, domname,
+					     uid, gid);		
+	}
 		
 	if (!templ)
 		return False;
