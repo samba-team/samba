@@ -116,19 +116,18 @@
 <refsect1>
 	<title>QUOTA_SET_COMAND</title>
 
-	<para>The format of an ACL is one or more ACL entries separated by 
-	either commas or newlines.  An ACL entry is one of the following: </para>
-
-	<para>
-	for setting user quotas for the user specified by -u or the current username:
+	<para>The format of an the QUOTA_SET_COMMAND is an operation
+	name followed by a set of parameters specific to that operation.
 	</para>
+
+	<para>To set user quotas for the user specified by -u or for the
+	current username: </para>
 
 	<para><userinput>
 	UQLIM:&lt;username&gt;:&lt;softlimit&gt;/&lt;hardlimit&gt;
 	</userinput></para>
 
-	<para>
-	for setting the default quotas for a share:
+	<para>To set the default quotas for a share:
 	</para>
 
 	<para><userinput>
@@ -136,12 +135,14 @@
 	</userinput></para>
 
 	<para>
-	for changing the share quota settings:
+	To change the share quota settings:
 	</para>
 
 	<para><userinput>
 	FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT
 	</userinput></para>
+
+	<para>All limits are specified as a number of bytes.</para>
 </refsect1>
 
 <refsect1>
