@@ -48,6 +48,11 @@
 #include "winbind_client.h"
 #include <usersec.h>
 
+/* enable this to log which entry points have not been
+  completed yet */
+#define LOG_UNIMPLEMENTED_CALLS 0
+
+
 #define WB_AIX_ENCODED '_'
 
 static int debug_enabled;
@@ -566,14 +571,12 @@ static attrval_t pwd_to_groupsids(struct passwd *pwd)
 	attrval_t r;
 	char *s, *p;
 
-	s = wb_aix_getgrset(pwd->pw_name);
-	if (!s) {
+	if ( (s = wb_aix_getgrset(pwd->pw_name)) == NULL ) {
 		r.attr_flag = EINVAL;
 		return r;
 	}
 
-	p = malloc(strlen(s)+2);
-	if (!p) {
+	if ( (p = malloc(strlen(s)+2)) == NULL ) {
 		r.attr_flag = ENOMEM;
 		return r;
 	}
@@ -626,6 +629,8 @@ static int wb_aix_user_attrib(const char *key, char *attributes[],
 
 		if (strcmp(attributes[i], S_ID) == 0) {
 			results[i].attr_un.au_int = pwd->pw_uid;
+		} else if (strcmp(attributes[i], S_PGID) == 0) {
+			results[i].attr_un.au_int = pwd->pw_gid;
 		} else if (strcmp(attributes[i], S_PWD) == 0) {
 			results[i].attr_un.au_char = strdup(pwd->pw_passwd);
 		} else if (strcmp(attributes[i], S_HOME) == 0) {
@@ -744,21 +749,69 @@ static void wb_aix_close(void *token)
 */
 static attrlist_t **wb_aix_attrlist(void)
 {
-	attrlist_t **ret;
+	/* pretty confusing but we are allocating the array of pointers
+	   and the structures we'll be pointing to all at once.  So
+ 	   you need N+1 pointers and N structures. */
+
+	attrlist_t **ret = NULL;
+	attrlist_t *offset = NULL;
+	int i;
+	int n;
+	size_t size;
+
+	struct attr_types {
+		const char *name;
+		int flags;
+		int type;
+	} attr_list[] = {
+		/* user attributes */
+		{S_ID, 		AL_USERATTR, 	SEC_INT},
+		{S_PGRP, 	AL_USERATTR,	SEC_CHAR},
+		{S_HOME, 	AL_USERATTR, 	SEC_CHAR},
+		{S_SHELL, 	AL_USERATTR,	SEC_CHAR},
+		{S_PGID, 	AL_USERATTR,	SEC_INT},
+		{S_GECOS, 	AL_USERATTR,	SEC_CHAR},
+		{S_SHELL, 	AL_USERATTR,	SEC_CHAR},
+		{S_PGRP, 	AL_USERATTR,	SEC_CHAR},
+		{S_GROUPS, 	AL_USERATTR, 	SEC_LIST},
+		{"SID", 	AL_USERATTR,	SEC_CHAR},
+
+		/* group attributes */
+		{S_ID, 		AL_GROUPATTR,	SEC_INT}
+	};
+
 	logit("method attrlist called\n");
-	ret = malloc(2*sizeof(attrlist_t *) + sizeof(attrlist_t));
-	if (!ret) {
+
+	n = sizeof(attr_list) / sizeof(struct attr_types);
+	size = (n*sizeof(attrlist_t *));
+
+	if ( (ret = malloc( size )) == NULL ) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	ret[0] = (attrlist_t *)(ret+2);
+	/* offset to where the structures start in the buffer */
 
-	/* just one extra attribute - the windows SID */
-	ret[0]->al_name = strdup("SID");
-	ret[0]->al_flags = AL_USERATTR;
-	ret[0]->al_type = SEC_CHAR;
-	ret[1] = NULL;
+	offset = (attrlist_t *)(ret + n);
+
+	/* now loop over the user_attr_list[] array and add
+	   all the members */
+
+	for ( i=0; i<n; i++ ) {
+		attrlist_t *a = malloc(sizeof(attrlist_t));
+
+		if ( !a ) {
+			/* this is bad.  Just bail */
+			return NULL;
+		}
+
+		a->al_name  = strdup(attr_list[i].name);
+		a->al_flags = attr_list[i].flags;
+		a->al_type  = attr_list[i].type;
+
+		ret[i] = a;
+	}
+	ret[n] = NULL;
 
 	return ret;
 }
