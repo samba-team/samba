@@ -19,7 +19,7 @@
 		<command>eventlogadm</command>
 		<arg><option>-d</option></arg>
 		<arg><option>-h</option></arg>
-		<arg choixe="plain"><option>-o</option>
+		<arg choice="plain"><option>-o</option>
 		<literal>addsource</literal>
 		<replaceable>EVENTLOG</replaceable>
 		<replaceable>SOURCENAME</replaceable>
@@ -31,7 +31,7 @@
 		<command>eventlogadm</command>
 		<arg><option>-d</option></arg>
 		<arg><option>-h</option></arg>
-		<arg choce="plain"><option>-o</option>
+		<arg choice="plain"><option>-o</option>
 		<literal>write</literal>
 		<replaceable>EVENTLOG</replaceable>
 		</arg>
