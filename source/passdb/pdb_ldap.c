@@ -2436,6 +2436,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			
 			filter = talloc_asprintf_append(filter, "(uid=%s)", escape_memberuid);
 			if (filter == NULL) {
+				SAFE_FREE(escape_memberuid);
 				ret = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
