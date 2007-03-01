@@ -4305,6 +4305,11 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
+		fname ? fname : fsp->fsp_name,
+		(unsigned int)num_file_acls,
+		(unsigned int)num_def_acls));
+
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
 			pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
 		return map_nt_error_from_unix(errno);
@@ -4386,6 +4391,14 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
+	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
+			"lock_pid = %u, count = %.0f, offset = %.0f\n",
+		fsp->fsp_name,
+		(unsigned int)lock_type,
+		(unsigned int)lock_pid,
+		(double)count,
+		(double)offset ));
+
 	if (lock_type == UNLOCK_LOCK) {
 		status = do_unlock(fsp,
 				lock_pid,
@@ -4450,6 +4463,9 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	/* write time */
 	tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
 
+	DEBUG(10,("smb_set_info_standard: file %s\n",
+		fname ? fname : fsp->fsp_name ));
+
 	return smb_set_file_time(conn,
 				fsp,
 				fname,
@@ -4506,6 +4522,9 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	if (null_mtime(tvs.modtime)) {
 		tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
 	}
+
+	DEBUG(10,("smb_set_file_basic_info: file %s\n",
+		fname ? fname : fsp->fsp_name ));
 
 	return smb_set_file_time(conn,
 				fsp,
@@ -4910,6 +4929,9 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 
 	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
 
+	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
+		fname, (unsigned int)unixmode ));
+
 	status = open_directory(conn,
 				fname,
 				psbuf,
@@ -5056,6 +5078,11 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		mod_unixmode |= FILE_FLAG_NO_BUFFERING;
 	}
 
+	DEBUG(10,("smb_posix_open: file %s, smb_posix_flags = %u, mode 0%o\n",
+		fname,
+		(unsigned int)wire_open_mode,
+		(unsigned int)unixmode ));
+
 	status = open_file_ntcreate(conn,
 				fname,
 				psbuf,
@@ -5149,6 +5176,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 			!VALID_STAT_OF_DIR(*psbuf)) {
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
+
+	DEBUG(10,("smb_posix_unlink: %s %s\n",
+		(flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) ? "directory" : "file",
+		fname));
 
 	if (VALID_STAT_OF_DIR(*psbuf)) {
 		status = open_directory(conn,
