@@ -2119,7 +2119,7 @@ void wcache_invalidate_cache(void)
 	}
 }
 
-static BOOL init_wcache(void)
+BOOL init_wcache(void)
 {
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
