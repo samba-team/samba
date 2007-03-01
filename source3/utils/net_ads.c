@@ -1823,10 +1823,12 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
 	if (argc < 1) {
+		talloc_destroy(mem_ctx);
 		return net_ads_printer_usage(argc, argv);
 	}
 	
@@ -1854,6 +1856,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		d_fprintf(stderr, "Unable to open a connnection to %s to obtain data "
 			 "for %s\n", servername, printername);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1865,6 +1868,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		d_fprintf(stderr, "Could not find machine account for server %s\n", 
 			 servername);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1878,6 +1882,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		SAFE_FREE(printername_escaped);
 		d_fprintf(stderr, "Internal error, out of memory!");
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1892,6 +1897,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 			 servername);
 		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1899,6 +1905,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 							      printername))) {
 		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1907,12 +1914,14 @@ static int net_ads_printer_publish(int argc, const char **argv)
                 d_fprintf(stderr, "ads_publish_printer: %s\n", ads_errstr(rc));
 		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
                 return -1;
         }
  
         d_printf("published printer\n");
 	SAFE_FREE(prt_dn);
 	ads_destroy(&ads);
+	talloc_destroy(mem_ctx);
  
 	return 0;
 }

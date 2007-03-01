@@ -5574,6 +5574,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (!pipe_hnd) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n", nt_errstr(nt_status) ));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -5583,6 +5584,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -5595,6 +5597,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -5608,6 +5611,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (!pdb_set_trusteddom_pw(domain_name, opt_password, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 	
@@ -5620,6 +5624,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -5807,6 +5812,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	/* open \PIPE\lsarpc and open policy handle */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
 		DEBUG(0, ("Couldn't connect to domain controller\n"));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5815,6 +5821,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5824,6 +5831,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
  			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5836,6 +5844,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -5855,6 +5864,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
 			cli_shutdown(cli);
+			talloc_destroy(mem_ctx);
 			return -1;
 		};
 		
@@ -5866,6 +5876,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 							   domain_sids[i], trusted_dom_names[i]);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				cli_shutdown(cli);
+				talloc_destroy(mem_ctx);
 				return -1;
 			}
 		};
@@ -5884,6 +5895,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5943,6 +5955,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* open \PIPE\lsarpc and open policy handle */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
 		DEBUG(0, ("Couldn't connect to domain controller\n"));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5950,6 +5963,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!pipe_hnd) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 
@@ -5958,6 +5972,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
  			nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 	
@@ -5969,6 +5984,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 		
@@ -5987,6 +6003,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
+			talloc_destroy(mem_ctx);
 			return -1;
 		};
 		
@@ -6007,6 +6024,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 	
@@ -6024,6 +6042,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &nt_status);
 	if (!pipe_hnd) {
 		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 	
@@ -6033,6 +6052,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 	
@@ -6044,6 +6064,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));
+		talloc_destroy(mem_ctx);
 		return -1;
 	};
 	
@@ -6061,6 +6082,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
+			talloc_destroy(mem_ctx);
 			return -1;
 		};
 		

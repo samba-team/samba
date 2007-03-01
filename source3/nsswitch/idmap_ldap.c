@@ -1283,6 +1283,9 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom, const struct id
 			 sid, (unsigned long)map->xid.id, type));
 		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", 
 			ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
+		if (ld_error) {
+			ldap_memfree(ld_error);
+		}
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
