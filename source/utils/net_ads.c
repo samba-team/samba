@@ -1819,6 +1819,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
+	char *srv_cn_escaped, *printername_escaped;
 	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
@@ -1870,7 +1871,15 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	srv_dn = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
+	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn[0]);
+	printername_escaped = escape_rdn_val_string_alloc(printername);
+	if (!srv_cn_escaped || !printername_escaped) {
+		d_fprintf(stderr, "Internal error, out of memory!");
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
 	if (!pipe_hnd) {
@@ -2158,6 +2167,7 @@ static int net_ads_dn_usage(int argc, const char **argv)
 		"The DN standard LDAP DN, and the attributes are a list of LDAP fields \n"\
 		"to show in the results\n\n"\
 		"Example: net ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' sAMAccountName\n\n"
+		"Note: the DN must be provided properly escaped. See RFC 4514 for details\n\n"
 		);
 	net_common_flags_usage(argc, argv);
 	return -1;

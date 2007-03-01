@@ -50,6 +50,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	ADS_MODLIST mods;
 	ADS_STATUS status;
 	const char *upn, *new_dn, *name, *controlstr;
+	char *name_escaped = NULL;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", NULL};
 
@@ -63,7 +64,9 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 
 	if (!(upn = talloc_asprintf(ctx, "%s@%s", user, ads->config.realm)))
 		goto done;
-	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", name, container,
+	if (!(name_escaped = escape_rdn_val_string_alloc(name)))
+		goto done;
+	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", name_escaped, container,
 				       ads->config.bind_path)))
 		goto done;
 	if (!(controlstr = talloc_asprintf(ctx, "%u", (UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE))))
@@ -81,6 +84,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:
+	SAFE_FREE(name_escaped);
 	talloc_destroy(ctx);
 	return status;
 }
@@ -92,6 +96,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	ADS_MODLIST mods;
 	ADS_STATUS status;
 	char *new_dn;
+	char *name_escaped = NULL;
 	const char *objectClass[] = {"top", "group", NULL};
 
 	if (!(ctx = talloc_init("ads_add_group_acct")))
@@ -99,7 +104,9 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 
 	status = ADS_ERROR(LDAP_NO_MEMORY);
 
-	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", group, container,
+	if (!(name_escaped = escape_rdn_val_string_alloc(group)))
+		goto done;
+	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", name_escaped, container,
 				       ads->config.bind_path)))
 		goto done;
 	if (!(mods = ads_init_mods(ctx)))
@@ -114,6 +121,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	status = ads_gen_add(ads, new_dn, mods);
 
  done:
+	SAFE_FREE(name_escaped);
 	talloc_destroy(ctx);
 	return status;
 }

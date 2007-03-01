@@ -39,12 +39,21 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 	const char *policy_attr = NULL;
 	pstring dn;
 	LDAPMod **mods = NULL;
+	char *escape_domain_name;
 
 	DEBUG(3,("add_new_domain_account_policies: Adding new account policies for domain\n"));
-	
+
+	escape_domain_name = escape_rdn_val_string_alloc(domain_name);
+	if (!escape_domain_name) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	pstr_sprintf(dn, "%s=%s,%s", 
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		domain_name, lp_ldap_suffix());
+		escape_domain_name, lp_ldap_suffix());
+
+	SAFE_FREE(escape_domain_name);
 
 	for (i=1; decode_account_policy_name(i) != NULL; i++) {
 
@@ -104,10 +113,20 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	LDAPMessage *result = NULL;
 	int num_result;
 	const char **attr_list;
+	char *escape_domain_name;
+
+	/* escape for filter */
+	escape_domain_name = escape_ldap_string_alloc(domain_name);
+	if (!escape_domain_name) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
 		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		  domain_name, LDAP_OBJ_DOMINFO);
+		  escape_domain_name, LDAP_OBJ_DOMINFO);
+
+	SAFE_FREE(escape_domain_name);
 
 	attr_list = get_attr_list( NULL, dominfo_attr_list );
 	rc = smbldap_search_suffix(ldap_state, filter, attr_list, &result);
@@ -129,9 +148,18 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	/* Check if we need to add an entry */
 	DEBUG(3,("add_new_domain_info: Adding new domain\n"));
 
+	/* this time escape for DN */
+	escape_domain_name = escape_rdn_val_string_alloc(domain_name);
+	if (!escape_domain_name) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	pstr_sprintf(dn, "%s=%s,%s",
 		     get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		     domain_name, lp_ldap_suffix());
+		     escape_domain_name, lp_ldap_suffix());
+
+	SAFE_FREE(escape_domain_name);
 
 	/* Free original search */
 	ldap_msgfree(result);
@@ -210,11 +238,20 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	int rc;
 	const char **attr_list;
 	int count;
+	char *escape_domain_name;
+	
+	escape_domain_name = escape_ldap_string_alloc(domain_name);
+	if (!escape_domain_name) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_DOMINFO,
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		domain_name);
+		escape_domain_name);
+
+	SAFE_FREE(escape_domain_name);
 
 	DEBUG(2, ("smbldap_search_domain_info: Searching for:[%s]\n", filter));
 
