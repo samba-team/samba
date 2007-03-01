@@ -22,6 +22,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.*/
 
 #include "includes.h"
+#include "winbindd.h"
 
 #define TIMEOUT_LEN 12
 #define IDMAP_CACHE_DATA_FMT	"%12u/%s"
@@ -418,14 +419,34 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		/* here ret == NT_STATUS_OK and id->status = ID_MAPPED */
 
 		if (t <= time(NULL)) {
-			/* We're expired, set an error code for upper layer */
-			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+			/* If we've been told to be offline - stay in 
+			   that state... */
+			if (lp_winbind_offline_logon() && 
+			    get_global_winbindd_state_offline()) 
+			{
+				DEBUG(10,("idmap_cache_map_sid: winbindd is "
+					  "globally offline.\n"));
+			} else {
+				/* We're expired, set an error code
+				   for upper layer */
+				ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+			}			
 		}
 	} else {
 		if (t <= time(NULL)) {
-			/* We're expired, delete the entry and return not mapped */
-			tdb_delete(cache->tdb, keybuf);
-			ret = NT_STATUS_NONE_MAPPED;
+			/* If we've been told to be offline - stay in 
+			   that state... */
+			if (lp_winbind_offline_logon() && 
+			    get_global_winbindd_state_offline()) 
+			{
+				DEBUG(10,("idmap_cache_map_sid: winbindd is "
+					  "globally offline.\n"));
+			} else {				
+				/* We're expired, delete the entry and return
+				   not mapped */
+				tdb_delete(cache->tdb, keybuf);
+				ret = NT_STATUS_NONE_MAPPED;
+			}			
 		} else {
 			/* this is not mapped as it was a negative cache hit */
 			id->status = ID_UNMAPPED;
@@ -508,14 +529,34 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		/* here ret == NT_STATUS_OK and id->mapped = True */
 
 		if (t <= time(NULL)) {
-			/* We're expired, set an error code for upper layer */
-			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+			/* If we've been told to be offline - stay in
+			   that state... */
+			if (lp_winbind_offline_logon() && 
+			    get_global_winbindd_state_offline()) 
+			{
+				DEBUG(10,("idmap_cache_map_sid: winbindd is "
+					  "globally offline.\n"));
+			} else {
+				/* We're expired, set an error code
+				   for upper layer */
+				ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+			}			
 		}
 	} else {
 		if (t <= time(NULL)) {
-			/* We're expired, delete the entry and return not mapped */
-			tdb_delete(cache->tdb, keybuf);
-			ret = NT_STATUS_NONE_MAPPED;
+			/* If we've been told to be offline - stay in
+			   that state... */
+			if (lp_winbind_offline_logon() && 
+			    get_global_winbindd_state_offline()) 
+			{
+				DEBUG(10,("idmap_cache_map_sid: winbindd is "
+					  "globally offline.\n"));
+			} else {
+				/* We're expired, delete the entry and
+				   return not mapped */
+				tdb_delete(cache->tdb, keybuf);
+				ret = NT_STATUS_NONE_MAPPED;
+			}			
 		} else {
 			/* this is not mapped is it was a negative cache hit */
 			id->status = ID_UNMAPPED;

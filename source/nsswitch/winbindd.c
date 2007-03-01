@@ -1011,13 +1011,9 @@ int main(int argc, char **argv, char **envp)
 
 	/* Winbind daemon initialisation */
 
-	if ( ! NT_STATUS_IS_OK(idmap_init()) ) {
-		DEBUG(1, ("Could not init idmap! - Sid/[UG]id mapping will not be available\n"));
+	if ( ! NT_STATUS_IS_OK(idmap_init_cache()) ) {
+		DEBUG(1, ("Could not init idmap cache!\n"));		
 	}
-
-#ifdef WITH_ADS
-	nss_init( lp_winbind_nss_info() );
-#endif
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
@@ -1084,6 +1080,7 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0,("unable to initalize domain list\n"));
 		exit(1);
 	}
+#endif
 
 	init_idmap_child();
 

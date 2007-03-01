@@ -46,7 +46,7 @@ AC_ARG_WITH(fhs,
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
-    configdir="${sysconfdir}/samba"
+    configdir="\${sysconfdir}/samba"
     swatdir="\${DATADIR}/samba/swat"
     ;;
   esac])
