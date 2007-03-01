@@ -1635,6 +1635,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	char *samAccountName, *controlstr;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
+	char *machine_escaped;
 	char *new_dn;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
@@ -1647,8 +1648,13 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	ret = ADS_ERROR(LDAP_NO_MEMORY);
-		
-	new_dn = talloc_asprintf(ctx, "cn=%s,%s", machine_name, org_unit);
+
+	machine_escaped = escape_rdn_val_string_alloc(machine_name);
+	if (!machine_escaped) {
+		goto done;
+	}
+
+	new_dn = talloc_asprintf(ctx, "cn=%s,%s", machine_escaped, org_unit);
 	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
 
 	if ( !new_dn || !samAccountName ) {

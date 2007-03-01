@@ -351,6 +351,7 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 
 	if (argc < 2) {
 		printf("usage: net ads gpo addlink <linkdn> <gpodn> [options]\n");
+		printf("note: DNs must be provided properly escaped.\n      See RFC 4514 for details");
 		return -1;
 	}
 
