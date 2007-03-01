@@ -3886,7 +3886,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	init_samr_r_query_aliasmem(r_u, num_sids, sid, NT_STATUS_OK);
 
-	SAFE_FREE(sids);
+	TALLOC_FREE(sids);
 
 	return NT_STATUS_OK;
 }
