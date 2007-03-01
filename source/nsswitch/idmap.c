@@ -225,9 +225,36 @@ NTSTATUS idmap_close(void)
 
 static const char *idmap_default_domain[] = { "default domain", NULL };
 
+/****************************************************************************
+ ****************************************************************************/
+
+NTSTATUS idmap_init_cache(void)
+{	
+	/* Always initialize the cache.  We'll have to delay initialization
+	   of backends if we are offline */
+
+	if ( idmap_ctx ) {
+		return NT_STATUS_OK;
+	}	
+	
+	if ( (idmap_ctx = talloc_named_const(NULL, 0, "idmap_ctx")) == NULL ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ( (idmap_cache = idmap_cache_init(idmap_ctx)) == NULL ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
 NTSTATUS idmap_init(void)
 {	
 	NTSTATUS ret;
+	static NTSTATUS backend_init_status = NT_STATUS_UNSUCCESSFUL;	
 	struct idmap_domain *dom;
 	char *compat_backend = NULL;
 	char *compat_params = NULL;
@@ -238,16 +265,23 @@ NTSTATUS idmap_init(void)
 	int compat = 0;
 	int i;
 
-	if (idmap_ctx) {
+	/* Always initialize the cache.  We'll have to delay initialization
+	   of backends if we are offline */
+
+	ret = idmap_init_cache();
+	if ( !NT_STATUS_IS_OK(ret) )
+		return ret;
+
+	if ( NT_STATUS_IS_OK(backend_init_status) ) {
 		return NT_STATUS_OK;
 	}
+	
+	/* We can't reliably call intialization code here unless 
+	   we are online */
 
-	if ( (idmap_ctx = talloc_named_const(NULL, 0, "idmap_ctx")) == NULL ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if ( (idmap_cache = idmap_cache_init(idmap_ctx)) == NULL ) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if ( get_global_winbindd_state_offline() ) {
+		backend_init_status = NT_STATUS_FILE_IS_OFFLINE;
+		return backend_init_status;		
 	}
 
 	static_init_idmap;
@@ -559,11 +593,17 @@ NTSTATUS idmap_init(void)
 	/* cleanpu temporary strings */
 	TALLOC_FREE( compat_backend );
 	
+	backend_init_status = NT_STATUS_OK;
+	
 	return NT_STATUS_OK;
 
 done:
 	DEBUG(0, ("Aborting IDMAP Initialization ...\n"));
 	idmap_close();
+
+	/* save the init status for later checks */
+	backend_init_status = ret;
+	
 	return ret;
 }
 
@@ -1067,6 +1107,14 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bi) {
+		/* Only do query if we are online */
+		if ( lp_winbind_offline_logon() &&
+		     get_global_winbindd_state_offline() )
+		{
+			ret = NT_STATUS_FILE_IS_OFFLINE;
+			goto done;
+		}
+
 		ret = idmap_backends_unixids_to_sids(bids);
 		IDMAP_CHECK_RET(ret);
 
@@ -1132,7 +1180,8 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			if ( ! bids) {
-				/* alloc space for ids to be resolved by backends (realloc ten by ten) */
+				/* alloc space for ids to be resolved
+				   by backends (realloc ten by ten) */
 				bids = talloc_array(ctx, struct id_map *, 10);
 				if ( ! bids) {
 					DEBUG(1, ("Out of memory!\n"));
@@ -1164,6 +1213,14 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bids) {
+		/* Only do query if we are online */
+		if ( lp_winbind_offline_logon() &&
+		     get_global_winbindd_state_offline() )
+		{
+			ret = NT_STATUS_FILE_IS_OFFLINE;
+			goto done;
+		}
+		
 		ret = idmap_backends_sids_to_unixids(bids);
 		IDMAP_CHECK_RET(ret);
 
