@@ -228,10 +228,12 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	 * from more than one domain, ie aliases. Thus we have to work it out
 	 * ourselves in a special routine. */
 
-	if (domain->internal)
-		return fill_passdb_alias_grmem(domain, group_sid,
+	if (domain->internal) {
+		result = fill_passdb_alias_grmem(domain, group_sid,
 					       num_gr_mem,
 					       gr_mem, gr_mem_len);
+		goto done;
+	}
 	
 	if ( !((group_name_type==SID_NAME_DOM_GRP) ||
 		((group_name_type==SID_NAME_ALIAS) && domain->primary)) )

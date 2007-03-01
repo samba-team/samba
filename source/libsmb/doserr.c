@@ -68,6 +68,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_DFS_CANT_CREATE_JUNCT", WERR_DFS_CANT_CREATE_JUNCT },
 	{ "WERR_MACHINE_LOCKED", WERR_MACHINE_LOCKED },
 	{ "WERR_NO_LOGON_SERVERS", WERR_NO_LOGON_SERVERS },
+	{ "WERR_LOGON_FAILURE", WERR_LOGON_FAILURE },
 	{ "WERR_NO_SUCH_DOMAIN", WERR_NO_SUCH_DOMAIN },
 	{ "WERR_INVALID_SECURITY_DESCRIPTOR", WERR_INVALID_SECURITY_DESCRIPTOR },
 	{ "WERR_INVALID_OWNER", WERR_INVALID_OWNER },
@@ -83,8 +84,9 @@ werror_code_struct dos_errs[] =
 };
 
 /*****************************************************************************
- returns a DOS error message.  not amazingly helpful, but better than a number.
+ Returns a DOS error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
+
 const char *dos_errstr(WERROR werror)
 {
         static pstring msg;

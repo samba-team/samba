@@ -241,7 +241,7 @@ static int atalk_rename(struct vfs_handle_struct *handle, const char *oldname, c
 
 	if (atalk_build_paths(ctx, handle->conn->origpath, oldname, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
-		return ret;
+		goto exit_rename;
 
 	if (S_ISDIR(orig_info.st_mode) || S_ISREG(orig_info.st_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", adbl_path));		
@@ -297,7 +297,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
 
 	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
-		return ret;
+		goto exit_unlink;
 
 	if (S_ISDIR(orig_info.st_mode) || S_ISREG(orig_info.st_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", adbl_path));
@@ -329,7 +329,7 @@ static int atalk_chmod(struct vfs_handle_struct *handle, const char *path, mode_
 
 	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
-		return ret;
+		goto exit_chmod;
 
 	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		
@@ -361,7 +361,7 @@ static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t
 
 	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
-		return ret;
+		goto exit_chown;
 
 	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		

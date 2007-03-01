@@ -5673,6 +5673,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 
 	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
+		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -5689,6 +5690,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		if (!string_to_sid(&ldap_domain_sid, domain_sid_string)) {
 			DEBUG(1, ("pdb_init_ldapsam: SID [%s] could not be "
 				  "read as a valid SID\n", domain_sid_string));
+			ldap_msgfree(result);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name,
