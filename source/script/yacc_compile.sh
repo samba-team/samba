@@ -20,8 +20,8 @@ TOP=`pwd`
 if cd $dir && $YACC -d $file; then
 	if [ -r y.tab.h -a -r y.tab.c ];then
 		echo "move files"
-		sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
-		sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
+		sed -e "/^#/!b" -e "/^#/ s|y\.tab\.h|$SRC|" -e "/^#/ s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
+		sed -e "/^#/ s|y\.tab\.c|$SRC|" -e "/^#/ s|\"$base.y|\"$SRC|" y.tab.c > $base.c
 		rm -f y.tab.c y.tab.h
 	fi
 fi
