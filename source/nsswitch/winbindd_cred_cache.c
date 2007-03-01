@@ -494,6 +494,17 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 		memcredp->len += strlen(pass)+1;
 	}
 
+#if defined(LINUX)
+	/* aligning the memory on on x86_64 and compiling 
+	   with gcc 4.1 using -O2 causes a segv in the 
+	   next memset()  --jerry */
+	memcredp->nt_hash = SMB_MALLOC_ARRAY(unsigned char, memcredp->len);
+#else
+	/* On non-linux platforms, mlock()'d memory must be aligned */
+	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char, 
+					       getpagesize(), memcredp->len);
+#endif
+
 	/* On non-linux platforms, mlock()'d memory must be aligned */
 
 	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char, psize, 
