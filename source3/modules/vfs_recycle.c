@@ -153,15 +153,26 @@ static const char **recycle_noversions(vfs_handle_struct *handle)
 	return tmp_lp;
 }
 
-static int recycle_maxsize(vfs_handle_struct *handle)
+static SMB_OFF_T recycle_maxsize(vfs_handle_struct *handle)
 {
-	int maxsize;
+	SMB_OFF_T maxsize;
 	
-	maxsize = lp_parm_int(SNUM(handle->conn), "recycle", "maxsize", -1);
+	maxsize = lp_parm_ulong(SNUM(handle->conn), "recycle", "maxsize", 0);
 
-	DEBUG(10, ("recycle: maxsize = %d\n", maxsize));
+	DEBUG(10, ("recycle: maxsize = %lu\n", maxsize));
 	
 	return maxsize;
+}
+
+static SMB_OFF_T recycle_minsize(vfs_handle_struct *handle)
+{
+	SMB_OFF_T minsize;
+	
+	minsize = lp_parm_ulong(SNUM(handle->conn), "recycle", "minsize", 0);
+
+	DEBUG(10, ("recycle: minsize = %lu\n", minsize));
+	
+	return minsize;
 }
 
 static mode_t recycle_directory_mode(vfs_handle_struct *handle)
@@ -381,7 +392,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	const char *base;
 	char *repository = NULL;
 	int i = 1;
-	int maxsize;
+	SMB_OFF_T maxsize, minsize;
 	SMB_OFF_T file_size; /* space_avail;	*/
 	BOOL exist;
 	int rc = -1;
@@ -428,6 +439,12 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	maxsize = recycle_maxsize(handle);
 	if(maxsize > 0 && file_size > maxsize) {
 		DEBUG(3, ("recycle: File %s exceeds maximum recycle size, purging... \n", file_name));
+		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
+		goto done;
+	}
+	minsize = recycle_minsize(handle);
+	if(minsize > 0 && file_size < minsize) {
+		DEBUG(3, ("recycle: File %s lowers minimum recycle size, purging... \n", file_name));
 		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
 		goto done;
 	}
