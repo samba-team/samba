@@ -1783,8 +1783,8 @@ static uint32 open_flags_to_wire(int flags)
 		case O_RDWR:
 			ret |= SMB_O_RDWR;
 			break;
-		case O_RDONLY:
 		default:
+		case O_RDONLY:
 			ret |= SMB_O_RDONLY;
 			break;
 	}
@@ -1811,6 +1811,7 @@ static uint32 open_flags_to_wire(int flags)
 #endif
 #if defined(O_DIRECTORY)
 	if (flags & O_DIRECTORY) {
+		ret &= ~(SMB_O_RDONLY|SMB_O_RDWR|SMB_O_WRONLY);
 		ret |= SMB_O_DIRECTORY;
 	}
 #endif
