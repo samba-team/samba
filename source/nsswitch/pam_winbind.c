@@ -1517,7 +1517,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	dictionary *d = NULL;
 	char *username_ret = NULL;
 	char *new_authtok_required = NULL;
-	char *combined_member = NULL;
 	const char *real_username = NULL;
 
 	/* parse arguments */
