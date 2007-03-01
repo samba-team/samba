@@ -215,7 +215,8 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 		DEBUG(10,("krb5_ticket_gain_handler: successful kinit for: %s in ccache: %s\n",
 			entry->principal_name, entry->ccname));
 
-		new_start = entry->refresh_time;
+		/* Renew at 1/2 the expiration time */
+		new_start = entry->refresh_time / 2;
 
 		goto got_ticket;
 	}
@@ -369,8 +370,9 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 						krb5_ticket_gain_handler,
 						entry);
 		} else {
+			/* Renew at 1/2 the ticket expiration time */
 			entry->event = event_add_timed(winbind_event_context(), entry,
-						timeval_set((ticket_end - 1), 0),
+						timeval_set((ticket_end - 1)/2, 0),
 						"krb5_ticket_refresh_handler",
 						krb5_ticket_refresh_handler,
 						entry);
