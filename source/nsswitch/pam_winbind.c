@@ -1517,6 +1517,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	dictionary *d = NULL;
 	char *username_ret = NULL;
 	char *new_authtok_required = NULL;
+	char *combined_member = NULL;
+	const char *real_username = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
@@ -1535,6 +1537,30 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		goto out;
 	}
 
+#if defined(AIX)
+	/* Decode the user name since AIX does not support logn user
+	   names by default.  The name is encoded as _#uid.  */
+
+	if ( username[0] == '_' ) {
+		uid_t id = atoi( &username[1] );
+		struct passwd *pw = NULL;		
+
+		if ( (id!=0) && ((pw = getpwuid( id )) != NULL) ) {
+			real_username = strdup( pw->pw_name );
+		}
+	}
+#endif
+
+	if ( !real_username ) {
+		/* Just making a copy of the username we got from PAM */
+		if ( (real_username = strdup( username )) == NULL ) {
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, 
+				       "memory allocation failure when copying username");
+			retval = PAM_SERVICE_ERR;
+			goto out;
+		}
+	}	
+
 	retval = _winbind_read_password(pamh, ctrl, NULL, 
 					"Password: ", NULL,
 					&password);
@@ -1549,9 +1575,9 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 #ifdef DEBUG_PASSWORD
 	_pam_log_debug(pamh, ctrl, LOG_INFO, "Verify user '%s' with password '%s'", 
-		       username, password);
+		       real_username, password);
 #else
-	_pam_log_debug(pamh, ctrl, LOG_INFO, "Verify user '%s'", username);
+	_pam_log_debug(pamh, ctrl, LOG_INFO, "Verify user '%s'", real_username);
 #endif
 
 	member = get_member_from_config(pamh, argc, argv, ctrl, d);
@@ -1594,6 +1620,10 @@ out:
 		free(username_ret);
 	}
 
+	if ( real_username ) {		
+		free( real_username );
+	}	
+			
 	if (d) {
 		iniparser_freedict(d);
 	}
