@@ -485,8 +485,6 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 #if !defined(HAVE_MLOCK)
 	return NT_STATUS_OK;
 #else
-	int psize = getpagesize();
-
 	/* new_entry->nt_hash is the base pointer for the block
 	   of memory pointed into by new_entry->lm_hash and
 	   new_entry->pass (if we're storing plaintext). */
@@ -506,11 +504,6 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char, 
 					       getpagesize(), memcredp->len);
 #endif
-
-	/* On non-linux platforms, mlock()'d memory must be aligned */
-
-	memcredp->nt_hash = SMB_MEMALIGN_ARRAY(unsigned char, psize, 
-					       memcredp->len);
 	if (!memcredp->nt_hash) {
 		return NT_STATUS_NO_MEMORY;
 	}
