@@ -120,7 +120,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	   about the name.  Just setup affinity and the KRB5_CONFIG 
 	   file. */
 
-	get_dc_name( "", ads->auth.realm, dc_name, &dc_ip );
+	get_dc_name( ads->server.workgroup, ads->server.realm, dc_name, &dc_ip );
 	
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
