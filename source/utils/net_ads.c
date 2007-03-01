@@ -1819,7 +1819,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
-	char *srv_cn_escaped, *printername_escaped;
+	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
@@ -1874,6 +1874,8 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn[0]);
 	printername_escaped = escape_rdn_val_string_alloc(printername);
 	if (!srv_cn_escaped || !printername_escaped) {
+		SAFE_FREE(srv_cn_escaped);
+		SAFE_FREE(printername_escaped);
 		d_fprintf(stderr, "Internal error, out of memory!");
 		ads_destroy(&ads);
 		return -1;
@@ -1881,16 +1883,21 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn);
 
+	SAFE_FREE(srv_cn_escaped);
+	SAFE_FREE(printername_escaped);
+
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
 	if (!pipe_hnd) {
 		d_fprintf(stderr, "Unable to open a connnection to the spoolss pipe on %s\n",
 			 servername);
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (!W_ERROR_IS_OK(get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
 							      printername))) {
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -1898,11 +1905,13 @@ static int net_ads_printer_publish(int argc, const char **argv)
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
                 d_fprintf(stderr, "ads_publish_printer: %s\n", ads_errstr(rc));
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
                 return -1;
         }
  
         d_printf("published printer\n");
+	SAFE_FREE(prt_dn);
 	ads_destroy(&ads);
  
 	return 0;
