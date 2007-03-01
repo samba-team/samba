@@ -573,8 +573,8 @@ void winbind_msg_online(int msg_type, struct process_id src,
 		winbindd_flush_negative_conn_cache(domain);
 		set_domain_online_request(domain);
 
-		/* Send an offline message to the idmap child when our
-		   primary domain goes offline */
+		/* Send an online message to the idmap child when our
+		   primary domain comes back online */
 
 		if ( domain->primary ) {
 			struct winbindd_child *idmap = idmap_child();
