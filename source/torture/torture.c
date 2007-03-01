@@ -4479,6 +4479,7 @@ static BOOL run_eatest(int dummy)
 	printf("starting eatest\n");
 	
 	if (!torture_open_connection(&cli, 0)) {
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 	
@@ -4490,6 +4491,7 @@ static BOOL run_eatest(int dummy)
 
 	if (fnum == -1) {
 		printf("open failed - %s\n", cli_errstr(cli));
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 
@@ -4500,6 +4502,7 @@ static BOOL run_eatest(int dummy)
 		memset(ea_val, (char)i+1, i+1);
 		if (!cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			talloc_destroy(mem_ctx);
 			return False;
 		}
 	}
@@ -4512,6 +4515,7 @@ static BOOL run_eatest(int dummy)
 		memset(ea_val, (char)i+1, i+1);
 		if (!cli_set_ea_path(cli, fname, ea_name, ea_val, i+1)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			talloc_destroy(mem_ctx);
 			return False;
 		}
 	}
@@ -4545,6 +4549,7 @@ static BOOL run_eatest(int dummy)
 		slprintf(ea_name, sizeof(ea_name), "ea_%d", i);
 		if (!cli_set_ea_path(cli, fname, ea_name, "", 0)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			talloc_destroy(mem_ctx);
 			return False;
 		}
 	}
