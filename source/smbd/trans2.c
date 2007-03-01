@@ -5132,10 +5132,22 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
+	uint16 flags = 0;
 	int info = 0;
+
+	if (total_data < 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	flags = SVAL(pdata,0);
 
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if ((flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) &&
+			!VALID_STAT_OF_DIR(*psbuf)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	if (VALID_STAT_OF_DIR(*psbuf)) {
