@@ -4030,6 +4030,12 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	delete_on_close = (CVAL(pdata,0) ? True : False);
 	dosmode = dos_mode(conn, fname, psbuf);
 
+	DEBUG(10,("smb_set_file_disposition_info: file %s, dosmode = %u, "
+		"delete_on_close = %u\n",
+		fsp->fsp_name,
+		(unsigned int)dosmode,
+		(unsigned int)delete_on_close ));
+
 	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
  
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5193,17 +5199,34 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 					&info,				
 					&fsp);
 	} else {
+		char del = 1;
+
 		status = open_file_ntcreate(conn,
 				fname,
 				psbuf,
 				DELETE_ACCESS,
 				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				FILE_OPEN,
-				FILE_DELETE_ON_CLOSE,
+				0,
 				FILE_FLAG_POSIX_SEMANTICS|0777,
 				INTERNAL_OPEN_ONLY,
 				&info,
 				&fsp);
+		/* 
+		 * For file opens we must set the delete on close
+		 * after the open.
+		 */
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = smb_set_file_disposition_info(conn,
+							&del,
+							1,
+							fsp,
+							fname,
+							psbuf);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
