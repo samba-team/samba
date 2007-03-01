@@ -1822,7 +1822,7 @@ static uint32 open_flags_to_wire(int flags)
  Open a file - POSIX semantics. Returns fnum. Doesn't request oplock.
 ****************************************************************************/
 
-int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode)
+static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int flags, mode_t mode, BOOL is_dir)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -1832,6 +1832,7 @@ int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t m
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 	int fnum = -1;
+	uint32 wire_flags = open_flags_to_wire(flags);
 
 	memset(param, 0, sizeof(param));
 	SSVAL(param,0, SMB_POSIX_PATH_OPEN);
@@ -1840,11 +1841,14 @@ int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t m
 	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
-	/* Convert flags to wire_open_mode. */
+	if (is_dir) {
+		wire_flags &= ~(SMB_O_RDONLY|SMB_O_RDWR|SMB_O_WRONLY);
+		wire_flags |= SMB_O_DIRECTORY;
+	}
 
 	p = data;
 	SIVAL(p,0,0); /* No oplock. */
-	SIVAL(p,4,open_flags_to_wire(flags));
+	SIVAL(p,4,wire_flags);
 	SIVAL(p,8,unix_perms_to_wire(mode));
 	SSVAL(p,12,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
 
@@ -1875,17 +1879,21 @@ int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t m
 }
 
 /****************************************************************************
+ open - POSIX semantics.
+****************************************************************************/
+
+int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode)
+{
+	return cli_posix_open_internal(cli, fname, flags, mode, False);
+}
+
+/****************************************************************************
  mkdir - POSIX semantics.
 ****************************************************************************/
 
 int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 {
-#if defined(O_DIRECTORY)
-	return (cli_posix_open(cli, fname, O_CREAT|O_DIRECTORY, mode) == -1) ? -1 : 0;
-#else
-	cli_set_nt_error(cli, NT_STATUS_NOT_IMPLEMENTED);
-	return -1;
-#endif
+	return (cli_posix_open_internal(cli, fname, O_CREAT, mode, True) == -1) ? -1 : 0;
 }
 
 /****************************************************************************
