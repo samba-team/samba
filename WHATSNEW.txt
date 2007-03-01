@@ -11,22 +11,62 @@ We would like to ask the Samba community for help in testing
 these changes as we work towards the next significant production
 upgrade Samba 3.0 release.
 
-Major Features included in the 3.0.25 code base include:
+Major features included in the 3.0.25 code base include:
 
-  o Significant improvements in the winbind off-line logon 
-    support
-  o Support for secure DDNS updates as part of the 'net 
-    ads join' process
-  o Rewritten IdMap interface which allows for TTL based 
-    caching and per domain backends.
+  o Significant improvements in the winbind off-line logon support.
+  o Support for secure DDNS updates as part of the 'net ads join' 
+    process.
+  o Rewritten IdMap interface which allows for TTL based caching and 
+    per domain backends.
   o New plug-in interface for the "winbind nss info" parameter.
-  o New file change notify subsystem which is able to make use 
-    of inotify on Linux.
-  o Support for passing Windows security descriptors to
-    a VFS plug-in allowing for multiple Unix ACL implements
-    to running side by side on the Same server.
+  o New file change notify subsystem which is able to make use of 
+    inotify on Linux.
+  o Support for passing Windows security descriptors to a VFS 
+    plug-in allowing for multiple Unix ACL implements to running side 
+    by side on the Same server.
   o Improved compatibility with Windows Vista clients.
+  o Man pages for VFS plugins.
 
+
+Off-line Logons and AD Site Support
+===================================
+
+Winbind's capability to support offline logons has been greatly
+improved with the 3.0.25 release including support for locating 
+domain controllers asynchronously using Active Directory Site
+information.
+
+
+New IdMap Interface for Winbindd
+================================
+
+The 3.0.25 release of Samba will include a rewritten IdMap interface
+for winbindd which replaces the "idmap backend" parameter.  The
+initial design document may be found at
+
+	http://www.samba.org/~idra/samba3_newidmap.pdf
+
+The final 3.0.25 release will include full documentation in the
+distributed manpages.
+
+
+Dynamic DNS Updates
+===================
+
+The "net ads join" command is now able to register the host's DNS A
+records with Windows 2000 SP4 and 2003 DNS servers.  This 
+feature must be enabled at compile time using the --with-dnsupdate 
+when running the ./configure script.  There is also a related "net ads 
+dns" command for refreshing a host's records which could be launched
+from a dhcp client script when a new IP address is obtained.
+
+
+Support for Additional ACL Modules
+==================================
+
+Samba's POSIX ACL support has been moved inside of the VFS layer 
+which means it is now possible to support multiple ACL implementations
+on the same server including NFSv3 and GPFS ACLs.
 
 
 ######################################################################
@@ -41,71 +81,80 @@ smb.conf changes
 
     Parameter Name                      Description	  Default
     --------------                      -----------	  -------
+    change notify timeout		Removed 	n/a
+    change notify			New		Yes
+    fam change notify			Removed		n/a
+    idmap domains			New		""
+    idmap alloc backend			New		""
+    idmap expire time			New		900
+    idmap negative time			New		120
+    kernel change notify		Per share	Yes
+    max stat cache size 		Modified 	1024MB
+    printjob username			New		%U
+    winbind normalize names		New		no
 
-
+    
 commits
 -------
 
 
 o   Michael Adam <ma@sernet.de>
-    * Patch to lib/sysquotas_linux.c replacing some "get"s 
-      by "set"s.  This makes the difference between the get 
-      and set calls for SMB_USER_FS_QUOTA_TYPE and 
-      SMB_GROUP_FS_QUOTA_TYPE. 
-    * Prevent collision from config.h created by stand alone
-      component builds.
+    * Patch to lib/sysquotas_linux.c replacing some "get"s by "set"s.  
+      This makes the difference between the get and set calls for
+      SMB_USER_FS_QUOTA_TYPE and SMB_GROUP_FS_QUOTA_TYPE. 
+    * Prevent collision from config.h created by stand alone component
+      builds.
 
 
 o   Jeremy Allison <jra@samba.org>
     * winbind off-line logon fixes.
     * Support for AD sites when locating domain controllers.
-    * Fix libsmbclient bug with Konqueror and NetApp filers
-      that need a leading / in OpenAndX calls. 
+    * Fix libsmbclient bug with Konqueror and NetApp filers that need 
+      a leading / in OpenAndX calls. 
     * BUG 4187: Possible crash in signing on/off code.
     * Fix memory leaks in pam_winbind.c.
-    * Fix a bug in the sequence number store/fetch routines in 
+    * Fix a bug in the sequence number store/fetch routines in
       winbindd_cache.tdb.
-    * Fix the problem with Linux clients requesting O_WRONLY
-      on write-only files.
-    * Fix a class of memory allocation bugs in the handling 
-      of user tokens.
-    * Fix crash bug in winbindd caused by a bug in the 
-      messaging dispatch code.
-    * Fix memory bloat in trans calls caused by talloc()'ing 
-      memory off the wrong context.
+    * Fix the problem with Linux clients requesting O_WRONLY on write-only
+      files.
+    * Fix a class of memory allocation bugs in the handling of user tokens.
+    * Fix crash bug in winbindd caused by a bug in the messaging dispatch
+      code.
+    * Fix memory bloat in trans calls caused by talloc()'ing memory off the
+      wrong context.
     * Fix wildcard renames with SMBmv.
     * Fixes for pathname handling code.
     * Add in the wdel smbclient command to perform wildcard deletes.
-    * Fix a bug that causes smbd to 'hang' intermittently while
-      updating the trusted domain cache.
+    * Fix a bug that causes smbd to 'hang' intermittently while updating
+      the trusted domain cache.
     * Cleanup error path processing in reduce_name().
     * Fixes for smbtorture tests (BASE-DELETE, ...)
     * Delete on close fixes ("I completely understand it this time").
-    * Remove unneeded checks on incoming uid/gid for mknod 
-      (fifo) Unix extensions code.
+    * Remove unneeded checks on incoming uid/gid for mknod (fifo) Unix
+      extensions code.
     * More fixes for Unix Extensions include support for POSIX locking.
     * NTLMv2 fixes for Vista clients.
-    * Add an optimized lookup for Domain Users and only report 
-      the current user (which is generally what the calling 
-      application wants to know anyways).
-    * Fixes for supporting the Vista backup utility based on work 
-      by Joe Meadows <jameadows@webopolis.com>.
+    * Add an optimized lookup for Domain Users and only report the current
+      user (which is generally what the calling application wants to know 
+      anyways).
+    * Fixes for supporting the Vista backup utility based on work by Joe
+      Meadows <jameadows@webopolis.com>.
     * Fix 4377: Fix rename of "foo" -> "Foo".
     * BUG 4188: Fix for Vista delete directory bug.
-    * BUG 4400: Add support for processing large Krb5 tickets
-      in SMBsesssetup&X.  Basic on work by Todd Stecher 
-      <todd.stecher@isilon.com>.
+    * BUG 4400: Add support for processing large Krb5 tickets in SMB
+      sesssetup&X.  Based on work by <todd.stecher@isilon.com>.
+    * Fix trans2 file size reporting for Linux CIFS client.
 
 
 o   Danilo Almeida <dalmeida@centeris.com>
     * Add additional debug support for pam_winbind.
-    * Add support for listing multiple groups in pam_winbind's
+    * Add support for listing multiple groups in pam_winbind's 
       require-membership-of option which act as a logical OR.
 
 
 o   Andrew Benham <andrew.benham@thus.net>
-    * BUG 4290: Properly compute time to password expiration 
-      in message from pam_winbind.
+    * BUG 4290: Properly compute time to password expiration in message
+      from pam_winbind.
 
 
 o   Alexander Bokovoy <ab@samba.org>
@@ -119,12 +168,12 @@ o   Kai Blin <kai.blin@gmail.com>
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Implement pluggable "winbind nss info" interface.
     * Removal of unmaintained smbwrapper utility.
-    * Fix server affinity bugs in the 'net ads join' 
-      code to include support for AD sites.
+    * Fix server affinity bugs in the 'net ads join' code to include
+      support for AD sites.
     * Implement DDNS update client code.
     * Upper case the host/sAMAccountName in the keytab file.
-    * Fix lookupname call in winbindd when joined to a child 
-      domain and trying to resolve a SID in a sibling domain.
+    * Fix lookupname call in winbindd when joined to a child domain and
+      trying to resolve a SID in a sibling domain.
     * Fix password changes against a Windows 2000 DC using pam_winbind.
     * Fix crash in "pdbedit -L -w"
     * Add "winbind normalize names" option.
@@ -134,6 +183,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Protect the sasl bind against a NULL principal string in the 
       SPNEGO negTokenInit
     * Fix some "cannot access LDAP when no root" bugs.
+    * NSS and PAM fixes on AIX.
+    * Cached credentials and Krb5 ticket renewal fixes in winbindd.
 
 
 o   Mathias Dietz <mdietz@de.ibm.com>
@@ -153,8 +204,8 @@ o   Guenther Deschner <gd@samba.org>
     * Implement grace logons for offline authentications in pam_winbind.
     * Fixes for idmap_ad.
     * Memory leak fixes.
-    * BUG 4009: Fixes leaking file descriptors (CLOSE_WAIT) in 
-      winbindd with short lived service tickets
+    * BUG 4009: Fixes leaking file descriptors (CLOSE_WAIT) in winbindd
+      with short lived service tickets
     * Implement basic AD group policy library
 
 
@@ -163,13 +214,12 @@ o   dleonard@vintela.com
 
 
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
-    * BUG 3319: Ensure that 'hide unreadable' does not filter
-      MS-DFS links.
+    * BUG 3319: Ensure that 'hide unreadable' does not filter MS-DFS links.
 
 
 o   Krishna Ganugapati <krishnag@centeris.com>
     * Implement DDNS update client code.
-   
+
 
 o   YAMASAKI Hiroyuki <h-yamasaki@pd.jp.nec.com>
     * BUG 4346: Fix type reported for hidden shares via MS-RPC.
@@ -187,6 +237,10 @@ o   William Jojo <jojowil@hvcc.edu>
     * BUG 3713: Re-add reporting what the profiles tool does (-v).
 
 
+o   Zack Kirsch <zack.kirsch@isilon.com>
+    * Fix memory leaks on some error paths.
+
+
 o   Volker Lendecke <vl@samba.org>
     * Replace snum references with a structure based array.
     * Allow changing of the hashsize when running tdbbackup.
@@ -195,21 +249,20 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 4273: Fix crash in 'net rpc vampire'
     * Refactor older SMB file serving code.
     * Refactor open directory file serving code.
-    * Implement support for inotify when serving CIFS change 
-      notification requests.
-    * Fixes to allow Samba 3.0 to pass various smbtorture tests
-      (RAW-OPEN, RAW-UNLINK, RAW-CLOSE, ...)
+    * Implement support for inotify when serving CIFS change notification
+      requests (includes merge work from SAMBA_4_0).
+    * Fixes to allow Samba 3.0 to pass various smbtorture tests (RAW-OPEN,
+      RAW-UNLINK, RAW-CLOSE, ...)
     * Refactor delete on close file server code.
     * MS-DFS fixes for Vista clients.
     * BUG 4372: Long timeout in LDAP setup when accessing files after 
       10 secs.
-    * Change the static array for the in-memory mirrors of the hash 
-      chain locks to a dynamically allocated one.
+    * Change the static array for the in-memory mirrors of the hash chain
+      locks to a dynamically allocated one.
     * Use inotify for file change notification on Linux.
     * Revert "msdfs root" to default to "no".
     * Refactor AIO code.
-    * Fix memory leaks when returning user lists to clients via 
-      the SAMR calls.
+    * Fix memory leaks when returning user lists to clients via SAMR calls.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -219,7 +272,6 @@ o   Herb Lewis <herb@samba.org>
 
 o   Jim McDonough <jmcd@us.ibm.com>
     * Bug fixes for GPFS VFS module.
-
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -247,23 +299,24 @@ o   James Peach <jpeach@apple.com>
 
 
 o   J Raynor <raynorj@mn.rr.com>
-    * Make sure we are privileged when doing DMAPI operations 
-      on systems that don't have capability support.
+    * Make sure we are privileged when doing DMAPI operations on systems
+      that don't have capability support.
 
 
 o   Jiri Sasek <Jiri.Sasek@Sun.COM>
-    Fix possible NULL dereference in adt_tree.c
+    I Fix possible NULL dereference in adt_tree.c
 
 
 o   Karolin Seeger <ks@sernet.de>
-    * Improvements to 'net sam policy'
+    * Add 'net sam policy' commands.
     * Fixes for "net usershare" and "guest_ok=y"
 
 
 o   Simo Sorce <idra@samba.org>
     * Initial implementation of new IdMap interface.
-    * Fix crash in pam_winbind caused by referencing a 
-      pointer after the memory had been freed.
+    * Fix crash in pam_winbind caused by referencing a pointer after the 
+      memory had been freed.
+    * Implement escaping function for ldap RDN values.
 
 
 o   Peter Somogyi <SOMOGYI@de.ibm.com>
