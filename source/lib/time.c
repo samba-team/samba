@@ -36,6 +36,8 @@
 #define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
 #endif
 
+#define NTTIME_INFINITY (NTTIME)0x8000000000000000LL
+
 /**
  External access to time_t_min and time_t_max.
 **/
@@ -1180,6 +1182,10 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 		return (time_t)-1;
 	}
 
+	if (*nt == NTTIME_INFINITY) {
+		return (time_t)-1;
+	}
+
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
 	d=~*nt;
@@ -1248,7 +1254,7 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		
 	if (t == (time_t)-1) {
 		/* that's what NT uses for infinite */
-		*nt = 0x8000000000000000LL;
+		*nt = NTTIME_INFINITY;
 		return;
 	}		
 
@@ -1306,7 +1312,7 @@ const char *display_time(NTTIME nttime)
 	if (nttime==0)
 		return "Now";
 
-	if (nttime==0x8000000000000000LL)
+	if (nttime==NTTIME_INFINITY)
 		return "Never";
 
 	high = 65536;	
@@ -1335,7 +1341,7 @@ BOOL nt_time_is_set(const NTTIME *nt)
 		return False;
 	}
 
-	if (*nt == 0x8000000000000000LL) {
+	if (*nt == NTTIME_INFINITY) {
 		return False;
 	}
 
