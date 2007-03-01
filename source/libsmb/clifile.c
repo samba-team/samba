@@ -1804,12 +1804,16 @@ static uint32 open_flags_to_wire(int flags)
 	if (flags & O_APPEND) {
 		ret |= SMB_O_APPEND;
 	}
+#if defined(O_DIRECT)
 	if (flags & O_DIRECT) {
 		ret |= SMB_O_DIRECT;
 	}
+#endif
+#if defined(O_DIRECTORY)
 	if (flags & O_DIRECTORY) {
 		ret |= SMB_O_DIRECTORY;
 	}
+#endif
 	return ret;
 }
 
@@ -1875,7 +1879,12 @@ int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t m
 
 int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 {
+#if defined(O_DIRECTORY)
 	return (cli_posix_open(cli, fname, O_CREAT|O_DIRECTORY, mode) == -1) ? -1 : 0;
+#else
+	cli_set_nt_error(cli, NT_STATUS_NOT_IMPLEMENTED);
+	return -1;
+#endif
 }
 
 /****************************************************************************
