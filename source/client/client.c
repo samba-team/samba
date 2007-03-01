@@ -1739,7 +1739,6 @@ static int cmd_wdel(void)
 	return 0;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
 
@@ -1774,6 +1773,146 @@ static int cmd_open(void)
 		}
 	} else {
 		d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static int cmd_posix_open(void)
+{
+	pstring mask;
+	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
+	mode_t mode;
+	int fnum;
+
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_open <filename> 0<mode>\n");
+		return 1;
+	}
+	pstrcat(mask,buf);
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_open <filename> 0<mode>\n");
+		return 1;
+	}
+	mode = (mode_t)strtol(buf, (char **)NULL, 8);
+
+	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+		d_printf("posix_open %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	fnum = cli_posix_open(targetcli, targetname, O_CREAT|O_RDWR, mode);
+	if (fnum == -1) {
+		fnum = cli_posix_open(targetcli, targetname, O_CREAT|O_RDONLY, mode);
+		if (fnum != -1) {
+			d_printf("posix_open file %s: for read/write fnum %d\n", targetname, fnum);
+		} else {
+			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+		}
+	} else {
+		d_printf("posix_open file %s: for read/write fnum %d\n", targetname, fnum);
+	}
+
+	return 0;
+}
+
+static int cmd_posix_mkdir(void)
+{
+	pstring mask;
+	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
+	mode_t mode;
+	int fnum;
+
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_mkdir <filename> 0<mode>\n");
+		return 1;
+	}
+	pstrcat(mask,buf);
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_mkdir <filename> 0<mode>\n");
+		return 1;
+	}
+	mode = (mode_t)strtol(buf, (char **)NULL, 8);
+
+	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+		d_printf("posix_mkdir %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	fnum = cli_posix_mkdir(targetcli, targetname, mode);
+	if (fnum == -1) {
+		d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+	} else {
+		d_printf("posix_mkdir created directory %s\n", targetname);
+	}
+
+	return 0;
+}
+
+static int cmd_posix_unlink(void)
+{
+	pstring mask;
+	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
+
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_unlink <filename>\n");
+		return 1;
+	}
+	pstrcat(mask,buf);
+
+	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+		d_printf("posix_unlink %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_posix_unlink(targetcli, targetname)) {
+		d_printf("Failed to unlink file %s. %s\n", targetname, cli_errstr(cli));
+	} else {
+		d_printf("posix_unlink deleted file %s\n", targetname);
+	}
+
+	return 0;
+}
+
+static int cmd_posix_rmdir(void)
+{
+	pstring mask;
+	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
+
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_rmdir <filename>\n");
+		return 1;
+	}
+	pstrcat(mask,buf);
+
+	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname)) {
+		d_printf("posix_rmdir %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_posix_rmdir(targetcli, targetname)) {
+		d_printf("Failed to unlink directory %s. %s\n", targetname, cli_errstr(cli));
+	} else {
+		d_printf("posix_rmdir deleted directory %s\n", targetname);
 	}
 
 	return 0;
@@ -1828,6 +1967,9 @@ static int cmd_posix(void)
 	}
         if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 		pstrcat(caps, "pathnames ");
+	}
+        if (caplow & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP) {
+		pstrcat(caps, "posix_path_operations ");
 	}
 
 	if (strlen(caps) > 0 && caps[strlen(caps)-1] == ' ') {
@@ -3067,6 +3209,10 @@ static struct
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
+  {"posix_open",cmd_posix_open,"<name> 0<mode> open_flags mode open a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
+  {"posix_mkdir",cmd_posix_mkdir,"<name> 0<mode> creates a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
+  {"posix_rmdir",cmd_posix_rmdir,"<name> removes a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
+  {"posix_unlink",cmd_posix_unlink,"<name> removes a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
