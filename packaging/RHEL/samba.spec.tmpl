@@ -233,6 +233,14 @@ install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
 rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libmsrpc.*
 ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
 
+# make install puts libsmbsharemodes.so in the wrong place on x86_64
+rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
+install -m 755 source/bin/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.so
+install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.a
+install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libsmbsharemodes.*
+ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.so.0
+
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 
@@ -376,9 +384,12 @@ fi
 %{_mandir}/man8/smbd.8*
 %{_mandir}/man8/tdbbackup.8*
 %{_mandir}/man8/tdbdump.8*
+%{_mandir}/man8/tdbtool.8*
+%{_mandir}/man8/eventlogadm.8*
 %{_mandir}/man8/winbindd.8*
 %{_mandir}/man1/ntlm_auth.1*
 %{_mandir}/man1/wbinfo.1*
+%{_mandir}/man8/vfs_*.8*
 
 
 ##########
@@ -430,9 +441,9 @@ fi
 %{_bindir}/net
 %{_bindir}/smbtree
 
-%{_mandir}/man8/smbmnt.8*
-%{_mandir}/man8/smbmount.8*
-%{_mandir}/man8/smbumount.8*
+#%{_mandir}/man8/smbmnt.8*
+#%{_mandir}/man8/smbmount.8*
+#%{_mandir}/man8/smbumount.8*
 %{_mandir}/man8/mount.cifs.8.*
 %{_mandir}/man8/umount.cifs.8.*
 %{_mandir}/man8/smbspool.8*
@@ -462,11 +473,11 @@ fi
 %attr(755,root,root) /%{_lib}/security/pam_smbpass.so
 
 %{_includedir}/libsmbclient.h
-%{_libdir}/libsmbclient.a
-%{_libdir}/libsmbclient.so*
+%{_libdir}/libsmbclient.*
 %{_includedir}/libmsrpc.h
-%{_libdir}/libmsrpc.a
-%{_libdir}/libmsrpc.so*
+%{_libdir}/libmsrpc.*
+%{_includedir}/smb_share_modes.h
+%{_libdir}/libsmbsharemodes.*
 
 %{_libdir}/samba/*.dat
 %{_libdir}/samba/*.msg
