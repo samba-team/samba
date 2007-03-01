@@ -1635,7 +1635,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	char *samAccountName, *controlstr;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
-	char *machine_escaped;
+	char *machine_escaped = NULL;
 	char *new_dn;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
@@ -1681,6 +1681,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	ret = ads_gen_add(ads, new_dn, mods);
 
 done:
+	SAFE_FREE(machine_escaped);
 	ads_msgfree(ads, res);
 	talloc_destroy(ctx);
 	
