@@ -502,10 +502,26 @@ void winbind_msg_offline(int msg_type, struct process_id src,
 		}
 		DEBUG(5,("winbind_msg_offline: marking %s offline.\n", domain->name));
 		set_domain_offline(domain);
+
+		/* Send an offline message to the idmap child when our
+		   primary domain goes offline */
+
+		if ( domain->primary ) {
+			struct winbindd_child *idmap = idmap_child();
+
+			if ( idmap->pid != 0 ) {
+				message_send_pid(pid_to_procid(idmap->pid), 
+						 MSG_WINBIND_OFFLINE, 
+						 domain->name, 
+						 strlen(domain->name)+1, 
+						 False);
+			}			
+		}
 	}
 
 	for (child = children; child != NULL; child = child->next) {
-		/* Don't send message to idmap child. */
+		/* Don't send message to idmap child.  We've already
+		   done so above. */
 		if (!child->domain || (child == idmap_child())) {
 			continue;
 		}
@@ -556,6 +572,22 @@ void winbind_msg_online(int msg_type, struct process_id src,
 
 		winbindd_flush_negative_conn_cache(domain);
 		set_domain_online_request(domain);
+
+		/* Send an offline message to the idmap child when our
+		   primary domain goes offline */
+
+		if ( domain->primary ) {
+			struct winbindd_child *idmap = idmap_child();
+			
+			if ( idmap->pid != 0 ) {
+				message_send_pid(pid_to_procid(idmap->pid), 
+						 MSG_WINBIND_ONLINE,
+						 domain->name,
+						 strlen(domain->name)+1, 
+						 False);
+			}
+			
+		}
 	}
 
 	for (child = children; child != NULL; child = child->next) {

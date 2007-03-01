@@ -131,11 +131,17 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
  NTSTATUS nss_init( const char **nss_list )
 {
 	NTSTATUS status;
+	static NTSTATUS nss_initialized = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	char *backend, *domain;
 	struct nss_function_entry *nss_backend;
 	struct nss_domain_entry *nss_domain;
 
+	/* check for previous successful initializations */
+
+	if ( NT_STATUS_IS_OK(nss_initialized) )
+		return NT_STATUS_OK;
+	
 	/* The "template" backend should alqays be registered as it
 	   is a static module */
 
@@ -207,7 +213,42 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
 	}
 	
 		
+	nss_initialized = NT_STATUS_OK;
+	
 	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ *******************************************************************/
+
+static struct nss_domain_entry *find_nss_domain( const char *domain )
+{
+	NTSTATUS status;	
+	struct nss_domain_entry *p;
+
+	status = nss_init( lp_winbind_nss_info() );
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(4,("nss_get_info: Failed to init nss_info API (%s)!\n",
+			 nt_errstr(status)));
+		return NULL;
+	}
+	
+	for ( p=nss_domain_list; p; p=p->next ) {
+		if ( strequal( p->domain, domain ) )
+			break;
+	}
+	
+	/* If we didn't find a match, then use the default nss info */
+
+	if ( !p ) {
+		if ( !nss_domain_list ) {
+			return NULL;
+		}
+		
+		p = nss_domain_list;		
+	}
+
+	return p;
 }
 
 /********************************************************************
@@ -221,22 +262,13 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
 {
 	struct nss_domain_entry *p;
 	struct nss_info_methods *m;
-	
-	for ( p=nss_domain_list; p; p=p->next ) {
-		if ( strequal( p->domain, domain ) )
-			break;
-	}
-	
-	/* If we didn't find a match, then use the default nss info */
 
-	if ( !p ) {
-		if ( !nss_domain_list ) {
-			return NT_STATUS_NOT_FOUND;
-		}
+	if ( (p = find_nss_domain( domain )) == NULL ) {
+		DEBUG(4,("nss_get_info: Failed to find nss domain pointer for %s\n",
+			 domain ));
+		return NT_STATUS_NOT_FOUND;
+	}
 		
-		p = nss_domain_list;		
-	}
-
 	m = p->backend->methods;
 
 	return m->get_nss_info( p, user_sid, ctx, ads, msg, 
