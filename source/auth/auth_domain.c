@@ -237,7 +237,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
 						      dc_name,                    /* server name */
 						      user_info->smb_name,        /* user name logging on. */
-						      user_info->domain,          /* domain name */
+						      user_info->client_domain,   /* domain name */
 						      user_info->wksta_name,      /* workstation name */
 						      chal,                       /* 8 byte challenge. */
 						      user_info->lm_resp,         /* lanman 24 byte response */
