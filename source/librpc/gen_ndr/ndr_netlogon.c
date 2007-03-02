@@ -495,7 +495,7 @@ _PUBLIC_ void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		ndr->depth++;
 		ndr_print_uint16(ndr, "length", r->length);
-		ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->length);
+		ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->size);
 		ndr_print_ptr(ndr, "data", r->data);
 		ndr->depth++;
 		if (r->data) {
@@ -2031,7 +2031,7 @@ _PUBLIC_ void ndr_print_netr_USER_KEY16(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "netr_USER_KEY16");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "length", r->length);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->length);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->length:r->size);
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_samr_Password(ndr, "pwd", &r->pwd);
 	ndr->depth--;
