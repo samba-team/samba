@@ -847,7 +847,7 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		hnd->status = rpccli_winreg_EnumValue( pipe_hnd, mem_ctx, 
 						       op->in.key,
 						       resume_idx, &name_buf,
-						       &types_out[num_values_out], &buffer,
+						       &types_out[num_values_out], buffer,
 						       &data_size,
 						       &data_length );
 
