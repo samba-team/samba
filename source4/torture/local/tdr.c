@@ -50,12 +50,44 @@ static bool test_pull_uint8(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_push_uint16(struct torture_context *tctx)
+{
+	uint16_t v = 0xF32;
+	struct tdr_push *tdr = talloc_zero(tctx, struct tdr_push);
+
+	torture_assert_ntstatus_ok(tctx, tdr_push_uint16(tdr, &v), "push failed");
+	torture_assert_int_equal(tctx, tdr->data.length, 2, "length incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[0], 0x32, "data incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[1], 0x0F, "data incorrect");
+	return true;
+}
+
+static bool test_pull_uint16(struct torture_context *tctx)
+{
+	uint16_t d = 782;
+	uint16_t l;
+	struct tdr_pull tdr;
+	tdr.data.data = (uint8_t *)&d;
+	tdr.data.length = 2;
+	tdr.offset = 0;
+	tdr.flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_uint16(&tdr, tctx, &l), 
+							   "pull failed");
+	torture_assert_int_equal(tctx, 2, tdr.offset, 
+							 "offset invalid");
+	torture_assert_int_equal(tctx, 782, l, "right int read");
+	return true;
+}
+
 struct torture_suite *torture_local_tdr(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "TDR");
 
 	torture_suite_add_simple_test(suite, "pull_uint8", test_pull_uint8);
 	torture_suite_add_simple_test(suite, "push_uint8", test_push_uint8);
+	
+	torture_suite_add_simple_test(suite, "pull_uint16", test_pull_uint16);
+	torture_suite_add_simple_test(suite, "push_uint16", test_push_uint16);
 
 	return suite;
 }

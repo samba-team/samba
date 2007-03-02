@@ -166,6 +166,15 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
 #if (_SAMBA_BUILD_ >= 4)
 	dcerpc_table_init();
+#else
+	/* Initialise samba stuff */
+	load_case_tables();
+
+	setlinebuf(stdout);
+
+	dbf = x_stderr;
+
+	setup_logging(argv[0],True);
 #endif
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
