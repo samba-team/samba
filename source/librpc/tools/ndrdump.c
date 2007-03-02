@@ -20,8 +20,13 @@
 */
 
 #include "includes.h"
+#if (_SAMBA_BUILD_ >= 4)
+#include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_table.h"
+#endif
 
 static const struct dcerpc_interface_call *find_function(
 	const struct dcerpc_interface_table *p,
@@ -44,6 +49,7 @@ static const struct dcerpc_interface_call *find_function(
 	return &p->calls[i];
 }
 
+#if (_SAMBA_BUILD_ >= 4)
 
 static void show_pipes(void)
 {
@@ -59,6 +65,8 @@ static void show_pipes(void)
 	}
 	exit(1);
 }
+
+#endif
 
 static void show_functions(const struct dcerpc_interface_table *p)
 {
@@ -156,7 +164,9 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		{ NULL }
 	};
 
+#if (_SAMBA_BUILD_ >= 4)
 	dcerpc_table_init();
+#endif
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	
@@ -184,14 +194,21 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
 	if (!pipe_name) {
 		poptPrintUsage(pc, stderr, 0);
+#if (_SAMBA_BUILD_ >= 4)
 		show_pipes();
+#endif
 		exit(1);
 	}
 
 	if (plugin != NULL) {
 		p = load_iface_from_plugin(plugin, pipe_name);
+	} 
+#if (_SAMBA_BUILD_ <= 3)
+	else {
+		fprintf(stderr, "Only loading from DSO's supported in Samba 3\n");
+		exit(1);
 	}
-
+#else
 	if (!p) {
 		p = idl_iface_by_name(pipe_name);
 	}
@@ -205,6 +222,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 			p = idl_iface_by_uuid(&uuid);
 		}
 	}
+#endif
 
 	if (!p) {
 		printf("Unknown pipe or UUID '%s'\n", pipe_name);
@@ -254,7 +272,11 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 			exit(1);
 		}
 			
+#if (_SAMBA_BUILD_ >= 4)
+		data = (uint8_t *)file_load(ctx_filename, &size, mem_ctx);
+#else
 		data = (uint8_t *)file_load(ctx_filename, &size, 0);
+#endif
 		if (!data) {
 			perror(ctx_filename);
 			exit(1);
@@ -280,7 +302,11 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 	} 
 
 	if (filename)
+#if (_SAMBA_BUILD_ >= 4)
+		data = (uint8_t *)file_load(filename, &size, mem_ctx);
+#else
 		data = (uint8_t *)file_load(filename, &size, 0);
+#endif
 	else
 		data = (uint8_t *)stdin_load(mem_ctx, &size);
 
@@ -304,12 +330,12 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
 	if (ndr_pull->offset != ndr_pull->data_size) {
 		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - ndr_pull->offset);
-		dump_data(0, (const char *)ndr_pull->data+ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+		dump_data(0, ndr_pull->data+ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
 	}
 
 	if (dumpdata) {
 		printf("%d bytes consumed\n", ndr_pull->offset);
-		dump_data(0, (const char *)blob.data, blob.length);
+		dump_data(0, blob.data, blob.length);
 	}
 
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
@@ -343,7 +369,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
 		if (dumpdata) {
 			printf("%ld bytes generated (validate)\n", (long)v_blob.length);
-			dump_data(0, (const char *)v_blob.data, v_blob.length);
+			dump_data(0, v_blob.data, v_blob.length);
 		}
 
 		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
@@ -359,7 +385,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
 		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
 			printf("WARNING! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
-			dump_data(0, (const char *)ndr_v_pull->data+ndr_v_pull->offset, ndr_v_pull->data_size - ndr_v_pull->offset);
+			dump_data(0, ndr_v_pull->data+ndr_v_pull->offset, ndr_v_pull->data_size - ndr_v_pull->offset);
 		}
 
 		ndr_v_print = talloc_zero(mem_ctx, struct ndr_print);
