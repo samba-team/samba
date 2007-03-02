@@ -2303,7 +2303,8 @@ enum {
 		}
 	}
 
-	if (opt_domain == NULL || !*opt_domain) {
+	/* Note: if opt_domain is "" then send no domain */
+	if (opt_domain == NULL) {
 		opt_domain = get_winbind_domain();
 	}
 
