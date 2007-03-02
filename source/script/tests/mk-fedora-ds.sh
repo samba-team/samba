@@ -1,48 +1,37 @@
 FEDORA_DS_INF=$LDAPDIR/fedorads.inf
 export FEDORA_DS_INF
-FEDORA_DS_INITIAL_LDIF=$LDAPDIR/fedorads-initial-ldif.inf
-FEDORA_DS_LDAP_PORT=3389
+FEDORA_DS_INITIAL_LDIF=$LDAPDIR/fedorads-initial.ldif
 
-LDAP_URI="ldap://127.0.0.1:$FEDORA_DS_LDAP_PORT"
-
-$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $LDAPDIR/99_ad.ldif >&2
+#Make the subdirectory be as fedora DS would expect
+FEDORA_DS_DIR=$LDAPDIR/slapd-samba4
 
 cat >$FEDORA_DS_INF <<EOF
-
 [General]
 SuiteSpotUserID = $ROOT
 FullMachineName=   localhost
 ServerRoot=   $LDAPDIR
-ConfigDirectoryLdapURL=   $FEDORA_DS_LDAP_URI/o=NetscapeRoot
-ConfigDirectoryAdminID=   $USERNAME
-AdminDomain=   localdomain
-ConfigDirectoryAdminPwd=   $PASSWORD
-
-Components= svrcore,base,slapd
 
 [slapd]
-ServerPort= $FEDORA_DS_LDAP_PORT
+ldapifilepath=$LDAPDIR/ldapi
 Suffix= $BASEDN
 RootDN= cn=Manager,$BASEDN
 RootDNPwd= $PASSWORD
-Components= slapd
 ServerIdentifier= samba4
 InstallLdifFile=$FEDORA_DS_INITIAL_LDIF
 
-inst_dir= $LDAPDIR/slapd-samba4
-config_dir= $LDAPDIR/slapd-samba4
-schema_dir= $LDAPDIR/slapd-samba4/schema
-lock_dir= $LDAPDIR/slapd-samba4/lock
-log_dir= $LDAPDIR/slapd-samba4/logs
-run_dir= $LDAPDIR/slapd-samba4/logs
-db_dir= $LDAPDIR/slapd-samba4/db
-bak_dir= $LDAPDIR/slapd-samba4/bak
-tmp_dir= $LDAPDIR/slapd-samba4/tmp
-ldif_dir= $LDAPDIR/slapd-samba4/ldif
-cert_dir= $LDAPDIR/slapd-samba4
+inst_dir= $FEDORA_DS_DIR
+config_dir= $FEDORA_DS_DIR
+schema_dir= $FEDORA_DS_DIR/schema
+lock_dir= $FEDORA_DS_DIR/lock
+log_dir= $FEDORA_DS_DIR/logs
+run_dir= $FEDORA_DS_DIR/logs
+db_dir= $FEDORA_DS_DIR/db
+bak_dir= $FEDORA_DS_DIR/bak
+tmp_dir= $FEDORA_DS_DIR/tmp
+ldif_dir= $FEDORA_DS_DIR/ldif
+cert_dir= $FEDORA_DS_DIR
 
-[base]
-Components= base
+start_server= 0
 
 EOF
 
@@ -55,15 +44,24 @@ objectclass: top
 objectclass: extensibleObject
 objectclass: nsMappingTree
 nsslapd-state: backend
-nsslapd-backend: UserData
+nsslapd-backend: userData
 cn: $BASEDN
 
-dn: cn=UserData,cn=ldbm database,cn=plugins,cn=config
+dn: cn=userData,cn=ldbm database,cn=plugins,cn=config
 objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: $BASEDN
 
 EOF
+
+perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF || exit 1;
+
+( 
+     cd $FEDORA_DS_DIR/schema
+     ls | grep -v ^00core | xargs rm
+)
+
+$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $FEDORA_DS_DIR/schema/99_ad.ldif >&2
 
 LDAP_URI_ESCAPE=$LDAP_URI;
 PROVISION_OPTIONS="$PROVISION_OPTIONS --ldap-module=nsuniqueid"

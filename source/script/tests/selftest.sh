@@ -75,7 +75,7 @@ if [ x"$TEST_LDAP" = x"yes" ]; then
     if test -z "$FEDORA_DS_PREFIX"; then
 	slapd_start || exit 1;
     else
-	perl $FEDORA_DS_PREFIX/lib/fedora-ds/ds_newinst.pl $FEDORA_DS_INF || exit 1;
+	fedora_ds_start || exit 1;
     fi
     echo -n "LDAP PROVISIONING..."
     $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS "$PROVISION_ACI" --ldap-backend=$LDAP_URI || {
