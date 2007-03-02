@@ -77,6 +77,13 @@ slapd_start() {
     return $?;
 }
 
+fedora_ds_start() {
+# running slapd in the background means it stays in the same process group, so it can be
+# killed by timelimit
+    $FEDORA_DS_PREFIX/sbin/ns-slapd -D $FEDORA_DS_DIR -d0 &
+    return $?;
+}
+
 testit() {
 	name=$1
 	shift 1
