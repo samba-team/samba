@@ -53,7 +53,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS samr_Close (
+	[public] NTSTATUS samr_Close (
 		[in,out,ref]  policy_handle *handle
 		);
 
@@ -793,7 +793,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[case(26)] samr_UserInfo26 info26;
 	} samr_UserInfo;
 
-	NTSTATUS samr_QueryUserInfo(
+	[public] NTSTATUS samr_QueryUserInfo(
 		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
 		[out,switch_is(level)]    samr_UserInfo *info
@@ -802,7 +802,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x25     */
-	NTSTATUS samr_SetUserInfo(
+	[public] NTSTATUS samr_SetUserInfo(
 		[in,ref]                   policy_handle *user_handle,
 		[in]                       uint16 level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
@@ -974,7 +974,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		samr_PasswordProperties password_properties;
 	} samr_PwInfo;
 
-	NTSTATUS samr_GetUserPwInfo(
+	[public] NTSTATUS samr_GetUserPwInfo(
 		[in,ref]    policy_handle *user_handle,
 		[out]       samr_PwInfo info
 		);
@@ -1127,7 +1127,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/*
 	  seems to be an exact alias for samr_SetUserInfo() 
 	*/
-	NTSTATUS samr_SetUserInfo2(
+	[public] NTSTATUS samr_SetUserInfo2(
 		[in,ref]                   policy_handle *user_handle,
 		[in]                       uint16 level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
