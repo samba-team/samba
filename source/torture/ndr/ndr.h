@@ -38,7 +38,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
 			 sizeof(struct name), 0, (bool (*) (struct torture_context *, void *)) check_fn);
 
 #define torture_suite_add_ndr_pull_fn_test(suite,name,data,flags,check_fn) \
-		_torture_suite_add_ndr_pull_test(suite, #name, \
+		_torture_suite_add_ndr_pull_test(suite, #name "_" #flags, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, data_blob_talloc(suite, data, sizeof(data)), \
 			 sizeof(struct name), flags, (bool (*) (struct torture_context *, void *)) check_fn);
 
