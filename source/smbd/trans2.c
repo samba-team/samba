@@ -5209,7 +5209,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				FILE_OPEN,
 				0,
 				FILE_FLAG_POSIX_SEMANTICS|0777,
-				INTERNAL_OPEN_ONLY,
+				0, /* No oplock, but break existing ones. */
 				&info,
 				&fsp);
 		/* 
