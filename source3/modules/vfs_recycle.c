@@ -157,7 +157,8 @@ static SMB_OFF_T recycle_maxsize(vfs_handle_struct *handle)
 {
 	SMB_OFF_T maxsize;
 	
-	maxsize = lp_parm_ulong(SNUM(handle->conn), "recycle", "maxsize", 0);
+	maxsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+					    "recycle", "maxsize", NULL));
 
 	DEBUG(10, ("recycle: maxsize = %lu\n", maxsize));
 	
@@ -168,7 +169,8 @@ static SMB_OFF_T recycle_minsize(vfs_handle_struct *handle)
 {
 	SMB_OFF_T minsize;
 	
-	minsize = lp_parm_ulong(SNUM(handle->conn), "recycle", "minsize", 0);
+	minsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+					    "recycle", "minsize", NULL));
 
 	DEBUG(10, ("recycle: minsize = %lu\n", minsize));
 	
