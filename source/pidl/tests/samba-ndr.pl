@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 41;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -12,7 +12,7 @@ use Parse::Pidl::Util qw(MyDumper);
 use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer 
 	GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv 
 	EnvSubstituteValue NeededFunction NeededElement NeededType $res
-	NeededInterface TypeFunctionName); 
+	NeededInterface TypeFunctionName ParseElementPrint); 
 
 my $output;
 sub print_fn($) { my $x = shift; $output.=$x; }
@@ -303,3 +303,23 @@ is(TypeFunctionName("ndr_pull", "uint32"), "ndr_pull_uint32");
 is(TypeFunctionName("ndr_pull", {TYPE => "ENUM", NAME => "bar"}), "ndr_pull_ENUM_bar");
 is(TypeFunctionName("ndr_pull", {TYPE => "TYPEDEF", NAME => "bar", DATA => undef}), "ndr_pull_bar");
 is(TypeFunctionName("ndr_push", {TYPE => "STRUCT", NAME => "bar"}), "ndr_push_STRUCT_bar");
+
+# check noprint works
+$res = "";
+ParseElementPrint({ NAME => "x", TYPE => "rt", REPRESENTATION_TYPE => "rt", 
+				    PROPERTIES => { noprint => 1},
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt"} ]}, "var", { "x" => "r->foobar" } );
+is($res, "");
+
+$res = "";
+ParseElementPrint({ NAME => "x", TYPE => "rt", REPRESENTATION_TYPE => "rt", 
+				    PROPERTIES => {},
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt" }]}, "var", { "x" => "r->foobar" } );
+is($res, "ndr_print_rt(ndr, \"x\", &var);\n");
+
+# make sure that a print function for an element with value() set works
+$res = "";
+ParseElementPrint({ NAME => "x", TYPE => "uint32", REPRESENTATION_TYPE => "uint32", 
+				    PROPERTIES => { value => "23" },
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "uint32"} ]}, "var", { "x" => "r->foobar" } );
+is($res, "ndr_print_uint32(ndr, \"x\", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?23:var);\n");
