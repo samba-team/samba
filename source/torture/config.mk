@@ -214,6 +214,20 @@ OBJ_FILES = \
 #################################
 
 #################################
+# Start MODULE TORTURE_UNIX
+[MODULE::TORTURE_UNIX]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_unix_init
+PRIVATE_DEPENDENCIES = TORTURE_UTIL 
+PRIVATE_PROTO_HEADER = \
+		unix/proto.h
+OBJ_FILES = \
+		unix/unix.o \
+		unix/whoami.o
+# End MODULE TORTURE_UNIX
+#################################
+
+#################################
 # Start SUBSYSTEM TORTURE_LDAP
 [MODULE::TORTURE_LDAP]
 SUBSYSTEM = torture
