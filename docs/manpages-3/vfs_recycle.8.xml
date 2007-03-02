@@ -127,6 +127,16 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>recycle:minsize = BYTES</term>
+		<listitem>
+		<para>Files that are smaller than the number of bytes
+		specified by this parameter will not be put into the
+		repository.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>recycle:maxsize = BYTES</term>
 		<listitem>
 		<para>Files that are larger than the number of bytes
