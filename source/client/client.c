@@ -2557,7 +2557,7 @@ static int cmd_stat(void)
 
 	lt = localtime(&sbuf.st_atime);
 	if (lt) {
-		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
 		fstrcpy(mode_str, "unknown");
 	}
@@ -2565,7 +2565,7 @@ static int cmd_stat(void)
 
 	lt = localtime(&sbuf.st_mtime);
 	if (lt) {
-		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
 		fstrcpy(mode_str, "unknown");
 	}
@@ -2573,7 +2573,7 @@ static int cmd_stat(void)
 
 	lt = localtime(&sbuf.st_ctime);
 	if (lt) {
-		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
 		fstrcpy(mode_str, "unknown");
 	}
