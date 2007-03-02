@@ -68,6 +68,21 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	return cred;
 }
 
+/**
+ * Create a new anonymous credential
+ * @param mem_ctx TALLOC_CTX parent for credentials structure 
+ */
+struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx) 
+{
+	struct cli_credentials *anon_credentials;
+
+	anon_credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(anon_credentials);
+	cli_credentials_set_anonymous(anon_credentials);
+
+	return anon_credentials;
+}
+
 void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
 					enum credentials_use_kerberos use_kerberos)
 {

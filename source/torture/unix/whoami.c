@@ -26,8 +26,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 
-#define SMB_QUERY_POSIX_WHOAMI     0x202
-
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40
 
@@ -68,7 +66,8 @@ struct smb_whoami
 	struct dom_sid ** sid_list;
 };
 
-static struct smbcli_state *connect_to_server(void *mem_ctx)
+static struct smbcli_state *connect_to_server(void *mem_ctx,
+		struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	struct smbcli_state *cli;
@@ -78,7 +77,7 @@ static struct smbcli_state *connect_to_server(void *mem_ctx)
 
 	status = smbcli_full_connection(mem_ctx, &cli,
 					host, share, NULL,
-					cmdline_credentials, NULL);
+					creds, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to //%s/%s: %s\n",
@@ -154,13 +153,13 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 	tp.in.max_data = (uint16_t)max_data;
 	tp.in.setup = &setup;
 	tp.in.trans_name = NULL;
-	SSVAL(&info_level, 0, SMB_QUERY_POSIX_WHOAMI);
+	SSVAL(&info_level, 0, SMB_QFS_POSIX_WHOAMI);
 	tp.in.params = data_blob_talloc(mem_ctx, &info_level, 2);
 	tp.in.data = data_blob_talloc(mem_ctx, NULL, 0);
 
 	status = smb_raw_trans2(cli->tree, mem_ctx, &tp);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK,
-			"doing SMB_QUERY_POSIX_WHOAMI");
+			"doing SMB_QFS_POSIX_WHOAMI");
 
 	/* Make sure we got back all the required fields. */
 	torture_assert(torture, tp.out.params.length == 0,
@@ -269,18 +268,19 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 BOOL torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
+	struct cli_credentials *anon_credentials;
 	struct smb_whoami whoami;
 	void *mem_ctx;
 
 	mem_ctx = talloc_init("smb_query_posix_whoami");
 	torture_assert(torture, mem_ctx != NULL, "malloc failed");
 
-	if (!(cli = connect_to_server(mem_ctx))) {
+	if (!(cli = connect_to_server(mem_ctx, cmdline_credentials))) {
 		goto fail;
 	}
 
 	/* Test basic authenticated mapping. */
-	printf("calling SMB_QUERY_POSIX_WHOAMI on an authenticated connection\n");
+	printf("calling SMB_QFS_POSIX_WHOAMI on an authenticated connection\n");
 	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
 				cli, &whoami, 0xFFFF)) {
 		smbcli_tdis(cli);
@@ -288,7 +288,7 @@ BOOL torture_unix_whoami(struct torture_context *torture)
 	}
 
 	/* Test that the server drops the UID and GID list. */
-	printf("calling SMB_QUERY_POSIX_WHOAMI with a small buffer\n");
+	printf("calling SMB_QFS_POSIX_WHOAMI with a small buffer\n");
 	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
 				cli, &whoami, 0x40)) {
 		smbcli_tdis(cli);
@@ -303,13 +303,14 @@ BOOL torture_unix_whoami(struct torture_context *torture)
 			"invalid SID bytes count");
 
 	smbcli_tdis(cli);
-	cli_credentials_set_anonymous(cmdline_credentials);
 
-	if (!(cli = connect_to_server(mem_ctx))) {
+	printf("calling SMB_QFS_POSIX_WHOAMI on an anonymous connection\n");
+	anon_credentials = cli_credentials_init_anon(mem_ctx);
+
+	if (!(cli = connect_to_server(mem_ctx, anon_credentials))) {
 		goto fail;
 	}
 
-	printf("calling SMB_QUERY_POSIX_WHOAMI on an anonymous connection\n");
 	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
 				cli, &whoami, 0xFFFF)) {
 		smbcli_tdis(cli);

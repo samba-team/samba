@@ -74,6 +74,7 @@ Found 4 aliased levels
 #define SMB_QFS_ATTRIBUTE_INFO                         0x105
 #define SMB_QFS_UNIX_INFO                              0x200
 #define SMB_QFS_POSIX_INFO                             0x201
+#define SMB_QFS_POSIX_WHOAMI                           0x202
 #define SMB_QFS_VOLUME_INFORMATION			1001
 #define SMB_QFS_SIZE_INFORMATION			1003
 #define SMB_QFS_DEVICE_INFORMATION			1004

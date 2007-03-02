@@ -1125,9 +1125,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 		return False;
 	}
 
-	anon_credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(anon_credentials);
-	cli_credentials_set_anonymous(anon_credentials);
+	anon_credentials = cli_credentials_init_anon(mem_ctx);
 
 	status = dcerpc_pipe_connect(mem_ctx, 
 				     &p, binding, &dcerpc_table_srvsvc,
