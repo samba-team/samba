@@ -1899,7 +1899,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 				uint32 file_attributes,
 				SMB_STRUCT_STAT *psbuf)
 {
-	int ret= -1;
 	mode_t mode;
 	char *parent_dir;
 	const char *dirname;
@@ -1927,7 +1926,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		mode = unix_mode(conn, aDIR, name, parent_dir);
 	}
 
-	if ((ret=SMB_VFS_MKDIR(conn, name, mode)) != 0) {
+	if (SMB_VFS_MKDIR(conn, name, mode) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
