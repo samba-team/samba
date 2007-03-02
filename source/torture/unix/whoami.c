@@ -266,7 +266,7 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 	return True;
 }
 
-BOOL apple_torture_unix_whoami(struct torture_context *torture)
+BOOL torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	struct smb_whoami whoami;

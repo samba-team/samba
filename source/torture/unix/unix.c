@@ -31,7 +31,7 @@ NTSTATUS torture_unix_init(void)
                 talloc_strdup(suite, "CIFS UNIX extensions tests");
 
 	torture_suite_add_simple_test(suite,
-                        "WHOAMI", apple_torture_unix_whoami);
+                        "WHOAMI", torture_unix_whoami);
 
         return (torture_register_suite(suite)) ? NT_STATUS_OK
                                         : NT_STATUS_UNSUCCESSFUL;
