@@ -118,7 +118,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x07     */
-	NTSTATUS samr_OpenDomain(
+	[public] NTSTATUS samr_OpenDomain(
 		[in,ref]      policy_handle *connect_handle,
 		[in]          uint32 access_mask,
 		[in,ref]      dom_sid2 *sid,
@@ -337,7 +337,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x11     */
 
-	NTSTATUS samr_LookupNames(
+	[public] NTSTATUS samr_LookupNames(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(1000),length_is(num_names)] lsa_String names[],
@@ -550,7 +550,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x22     */
-	NTSTATUS samr_OpenUser(
+	[public] NTSTATUS samr_OpenUser(
 		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 access_mask,
 		[in]          uint32 rid,
@@ -1207,7 +1207,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[case(1)]  samr_ConnectInfo1 info1;
 	} samr_ConnectInfo;
 
-	NTSTATUS samr_Connect5(
+	[public] NTSTATUS samr_Connect5(
 		[in,string,charset(UTF16)] uint16 *system_name,
 		[in]       uint32             access_mask,
 		[in,out]   uint32             level,
