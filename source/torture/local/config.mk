@@ -16,16 +16,16 @@ OBJ_FILES = \
 		../../lib/replace/test/os2_delete.o \
 		../../lib/replace/test/testsuite.o \
 		messaging.o \
-		binding_string.o \
-		idtree.o \
-		socket.o \
+		../../librpc/tests/binding_string.o \
+		../../lib/util/tests/idtree.o \
+		../../lib/socket/testsuite.o \
 		irpc.o \
-		registry.o \
+		../../lib/registry/tests/generic.o \
 		resolve.o \
-		util_strlist.o \
-		util_file.o \
+		../../lib/util/tests/strlist.o \
+		../../lib/util/tests/file.o \
 		sddl.o \
-		tdr.o \
+		../../lib/tdr/testsuite.o \
 		event.o \
 		local.o \
 		dbspeed.o \

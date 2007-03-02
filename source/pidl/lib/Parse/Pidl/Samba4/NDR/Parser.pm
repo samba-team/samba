@@ -1481,8 +1481,6 @@ sub ParseStructPrint($$$)
 
 	my $env = GenerateStructEnv($struct, $varname);
 
-	EnvSubstituteValue($env, $struct);
-
 	DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
 	pidl "ndr_print_struct(ndr, name, \"$name\");";
@@ -2049,7 +2047,6 @@ sub ParseFunctionPrint($)
 	pidl "ndr->depth++;";
 
 	my $env = GenerateFunctionInEnv($fn);
-	EnvSubstituteValue($env, $fn);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
