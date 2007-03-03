@@ -30,9 +30,10 @@ for p in $PROTOCOLS; do
  done
 done
 
-testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP
-
-testit "LDAP-UPTODATENESS" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ LDAP-UPTODATENESS
+for t in CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
+do
+	testit "$t" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ $t
+done
 
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
 # is now pretty well tested by the rest of the quick tests anyway
