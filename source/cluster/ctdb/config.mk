@@ -1,19 +1,16 @@
 ##################
-[MODULE::brlock_ctdb]
-SUBSYSTEM = ntvfs_common
+[SUBSYSTEM::brlock_ctdb]
 OBJ_FILES = brlock_ctdb.o
 
 ##################
-[MODULE::ctdb_tcp]
-SUBSYSTEM = CLUSTER
+[SUBSYSTEM::ctdb_tcp]
 OBJ_FILES = \
 		tcp/tcp_init.o \
 		tcp/tcp_io.o \
 		tcp/tcp_connect.o
 
 ##################
-[MODULE::ctdb]
-SUBSYSTEM = CLUSTER
+[SUBSYSTEM::ctdb]
 OBJ_FILES = \
 		ctdb_cluster.o \
 		common/ctdb.o \
@@ -21,5 +18,5 @@ OBJ_FILES = \
 		common/ctdb_message.o \
 		common/ctdb_ltdb.o \
 		common/ctdb_util.o
-PRIVATE_DEPENDENCIES = ctdb_tcp
 PUBLIC_DEPENDENCIES = LIBTDB LIBTALLOC
+PRIVATE_DEPENDENCIES = ctdb_tcp
