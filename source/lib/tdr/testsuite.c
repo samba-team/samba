@@ -79,6 +79,93 @@ static bool test_pull_uint16(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_push_uint32(struct torture_context *tctx)
+{
+	uint32_t v = 0x100F32;
+	struct tdr_push *tdr = talloc_zero(tctx, struct tdr_push);
+
+	torture_assert_ntstatus_ok(tctx, tdr_push_uint32(tdr, &v), "push failed");
+	torture_assert_int_equal(tctx, tdr->data.length, 4, "length incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[0], 0x32, "data incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[1], 0x0F, "data incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[2], 0x10, "data incorrect");
+	torture_assert_int_equal(tctx, tdr->data.data[3], 0x00, "data incorrect");
+	return true;
+}
+
+static bool test_pull_uint32(struct torture_context *tctx)
+{
+	uint32_t d = 782;
+	uint32_t l;
+	struct tdr_pull tdr;
+	tdr.data.data = (uint8_t *)&d;
+	tdr.data.length = 4;
+	tdr.offset = 0;
+	tdr.flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_uint32(&tdr, tctx, &l), 
+							   "pull failed");
+	torture_assert_int_equal(tctx, 4, tdr.offset, "offset invalid");
+	torture_assert_int_equal(tctx, 782, l, "right int read");
+	return true;
+}
+
+static bool test_pull_charset(struct torture_context *tctx)
+{
+	struct tdr_pull tdr;
+	const char *l = NULL;
+	tdr.data.data = (uint8_t *)talloc_strdup(tctx, "bla");
+	tdr.data.length = 4;
+	tdr.offset = 0;
+	tdr.flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, -1, 1, CH_DOS), 
+							   "pull failed");
+	torture_assert_int_equal(tctx, 4, tdr.offset, "offset invalid");
+	torture_assert_str_equal(tctx, "bla", l, "right int read");
+
+	tdr.offset = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, 2, 1, CH_UNIX), 
+							   "pull failed");
+	torture_assert_int_equal(tctx, 2, tdr.offset, "offset invalid");
+	torture_assert_str_equal(tctx, "bl", l, "right int read");
+
+	return true;
+}
+
+static bool test_pull_charset_empty(struct torture_context *tctx)
+{
+	struct tdr_pull tdr;
+	const char *l = NULL;
+	tdr.data.data = (uint8_t *)talloc_strdup(tctx, "bla");
+	tdr.data.length = 4;
+	tdr.offset = 0;
+	tdr.flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, 0, 1, CH_DOS), 
+							   "pull failed");
+	torture_assert_int_equal(tctx, 0, tdr.offset, "offset invalid");
+	torture_assert_str_equal(tctx, "", l, "right string read");
+
+	return true;
+}
+
+
+
+static bool test_push_charset(struct torture_context *tctx)
+{
+	const char *l = "bloe";
+	struct tdr_push *tdr = talloc_zero(tctx, struct tdr_push);
+	torture_assert_ntstatus_ok(tctx, tdr_push_charset(tdr, &l, 4, 1, CH_UTF8), 
+							   "push failed");
+	torture_assert_int_equal(tctx, 4, tdr->data.length, "offset invalid");
+	torture_assert(tctx, strcmp("bloe", (const char *)tdr->data.data) == 0, "right string push");
+
+	torture_assert_ntstatus_ok(tctx, tdr_push_charset(tdr, &l, -1, 1, CH_UTF8), 
+							   "push failed");
+	torture_assert_int_equal(tctx, 9, tdr->data.length, "offset invalid");
+	torture_assert_str_equal(tctx, "bloe", (const char *)tdr->data.data+4, "right string read");
+
+	return true;
+}
+
 struct torture_suite *torture_local_tdr(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "TDR");
@@ -88,6 +175,13 @@ struct torture_suite *torture_local_tdr(TALLOC_CTX *mem_ctx)
 	
 	torture_suite_add_simple_test(suite, "pull_uint16", test_pull_uint16);
 	torture_suite_add_simple_test(suite, "push_uint16", test_push_uint16);
+
+	torture_suite_add_simple_test(suite, "pull_uint32", test_pull_uint32);
+	torture_suite_add_simple_test(suite, "push_uint32", test_push_uint32);
+
+	torture_suite_add_simple_test(suite, "pull_charset", test_pull_charset);
+	torture_suite_add_simple_test(suite, "pull_charset", test_pull_charset_empty);
+	torture_suite_add_simple_test(suite, "push_charset", test_push_charset);
 
 	return suite;
 }
