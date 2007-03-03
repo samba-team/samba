@@ -187,7 +187,7 @@ struct socket_info
 static struct socket_info *sockets;
 
 
-static const char *socket_wrapper_dir(void)
+const char *socket_wrapper_dir(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DIR");
 	if (s == NULL) {
