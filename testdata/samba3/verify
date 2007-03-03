@@ -5,6 +5,13 @@
  Written by Jelmer Vernooij, 2005.
  */
 
+var sys;
+var options = GetOptions(ARGV, "POPT_AUTOHELP", "POPT_COMMON_SAMBA");
+if (options == undefined) {
+	println("Failed to parse options");
+	return -1;
+}
+
 libinclude("base.js");
 
 var path = substr(ARGV[0], 0, -strlen("verify"));
@@ -49,3 +56,4 @@ assert(s.policy.bad_lockout_minutes == 0);
 
 println("account policies ok");
 
+exit(0);

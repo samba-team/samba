@@ -95,7 +95,7 @@ if (options.realm != undefined) {
 	subobj.REALM = options.realm;
 }
 
-provision(subobj, message, options.blank, paths, system_session, creds);
+provision(subobj, message, options.blank, paths, system_session, creds, undefined);
 
 var ret = upgrade(subobj,samba3,message,paths, system_session, creds);
 if (ret > 0) {
