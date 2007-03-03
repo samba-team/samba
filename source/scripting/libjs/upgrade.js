@@ -357,7 +357,6 @@ function upgrade_provision(samba3)
 	subobj.NTTIME       = nttime;
 	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
-	subobj.USN          = nextusn;
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
@@ -368,7 +367,26 @@ function upgrade_provision(samba3)
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", split(".", subobj.REALM));
-	rdn_list = split(".", subobj.REALM);
+	rdn_list = split(".", subobj.DNSDOMAIN);
+	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
+	subobj.DOMAINDN_LDB = "users.ldb";
+	subobj.ROOTDN       = subobj.DOMAINDN;
+
+	modules_list        = new Array("rootdse",
+					"kludge_acl",
+					"paged_results",
+					"server_sort",
+					"extended_dn",
+					"asq",
+					"samldb",
+					"password_hash",
+					"operational",
+					"objectclass",
+					"rdn_name",
+					"show_deleted",
+					"partition");
+	subobj.MODULES_LIST = join(",", modules_list);
+
 	return subobj;
 }
 

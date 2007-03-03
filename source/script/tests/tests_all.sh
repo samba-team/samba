@@ -12,3 +12,4 @@
  $SRCDIR/script/tests/test_pidl.sh
  $SRCDIR/script/tests/test_blackbox.sh $SERVER $USERNAME $PASSWORD $DOMAIN $PREFIX
  $SRCDIR/script/tests/test_simple.sh //$SERVER/simple $USERNAME $PASSWORD ""
+ $SRCDIR/script/tests/test_s3upgrade.sh $PREFIX/upgrade
