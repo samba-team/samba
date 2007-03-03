@@ -3743,14 +3743,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 		return status;
 	}
 
+	status = check_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* source must already exist. */
 	if (!VALID_STAT(sbuf1)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	status = check_name(conn, oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
@@ -3758,14 +3758,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 		return status;
 	}
 
+	status = check_name(conn, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* Disallow if newname already exists. */
 	if (VALID_STAT(sbuf2)) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
-	status = check_name(conn, newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* No links from a directory. */
@@ -4217,6 +4217,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32 len;
 	pstring newname;
 	pstring base_name;
+	BOOL dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
 
@@ -4232,7 +4233,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
+	srvstr_get_path_wcard(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4261,7 +4262,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, newname ));
-		status = rename_internals(conn, fname, base_name, 0, overwrite, False);
+		status = rename_internals(conn, fname, base_name, 0, overwrite, False, dest_has_wcard);
 	}
 
 	return status;
@@ -5324,6 +5325,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return ERROR_NT(status);
 		}
 
+		status = check_name(conn, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
+		}
+
 		/*
 		 * For CIFS UNIX extensions the target name may not exist.
 		 */
@@ -5332,12 +5338,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
 			return UNIXERROR(ERRDOS,ERRbadpath);
 		}    
-
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
-		}
-
 	}
 
 	if (!CAN_WRITE(conn)) {
@@ -5642,6 +5642,12 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(status);
 	}
 
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
+		return ERROR_NT(status);
+	}
+
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
@@ -5671,12 +5677,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		}
 	} else if (IVAL(pdata,0) != 4) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
-	status = check_name(conn, directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
-		return ERROR_NT(status);
 	}
 
 	status = create_directory(conn, directory);

@@ -1823,7 +1823,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			driver_unix_convert(new_name, conn, NULL, &st);
-			if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+			if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
@@ -1839,7 +1839,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1857,7 +1857,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1876,7 +1876,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1904,7 +1904,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					driver_unix_convert(new_name, conn, NULL, &st);
-					if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn,
+					if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name,
 							OPENX_FILE_EXISTS_TRUNCATE|
 							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
