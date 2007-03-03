@@ -1592,15 +1592,15 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-        /* Source must already exist. */
-	if (!VALID_STAT(sbuf1)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 	status = check_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+        /* Source must already exist. */
+	if (!VALID_STAT(sbuf1)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	/* Ensure attributes match. */
 	fattr = dos_mode(conn,oldname,&sbuf1);
 	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
@@ -1612,14 +1612,14 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-	/* Disallow if newname already exists. */
-	if (VALID_STAT(sbuf2)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
 	status = check_name(conn, newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/* Disallow if newname already exists. */
+	if (VALID_STAT(sbuf2)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	/* No links from a directory. */
@@ -1708,15 +1708,15 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
-	BOOL path1_contains_wcard = False;
-	BOOL path2_contains_wcard = False;
+	BOOL src_has_wcard = False;
+	BOOL dest_has_wcard = False;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &path1_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1734,7 +1734,7 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path2_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1747,10 +1747,10 @@ int reply_ntrename(connection_struct *conn,
 	
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, oldname, newname, attrs, False, path1_contains_wcard);
+			status = rename_internals(conn, oldname, newname, attrs, False, src_has_wcard, dest_has_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			if (path1_contains_wcard || path2_contains_wcard) {
+			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
@@ -1758,7 +1758,7 @@ int reply_ntrename(connection_struct *conn,
 			}
 			break;
 		case RENAME_FLAG_COPY:
-			if (path1_contains_wcard || path2_contains_wcard) {
+			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
@@ -1899,7 +1899,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	pstring new_name;
 	files_struct *fsp = NULL;
 	BOOL replace_if_exists = False;
-	BOOL path_contains_wcard = False;
+	BOOL dest_has_wcard = False;
 	NTSTATUS status;
 
         if(parameter_count < 5) {
@@ -1909,13 +1909,14 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4, STR_TERMINATE, &status, &path_contains_wcard);
+	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4,
+			STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
 	status = rename_internals(conn, fsp->fsp_name,
-				  new_name, 0, replace_if_exists, path_contains_wcard);
+				  new_name, 0, replace_if_exists, False, dest_has_wcard);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
