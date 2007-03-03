@@ -7,9 +7,16 @@ then
 	exit 1
 fi
 
+SCRIPTDIR=../testprogs/ejs
+DATADIR=../testdata
+
+PATH=bin:$PATH
+export PATH
+
 mkdir -p $PREFIX
 rm -f $PREFIX/*
 
-$VALGRIND bin/smbscript ../testprogs/ejs/samba3sam
-$VALGRIND bin/smbscript ../testdata/samba3/verify ../testdata/samba3
-$VALGRIND bin/smbscript setup/upgrade --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
+. script/tests/test_functions.sh
+
+testit "parse samba3" bin/smbscript ../testdata/samba3/verify $CONFIGURATION ../testdata/samba3
+#testit "upgrade" bin/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
