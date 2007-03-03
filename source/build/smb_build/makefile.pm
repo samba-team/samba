@@ -468,7 +468,7 @@ sub PkgConfig($$$)
 		$ctx->{DESCRIPTION},
 		defined($ctx->{INIT_FUNCTIONS}),
 		$pubs,
-		$privs,
+		"",
 		[
 			"prefix=$self->{config}->{prefix}",
 			"exec_prefix=$self->{config}->{exec_prefix}",
