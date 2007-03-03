@@ -30,7 +30,7 @@ for p in $PROTOCOLS; do
  done
 done
 
-for t in CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
+for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
 do
 	testit "$t" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ $t
 done
