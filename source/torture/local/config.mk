@@ -19,6 +19,7 @@ OBJ_FILES = \
 		../../librpc/tests/binding_string.o \
 		../../lib/util/tests/idtree.o \
 		../../lib/socket/testsuite.o \
+		../../lib/socket_wrapper/testsuite.o \
 		irpc.o \
 		../../lib/registry/tests/generic.o \
 		resolve.o \

@@ -36,6 +36,7 @@
 #ifndef __SOCKET_WRAPPER_H__
 #define __SOCKET_WRAPPER_H__
 
+const char *socket_wrapper_dir(void);
 int swrap_socket(int family, int type, int protocol);
 int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen);
