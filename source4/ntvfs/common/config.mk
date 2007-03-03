@@ -9,5 +9,6 @@ OBJ_FILES = \
 		opendb.o \
 		notify.o
 PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify share
+PRIVATE_DEPENDENCIES = brlock_ctdb
 # End LIBRARY ntvfs_common
 ################################################

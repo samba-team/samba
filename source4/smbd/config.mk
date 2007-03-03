@@ -46,6 +46,7 @@ PRIVATE_DEPENDENCIES = \
 		registry \
 		ntptr \
 		ntvfs \
-		share
+		share \
+		CLUSTER
 # End BINARY smbd
 #################################
