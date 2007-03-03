@@ -170,3 +170,4 @@ webapps/swat/source/class/swat/translation
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/translation
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/translation/messages.pot
 source/torture/ndr/proto.h
+source/bin/modules/*
