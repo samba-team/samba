@@ -61,19 +61,6 @@ PUBLIC_DEPENDENCIES = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
 
-
-
-################################################
-# Start MODULE registry_gconf
-[MODULE::registry_gconf]
-INIT_FUNCTION = registry_gconf_init
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_gconf.o
-PUBLIC_DEPENDENCIES = gconf
-# End MODULE registry_gconf
-################################################
-
 ################################################
 # Start MODULE registry_ldb
 [MODULE::registry_ldb]
