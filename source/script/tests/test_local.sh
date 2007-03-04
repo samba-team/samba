@@ -21,7 +21,7 @@ incdir=`dirname $0`
 # the local tests don't need smbd
 SMBD_TEST_FIFO=""
 export SMBD_TEST_FIFO
-skipped="LOCAL-RESOLVE LOCAL-REGISTRY"
+skipped="LOCAL-RESOLVE"
 
 echo "WARNING: Skipping $skipped"
 
