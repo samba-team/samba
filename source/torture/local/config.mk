@@ -25,6 +25,7 @@ OBJ_FILES = \
 		resolve.o \
 		../../lib/util/tests/strlist.o \
 		../../lib/util/tests/file.o \
+		../../lib/util/tests/genrand.o \
 		sddl.o \
 		../../lib/tdr/testsuite.o \
 		event.o \

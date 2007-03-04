@@ -35,6 +35,7 @@
 	torture_local_util_strlist, 
 	torture_local_util_file, 
 	torture_local_idtree, 
+	torture_local_genrand, 
 	torture_local_iconv,
 	torture_local_socket, 
 	torture_local_socket_wrapper, 
