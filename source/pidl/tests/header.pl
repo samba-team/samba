@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 14;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -42,3 +42,9 @@ like(parse_idl("interface p { struct x { struct y z; }; };"),
 
 like(parse_idl("interface p { struct x { union y z; }; };"),
      qr/struct x.*{.*union y z;.*}.*;/sm, "tagged type union member");
+
+like(parse_idl("interface p { struct x { }; };"),
+     qr/struct x.*{.*char _empty_;.*}.*;/sm, "empty struct");
+
+like(parse_idl("interface p { struct x; };"),
+     qr/struct x;/sm, "struct declaration");

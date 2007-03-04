@@ -271,9 +271,12 @@ sub GetElementLevelTable($)
 
 #####################################################################
 # see if a type contains any deferred data 
-sub can_contain_deferred
+sub can_contain_deferred($)
 {
+	sub can_contain_deferred($);
 	my $e = shift;
+
+	print "$e->{NAME}\n";
 
 	return 0 if (Parse::Pidl::Typelist::is_scalar($e->{TYPE}));
 	return 1 unless (hasType($e->{TYPE})); # assume the worst
