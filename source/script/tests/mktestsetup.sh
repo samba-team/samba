@@ -130,9 +130,8 @@ cat >$CONFFILE<<EOF
 	ntvfs handler = simple
 
 [cifsposixtestshare]
-	read only = no
+	copy = simple
 	ntvfs handler = cifsposix   
-	path = $TMPDIR
 EOF
 
 ## Override default share.ldb file
@@ -243,6 +242,21 @@ EOF
 export KRB5_CONFIG
 
 . `dirname $0`/mk-keyblobs.sh
+
+#Ensure the config file is valid before we start
+$srcdir/bin/testparm $CONFIGURATION -v --suppress-prompt >/dev/null 2>&1 || {
+    echo "">&2
+    echo "Failed to create configuration!" >&2
+    $srcdir/bin/testparm $CONFIGURATION  >&2
+    exit 1
+}
+
+( $srcdir/bin/testparm $CONFIGURATION -v --suppress-prompt --parameter-name="netbios name" --section-name=global 2> /dev/null | grep -i ^$NETBIOSNAME ) >/dev/null 2>&1 || {
+    echo "$?" >&2
+    $srcdir/bin/testparm $CONFIGURATION -v --suppress-prompt --parameter-name="netbios name" --section-name=global --suppress-prompt 2> /dev/null | grep -i ^$NETBIOSNAME >&2
+    echo "Failed to create configuration!" >&2
+    exit 1
+}
 
 PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --quiet --domain $DOMAIN --realm $REALM"
