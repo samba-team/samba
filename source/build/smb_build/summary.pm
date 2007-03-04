@@ -39,7 +39,6 @@ sub show($$)
 	my ($output,$config) = @_;
 
 	print "Summary:\n\n";
-	showitem($output, "GTK+ frontends", ["gtk","gconf"]);
 	showitem($output, "SSL in SWAT and LDAP", ["GNUTLS"]);
 	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
 	showitem($output, "intelligent command line editing", ["READLINE"]);
