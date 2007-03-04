@@ -8,10 +8,6 @@ fi
 
 PREFIX=$1
 
-if test -z "$TLS_ENABLED"; then
-	TLS_ENABLED=false
-fi
-
 if test -z "$SHARE_BACKEND"; then
 	SHARE_BACKEND=classic
 fi
@@ -95,7 +91,6 @@ cat >$CONFFILE<<EOF
         winbindd socket directory = $WINBINDD_SOCKET_DIR
 	name resolve order = bcast
 	interfaces = 127.0.0.1/8
-	tls enabled = $TLS_ENABLED
         tls dh params file = $DHFILE
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
