@@ -36,7 +36,6 @@ dnl m4_include(auth/kerberos/config.m4)
 
 m4_include(auth/gensec/config.m4)
 m4_include(smbd/process_model.m4)
-m4_include(lib/registry/config.m4)
 m4_include(scripting/swig/config.m4)
 m4_include(ntvfs/posix/config.m4)
 m4_include(ntvfs/unixuid/config.m4)
