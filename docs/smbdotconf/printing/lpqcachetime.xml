@@ -24,6 +24,6 @@
 
 <related>printing</related>
 
-<value type="default">10</value>
-<value type="example">30</value>
+<value type="default">30</value>
+<value type="example">10</value>
 </samba:parameter>
