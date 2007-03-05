@@ -58,7 +58,7 @@ BOOL count_calls(TALLOC_CTX *mem_ctx,
 	printf("\nScanning pipe '%s'\n", iface->name);
 
 	for (i=0;i<500;i++) {
-		status = dcerpc_request(p, mem_ctx, i, False, p, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, i, False, p, &stub_in, &stub_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			i--;
