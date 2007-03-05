@@ -14,9 +14,9 @@
 	<para>The cache files are stored in <filename moreinfo="none">/tmp/lpq.xxxx</filename> 
 	where xxxx is a hash of the <command moreinfo="none">lpq</command> command in use.</para>
 
-	<para>The default is 10 seconds, meaning that the cached results 
+	<para>The default is 30 seconds, meaning that the cached results 
 	of a previous identical <command moreinfo="none">lpq</command> command will be used 
-	if the cached data is less than 10 seconds old. A large value may 
+	if the cached data is less than 30 seconds old. A large value may 
 	be advisable if your <command moreinfo="none">lpq</command> command is very slow.</para>
 
 <para>A value of 0 will disable caching completely.</para>
