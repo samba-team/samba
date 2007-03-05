@@ -726,6 +726,15 @@ static void process_loop(void)
 	int maxfd, listen_sock, listen_priv_sock, selret;
 	struct timeval timeout, ev_timeout;
 
+	/* Open Sockets here to get stuff going ASAP */
+	listen_sock = open_winbindd_socket();
+	listen_priv_sock = open_winbindd_priv_socket();
+
+	if (listen_sock == -1 || listen_priv_sock == -1) {
+		perror("open_winbind_socket");
+		exit(1);
+	}
+
 	/* We'll be doing this a lot */
 
 	/* Handle messages */
@@ -744,14 +753,6 @@ static void process_loop(void)
 	main_loop_TALLOC_FREE();
 
 	/* Initialise fd lists for select() */
-
-	listen_sock = open_winbindd_socket();
-	listen_priv_sock = open_winbindd_priv_socket();
-
-	if (listen_sock == -1 || listen_priv_sock == -1) {
-		perror("open_winbind_socket");
-		exit(1);
-	}
 
 	maxfd = MAX(listen_sock, listen_priv_sock);
 
