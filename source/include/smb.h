@@ -500,8 +500,8 @@ typedef struct files_struct {
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 	BOOL pending_modtime_owner;
-	time_t pending_modtime;
-	time_t last_write_time;
+	struct timespec pending_modtime;
+	struct timespec last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;

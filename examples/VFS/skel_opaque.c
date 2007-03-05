@@ -211,9 +211,9 @@ static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
 	return vfswrap_getwd(NULL,  buf);
 }
 
-static int skel_utime(vfs_handle_struct *handle,  const char *path, struct utimbuf *times)
+static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struct timespec ts[2])
 {
-	return vfswrap_utime(NULL,  path, times);
+	return vfswrap_ntimes(NULL,  path, ts);
 }
 
 static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
@@ -578,7 +578,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(skel_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_ftruncate),			SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_lock),				SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_getlock),			SMB_VFS_OP_GETLOCK,		SMB_VFS_LAYER_OPAQUE},

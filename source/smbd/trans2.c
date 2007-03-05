@@ -3175,18 +3175,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 
 	if (fsp) {
-		if (fsp->pending_modtime) {
+		if (!null_timespec(fsp->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts.tv_sec = fsp->pending_modtime;
-			mtime_ts.tv_nsec = 0;
+			mtime_ts = fsp->pending_modtime;
 		}
 	} else {
 		/* Do we have this path open ? */
 		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
-		if (fsp1 && fsp1->pending_modtime) {
+		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts.tv_sec = fsp1->pending_modtime;
-			mtime_ts.tv_nsec = 0;
+			mtime_ts = fsp->pending_modtime;
 		}
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
@@ -3798,7 +3796,7 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 				files_struct *fsp,
 				const char *fname,
 				const SMB_STRUCT_STAT *psbuf,
-				struct utimbuf tvs)
+				struct timespec ts[2])
 {
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
@@ -3810,26 +3808,30 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (null_mtime(tvs.actime)) {
-		tvs.actime = psbuf->st_atime;
+	if (null_timespec(ts[0])) {
+		ts[0] = get_atimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
-	if (null_mtime(tvs.modtime)) {
-		tvs.modtime = psbuf->st_mtime;
+	if (null_timespec(ts[1])) {
+		ts[1] = get_mtimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
-	DEBUG(6,("smb_set_file_time: actime: %s " , ctime(&tvs.actime)));
-	DEBUG(6,("smb_set_file_time: modtime: %s ", ctime(&tvs.modtime)));
+	DEBUG(6,("smb_set_file_time: actime: %s " , time_to_asc(convert_timespec_to_time_t(ts[0])) ));
+	DEBUG(6,("smb_set_file_time: modtime: %s ", time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
 	/*
 	 * Try and set the times of this file if
 	 * they are different from the current values.
 	 */
 
-	if (psbuf->st_mtime == tvs.modtime && psbuf->st_atime == tvs.actime) {
-		return NT_STATUS_OK;
+	{
+		struct timespec mts = get_mtimespec(psbuf);
+		struct timespec ats = get_atimespec(psbuf);
+		if ((timespec_compare(&ts[0], &ats) == 0) && (timespec_compare(&ts[1], &mts) == 0)) {
+			return NT_STATUS_OK;
+		}
 	}
 
 	if(fsp != NULL) {
@@ -3843,15 +3845,16 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 		 * away and will set it on file close and after a write. JRA.
 		 */
 
-		if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
-			fsp_set_pending_modtime(fsp, tvs.modtime);
+		if (!null_timespec(ts[1])) {
+			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
+				time_to_asc(convert_timespec_to_time_t(ts[1])) ));
+			fsp_set_pending_modtime(fsp, ts[1]);
 		}
 
 	}
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
-	if(file_utime(conn, fname, &tvs)!=0) {
+	if(file_ntimes(conn, fname, ts)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
 	if (action != 0) {
@@ -4459,16 +4462,16 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					const char *fname,
 					const SMB_STRUCT_STAT *psbuf)
 {
-	struct utimbuf tvs;
+	struct timespec ts[2];
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* access time */
-	tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
+	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastAccess));
 	/* write time */
-	tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastWrite));
 
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		fname ? fname : fsp->fsp_name ));
@@ -4477,7 +4480,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
 }
 
 /****************************************************************************
@@ -4492,10 +4495,10 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					SMB_STRUCT_STAT *psbuf)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-	time_t write_time;
-	time_t changed_time;
+	struct timespec write_time;
+	struct timespec changed_time;
 	uint32 dosmode = 0;
-	struct utimbuf tvs;
+	struct timespec ts[2];
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (total_data < 36) {
@@ -4515,19 +4518,21 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	/* Ignore create time at offset pdata. */
 
 	/* access time */
-	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
+	ts[0] = interpret_long_date(pdata+8);
 
-	write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
-	changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
+	write_time = interpret_long_date(pdata+16);
+	changed_time = interpret_long_date(pdata+24);
 
-	tvs.modtime = MIN(write_time, changed_time);
+	/* mtime */
+	ts[1] = timespec_min(&write_time, &changed_time);
 
-	if (write_time > tvs.modtime && write_time != (time_t)-1) {
-		tvs.modtime = write_time;
+	if ((timespec_compare(&write_time, &ts[1]) == 1) && !null_timespec(write_time)) {
+		ts[1] = write_time;
 	}
+
 	/* Prefer a defined time to an undefined one. */
-	if (null_mtime(tvs.modtime)) {
-		tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
+	if (null_timespec(ts[1])) {
+		ts[1] = null_timespec(write_time) ? changed_time : write_time;
 	}
 
 	DEBUG(10,("smb_set_file_basic_info: file %s\n",
@@ -4537,7 +4542,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
 }
 
 /****************************************************************************
@@ -4751,7 +4756,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					const char *fname,
 					SMB_STRUCT_STAT *psbuf)
 {
-	struct utimbuf tvs;
+	struct timespec ts[2];
 	uint32 raw_unixmode;
 	mode_t unixmode;
 	SMB_OFF_T size = 0;
@@ -4778,8 +4783,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+24)); /* access_time */
-	tvs.modtime = convert_timespec_to_time_t(interpret_long_date(pdata+32)); /* modification_time */
+	ts[0] = interpret_long_date(pdata+24); /* access_time */
+	ts[1] = interpret_long_date(pdata+32); /* modification_time */
 	set_owner = (uid_t)IVAL(pdata,40);
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
@@ -4822,8 +4827,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
 		size = get_file_size(*psbuf);
-		tvs.modtime = psbuf->st_mtime;
-		tvs.actime = psbuf->st_atime;
+		ts[0] = get_atimespec(psbuf);
+		ts[1] = get_mtimespec(psbuf);
 		/* 
 		 * We continue here as we might want to change the 
 		 * owner uid/gid.
@@ -4902,7 +4907,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
 }
 
 /****************************************************************************
@@ -5360,9 +5365,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
-	if (fsp && fsp->pending_modtime) {
+	if (fsp && !null_timespec(fsp->pending_modtime)) {
 		/* the pending modtime overrides the current modtime */
-		sbuf.st_mtime = fsp->pending_modtime;
+		set_mtimespec(&sbuf, fsp->pending_modtime);
 	}
 
 	switch (info_level) {
