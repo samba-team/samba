@@ -8,13 +8,6 @@ EOF
 exit 1;
 fi
 
-# see if we support ldaps
-if grep HAVE_LIBGNUTLS.1 include/config.h > /dev/null > /dev/null; then
-    PROTOCOLS="ldap ldaps"
-else
-    PROTOCOLS="ldap"
-fi
-
 SERVER="$1"
 USERNAME="$2"
 PASSWORD="$3"
@@ -23,12 +16,17 @@ incdir=`dirname $0`
 . $incdir/test_functions.sh
 
 
-for p in $PROTOCOLS; do
- for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
-	 testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $options
- done
+p=ldap
+for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
+    testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $options
 done
-
+# see if we support ldaps
+if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
+    p=ldaps
+    for options in "" "-U$USERNAME%$PASSWORD"; do
+	testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $options
+    done
+fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
 do
 	testit "$t" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ $t
