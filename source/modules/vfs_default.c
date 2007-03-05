@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Wrap disk only vfs functions to sidestep dodgy compilers.
    Copyright (C) Tim Potter 1998
+   Copyright (C) Jeremy Allison 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -612,13 +613,35 @@ static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
 	return result;
 }
 
-static int vfswrap_utime(vfs_handle_struct *handle,  const char *path, struct utimbuf *times)
+/*********************************************************************
+ nsec timestamp resolution call. Convert down to whatever the underlying
+ system will support.
+**********************************************************************/
+
+static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const struct timespec ts[2])
 {
 	int result;
 
-	START_PROFILE(syscall_utime);
-	result = utime(path, times);
-	END_PROFILE(syscall_utime);
+	START_PROFILE(syscall_ntimes);
+#if defined(HAVE_UTIMES)
+	{
+		struct timeval tv[2];
+		tv[0] = convert_timespec_to_timeval(ts[0]);
+		tv[1] = convert_timespec_to_timeval(ts[1]);
+		result = utimes(path, tv);
+	}
+#elif defined(HAVE_UTIME)
+	{
+		struct utimebuf times;
+		times.actime = convert_timespec_to_time_t(ts[0]);
+		times.modtime = convert_timespec_to_time_t(ts[1]);
+		result = utime(path, times);
+	}
+#else
+	errno = ENOSYS;
+	result = -1;
+#endif
+	END_PROFILE(syscall_ntimes);
 	return result;
 }
 
@@ -1239,7 +1262,7 @@ static vfs_op_tuple vfs_default_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_getwd),	SMB_VFS_OP_GETWD,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_utime),	SMB_VFS_OP_UTIME,
+	{SMB_VFS_OP(vfswrap_ntimes),	SMB_VFS_OP_NTIMES,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_ftruncate),	SMB_VFS_OP_FTRUNCATE,
 	 SMB_VFS_LAYER_OPAQUE},

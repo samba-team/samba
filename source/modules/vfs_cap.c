@@ -131,11 +131,11 @@ static int cap_chdir(vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_CHDIR(handle, cappath);
 }
 
-static int cap_utime(vfs_handle_struct *handle, const char *path, struct utimbuf *times)
+static int cap_ntimes(vfs_handle_struct *handle, const char *path, const struct timespec ts[2])
 {
         pstring cappath;
 	capencode(cappath, path);
-	return SMB_VFS_NEXT_UTIME(handle, cappath, times);
+	return SMB_VFS_NEXT_NTIMES(handle, cappath, ts);
 }
 
 
@@ -327,7 +327,7 @@ static vfs_op_tuple cap_op_tuples[] = {
 	{SMB_VFS_OP(cap_chmod),			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},

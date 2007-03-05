@@ -149,13 +149,13 @@ static ssize_t real_write_file(files_struct *fsp,const char *data, SMB_OFF_T pos
 		 * The 99% solution will hopefully be good enough in this case. JRA.
 		 */
 
-		if (fsp->pending_modtime) {
+		if (!null_timespec(fsp->pending_modtime)) {
 			set_filetime(fsp->conn, fsp->fsp_name, fsp->pending_modtime);
 
 			/* If we didn't get the "set modtime" call ourselves, we must
 			   store the last write time to restore on close. JRA. */
 			if (!fsp->pending_modtime_owner) {
-				fsp->last_write_time = time(NULL);
+				fsp->last_write_time = timespec_current();
 			}
 		}
 

@@ -828,7 +828,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 	}
 
-	if (!set_filetime(conn,fname,mtime)) {
+	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
 		END_PROFILE(SMBsetatr);
 		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
@@ -1483,7 +1483,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int com;
 	int outsize = 0;
 	uint32 fattr = SVAL(inbuf,smb_vwv0);
-	struct utimbuf times;
+	struct timespec ts[2];
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	SMB_STRUCT_STAT sbuf;
@@ -1497,7 +1497,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  
 	com = SVAL(inbuf,smb_com);
 
-	times.modtime = srv_make_unix_date3(inbuf + smb_vwv1);
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date3(inbuf + smb_vwv1)); /* mtime. */
 
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1550,8 +1550,8 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
  
-	times.actime = sbuf.st_atime;
-	file_utime(conn, fname, &times);
+	ts[0] = get_atimespec(&sbuf); /* atime. */
+	file_ntimes(conn, fname, ts);
 
 	outsize = set_message(outbuf,1,0,True);
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
@@ -3146,7 +3146,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int outsize = 0;
-	time_t mtime;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
@@ -3188,8 +3187,8 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Take care of any time sent in the close.
 		 */
 
-		mtime = srv_make_unix_date3(inbuf+smb_vwv1);
-		fsp_set_pending_modtime(fsp, mtime);
+		fsp_set_pending_modtime(fsp,
+				convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv1)));
 
 		/*
 		 * close_file() returns the unix errno if an error
@@ -3222,7 +3221,7 @@ int reply_writeclose(connection_struct *conn,
 	NTSTATUS close_status = NT_STATUS_OK;
 	SMB_OFF_T startpos;
 	char *data;
-	time_t mtime;
+	struct timespec mtime;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBwriteclose);
 
@@ -3233,7 +3232,7 @@ int reply_writeclose(connection_struct *conn,
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	mtime = srv_make_unix_date3(inbuf+smb_vwv4);
+	mtime = convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv4));
 	data = smb_buf(inbuf) + 1;
   
 	if (numtowrite && is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
@@ -3243,7 +3242,7 @@ int reply_writeclose(connection_struct *conn,
   
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	set_filetime(conn, fsp->fsp_name,mtime);
+	set_filetime(conn, fsp->fsp_name, mtime);
   
 	/*
 	 * More insanity. W2K only closes the file if writelen > 0.
@@ -4724,7 +4723,7 @@ NTSTATUS copy_file(connection_struct *conn,
 	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp_set_pending_modtime( fsp2, src_sbuf.st_mtime);
+	fsp_set_pending_modtime( fsp2, get_mtimespec(&src_sbuf));
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -5536,7 +5535,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-	struct utimbuf unix_times;
+	struct timespec ts[2];
 	int outsize = 0;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBsetattrE);
@@ -5553,15 +5552,15 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * time as UNIX can't set this.
 	 */
 
-	unix_times.actime = srv_make_unix_date2(inbuf+smb_vwv3);
-	unix_times.modtime = srv_make_unix_date2(inbuf+smb_vwv5);
+	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv3)); /* atime. */
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv5)); /* mtime. */
   
 	/* 
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
 	 * Sometimes times are sent as zero - ignore them.
 	 */
 
-	if (null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
+	if (null_timespec(ts[0]) && null_timespec(ts[1])) {
 		/* Ignore request */
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
@@ -5569,20 +5568,22 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		}
 		END_PROFILE(SMBsetattrE);
 		return(outsize);
-	} else if (!null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
+	} else if (!null_timespec(ts[0]) && null_timespec(ts[1])) {
 		/* set modify time = to access time if modify time was unset */
-		unix_times.modtime = unix_times.actime;
+		ts[1] = ts[0];
 	}
 
 	/* Set the date on this file */
 	/* Should we set pending modtime here ? JRA */
-	if(file_utime(conn, fsp->fsp_name, &unix_times)) {
+	if(file_ntimes(conn, fsp->fsp_name, ts)) {
 		END_PROFILE(SMBsetattrE);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
   
-	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
-		fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
+	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%u modtime=%u\n",
+		fsp->fnum,
+		(unsigned int)ts[0].tv_sec,
+		(unsigned int)ts[1].tv_sec));
 
 	END_PROFILE(SMBsetattrE);
 	return(outsize);

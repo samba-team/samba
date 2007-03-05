@@ -445,7 +445,7 @@ static void display_finfo(file_info *finfo)
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 time_to_asc(&t));
+			 time_to_asc(t));
 		dir_total += finfo->size;
 	}
 }
@@ -458,7 +458,7 @@ static void display_stat(char *name, struct stat *st)
 {
 	time_t t = st->st_mtime;
 	pstring time_str;
-	pstrcpy(time_str, time_to_asc(&t));
+	pstrcpy(time_str, time_to_asc(t));
 	time_str[strlen(time_str)-1] = 0;
 	d_printf("> %-30s", name);
 	d_printf("%10.10s %8.0f  %s\n", *mode_t_string(st->st_mode), (double)st->st_size, time_str);
@@ -2561,7 +2561,7 @@ static int cmd_newer(void)
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
-			 time_to_asc(&newer_than)));
+			 time_to_asc(newer_than)));
 	} else {
 		newer_than = 0;
 	}

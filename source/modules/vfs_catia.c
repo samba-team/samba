@@ -184,10 +184,10 @@ static char *catia_getwd(vfs_handle_struct *handle, char *buf)
         return SMB_VFS_NEXT_GETWD(handle, buf);
 }
 
-static int catia_utime(vfs_handle_struct *handle,
-		       const char *path, struct utimbuf *times)
+static int catia_ntimes(vfs_handle_struct *handle,
+		       const char *path, const struct timespec ts[2])
 {
-        return SMB_VFS_NEXT_UTIME(handle, path, times);
+        return SMB_VFS_NEXT_NTIMES(handle, path, ts);
 }
 
 static BOOL catia_symlink(vfs_handle_struct *handle,
@@ -278,7 +278,7 @@ SMB_VFS_LAYER_TRANSPARENT},
 SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(catia_getwd),                       SMB_VFS_OP_GETWD,  
 SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_utime),                       SMB_VFS_OP_UTIME,  
+        {SMB_VFS_OP(catia_ntimes),                       SMB_VFS_OP_NTIMES,  
 SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(catia_symlink), SMB_VFS_OP_SYMLINK, 
 SMB_VFS_LAYER_TRANSPARENT},

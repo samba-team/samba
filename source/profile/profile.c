@@ -285,7 +285,7 @@ BOOL profile_setup(BOOL rdonly)
 	    "syscall_fchown",		/* PR_VALUE_SYSCALL_FCHOWN */
 	    "syscall_chdir",		/* PR_VALUE_SYSCALL_CHDIR */
 	    "syscall_getwd",		/* PR_VALUE_SYSCALL_GETWD */
-	    "syscall_utime",		/* PR_VALUE_SYSCALL_UTIME */
+	    "syscall_ntimes",		/* PR_VALUE_SYSCALL_NTIMES */
 	    "syscall_ftruncate",	/* PR_VALUE_SYSCALL_FTRUNCATE */
 	    "syscall_fcntl_lock",	/* PR_VALUE_SYSCALL_FCNTL_LOCK */
 	    "syscall_kernel_flock",     /* PR_VALUE_SYSCALL_KERNEL_FLOCK */
