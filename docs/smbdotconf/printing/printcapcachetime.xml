@@ -10,8 +10,8 @@
     to allow an earlier first rescan of the printing subsystem.
     </para>
 
-    <para>Setting this parameter to 0 (the default) disables any 
-    rescanning for new or removed printers after the initial startup.
+    <para>Setting this parameter to 0 disables any rescanning for new 
+    or removed printers after the initial startup.
     </para>
 </description>
 
