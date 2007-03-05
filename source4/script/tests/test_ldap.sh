@@ -15,7 +15,6 @@ PASSWORD="$3"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-
 p=ldap
 for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
     testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
@@ -37,11 +36,11 @@ done
 test "$TORTURE_QUICK" = "yes" || {
    LDBDIR=lib/ldb
    export LDBDIR
-   testit "ldb tests" $LDBDIR/tests/test-tdb.sh
+   testit "ldb" $LDBDIR/tests/test-tdb.sh
 }
 
 SCRIPTDIR=../testprogs/ejs
 
-testit "ejs ldap test" $SCRIPTDIR/ldap.js $CONFIGURATION $SERVER -U$USERNAME%$PASSWORD 
+testit "ejs ldap" $SCRIPTDIR/ldap.js $CONFIGURATION $SERVER -U$USERNAME%$PASSWORD
 
 testok $0 $failed

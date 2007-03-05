@@ -316,12 +316,24 @@ static void simple_comment (struct torture_context *test,
 	printf("%s", comment);
 }
 
+static void simple_warning(struct torture_context *test, 
+						   const char *comment)
+{
+	fprintf(stderr, "WARNING: %s\n", comment);
+}
+
 const static struct torture_ui_ops std_ui_ops = {
 	.comment = simple_comment,
+	.warning = simple_warning,
 	.suite_start = simple_suite_start,
 	.suite_finish = simple_suite_finish,
 	.test_result = simple_test_result
 };
+
+static void subunit_init(struct torture_context *ctx) 
+{
+	/* FIXME: register segv and bus handler */
+}
 
 static void subunit_suite_start(struct torture_context *ctx,
 							   struct torture_suite *suite)
@@ -354,7 +366,7 @@ static void subunit_test_result (struct torture_context *context,
 		break;
 	}
 	if (reason)
-		printf(" [ %s ]", reason);
+		printf(" [\n%s\n]", reason);
 	printf("\n");
 }
 
@@ -365,6 +377,7 @@ static void subunit_comment (struct torture_context *test,
 }
 
 const static struct torture_ui_ops subunit_ui_ops = {
+	.init = subunit_init,
 	.comment = subunit_comment,
 	.test_start = subunit_test_start,
 	.test_result = subunit_test_result,

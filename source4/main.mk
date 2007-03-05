@@ -282,49 +282,56 @@ realdistclean: distclean removebackup
 	-rm -f $(MANPAGES)
 
 check:: test
-test: $(DEFAULT_TEST_TARGET)
 
-SELFTEST = builddir=$(builddir) srcdir=$(srcdir) \
-	    $(srcdir)/script/tests/selftest.sh ${selftest_prefix}
+SELFTEST = $(srcdir)/script/tests/selftest.pl --prefix=${selftest_prefix} --builddir=$(builddir) --srcdir=$(srcdir) --expected-failures=samba4-knownfail 
+
+test: all libraries
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) --immediate
+
+testone: all libraries
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) --one
 
 test-swrap: all libraries
-	$(SELFTEST) all SOCKET_WRAPPER
+	$(SELFTEST) --socket-wrapper --immediate $(TESTS) 
 
 test-noswrap: all libraries
-	$(SELFTEST) all
+	$(SELFTEST) --immediate $(TESTS)
+
+quicktestone: all
+	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
 
 quicktest: all
-	$(SELFTEST) quick SOCKET_WRAPPER
+	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
 
 testenv: all libraries
-	$(SELFTEST) xterm SOCKET_WRAPPER
+	$(srcdir)/script/tests/testenv.pl 
 
 valgrindtest: valgrindtest-quick
 
 valgrindtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(SELFTEST) quick SOCKET_WRAPPER
+	$(SELFTEST) --quick --immediate --socket-wrapper
 
 valgrindtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(SELFTEST) all SOCKET_WRAPPER
+	$(SELFTEST) --immediate --socket-wrapper
 
 valgrindtest-env: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(SELFTEST) xterm SOCKET_WRAPPER
+	$(srcdir)/script/tests/testenv.pl
 
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	$(SELFTEST) quick SOCKET_WRAPPER
+	$(SELFTEST) --immediate --quick --socket-wrapper
 
 gdbtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	$(SELFTEST) all SOCKET_WRAPPER
+	$(SELFTEST) --immediate --socket-wrapper
 
 wintest: all
 	$(SELFTEST) win
