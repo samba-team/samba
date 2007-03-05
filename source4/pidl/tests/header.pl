@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 15;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -48,3 +48,6 @@ like(parse_idl("interface p { struct x { }; };"),
 
 like(parse_idl("interface p { struct x; };"),
      qr/struct x;/sm, "struct declaration");
+
+like(parse_idl("interface p { typedef struct x { int p; } x; };"),
+     qr/struct x.*{.*int32_t p;.*};/sm, "double struct declaration");
