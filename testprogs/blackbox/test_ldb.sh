@@ -21,8 +21,6 @@ check() {
 	return $status
 }
 
-
-
 check "RootDSE" bin/ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"

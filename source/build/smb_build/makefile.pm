@@ -157,7 +157,7 @@ YAPP=$self->{config}->{YAPP}
 
 GCOV=$self->{config}->{GCOV}
 
-DEFAULT_TEST_TARGET=$self->{config}->{DEFAULT_TEST_TARGET}
+DEFAULT_TEST_OPTIONS=$self->{config}->{DEFAULT_TEST_OPTIONS}
 
 __EOD__
 );

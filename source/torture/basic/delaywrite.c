@@ -487,6 +487,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
 		ret = False;
+		torture_result(tctx, TORTURE_FAIL, __location__": unable to open %s", fname);
 		goto done;
 	}
 
@@ -496,8 +497,8 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		ret = False;
+		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", nt_errstr(status));
 		goto done;
 	}
 
@@ -506,16 +507,15 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
-		torture_comment(tctx, "(%s) written gave %d - should have been 1\n", 
-		       __location__, (int)written);
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", (int)written);
 		ret = False;
 		goto done;
 	}
 
 	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		torture_comment(tctx, "(%s) failed to open 2nd time - %s\n", 
-		       __location__, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL, __location__": failed to open 2nd time - %s", 
+		       smbcli_errstr(cli2->tree));
 		ret = False;
 		goto done;
 	}
@@ -523,8 +523,8 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
 	
 	if (written != 1) {
-		torture_comment(tctx, "(%s) written gave %d - should have been 1\n", 
-		       __location__, (int)written);
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", 
+		       (int)written);
 		ret = False;
 		goto done;
 	}
@@ -535,30 +535,30 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_pathinfo(cli2->tree, tctx, &finfo2);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("(%s) fileinfo failed: %s\n", 
-			  __location__, nt_errstr(status)));
+		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", 
+			  nt_errstr(status));
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.create_time !=
 	    finfo2.basic_info.out.create_time) {
-		torture_comment(tctx, "(%s) create_time changed\n", __location__);
+		torture_result(tctx, TORTURE_FAIL, __location__": create_time changed");
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.access_time !=
 	    finfo2.basic_info.out.access_time) {
-		torture_comment(tctx, "(%s) access_time changed\n", __location__);
+		torture_result(tctx, TORTURE_FAIL, __location__": access_time changed");
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.write_time !=
 	    finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "(%s) write_time changed\n", __location__);
-		torture_comment(tctx, "write time conn 1 = %s, conn 2 = %s\n", 
+		torture_result(tctx, TORTURE_FAIL, __location__": write_time changed:\n"
+					   "write time conn 1 = %s, conn 2 = %s", 
 		       nt_time_string(tctx, finfo1.basic_info.out.write_time),
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		ret = False;
@@ -567,7 +567,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	
 	if (finfo1.basic_info.out.change_time !=
 	    finfo2.basic_info.out.change_time) {
-		torture_comment(tctx, "(%s) change_time changed\n", __location__);
+		torture_result(tctx, TORTURE_FAIL, __location__": change_time changed");
 		ret = False;
 		goto done;
 	}
@@ -587,7 +587,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", nt_errstr(status));
 		ret = False;
 		goto done;
 	}

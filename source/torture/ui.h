@@ -40,7 +40,9 @@ enum torture_result {
  */
 struct torture_ui_ops
 {
+	void (*init) (struct torture_context *);
 	void (*comment) (struct torture_context *, const char *);
+	void (*warning) (struct torture_context *, const char *);
 	void (*suite_start) (struct torture_context *, struct torture_suite *);
 	void (*suite_finish) (struct torture_context *, struct torture_suite *);
 	void (*tcase_start) (struct torture_context *, struct torture_tcase *); 
@@ -188,6 +190,7 @@ bool torture_run_test(struct torture_context *context,
 					  struct torture_test *test);
 
 void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
+void torture_warning(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
 void torture_result(struct torture_context *test, 
 			enum torture_result, const char *reason, ...) PRINTF_ATTRIBUTE(3,4);
 
@@ -262,6 +265,10 @@ void torture_result(struct torture_context *test,
 #define torture_fail(torture_ctx,cmt) do {\
 		torture_result(torture_ctx, TORTURE_FAIL, __location__": %s", cmt);\
 		return false; \
+	} while (0)
+#define torture_fail_goto(torture_ctx,label,cmt) do {\
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": %s", cmt);\
+		goto label; \
 	} while (0)
 
 #define torture_out stderr

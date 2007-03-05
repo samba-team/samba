@@ -49,6 +49,9 @@ struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
 	torture->ui_ops = ui_ops;
 	torture->returncode = true;
 
+	if (ui_ops->init)
+		ui_ops->init(torture);
+
 	return torture;
 }
 
