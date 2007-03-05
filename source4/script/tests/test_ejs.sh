@@ -3,7 +3,7 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_ejs.sh DOMAIN USERNAME PASSWORD
+Usage: test_ejs.sh DOMAIN USERNAME PASSWORD [OPTIONS]
 EOF
 exit 1;
 fi
@@ -11,6 +11,8 @@ fi
 DOMAIN="$1"
 USERNAME="$2"
 PASSWORD="$3"
+shift 3
+CONFIGURATION="$*"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
