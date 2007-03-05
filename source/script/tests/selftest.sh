@@ -52,8 +52,18 @@ export PKG_CONFIG_PATH
 
 incdir=`dirname $ARG0`
 echo -n "PROVISIONING..."
-. $incdir/mktestsetup.sh $PREFIX >/dev/null || exit 1
+eval `$incdir/mktestsetup.sh $PREFIX || exit 1`
 echo "DONE"
+
+export KRB5_CONFIG
+export PREFIX_ABS
+export TEST_DATA_PREFIX
+export CONFIGURATION
+export CONFFILE
+export PIDDIR
+export AUTH
+export SERVER
+export NETBIOSNAME
 
 PATH=bin:$PATH
 export PATH

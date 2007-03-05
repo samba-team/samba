@@ -18,13 +18,13 @@ incdir=`dirname $0`
 
 p=ldap
 for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
-    testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $options
+    testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
     p=ldaps
     for options in "" "-U$USERNAME%$PASSWORD"; do
-	testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $options
+	testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
     done
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS

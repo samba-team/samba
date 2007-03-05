@@ -1,7 +1,8 @@
 #!/bin/sh
 
 p=$1
-shift 1
+SERVER=$2
+shift 2
 options="$*"
 
 check() {

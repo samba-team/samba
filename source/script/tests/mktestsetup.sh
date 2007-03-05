@@ -1,4 +1,5 @@
 #!/bin/sh
+# Build a test environment for running Samba
 
 if [ $# -lt 1 ]
 then
@@ -39,11 +40,9 @@ srcdir=`dirname $0`/../..
 mkdir -p $PREFIX || exit $?
 cd $PREFIX
 PREFIX_ABS=`pwd`
-export PREFIX_ABS
 cd $oldpwd
 
 TEST_DATA_PREFIX=$PREFIX_ABS
-export TEST_DATA_PREFIX
 
 TMPDIR=$PREFIX_ABS/tmp
 ETCDIR=$PREFIX_ABS/etc
@@ -57,13 +56,6 @@ LOCKDIR=$PREFIX_ABS/lockdir
 WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
 LDAPDIR=$PREFIX_ABS/ldap
-
-export CONFIGURATION
-export CONFFILE
-export PIDDIR
-export AUTH
-export SERVER
-export NETBIOSNAME
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $LDAPDIR/db $LDAPDIR/db/bdb-logs $LDAPDIR/db/tmp
@@ -239,7 +231,6 @@ cat >$KRB5_CONFIG<<EOF
 [domain_realm]
  .samba.example.com = SAMBA.EXAMPLE.COM
 EOF
-export KRB5_CONFIG
 
 . `dirname $0`/mk-keyblobs.sh
 
@@ -301,11 +292,7 @@ echo "REALM=$REALM"
 echo "DNSNAME=$DNSNAME"
 echo "BASEDN=$BASEDN"
 echo "PASSWORD=$PASSWORD"
-echo "AUTH=$AUTH"
 echo "SRCDIR=$SRCDIR"
-echo "ROOT=$ROOT"
-echo "SERVER=$SERVER"
-echo "NETBIOSNAME=$NETBIOSNAME"
 echo "PREFIX=$PREFIX"
 echo "SMBD_LOGLEVEL=$SMBD_LOGLEVEL"
 echo "LDAPDIR=$LDAPDIR"
