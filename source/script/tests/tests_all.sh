@@ -1,5 +1,5 @@
 #!/bin/sh
- $SRCDIR/script/tests/test_ejs.sh $DOMAIN $USERNAME $PASSWORD
+ $SRCDIR/script/tests/test_ejs.sh $DOMAIN $USERNAME $PASSWORD $CONFIGURATION
  $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD
  $SRCDIR/script/tests/test_nbt.sh $SERVER
  $SRCDIR/script/tests/test_rpc.sh $SERVER $USERNAME $PASSWORD $DOMAIN
