@@ -69,6 +69,11 @@ The format for the file is, one entry per line:
 
 TESTSUITE-NAME/TEST-NAME
 
+=item I<--skip>
+
+Specify a file containing a list of tests that should be skipped. Possible candidates are
+tests that segfault the server, flip or don't end.
+
 =item I<--one>
 
 Abort as soon as one test fails.
@@ -123,6 +128,7 @@ my $opt_socket_wrapper_pcap = undef;
 my $opt_one = 0;
 my $opt_immediate = 0;
 my $opt_expected_failures = undef;
+my $opt_skip = undef;
 my $opt_verbose = 0;
 
 my $srcdir = ".";
@@ -132,10 +138,12 @@ my $prefix = "st";
 my $suitesfailed = [];
 my $start = time();
 my @expected_failures = ();
+my @skips = ();
 
 my $statistics = {
 	SUITES_FAIL => 0,
 	SUITES_OK => 0,
+	SUITES_SKIPPED => 0,
 
 	TESTS_UNEXPECTED_OK => 0,
 	TESTS_EXPECTED_OK => 0,
@@ -148,10 +156,16 @@ sub expecting_failure($)
 {
 	my $fullname = shift;
 
-	foreach (@expected_failures) {
-		return 1 if $fullname =~ /^$_$/;
-	}
+	return 1 if (grep(/^$fullname$/, @expected_failures));
 
+	return 0;
+}
+
+sub skip($)
+{
+	my $fullname = shift;
+
+	return 1 if (grep(/^$fullname$/, @skips));
 	return 0;
 }
 
@@ -310,6 +324,7 @@ my $result = GetOptions (
 		'one' => \$opt_one,
 		'immediate' => \$opt_immediate,
 		'expected-failures=s' => \$opt_expected_failures,
+		'skip=s' => \$opt_skip,
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
 		'verbose' => \$opt_verbose
@@ -419,6 +434,15 @@ if (defined($opt_expected_failures)) {
 	close(KNOWN);
 }
 
+if (defined($opt_skip)) {
+	open(SKIP, "<$opt_skip") or die("unable to read skip file: $!");
+	while (<SKIP>) { 
+		chomp; 
+		s/([ \t]+)\#(.*)$//;
+		push (@skips, $_); }
+	close(SKIP);
+}
+
 my $test_fifo = "$prefix/smbd_test.fifo";
 
 $ENV{SMBD_TEST_FIFO} = $test_fifo;
@@ -496,6 +520,13 @@ foreach (@todo) {
 	my $cmd = $$_[1];
 	$cmd =~ s/([\(\)])/\\$1/g;
 	my $name = $$_[0];
+	
+	if (skip($name)) {
+		print "SKIPPED: $name\n";
+		$statistics->{SUITES_SKIPPED}++;
+		next;
+	}
+
 	if ($from_build_farm) {
 		run_test_buildfarm($name, $cmd, $i, $suitestotal);
 	} else {
