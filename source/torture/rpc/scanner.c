@@ -51,7 +51,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
 		       uuid_str, iface->name, nt_errstr(status));
 		talloc_free(uuid_str);
-		return False;
+		return True;
 	}
 
 	/* make null calls */
@@ -59,7 +59,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	memset(stub_in.data, 0xFF, stub_in.length);
 
 	for (i=0;i<200;i++) {
-		status = dcerpc_request(p, NULL, False, i, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, i, False, mem_ctx, &stub_in, &stub_out);
 		if (!NT_STATUS_IS_OK(status) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			break;
@@ -91,52 +91,6 @@ done:
 	return True;
 }
 
-/*
-  ask the server what interface IDs are available on this endpoint
-*/
-static BOOL test_inq_if_ids(struct dcerpc_pipe *p, 
-			    TALLOC_CTX *mem_ctx,
-			    const struct dcerpc_interface_table *iface)
-{
-	NTSTATUS status;
-	struct mgmt_inq_if_ids r;
-	struct rpc_if_id_vector_t *vector;
-	int i;
-
-	r.out.if_id_vector = &vector;
-	
-	status = dcerpc_mgmt_inq_if_ids(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("inq_if_ids failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("inq_if_ids gave error code %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	if (!r.out.if_id_vector) {
-		printf("inq_if_ids gave NULL if_id_vector\n");
-		return False;
-	}
-
-	for (i=0;i<vector->count;i++) {
-		const char *uuid;
-		struct dcerpc_syntax_id *id = vector->if_id[i].id;
-		if (!id) continue;
-
-		uuid = GUID_string(mem_ctx, &id->uuid),
-
-		printf("\n\tuuid %s  version 0x%08x '%s'\n",
-		       uuid,
-		       id->if_version, idl_pipe_name(&id->uuid, id->if_version));
-
-		test_num_calls(iface, mem_ctx, id);
-	}
-
-	return True;
-}
 
 
 BOOL torture_rpc_scanner(struct torture_context *torture)
@@ -196,10 +150,11 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 			continue;
 		}
 	
-		if (!test_inq_if_ids(p, mem_ctx, l->table)) {
+		if (!test_inq_if_ids(p, mem_ctx, test_num_calls, l->table)) {
 			ret = False;
 		}
 	}
 
 	return ret;
 }
+
