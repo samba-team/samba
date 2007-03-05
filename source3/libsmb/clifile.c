@@ -1798,9 +1798,11 @@ static uint32 open_flags_to_wire(int flags)
 	if (flags & O_TRUNC) {
 		ret |= SMB_O_TRUNC;
 	}
+#if defined(O_SYNC)
 	if (flags & O_SYNC) {
 		ret |= SMB_O_SYNC;
 	}
+#endif /* O_SYNC */
 	if (flags & O_APPEND) {
 		ret |= SMB_O_APPEND;
 	}
