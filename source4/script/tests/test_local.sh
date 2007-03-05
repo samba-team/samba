@@ -27,4 +27,6 @@ for t in $local_tests; do
 	testit "$t" $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
 done
 
+testit "tdb stress" $VALGRIND bin/tdbtorture
+
 testok $0 $failed
