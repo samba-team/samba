@@ -858,15 +858,29 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	return True;
 }
 
+static int pull_delete_on_close_flag(TDB_DATA key, TDB_DATA dbuf,
+				     void *private_data)
+{
+	BOOL *result = (BOOL *)private_data;
+	struct locking_data *data;
+
+	if (dbuf.dsize < sizeof(struct locking_data)) {
+		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
+	}
+
+	data = (struct locking_data *)dbuf.dptr;
+
+	*result = data->u.s.delete_on_close;
+	return 0;
+}
+
 BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
-	BOOL result;
-	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode, NULL, NULL);
-	if (!lck) {
-		return False;
-	}
-	result = lck->delete_on_close;
-	TALLOC_FREE(lck);
+	TDB_DATA key = locking_key(dev, inode);
+	BOOL result = False;
+
+	tdb_parse_record(tdb, key, pull_delete_on_close_flag,
+			 (void *)&result);
 	return result;
 }
 
