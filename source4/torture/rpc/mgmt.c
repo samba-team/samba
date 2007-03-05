@@ -30,7 +30,11 @@
 /*
   ask the server what interface IDs are available on this endpoint
 */
-static BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		     BOOL (*per_id_test)(const struct dcerpc_interface_table *iface,
+					 TALLOC_CTX *mem_ctx,
+					 struct dcerpc_syntax_id *id),
+		     const void *priv)
 {
 	NTSTATUS status;
 	struct mgmt_inq_if_ids r;
@@ -63,6 +67,10 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("\tuuid %s  version 0x%08x  '%s'\n",
 		       GUID_string(mem_ctx, &id->uuid),
 		       id->if_version, idl_pipe_name(&id->uuid, id->if_version));
+
+		if (per_id_test) {
+			per_id_test(priv, mem_ctx, id);
+		}
 	}
 
 	return True;
@@ -255,7 +263,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 			ret = False;
 		}
 
-		if (!test_inq_if_ids(p, loop_ctx)) {
+		if (!test_inq_if_ids(p, loop_ctx, NULL, NULL)) {
 			ret = False;
 		}
 
