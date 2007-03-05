@@ -26,6 +26,7 @@ OBJ_FILES = \
 		../../lib/util/tests/strlist.o \
 		../../lib/util/tests/file.o \
 		../../lib/util/tests/genrand.o \
+		../../lib/charset/testsuite.o \
 		sddl.o \
 		../../lib/tdr/testsuite.o \
 		event.o \

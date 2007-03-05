@@ -251,11 +251,6 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
  **/
 _PUBLIC_ BOOL strequal_w(const char *s1, const char *s2)
 {
-	if (s1 == s2)
-		return(True);
-	if (!s1 || !s2)
-		return(False);
-  
 	return strcasecmp_m(s1,s2) == 0;
 }
 
@@ -279,7 +274,7 @@ _PUBLIC_ BOOL strcsequal_w(const char *s1,const char *s2)
 **/
 _PUBLIC_ void string_replace_w(char *s, char oldc, char newc)
 {
-	for (; s && *s; s++) {
+	while (s && *s) {
 		size_t size;
 		codepoint_t c = next_codepoint(s, &size);
 		if (c == oldc) {
