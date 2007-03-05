@@ -580,6 +580,28 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		*password = newpass;
 	}
 
+	encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return False;
+	}
+
+	/* This should break the key nicely */
+	session_key.length--;
+	arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
+
+	printf("Testing SetUserInfo level 23 (set password) with wrong password\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("SetUserInfo level %u should have failed with WRONG_PASSWORD- %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = False;
+	}
+
 	return ret;
 }
 
@@ -635,6 +657,23 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = False;
+	} else {
+		*password = newpass;
+	}
+
+	/* This should break the key nicely */
+	confounded_session_key.data[0]++;
+
+	arcfour_crypt_blob(u.info26.password.data, 516, &confounded_session_key);
+	memcpy(&u.info26.password.data[516], confounder, 16);
+
+	printf("Testing SetUserInfo level 26 (set password ex) with wrong session key\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("SetUserInfo level %u should have failed with WRONG_PASSWORD- %s\n",
 		       s.in.level, nt_errstr(status));
 		ret = False;
 	} else {
@@ -703,6 +742,21 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		*password = newpass;
+	}
+
+	/* This should break the key nicely */
+	confounded_session_key.data[0]++;
+
+	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
+	memcpy(&u.info25.password.data[516], confounder, 16);
+
+	printf("Testing SetUserInfo level 25 (set password ex) with wrong session key\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("SetUserInfo level %u should have failed with WRONG_PASSWORD- %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = False;
 	}
 
 	return ret;
