@@ -25,34 +25,10 @@ raw=`bin/smbtorture --list | grep "^RAW-" | xargs`
 base=`bin/smbtorture --list | grep "^BASE-" | xargs`
 tests="$base $raw $smb2"
 
-#
-# please add tests you want to be skipped here!
-#
-skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE RAW-COMPOSITE RAW-OPLOCK BASE-IOMETER"
-skipped="$skipped BASE-SAMBA3ERROR BASE-CASETABLE BASE-NTTRANS BASE-BENCH-HOLDCON BASE-SCAN-MAXFID"
-skipped="$skipped RAW-BENCH-OPLOCK RAW-SAMBA3HIDE RAW-SAMBA3CLOSEERR RAW-SAMBA3CHECKFSP RAW-SAMBA3BADPATH"
-skipped="$skipped RAW-SCAN-EAMAX SMB2-LOCK SMB2-NOTIFY"
-
-echo "WARNING: Skipping tests $skipped"
-
-failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then
 	continue;
     fi
-    skip=0
-    for s in $skipped; do
-    	if [ x"$s" = x"$t" ]; then
-    	    skip=1;
-	    break;
-	fi
-    done
-    if [ $skip = 1 ]; then
-    	continue;
-    fi
     start=""
-    name="$t"
-    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    testit "$t" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done
-
-testok $0 $failed
