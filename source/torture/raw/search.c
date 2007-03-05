@@ -31,7 +31,7 @@
 /*
   callback function for single_search
 */
-static BOOL single_search_callback(void *private, union smb_search_data *file)
+static BOOL single_search_callback(void *private, const union smb_search_data *file)
 {
 	union smb_search_data *data = private;
 

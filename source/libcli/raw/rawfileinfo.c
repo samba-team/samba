@@ -3,6 +3,7 @@
    client trans2 operations
    Copyright (C) James Myers 2003
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) James Peach 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -401,6 +402,26 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		parms->unix_basic_info.out.unique_id          =            BVAL(blob->data, 76);
 		parms->unix_basic_info.out.permissions        =            BVAL(blob->data, 84);
 		parms->unix_basic_info.out.nlink              =            BVAL(blob->data, 92);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_UNIX_INFO2:
+		FINFO_CHECK_SIZE(116);
+		parms->unix_info2.out.end_of_file	= BVAL(blob->data,  0);
+		parms->unix_info2.out.num_bytes		= BVAL(blob->data,  8);
+		parms->unix_info2.out.status_change_time = smbcli_pull_nttime(blob->data, 16);
+		parms->unix_info2.out.access_time	= smbcli_pull_nttime(blob->data, 24);
+		parms->unix_info2.out.change_time	= smbcli_pull_nttime(blob->data, 32);
+		parms->unix_info2.out.uid		= BVAL(blob->data, 40);
+		parms->unix_info2.out.gid		= BVAL(blob->data, 48);
+		parms->unix_info2.out.file_type		= IVAL(blob->data, 52);
+		parms->unix_info2.out.dev_major		= BVAL(blob->data, 60);
+		parms->unix_info2.out.dev_minor		= BVAL(blob->data, 68);
+		parms->unix_info2.out.unique_id		= BVAL(blob->data, 76);
+		parms->unix_info2.out.permissions	= BVAL(blob->data, 84);
+		parms->unix_info2.out.nlink		= BVAL(blob->data, 92);
+		parms->unix_info2.out.create_time	= smbcli_pull_nttime(blob->data, 100);
+		parms->unix_info2.out.file_flags	= IVAL(blob->data, 108);
+		parms->unix_info2.out.flags_mask	= IVAL(blob->data, 112);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_UNIX_LINK:

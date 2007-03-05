@@ -607,7 +607,7 @@ void nb_qfsinfo(int level, NTSTATUS status)
 }
 
 /* callback function used for trans2 search */
-static BOOL findfirst_callback(void *private, union smb_search_data *file)
+static BOOL findfirst_callback(void *private, const union smb_search_data *file)
 {
 	return True;
 }

@@ -3,6 +3,7 @@
    SMB transaction2 handling
    Copyright (C) Jeremy Allison 1994-2002.
    Copyright (C) Andrew Tridgell 1995-2003.
+   Copyright (C) James Peach 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -141,6 +142,7 @@ Found 8 aliased levels
 #define SMB_QFILEINFO_COMPRESSION_INFO                 0x10b
 #define SMB_QFILEINFO_UNIX_BASIC                       0x200
 #define SMB_QFILEINFO_UNIX_LINK                        0x201
+#define SMB_QFILEINFO_UNIX_INFO2                       0x20b
 #define SMB_QFILEINFO_BASIC_INFORMATION			1004
 #define SMB_QFILEINFO_STANDARD_INFORMATION		1005
 #define SMB_QFILEINFO_INTERNAL_INFORMATION		1006
@@ -213,6 +215,7 @@ Found 13 valid levels
 #define SMB_SPATHINFO_POSIX_ACL                        0x204
 #define SMB_SPATHINFO_XATTR                            0x205
 #define SMB_SFILEINFO_ATTR_FLAGS                       0x206	
+#define SMB_SFILEINFO_UNIX_INFO2                       0x20b
 #define SMB_SFILEINFO_BASIC_INFORMATION			1004
 #define SMB_SFILEINFO_RENAME_INFORMATION		1010
 #define SMB_SFILEINFO_DISPOSITION_INFORMATION		1013
@@ -267,6 +270,7 @@ Found 0 aliased levels
 #define SMB_FIND_ID_FULL_DIRECTORY_INFO	0x105
 #define SMB_FIND_ID_BOTH_DIRECTORY_INFO 0x106
 #define SMB_FIND_UNIX_INFO              0x202
+#define SMB_FIND_UNIX_INFO2             0x20b
 
 /* flags on trans2 findfirst/findnext that control search */
 #define FLAG_TRANS2_FIND_CLOSE          0x1
@@ -321,9 +325,6 @@ Found 0 aliased levels
 
 #define INFO_LEVEL_IS_UNIX(level) (((level) >= MIN_UNIX_INFO_LEVEL) && ((level) <= MAX_UNIX_INFO_LEVEL))
 
-#define SMB_QFILEINFO_UNIX_BASIC       0x200   /* UNIX File Info*/
-#define SMB_SFILEINFO_UNIX_BASIC        0x200
-
 #define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
 #define SMB_UID_NO_CHANGE                  0xFFFFFFFF
@@ -336,6 +337,8 @@ Found 0 aliased levels
 #define SMB_TIME_NO_CHANGE_HI              0xFFFFFFFF
 
 /*
+UNIX_BASIC  info level:
+
 Offset Size         Name
 0      LARGE_INTEGER EndOfFile                File size
 8      LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
@@ -363,6 +366,31 @@ Offset Size         Name
                                               (number of hard links)
 
 100 - end.
+*/
+
+/*
+SMB_QUERY_FILE_UNIX_INFO2 is SMB_QUERY_FILE_UNIX_BASIC with create
+time and file flags appended. The corresponding info level for
+findfirst/findnext is SMB_FIND_FILE_UNIX_UNIX2.
+
+Size    Offset  Value
+---------------------
+0      LARGE_INTEGER EndOfFile  	File size
+8      LARGE_INTEGER Blocks     	Number of blocks used on disk
+16     LARGE_INTEGER ChangeTime 	Attribute change time
+24     LARGE_INTEGER LastAccessTime           Last access time
+32     LARGE_INTEGER LastModificationTime     Last modification time
+40     LARGE_INTEGER Uid        	Numeric user id for the owner
+48     LARGE_INTEGER Gid        	Numeric group id of owner
+56     ULONG Type               	Enumeration specifying the file type
+60     LARGE_INTEGER devmajor   	Major device number if type is device
+68     LARGE_INTEGER devminor   	Minor device number if type is device
+76     LARGE_INTEGER uniqueid   	This is a server-assigned unique id
+84     LARGE_INTEGER permissions        Standard UNIX permissions
+92     LARGE_INTEGER nlinks     	Number of hard link)
+100    LARGE_INTEGER CreationTime       Create/birth time
+108    ULONG FileFlags          	File flags enumeration
+112    ULONG FileFlagsMask      	Mask of valid flags
 */
 
 /* UNIX filetype mappings. */
@@ -404,11 +432,19 @@ Offset Size         Name
 #define UNIX_EXTRA_MASK                 0007000
 #define UNIX_ALL_MASK                   0007777
 
+/* Flags for the file_flags field in UNIX_INFO2: */
+#define EXT_SECURE_DELETE               0x00000001
+#define EXT_ENABLE_UNDELETE             0x00000002
+#define EXT_SYNCHRONOUS                 0x00000004
+#define EXT_IMMUTABLE			0x00000008
+#define EXT_OPEN_APPEND_ONLY            0x00000010
+#define EXT_DO_NOT_BACKUP               0x00000020
+#define EXT_NO_UPDATE_ATIME             0x00000040
+#define EXT_HIDDEN                      0x00000080
+
 #define SMB_QFILEINFO_UNIX_LINK         0x201
 #define SMB_SFILEINFO_UNIX_LINK         0x201
 #define SMB_SFILEINFO_UNIX_HLINK        0x203
-
-#define SMB_FIND_FILE_UNIX              0x202
 
 /*
  Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus
