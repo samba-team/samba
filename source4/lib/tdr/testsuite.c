@@ -64,10 +64,10 @@ static bool test_push_uint16(struct torture_context *tctx)
 
 static bool test_pull_uint16(struct torture_context *tctx)
 {
-	uint16_t d = 782;
+	uint8_t d[2] = { 782 & 0xFF, (782 & 0xFF00) / 0x100 };
 	uint16_t l;
 	struct tdr_pull tdr;
-	tdr.data.data = (uint8_t *)&d;
+	tdr.data.data = d;
 	tdr.data.length = 2;
 	tdr.offset = 0;
 	tdr.flags = 0;
@@ -95,10 +95,10 @@ static bool test_push_uint32(struct torture_context *tctx)
 
 static bool test_pull_uint32(struct torture_context *tctx)
 {
-	uint32_t d = 782;
+	uint8_t d[4] = { 782 & 0xFF, (782 & 0xFF00) / 0x100, 0, 0 };
 	uint32_t l;
 	struct tdr_pull tdr;
-	tdr.data.data = (uint8_t *)&d;
+	tdr.data.data = d;
 	tdr.data.length = 4;
 	tdr.offset = 0;
 	tdr.flags = 0;
