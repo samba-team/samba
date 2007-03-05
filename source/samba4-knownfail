@@ -1,3 +1,5 @@
-LOCAL-REGISTRY-*
-LOCAL-RESOLVE-async
-LOCAL-ICONV-next_codepoint()
+LOCAL-REGISTRY/(nt4|ldb|dir) # Not implemented yet
+LOCAL-RESOLVE/async
+LOCAL-ICONV/next_codepoint()
+BASE-DELAYWRITE/finfo update on close
+RAW-OPLOCK/OPLOCK

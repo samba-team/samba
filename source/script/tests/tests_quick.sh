@@ -1,6 +1,4 @@
 #!/bin/sh
-TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:quick=yes"
-export TORTURE_OPTIONS
 TORTURE_QUICK="yes"
 export TORTURE_QUICK
 

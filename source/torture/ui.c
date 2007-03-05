@@ -40,6 +40,22 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 	talloc_free(tmp);
 }
 
+void torture_warning(struct torture_context *context, const char *comment, ...)
+{
+	va_list ap;
+	char *tmp;
+
+	if (!context->ui_ops->warning)
+		return;
+
+	va_start(ap, comment);
+	tmp = talloc_vasprintf(context, comment, ap);
+
+	context->ui_ops->warning(context, tmp);
+
+	talloc_free(tmp);
+}
+
 void torture_result(struct torture_context *context, 
 					enum torture_result result, const char *fmt, ...)
 {
