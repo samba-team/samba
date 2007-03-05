@@ -837,8 +837,7 @@ BOOL torture_rpc_winreg(struct torture_context *torture)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
-		if (!test_Open(p, mem_ctx, open_fns[i].name, open_fns[i].fn))
-			ret = False;
+		ret &= test_Open(p, mem_ctx, open_fns[i].name, open_fns[i].fn);
 	}
 
 	talloc_free(mem_ctx);

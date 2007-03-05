@@ -113,7 +113,12 @@ static bool test_strncasecmp_m(struct torture_context *tctx)
 	return true;
 }
 
-
+static bool test_next_token_null(struct torture_context *tctx)
+{
+	char buf[20];
+	torture_assert(tctx, !next_token(NULL, buf, " ", 20), "null ptr works");
+	return true;
+}
 
 static bool test_next_token(struct torture_context *tctx)
 {
@@ -132,6 +137,26 @@ static bool test_next_token(struct torture_context *tctx)
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
 
 	torture_assert(tctx, !next_token(&teststr, buf, " ", 20), "finding token doesn't work");
+	return true;
+}
+
+static bool test_next_token_implicit_sep(struct torture_context *tctx)
+{
+	const char *teststr = "foo\tbar\n bla";
+	char buf[20];
+	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	torture_assert_str_equal(tctx, buf, "foo", "token matches");
+	torture_assert_str_equal(tctx, teststr, "bar\n bla", "ptr modified correctly");
+
+	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	torture_assert_str_equal(tctx, buf, "bar", "token matches");
+	torture_assert_str_equal(tctx, teststr, " bla", "ptr modified correctly");
+
+	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	torture_assert_str_equal(tctx, buf, "bla", "token matches");
+	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
+
+	torture_assert(tctx, !next_token(&teststr, buf, NULL, 20), "finding token doesn't work");
 	return true;
 }
 
@@ -211,6 +236,15 @@ static bool test_strhasupper(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_count_chars_w(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, count_chars_w("foo", 'o'), 2, "simple");
+	torture_assert_int_equal(tctx, count_chars_w("", 'o'), 0, "empty");
+	torture_assert_int_equal(tctx, count_chars_w("bla", 'o'), 0, "none");
+	torture_assert_int_equal(tctx, count_chars_w("bla", '\0'), 0, "null");
+	return true;
+}
+
 struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "CHARSET");
@@ -224,6 +258,8 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "string_replace_w", test_string_replace_w);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
+	torture_suite_add_simple_test(suite, "next_token_null", test_next_token_null);
+	torture_suite_add_simple_test(suite, "next_token_implicit_sep", test_next_token_implicit_sep);
 	torture_suite_add_simple_test(suite, "next_token_quotes", test_next_token_quotes);
 	torture_suite_add_simple_test(suite, "next_token_seps", test_next_token_seps);
 	torture_suite_add_simple_test(suite, "next_token_quote_wrong", test_next_token_quote_wrong);
@@ -231,6 +267,7 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "strlen_m_term", test_strlen_m_term);
 	torture_suite_add_simple_test(suite, "strhaslower", test_strhaslower);
 	torture_suite_add_simple_test(suite, "strhasupper", test_strhasupper);
+	torture_suite_add_simple_test(suite, "count_chars_w", test_count_chars_w);
 
 	return suite;
 }

@@ -27,7 +27,5 @@ struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "COMPRESSION");
 
-	torture_suite_add_simple_test(suite, "pull_charset", test_pull_charset);
-
 	return suite;
 }
