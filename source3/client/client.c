@@ -387,7 +387,7 @@ static void display_finfo(file_info *finfo)
 				 finfo->name,
 				 attrib_string(finfo->mode),
 			 	(double)finfo->size,
-				time_to_asc(&t));
+				time_to_asc(t));
 			dir_total += finfo->size;
 		} else {
 			pstring afname;
@@ -404,7 +404,7 @@ static void display_finfo(file_info *finfo)
 			d_printf( "FILENAME:%s\n", afname);
 			d_printf( "MODE:%s\n", attrib_string(finfo->mode));
 			d_printf( "SIZE:%.0f\n", (double)finfo->size);
-			d_printf( "MTIME:%s", time_to_asc(&t));
+			d_printf( "MTIME:%s", time_to_asc(t));
 			fnum = cli_nt_create(cli, afname, CREATE_ACCESS_READ);
 			if (fnum == -1) {
 				DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
@@ -2713,7 +2713,7 @@ static int cmd_newer(void)
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
-			 time_to_asc(&newer_than)));
+			 time_to_asc(newer_than)));
 	} else {
 		newer_than = 0;
 	}

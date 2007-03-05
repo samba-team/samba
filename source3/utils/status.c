@@ -162,7 +162,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 			d_printf("NONE            ");
 		}
 
-		d_printf(" %s   %s   %s",sharepath, fname, time_to_asc((time_t *)&e->time.tv_sec));
+		d_printf(" %s   %s   %s",sharepath, fname, time_to_asc((time_t)e->time.tv_sec));
 	}
 }
 
@@ -207,7 +207,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	d_printf("%-10s   %s   %-12s  %s",
 	       crec.name,procid_str_static(&crec.pid),
 	       crec.machine,
-	       time_to_asc(&crec.start));
+	       time_to_asc(crec.start));
 
 	return 0;
 }

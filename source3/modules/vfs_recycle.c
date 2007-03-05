@@ -364,18 +364,16 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
 static void recycle_do_touch(vfs_handle_struct *handle, const char *fname, BOOL touch_mtime)
 {
 	SMB_STRUCT_STAT st;
-	struct utimbuf tb;
-	time_t currtime;
+	struct timespec ts[2];
 	
 	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n", fname, strerror(errno)));
 		return;
 	}
-	currtime = time(&currtime);
-	tb.actime = currtime;
-	tb.modtime = touch_mtime ? currtime : st.st_mtime;
+	ts[0] = timespec_current(); /* atime */
+	ts[1] = touch_mtime ? ts[0] : get_mtimespec(&st); /* mtime */
 
-	if (SMB_VFS_NEXT_UTIME(handle, fname, &tb) == -1 ) {
+	if (SMB_VFS_NEXT_NTIMES(handle, fname, ts) == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n", fname, strerror(errno)));
 	}
 }

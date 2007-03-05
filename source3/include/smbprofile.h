@@ -152,9 +152,9 @@ enum profile_stats_values
 #define syscall_getwd_count __profile_stats_value(PR_VALUE_SYSCALL_GETWD, count)
 #define syscall_getwd_time __profile_stats_value(PR_VALUE_SYSCALL_GETWD, time)
 
-	PR_VALUE_SYSCALL_UTIME,
-#define syscall_utime_count __profile_stats_value(PR_VALUE_SYSCALL_UTIME, count)
-#define syscall_utime_time __profile_stats_value(PR_VALUE_SYSCALL_UTIME, time)
+	PR_VALUE_SYSCALL_NTIMES,
+#define syscall_ntimes_count __profile_stats_value(PR_VALUE_SYSCALL_NTIMES, count)
+#define syscall_ntimes_time __profile_stats_value(PR_VALUE_SYSCALL_NTIMES, time)
 
 	PR_VALUE_SYSCALL_FTRUNCATE,
 #define syscall_ftruncate_count __profile_stats_value(PR_VALUE_SYSCALL_FTRUNCATE, count)

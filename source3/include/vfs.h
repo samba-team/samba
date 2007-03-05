@@ -67,7 +67,9 @@
    Also include kernel_flock call - jmcd */
 /* Changed to version 19, kernel change notify has been merged 
    Also included linux setlease call - jmcd */
-#define SMB_VFS_INTERFACE_VERSION 19
+/* Changed to version 20, use ntimes call instead of utime (greater
+ * timestamp resolition. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 20
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -144,7 +146,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FCHOWN,
 	SMB_VFS_OP_CHDIR,
 	SMB_VFS_OP_GETWD,
-	SMB_VFS_OP_UTIME,
+	SMB_VFS_OP_NTIMES,
 	SMB_VFS_OP_FTRUNCATE,
 	SMB_VFS_OP_LOCK,
 	SMB_VFS_OP_KERNEL_FLOCK,
@@ -269,7 +271,7 @@ struct vfs_ops {
 		int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
 		int (*chdir)(struct vfs_handle_struct *handle, const char *path);
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
-		int (*utime)(struct vfs_handle_struct *handle, const char *path, struct utimbuf *times);
+		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset);
 		BOOL (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 share_mode);
@@ -392,7 +394,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *fchown;
 		struct vfs_handle_struct *chdir;
 		struct vfs_handle_struct *getwd;
-		struct vfs_handle_struct *utime;
+		struct vfs_handle_struct *ntimes;
 		struct vfs_handle_struct *ftruncate;
 		struct vfs_handle_struct *lock;
 		struct vfs_handle_struct *kernel_flock;
