@@ -179,7 +179,7 @@ sub run_test_buildfarm($$$$)
 
 	my $expected_ret = 1;
 	my $open_tests = {};
-	open(RESULT, "$cmd|");
+	open(RESULT, "$cmd 2>&1|");
 	while (<RESULT>) { 
 		print;
 		if (/^test: (.+)\n/) {
