@@ -383,11 +383,11 @@ files_struct *file_find_print(void)
  Record the owner of that modtime.
 ****************************************************************************/
 
-void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
+void fsp_set_pending_modtime(files_struct *tfsp, const struct timespec mod)
 {
 	files_struct *fsp;
 
-	if (null_mtime(pmod)) {
+	if (null_timespec(mod)) {
 		return;
 	}
 
@@ -395,7 +395,7 @@ void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
 		if ( fsp->fh->fd != -1 &&
 				fsp->dev == tfsp->dev &&
 				fsp->inode == tfsp->inode ) {
-			fsp->pending_modtime = pmod;
+			fsp->pending_modtime = mod;
 			fsp->pending_modtime_owner = False;
 		}
 	}

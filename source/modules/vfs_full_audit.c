@@ -151,8 +151,8 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 		       const char *path);
 static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 			 char *path);
-static int smb_full_audit_utime(vfs_handle_struct *handle,
-		       const char *path, struct utimbuf *times);
+static int smb_full_audit_ntimes(vfs_handle_struct *handle,
+		       const char *path, const struct timespec ts[2]);
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   int fd, SMB_OFF_T len);
 static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
@@ -375,7 +375,7 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_getwd),	SMB_VFS_OP_GETWD,
 	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_utime),	SMB_VFS_OP_UTIME,
+	{SMB_VFS_OP(smb_full_audit_ntimes),	SMB_VFS_OP_NTIMES,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_ftruncate),	SMB_VFS_OP_FTRUNCATE,
 	 SMB_VFS_LAYER_LOGGER},
@@ -549,7 +549,7 @@ static struct {
 	{ SMB_VFS_OP_FCHOWN,	"fchown" },
 	{ SMB_VFS_OP_CHDIR,	"chdir" },
 	{ SMB_VFS_OP_GETWD,	"getwd" },
-	{ SMB_VFS_OP_UTIME,	"utime" },
+	{ SMB_VFS_OP_NTIMES,	"ntimes" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
 	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
@@ -1267,14 +1267,14 @@ static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_utime(vfs_handle_struct *handle,
-		       const char *path, struct utimbuf *times)
+static int smb_full_audit_ntimes(vfs_handle_struct *handle,
+		       const char *path, const struct timespec ts[2])
 {
 	int result;
 
-	result = SMB_VFS_NEXT_UTIME(handle, path, times);
+	result = SMB_VFS_NEXT_NTIMES(handle, path, ts);
 
-	do_log(SMB_VFS_OP_UTIME, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s", path);
 
 	return result;
 }

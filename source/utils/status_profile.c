@@ -113,8 +113,8 @@ BOOL status_profile_dump(BOOL verbose)
 	d_printf("chdir_time:                     %u\n", profile_p->syscall_chdir_time);
 	d_printf("getwd_count:                    %u\n", profile_p->syscall_getwd_count);
 	d_printf("getwd_time:                     %u\n", profile_p->syscall_getwd_time);
-	d_printf("utime_count:                    %u\n", profile_p->syscall_utime_count);
-	d_printf("utime_time:                     %u\n", profile_p->syscall_utime_time);
+	d_printf("ntimes_count:                   %u\n", profile_p->syscall_ntimes_count);
+	d_printf("ntimes_time:                    %u\n", profile_p->syscall_ntimes_time);
 	d_printf("ftruncate_count:                %u\n", profile_p->syscall_ftruncate_count);
 	d_printf("ftruncate_time:                 %u\n", profile_p->syscall_ftruncate_time);
 	d_printf("fcntl_lock_count:               %u\n", profile_p->syscall_fcntl_lock_count);

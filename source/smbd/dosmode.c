@@ -282,7 +282,7 @@ static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 		}
 
 		/* We want DOS semantics, ie allow non owner with write permission to change the
-			bits on a file. Just like file_utime below.
+			bits on a file. Just like file_ntimes below.
 		*/
 
 		/* Check if we have write access. */
@@ -504,7 +504,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		return -1;
 
 	/* We want DOS semantics, ie allow non owner with write permission to change the
-		bits on a file. Just like file_utime below.
+		bits on a file. Just like file_ntimes below.
 	*/
 
 	/* Check if we have write access. */
@@ -532,11 +532,11 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 }
 
 /*******************************************************************
- Wrapper around dos_utime that possibly allows DOS semantics rather
+ Wrapper around the VFS ntimes that possibly allows DOS semantics rather
  than POSIX.
 *******************************************************************/
 
-int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times)
+int file_ntimes(connection_struct *conn, const char *fname, const struct timespec ts[2])
 {
 	SMB_STRUCT_STAT sbuf;
 	int ret = -1;
@@ -555,14 +555,17 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
 		return 0;
 	}
 
-	if(SMB_VFS_UTIME(conn,fname, times) == 0)
+	if(SMB_VFS_NTIMES(conn, fname, ts) == 0) {
 		return 0;
+	}
 
-	if((errno != EPERM) && (errno != EACCES))
+	if((errno != EPERM) && (errno != EACCES)) {
 		return -1;
+	}
 
-	if(!lp_dos_filetimes(SNUM(conn)))
+	if(!lp_dos_filetimes(SNUM(conn))) {
 		return -1;
+	}
 
 	/* We have permission (given by the Samba admin) to
 	   break POSIX semantics and allow a user to change
@@ -574,7 +577,7 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
 	if (can_write_to_file(conn, fname, &sbuf)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
-		ret = SMB_VFS_UTIME(conn,fname, times);
+		ret = SMB_VFS_NTIMES(conn, fname, ts);
 		unbecome_root();
 	}
 
@@ -585,16 +588,19 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
+BOOL set_filetime(connection_struct *conn, const char *fname,
+		const struct timespec mtime)
 {
-	struct utimbuf times;
+	struct timespec ts[2];
 
-	if (null_mtime(mtime))
+	if (null_timespec(mtime)) {
 		return(True);
+	}
 
-	times.modtime = times.actime = mtime;
+	ts[1] = mtime; /* mtime. */
+	ts[0] = ts[1]; /* atime. */
 
-	if (file_utime(conn, fname, &times)) {
+	if (file_ntimes(conn, fname, ts)) {
 		DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
 		return False;
 	}
@@ -602,5 +608,5 @@ BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 		     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
   
-	return(True);
-} 
+	return True;
+}
