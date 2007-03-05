@@ -245,6 +245,16 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_u64_equal(torture_ctx,got,expected,cmt)\
+	do { uint64_t __got = (got), __expected = (expected); \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %llu, expected %llu: %s", \
+			(unsigned long long)__got, (unsigned long long)__expected, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_errno_equal(torture_ctx,expected,cmt)\
 	do { int __expected = (expected); \
 	if (errno != __expected) { \

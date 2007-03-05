@@ -3,6 +3,7 @@
    RAW_SFILEINFO_* calls
    Copyright (C) James Myers 2003
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) James Peach 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -164,6 +165,26 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		SBVAL(blob->data, 76, parms->unix_basic.in.unique_id);
 		SBVAL(blob->data, 84, parms->unix_basic.in.permissions);
 		SBVAL(blob->data, 92, parms->unix_basic.in.nlink);
+		return True;
+
+	case RAW_SFILEINFO_UNIX_INFO2:
+		NEED_BLOB(116);
+		SBVAL(blob->data,   0, parms->unix_info2.in.end_of_file);
+		SBVAL(blob->data,   8, parms->unix_info2.in.num_bytes);
+		smbcli_push_nttime(blob->data, 16, parms->unix_info2.in.status_change_time);
+		smbcli_push_nttime(blob->data, 24, parms->unix_info2.in.access_time);
+		smbcli_push_nttime(blob->data, 32, parms->unix_info2.in.change_time);
+		SBVAL(blob->data,  40,parms->unix_info2.in.uid);
+		SBVAL(blob->data,  48,parms->unix_info2.in.gid);
+		SIVAL(blob->data,  52,parms->unix_info2.in.file_type);
+		SBVAL(blob->data,  60,parms->unix_info2.in.dev_major);
+		SBVAL(blob->data,  68,parms->unix_info2.in.dev_minor);
+		SBVAL(blob->data,  76,parms->unix_info2.in.unique_id);
+		SBVAL(blob->data,  84,parms->unix_info2.in.permissions);
+		SBVAL(blob->data,  92,parms->unix_info2.in.nlink);
+		smbcli_push_nttime(blob->data, 100, parms->unix_info2.in.create_time);
+		SIVAL(blob->data, 108, parms->unix_info2.in.file_flags);
+		SIVAL(blob->data, 112, parms->unix_info2.in.flags_mask);
 		return True;
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:

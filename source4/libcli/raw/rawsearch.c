@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    client directory search routines
    Copyright (C) James Myers 2003 <myersjj@samba.org>
+   Copyright (C) James Peach 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +29,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 				   TALLOC_CTX *mem_ctx,
 				   uint16_t count, 
 				   void *private,
-				   BOOL (*callback)(void *private, union smb_search_data *file))
+				   smbcli_search_callback callback)
 
 {
 	union smb_search_data search_data;
@@ -69,7 +70,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 union smb_search_first *io, void *private,
-					 BOOL (*callback)(void *private, union smb_search_data *file))
+					 smbcli_search_callback callback)
 
 {
 	struct smbcli_request *req; 
@@ -110,7 +111,7 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 					TALLOC_CTX *mem_ctx,
 					union smb_search_next *io, void *private,
-					BOOL (*callback)(void *private, union smb_search_data *file))
+					smbcli_search_callback callback)
 
 {
 	struct smbcli_request *req; 
@@ -605,17 +606,51 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		}
 		return ofs;
 
-	case RAW_SEARCH_DATA_DIRECTORY_INFO:
-	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_DATA_NAME_INFO:
-	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
-	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO: {
-		uint_t str_flags = STR_UNICODE;
-		if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
-			str_flags = STR_ASCII;
+	case RAW_SEARCH_DATA_UNIX_INFO2:
+		if (blob->length < (116 + 8 + 1)) {
+			return -1;
 		}
-		
+
+		ofs                                 = IVAL(blob->data,   0);
+		data->unix_info2.file_index         = IVAL(blob->data,   4);
+		data->unix_info2.end_of_file        = BVAL(blob->data,   8);
+		data->unix_info2.num_bytes          = BVAL(blob->data,  16);
+		data->unix_info2.status_change_time = smbcli_pull_nttime(blob->data, 24);
+		data->unix_info2.access_time        = smbcli_pull_nttime(blob->data, 32);
+		data->unix_info2.change_time        = smbcli_pull_nttime(blob->data, 40);
+		data->unix_info2.uid                = IVAL(blob->data,  48);
+		data->unix_info2.gid                = IVAL(blob->data,  56);
+		data->unix_info2.file_type          = IVAL(blob->data,  64);
+		data->unix_info2.dev_major          = BVAL(blob->data,  68);
+		data->unix_info2.dev_minor          = BVAL(blob->data,  76);
+		data->unix_info2.unique_id          = BVAL(blob->data,  84);
+		data->unix_info2.permissions        = IVAL(blob->data,  92);
+		data->unix_info2.nlink              = IVAL(blob->data, 100);
+		data->unix_info2.create_time	    = smbcli_pull_nttime(blob->data, 108);
+		data->unix_info2.file_flags	    = IVAL(blob->data, 116);
+		data->unix_info2.flags_mask	    = IVAL(blob->data, 120);
+
+		/* There is no length field for this name but we know it's null terminated. */
+		len = smbcli_blob_pull_unix_string(tree->session, mem_ctx, blob,
+					   &data->unix_info2.name, 116 + 8, 0);
+
+		if (ofs != 0 && ofs < (116 + 8 + len)) {
+			return -1;
+		}
+
+		return ofs;
+
+		case RAW_SEARCH_DATA_DIRECTORY_INFO:
+		case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
+		case RAW_SEARCH_DATA_NAME_INFO:
+		case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
+		case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
+		case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO: {
+			uint_t str_flags = STR_UNICODE;
+			if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
+				str_flags = STR_ASCII;
+			}
+			
 		status = smb_raw_search_common(mem_ctx, level, blob, data, &ofs, str_flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
@@ -638,7 +673,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 					 int16_t count,
 					 DATA_BLOB *blob,
 					 void *private,
-					 BOOL (*callback)(void *private, union smb_search_data *file))
+					 smbcli_search_callback callback)
 
 {
 	int i;
@@ -677,7 +712,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      TALLOC_CTX *mem_ctx,
 			      union smb_search_first *io, void *private,
-			      BOOL (*callback)(void *private, union smb_search_data *file))
+			      smbcli_search_callback callback)
 {
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
@@ -725,7 +760,7 @@ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
 			     union smb_search_next *io, void *private,
-			     BOOL (*callback)(void *private, union smb_search_data *file))
+			     smbcli_search_callback callback)
 {
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
