@@ -1,7 +1,7 @@
 /*
    UNIX Extensions test registration.
 
-   Copyright (C) 2006 James Peach
+   Copyright (C) 2007 James Peach
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@ NTSTATUS torture_unix_init(void)
 
 	torture_suite_add_simple_test(suite,
                         "WHOAMI", torture_unix_whoami);
+	torture_suite_add_simple_test(suite,
+			"INFO2", unix_torture_unix_info2);
 
         return (torture_register_suite(suite)) ? NT_STATUS_OK
                                         : NT_STATUS_UNSUCCESSFUL;

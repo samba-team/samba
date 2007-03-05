@@ -224,7 +224,8 @@ PRIVATE_PROTO_HEADER = \
 		unix/proto.h
 OBJ_FILES = \
 		unix/unix.o \
-		unix/whoami.o
+		unix/whoami.o \
+		unix/unix_info2.o
 # End MODULE TORTURE_UNIX
 #################################
 

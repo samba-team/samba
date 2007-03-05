@@ -3,6 +3,7 @@
    SMB request interface structures
    Copyright (C) Andrew Tridgell			2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
+   Copyright (C) James Peach 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -426,6 +427,7 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_STREAM_INFO                = SMB_QFILEINFO_STREAM_INFO,
 		     RAW_FILEINFO_COMPRESSION_INFO           = SMB_QFILEINFO_COMPRESSION_INFO,
 		     RAW_FILEINFO_UNIX_BASIC                 = SMB_QFILEINFO_UNIX_BASIC,
+		     RAW_FILEINFO_UNIX_INFO2                 = SMB_QFILEINFO_UNIX_INFO2,
 		     RAW_FILEINFO_UNIX_LINK                  = SMB_QFILEINFO_UNIX_LINK,
 		     RAW_FILEINFO_BASIC_INFORMATION          = SMB_QFILEINFO_BASIC_INFORMATION,
 		     RAW_FILEINFO_STANDARD_INFORMATION       = SMB_QFILEINFO_STANDARD_INFORMATION,
@@ -745,6 +747,32 @@ union smb_fileinfo {
 		} out;
 	} unix_basic_info;
 
+	/* RAW_FILEINFO_UNIX_INFO2 interface */
+	struct {
+		enum smb_fileinfo_level level;
+		struct {
+			union smb_handle_or_path file;
+		} in;
+		struct {
+			uint64_t end_of_file;
+			uint64_t num_bytes;
+			NTTIME status_change_time;
+			NTTIME access_time;
+			NTTIME change_time;
+			uint64_t uid;
+			uint64_t gid;
+			uint32_t file_type;
+			uint64_t dev_major;
+			uint64_t dev_minor;
+			uint64_t unique_id;
+			uint64_t permissions;
+			uint64_t nlink;
+			NTTIME create_time;
+			uint32_t file_flags;
+			uint32_t flags_mask;
+		} out;
+	} unix_info2;
+
 	/* RAW_FILEINFO_UNIX_LINK interface */
 	struct {
 		enum smb_fileinfo_level level;
@@ -867,6 +895,7 @@ enum smb_setfileinfo_level {
 	RAW_SFILEINFO_ALLOCATION_INFO         = SMB_SFILEINFO_ALLOCATION_INFO,
 	RAW_SFILEINFO_END_OF_FILE_INFO        = SMB_SFILEINFO_END_OF_FILE_INFO,
 	RAW_SFILEINFO_UNIX_BASIC              = SMB_SFILEINFO_UNIX_BASIC,
+	RAW_SFILEINFO_UNIX_INFO2              = SMB_SFILEINFO_UNIX_INFO2,
 	RAW_SFILEINFO_UNIX_LINK               = SMB_SFILEINFO_UNIX_LINK,
 	RAW_SFILEINFO_UNIX_HLINK	      = SMB_SFILEINFO_UNIX_HLINK,
 	RAW_SFILEINFO_BASIC_INFORMATION       = SMB_SFILEINFO_BASIC_INFORMATION,
@@ -1003,8 +1032,6 @@ union smb_setfileinfo {
 		} in;
 	} mode_information;
 
-
-
 	/* RAW_SFILEINFO_UNIX_BASIC interface */
 	struct {
 		enum smb_setfileinfo_level level;
@@ -1026,7 +1053,31 @@ union smb_setfileinfo {
 			uint64_t nlink;
 		} in;
 	} unix_basic;
-	
+
+	/* RAW_SFILEINFO_UNIX_INFO2 interface */
+	struct {
+		enum smb_setfileinfo_level level;
+		struct {
+			union smb_handle_or_path file;
+			uint64_t end_of_file;
+			uint64_t num_bytes;
+			NTTIME status_change_time;
+			NTTIME access_time;
+			NTTIME change_time;
+			uint64_t uid;
+			uint64_t gid;
+			uint32_t file_type;
+			uint64_t dev_major;
+			uint64_t dev_minor;
+			uint64_t unique_id;
+			uint64_t permissions;
+			uint64_t nlink;
+			NTTIME create_time;
+			uint32_t file_flags;
+			uint32_t flags_mask;
+		} in;
+	} unix_info2;
+
 	/* RAW_SFILEINFO_UNIX_LINK, RAW_SFILEINFO_UNIX_HLINK interface */
 	struct {
 		enum smb_setfileinfo_level level;
@@ -2204,7 +2255,8 @@ enum smb_search_data_level {
 	RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO	= SMB_FIND_BOTH_DIRECTORY_INFO,
 	RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO	= SMB_FIND_ID_FULL_DIRECTORY_INFO,
 	RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO	= SMB_FIND_ID_BOTH_DIRECTORY_INFO,
-	RAW_SEARCH_DATA_UNIX_INFO		= SMB_FIND_UNIX_INFO
+	RAW_SEARCH_DATA_UNIX_INFO		= SMB_FIND_UNIX_INFO,
+	RAW_SEARCH_DATA_UNIX_INFO2		= SMB_FIND_UNIX_INFO2
 };
 	
 /* union for file search */
@@ -2504,8 +2556,32 @@ union smb_search_data {
 		uint64_t nlink;		
 		const char *name;
 	} unix_info;
+
+	/* RAW_SEARCH_DATA_UNIX_INFO2 interface */
+	struct {
+		uint32_t file_index;
+		uint64_t end_of_file;
+		uint64_t num_bytes;
+		NTTIME status_change_time;
+		NTTIME access_time;
+		NTTIME change_time;
+		uint64_t uid;
+		uint64_t gid;
+		uint32_t file_type;
+		uint64_t dev_major;
+		uint64_t dev_minor;
+		uint64_t unique_id;
+		uint64_t permissions;
+		uint64_t nlink;
+		NTTIME create_time;
+		uint32_t file_flags;
+		uint32_t flags_mask;
+		const char *name;
+	} unix_info2;
 };
 
+/* Callback function passed to the raw search interface. */
+typedef BOOL (*smbcli_search_callback)(void *private, const union smb_search_data *file);
 
 enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_FCLOSE, RAW_FINDCLOSE_FINDCLOSE};
 
