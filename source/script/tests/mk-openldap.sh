@@ -80,11 +80,6 @@ cat > $LDAPDIR/db/DB_CONFIG <<EOF
 	set_tmp_dir             $LDAPDIR/db/tmp
 EOF
 
-LDAP_URI="ldapi://$LDAPDIR/ldapi"
-LDAP_URI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
-export LDAP_URI
-export LDAP_URI_ESCAPE
-
 #This uses the provision we just did, to read out the schema
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema >&2
 
