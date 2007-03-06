@@ -564,6 +564,37 @@ number of entries sent will be zero.
 
 */
 
+#define SMB_QUERY_POSIX_WHOAMI     0x202
+
+enum smb_whoami_flags {
+    SMB_WHOAMI_GUEST = 0x1 /* Logged in as (or squashed to) guest */
+};
+
+/* Mask of which WHOAMI bits are valid. This should make it easier for clients
+ * to cope with servers that have different sets of WHOAMI flags (as more get
+ * added).
+ */
+#define SMB_WHOAMI_MASK 0x00000001
+
+/*
+   SMBWhoami - Query the user mapping performed by the server for the
+   connected tree. This is a subcommand of the TRANS2_QFSINFO.
+
+   Returns:
+	4 bytes unsigned -	mapping flags (smb_whoami_flags)
+	4 bytes unsigned -	flags mask
+
+	8 bytes unsigned -	primary UID
+	8 bytes unsigned -	primary GID
+	4 bytes unsigned -	number of supplementary GIDs
+	4 bytes unsigned -	number of SIDs
+	4 bytes unsigned -	SID list byte count
+	4 bytes -		pad / reserved (must be zero)
+
+	8 bytes unsigned[] -	list of GIDs (may be empty)
+	DOM_SID[] -		list of SIDs (may be empty)
+*/
+
 /* The query/set info levels for POSIX ACLs. */
 #define SMB_QUERY_POSIX_ACL  0x204
 #define SMB_SET_POSIX_ACL  0x204
