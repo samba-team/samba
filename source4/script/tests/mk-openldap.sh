@@ -47,10 +47,6 @@ index subClassOf eq
 index dnsRoot eq
 index nETBIOSName eq pres
 
-overlay syncprov
-syncprov-checkpoint 100 10
-syncprov-sessionlog 100
-
 EOF
 
 cat > $LDAPDIR/db/DB_CONFIG <<EOF
