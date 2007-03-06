@@ -913,17 +913,6 @@ void *malloc_(size_t size)
 }
 
 /****************************************************************************
- Internal malloc wrapper. Externally visible.
-****************************************************************************/
-
-void *memalign_(size_t align, size_t size)
-{
-#undef memalign
-	return memalign(align, size);
-#define memalign(align, s) __ERROR_DONT_USE_MEMALIGN_DIRECTLY
-}
-
-/****************************************************************************
  Internal calloc wrapper. Not externally visible.
 ****************************************************************************/
 
@@ -974,11 +963,7 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count)
 		return NULL;
 	}
 
-#if defined(PARANOID_MALLOC_CHECKER)
-	return memalign_(align, el_size*count);
-#else
 	return sys_memalign(align, el_size*count);
-#endif
 }
 
 /****************************************************************************
