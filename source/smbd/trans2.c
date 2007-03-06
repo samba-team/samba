@@ -5,6 +5,7 @@
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005
    Copyright (C) Steve French			2005
+   Copyright (C) James Peach			2007
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -2232,7 +2233,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
 {
-	char *pdata = *ppdata;
+	char *pdata;
 	char *params = *pparams;
 	uint16 info_level;
 	int data_len, len;
@@ -2563,6 +2564,114 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
 				return ERROR_DOS(ERRSRV,ERRerror);
 			}
+			break;
+		}
+
+		case SMB_QUERY_POSIX_WHOAMI:
+		{
+			uint32_t flags = 0;
+			uint32_t sid_bytes;
+			int i;
+
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
+
+			if (max_data_bytes < 40) {
+				return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+			}
+
+			/* We ARE guest if global_sid_Builtin_Guests is
+			 * in our list of SIDs.
+			 */
+			if (nt_token_check_sid(&global_sid_Builtin_Guests,
+				    current_user.nt_user_token)) {
+				flags |= SMB_WHOAMI_GUEST;
+			}
+
+			/* We are NOT guest if global_sid_Authenticated_Users
+			 * is in our list of SIDs.
+			 */
+			if (nt_token_check_sid(&global_sid_Authenticated_Users,
+				    current_user.nt_user_token)) {
+				flags &= ~SMB_WHOAMI_GUEST;
+			}
+
+			/* NOTE: 8 bytes for UID/GID, irrespective of native
+			 * platform size. This matches
+			 * SMB_QUERY_FILE_UNIX_BASIC and friends.
+			 */
+			data_len = 4 /* flags */
+			    + 4 /* flag mask */
+			    + 8 /* uid */
+			    + 8 /* gid */
+			    + 4 /* ngroups */
+			    + 4 /* num_sids */
+			    + 4 /* SID bytes */
+			    + 4 /* pad/reserved */
+			    + (current_user.ut.ngroups * 8)
+				/* groups list */
+			    + (current_user.nt_user_token->num_sids *
+				    SID_MAX_SIZE)
+				/* SID list */;
+
+			SIVAL(pdata, 0, flags);
+			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
+			SBIG_UINT(pdata, 8, (SMB_BIG_UINT)current_user.ut.uid);
+			SBIG_UINT(pdata, 16, (SMB_BIG_UINT)current_user.ut.gid);
+
+
+			if (data_len >= max_data_bytes) {
+				/* Potential overflow, skip the GIDs and SIDs. */
+
+				SIVAL(pdata, 24, 0); /* num_groups */
+				SIVAL(pdata, 28, 0); /* num_sids */
+				SIVAL(pdata, 32, 0); /* num_sid_bytes */
+				SIVAL(pdata, 36, 0); /* reserved */
+
+				data_len = 40;
+				break;
+			}
+
+			SIVAL(pdata, 24, current_user.ut.ngroups);
+			SIVAL(pdata, 28,
+				current_user.nt_user_token->num_sids);
+
+			/* We walk the SID list twice, but this call is fairly
+			 * infrequent, and I don't expect that it's performance
+			 * sensitive -- jpeach
+			 */
+			for (i = 0, sid_bytes = 0;
+			    i < current_user.nt_user_token->num_sids; ++i) {
+				sid_bytes +=
+				    sid_size(&current_user.nt_user_token->user_sids[i]);
+			}
+
+			/* SID list byte count */
+			SIVAL(pdata, 32, sid_bytes);
+
+			/* 4 bytes pad/reserved - must be zero */
+			SIVAL(pdata, 36, 0);
+			data_len = 40;
+
+			/* GID list */
+			for (i = 0; i < current_user.ut.ngroups; ++i) {
+				SBIG_UINT(pdata, data_len,
+					(SMB_BIG_UINT)current_user.ut.groups[i]);
+				data_len += 8;
+			}
+
+			/* SID list */
+			for (i = 0;
+			    i < current_user.nt_user_token->num_sids; ++i) {
+				int sid_len =
+				    sid_size(&current_user.nt_user_token->user_sids[i]);
+
+				sid_linearize(pdata + data_len, sid_len,
+				    &current_user.nt_user_token->user_sids[i]);
+				data_len += sid_len;
+			}
+
 			break;
 		}
 
