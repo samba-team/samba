@@ -1112,6 +1112,106 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.user_handle = &user_handle;
 	r.in.lm_present = 1;
+	/* Break the LM hash */
+	hash1.hash[0]++;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM hash, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* Unbreak the LM hash */
+	hash1.hash[0]--;
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	/* Break the NT hash */
+	hash3.hash[0]--;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the NT hash, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* Unbreak the NT hash */
+	hash3.hash[0]--;
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	/* Break the LM cross */
+	hash6.hash[0]++;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM cross-hash, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* Unbreak the LM cross */
+	hash6.hash[0]--;
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	/* Break the NT cross */
+	hash5.hash[0]++;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the NT cross-hash, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* Unbreak the NT cross */
+	hash5.hash[0]--;
+
+	/* Reset the hashes to not broken values */
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
 	r.in.old_lm_crypted = &hash1;
 	r.in.new_lm_crypted = &hash2;
 	r.in.nt_present = 1;
