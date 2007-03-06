@@ -94,6 +94,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn);
+void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
