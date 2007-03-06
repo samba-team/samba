@@ -1034,6 +1034,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	char *oldpass;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+	BOOL changed = True;
 
 	char *newpass;
 	struct samr_GetUserPwInfo pwp;
@@ -1081,6 +1082,43 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.new_nt_crypted = &hash4;
 	r.in.cross1_present = 1;
 	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 0;
+	r.in.lm_cross = NULL;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 0;
+	r.in.nt_cross = NULL;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NT_CROSS_ENCRYPTION_REQUIRED)) {
+		printf("ChangePasswordUser failed: expected NT_STATUS_NT_CROSS_ENCRYPTION_REQUIRED, got %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
 	r.in.cross2_present = 1;
 	r.in.lm_cross = &hash6;
 
@@ -1091,7 +1129,28 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
 		ret = False;
 	} else {
+		changed = True;
 		*password = newpass;
+	}
+
+	r.in.user_handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	if (changed) {
+		status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+			printf("ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we already changed the password, got %s\n", nt_errstr(status));
+			ret = False;
+		}
 	}
 
 	if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
@@ -1163,6 +1222,45 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
 		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalid password verifier - %s\n",
+			nt_errstr(status));
+		ret = False;
+	}
+
+	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
+	/* Break the old password */
+	old_lm_hash[0]++;
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	/* unbreak it for the next operation */
+	old_lm_hash[0]--;
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.password = &lm_pass;
+	r.in.hash = &lm_verifier;
+
+	status = dcerpc_samr_OemChangePasswordUser2(p, mem_ctx, &r);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
+			nt_errstr(status));
+		ret = False;
+	}
+
+	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.password = &lm_pass;
+	r.in.hash = NULL;
+
+	status = dcerpc_samr_OemChangePasswordUser2(p, mem_ctx, &r);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for no supplied validation hash - %s\n",
 			nt_errstr(status));
 		ret = False;
 	}
@@ -1305,11 +1403,13 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ChangePasswordUser3\n");
 
 	if (newpass == NULL) {
-		if (policy_min_pw_len == 0) {
-			newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
-		} else {
-			newpass = samr_rand_pass_fixed_len(mem_ctx, policy_min_pw_len);
-		}
+		do {
+			if (policy_min_pw_len == 0) {
+				newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
+			} else {
+				newpass = samr_rand_pass_fixed_len(mem_ctx, policy_min_pw_len);
+			}
+		} while (check_password_quality(newpass) == False);
 	} else {
 		printf("Using password '%s'\n", newpass);
 	}
@@ -1353,6 +1453,35 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) &&
 	    (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD))) {
 		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalid password verifier - %s\n",
+			nt_errstr(status));
+		ret = False;
+	}
+	
+	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
+	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
+
+	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
+	/* Break the NT hash */
+	old_nt_hash[0]++;
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	/* Unbreak it again */
+	old_nt_hash[0]--;
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 1;
+	r.in.lm_password = &lm_pass;
+	r.in.lm_verifier = &lm_verifier;
+	r.in.password3 = NULL;
+
+	status = dcerpc_samr_ChangePasswordUser3(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) &&
+	    (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD))) {
+		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
 			nt_errstr(status));
 		ret = False;
 	}
@@ -1434,14 +1563,6 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				return False;
 			}
 
-		} else if (r.out.dominfo->password_properties & DOMAIN_PASSWORD_COMPLEX) {
-
-			if (r.out.reject->reason != SAMR_REJECT_COMPLEXITY) {
-				printf("expected SAMR_REJECT_COMPLEXITY (%d), got %d\n", 
-					SAMR_REJECT_COMPLEXITY, r.out.reject->reason);
-				return False;
-			}
-
 		} else if ((r.out.dominfo->password_history_length > 0) && 
 			    strequal(oldpass, newpass)) {
 
@@ -1450,6 +1571,14 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 					SAMR_REJECT_IN_HISTORY, r.out.reject->reason);
 				return False;
 			}
+		} else if (r.out.dominfo->password_properties & DOMAIN_PASSWORD_COMPLEX) {
+
+			if (r.out.reject->reason != SAMR_REJECT_COMPLEXITY) {
+				printf("expected SAMR_REJECT_COMPLEXITY (%d), got %d\n", 
+					SAMR_REJECT_COMPLEXITY, r.out.reject->reason);
+				return False;
+			}
+
 		}
 
 		if (r.out.reject->reason == SAMR_REJECT_TOO_SHORT) {
@@ -1970,9 +2099,10 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		struct samr_QueryDomainInfo r;
 		struct samr_SetDomainInfo s;
 		uint16_t len_old, len;
+		uint32_t pwd_prop_old;
 		NTSTATUS status;
 
-		len = 3;
+		len = 5;
 
 		r.in.domain_handle = domain_handle;
 		r.in.level = 1;
@@ -1987,8 +2117,12 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.level = 1;
 		s.in.info = r.out.info;
 
+		/* remember the old min length, so we can reset it */
 		len_old = s.in.info->info1.min_password_length;
 		s.in.info->info1.min_password_length = len;
+		pwd_prop_old = s.in.info->info1.password_properties;
+		/* turn off password complexity checks for this test */
+		s.in.info->info1.password_properties &= ~DOMAIN_PASSWORD_COMPLEX;
 
 		printf("testing samr_SetDomainInfo level 1\n");
 		status = dcerpc_samr_SetDomainInfo(p, mem_ctx, &s);
@@ -2003,6 +2137,7 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 
 		s.in.info->info1.min_password_length = len_old;
+		s.in.info->info1.password_properties = pwd_prop_old;
 		
 		printf("testing samr_SetDomainInfo level 1\n");
 		status = dcerpc_samr_SetDomainInfo(p, mem_ctx, &s);
@@ -2057,8 +2192,6 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 		}
 	}
-
-	return True;
 
 	/* we change passwords twice - this has the effect of verifying
 	   they were changed correctly for the final call */
