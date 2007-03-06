@@ -506,6 +506,7 @@ typedef struct files_struct {
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;
 	struct lock_struct last_lock_failure;
+	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
