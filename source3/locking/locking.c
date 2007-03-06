@@ -325,7 +325,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 	}
 
 	SMB_ASSERT(fsp->current_lock_count > 0);
-	fsp->current_lock_count++;
+	fsp->current_lock_count--;
 
 	return NT_STATUS_OK;
 }
