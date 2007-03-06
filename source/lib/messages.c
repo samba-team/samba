@@ -133,6 +133,9 @@ BOOL message_init(void)
 		return False;
 	}
 
+	/* Activate the per-hashchain freelist */
+	tdb_set_max_dead(tdb, 5);
+
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
 	message_register(MSG_PING, ping_message, NULL);
