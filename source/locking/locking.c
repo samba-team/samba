@@ -222,6 +222,12 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 			lock_flav,
 			blocking_lock);
 
+	/* blocking ie. pending, locks also count here,
+	 * as this is an efficiency counter to avoid checking
+	 * the lock db. on close. JRA. */
+
+	fsp->current_lock_count++;
+
 	return br_lck;
 }
 
@@ -267,6 +273,9 @@ NTSTATUS do_unlock(files_struct *fsp,
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
+
+	SMB_ASSERT(fsp->current_lock_count > 0);
+	fsp->current_lock_count--;
 
 	return NT_STATUS_OK;
 }
@@ -315,6 +324,9 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
+	SMB_ASSERT(fsp->current_lock_count > 0);
+	fsp->current_lock_count++;
+
 	return NT_STATUS_OK;
 }
 
@@ -327,6 +339,14 @@ void locking_close_file(files_struct *fsp)
 	struct byte_range_lock *br_lck;
 
 	if (!lp_locking(fsp->conn->params)) {
+		return;
+	}
+
+	/* If we have not outstanding locks or pending
+	 * locks then we don't need to look in the lock db.
+	 */
+
+	if (fsp->current_lock_count == 0) {
 		return;
 	}
 
