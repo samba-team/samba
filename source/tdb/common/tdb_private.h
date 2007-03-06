@@ -169,6 +169,7 @@ struct tdb_context {
 	const struct tdb_methods *methods;
 	struct tdb_transaction *transaction;
 	int page_size;
+	int max_dead_records;
 };
 
 
