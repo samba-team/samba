@@ -28,5 +28,15 @@ $ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
 
 open(DATA, ">$test_fifo");
 Samba4::wait_for_start();
-system("xterm");
+system("xterm -e 'echo -e \"Welcome to the Samba4 Test environment
+This matches the client environment used in make test
+smbd is pid `cat \$PIDDIR/smbd.pid`
+
+Some useful environment variables:
+AUTH=\$AUTH
+TORTURE_OPTIONS=\$TORTURE_OPTIONS
+CONFIGURATION=\$CONFIGURATION
+SERVER=\$SERVER
+NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 close(DATA);
+
