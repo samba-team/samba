@@ -591,4 +591,8 @@ foreach (<$prefix/valgrind.log*>) {
 	}
 }
 
+if ($from_build_farm) {
+	print "TEST STATUS: $numfailed\n";
+}
+
 exit $numfailed;
