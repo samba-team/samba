@@ -199,15 +199,14 @@ const char *socket_wrapper_dir(void)
 	return s;
 }
 
-static unsigned int socket_wrapper_default_iface(void)
+unsigned int socket_wrapper_default_iface(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
 	if (s) {
 		unsigned int iface;
-		if (sscanf(s, "%u", &iface) == 1) {
-			if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
-				return iface;
-			}
+		iface = atoi(s);
+		if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
+			return iface;
 		}
 	}
 
