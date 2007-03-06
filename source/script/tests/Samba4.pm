@@ -16,17 +16,17 @@ use POSIX;
 sub slapd_start($$)
 {
 	my ($conf, $uri) = @_;
+	# running slapd in the background means it stays in the same process group, so it can be
+	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-		system("$ENV{FEDORA_DS_PREFIX}/lib/fedora-ds/ds_newinst.pl $ENV{FEDORA_DS_INF}") or die("Unable to provision fedora ds ldapd");
+	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d0 &");
 	} else {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		# running slapd in the background means it stays in the same process group, so it can be
-		# killed by timelimit
 		system("slapd -d0 -f $conf -h $uri &");
 		$ENV{PATH} = $oldpath;
 	}
-    return $? >> 8;
+	return 1;
 }
 
 sub slapd_stop()
@@ -132,8 +132,8 @@ sub provision($)
 sub provision_ldap($$)
 {
 	my ($bindir, $setupdir) = @_;
-    system("$bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAPI}") or
-		die("LDAP PROVISIONING failed: $bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAPI}");
+    system("$bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}") and
+		die("LDAP PROVISIONING failed: $bindir/smbscript $setupdir/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}");
 }
 
 1;
