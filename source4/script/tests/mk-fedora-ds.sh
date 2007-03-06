@@ -1,9 +1,9 @@
 FEDORA_DS_INF=$LDAPDIR/fedorads.inf
-export FEDORA_DS_INF
 FEDORA_DS_INITIAL_LDIF=$LDAPDIR/fedorads-initial.ldif
 
 #Make the subdirectory be as fedora DS would expect
 FEDORA_DS_DIR=$LDAPDIR/slapd-samba4
+echo FEDORA_DS_DIR=$FEDORA_DS_DIR
 
 cat >$FEDORA_DS_INF <<EOF
 [General]
@@ -63,7 +63,8 @@ perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF || exit 1;
 
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $FEDORA_DS_DIR/schema/99_ad.ldif >&2
 
-LDAP_URI_ESCAPE=$LDAP_URI;
+LDAP_URI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
+
 PROVISION_OPTIONS="$PROVISION_OPTIONS --ldap-module=nsuniqueid"
 #it is easier to base64 encode this than correctly escape it:
 # (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
