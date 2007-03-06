@@ -26,15 +26,24 @@
 #include "torture/torture.h"
 
 static char *old_dir = NULL;
+static char *old_iface = NULL;
 
 static void backup_env(void)
 {
 	old_dir = getenv("SOCKET_WRAPPER_DIR");
+	old_iface = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
 }
 
 static void restore_env(void)
 {
-	setenv("SOCKET_WRAPPER_DIR", old_dir, 1);
+	if (old_dir == NULL)
+		unsetenv("SOCKET_WRAPPER_DIR");
+	else
+		setenv("SOCKET_WRAPPER_DIR", old_dir, 1);
+	if (old_iface == NULL)
+		unsetenv("SOCKET_WRAPPER_DEFAULT_IFACE");
+	else
+		setenv("SOCKET_WRAPPER_DEFAULT_IFACE", old_iface, 1);
 }
 
 static bool test_socket_wrapper_dir(struct torture_context *tctx)
@@ -70,6 +79,20 @@ static bool test_swrap_socket(struct torture_context *tctx)
 	return true;
 }
 
+unsigned int socket_wrapper_default_iface(void);
+static bool test_socket_wrapper_default_iface(struct torture_context *tctx)
+{
+	backup_env();
+	unsetenv("SOCKET_WRAPPER_DEFAULT_IFACE");
+	torture_assert_int_equal(tctx, socket_wrapper_default_iface(), 1, "unset");
+	setenv("SOCKET_WRAPPER_DEFAULT_IFACE", "2", 1);
+	torture_assert_int_equal(tctx, socket_wrapper_default_iface(), 2, "unset");
+	setenv("SOCKET_WRAPPER_DEFAULT_IFACE", "bla", 1);
+	torture_assert_int_equal(tctx, socket_wrapper_default_iface(), 1, "unset");
+	restore_env();
+	return true;
+}
+
 struct torture_suite *torture_local_socket_wrapper(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
@@ -77,6 +100,7 @@ struct torture_suite *torture_local_socket_wrapper(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "socket_wrapper_dir", test_socket_wrapper_dir);
 	torture_suite_add_simple_test(suite, "socket", test_swrap_socket);
+	torture_suite_add_simple_test(suite, "socket_wrapper_default_iface", test_socket_wrapper_default_iface);
 
 	return suite;
 }
