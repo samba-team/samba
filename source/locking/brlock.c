@@ -273,6 +273,9 @@ void brl_init(int read_only)
 			lock_path("brlock.tdb")));
 		return;
 	}
+
+	/* Activate the per-hashchain freelist */
+	tdb_set_max_dead(tdb, 5);
 }
 
 /****************************************************************************

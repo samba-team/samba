@@ -363,6 +363,9 @@ BOOL locking_init(int read_only)
 		return False;
 	}
 
+	/* Activate the per-hashchain freelist */
+	tdb_set_max_dead(tdb, 5);
+
 	if (!posix_locking_init(read_only))
 		return False;
 
