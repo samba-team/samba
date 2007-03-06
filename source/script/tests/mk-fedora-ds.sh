@@ -54,7 +54,7 @@ nsslapd-suffix: $BASEDN
 
 EOF
 
-perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF || exit 1;
+perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF >&2 || exit 1;
 
 ( 
      cd $FEDORA_DS_DIR/schema
