@@ -62,7 +62,7 @@ int torture_init(void)
 	init_module_fn *shared_init = load_samba_modules(NULL, "torture");
 
 	torture_root = talloc_zero(talloc_autofree_context(), 
-							struct torture_suite);
+				   struct torture_suite);
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
