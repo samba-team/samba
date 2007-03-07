@@ -255,8 +255,7 @@ PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --simple-bind-dn=cn=Manager,$BASEDN --password=$PASSWORD --root=$ROOT"
 $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS >&2
 
-LDAP_URI="ldapi://$LDAPDIR/ldapi"
-LDAP_URI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
+LDAP_URI="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
 
 . `dirname $0`/mk-openldap.sh
 
@@ -287,7 +286,6 @@ echo "AUTH=$AUTH"
 echo "SERVER=$SERVER"
 echo "NETBIOSNAME=$NETBIOSNAME"
 echo "LDAP_URI=$LDAP_URI"
-echo "LDAP_URI_ESCAPE=$LDAP_URI_ESCAPE"
 echo "DOMAIN=$DOMAIN"
 echo "USERNAME=$USERNAME"
 echo "REALM=$REALM"
