@@ -693,8 +693,6 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 				DEBUG(3, ("Failed to send NTLMSSP/SPNEGO blob to server!\n"));
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 			} else {
-				data_blob_free(&msg1);
-				
 				blob = cli_session_setup_blob_receive(cli);
 				
 				nt_status = cli_nt_error(cli);
@@ -706,6 +704,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 					}
 				}
 			}
+			data_blob_free(&msg1);
 		}
 		
 		if (!blob.length) {
@@ -735,6 +734,8 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		data_blob_free(&blob_out);
 		turn++;
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
+	data_blob_free(&blob_in);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 
