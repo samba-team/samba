@@ -72,7 +72,9 @@ static NTSTATUS dcesrv_echo_SourceData(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS dcesrv_echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
 {
 	*r->out.s2 = talloc_strdup(mem_ctx, r->in.s1);
-	
+	if (r->in.s1 && !*r->out.s2) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -134,6 +136,9 @@ static NTSTATUS dcesrv_echo_TestSurrounding(struct dcesrv_call_state *dce_call, 
 	}
 	r->out.data->x = 2 * r->in.data->x;
 	r->out.data->surrounding = talloc_zero_array(mem_ctx, uint16_t, r->out.data->x);
+	if (!r->out.data->surrounding) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }
