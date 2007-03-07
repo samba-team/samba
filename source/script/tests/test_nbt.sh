@@ -9,6 +9,8 @@ exit 1;
 fi
 
 SERVER="$1"
+USERNAME="$2"
+PASSWORD="$3"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
@@ -24,7 +26,7 @@ testit "nmblookup $SERVER" bin/nmblookup $TORTURE_OPTIONS $SERVER
 NBT_TESTS=`bin/smbtorture --list | grep ^NBT`
 
 for f in $NBT_TESTS; do
-    testit "$f" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ $f
+    testit "$f" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ $f -U$USERNAME%$PASSWORD 
 done
 
 testok $0 $failed

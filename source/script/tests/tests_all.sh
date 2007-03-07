@@ -1,7 +1,7 @@
 #!/bin/sh
  $SRCDIR/script/tests/test_ejs.sh $DOMAIN $USERNAME $PASSWORD $CONFIGURATION
  $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD
- $SRCDIR/script/tests/test_nbt.sh $SERVER
+ $SRCDIR/script/tests/test_nbt.sh $SERVER $USERNAME $PASSWORD
  $SRCDIR/script/tests/test_rpc.sh $SERVER $USERNAME $PASSWORD $DOMAIN
  $SRCDIR/script/tests/test_net.sh $SERVER $USERNAME $PASSWORD $DOMAIN
  $SRCDIR/script/tests/test_session_key.sh $SERVER $USERNAME $PASSWORD $DOMAIN $NETBIOSNAME
