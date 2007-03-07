@@ -59,13 +59,10 @@ echo rm tmpfile | runcmd "Removing file" || failed=`expr $failed + 1`
 # compare locally
 testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
 # create directory
-echo mkdir bla | runcmd "Creating directory" || failed=`expr $failed + 1`
 # cd to directory
-echo cd bla | runcmd "Changing directory" || failed=`expr $failed + 1`
 # cd to top level directory
-echo cd .. | runcmd "Going back" || failed=`expr $failed + 1`
 # remove directory
-echo rmdir bla | runcmd "Removing directory"  || failed=`expr $failed + 1`
+echo "mkdir bla; cd bla; cd ..; rmdir bla" | runcmd "Creating directory, Changing directory, Going back, " || failed=`expr $failed + 1`
 # enable recurse, create nested directory
 echo "recurse; echo mkdir bla/bloe; exit" | runcmd "Creating nested directory" || failed=`expr $failed + 1`
 # remove parent directory
@@ -97,17 +94,37 @@ echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN1" -m LANMAN1 || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $failed + 1`
 
-echo ls | testit "Test login with --machine-pass" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass
+echo ls | testit "Test login with --machine-pass" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass  || failed=`expr $failed + 1`
 
-echo "password=$PASSWORD\nusername=$USERNAME\ndomain=$DOMAIN" > tmpauthfile
+(
+    echo "password=$PASSWORD"
+    echo "username=$USERNAME"
+    echo "domain=$DOMAIN"
+) > tmpauthfile
 
-echo ls | testit "Test login with --authentication-file" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile 
+echo ls | testit "Test login with --authentication-file" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile  || failed=`expr $failed + 1`
 
-echo "$PASSWORD" > tmppassfile
+PASSWD_FILE="tmppassfile" 
+echo "$PASSWORD" > $PASSWD_FILE
+export PASSWD_FILE
+echo ls | testit "Test login with PASSWD_FILE" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
+PASSWD_FILE=""
+export PASSWD_FILE
+unset PASSWD_FILE
 
-echo ls | PASSWD_FILE="tmppassfile" testit "Test login with PASSWD_FILE" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME"
+PASSWD="$PASSWORD" 
+export PASSWD
+echo ls | testit "Test login with PASSWD" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
 
+oldUSER=$USER
+USER="$USERNAME" 
+export USER
+echo ls | testit "Test login with USER and PASSWD" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" | failed=`expr $failed + 1`
+PASSWD=
+export PASSWD
+unset PASSWD
+USER=$oldUSER
+export USER
 
 rm -f tmpfile tmpfile-old tmpfilex tmpauthfile tmppassfile
-
 exit $failed
