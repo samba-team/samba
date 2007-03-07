@@ -1,6 +1,8 @@
 FEDORA_DS_INF=$LDAPDIR/fedorads.inf
 FEDORA_DS_INITIAL_LDIF=$LDAPDIR/fedorads-initial.ldif
 
+echo "FEDORA_DS_LOGLEVEL=0"
+
 #Make the subdirectory be as fedora DS would expect
 FEDORA_DS_DIR=$LDAPDIR/slapd-samba4
 echo FEDORA_DS_DIR=$FEDORA_DS_DIR
