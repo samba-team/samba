@@ -30,8 +30,8 @@ struct ccache_container;
 /* In order of priority */
 enum credentials_obtained { 
 	CRED_UNINITIALISED = 0,  /* We don't even have a guess yet */
-	CRED_GUESS_ENV,	         /* Current value should be used, which was guessed */
 	CRED_CALLBACK, 		 /* Callback should be used to obtain value */
+	CRED_GUESS_ENV,	         /* Current value should be used, which was guessed */
 	CRED_GUESS_FILE,	 /* A guess from a file (or file pointed at in env variable) */
 	CRED_CALLBACK_RESULT,    /* Value was obtained from a callback */
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */

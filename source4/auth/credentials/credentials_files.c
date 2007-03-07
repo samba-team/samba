@@ -89,7 +89,7 @@ BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, co
 	BOOL ret;
 
 	if (fd < 0) {
-		fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
+		fprintf(stderr, "Error opening password file %s: %s\n",
 				file, strerror(errno));
 		return False;
 	}

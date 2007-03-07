@@ -648,8 +648,9 @@ void cli_credentials_guess(struct cli_credentials *cred)
 		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), CRED_GUESS_FILE);
 	}
 	
-	if (getenv("PASSWD_FILE")) {
-		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESS_FILE);
+	p = getenv("PASSWD_FILE");
+	if (p && p[0]) {
+		cli_credentials_parse_password_file(cred, p, CRED_GUESS_FILE);
 	}
 	
 	if (cli_credentials_get_kerberos_state(cred) != CRED_DONT_USE_KERBEROS) {
