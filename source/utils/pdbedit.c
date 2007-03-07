@@ -573,6 +573,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 			
 			if (sscanf(user_sid, "%d", &u_rid) != 1) {
 				fprintf(stderr, "Error passed string is not a complete user SID or RID!\n");
+				TALLOC_FREE(sam_pwent);
 				return -1;
 			}
 			sid_copy(&u_sid, get_global_sam_sid());
