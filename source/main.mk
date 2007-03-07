@@ -304,7 +304,7 @@ quicktest: all
 	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
 
 testenv: all libraries
-	$(srcdir)/script/tests/testenv.pl 
+	$(SELFTEST) --socket-wrapper --testenv
 
 valgrindtest: valgrindtest-quick
 
@@ -321,7 +321,7 @@ valgrindtest-all: all libraries
 valgrindtest-env: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	$(srcdir)/script/tests/testenv.pl
+	$(SELFTEST) --socket-wrapper --testenv
 
 gdbtest: gdbtest-quick
 

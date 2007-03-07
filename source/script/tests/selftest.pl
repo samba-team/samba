@@ -130,6 +130,7 @@ my $opt_immediate = 0;
 my $opt_expected_failures = undef;
 my $opt_skip = undef;
 my $opt_verbose = 0;
+my $opt_testenv = 0;
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -327,7 +328,8 @@ my $result = GetOptions (
 		'skip=s' => \$opt_skip,
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
-		'verbose' => \$opt_verbose
+		'verbose' => \$opt_verbose,
+		'testenv' => \$opt_testenv
 	    );
 
 exit(1) if (not $result);
@@ -515,22 +517,36 @@ $| = 1;
 
 delete $ENV{DOMAIN};
 
-foreach (@todo) {
-	$i++;
-	my $cmd = $$_[1];
-	$cmd =~ s/([\(\)])/\\$1/g;
-	my $name = $$_[0];
-	
-	if (skip($name)) {
-		print "SKIPPED: $name\n";
-		$statistics->{SUITES_SKIPPED}++;
-		next;
-	}
+if ($opt_testenv) {
+	my $term = $ENV{TERM} or "xterm";
+	system("$term -e 'echo -e \"Welcome to the Samba4 Test environment
+This matches the client environment used in make test
+smbd is pid `cat \$PIDDIR/smbd.pid`
 
-	if ($from_build_farm) {
-		run_test_buildfarm($name, $cmd, $i, $suitestotal);
-	} else {
-		run_test_plain($name, $cmd, $i, $suitestotal);
+Some useful environment variables:
+AUTH=\$AUTH
+TORTURE_OPTIONS=\$TORTURE_OPTIONS
+CONFIGURATION=\$CONFIGURATION
+SERVER=\$SERVER
+NETBIOSNAME=\$NETBIOSNAME\" && bash'");
+} else {
+	foreach (@todo) {
+		$i++;
+		my $cmd = $$_[1];
+		$cmd =~ s/([\(\)])/\\$1/g;
+		my $name = $$_[0];
+		
+		if (skip($name)) {
+			print "SKIPPED: $name\n";
+			$statistics->{SUITES_SKIPPED}++;
+			next;
+		}
+
+		if ($from_build_farm) {
+			run_test_buildfarm($name, $cmd, $i, $suitestotal);
+		} else {
+			run_test_plain($name, $cmd, $i, $suitestotal);
+		}
 	}
 }
 
