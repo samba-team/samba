@@ -469,7 +469,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = 0;
-	files_struct *fsp=NULL;
+	files_struct *fsp = NULL;
 	char *p = NULL;
 	struct timespec c_timespec;
 	struct timespec a_timespec;
@@ -491,7 +491,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			(unsigned int)create_options,
 			(unsigned int)root_dir_fid ));
 
-	/* If it's an IPC, use the pipe handler. */
+	/*
+	 * If it's an IPC, use the pipe handler.
+	 */
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
@@ -502,7 +504,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return(ERROR_DOS(ERRDOS,ERRnoaccess));
 		}
 	}
-			
+
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -522,7 +524,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp) {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadfid));
+			return ERROR_DOS(ERRDOS,ERRbadfid);
 		}
 
 		if(!dir_fsp->is_directory) {
@@ -533,7 +535,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				return ERROR_NT(status);
 			}
 
-			/* 
+			/*
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
@@ -564,7 +566,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * Ensure it ends in a '\'.
 		 */
 
-		if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
+		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
 			pstrcat(fname, "/");
 			dir_name_len++;
 		}
@@ -582,7 +584,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return ERROR_NT(status);
 		}
 
-		/* 
+		/*
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
@@ -664,19 +666,19 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
-	/* 
+	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
 	if(create_options & FILE_DIRECTORY_FILE) {
-		oplock_request = 0;
-		
+
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
+		oplock_request = 0;
 		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
@@ -695,7 +697,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
+
 	} else {
+
 		/*
 		 * Ordinary file case.
 		 */
@@ -721,6 +725,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					new_file_attributes,
 					oplock_request,
 					&info, &fsp);
+
 		if (!NT_STATUS_IS_OK(status)) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
@@ -773,7 +778,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					return ERROR_NT(status);
 				}
 			} else {
-
 				restore_case_semantics(conn, file_attributes);
 				END_PROFILE(SMBntcreateX);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
@@ -786,7 +790,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	restore_case_semantics(conn, file_attributes);
-		
+
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
 	if(fattr == 0) {
@@ -827,11 +831,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-	
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-	
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
@@ -871,8 +875,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		SIVAL(p,0,info);
 	}
 	p += 4;
-	
-	/* Create time. */  
+
+	/* Create time. */
 	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 	a_timespec = get_atimespec(&sbuf);
 	m_timespec = get_mtimespec(&sbuf);
@@ -883,7 +887,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec);
+	put_long_date_timespec(p, c_timespec); /* create time. */
 	p += 8;
 	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
@@ -1252,12 +1256,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	}
 
+	/*
+	 * Ordinary file or directory.
+	 */
+		
 	/*
 	 * Check if POSIX semantics are wanted.
 	 */
-
+		
 	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1273,7 +1283,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
 	}
-    
+
 	/* This is the correct thing to do (check every time) but can_delete is
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
@@ -1317,14 +1327,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		oplock_request = 0;
-
 		/*
 		 * We will get a create directory here if the Win32
 		 * app specified a security descriptor in the 
 		 * CreateDirectory() call.
 		 */
 
+		oplock_request = 0;
 		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
@@ -1464,11 +1473,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-    
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-  
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
