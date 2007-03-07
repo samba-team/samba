@@ -78,16 +78,13 @@ static BOOL parse_dfs_path(const char *pathname, struct dfs_path *pdp)
  into the dfs_path structure 
  This code is dependent on the fact that check_path_syntax() will
  convert '\\' characters to '/'.
- When POSIX pathnames have been selected this doesn't happen, so we
- must look for the unaltered separator of '\\' instead of the modified '/'.
- JRA.
  **********************************************************************/
 
 static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL allow_wcards)
 {
 	pstring pathname_local;
 	char *p,*temp;
-	const char sepchar = lp_posix_pathnames() ? '\\' : '/';
+	const char sepchar = '/';
 
 	pstrcpy(pathname_local,pathname);
 	p = temp = pathname_local;
