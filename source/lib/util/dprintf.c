@@ -30,6 +30,7 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 
 _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
@@ -54,6 +55,22 @@ again:
 		return -1;
 	}
 	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
+        if (clen == -1) {
+		/* the string can't be converted - do the best we can,
+		   filling in non-printing chars with '?' */
+		int i;
+		for (i=0;i<ret;i++) {
+			if (isprint(p[i]) || isspace(p[i])) {
+				fwrite(p+i, 1, 1, f);
+			} else {
+				fwrite("?", 1, 1, f);
+			}
+		}
+		SAFE_FREE(p);
+		SAFE_FREE(p2);
+		return ret;
+        }
+
 
 	if (clen >= maxlen) {
 		/* it didn't fit - try a larger buffer */
