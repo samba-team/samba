@@ -1746,7 +1746,9 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(ntstatus);
 	}
 
-	RESOLVE_DFSPATH_WCARD(directory, conn, inbuf, outbuf);
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory)) {
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
@@ -3140,7 +3142,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return ERROR_NT(status);
 		}
 
-		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+		if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4304,7 +4308,9 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	RESOLVE_DFSPATH_STATUS(oldname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname)) {
+		return NT_STATUS_PATH_NOT_COVERED;
+	}
 
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
@@ -4350,7 +4356,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	RESOLVE_DFSPATH_STATUS(newname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname)) {
+		return NT_STATUS_PATH_NOT_COVERED;
+	}
 
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
@@ -5432,7 +5440,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return ERROR_NT(status);
 		}
 
-		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+		if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+			ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {

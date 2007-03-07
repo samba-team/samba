@@ -615,7 +615,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
 	 * desired access and the share access.
 	 */
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBntcreateX);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	if (oplock_request) {
@@ -1270,7 +1273,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		
 	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
     
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1749,9 +1754,15 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH(oldname, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
-	
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
+
 	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
 	
 	switch(rename_type) {
