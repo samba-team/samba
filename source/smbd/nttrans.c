@@ -469,7 +469,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = 0;
-	files_struct *fsp=NULL;
+	files_struct *fsp = NULL;
 	char *p = NULL;
 	struct timespec c_timespec;
 	struct timespec a_timespec;
@@ -502,7 +502,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return(ERROR_DOS(ERRDOS,ERRnoaccess));
 		}
 	}
-			
+
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -522,7 +522,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp) {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadfid));
+			return ERROR_DOS(ERRDOS,ERRbadfid);
 		}
 
 		if(!dir_fsp->is_directory) {
@@ -533,7 +533,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				return ERROR_NT(status);
 			}
 
-			/* 
+			/*
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
@@ -564,7 +564,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * Ensure it ends in a '\'.
 		 */
 
-		if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
+		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
 			pstrcat(fname, "/");
 			dir_name_len++;
 		}
@@ -582,7 +582,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return ERROR_NT(status);
 		}
 
-		/* 
+		/*
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
@@ -664,7 +664,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
-	/* 
+	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
@@ -695,7 +695,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
+
 	} else {
+
 		/*
 		 * Ordinary file case.
 		 */
@@ -827,11 +829,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-	
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-	
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
@@ -1255,9 +1257,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
 	/*
+	 * Ordinary file or directory.
+	 */
+		
+	/*
 	 * Check if POSIX semantics are wanted.
 	 */
-
+		
 	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1273,7 +1279,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
 	}
-    
+
 	/* This is the correct thing to do (check every time) but can_delete is
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
@@ -1464,11 +1470,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-    
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-  
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
