@@ -714,6 +714,11 @@ static int cmd_dir(void)
 		pstrcat(mask,"*");
 	}
 
+	if (showacls) {
+		/* cwd is only used if showacls is on */
+		pstrcpy(cwd, cur_dir);
+	}
+
 	do_list(mask, attribute, display_finfo, recurse, True);
 
 	rc = do_dskattr();
