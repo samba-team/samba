@@ -187,8 +187,10 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 {
 	int ret;
 	ASN1_DATA data;
-	DATA_BLOB blob;
-	DATA_BLOB os1, os2, os3;
+	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB os1 = data_blob(NULL, 0);
+	DATA_BLOB os2 = data_blob(NULL, 0);
+	DATA_BLOB os3 = data_blob(NULL, 0);
 	int i1;
 	/* half the time of a regular ldap timeout, not less than 3 seconds. */
 	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
@@ -238,6 +240,9 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	if (data.has_error) {
 		data_blob_free(&blob);
+		data_blob_free(&os1);
+		data_blob_free(&os2);
+		data_blob_free(&os3);
 		asn1_free(&data);
 		DEBUG(1,("Failed to parse cldap reply\n"));
 		return -1;
