@@ -1148,6 +1148,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
 	char *inbuf2, *outbuf2;
 	int outsize2;
+	int new_size;
 	char inbuf_saved[smb_wct];
 	char outbuf_saved[smb_wct];
 	int outsize = smb_len(outbuf) + 4;
@@ -1198,6 +1199,20 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	/* create the in buffer */
 	SCVAL(inbuf2,smb_com,smb_com2);
 
+	/* work out the new size for the in buffer. */
+	new_size = size - (inbuf2 - inbuf);
+	if (new_size < 0) {
+		DEBUG(0,("chain_reply: chain packet size incorrect (orig size = %d, "
+			"offset = %d)\n",
+			size,
+			(inbuf2 - inbuf) ));
+		exit_server_cleanly("Bad chained packet");
+		return(-1);
+	}
+
+	/* And set it in the header. */
+	smb_setlen(inbuf2, new_size);
+
 	/* create the out buffer */
 	construct_reply_common(inbuf2, outbuf2);
 
@@ -1205,7 +1220,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	show_msg(inbuf2);
 
 	/* process the request */
-	outsize2 = switch_message(smb_com2,inbuf2,outbuf2,size-chain_size,
+	outsize2 = switch_message(smb_com2,inbuf2,outbuf2,new_size,
 				bufsize-chain_size);
 
 	/* copy the new reply and request headers over the old ones, but
@@ -1219,8 +1234,10 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
 	{
 		int ofs = smb_wct - PTR_DIFF(outbuf2,orig_outbuf);
-		if (ofs < 0) ofs = 0;
-			memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
+		if (ofs < 0) {
+			ofs = 0;
+		}
+		memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
 	}
 
 	return outsize2;
