@@ -13,9 +13,10 @@ use strict;
 use FindBin qw($RealBin);
 use POSIX;
 
-sub slapd_start($$)
+sub slapd_start($$$)
 {
-	my ($conf, $uri, $loglevel) = @_;
+        my $count = 0;
+	my ($bindir, $conf, $uri) = @_;
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
@@ -25,6 +26,14 @@ sub slapd_start($$)
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
 		system("slapd -d$ENV{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $ENV{LDAPDIR}/logs 2>&1 &");
 		$ENV{PATH} = $oldpath;
+	}
+	while (system("$bindir/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
+	        $count++;
+		if ($count > 10) {
+		    slapd_stop();
+		    return 0;
+		}
+		sleep(1);
 	}
 	return 1;
 }
@@ -103,13 +112,14 @@ sub wait_for_start()
 {
 	# give time for nbt server to register its names
 	print "delaying for nbt name registration\n";
-	sleep(4);
 
 	# This will return quickly when things are up, but be slow if we 
 	# need to wait for (eg) SSL init 
 	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{SERVER}");
 	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{SERVER}");
 	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{SERVER}");
+	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
+	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{NETBIOSNAME}");
 	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
 	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{NETBIOSNAME}");
 	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");

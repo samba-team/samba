@@ -65,8 +65,6 @@ perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF >&2 || exit 1;
 
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $FEDORA_DS_DIR/schema/99_ad.ldif >&2
 
-LDAP_URI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
-
 PROVISION_OPTIONS="$PROVISION_OPTIONS --ldap-module=nsuniqueid"
 #it is easier to base64 encode this than correctly escape it:
 # (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
