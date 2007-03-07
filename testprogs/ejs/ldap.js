@@ -198,9 +198,11 @@ objectClass: user
 
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon))");
 	var res3 = ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))");
-	if (res3.error != 0 || res3.msgs.length != 1) {
-		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon))");
+	if (res3.error != 0) {
+		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)): " + res3.errstr);
 		assert(res3.error == 0);
+	} else if (res3.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)): matched " + res3.msgs.length);
 		assert(res3.msgs.length == 1);
 	}
 
@@ -209,9 +211,11 @@ objectClass: user
 	if (gc_ldb != undefined) {
 		println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
 		var res3gc = gc_ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))");
-		if (res3gc.error != 0 || res3gc.msgs.length != 1) {
-			println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
+		if (res3gc.error != 0) {
+			println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog: " + res3gc.errstr);
 			assert(res3gc.error == 0);
+		} else if (res3gc.msgs.length != 1) {
+			println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog: matched " + res3gc.msgs.length);
 			assert(res3gc.msgs.length == 1);
 		}
 	
