@@ -631,7 +631,10 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name)) {
+		END_PROFILE(SMBcheckpath);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
 
@@ -710,7 +713,10 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBgetatr);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
   
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
@@ -789,7 +795,10 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBsetatr);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
   
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -944,7 +953,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(nt_status);
 	}
 
-	RESOLVE_DFSPATH_WCARD(path, conn, inbuf, outbuf);
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, path)) {
+		END_PROFILE(SMBsearch);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
   
 	p++;
 	status_len = SVAL(p, 0);
@@ -1202,7 +1214,10 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBopen);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1326,7 +1341,10 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBopenX);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1504,7 +1522,10 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBcreate);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1600,7 +1621,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		pstrcat(fname,"TMXXXXXX");
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
+		END_PROFILE(SMBctemp);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2003,7 +2027,10 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name)) {
+		END_PROFILE(SMBunlink);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
@@ -3633,7 +3660,10 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory)) {
+		END_PROFILE(SMBmkdir);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3851,7 +3881,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory)) {
+		END_PROFILE(SMBrmdir);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4603,8 +4636,14 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name)) {
+		END_PROFILE(SMBmv);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname)) {
+		END_PROFILE(SMBmv);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
@@ -4790,8 +4829,14 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
+	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname)) {
+		END_PROFILE(SMBcopy);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	status = unix_convert(conn, name, source_has_wild, NULL, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4982,7 +5027,10 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
   
-	RESOLVE_DFSPATH(newdir, conn, inbuf, outbuf);
+	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newdir)) {
+		END_PROFILE(pathworks_setdir);
+		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	}
 
 	if (strlen(newdir) != 0) {
 		if (!vfs_directory_exist(conn,newdir,NULL)) {

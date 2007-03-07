@@ -3,6 +3,7 @@
    Version 3.0
    MSDfs services for Samba
    Copyright (C) Shirish Kalele 2000
+   Copyright (C) Jeremy Allison 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -435,7 +436,7 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
   for details.
 *****************************************************************/
 
-BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_flag )
+static BOOL dfs_redirect( connection_struct *conn, pstring pathname, BOOL search_wcard_flag )
 {
 	struct dfs_path dp;
 	
@@ -1147,4 +1148,33 @@ int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
 		}
 	}
 	return jn_count;
+}
+
+/******************************************************************************
+ Core function to resolve a dfs pathname.
+******************************************************************************/
+
+BOOL resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring name)
+{
+	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
+			dfs_redirect(conn, name, False)) {
+		return False; /* Pathname didn't resolve. */
+	}
+	return True;
+}
+
+/******************************************************************************
+ Core function to resolve a dfs pathname possibly containing a wildcard.
+ This function is identical to the above except for the BOOL param to
+ dfs_redirect but I need this to be separate so it's really clear when
+ we're allowing wildcards and when we're not. JRA.
+******************************************************************************/
+
+BOOL resolve_dfspath_wcard(connection_struct *conn, BOOL dfs_pathnames, pstring name)
+{
+	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
+			dfs_redirect(conn, name, True)) {
+		return False; /* Pathname didn't resolve. */
+	}
+	return True;
 }
