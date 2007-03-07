@@ -15,15 +15,15 @@ use POSIX;
 
 sub slapd_start($$)
 {
-	my ($conf, $uri) = @_;
+	my ($conf, $uri, $loglevel) = @_;
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d0 &");
+	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d$ENV{FEDORA_DS_LOGLEVEL} > $ENV{LDAPDIR}/logs 2>&1 &");
 	} else {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		system("slapd -d0 -f $conf -h $uri &");
+		system("slapd -d$ENV{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $ENV{LDAPDIR}/logs 2>&1 &");
 		$ENV{PATH} = $oldpath;
 	}
 	return 1;

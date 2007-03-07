@@ -1,6 +1,8 @@
 SLAPD_CONF=$LDAPDIR/slapd.conf
 export SLAPD_CONF
 
+echo "OPENLDAP_LOGLEVEL=0"
+
 cat >$SLAPD_CONF <<EOF
 loglevel 0
 
