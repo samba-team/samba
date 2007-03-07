@@ -418,7 +418,7 @@ if ($opt_socket_wrapper)
 
 # Start slapd before smbd
 if ($ldap) {
-	Samba4::slapd_start($ENV{SLAPD_CONF}, $ENV{LDAP_URI_ESCAPE}) or die("couldn't start slapd");
+	Samba4::slapd_start($bindir, $ENV{SLAPD_CONF}, $ENV{LDAP_URI}) or die("couldn't start slapd");
 
     print "LDAP PROVISIONING...";
 	Samba4::provision_ldap($bindir, $setupdir);
