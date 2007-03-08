@@ -92,7 +92,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL 
 	ZERO_STRUCTP(pdp);
 
 	trim_char(temp,sepchar,sepchar);
-	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
+	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming /'s\n",temp));
 
 	/* now tokenize */
 	/* parse out hostname */
@@ -401,12 +401,15 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
 			*/
 			
 			if (consumedcntp) {
-				char *q;
 				pstring buf;
 				pstrcpy(buf, dfspath);
 				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
-					q = strrchr_m(buf, '\\');
+					char *q, *q1, *q2;
+					/* Either '\\' or '/' may be a separator. */
+					q1 = strrchr_m(buf, '\\');
+					q2 = strrchr_m(buf, '/');
+					q = MAX(q1,q2);
 					if (q) {
 						*q = 0;
 					}
