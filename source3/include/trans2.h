@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
+
+   Copyright (C) James Peach 2007
    Copyright (C) Jeremy Allison 1994-2002.
 
    Extensively modified by Andrew Tridgell, 1995
@@ -352,6 +354,7 @@ Byte offset   Type     name                description
 
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
+#define SMB_SET_FILE_UNIX_INFO2        0x20B   /* UNIX File Info2 */
 
 #define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
@@ -435,6 +438,18 @@ Offset Size         Name
 #define UNIX_EXTRA_MASK                 0007000
 #define UNIX_ALL_MASK                   0007777
 
+/* Flags for chflags (CIFS_UNIX_EXTATTR_CAP capability) and
+ * SMB_QUERY_FILE_UNIX_INFO2.
+ */
+#define EXT_SECURE_DELETE               0x00000001
+#define EXT_ENABLE_UNDELETE             0x00000002
+#define EXT_SYNCHRONOUS                 0x00000004
+#define EXT_IMMUTABLE			0x00000008
+#define EXT_OPEN_APPEND_ONLY            0x00000010
+#define EXT_DO_NOT_BACKUP               0x00000020
+#define EXT_NO_UPDATE_ATIME             0x00000040
+#define EXT_HIDDEN			0x00000080
+
 #define SMB_QUERY_FILE_UNIX_LINK       0x201
 #define SMB_SET_FILE_UNIX_LINK         0x201
 #define SMB_SET_FILE_UNIX_HLINK        0x203
@@ -455,8 +470,33 @@ Offset Size         Name
 #define SMB_QUERY_FILE_UNIX_INFO2      0x20B   /* UNIX File Info2 */
 #define SMB_SET_FILE_UNIX_INFO2        0x20B
 
+/*
+SMB_QUERY_FILE_UNIX_INFO2 is SMB_QUERY_FILE_UNIX_BASIC with create
+time and file flags appended. The corresponding info level for
+findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
+    Size    Offset  Value
+    ---------------------
+    0      LARGE_INTEGER EndOfFile  File size
+    8      LARGE_INTEGER Blocks     Number of blocks used on disk
+    16     LARGE_INTEGER ChangeTime Attribute change time
+    24     LARGE_INTEGER LastAccessTime           Last access time
+    32     LARGE_INTEGER LastModificationTime     Last modification time
+    40     LARGE_INTEGER Uid        Numeric user id for the owner
+    48     LARGE_INTEGER Gid        Numeric group id of owner
+    56     ULONG Type               Enumeration specifying the file type
+    60     LARGE_INTEGER devmajor   Major device number if type is device
+    68     LARGE_INTEGER devminor   Minor device number if type is device
+    76     LARGE_INTEGER uniqueid   This is a server-assigned unique id
+    84     LARGE_INTEGER permissions		Standard UNIX permissions
+    92     LARGE_INTEGER nlinks			Number of hard links
+    100    LARGE_INTEGER CreationTime		Create/birth time
+    108    ULONG FileFlags          File flags enumeration
+    112    ULONG FileFlagsMask      Mask of valid flags
+*/
+
 /* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
+#define SMB_FIND_FILE_UNIX_INFO2       0x20B /* UNIX File Info2 */
 
 /*
  Info level for TRANS2_QFSINFO - returns version of CIFS UNIX extensions, plus
