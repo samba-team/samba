@@ -432,7 +432,7 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 	}
 	if (!ldb_errstring(module->ldb)) {
 		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(module->ldb, "error in module %s: %s", module->ops->name, ldb_strerror(ret));
+		ldb_asprintf_errstring(module->ldb, "error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
 	return ret;
 }

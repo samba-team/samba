@@ -123,10 +123,16 @@ failed:
 */
 static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 {
+	TALLOC_CTX *mem_ctx = talloc_new(ildb);
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
-	ldb_set_errstring(ildb->module->ldb, ldap_errstr(ildb->ldap, status));
+	if (!mem_ctx) {
+		ldb_oom(ildb->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_set_errstring(ildb->module->ldb, ldap_errstr(ildb->ldap, mem_ctx, status));
+	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
 	}
@@ -763,7 +769,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	status = ldap_connect(ildb->ldap, url);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s\n",
-			  url, ldap_errstr(ildb->ldap, status));
+			  url, ldap_errstr(ildb->ldap, module, status));
 		goto failed;
 	}
 
@@ -783,14 +789,14 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 			status = ldap_bind_simple(ildb->ldap, bind_dn, password);
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
-					  ldap_errstr(ildb->ldap, status));
+					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
 			}
 		} else {
 			status = ldap_bind_sasl(ildb->ldap, creds);
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
-					  ldap_errstr(ildb->ldap, status));
+					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
 			}
 		}

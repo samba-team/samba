@@ -86,7 +86,7 @@ NTSTATUS torture_ldap_connection2(TALLOC_CTX *mem_ctx, struct ldap_connection **
 
 	status = ldap_bind_simple(*conn, userdn, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed a simple ldap bind - %s\n", ldap_errstr(*conn, status));
+		printf("Failed a simple ldap bind - %s\n", ldap_errstr(*conn, mem_ctx, status));
 	}
  
 	return status;

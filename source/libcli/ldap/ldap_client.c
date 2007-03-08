@@ -562,6 +562,7 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	msg->messageid = req->messageid;
 
 	if (!ldap_encode(msg, &req->data, req)) {
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto failed;		
 	}
 
@@ -704,12 +705,14 @@ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r
 /*
   return error string representing the last error
 */
-const char *ldap_errstr(struct ldap_connection *conn, NTSTATUS status)
+const char *ldap_errstr(struct ldap_connection *conn, 
+			TALLOC_CTX *mem_ctx, 
+			NTSTATUS status)
 {
 	if (NT_STATUS_IS_LDAP(status) && conn->last_error != NULL) {
-		return conn->last_error;
+		return talloc_strdup(mem_ctx, conn->last_error);
 	}
-	return nt_errstr(status);
+	return talloc_asprintf(mem_ctx, "LDAP client internal error: %s", nt_errstr(status));
 }
 
 
