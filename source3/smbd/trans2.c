@@ -3038,8 +3038,13 @@ static const struct {unsigned stat_fflag; unsigned smb_fflag;}
 #endif
 
 #ifdef UF_HIDDEN
-    { UF_HIDDEN, EXT_HIDDEN }
+    { UF_HIDDEN, EXT_HIDDEN },
 #endif
+
+    /* Do not remove. We need to guarantee that this array has at least one
+     * entry to build on HP-UX.
+     */
+    { 0, 0 }
 
 };
 
