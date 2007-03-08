@@ -271,19 +271,17 @@ static int do_cd(char *newdir)
 
 	pstrcpy(saved_dir, cur_dir);
 
-	if (*p == CLI_DIRSEP_CHAR)
+	if (*p == CLI_DIRSEP_CHAR) {
 		pstrcpy(cur_dir,p);
-	else
+	} else {
 		pstrcat(cur_dir,p);
-
-	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
-		pstrcat(cur_dir, CLI_DIRSEP_STR);
+		if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
+			pstrcat(cur_dir, CLI_DIRSEP_STR);
+		}
 	}
 	
-	dos_clean_name(cur_dir);
+	clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
-	pstrcat(cur_dir,CLI_DIRSEP_STR);
-	dos_clean_name(cur_dir);
 	
 	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
 		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
@@ -291,9 +289,9 @@ static int do_cd(char *newdir)
 		goto out;
 	}
 
-	
-	if ( strequal(targetpath,CLI_DIRSEP_STR ) )
-		return 0;   
+	if (strequal(targetpath,CLI_DIRSEP_STR )) {
+		return 0;
+	}
 		
 	/* Use a trans2_qpathinfo to test directories for modern servers.
 	   Except Win9x doesn't support the qpathinfo_basic() call..... */ 
@@ -312,7 +310,7 @@ static int do_cd(char *newdir)
 		}		
 	} else {
 		pstrcat( targetpath, CLI_DIRSEP_STR );
-		dos_clean_name( targetpath );
+		clean_name( targetpath );
 		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
@@ -398,25 +396,25 @@ static void display_finfo(file_info *finfo)
 				return;
 			/* create absolute filename for cli_nt_create() FIXME */
 			pstrcpy( afname, cwd);
-			pstrcat( afname, "\\");
+			pstrcat( afname, CLI_DIRSEP_STR);
 			pstrcat( afname, finfo->name);
 			/* print file meta date header */
 			d_printf( "FILENAME:%s\n", afname);
 			d_printf( "MODE:%s\n", attrib_string(finfo->mode));
 			d_printf( "SIZE:%.0f\n", (double)finfo->size);
 			d_printf( "MTIME:%s", time_to_asc(t));
-			fnum = cli_nt_create(cli, afname, CREATE_ACCESS_READ);
+			fnum = cli_nt_create(finfo->cli, afname, CREATE_ACCESS_READ);
 			if (fnum == -1) {
 				DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
 					afname,
-					cli_errstr( cli)));
+					cli_errstr( finfo->cli)));
 			} else {
 				SEC_DESC *sd = NULL;
-				sd = cli_query_secdesc(cli, fnum, ctx);
+				sd = cli_query_secdesc(finfo->cli, fnum, ctx);
 				if (!sd) {
 					DEBUG( 0, ("display_finfo() failed to "
 						"get security descriptor: %s",
-						cli_errstr( cli)));
+						cli_errstr( finfo->cli)));
 				} else {
 					display_sec_desc(sd);
 				}
@@ -591,7 +589,8 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 				return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
-			pstrcat(mask2,"\\*");
+			pstrcat(mask2,CLI_DIRSEP_STR);
+			pstrcat(mask2,"*");
 			add_to_do_list_queue(mask2);
 		}
 		return;
@@ -795,17 +794,6 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	GetTimeOfDay(&tp_start);
 	
-	if ( targetcli->dfsroot ) {
-		pstring path;
-
-		/* we need to refer to the full \server\share\path format 
-		   for dfs shares */
-
-		pstrcpy( path, targetname );
-		cli_dfs_make_full_path( targetname, targetcli->desthost, 
-			targetcli->share, path);
-	}
-
 	fnum = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
@@ -929,7 +917,7 @@ static int cmd_get(void)
 		return 1;
 	}
 	pstrcpy(lname,p);
-	dos_clean_name(rname);
+	clean_name(rname);
 	
 	next_token_nr(NULL,lname,NULL,sizeof(lname));
 	
@@ -1030,7 +1018,7 @@ static int cmd_more(void)
 		unlink(lname);
 		return 1;
 	}
-	dos_clean_name(rname);
+	clean_name(rname);
 
 	rc = do_get(rname, lname, False);
 
@@ -1160,14 +1148,20 @@ static int cmd_mkdir(void)
 	if (recurse) {
 		pstring ddir;
 		pstring ddir2;
+		struct cli_state *targetcli;
+		pstring targetname;
 		*ddir2 = 0;
 		
-		pstrcpy(ddir,mask);
+		if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+			return 1;
+		}
+
+		pstrcpy(ddir,targetname);
 		trim_char(ddir,'.','\0');
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
-			if (!cli_chkpath(cli, ddir2)) { 
+			if (!cli_chkpath(targetcli, ddir2)) { 
 				do_mkdir(ddir2);
 			}
 			pstrcat(ddir2,CLI_DIRSEP_STR);
@@ -1363,7 +1357,7 @@ static int cmd_put(void)
 	else
 		pstrcat(rname,lname);
 	
-	dos_clean_name(rname);
+	clean_name(rname);
 
 	{
 		SMB_STRUCT_STAT st;
@@ -1677,13 +1671,13 @@ static void do_del(file_info *finfo)
 {
 	pstring mask;
 
-	pstr_sprintf( mask, "%s\\%s", finfo->dir, finfo->name );
+	pstr_sprintf( mask, "%s%c%s", finfo->dir, CLI_DIRSEP_CHAR, finfo->name );
 
 	if (finfo->mode & aDIR) 
 		return;
 
-	if (!cli_unlink(cli, mask)) {
-		d_printf("%s deleting remote file %s\n",cli_errstr(cli),mask);
+	if (!cli_unlink(finfo->cli, mask)) {
+		d_printf("%s deleting remote file %s\n",cli_errstr(finfo->cli),mask);
 	}
 }
 
@@ -1722,6 +1716,8 @@ static int cmd_wdel(void)
 	pstring mask;
 	pstring buf;
 	uint16 attribute;
+	struct cli_state *targetcli;
+	pstring targetname;
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
@@ -1738,8 +1734,13 @@ static int cmd_wdel(void)
 	pstrcpy(mask,cur_dir);
 	pstrcat(mask,buf);
 
-	if (!cli_unlink_full(cli, mask, attribute)) {
-		d_printf("%s deleting remote files %s\n",cli_errstr(cli),mask);
+	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+		d_printf("cmd_wdel %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_unlink_full(targetcli, targetname, attribute)) {
+		d_printf("%s deleting remote files %s\n",cli_errstr(targetcli),targetname);
 	}
 	return 0;
 }
@@ -1854,7 +1855,7 @@ static int cmd_posix_mkdir(void)
 		d_printf("posix_mkdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
-	
+
 	fnum = cli_posix_mkdir(targetcli, targetname, mode);
 	if (fnum == -1) {
 		d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
@@ -2160,6 +2161,8 @@ static int cmd_symlink(void)
 {
 	pstring oldname,newname;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -2177,9 +2180,14 @@ static int cmd_symlink(void)
 	pstrcpy(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if (!cli_unix_symlink(cli, oldname, newname)) {
+	if ( !cli_resolve_path( "", cli, oldname, &targetcli, targetname ) ) {
+		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_unix_symlink(targetcli, targetname, newname)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli), newname, oldname);
+			cli_errstr(targetcli), newname, targetname);
 		return 1;
 	} 
 
@@ -2376,7 +2384,6 @@ static int cmd_getfacl(void)
 		d_printf("This server supports UNIX extensions but doesn't support POSIX ACLs.\n");
 		return 1;
 	}
-
 
 	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
 		d_printf("%s getfacl doing a stat on file %s\n",
@@ -2619,7 +2626,6 @@ static int cmd_chown(void)
 		return 1;
 	}
 
-
 	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
@@ -2642,6 +2648,8 @@ static int cmd_rename(void)
 {
 	pstring src,dest;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2655,8 +2663,13 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_rename(cli, src, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(cli));
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_rename(targetcli, targetname, dest)) {
+		d_printf("%s renaming files\n",cli_errstr(targetcli));
 		return 1;
 	}
 	
@@ -2885,7 +2898,7 @@ static int cmd_reget(void)
 		return 1;
 	}
 	pstrcpy(local_name, p);
-	dos_clean_name(remote_name);
+	clean_name(remote_name);
 	
 	next_token_nr(NULL, local_name, NULL, sizeof(local_name));
 	
@@ -2923,7 +2936,7 @@ static int cmd_reput(void)
 	else
 		pstrcat(remote_name, local_name);
 	
-	dos_clean_name(remote_name);
+	clean_name(remote_name);
 
 	return do_put(remote_name, local_name, True);
 }

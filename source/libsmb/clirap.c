@@ -749,10 +749,10 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
-
 /****************************************************************************
-send a qpathinfo BASIC_INFO call
+ Send a qpathinfo BASIC_INFO call.
 ****************************************************************************/
+
 BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name, 
                           SMB_STRUCT_STAT *sbuf, uint32 *attributes )
 {
@@ -765,18 +765,12 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	pstring path;
 	int len;
 	
-	/* send full paths to dfs root shares */
-	
-	if ( cli->dfsroot )
-		pstr_sprintf(path, "\\%s\\%s\\%s", cli->desthost, cli->share, name );
-	else
-		pstrcpy( path, name );
-	
+	pstrcpy( path, name );
 	/* cleanup */
 	
 	len = strlen( path );
-	if ( path[len] == '\\' )
-		path[len] = '\0';
+	if ( path[len-1] == '\\' || path[len-1] == '/')
+		path[len-1] = '\0';
 
 	p = param;
 	memset(p, 0, 6);

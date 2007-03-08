@@ -3,6 +3,7 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell                  1994-1998
    Copyright (C) Gerald (Jerry) Carter            2004
+   Copyright (C) Jeremy Allison                   2007
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,16 @@
 
 #include "includes.h"
 
+/********************************************************************
+ Important point.
+
+ DFS paths are of the form \server\share\<pathname> (the \ characters
+ are not C escaped here).
+
+ - but if we're using POSIX paths then <pathname> may contain
+   '/' separators, not '\\' separators. So cope with '\\' or '/'
+   as a separator when looking at the pathname part.... JRA.
+********************************************************************/
 
 struct client_connection {
 	struct client_connection *prev, *next;
@@ -194,7 +205,7 @@ static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
 	
 	if ( p ) {
 		pstrcpy( p->mount, mnt );
-		dos_clean_name( p->mount );
+		clean_name( p->mount );
 	}
 }
 
@@ -427,7 +438,7 @@ static void clean_path( pstring clean, const char *path )
 	/* strip a trailing backslash */
 	
 	len = strlen( newpath );
-	if ( (len > 0) && (newpath[len-1] == '\\') )
+	if ( (len > 0) && (newpath[len-1] == '\\' || newpath[len-1] == '/') )
 		newpath[len-1] = '\0';
 		
 	pstrcpy( clean, newpath );
@@ -462,7 +473,7 @@ BOOL cli_dfs_make_full_path( pstring path, const char *server, const char *share
 	}
 
 	directory = dir;
-	if ( *directory == '\\' )
+	if ( *directory == '\\' || *directory == '/' )
 		directory++;
 	
 	pstr_sprintf( path, "\\%s\\%s\\%s", server, sharename, directory );
@@ -597,8 +608,9 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	
-	if ( !rootcli || !path || !targetcli )
+	if ( !rootcli || !path || !targetcli ) {
 		return False;
+	}
 		
 	*targetcli = NULL;
 	
@@ -609,7 +621,7 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 
 	/* don't bother continuing if this is not a dfs root */
 	
-	if ( !rootcli->dfsroot || cli_qpathinfo_basic( rootcli, cleanpath, &sbuf, &attributes ) ) {
+	if ( !rootcli->dfsroot || cli_qpathinfo_basic( rootcli, fullpath, &sbuf, &attributes ) ) {
 		*targetcli = rootcli;
 		pstrcpy( targetpath, path );
 		return True;
@@ -620,22 +632,23 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	if ( cli_dfs_check_error(rootcli, NT_STATUS_OBJECT_NAME_NOT_FOUND) ) {
 		*targetcli = rootcli;
 		pstrcpy( targetpath, path );
-		return True;
+		goto done;
 	}
 
 	/* we got an error, check for DFS referral */
 			
-	if ( !cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED) ) 
+	if ( !cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED))  {
 		return False;
+	}
 
 	/* check for the referral */
 
-	if ( !(cli_ipc = cli_cm_open( rootcli->desthost, "IPC$", False )) )
+	if ( !(cli_ipc = cli_cm_open( rootcli->desthost, "IPC$", False )) ) {
 		return False;
+	}
 	
 	if ( !cli_dfs_get_referral(cli_ipc, fullpath, &refs, &num_refs, &consumed) 
-		|| !num_refs )
-	{
+			|| !num_refs ) {
 		return False;
 	}
 	
@@ -669,13 +682,28 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	/* trim off the \server\share\ */
 
 	fullpath[consumed/2] = '\0';
-	dos_clean_name( fullpath );
-	if ((ppath = strchr_m( fullpath, '\\' )) == NULL)
+	clean_name( fullpath );
+	if ((ppath = strchr_m( fullpath, '\\' )) == NULL) {
 		return False;
-	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
+	}
+	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL) {
 		return False;
-	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
-		return False;
+	}
+	{
+		char *p1, *p2;
+
+		/* Last component can be '\\' or '/' posix path. */
+
+		p1 = strchr_m( ppath+1, '\\' );
+		p2 = strchr_m( ppath+1, '/' );
+
+		ppath = MAX(p1,p2);
+
+		if (ppath == NULL) {
+			return False;
+		}
+	}
+
 	ppath++;
 	
 	pstr_sprintf( newmount, "%s\\%s", mountpt, ppath );
@@ -684,11 +712,20 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	/* check for another dfs referral, note that we are not 
 	   checking for loops here */
 
-	if ( !strequal( targetpath, "\\" ) ) {
+	if ( !strequal( targetpath, "\\" ) &&  !strequal( targetpath, "/")) {
 		if ( cli_resolve_path( newmount, *targetcli, targetpath, &newcli, newpath ) ) {
 			*targetcli = newcli;
 			pstrcpy( targetpath, newpath );
 		}
+	}
+
+  done:
+
+	/* If returning True ensure we return a dfs root full path. */
+	if ( (*targetcli)->dfsroot ) {
+		pstrcpy( fullpath, targetpath );
+		cli_dfs_make_full_path( targetpath, (*targetcli)->desthost,
+			(*targetcli)->share, fullpath);
 	}
 
 	return True;
@@ -736,7 +773,7 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	}
 
 	cli->cnum = cnum;
-		
+
 	if (!res || !num_refs ) {
 		SAFE_FREE( refs );
 		return False;
