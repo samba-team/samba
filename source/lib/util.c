@@ -579,6 +579,13 @@ void dos_clean_name(char *s)
 	/* remove any double slashes */
 	all_string_sub(s, "\\\\", "\\", 0);
 
+	/* Remove leading .\\ characters */
+	if(strncmp(s, ".\\", 2) == 0) {
+		trim_string(s, ".\\", NULL);
+		if(*s == 0)
+			pstrcpy(s,".\\");
+	}
+
 	while ((p = strstr_m(s,"\\..\\")) != NULL) {
 		pstring s1;
 
@@ -593,7 +600,6 @@ void dos_clean_name(char *s)
 	}  
 
 	trim_string(s,NULL,"\\..");
-
 	all_string_sub(s, "\\.\\", "\\", 0);
 }
 
@@ -631,6 +637,13 @@ void unix_clean_name(char *s)
 	}  
 
 	trim_string(s,NULL,"/..");
+	all_string_sub(s, "/./", "/", 0);
+}
+
+void clean_name(char *s)
+{
+	dos_clean_name(s);
+	unix_clean_name(s);
 }
 
 /*******************************************************************
