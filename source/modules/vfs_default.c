@@ -905,7 +905,8 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 
 static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flags)
 {
-	return chflags(path, flags);
+	errno = ENOSYS;
+	return -1;
 }
 
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
