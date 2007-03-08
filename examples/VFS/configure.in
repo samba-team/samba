@@ -182,6 +182,10 @@ PICFLAGS=""
 PICSUFFIX="po"
 SHLIBEXT="so"
 
+# Since we are not embedded in the Samba tree, building shared modules is
+# really the only option.
+enable_shared=yes
+
 if test "$enable_shared" = "yes"; then
   # this bit needs to be modified for each OS that is suported by
   # smbwrapper. You need to specify how to created a shared library and
