@@ -1145,13 +1145,6 @@ smbc_open_ctx(SMBCCTX *context,
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 		
-		if ( targetcli->dfsroot )
-		{
-			pstring temppath;
-			pstrcpy(temppath, targetpath);
-			cli_dfs_make_full_path( targetpath, targetcli->desthost, targetcli->share, temppath);
-		}
-		
 		if ((fd = cli_open(targetcli, targetpath, flags,
                                    context->internal->_share_mode)) < 0) {
 
@@ -1548,14 +1541,6 @@ smbc_getatr(SMBCCTX * context,
 		return False;
 	}
 	
-	if ( targetcli->dfsroot )
-	{
-		pstring temppath;
-		pstrcpy(temppath, targetpath);
-		cli_dfs_make_full_path(targetpath, targetcli->desthost,
-                                       targetcli->share, temppath);
-	}
-  
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
                            create_time_ts,

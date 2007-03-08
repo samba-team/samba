@@ -44,6 +44,7 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 		*p_resume_key = 0;
 	}
 	memcpy(finfo,&def_finfo,sizeof(*finfo));
+	finfo->cli = cli;
 
 	switch (level) {
 		case 1: /* OS/2 understands this */
@@ -185,13 +186,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
 	
-	/* when getting a directory listing from a 2k dfs root share, 
-	   we have to include the full path (\server\share\mask) here */
-	   
-	if ( cli->dfsroot )
-		pstr_sprintf( mask, "\\%s\\%s\\%s", cli->desthost, cli->share, Mask );
-	else
-		pstrcpy(mask,Mask);
+	pstrcpy(mask,Mask);
 	
 	while (ff_eos == 0) {
 		loop_count++;
@@ -377,6 +372,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 
 	*finfo = def_finfo;
 
+	finfo->cli = cli;
 	finfo->mode = CVAL(p,21);
 	
 	/* this date is converted to GMT by make_unix_date */
