@@ -392,32 +392,49 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
+	int ret;
 	switch (request->operation) {
 	case LDB_SEARCH:
 		FIND_OP(module, search);
-		return module->ops->search(module, request);
+		ret = module->ops->search(module, request);
+		break;
 	case LDB_ADD:
 		FIND_OP(module, add);
-		return module->ops->add(module, request);
+		ret = module->ops->add(module, request);
+		break;
 	case LDB_MODIFY:
 		FIND_OP(module, modify);
-		return module->ops->modify(module, request);
+		ret = module->ops->modify(module, request);
+		break;
 	case LDB_DELETE:
 		FIND_OP(module, del);
-		return module->ops->del(module, request);
+		ret = module->ops->del(module, request);
+		break;
 	case LDB_RENAME:
 		FIND_OP(module, rename);
-		return module->ops->rename(module, request);
+		ret = module->ops->rename(module, request);
+		break;
 	case LDB_EXTENDED:
 		FIND_OP(module, extended);
-		return module->ops->extended(module, request);
+		ret = module->ops->extended(module, request);
+		break;
 	case LDB_SEQUENCE_NUMBER:
 		FIND_OP(module, sequence_number);
-		return module->ops->sequence_number(module, request);
+		ret = module->ops->sequence_number(module, request);
+		break;
 	default:
 		FIND_OP(module, request);
-		return module->ops->request(module, request);
+		ret = module->ops->request(module, request);
+		break;
 	}
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb, "error in module %s: %s", module->ops->name, ldb_strerror(ret));
+	}
+	return ret;
 }
 
 int ldb_next_init(struct ldb_module *module)
