@@ -45,7 +45,7 @@ samba3_check_or_start() {
 			fi
 			MAKE_TEST_BINARY=$BINDIR/nmbd
 			export MAKE_TEST_BINARY
-			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $BINDIR/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
+			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $BINDIR/nmbd -F -S --no-process-group -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_NMBD_PID=$!
 			MAKE_TEST_BINARY=
 			echo $TIMELIMIT_NMBD_PID > $PIDDIR/timelimit.nmbd.pid
@@ -77,7 +77,7 @@ samba3_check_or_start() {
 			fi
 			MAKE_TEST_BINARY=$BINDIR/smbd
 			export MAKE_TEST_BINARY
-			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $BINDIR/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
+			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $BINDIR/smbd -F --no-process-group -s $SERVERCONFFILE -l $SOCKET_WRAPPER_DIR > $SMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_SMBD_PID=$!
 			MAKE_TEST_BINARY=
 			echo $TIMELIMIT_SMBD_PID > $PIDDIR/timelimit.smbd.pid

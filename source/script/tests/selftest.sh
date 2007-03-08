@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -x
 if [ $# != 3 ]; then
 	echo "$0 <directory> <all | quick> <smbtorture4>"
 	exit 1
@@ -93,7 +94,6 @@ cat >$COMMONCONFFILE<<EOF
 	pid directory = $PIDDIR
 	lock directory = $LOCKDIR
 	log file = $LOGDIR/log.%m
-	log level = 0
 
 	name resolve order = bcast
 EOF
@@ -120,6 +120,7 @@ EOF
 
 cat >$SERVERCONFFILE<<EOF
 [global]
+	log level = 10
 	netbios name = $SERVER
 	interfaces = $SERVER_IP/8
 	bind interfaces only = yes
@@ -146,6 +147,7 @@ cat >$SERVERCONFFILE<<EOF
 	map hidden = yes
 	map system = yes
 	create mask = 755
+	guest ok = yes
 [hideunread]
 	copy = tmp
 	hide unreadable = yes

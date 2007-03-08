@@ -3069,7 +3069,7 @@ static BOOL map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 				int *stat_fflags)
 {
 #ifdef HAVE_STAT_ST_FLAGS
-	uint32 max_fmask;
+	uint32 max_fmask = 0;
 	int i;
 
 	*stat_fflags = psbuf->st_flags;
