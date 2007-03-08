@@ -174,6 +174,8 @@ static int smb_full_audit_mknod(vfs_handle_struct *handle,
 		       const char *pathname, mode_t mode, SMB_DEV_T dev);
 static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 			    const char *path, char *resolved_path);
+static int smb_full_audit_chflags(vfs_handle_struct *handle,
+			    const char *path, uint flags);
 static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, uint32 security_info,
 				SEC_DESC **ppdesc);
@@ -397,6 +399,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_realpath),	SMB_VFS_OP_REALPATH,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_chflags),	SMB_VFS_OP_CHFLAGS,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* NT ACL operations. */
 
@@ -560,6 +564,7 @@ static struct {
 	{ SMB_VFS_OP_LINK,	"link" },
 	{ SMB_VFS_OP_MKNOD,	"mknod" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
+	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1401,6 +1406,18 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 
 	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
+
+	return result;
+}
+
+static int smb_full_audit_chflags(vfs_handle_struct *handle,
+			    const char *path, uint flags)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+
+	do_log(SMB_VFS_OP_CHFLAGS, (result != 0), handle, "%s", path);
 
 	return result;
 }
