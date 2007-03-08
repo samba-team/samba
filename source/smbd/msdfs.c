@@ -331,6 +331,7 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	pstring reqpath;
+	pstring local_dfspath;
 
 	if (!dp || !conn) {
 		DEBUG(1,("resolve_dfs_path: NULL dfs_path* or NULL connection_struct*!\n"));
@@ -385,6 +386,12 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
 		return True;
 	}
 
+	/* Prepare to test only for '/' components in the given path,
+	 * so replace all '\\' characters with '/'. */
+
+	pstrcpy(local_dfspath, dfspath);
+	string_replace(local_dfspath, '\\', '/');
+
 	/* redirect if any component in the path is a link */
 	pstrcpy(reqpath, localpath);
 	p = strrchr_m(reqpath, '/');
@@ -402,14 +409,12 @@ static BOOL resolve_dfs_path(TALLOC_CTX *ctx,
 			
 			if (consumedcntp) {
 				pstring buf;
-				pstrcpy(buf, dfspath);
-				trim_char(buf, '\0', '\\');
+				pstrcpy(buf, local_dfspath);
+				trim_char(buf, '\0', '/');
 				for (; consumed_level; consumed_level--) {
-					char *q, *q1, *q2;
-					/* Either '\\' or '/' may be a separator. */
-					q1 = strrchr_m(buf, '\\');
-					q2 = strrchr_m(buf, '/');
-					q = MAX(q1,q2);
+					char *q;
+					/* We made sure only '/' may be a separator above. */
+					q = strrchr_m(buf, '/');
 					if (q) {
 						*q = 0;
 					}
