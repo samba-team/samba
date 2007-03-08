@@ -58,7 +58,6 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
  */
 static int ctdb_ibw_start(struct ctdb_context *ctdb)
 {
-	struct ibw_ctx *ictx = talloc_get_type(ctdb->private, struct ibw_ctx);
 	int i;
 
 	/* listen on our own address */
@@ -71,35 +70,30 @@ static int ctdb_ibw_start(struct ctdb_context *ctdb)
 		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
 			ctdb_same_address(&ctdb->address, &node->address))
 			continue;
-		ctdb_ibw_node_connect(ictx, node);
+		ctdb_ibw_node_connect(node);
 	}
 
 	return 0;
 }
-
 
 /*
  * initialise ibw portion of a ctdb node 
  */
 static int ctdb_ibw_add_node(struct ctdb_node *node)
 {
-	/* TODO: clarify whether is this necessary for us ?
-	   - why not enough doing such thing internally at connect time ? */
-	return 0;
+	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private, struct ibw_ctx);
+	struct ctdb_ibw_node *cn = talloc_zero(node, struct ctdb_ibw_node);
+
+	assert(cn!=NULL);
+	cn->conn = ibw_conn_new(ictx, node);
+	node->private = (void *)cn;
+
+	return (cn->conn!=NULL ? 0 : -1);
 }
 
-static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
+static int ctdb_ibw_send_pkt(struct ibw_conn *conn, uint8_t *data, uint32_t length)
 {
-	struct ibw_conn *conn = talloc_get_type(node->private, struct ibw_conn);
-	int	rc;
 	void	*buf, *key;
-
-	assert(length>=sizeof(uint32_t));
-
-	if (conn==NULL) {
-		DEBUG(0, ("ctdb_ibw_queue_pkt: conn is NULL\n"));
-		return -1;
-	}
 
 	if (ibw_alloc_send_buf(conn, &buf, &key, length)) {
 		DEBUG(0, ("queue_pkt/ibw_alloc_send_buf failed\n"));
@@ -107,7 +101,56 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 	}
 
 	memcpy(buf, data, length);
-	rc = ibw_send(conn, buf, key, length);
+	return ibw_send(conn, buf, key, length);
+}
+
+int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn)
+{
+	struct ctdb_ibw_msg *p;
+	int	rc = 0;
+
+	while(cn->queue) {
+		p = cn->queue;
+		rc = ctdb_ibw_send_pkt(cn->conn, p->data, p->length);
+		if (rc)
+			return -1; /* will be retried later when conn is up */
+
+		DLIST_REMOVE(cn->queue, p);
+		cn->qcnt--;
+		talloc_free(p); /* it will talloc_free p->data as well */
+	}
+	assert(cn->qcnt==0);
+	/* cn->queue_last = NULL is not needed - see DLIST_ADD_AFTER */
+
+	return rc;
+}
+
+static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
+{
+	struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+	int	rc;
+
+	assert(length>=sizeof(uint32_t));
+	assert(cn!=NULL);
+
+	if (cn->conn==NULL) {
+		DEBUG(0, ("ctdb_ibw_queue_pkt: conn is NULL\n"));
+		return -1;
+	}
+
+	if (cn->conn->state==IBWC_CONNECTED) {
+		rc = ctdb_ibw_send_pkt(cn->conn, data, length);
+	} else {
+		struct ctdb_ibw_msg *p = talloc_zero(cn, struct ctdb_ibw_msg);
+		p->data = talloc_memdup(p, data, length);
+		p->length = length;
+
+		DLIST_ADD_AFTER(cn->queue, p, cn->queue_last);
+		cn->queue_last = p;
+		cn->qcnt++;
+
+		rc = 0;
+	}
 
 	return rc;
 }

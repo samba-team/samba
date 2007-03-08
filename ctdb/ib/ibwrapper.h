@@ -154,6 +154,14 @@ int ibw_listen(struct ibw_ctx *ctx, int backlog);
 int ibw_accept(struct ibw_ctx *ctx, struct ibw_conn *conn, void *conn_userdata);
 
 /*
+ * Create a new connection structure
+ * available for queueing ibw_send
+ *
+ * <parent> is needed to be notified by talloc destruct action.
+ */
+struct ibw_conn *ibw_conn_new(struct ibw_ctx *ctx, TALLOC_CTX *mem_ctx);
+
+/*
  * Needs a normal internet address here
  * can be called within IBWS_READY|IBWS_CONNECT_REQUEST
  *
@@ -162,7 +170,7 @@ int ibw_accept(struct ibw_ctx *ctx, struct ibw_conn *conn, void *conn_userdata);
  * You have +1 waiting here: you will get ibw_conn (having the
  * same <conn_userdata> member) structure in ibw_connstate_fn_t.
  */
-int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_userdata);
+int ibw_connect(struct ibw_conn *conn, struct sockaddr_in *serv_addr, void *conn_userdata);
 
 /*
  * Sends out a disconnect request.

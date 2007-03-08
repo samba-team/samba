@@ -21,10 +21,26 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+struct ctdb_ibw_msg {
+	uint8_t *data;
+	uint32_t length;
+	struct ctdb_ibw_msg *prev;
+	struct ctdb_ibw_msg *next;
+};
+
+struct ctdb_ibw_node {
+	struct ibw_conn *conn;
+
+	struct ctdb_ibw_msg *queue;
+	struct ctdb_ibw_msg *queue_last;
+	int	qcnt;
+};
+
 int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn);
 int ctdb_ibw_receive_handler(struct ibw_conn *conn, void *buf, int n);
 
-int ctdb_ibw_node_connect(struct ibw_ctx *ictx, struct ctdb_node *node);
+int ctdb_ibw_node_connect(struct ctdb_node *node);
 void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *te, 
 	struct timeval t, void *private);
 
+int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn);
