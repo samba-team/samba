@@ -966,16 +966,13 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	if (status_len == 0) {
 		SMB_STRUCT_STAT sbuf;
-		pstring dir2;
 
 		pstrcpy(directory,path);
-		pstrcpy(dir2,path);
 		nt_status = unix_convert(conn, directory, True, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			END_PROFILE(SMBsearch);
 			return ERROR_NT(nt_status);
 		}
-		unix_format(dir2);
 
 		nt_status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -983,23 +980,16 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			return ERROR_NT(nt_status);
 		}
 
-		p = strrchr_m(dir2,'/');
-		if (p == NULL) {
-			pstrcpy(mask,dir2);
-			*dir2 = 0;
+		p = strrchr_m(directory,'/');
+		if (!p) {
+			pstrcpy(mask,directory);
+			pstrcpy(directory,".");
 		} else {
 			*p = 0;
 			pstrcpy(mask,p+1);
 		}
 
-		p = strrchr_m(directory,'/');
-		if (!p) {
-			*directory = 0;
-		} else {
-			*p = 0;
-		}
-
-		if (strlen(directory) == 0) {
+		if (*directory == '\0') {
 			pstrcpy(directory,".");
 		}
 		memset((char *)status,'\0',21);
