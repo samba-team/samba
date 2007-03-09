@@ -717,8 +717,8 @@ enum smb_whoami_flags {
 /* Definition of request data block for SMB_POSIX_PATH_OPEN */
 /*
   [4 bytes] flags (as smb_ntcreate_Flags).
-  [4 bytes] open_mode
-  [4 bytes] mode_t		- same encoding as "Standard UNIX permissions" above.
+  [4 bytes] open_mode			- SMB_O_xxx flags above.
+  [8 bytes] mode_t (permissions)	- same encoding as "Standard UNIX permissions" above in SMB_SET_FILE_UNIX_BASIC.
   [2 bytes] ret_info_level	- optimization. Info level to be returned.
 */
 
