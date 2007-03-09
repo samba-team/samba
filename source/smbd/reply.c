@@ -1009,6 +1009,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 		string_set(&conn->dirpath,dptr_path(dptr_num));
 		pstrcpy(mask, dptr_wcard(dptr_num));
+		/*
+		 * For a 'continue' search we have no string. So
+		 * check from the initial saved string.
+		 */
+		mask_contains_wcard = ms_has_wild(mask);
 	}
 
 	p = smb_buf(outbuf) + 3;
