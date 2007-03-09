@@ -21,9 +21,9 @@ interface drsblobs {
 	typedef struct {
 		drsuapi_DsAttributeId attid;
 		uint32 version;
-		NTTIME_1sec orginating_time;
-		GUID orginating_invocation_id;
-		hyper orginating_usn;
+		NTTIME_1sec originating_change_time;
+		GUID originating_invocation_id;
+		hyper originating_usn;
 		hyper local_usn;
 	} replPropertyMetaData1;
 
