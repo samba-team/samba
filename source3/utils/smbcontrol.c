@@ -1145,22 +1145,12 @@ int main(int argc, const char **argv)
 	poptContext pc;
 	int opt;
 
-	static struct poptOption wbinfo_options[] = {
+	static struct poptOption long_options[] = {
+		POPT_AUTOHELP
 		{ "timeout", 't', POPT_ARG_INT, &timeout, 't', 
 		  "Set timeout value in seconds", "TIMEOUT" },
 
-		{ "configfile", 's', POPT_ARG_STRING, NULL, 's', 
-		  "Use alternative configuration file", "CONFIGFILE" },
-
-		POPT_TABLEEND
-	};
-
-	struct poptOption options[] = {
-		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, wbinfo_options, 0, 
-		  "Options" },
-
-		POPT_AUTOHELP
-		POPT_COMMON_VERSION
+		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
 
@@ -1171,7 +1161,7 @@ int main(int argc, const char **argv)
 	/* Parse command line arguments using popt */
 
 	pc = poptGetContext(
-		"smbcontrol", argc, (const char **)argv, options, 0);
+		"smbcontrol", argc, (const char **)argv, long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "[OPTION...] <destination> <message-type> "
 			       "<parameters>");
@@ -1182,11 +1172,6 @@ int main(int argc, const char **argv)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
 		case 't':	/* --timeout */
-			argc -= 2;
-			break;
-		case 's':	/* --configfile */
-			pstrcpy(dyn_CONFIGFILE, poptGetOptArg(pc));
-			argc -= 2;
 			break;
 		default:
 			fprintf(stderr, "Invalid option\n");
@@ -1200,7 +1185,10 @@ int main(int argc, const char **argv)
            correct value in the above switch statement. */
 
 	argv = (const char **)poptGetArgs(pc);
-	argc--;			/* Don't forget about argv[0] */
+	argc = 0;
+	while (argv[argc] != NULL) {
+		argc++;
+	}
 
 	if (argc == 1)
 		usage(&pc);
