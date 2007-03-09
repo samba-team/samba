@@ -35,6 +35,16 @@ extern struct current_user current_user;
 #define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
+static char *store_file_unix_basic(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf);
+
+static char *store_file_unix_basic_info2(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf);
+
 /********************************************************************
  Roundup a value to the nearest allocation roundup size boundary.
  Only do this for Windows clients.
@@ -57,7 +67,7 @@ SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
  account sparse files.
 ********************************************************************/
 
-SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
 
@@ -1579,51 +1589,21 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		/* CIFS UNIX Extension. */
 
 		case SMB_FIND_FILE_UNIX:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
+		case SMB_FIND_FILE_UNIX_INFO2:
 			p+= 4;
 			SIVAL(p,0,reskey); p+= 4;    /* Used for continuing search. */
 
 			/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
-			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
-			p+= 8;
 
-			SOFF_T(p,0,get_allocation_size(conn,NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
-			p+= 8;
-
-			put_long_date_timespec(p,get_ctimespec(&sbuf));       /* Inode change Time 64 Bit */
-			put_long_date_timespec(p+8,get_atimespec(&sbuf));     /* Last access time 64 Bit */
-			put_long_date_timespec(p+16,get_mtimespec(&sbuf));    /* Last modification time 64 Bit */
-			p+= 24;
-
-			SIVAL(p,0,sbuf.st_uid);               /* user id for the owner */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,sbuf.st_gid);               /* group id of owner */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,unix_filetype(sbuf.st_mode));
-			p+= 4;
-
-			SIVAL(p,0,unix_dev_major(sbuf.st_rdev));   /* Major device number if type is device */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,unix_dev_minor(sbuf.st_rdev));   /* Minor device number if type is device */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SINO_T_VAL(p,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
-			p+= 8;
-
-			SIVAL(p,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,sbuf.st_nlink);             /* number of hard links */
-			SIVAL(p,4,0);
-			p+= 8;
+			if (info_level == SMB_FIND_FILE_UNIX) {
+				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
+				p = store_file_unix_basic(conn, p,
+							NULL, &sbuf);
+			} else {
+				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
+				p = store_file_unix_basic_info2(conn, p,
+							NULL, &sbuf);
+			}
 
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			p += len;
@@ -1733,6 +1713,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
+		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
@@ -2040,6 +2021,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
+		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
@@ -2533,6 +2515,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
+					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
 			break;
 
@@ -2982,7 +2965,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 static char *store_file_unix_basic(connection_struct *conn,
 				char *pdata,
 				files_struct *fsp,
-				SMB_STRUCT_STAT *psbuf)
+				const SMB_STRUCT_STAT *psbuf)
 {
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
 	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_mode));
@@ -3026,6 +3009,121 @@ static char *store_file_unix_basic(connection_struct *conn,
 
 	SIVAL(pdata,0,psbuf->st_nlink);             /* number of hard links */
 	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	return pdata;
+}
+
+/* Forward and reverse mappings from the UNIX_INFO2 file flags field and
+ * the chflags(2) (or equivalent) flags.
+ *
+ * XXX: this really should be behind the VFS interface. To do this, we would
+ * need to alter SMB_STRUCT_STAT so that it included a flags and a mask field.
+ * Each VFS module could then implement it's own mapping as appropriate for the
+ * platform. We would then pass the SMB flags into SMB_VFS_CHFLAGS.
+ */
+static const struct {unsigned stat_fflag; unsigned smb_fflag;}
+	info2_flags_map[] =
+{
+#ifdef UF_NODUMP
+    { UF_NODUMP, EXT_DO_NOT_BACKUP },
+#endif
+
+#ifdef UF_IMMUTABLE
+    { UF_IMMUTABLE, EXT_IMMUTABLE },
+#endif
+
+#ifdef UF_APPEND
+    { UF_APPEND, EXT_OPEN_APPEND_ONLY },
+#endif
+
+#ifdef UF_HIDDEN
+    { UF_HIDDEN, EXT_HIDDEN },
+#endif
+
+    /* Do not remove. We need to guarantee that this array has at least one
+     * entry to build on HP-UX.
+     */
+    { 0, 0 }
+
+};
+
+static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
+				uint32 *smb_fflags, uint32 *smb_fmask)
+{
+#ifdef HAVE_STAT_ST_FLAGS
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
+	    *smb_fmask |= info2_flags_map[i].smb_fflag;
+	    if (psbuf->st_flags & info2_flags_map[i].stat_fflag) {
+		    *smb_fflags |= info2_flags_map[i].smb_fflag;
+	    }
+	}
+#endif /* HAVE_STAT_ST_FLAGS */
+}
+
+static BOOL map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
+				const uint32 smb_fflags,
+				const uint32 smb_fmask,
+				int *stat_fflags)
+{
+#ifdef HAVE_STAT_ST_FLAGS
+	uint32 max_fmask = 0;
+	int i;
+
+	*stat_fflags = psbuf->st_flags;
+
+	/* For each flags requested in smb_fmask, check the state of the
+	 * corresponding flag in smb_fflags and set or clear the matching
+	 * stat flag.
+	 */
+
+	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
+	    max_fmask |= info2_flags_map[i].smb_fflag;
+	    if (smb_fmask & info2_flags_map[i].smb_fflag) {
+		    if (smb_fflags & info2_flags_map[i].smb_fflag) {
+			    *stat_fflags |= info2_flags_map[i].stat_fflag;
+		    } else {
+			    *stat_fflags &= ~info2_flags_map[i].stat_fflag;
+		    }
+	    }
+	}
+
+	/* If smb_fmask is asking to set any bits that are not supported by
+	 * our flag mappings, we should fail.
+	 */
+	if ((smb_fmask & max_fmask) != smb_fmask) {
+		return False;
+	}
+
+	return True;
+#else
+	return False;
+#endif /* HAVE_STAT_ST_FLAGS */
+}
+
+
+/* Just like SMB_QUERY_FILE_UNIX_BASIC, but with the addition
+ * of file flags and birth (create) time.
+ */
+static char *store_file_unix_basic_info2(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf)
+{
+	uint32 file_flags = 0;
+	uint32 flags_mask = 0;
+
+	pdata = store_file_unix_basic(conn, pdata, fsp, psbuf);
+
+	/* Create (birth) time 64 bit */
+	put_long_date_timespec(pdata, get_create_timespec(psbuf, False));
+	pdata += 8;
+
+	map_info2_flags_from_sbuf(psbuf, &file_flags, &flags_mask);
+	SIVAL(pdata, 0, file_flags); /* flags */
+	SIVAL(pdata, 4, flags_mask); /* mask */
 	pdata += 8;
 
 	return pdata;
@@ -3080,6 +3178,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
+
+		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+		}
 
 		if(fsp && (fsp->fake_file_handle)) {
 			/*
@@ -3136,6 +3238,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		info_level = SVAL(params,0);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
+
+		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+		}
 
 		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3642,6 +3748,22 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			{
 				int i;
 				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC "));
+
+				for (i=0; i<100; i++)
+					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
+				DEBUG(4,("\n"));
+			}
+
+			break;
+
+		case SMB_QUERY_FILE_UNIX_INFO2:
+
+			pdata = store_file_unix_basic_info2(conn, pdata, fsp, &sbuf);
+			data_size = PTR_DIFF(pdata,(*ppdata));
+
+			{
+				int i;
+				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_INFO2 "));
 
 				for (i=0; i<100; i++)
 					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
@@ -5028,6 +5150,67 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 }
 
 /****************************************************************************
+ Deal with SMB_SET_FILE_UNIX_INFO2.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					files_struct *fsp,
+					const char *fname,
+					SMB_STRUCT_STAT *psbuf)
+{
+	NTSTATUS status;
+	uint32 smb_fflags;
+	uint32 smb_fmask;
+
+	if (total_data < 116) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Start by setting all the fields that are common between UNIX_BASIC
+	 * and UNIX_INFO2.
+	 */
+	status = smb_set_file_unix_basic(conn, pdata, total_data,
+				fsp, fname, psbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	smb_fflags = IVAL(pdata, 108);
+	smb_fmask = IVAL(pdata, 112);
+
+	/* NB: We should only attempt to alter the file flags if the client
+	 * sends a non-zero mask.
+	 */
+	if (smb_fmask != 0) {
+		int stat_fflags = 0;
+
+		if (!map_info2_flags_to_sbuf(psbuf, smb_fflags, smb_fmask,
+			    &stat_fflags)) {
+			/* Client asked to alter a flag we don't understand. */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (fsp && fsp->fh->fd != -1) {
+			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
+			return NT_STATUS_NOT_SUPPORTED;
+		} else {
+			if (SMB_VFS_CHFLAGS(conn, fname, stat_fflags) != 0) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
+	}
+
+	/* XXX: need to add support for changing the create_time here. You
+	 * can do this for paths on Darwin with setattrlist(2). The right way
+	 * to hook this up is probably by extending the VFS utimes interface.
+	 */
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Create a directory with POSIX semantics.
 ****************************************************************************/
 
@@ -5096,11 +5279,16 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
 	SSVAL(pdata,2,0);
 
-	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+	switch (info_level_return) {
+	case SMB_QUERY_FILE_UNIX_BASIC:
 		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
 		SSVAL(pdata,6,0); /* Padding. */
 		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
-	} else {
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,6,0); /* Padding. */
+		store_file_unix_basic_info2(conn, pdata + 8, fsp, psbuf);
+	default:
 		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
 		SSVAL(pdata,6,0); /* Padding. */
 	}
@@ -5269,11 +5457,16 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	SSVAL(pdata,2,fsp->fnum);
-	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
+	switch (info_level_return) {
+	case SMB_QUERY_FILE_UNIX_BASIC:
 		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
 		SSVAL(pdata,6,0); /* padding. */
 		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
-	} else {
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,6,0); /* padding. */
+		store_file_unix_basic_info2(conn, pdata + 8, fsp, psbuf);
+	default:
 		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
 		SSVAL(pdata,6,0); /* padding. */
 	}
@@ -5603,6 +5796,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_SET_FILE_UNIX_BASIC:
 		{
 			status = smb_set_file_unix_basic(conn,
+							pdata,
+							total_data,
+							fsp,
+							fname,
+							&sbuf);
+			break;
+		}
+
+		case SMB_SET_FILE_UNIX_INFO2:
+		{
+			status = smb_set_file_unix_info2(conn,
 							pdata,
 							total_data,
 							fsp,

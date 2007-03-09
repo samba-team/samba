@@ -39,5 +39,5 @@ clean:
 	rm -f core *~ *% *.bak *.o *.$(SHLIBEXT)
 
 distclean: clean
-	rm config.* Makefile
+	rm -f config.status config.cache Makefile
 

@@ -69,7 +69,8 @@
    Also included linux setlease call - jmcd */
 /* Changed to version 20, use ntimes call instead of utime (greater
  * timestamp resolition. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 20
+/* Changed to version21 to add chflags operation -- jpeach */
+#define SMB_VFS_INTERFACE_VERSION 21
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -158,6 +159,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_MKNOD,
 	SMB_VFS_OP_REALPATH,
 	SMB_VFS_OP_NOTIFY_WATCH,
+	SMB_VFS_OP_CHFLAGS,
 
 	/* NT ACL operations. */
 
@@ -289,6 +291,7 @@ struct vfs_ops {
 							  void *private_data,
 							  struct notify_event *ev),
 					 void *private_data, void *handle_p);
+		int (*chflags)(struct vfs_handle_struct *handle, const char *path, uint flags);
 		
 		/* NT ACL operations. */
 		
@@ -406,6 +409,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *mknod;
 		struct vfs_handle_struct *realpath;
 		struct vfs_handle_struct *notify_watch;
+		struct vfs_handle_struct *chflags;
 
 		/* NT ACL operations. */
 

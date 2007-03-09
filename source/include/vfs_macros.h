@@ -79,6 +79,7 @@
 #define SMB_VFS_MKNOD(conn, path, mode, dev) ((conn)->vfs.ops.mknod((conn)->vfs.handles.mknod, (path), (mode), (dev)))
 #define SMB_VFS_REALPATH(conn, path, resolved_path) ((conn)->vfs.ops.realpath((conn)->vfs.handles.realpath, (path), (resolved_path)))
 #define SMB_VFS_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs.ops.notify_watch((conn)->vfs.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
+#define SMB_VFS_CHFLAGS(conn, path, flags) ((conn)->vfs.ops.chflags((conn)->vfs.handles.chflags, (path), (flags)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, fd, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (fd), (security_info), (ppdesc)))
@@ -194,6 +195,7 @@
 #define SMB_VFS_OPAQUE_MKNOD(conn, path, mode, dev) ((conn)->vfs_opaque.ops.mknod((conn)->vfs_opaque.handles.mknod, (path), (mode), (dev)))
 #define SMB_VFS_OPAQUE_REALPATH(conn, path, resolved_path) ((conn)->vfs_opaque.ops.realpath((conn)->vfs_opaque.handles.realpath, (path), (resolved_path)))
 #define SMB_VFS_OPAQUE_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_opaque.ops.notify_watch((conn)->vfs_opaque.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
+#define SMB_VFS_OPAQUE_CHFLAGS(conn, path, flags) ((conn)->vfs_opaque.ops.chflags((conn)->vfs_opaque.handles.chflags, (path), (flags)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, fd, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (fd), (security_info), (ppdesc)))
@@ -310,6 +312,7 @@
 #define SMB_VFS_NEXT_MKNOD(handle, path, mode, dev) ((handle)->vfs_next.ops.mknod((handle)->vfs_next.handles.mknod, (path), (mode), (dev)))
 #define SMB_VFS_NEXT_REALPATH(handle, path, resolved_path) ((handle)->vfs_next.ops.realpath((handle)->vfs_next.handles.realpath, (path), (resolved_path)))
 #define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_next.ops.notify_watch((conn)->vfs_next.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
+#define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (fd), (security_info), (ppdesc)))
