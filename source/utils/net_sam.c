@@ -1043,6 +1043,7 @@ static int net_sam_provision(int argc, const char **argv)
 			d_fprintf(stderr, "Failed to add Domain Users group to ldap directory\n");
 		}
 	} else {
+		domusers_gid = gmap.gid;
 		d_printf("found!\n");
 	}	
 
@@ -1096,6 +1097,7 @@ domu_done:
 			d_fprintf(stderr, "Failed to add Domain Admins group to ldap directory\n");
 		}
 	} else {
+		domadmins_gid = gmap.gid;
 		d_printf("found!\n");
 	}
 
@@ -1124,7 +1126,7 @@ doma_done:
 		d_printf("Adding the Administrator user.\n");
 
 		if (domadmins_gid == -1) {
-			d_fprintf(stderr, "Can't create Administrtor user, Domain Admins group not available!\n");
+			d_fprintf(stderr, "Can't create Administrator user, Domain Admins group not available!\n");
 			goto done;
 		}
 		if (!winbind_allocate_uid(&uid)) {
@@ -1238,8 +1240,12 @@ doma_done:
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", pwd->pw_name);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", pwd->pw_dir);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", pwd->pw_shell);
+		if ((pwd->pw_dir != NULL) && (pwd->pw_dir[0] != '\0')) {
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", pwd->pw_dir);
+		}
+		if ((pwd->pw_shell != NULL) && (pwd->pw_shell[0] != '\0')) {
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", pwd->pw_shell);
+		}
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaAcctFlags",
 				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
@@ -1261,7 +1267,7 @@ doma_done:
 	pwd = getpwnam_alloc(NULL, lp_guestaccount());
 	if (!pwd) {
 		d_fprintf(stderr, "Failed to find just created Guest account!\n"
-				  "   Is nssswitch properly configured?!\n");
+				  "   Is nss properly configured?!\n");
 		goto failed;
 	}
 
