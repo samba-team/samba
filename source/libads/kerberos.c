@@ -101,7 +101,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 
-	code = krb5_get_init_creds_opt_alloc(ctx, &opt);
+	code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt);
 	if (code) {
 		krb5_cc_close(ctx, cc);
 		krb5_free_context(ctx);	
