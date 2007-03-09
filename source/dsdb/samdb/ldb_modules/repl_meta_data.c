@@ -499,9 +499,9 @@ static int replmd_add_originating(struct ldb_module *module,
 
 		m->attid			= sa->attributeID_id;
 		m->version			= 1;
-		m->orginating_time		= now;
-		m->orginating_invocation_id	= *our_invocation_id;
-		m->orginating_usn		= seq_num;
+		m->originating_change_time	= now;
+		m->originating_invocation_id	= *our_invocation_id;
+		m->originating_usn		= seq_num;
 		m->local_usn			= seq_num;
 		ni++;
 	}
@@ -821,16 +821,16 @@ static int replmd_replPropertyMetaData1_conflict_compare(struct replPropertyMeta
 		return m1->version - m2->version;
 	}
 
-	if (m1->orginating_time != m2->orginating_time) {
-		return m1->orginating_time - m2->orginating_time;
+	if (m1->originating_change_time != m2->originating_change_time) {
+		return m1->originating_change_time - m2->originating_change_time;
 	}
 
-	ret = GUID_compare(&m1->orginating_invocation_id, &m2->orginating_invocation_id);
+	ret = GUID_compare(&m1->originating_invocation_id, &m2->originating_invocation_id);
 	if (ret != 0) {
 		return ret;
 	}
 
-	return m1->orginating_usn - m2->orginating_usn;
+	return m1->originating_usn - m2->originating_usn;
 }
 
 static int replmd_replicated_apply_merge_callback(struct ldb_context *ldb,

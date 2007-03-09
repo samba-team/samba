@@ -278,13 +278,13 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 
 		m->attid			= a->attid;
 		m->version			= d->version;
-		m->orginating_time		= d->orginating_time;
-		m->orginating_invocation_id	= d->orginating_invocation_id;
-		m->orginating_usn		= d->orginating_usn;
+		m->originating_change_time	= d->originating_change_time;
+		m->originating_invocation_id	= d->originating_invocation_id;
+		m->originating_usn		= d->originating_usn;
 		m->local_usn			= 0;
 
-		if (d->orginating_time > whenChanged) {
-			whenChanged = d->orginating_time;
+		if (d->originating_change_time > whenChanged) {
+			whenChanged = d->originating_change_time;
 		}
 
 		if (a->attid == DRSUAPI_ATTRIBUTE_name) {
@@ -302,9 +302,9 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 
 		rdn_m->attid				= rdn_attid;
 		rdn_m->version				= name_d->version;
-		rdn_m->orginating_time			= name_d->orginating_time;
-		rdn_m->orginating_invocation_id		= name_d->orginating_invocation_id;
-		rdn_m->orginating_usn			= name_d->orginating_usn;
+		rdn_m->originating_change_time		= name_d->originating_change_time;
+		rdn_m->originating_invocation_id	= name_d->originating_invocation_id;
+		rdn_m->originating_usn			= name_d->originating_usn;
 		rdn_m->local_usn			= 0;
 		md->ctr.ctr1.count++;
 
