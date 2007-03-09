@@ -1839,7 +1839,7 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
 	char param[sizeof(pstring)+6];
-	char data[14];
+	char data[18];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 	int fnum = -1;
@@ -1861,9 +1861,10 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 	SIVAL(p,0,0); /* No oplock. */
 	SIVAL(p,4,wire_flags);
 	SIVAL(p,8,unix_perms_to_wire(mode));
-	SSVAL(p,12,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
+	SIVAL(p,12,0); /* Top bits of perms currently undefined. */
+	SSVAL(p,16,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
 
-	data_len = 14;
+	data_len = 18;
 
 	if (!cli_send_trans(cli, SMBtrans2,
 		NULL,                        /* name */

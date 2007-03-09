@@ -5229,11 +5229,13 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	uint16 info_level_return = 0;
 	char *pdata = *ppdata;
 
-	if (total_data < 10) {
+	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	raw_unixmode = IVAL(pdata,8);
+	/* Next 4 bytes are not yet defined. */
+
 	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5259,7 +5261,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
                 close_file(fsp, NORMAL_CLOSE);
         }
 
-	info_level_return = SVAL(pdata,12);
+	info_level_return = SVAL(pdata,16);
  
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
 		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
@@ -5321,7 +5323,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	int info = 0;
 	uint16 info_level_return = 0;
 
-	if (total_data < 14) {
+	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5373,6 +5375,8 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	raw_unixmode = IVAL(pdata,8);
+	/* Next 4 bytes are not yet defined. */
+
 	status = unix_perms_from_wire(conn,
 				psbuf,
 				raw_unixmode,
@@ -5424,7 +5428,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		extended_oplock_granted = True;
 	}
 
-	info_level_return = SVAL(pdata,12);
+	info_level_return = SVAL(pdata,16);
  
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
 		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
