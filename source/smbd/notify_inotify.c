@@ -26,6 +26,10 @@
 
 #ifdef HAVE_INOTIFY
 
+#ifdef HAVE_ASM_TYPES_H
+#include <asm/types.h>
+#endif
+
 #include <linux/inotify.h>
 #include <asm/unistd.h>
 
