@@ -482,9 +482,9 @@ interface drsuapi
 
 	typedef struct {
 		uint32 version;
-		NTTIME_1sec orginating_time;
-		GUID orginating_invocation_id;
-		hyper orginating_usn;
+		NTTIME_1sec originating_change_time;
+		GUID originating_invocation_id;
+		hyper originating_usn;
 	} drsuapi_DsReplicaMetaData;
 
 	typedef [public] struct {
@@ -529,7 +529,7 @@ interface drsuapi
 		drsuapi_DsAttributeId attid;
 		drsuapi_DsAttributeValue value;
 		drsuapi_DsLinkedAttributeFlags flags;
-		NTTIME_1sec orginating_add_time;
+		NTTIME_1sec originating_add_time;
 		drsuapi_DsReplicaMetaData meta_data;
 	} drsuapi_DsReplicaLinkedAttribute;
 
@@ -1217,8 +1217,8 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		uint32 version;
-		NTTIME originating_last_changed;
-		GUID originating_dsa_invocation_id;
+		NTTIME originating_change_time;
+		GUID originating_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
 	} drsuapi_DsReplicaObjMetaData;
@@ -1287,8 +1287,8 @@ interface drsuapi
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
-		NTTIME originating_last_changed;
-		GUID originating_dsa_invocation_id;
+		NTTIME originating_change_time;
+		GUID originating_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
 	} drsuapi_DsReplicaAttrValMetaData;
@@ -1321,11 +1321,11 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *attribute_name;
 		uint32 version;
-		NTTIME originating_last_changed;
-		GUID originating_dsa_invocation_id;
+		NTTIME originating_change_time;
+		GUID originating_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
-		[charset(UTF16),string] uint16 *originating_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *originating_dsa_dn;
 	} drsuapi_DsReplicaObjMetaData2;
 
 	typedef struct {
@@ -1342,11 +1342,11 @@ interface drsuapi
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
-		NTTIME originating_last_changed;
-		GUID originating_dsa_invocation_id;
+		NTTIME originating_change_time;
+		GUID originating_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
-		[charset(UTF16),string] uint16 *originating_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *originating_dsa_dn;
 	} drsuapi_DsReplicaAttrValMetaData2;
 
 	typedef struct {
