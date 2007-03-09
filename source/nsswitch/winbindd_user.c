@@ -262,7 +262,7 @@ static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query user's %s\\%s uid\n",
+		DEBUG(5, ("Could not query uid for user %s\\%s\n",
 			  s->domain->name, s->username));
 		request_error(s->state);
 		return;
@@ -289,7 +289,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	if ( s->gid == (gid_t)-1 ) {
 
 		if (!success) {
-			DEBUG(5, ("Could not query user's %s\\%s\n gid",
+			DEBUG(5, ("Could not query gid for user %s\\%s\n",
 				  s->domain->name, s->username));
 			goto failed;
 		}
