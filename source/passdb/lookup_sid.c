@@ -410,6 +410,7 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 			names[i] = "";
 			types[i] = SID_NAME_UNKNOWN;
 		}
+		TALLOC_FREE(tmp_ctx);
 		return True;
 	}
 
