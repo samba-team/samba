@@ -226,6 +226,7 @@ Showing Samba status
 EOF
 show_all "smbstatus -n -B"
 show_all "net ads testjoin"
+show_all "net conf list"
 show_all "lsof -n | grep smbd"
 show_all "lsof -n | grep ctdbd"
 show_all "netstat -tan"
