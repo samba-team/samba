@@ -1003,7 +1003,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 		return NT_STATUS_IS_OK(ret);
 	}
 
-	if(!initialize_password_db(True)) {
+	if(!initialize_password_db(True, NULL)) {
 		printf("%s\n<p>", _("Can't setup password database vectors."));
 		return False;
 	}
