@@ -5227,6 +5227,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	mode_t unixmode = (mode_t)0;
 	files_struct *fsp = NULL;
 	uint16 info_level_return = 0;
+	int info;
 	char *pdata = *ppdata;
 
 	if (total_data < 18) {
@@ -5254,7 +5255,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				FILE_CREATE,
 				0,
 				mod_unixmode,
-				NULL,
+				&info,
 				&fsp);
 
         if (NT_STATUS_IS_OK(status)) {
@@ -5264,9 +5265,11 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	info_level_return = SVAL(pdata,16);
  
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
+		*pdata_return_size = 12 + SMB_FILE_UNIX_BASIC_SIZE;
+	} else if (info_level_return ==  SMB_QUERY_FILE_UNIX_INFO2) {
+		*pdata_return_size = 12 + SMB_FILE_UNIX_INFO2_SIZE;
 	} else {
-		*pdata_return_size = 8;
+		*pdata_return_size = 12;
 	}
 
 	/* Realloc the data size */
@@ -5277,20 +5280,21 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	}
 
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
-	SSVAL(pdata,2,0);
+	SSVAL(pdata,2,0); /* No fnum. */
+	SIVAL(pdata,4,info); /* Was directory created. */
 
 	switch (info_level_return) {
 	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,6,0); /* Padding. */
-		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+		SSVAL(pdata,10,0); /* Padding. */
+		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
 	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,6,0); /* Padding. */
-		store_file_unix_basic_info2(conn, pdata + 8, fsp, psbuf);
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,10,0); /* Padding. */
+		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
 	default:
-		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,6,0); /* Padding. */
+		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+		SSVAL(pdata,10,0); /* Padding. */
 	}
 
 	return status;
@@ -5430,10 +5434,14 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 
 	info_level_return = SVAL(pdata,16);
  
+	/* Allocate the correct return size. */
+
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
+		*pdata_return_size = 12 + SMB_FILE_UNIX_BASIC_SIZE;
+	} else if (info_level_return ==  SMB_QUERY_FILE_UNIX_INFO2) {
+		*pdata_return_size = 12 + SMB_FILE_UNIX_INFO2_SIZE;
 	} else {
-		*pdata_return_size = 8;
+		*pdata_return_size = 12;
 	}
 
 	/* Realloc the data size */
@@ -5457,18 +5465,20 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	SSVAL(pdata,2,fsp->fnum);
+	SIVAL(pdata,4,info); /* Was file created etc. */
+
 	switch (info_level_return) {
 	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,6,0); /* padding. */
-		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+		SSVAL(pdata,10,0); /* padding. */
+		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
 	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,6,0); /* padding. */
-		store_file_unix_basic_info2(conn, pdata + 8, fsp, psbuf);
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,10,0); /* padding. */
+		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
 	default:
-		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,6,0); /* padding. */
+		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+		SSVAL(pdata,10,0); /* padding. */
 	}
 	return NT_STATUS_OK;
 }
