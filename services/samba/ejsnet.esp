@@ -1,0 +1,68 @@
+<%
+
+/*
+ * Copyright (C)  Rafal Szczesniak 2007
+ */
+
+/* JSON-RPC mappings to the libnet functions */
+
+jsonrpc_include("resources.esp");
+
+
+function _init_ctx(params, error)
+{
+  if (params.length < 1)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "too few parameters(usage: [ <credentials ])");
+    return error;
+  }
+  
+  var creds = params[0];
+  if (creds == undefined)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "credentials parameter is undefined");
+    return error;
+  }
+  
+  if (creds.domain == undefined)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "credentials.domain is undefined");
+    return error;
+  }
+  
+  if (creds.username == undefined)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "credentials.username is undefined");
+    return error;
+  }
+  
+  if (creds.password == undefined)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "credentials.password is undefined");
+    return error;
+  }
+  
+  var credentials = credentials_init();
+  credentials.set_domain(creds.domain);
+  credentials.set_username(creds.username);
+  credentials.set_password(creds.password);
+  
+  var netCtx = NetContext(credentials);
+
+  return session.resources.set(netCtx, "netCtx", error);
+}
+jsonrpc.method.init_ctx = _init_ctx;
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+
+%>
