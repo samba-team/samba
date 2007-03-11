@@ -35,6 +35,10 @@ new swat.main.Module("Status and Statistics",
 new swat.main.Module("LDB Browser",
                      swat.module.ldbbrowse.LdbBrowse);
 
+//#require(swat.module.netmgr.NetManager)
+new swat.main.Module("Net Manager",
+                     swat.module.netmgr.NetManager);
+
 //#require(swat.module.documentation.Documentation)
 //#require(apiviewer.Viewer)
 new swat.main.Module("API Documentation",
