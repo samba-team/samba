@@ -1,0 +1,26 @@
+<%
+
+/*
+ * Copyright (C)  Rafal Szczesniak 2007
+ */
+
+/* Simple JSON-RPC access to the configuration parameters */
+
+function _lp_get(params, error)
+{
+  if (params.length < 1)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "no parameter specified");
+    return error;
+  }
+
+  var lp = loadparm_init();
+  var name = params[0];
+  var value = lp.get(name);
+
+  return value;
+}
+jsonrpc.method.lp_get = _lp_get;
+
+%>
