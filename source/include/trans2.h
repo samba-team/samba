@@ -498,6 +498,8 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
 #define SMB_FIND_FILE_UNIX             0x202
 #define SMB_FIND_FILE_UNIX_INFO2       0x20B /* UNIX File Info2 */
 
+#define SMB_FILE_UNIX_INFO2_SIZE 116
+
 /*
  Info level for TRANS2_QFSINFO - returns version of CIFS UNIX extensions, plus
  64-bits worth of capability fun :-).
@@ -712,7 +714,11 @@ enum smb_whoami_flags {
 #define SMB_NO_INFO_LEVEL_RETURNED 0xFFFF
 
 /*
-  [2 bytes] reply info level    - as requested or 0xFFFF if not available.
+  [2 bytes] - flags field. Identical to flags reply for oplock response field in SMBNTCreateX)
+  [2 bytes] - FID returned.
+  [4 bytes] - CreateAction (same as in NTCreateX response).
+  [2 bytes] - reply info level    - as requested or 0xFFFF if not available.
+  [2 bytes] - padding (must be zero)
   [n bytes] - info level reply  - if available.
 */
 
