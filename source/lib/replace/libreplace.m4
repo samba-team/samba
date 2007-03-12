@@ -263,7 +263,8 @@ AC_CHECK_HEADERS([sys/param.h limits.h])
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
-AC_CHECK_FUNCS(strnlen setenv)
+AC_CHECK_FUNCS(setenv unsetenv)
+AC_CHECK_FUNCS(strnlen)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
 # this test disabled as we don't actually need __VA_ARGS__ yet
