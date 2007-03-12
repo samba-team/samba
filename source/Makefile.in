@@ -1837,7 +1837,7 @@ clean: delheaders python_clean
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \
-		.headers.stamp */src/*.o
+		.headers.stamp */src/*.o proto_exists
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
@@ -1847,6 +1847,7 @@ clean: delheaders python_clean
 proto_exists: include/proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
 	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
+	@touch proto_exists
 
 delheaders:
 	@echo Removing prototype headers
