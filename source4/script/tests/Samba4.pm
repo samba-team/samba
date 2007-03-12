@@ -58,14 +58,6 @@ sub smbd_check_or_start($$$$$$)
 	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless
 		defined($socket_wrapper_dir) or $< == 0;
 
-	if (defined($socket_wrapper_dir)) {
-		if ( -d $socket_wrapper_dir ) {
-			unlink <$socket_wrapper_dir/*>;
-		} else {
-			mkdir($socket_wrapper_dir);
-		}
-	}
-
 	unlink($test_fifo);
 	POSIX::mkfifo($test_fifo, 0700);
 	unlink($test_log);
