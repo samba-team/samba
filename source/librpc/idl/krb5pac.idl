@@ -42,7 +42,8 @@ interface krb5pac
 		PAC_TYPE_LOGON_INFO = 1,
 		PAC_TYPE_SRV_CHECKSUM = 6,
 		PAC_TYPE_KDC_CHECKSUM = 7,
-		PAC_TYPE_LOGON_NAME = 10
+		PAC_TYPE_LOGON_NAME = 10,
+		PAC_TYPE_CONSTRAINED_DELEGATION = 11
 	} PAC_TYPE;
 
 	typedef [public,nodiscriminant,gensize] union {
