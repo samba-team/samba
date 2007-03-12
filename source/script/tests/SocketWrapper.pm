@@ -15,6 +15,14 @@ use FindBin qw($RealBin);
 sub setup_dir($)
 {
 	my ($dir) = @_;
+	if (defined($dir)) {
+		if ( -d $dir ) {
+			unlink <$dir/*>;
+		} else {
+			mkdir($dir);
+		}
+	}
+
 	$ENV{SOCKET_WRAPPER_DIR} = $dir;
 	return $dir;
 }
