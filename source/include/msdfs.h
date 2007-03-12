@@ -51,7 +51,7 @@ struct referral {
 };
 
 struct junction_map {
-	pstring service_name;
+	fstring service_name;
 	pstring volume_name;
 	pstring comment;
 	int referral_count;
@@ -59,9 +59,10 @@ struct junction_map {
 };
 
 struct dfs_path {
-	pstring hostname;
-	pstring servicename;
+	fstring hostname;
+	fstring servicename;
 	pstring reqpath;
+	BOOL posix_path;
 };
 
 #define init_dfsroot(conn, inbuf, outbuf)                    	\
