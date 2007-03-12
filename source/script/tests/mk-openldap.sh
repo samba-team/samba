@@ -49,6 +49,12 @@ index subClassOf eq
 index dnsRoot eq
 index nETBIOSName eq pres
 
+#syncprov is stable in OpenLDAP 2.3, and available in 2.2.  
+#We only need this for the contextCSN attribute anyway....
+overlay syncprov
+syncprov-checkpoint 100 10
+syncprov-sessionlog 100
+
 EOF
 
 cat > $LDAPDIR/db/DB_CONFIG <<EOF
