@@ -171,7 +171,67 @@ static int test_timegm(void)
 
 static int test_setenv(void)
 {
-	/* FIXME */
+#define TEST_SETENV(key, value, overwrite, result) do { \
+	int _ret; \
+	char *_v; \
+	_ret = setenv(key, value, overwrite); \
+	if (_ret != 0) { \
+		printf("failure: setenv [\n" \
+			"setenv(%s, %s, %d) failed\n" \
+			"]\n", \
+			key, value, overwrite); \
+		return false; \
+	} \
+	_v=getenv(key); \
+	if (!_v) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s) returned NULL\n" \
+			"]\n", \
+			key); \
+		return false; \
+	} \
+	if (strcmp(result, _v) != 0) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s): '%s' != '%s'\n" \
+			"]\n", \
+			key, result, _v); \
+		return false; \
+	} \
+} while(0)
+
+#define TEST_UNSETENV(key) do { \
+	int _ret; \
+	char *_v; \
+	_ret = unsetenv(key); \
+	if (_ret != 0) { \
+		printf("failure: setenv [\n" \
+			"unsetenv(%s) failed\n" \
+			"]\n", \
+			key); \
+		return false; \
+	} \
+	_v=getenv(key); \
+	if (_v) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s): NULL != '%s'\n" \
+			"]\n", \
+			SETENVTEST_KEY, _v); \
+		return false; \
+	} \
+} while (0)
+
+#define SETENVTEST_KEY "SETENVTESTKEY"
+#define SETENVTEST_VAL "SETENVTESTVAL"
+
+	printf("test: setenv\n");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"1", 0, SETENVTEST_VAL"1");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"2", 0, SETENVTEST_VAL"1");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"3", 1, SETENVTEST_VAL"3");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"4", 1, SETENVTEST_VAL"4");
+	TEST_UNSETENV(SETENVTEST_KEY);
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"5", 0, SETENVTEST_VAL"5");
+	TEST_UNSETENV(SETENVTEST_KEY);
+	printf("success: setenv\n");
 	return true;
 }
 
