@@ -142,7 +142,7 @@ int rep_setenv(const char *name, const char *value, int overwrite);
 
 #ifndef HAVE_UNSETENV
 #define unsetenv rep_unsetenv
-int rep_unsetenv(const char *name, const char *value, int overwrite); 
+int rep_unsetenv(const char *name); 
 #endif
 
 #ifndef HAVE_SETEUID
