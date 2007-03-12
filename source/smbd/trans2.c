@@ -3403,7 +3403,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
 		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts = fsp->pending_modtime;
+			mtime_ts = fsp1->pending_modtime;
 		}
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
