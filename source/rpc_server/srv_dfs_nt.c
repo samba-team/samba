@@ -42,6 +42,8 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 {
 	struct junction_map jn;
 	struct referral* old_referral_list = NULL;
+	BOOL self_ref = False;
+	int consumedcnt = 0;
 	BOOL exists = False;
 
 	pstring altpath;
@@ -59,7 +61,7 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	pstrcat(altpath, r->in.share);
 
 	/* The following call can change the cwd. */
-	if(get_referred_path(p->mem_ctx, r->in.path, &jn, NULL, NULL)) {
+	if(get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, &self_ref)) {
 		exists = True;
 		jn.referral_count += 1;
 		old_referral_list = jn.referral_list;
@@ -96,6 +98,8 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 {
 	struct junction_map jn;
+	BOOL self_ref = False;
+	int consumedcnt = 0;
 	BOOL found = False;
 
 	pstring altpath;
@@ -115,7 +119,7 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 	DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 		r->in.path, r->in.server, r->in.share));
 
-	if(!get_referred_path(p->mem_ctx, r->in.path, &jn, NULL, NULL)) {
+	if(!get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, &self_ref)) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}
 
@@ -302,13 +306,14 @@ WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 {
 	int consumedcnt = sizeof(pstring);
 	struct junction_map jn;
+	BOOL self_ref = False;
 	BOOL ret;
 
 	if(!create_junction(r->in.path, &jn))
 		return WERR_DFS_NO_SUCH_SERVER;
   
 	/* The following call can change the cwd. */
-	if(!get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, NULL) || consumedcnt < strlen(r->in.path)) {
+	if(!get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, &self_ref) || consumedcnt < strlen(r->in.path)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}
@@ -456,4 +461,3 @@ WERROR _dfs_SetInfo2(pipes_struct *p, struct dfs_SetInfo2 *r)
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
-

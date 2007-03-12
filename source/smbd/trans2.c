@@ -1202,15 +1202,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 					continue;
 				}
 			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
+				pstring link_target;
 
 				/* Needed to show the msdfs symlinks as 
 				 * directories */
 
 				if(lp_host_msdfs() && 
 				   lp_msdfs_root(SNUM(conn)) &&
-				   ((ms_dfs_link = is_msdfs_link(NULL,conn, pathreal, NULL, NULL, &sbuf)) == True)) {
-
-					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+				   ((ms_dfs_link = is_msdfs_link(conn, pathreal, link_target, &sbuf)) == True)) {
+					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s "
+						"as a directory\n",
+						pathreal));
 					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
 
 				} else {
@@ -1727,8 +1729,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(ntstatus);
 	}
 
-	if (!resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory)) {
-		return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+	ntstatus = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory, &mask_contains_wcard);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(ntstatus);
 	}
 
 	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
@@ -3248,8 +3254,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return ERROR_NT(status);
 		}
 
-		if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			}
+			return ERROR_NT(status);
 		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
@@ -4376,7 +4386,6 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		pstring rel_name;
 		char *last_dirp = NULL;
 
-		unix_format(link_target);
 		if (*link_target == '/') {
 			/* No absolute paths allowed. */
 			return NT_STATUS_ACCESS_DENIED;
@@ -4430,8 +4439,9 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname)) {
-		return NT_STATUS_PATH_NOT_COVERED;
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
@@ -4478,8 +4488,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname)) {
-		return NT_STATUS_PATH_NOT_COVERED;
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Check the new name has no '/' characters. */
@@ -5647,8 +5658,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return ERROR_NT(status);
 		}
 
-		if (!resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname)) {
-			ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			}
+			return ERROR_NT(status);
 		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);

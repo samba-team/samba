@@ -2091,6 +2091,9 @@ BOOL is_myname_or_ipaddr(const char *s)
 
 	/* check for loopback */
 
+	if (strequal(servername, "127.0.0.1")) 
+		return True;
+
 	if (strequal(servername, "localhost")) 
 		return True;
 
