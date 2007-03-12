@@ -593,34 +593,26 @@ int rep_setenv(const char *name, const char *value, int overwrite)
 #ifndef HAVE_UNSETENV
 int rep_unsetenv(const char *name)
 {
-	char *p;
-	size_t l1;
-	int ret;
+	extern char **environ;
+	size_t len = strlen(name);
+	size_t i; 
+	int found = 0;
 
-	if (!getenv(name)) {
-		return 0;
+	for (i=0; (environ && environ[i]); i++) {
+		if (found) {
+			environ[i-1] = environ[i];
+			continue;
+		}
+
+		if (strncmp(environ[i], name, len) == 0 && environ[i][len] == '=') {
+			free(environ[i]);
+			environ[i] = NULL;
+			found = 1;
+			continue;
+		}
 	}
 
-	l1 = strlen(name);
-
-	p = malloc(l1+1);
-	if (p == NULL) {
-		return -1;
-	}
-	memcpy(p, name, l1);
-	p[l1] = 0;
-
-	/*
-	 * use using "name" here unsets the var
-	 *
-	 * "name=" would set it to an empty string..
-	 */
-	ret = putenv(p);
-	if (ret != 0) {
-		free(p);
-	}
-
-	return ret;
+	return 0;
 }
 #endif
 
