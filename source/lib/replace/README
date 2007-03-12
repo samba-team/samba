@@ -21,6 +21,7 @@ setlinebuf
 vsyslog
 timegm
 setenv
+unsetenv
 strndup
 strnlen
 waitpid

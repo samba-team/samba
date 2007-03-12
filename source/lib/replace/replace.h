@@ -140,6 +140,11 @@ size_t rep_strnlen(const char *s, size_t n);
 int rep_setenv(const char *name, const char *value, int overwrite); 
 #endif
 
+#ifndef HAVE_UNSETENV
+#define unsetenv rep_unsetenv
+int rep_unsetenv(const char *name, const char *value, int overwrite); 
+#endif
+
 #ifndef HAVE_SETEUID
 #define seteuid rep_seteuid
 int rep_seteuid(uid_t);

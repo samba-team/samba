@@ -590,6 +590,40 @@ int rep_setenv(const char *name, const char *value, int overwrite)
 }
 #endif
 
+#ifndef HAVE_UNSETENV
+int rep_unsetenv(const char *name)
+{
+	char *p;
+	size_t l1;
+	int ret;
+
+	if (!getenv(name)) {
+		return 0;
+	}
+
+	l1 = strlen(name);
+
+	p = malloc(l1+1);
+	if (p == NULL) {
+		return -1;
+	}
+	memcpy(p, name, l1);
+	p[l1] = 0;
+
+	/*
+	 * use using "name" here unsets the var
+	 *
+	 * "name=" would set it to an empty string..
+	 */
+	ret = putenv(p);
+	if (ret != 0) {
+		free(p);
+	}
+
+	return ret;
+}
+#endif
+
 #ifndef HAVE_SOCKETPAIR
 int rep_socketpair(int d, int type, int protocol, int sv[2])
 {
