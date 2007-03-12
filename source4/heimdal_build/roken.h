@@ -41,6 +41,14 @@
 #define HAVE_STRNDUP
 #endif
 
+#ifndef HAVE_SETENV
+#define HAVE_SETENV
+#endif
+
+#ifndef HAVE_UNSETENV
+#define HAVE_UNSETENV
+#endif
+
 #ifndef HAVE_VSYSLOG
 #define HAVE_VSYSLOG
 #endif
