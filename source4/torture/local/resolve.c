@@ -29,7 +29,7 @@ static bool test_async_resolve(struct torture_context *tctx)
 {
 	struct nbt_name n;
 	struct event_context *ev;
-	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 2);
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	int count = 0;
 	struct timeval tv = timeval_current();
@@ -61,7 +61,7 @@ static bool test_async_resolve(struct torture_context *tctx)
 */
 static bool test_sync_resolve(struct torture_context *tctx)
 {
-	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 2);
 	struct timeval tv = timeval_current();
 	int count = 0;
 	const char *host = torture_setting_string(tctx, "host", NULL);
