@@ -483,6 +483,7 @@ static NTSTATUS dfs_redirect( connection_struct *conn,
 	}
 
 	if (dp.reqpath[0] == '\0') {
+		pstrcpy(dfs_path, dp.reqpath);
 		DEBUG(5,("dfs_redirect: self-referral.\n"));
 		return NT_STATUS_OK;
 	}
