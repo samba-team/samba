@@ -200,16 +200,8 @@ static int test_setenv(void)
 } while(0)
 
 #define TEST_UNSETENV(key) do { \
-	int _ret; \
 	char *_v; \
-	_ret = unsetenv(key); \
-	if (_ret != 0) { \
-		printf("failure: setenv [\n" \
-			"unsetenv(%s) failed\n" \
-			"]\n", \
-			key); \
-		return false; \
-	} \
+	unsetenv(key); \
 	_v=getenv(key); \
 	if (_v) { \
 		printf("failure: setenv [\n" \
