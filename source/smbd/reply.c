@@ -2029,6 +2029,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
 				return status;
 			}
 
