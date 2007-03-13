@@ -131,6 +131,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 */
 static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 {
+	NTSTATUS status;
 	struct ldapsrv_connection *conn = talloc_get_type(private, 
 							  struct ldapsrv_connection);
 	struct asn1_data asn1;
@@ -144,9 +145,10 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!ldap_decode(&asn1, msg)) {
+	status = ldap_decode(&asn1, msg);
+	if (!NT_STATUS_IS_OK(status)) {
 		asn1_free(&asn1);
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+		return status;
 	}
 
 	data_blob_free(&blob);
