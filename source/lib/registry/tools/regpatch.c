@@ -23,7 +23,6 @@
 #include "lib/events/events.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/registry/reg_backend_rpc.h"
 
 int main(int argc, char **argv)
 {
