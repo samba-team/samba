@@ -52,7 +52,6 @@ PUBLIC_DEPENDENCIES = LIBTALLOC
 # Start MODULE registry_rpc
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
-PUBLIC_PROTO_HEADER = reg_backend_rpc.h
 OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = registry
 OBJ_FILES = \
