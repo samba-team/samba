@@ -140,7 +140,7 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 
 installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
+	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader: headers installdirs
 	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
@@ -174,7 +174,7 @@ uninstallbin:
 
 uninstalllib:
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)
-	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS) 
+	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS) 
 
 uninstallheader:
 	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
