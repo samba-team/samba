@@ -188,6 +188,11 @@ _PUBLIC_ WERROR reg_open_local (TALLOC_CTX *mem_ctx,
 				struct auth_session_info *session_info, 
 				struct cli_credentials *credentials);
 
+_PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, 
+								struct auth_session_info *session_info, 
+								struct cli_credentials *credentials, 
+								const char *location, struct event_context *ev);
+
 _PUBLIC_ NTSTATUS registry_register(const void *_hive_ops);
 _PUBLIC_ NTSTATUS registry_init(void);
 _PUBLIC_ BOOL reg_has_backend(const char *backend);
@@ -231,5 +236,7 @@ _PUBLIC_ struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry
 _PUBLIC_ WERROR reg_diff_save(const struct reg_diff *diff, const char *filename);
 _PUBLIC_ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn);
 _PUBLIC_ BOOL reg_diff_apply (const struct reg_diff *diff, struct registry_context *ctx);
+
+NTSTATUS registry_rpc_init(void);
 
 #endif /* _REGISTRY_H */
