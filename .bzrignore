@@ -55,9 +55,7 @@ source/lib/db_wrap_proto.h
 source/lib/charset/charset_proto.h
 source/lib/cmdline/credentials.h
 source/lib/ldb/samba/ldif_handlers.h
-source/lib/registry/reg_backend_rpc.h
 source/lib/registry/regf.h
-source/lib/registry/registry_proto.h
 source/lib/registry/tdr_regf.c
 source/lib/registry/tdr_regf.h
 source/lib/samba3/samba3_proto.h
@@ -171,3 +169,5 @@ webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/translation
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/translation/messages.pot
 source/torture/ndr/proto.h
 source/bin/modules/*
+source/tests
+source/torture/unix/proto.h
