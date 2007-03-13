@@ -3,11 +3,12 @@
 				 type="string"
 		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
- <description>
+<description>
     <para>This parameter specifies which user information will be 
     passed to the printing system. Usually, the username is sent,
     but in some cases, e.g. the domain prefix is useful, too.</para>
-   
+</description>
+
 <related>printing</related>
 
 <value type="example">%D\%U</value>
