@@ -220,6 +220,13 @@ qx.Proto.replaceState = function(state, bDispose)
   // Save the old state object, so we can return it to be disposed
   var oldState = this._states[stateName];
 
+  // Ensure the old state exists.  Otherwise, shouldn't be using replaceState()
+  if (! oldState)
+  {
+    throw new Error("Can not replace state " + stateName + ": " +
+                    "no existing state of that name.");
+  }
+
   // Replace the old state with the new state object.
   this._states[stateName] = state;
 
@@ -227,7 +234,7 @@ qx.Proto.replaceState = function(state, bDispose)
   if (bDispose)
   {
     // Yup.  Mark it to be disposed.
-    oldState._needDispose;
+    oldState._bNeedDispose = true;
   }
 
   return oldState;
@@ -787,6 +794,18 @@ qx.Proto._run = function(event)
     }
 
     action = e[friendly];
+
+    // Do we handle this event type for the widget from which it originated?
+    if (! action)
+    {
+      // Nope.
+      if (debugEvents)
+      {
+        this.debug(this.getName() + ": Event '" + event.getType() + "'" +
+                   " not handled for target " + friendly + ".  Ignoring.");
+      }
+      return true;
+    }
   }
   else
   {
@@ -946,7 +965,7 @@ qx.Proto._run = function(event)
     currentState.getAutoActionsAfterOnexit()(this);
 
     // If this state has been replaced and we're supposed to dispose it...
-    if (currentState._needDispose)
+    if (currentState._bNeedDispose)
     {
       // ... then dispose it now that it's no longer in use
       currentState.dispose();
