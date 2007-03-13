@@ -34,6 +34,649 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "auth/gensec/gensec.h"
 
+/*****************************************************************************
+ * Windows 2003 (w2k3) does the following steps when changing the server role
+ * from domain member to domain controller
+ *
+ * We mostly do the same.
+ *****************************************************************************/
+
+/*
+ * lookup DC:
+ * - using nbt name<1C> request and a samlogon mailslot request
+ * or
+ * - using a DNS SRV _ldap._tcp.dc._msdcs. request and a CLDAP netlogon request
+ *
+ * see: becomeDC_recv_cldap() and becomeDC_send_cldap()
+ */
+
+/*
+ * Open 1st LDAP connection to the DC using admin credentials
+ *
+ * see: becomeDC_connect_ldap1() and becomeDC_ldap_connect()
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_rootdse()
+ *
+ * Request:
+ *	basedn:	""
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	*
+ * Result:
+ *      ""
+ *		currentTime:		20061202155100.0Z
+ *		subschemaSubentry:	CN=Aggregate,CN=Schema,CN=Configuration,<domain_partition>
+ *		dsServiceName:		CN=<netbios_name>,CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *		namingContexts:		<domain_partition>
+ *					CN=Configuration,<domain_partition>
+ *					CN=Schema,CN=Configuration,<domain_partition>
+ *		defaultNamingContext:	<domain_partition>
+ *		schemaNamingContext:	CN=Schema,CN=Configuration,<domain_partition>
+ *		configurationNamingContext:CN=Configuration,<domain_partition>
+ *		rootDomainNamingContext:<domain_partition>
+ *		supportedControl:	...
+ *		supportedLDAPVersion:	3
+ *					2
+ *		supportedLDAPPolicies:	...
+ *		highestCommitedUSN:	...
+ *		supportedSASLMechanisms:GSSAPI
+ *					GSS-SPNEGO
+ *					EXTERNAL
+ *					DIGEST-MD5
+ *		dnsHostName:		<dns_host_name>
+ *		ldapServiceName:	<domain_dns_name>:<netbios_name>$@<REALM>
+ *		serverName:		CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *		supportedCapabilities:	...
+ *		isSyncronized:		TRUE
+ *		isGlobalCatalogReady:	TRUE
+ *		domainFunctionality:	0
+ *		forestFunctionality:	0
+ *		domainControllerFunctionality: 2
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_crossref_behavior_version()
+ *
+ * Request:
+ *	basedn:	CN=Configuration,<domain_partition>
+ *	scope:	one
+ *	filter:	(cn=Partitions)
+ *	attrs:	msDS-Behavior-Version
+ * Result:
+ *      CN=Partitions,CN=Configuration,<domain_partition>
+ *		msDS-Behavior-Version:	0
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * NOTE: this seems to be a bug! as the messageID of the LDAP message is corrupted!
+ *
+ * not implemented here
+ * 
+ * Request:
+ *	basedn:	CN=Schema,CN=Configuration,<domain_partition>
+ *	scope:	one
+ *	filter:	(cn=Partitions)
+ *	attrs:	msDS-Behavior-Version
+ * Result:
+ *	<none>
+ *
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_domain_behavior_version()
+ * 
+ * Request:
+ *	basedn:	<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	msDS-Behavior-Version
+ * Result:
+ *	<domain_partition>
+ *		msDS-Behavior-Version:	0
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: becomeDC_ldap1_schema_object_version()
+ *
+ * Request:
+ *	basedn:	CN=Schema,CN=Configuration,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	objectVersion
+ * Result:
+ *	CN=Schema,CN=Configuration,<domain_partition>
+ *		objectVersion:	30
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * not implemented, because the information is already there
+ *
+ * Request:
+ *	basedn:	""
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	defaultNamingContext
+ *		dnsHostName
+ * Result:
+ *	""
+ *		defaultNamingContext:	<domain_partition>
+ *		dnsHostName:		<dns_host_name>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_infrastructure_fsmo()
+ * 
+ * Request:
+ *	basedn:	<WKGUID=2fbac1870ade11d297c400c04fd8d5cd,domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	1.1
+ * Result:
+ *	CN=Infrastructure,<domain_partition>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_w2k3_update_revision()
+ *
+ * Request:
+ *	basedn:	CN=Windows2003Update,CN=DomainUpdates,CN=System,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	revision
+ * Result:
+ *      CN=Windows2003Update,CN=DomainUpdates,CN=System,<domain_partition>
+ *		revision:	8
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_infrastructure_fsmo()
+ *
+ * Request:
+ *	basedn:	CN=Infrastructure,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	fSMORoleOwner
+ * Result:
+ *      CN=Infrastructure,<domain_partition>
+ *		fSMORoleOwner:	CN=NTDS Settings,<infrastructure_fsmo_server_object>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_infrastructure_fsmo()
+ *
+ * Request:
+ *	basedn:	<infrastructure_fsmo_server_object>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	dnsHostName
+ * Result:
+ *      <infrastructure_fsmo_server_object>
+ *		dnsHostName:	<dns_host_name>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_infrastructure_fsmo()
+ *
+ * Request:
+ *	basedn:	CN=NTDS Settings,<infrastructure_fsmo_server_object>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	objectGUID
+ * Result:
+ *      CN=NTDS Settings,<infrastructure_fsmo_server_object>
+ *		objectGUID:	<object_guid>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: becomeDC_ldap1_rid_manager_fsmo()
+ *
+ * Request:
+ *	basedn:	<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	rIDManagerReference
+ * Result:
+ *	<domain_partition>
+ *		rIDManagerReference:	CN=RID Manager$,CN=System,<domain_partition>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: becomeDC_ldap1_rid_manager_fsmo()
+ *
+ * Request:
+ *	basedn:	CN=RID Manager$,CN=System,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	fSMORoleOwner
+ * Result:
+ *      CN=Infrastructure,<domain_partition>
+ *		fSMORoleOwner:	CN=NTDS Settings,<rid_manager_fsmo_server_object>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_rid_manager_fsmo()
+ *
+ * Request:
+ *	basedn:	<rid_manager_fsmo_server_object>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	dnsHostName
+ * Result:
+ *      <rid_manager_fsmo_server_object>
+ *		dnsHostName:	<dns_host_name>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_rid_manager_fsmo()
+ *
+ * Request:
+ *	basedn:	CN=NTDS Settings,<rid_manager_fsmo_server_object>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	msDs-ReplicationEpoch
+ * Result:
+ *      CN=NTDS Settings,<rid_manager_fsmo_server_object>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_site_object()
+ *
+ * Request:
+ *	basedn:	CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:
+ * Result:
+ *      CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *		objectClass:	top
+ *				site
+ *		cn:		<new_dc_site_name>
+ *		distinguishedName:CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *		instanceType:	4
+ *		whenCreated:	...
+ *		whenChanged:	...
+ *		uSNCreated:	...
+ *		uSNChanged:	...
+ *		showInAdvancedViewOnly:	TRUE
+ *		name:		<new_dc_site_name>
+ *		objectGUID:	<object_guid>
+ *		systemFlags:	1107296256 <0x42000000>
+ *		objectCategory:	CN=Site,C=Schema,CN=Configuration,<domain_partition>
+ */
+
+/***************************************************************
+ * Add this stage we call the check_options() callback function
+ * of the caller, to see if he wants us to continue
+ *
+ * see: becomeDC_check_options()
+ ***************************************************************/
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_computer_object()
+ *
+ * Request:
+ *	basedn:	<domain_partition>
+ *	scope:	sub
+ *	filter:	(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=<new_dc_account_name>))
+ *	attrs:	distinguishedName
+ *		userAccountControl
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		userAccoountControl:	4096 <0x1000>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_server_object_1()
+ *
+ * Request:
+ *	basedn:	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:
+ * Result:
+ *      <noSuchObject>
+ *	<matchedDN:CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_server_object_2()
+ * 
+ * Request:
+ *	basedn:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	serverReferenceBL
+ *	typesOnly: TRUE!!!
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ */
+
+/*
+ * LDAP add 1st LDAP connection:
+ * 
+ * see: becomeDC_ldap1_server_object_add()
+ *
+ * Request:
+ *	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	objectClass:	server
+ *	systemFlags:	50000000 <0x2FAF080>
+ *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ * Result:
+ *      <success>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * not implemented, maybe we can add that later
+ *
+ * Request:
+ *	basedn:	CN=NTDS Settings,CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:
+ * Result:
+ *      <noSuchObject>
+ *	<matchedDN:CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * not implemented because it gives no new information
+ * 
+ * Request:
+ *	basedn:	CN=Partitions,CN=Configuration,<domain_partition>
+ *	scope:	sub
+ *	filter:	(nCName=<domain_partition>)
+ *	attrs:	nCName
+ *		dnsRoot
+ *	controls: LDAP_SERVER_EXTENDED_DN_OID:critical=false
+ * Result:
+ *      <GUID=<hex_guid>>;CN=<domain_netbios_name>,CN=Partitions,<domain_partition>>
+ *		nCName:		<GUID=<hex_guid>>;<SID=<hex_sid>>;<domain_partition>>
+ *		dnsRoot:	<domain_dns_name>
+ */
+
+/*
+ * LDAP modify 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_server_object_modify()
+ * 
+ * Request (add):
+ *	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+ *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ * Result:
+ *	<attributeOrValueExist>
+ */
+
+/*
+ * LDAP modify 1st LDAP connection:
+ *
+ * see: becomeDC_ldap1_server_object_modify()
+ *
+ * Request (replace):
+ *	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+ *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ * Result:
+ *	<success>
+ */
+
+/*
+ * Open 1st DRSUAPI connection to the DC using admin credentials
+ * DsBind with DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+ * (w2k3 does 2 DsBind() calls here..., where is first is unused and contains garbage at the end)
+ *
+ * see: becomeDC_drsuapi_connect_send(), becomeDC_drsuapi1_connect_recv(),
+ *      becomeDC_drsuapi_bind_send(), becomeDC_drsuapi_bind_recv() and becomeDC_drsuapi1_bind_recv()
+ */
+
+/*
+ * DsAddEntry to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+ * on the 1st DRSUAPI connection
+ *
+ * see: becomeDC_drsuapi1_add_entry_send() and becomeDC_drsuapi1_add_entry_recv()
+ */
+
+/***************************************************************
+ * Add this stage we call the prepare_db() callback function
+ * of the caller, to see if he wants us to continue
+ *
+ * see: becomeDC_prepare_db()
+ ***************************************************************/
+
+/*
+ * Open 2nd and 3rd DRSUAPI connection to the DC using admin credentials
+ * - a DsBind with DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+ *   on the 2nd connection
+ *
+ * see: becomeDC_drsuapi_connect_send(), becomeDC_drsuapi2_connect_recv(),
+ *      becomeDC_drsuapi_bind_send(), becomeDC_drsuapi_bind_recv(), becomeDC_drsuapi2_bind_recv()
+ *	and becomeDC_drsuapi3_connect_recv()
+ */
+
+/*
+ * replicate CN=Schema,CN=Configuration,...
+ * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
+ *
+ * see: becomeDC_drsuapi_pull_partition_send(), becomeDC_drsuapi_pull_partition_recv(),
+ *	becomeDC_drsuapi3_pull_schema_send() and becomeDC_drsuapi3_pull_schema_recv()
+ *
+ ***************************************************************
+ * Add this stage we call the schema_chunk() callback function
+ * for each replication message
+ ***************************************************************/
+
+/*
+ * replicate CN=Configuration,...
+ * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
+ *
+ * see: becomeDC_drsuapi_pull_partition_send(), becomeDC_drsuapi_pull_partition_recv(),
+ *	becomeDC_drsuapi3_pull_config_send() and becomeDC_drsuapi3_pull_config_recv()
+ *
+ ***************************************************************
+ * Add this stage we call the config_chunk() callback function
+ * for each replication message
+ ***************************************************************/
+
+/*
+ * LDAP unbind on the 1st LDAP connection
+ *
+ * not implemented, because it's not needed...
+ */
+
+/*
+ * Open 2nd LDAP connection to the DC using admin credentials
+ *
+ * see: becomeDC_connect_ldap2() and becomeDC_ldap_connect()
+ */
+
+/*
+ * LDAP search 2nd LDAP connection:
+ * 
+ * not implemented because it gives no new information
+ * same as becomeDC_ldap1_computer_object()
+ *
+ * Request:
+ *	basedn:	<domain_partition>
+ *	scope:	sub
+ *	filter:	(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=<new_dc_account_name>))
+ *	attrs:	distinguishedName
+ *		userAccountControl
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		userAccoountControl:	4096 <0x00001000>
+ */
+
+/*
+ * LDAP search 2nd LDAP connection:
+ * 
+ * not implemented because it gives no new information
+ * same as becomeDC_ldap1_computer_object()
+ *
+ * Request:
+ *	basedn:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	userAccountControl
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		userAccoountControl:	4096 <0x00001000>
+ */
+
+/*
+ * LDAP modify 2nd LDAP connection:
+ *
+ * see: becomeDC_ldap2_modify_computer()
+ *
+ * Request (replace):
+ *	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	userAccoountControl:	532480 <0x82000>
+ * Result:
+ *	<success>
+ */
+
+/*
+ * LDAP search 2nd LDAP connection:
+ *
+ * see: becomeDC_ldap2_move_computer()
+ * 
+ * Request:
+ *	basedn:	<WKGUID=2fbac1870ade11d297c400c04fd8d5cd,<domain_partition>>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	1.1
+ * Result:
+ *	CN=Domain Controllers,<domain_partition>
+ */
+
+/*
+ * LDAP search 2nd LDAP connection:
+ *
+ * not implemented because it gives no new information
+ * 
+ * Request:
+ *	basedn:	CN=Domain Controllers,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	distinguishedName
+ * Result:
+ *	CN=Domain Controller,<domain_partition>
+ *		distinguishedName:	CN=Domain Controllers,<domain_partition>
+ */
+
+/*
+ * LDAP modifyRDN 2nd LDAP connection:
+ *
+ * see: becomeDC_ldap2_move_computer()
+ * 
+ * Request:
+ *      entry:		CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	newrdn:		CN=<new_dc_netbios_name>
+ *	deleteoldrdn:	TRUE
+ *	newparent:	CN=Domain Controllers,<domain_partition>
+ * Result:
+ *	<success>
+ */
+
+/*
+ * LDAP unbind on the 2nd LDAP connection
+ *
+ * not implemented, because it's not needed...
+ */
+
+/*
+ * replicate Domain Partition
+ * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
+ *
+ * see: becomeDC_drsuapi_pull_partition_send(), becomeDC_drsuapi_pull_partition_recv(),
+ *	becomeDC_drsuapi3_pull_domain_send() and becomeDC_drsuapi3_pull_domain_recv()
+ *
+ ***************************************************************
+ * Add this stage we call the domain_chunk() callback function
+ * for each replication message
+ ***************************************************************/
+
+/* call DsReplicaUpdateRefs() for all partitions like this:
+ *     req1: struct drsuapi_DsReplicaUpdateRefsRequest1
+ *
+ *                 naming_context: struct drsuapi_DsReplicaObjectIdentifier
+ *                     __ndr_size               : 0x000000ae (174)
+ *                     __ndr_size_sid           : 0x00000000 (0)
+ *                     guid                     : 00000000-0000-0000-0000-000000000000
+ *                     sid                      : S-0-0
+ *                     dn                       : 'CN=Schema,CN=Configuration,DC=w2k3,DC=vmnet1,DC=vm,DC=base'
+ *
+ *                 dest_dsa_dns_name        : '4a0df188-a0b8-47ea-bbe5-e614723f16dd._msdcs.w2k3.vmnet1.vm.base'
+ *           dest_dsa_guid            : 4a0df188-a0b8-47ea-bbe5-e614723f16dd
+ *           options                  : 0x0000001c (28)
+ *                 0: DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION
+ *                 0: DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE
+ *                 1: DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE
+ *                 1: DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE
+ *                 1: DRSUAPI_DS_REPLICA_UPDATE_0x00000010
+ *
+ * 4a0df188-a0b8-47ea-bbe5-e614723f16dd is the objectGUID the DsAddEntry() returned for the
+ * CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+ * on the 2nd!!! DRSUAPI connection
+ *
+ * see:	becomeDC_drsuapi_update_refs_send(), becomeDC_drsuapi2_update_refs_schema_recv(),
+ *	becomeDC_drsuapi2_update_refs_config_recv() and becomeDC_drsuapi2_update_refs_domain_recv()
+ */
+
+/*
+ * Windows does opens the 4th and 5th DRSUAPI connection...
+ * and does a DsBind() with the objectGUID from DsAddEntry() as bind_guid
+ * on the 4th connection
+ *
+ * and then 2 full replications of the domain partition on the 5th connection
+ * with the bind_handle from the 4th connection
+ *
+ * not implemented because it gives no new information
+ */
+
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
 
