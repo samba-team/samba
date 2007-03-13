@@ -400,7 +400,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	if (!secrets_store_machine_password(clear_trust_password, domain, sec_channel_type)) {
+	if (!secrets_store_machine_password(clear_trust_password,
+					    global_myname(), domain,
+					    sec_channel_type)) {
 		DEBUG(0, ("error storing plaintext domain secrets for %s\n", domain));
 	}
 
