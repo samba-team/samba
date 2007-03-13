@@ -24,7 +24,7 @@ qx.Proto.buildGui = function(module)
                   top: 20,
                   left: 20,
                   right: 20,
-                  height: "100%"
+                  bottom: 20
               });
   
   // Create a hosts tree
