@@ -290,6 +290,7 @@ typedef struct {
 	BOOL bClientNTLMv2Auth;
 	BOOL bClientPlaintextAuth;
 	BOOL bClientUseSpnego;
+	BOOL bDebugPrefixTimestamp;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
@@ -952,6 +953,7 @@ static struct parm_struct parm_table[] = {
 	{"max log size", P_INTEGER, P_GLOBAL, &Globals.max_log_size, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug timestamp", P_BOOL, P_GLOBAL, &Globals.bTimestampLogs, NULL, NULL, FLAG_ADVANCED}, 
 	{"timestamp logs", P_BOOL, P_GLOBAL, &Globals.bTimestampLogs, NULL, NULL, FLAG_ADVANCED}, 
+	{"debug prefix timestamp", P_BOOL, P_GLOBAL, &Globals.bDebugPrefixTimestamp, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug hires timestamp", P_BOOL, P_GLOBAL, &Globals.bDebugHiresTimestamp, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, FLAG_ADVANCED}, 
@@ -1516,6 +1518,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bSyslogOnly = False;
 	Globals.bTimestampLogs = True;
 	string_set(&Globals.szLogLevel, "0");
+	Globals.bDebugPrefixTimestamp = False;
 	Globals.bDebugHiresTimestamp = False;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
@@ -1947,6 +1950,7 @@ FN_GLOBAL_INTEGER(lp_client_schannel, &Globals.clientSchannel)
 FN_GLOBAL_INTEGER(lp_server_schannel, &Globals.serverSchannel)
 FN_GLOBAL_BOOL(lp_syslog_only, &Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs, &Globals.bTimestampLogs)
+FN_GLOBAL_BOOL(lp_debug_prefix_timestamp, &Globals.bDebugPrefixTimestamp)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
 FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)

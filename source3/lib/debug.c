@@ -962,7 +962,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
 	/* Print the header if timestamps are turned on.  If parameters are
 	 * not yet loaded, then default to timestamps on.
 	 */
-	if( lp_timestamp_logs() || !(lp_loaded()) ) {
+	if( lp_timestamp_logs() || lp_debug_prefix_timestamp() || !(lp_loaded()) ) {
 		char header_str[200];
 
 		header_str[0] = '\0';
@@ -980,9 +980,15 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
 		}
   
 		/* Print it all out at once to prevent split syslog output. */
-		(void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+		if( lp_debug_prefix_timestamp() ) {
+		    (void)Debug1( "[%s, %d%s] ",
+			current_timestring(lp_debug_hires_timestamp()), level,
+			header_str);
+		} else {
+		    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
 			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str, file, func, line );
+		}
 	}
 
 	errno = old_errno;
