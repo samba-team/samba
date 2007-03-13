@@ -42,9 +42,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 		goto failed;
 	}
 
-	if (!secrets_store_machine_password(new_password, global_myname(),
-					    lp_workgroup(),
-					    sec_channel_type)) {
+	if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		ret = ADS_ERROR_SYSTEM(EACCES);
 		goto failed;

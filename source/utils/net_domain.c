@@ -146,8 +146,7 @@ int netdom_store_machine_account( const char *domain, DOM_SID *sid, const char *
 		return -1;
 	}
 
-	if (!secrets_store_machine_password(pw, global_myname(), domain,
-					    SEC_CHAN_WKSTA)) {
+	if (!secrets_store_machine_password(pw, domain, SEC_CHAN_WKSTA)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		return -1;
 	}

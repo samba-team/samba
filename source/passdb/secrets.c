@@ -553,10 +553,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
 
-BOOL secrets_store_machine_password(const char *pass,
-				    const char *accountname,
-				    const char *domain,
-				    uint32 sec_channel)
+BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
 	char *key = NULL;
 	BOOL ret = False;
@@ -576,22 +573,6 @@ BOOL secrets_store_machine_password(const char *pass,
 	strupper_m(key);
 
 	ret = secrets_store(key, pass, strlen(pass)+1);
-	SAFE_FREE(key);
-
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
-	
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_ACCOUNTNAME,
-		     domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
-	strupper_m(key);
-
-	ret = secrets_store(key, accountname, strlen(accountname)+1);
 	SAFE_FREE(key);
 
 	if (!ret) {
