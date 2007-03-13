@@ -87,6 +87,31 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
+static void becomeDC_recv_cldap(struct cldap_request *req);
+
+static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+	struct cldap_request *req;
+
+	s->cldap.io.in.dest_address	= s->source_dsa.address;
+	s->cldap.io.in.realm		= s->domain.dns_name;
+	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
+	s->cldap.io.in.user		= NULL;
+	s->cldap.io.in.domain_guid	= NULL;
+	s->cldap.io.in.domain_sid	= NULL;
+	s->cldap.io.in.acct_control	= -1;
+	s->cldap.io.in.version		= 6;
+
+	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx);
+	if (composite_nomem(s->cldap.sock, c)) return;
+
+	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
+	if (composite_nomem(req, c)) return;
+	req->async.fn		= becomeDC_recv_cldap;
+	req->async.private	= s;
+}
+
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
 
 static void becomeDC_recv_cldap(struct cldap_request *req)
@@ -113,29 +138,6 @@ static void becomeDC_recv_cldap(struct cldap_request *req)
 	s->dest_dsa.site_name		= s->cldap.netlogon5.client_site;
 
 	becomeDC_connect_ldap1(s);
-}
-
-static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
-{
-	struct composite_context *c = s->creq;
-	struct cldap_request *req;
-
-	s->cldap.io.in.dest_address	= s->source_dsa.address;
-	s->cldap.io.in.realm		= s->domain.dns_name;
-	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
-	s->cldap.io.in.user		= NULL;
-	s->cldap.io.in.domain_guid	= NULL;
-	s->cldap.io.in.domain_sid	= NULL;
-	s->cldap.io.in.acct_control	= -1;
-	s->cldap.io.in.version		= 6;
-
-	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx);
-	if (composite_nomem(s->cldap.sock, c)) return;
-
-	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
-	if (composite_nomem(req, c)) return;
-	req->async.fn		= becomeDC_recv_cldap;
-	req->async.private	= s;
 }
 
 static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s, struct becomeDC_ldap *ldap)
