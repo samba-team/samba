@@ -156,7 +156,8 @@ _PUBLIC_ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 
 	if (size < ndr->offset) {
 		/* extra_size overflowed the offset */
-		return NT_STATUS_NO_MEMORY;
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand to %u",
+				      size);
 	}
 
 	if (ndr->alloc_size > size) {
