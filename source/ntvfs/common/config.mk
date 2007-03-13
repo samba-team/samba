@@ -7,6 +7,7 @@ OBJ_FILES = \
 		brlock.o \
 		brlock_tdb.o \
 		opendb.o \
+		opendb_tdb.o \
 		notify.o
 PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify share
 PRIVATE_DEPENDENCIES = brlock_ctdb

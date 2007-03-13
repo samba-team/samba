@@ -27,6 +27,7 @@ struct notify_event;
 struct notify_entry;
 
 #include "ntvfs/common/brlock.h"
+#include "ntvfs/common/opendb.h"
 #include "ntvfs/common/proto.h"
 
 #endif /* _NTVFS_COMMON_H_ */
