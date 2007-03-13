@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "lib/events/events.h"
-#include "lib/registry/reg_backend_rpc.h"
 #include "lib/cmdline/popt_common.h"
 
 static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
