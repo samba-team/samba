@@ -556,40 +556,78 @@ the password is assumed to be a null terminated ascii string
 BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
 	char *key = NULL;
-	BOOL ret;
+	BOOL ret = False;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
 
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
-	if (!key) 
+	if (tdb_transaction_start(tdb) == -1) {
+		DEBUG(5, ("tdb_transaction_start failed: %s\n",
+			  tdb_errorstr(tdb)));
 		return False;
+	}
+
+	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain) == -1) {
+		DEBUG(5, ("asprintf failed\n"));
+		goto fail;
+	}
 	strupper_m(key);
 
 	ret = secrets_store(key, pass, strlen(pass)+1);
 	SAFE_FREE(key);
 
-	if (!ret)
-		return ret;
+	if (!ret) {
+		DEBUG(5, ("secrets_store failed: %s\n",
+			  tdb_errorstr(tdb)));
+		goto fail;
+	}
 	
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
-	if (!key) 
-		return False;
+	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME,
+		     domain) == -1) {
+		DEBUG(5, ("asprintf failed\n"));
+		goto fail;
+	}
 	strupper_m(key);
 
 	SIVAL(&last_change_time, 0, time(NULL));
 	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
 	SAFE_FREE(key);
 
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
-	if (!key) 
-		return False;
+	if (!ret) {
+		DEBUG(5, ("secrets_store failed: %s\n",
+			  tdb_errorstr(tdb)));
+		goto fail;
+	}
+	
+	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE,
+		     domain) == -1) {
+		DEBUG(5, ("asprintf failed\n"));
+		goto fail;
+	}
 	strupper_m(key);
 
 	SIVAL(&sec_channel_type, 0, sec_channel);
 	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
 	SAFE_FREE(key);
 
-	return ret;
+	if (!ret) {
+		DEBUG(5, ("secrets_store failed: %s\n",
+			  tdb_errorstr(tdb)));
+		goto fail;
+	}
+
+	if (tdb_transaction_commit(tdb) != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
+			  tdb_errorstr(tdb)));
+		return False;
+	}
+
+	return True;
+
+ fail:
+	if (tdb_transaction_cancel(tdb) != 0) {
+		smb_panic("tdb_transaction_cancel failed!\n");
+	}
+	return False;
 }
 
 /************************************************************************
