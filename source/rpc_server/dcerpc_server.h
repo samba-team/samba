@@ -71,12 +71,24 @@ struct dcesrv_interface {
 	const void *private;
 };
 
+enum dcesrv_call_list {
+	DCESRV_LIST_NONE,
+	DCESRV_LIST_CALL_LIST,
+	DCESRV_LIST_FRAGMENTED_CALL_LIST,
+	DCESRV_LIST_PENDING_CALL_LIST
+};
+
 /* the state of an ongoing dcerpc call */
 struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
 	struct dcesrv_connection *conn;
 	struct dcesrv_connection_context *context;
 	struct ncacn_packet pkt;
+
+	/*
+	  which list this request is in, if any
+	 */
+	enum dcesrv_call_list list;
 
 	/* the backend can mark the call
 	 * with DCESRV_CALL_STATE_FLAG_ASYNC

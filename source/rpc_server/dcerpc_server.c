@@ -401,6 +401,43 @@ static void dcesrv_init_hdr(struct ncacn_packet *pkt)
 }
 
 /*
+  move a call from an existing linked list to the specified list. This
+  prevents bugs where we forget to remove the call from a previous
+  list when moving it.
+ */
+static void dcesrv_call_set_list(struct dcesrv_call_state *call, 
+				 enum dcesrv_call_list list)
+{
+	switch (call->list) {
+	case DCESRV_LIST_NONE:
+		break;
+	case DCESRV_LIST_CALL_LIST:
+		DLIST_REMOVE(call->conn->call_list, call);
+		break;
+	case DCESRV_LIST_FRAGMENTED_CALL_LIST:
+		DLIST_REMOVE(call->conn->incoming_fragmented_call_list, call);
+		break;
+	case DCESRV_LIST_PENDING_CALL_LIST:
+		DLIST_REMOVE(call->conn->pending_call_list, call);
+		break;
+	}
+	call->list = list;
+	switch (list) {
+	case DCESRV_LIST_NONE:
+		break;
+	case DCESRV_LIST_CALL_LIST:
+		DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+		break;
+	case DCESRV_LIST_FRAGMENTED_CALL_LIST:
+		DLIST_ADD_END(call->conn->incoming_fragmented_call_list, call, struct dcesrv_call_state *);
+		break;
+	case DCESRV_LIST_PENDING_CALL_LIST:
+		DLIST_ADD_END(call->conn->pending_call_list, call, struct dcesrv_call_state *);
+		break;
+	}
+}
+
+/*
   return a dcerpc fault
 */
 static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
@@ -433,7 +470,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
-	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	return NT_STATUS_OK;	
 }
@@ -472,7 +509,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
-	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	return NT_STATUS_OK;	
 }
@@ -612,7 +649,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
-	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	return NT_STATUS_OK;
 }
@@ -750,7 +787,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
-	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	return NT_STATUS_OK;
 }
@@ -814,7 +851,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* add the call to the pending list */
-	DLIST_ADD_END(call->conn->pending_call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_PENDING_CALL_LIST);
 
 	if (call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
 		return NT_STATUS_OK;
@@ -905,8 +942,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	} while (stub.length != 0);
 
 	/* move the call from the pending to the finished calls list */
-	DLIST_REMOVE(call->conn->pending_call_list, call);
-	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
 		if (call->conn->transport.report_output_data) {
@@ -968,6 +1004,15 @@ static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32_t off
 }
 
 /*
+  remove the call from the right list when freed
+ */
+static int dcesrv_call_dequeue(struct dcesrv_call_state *call)
+{
+	dcesrv_call_set_list(call, DCESRV_LIST_NONE);
+	return 0;
+}
+
+/*
   process some input to a dcerpc endpoint server.
 */
 NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
@@ -987,6 +1032,9 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	call->msg_ctx		= dce_conn->msg_ctx;
 	call->state_flags	= call->conn->state_flags;
 	call->time		= timeval_current();
+	call->list              = DCESRV_LIST_NONE;
+
+	talloc_set_destructor(call, dcesrv_call_dequeue);
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
@@ -1071,13 +1119,12 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	   just put it on the incoming_fragmented_call_list and wait for the rest */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		DLIST_ADD_END(dce_conn->incoming_fragmented_call_list, call, 
-			      struct dcesrv_call_state *);
+		dcesrv_call_set_list(call, DCESRV_LIST_FRAGMENTED_CALL_LIST);
 		return NT_STATUS_OK;
 	} 
 	
 	/* This removes any fragments we may have had stashed away */
-	DLIST_REMOVE(dce_conn->incoming_fragmented_call_list, call);
+	dcesrv_call_set_list(call, DCESRV_LIST_NONE);
 
 	switch (call->pkt.ptype) {
 	case DCERPC_PKT_BIND:
@@ -1184,7 +1231,7 @@ _PUBLIC_ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 
 	if (call->replies == NULL) {
 		/* we're done with the whole call */
-		DLIST_REMOVE(dce_conn->call_list, call);
+		dcesrv_call_set_list(call, DCESRV_LIST_NONE);
 		talloc_free(call);
 	}
 
