@@ -107,8 +107,9 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 
 	/* this initial decode is used to find the message id */
-	if (!ldap_decode(&asn1, ldap_msg)) {
-		DEBUG(2,("Failed to decode ldap message\n"));
+	status = ldap_decode(&asn1, ldap_msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("Failed to decode ldap message: %s\n", nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -428,6 +429,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 			   struct cldap_search *io)
 {
 	struct ldap_message *ldap_msg;
+	NTSTATUS status;
 
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -448,9 +450,11 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	ldap_msg = talloc(mem_ctx, struct ldap_message);
 	NT_STATUS_HAVE_NO_MEMORY(ldap_msg);
 
-	if (!ldap_decode(&req->asn1, ldap_msg)) {
+	status = ldap_decode(&req->asn1, ldap_msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("Failed to decode cldap search reply: %s\n", nt_errstr(status)));
 		talloc_free(req);
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+		return status;
 	}
 
 	ZERO_STRUCT(io->out);
@@ -462,9 +466,11 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		*io->out.response = ldap_msg->r.SearchResultEntry;
 
 		/* decode the 2nd part */
-		if (!ldap_decode(&req->asn1, ldap_msg)) {
+		status = ldap_decode(&req->asn1, ldap_msg);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2,("Failed to decode cldap search result entry: %s\n", nt_errstr(status)));
 			talloc_free(req);
-			return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+			return status;
 		}
 	}
 
