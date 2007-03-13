@@ -94,6 +94,31 @@ struct libnet_UnbecomeDC_state {
 	} dest_dsa;
 };
 
+static void unbecomeDC_recv_cldap(struct cldap_request *req);
+
+static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+	struct cldap_request *req;
+
+	s->cldap.io.in.dest_address	= s->source_dsa.address;
+	s->cldap.io.in.realm		= s->domain.dns_name;
+	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
+	s->cldap.io.in.user		= NULL;
+	s->cldap.io.in.domain_guid	= NULL;
+	s->cldap.io.in.domain_sid	= NULL;
+	s->cldap.io.in.acct_control	= -1;
+	s->cldap.io.in.version		= 6;
+
+	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx);
+	if (composite_nomem(s->cldap.sock, c)) return;
+
+	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
+	if (composite_nomem(req, c)) return;
+	req->async.fn		= unbecomeDC_recv_cldap;
+	req->async.private	= s;
+}
+
 static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s);
 
 static void unbecomeDC_recv_cldap(struct cldap_request *req)
@@ -118,29 +143,6 @@ static void unbecomeDC_recv_cldap(struct cldap_request *req)
 	s->dest_dsa.site_name		= s->cldap.netlogon5.client_site;
 
 	unbecomeDC_connect_ldap(s);
-}
-
-static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
-{
-	struct composite_context *c = s->creq;
-	struct cldap_request *req;
-
-	s->cldap.io.in.dest_address	= s->source_dsa.address;
-	s->cldap.io.in.realm		= s->domain.dns_name;
-	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
-	s->cldap.io.in.user		= NULL;
-	s->cldap.io.in.domain_guid	= NULL;
-	s->cldap.io.in.domain_sid	= NULL;
-	s->cldap.io.in.acct_control	= -1;
-	s->cldap.io.in.version		= 6;
-
-	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx);
-	if (composite_nomem(s->cldap.sock, c)) return;
-
-	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
-	if (composite_nomem(req, c)) return;
-	req->async.fn		= unbecomeDC_recv_cldap;
-	req->async.private	= s;
 }
 
 static NTSTATUS unbecomeDC_ldap_connect(struct libnet_UnbecomeDC_state *s)
