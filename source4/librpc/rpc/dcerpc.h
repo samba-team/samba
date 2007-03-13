@@ -216,6 +216,7 @@ struct dcerpc_pipe_connect {
 
 
 enum rpc_request_state {
+	RPC_REQUEST_QUEUED,
 	RPC_REQUEST_PENDING,
 	RPC_REQUEST_DONE
 };
