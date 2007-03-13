@@ -162,8 +162,8 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
-		GUID guid1;
-		astring *string1;
+		GUID source_dsa_guid;
+		astring *other_info; /* I assume this is related to the repsFromTo1OtherInfo dns_name */
 		drsuapi_DsReplicaSyncOptions options;
 	} drsuapi_DsReplicaSyncRequest1;
 

@@ -448,8 +448,8 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			nc.dn					= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
 			r.in.req.req1.naming_context		= &nc;
-			r.in.req.req1.guid1			= priv->dcinfo.ntds_guid;
-			r.in.req.req1.string1			= NULL;
+			r.in.req.req1.source_dsa_guid		= priv->dcinfo.ntds_guid;
+			r.in.req.req1.other_info		= NULL;
 			r.in.req.req1.options			= 16;
 			break;
 		}
