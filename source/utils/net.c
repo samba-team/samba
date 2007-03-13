@@ -555,9 +555,7 @@ static int net_changesecretpw(int argc, const char **argv)
 
 		trust_pw = get_pass("Enter machine password: ", opt_stdin);
 
-		if (!secrets_store_machine_password(trust_pw, global_myname(),
-						    lp_workgroup(),
-						    sec_channel_type)) {
+		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
 			    d_fprintf(stderr, "Unable to write the machine account password in the secrets database");
 			    return 1;
 		}

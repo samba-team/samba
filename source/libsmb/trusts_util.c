@@ -104,10 +104,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
 		 */
-		if (!secrets_store_machine_password(new_trust_passwd,
-						    global_myname(),
-						    domain,
-						    sec_channel_type)) {
+		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
