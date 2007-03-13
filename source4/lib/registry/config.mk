@@ -86,7 +86,6 @@ OBJ_FILES = \
 		patchfile.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET
-PUBLIC_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
 ################################################
