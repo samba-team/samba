@@ -61,8 +61,8 @@ qx.Proto.buildFsm = function(module)
         {
           "appear" :
           {
-            "tree" :
-              "Transition_Idle_to_AwaitRpcResult_via_tree_appear"
+            "swat.main.canvas" :
+              "Transition_Idle_to_AwaitRpcResult_via_canvas_appear"
           }
         }
     });
@@ -71,7 +71,7 @@ qx.Proto.buildFsm = function(module)
   fsm.replaceState(state, true);
 
   var trans = new qx.util.fsm.Transition(
-    "Transition_Idle_to_AwaitRpcResult_via_tree_appear",
+    "Transition_Idle_to_AwaitRpcResult_via_canvas_appear",
     {
       "nextState" : "State_AwaitRpcResult",
 		    
