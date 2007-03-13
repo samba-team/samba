@@ -205,11 +205,13 @@ error:
 }
 
 
-static int partition_send_request(struct partition_context *ac, struct dsdb_control_current_partition *partition)
+static int partition_send_request(struct partition_context *ac, struct ldb_control *remove_control, 
+				  struct dsdb_control_current_partition *partition)
 {
 	int ret;
 	struct ldb_module *backend;
 	struct ldb_request *req;
+	struct ldb_control **saved_controls;
 
 	if (partition) {
 		backend = make_module_for_next_request(ac, ac->module->ldb, partition->module);
@@ -231,7 +233,7 @@ static int partition_send_request(struct partition_context *ac, struct dsdb_cont
 	
 	*req = *ac->orig_req; /* copy the request */
 
-	if (ac->orig_req->controls) {
+	if (req->controls) {
 		req->controls
 			= talloc_memdup(req,
 					ac->orig_req->controls, talloc_get_size(ac->orig_req->controls));
@@ -259,6 +261,12 @@ static int partition_send_request(struct partition_context *ac, struct dsdb_cont
 		req->context = ac;
 	}
 
+	/* Remove a control, so we don't confuse a backend server */
+	if (remove_control && !save_controls(remove_control, req, &saved_controls)) {
+		ldb_oom(ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
 	if (partition) {
 		ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, partition);
 		if (ret != LDB_SUCCESS) {
@@ -278,17 +286,19 @@ static int partition_send_request(struct partition_context *ac, struct dsdb_cont
 
 /* Send a request down to all the partitions */
 static int partition_send_all(struct ldb_module *module, 
-			      struct partition_context *ac, struct ldb_request *req) 
+			      struct partition_context *ac, 
+			      struct ldb_control *remove_control, 
+			      struct ldb_request *req) 
 {
 	int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	int ret = partition_send_request(ac, NULL);
+	int ret = partition_send_request(ac, remove_control, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		ret = partition_send_request(ac, data->partitions[i]);
+		ret = partition_send_request(ac, remove_control, data->partitions[i]);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -307,18 +317,20 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	
-	/* Is this a special DN, we need to replicate to every backend? */
-	for (i=0; data->replicate && data->replicate[i]; i++) {
-		if (ldb_dn_compare(data->replicate[i], 
-				   dn) == 0) {
-			struct partition_context *ac;
-			
-			ac = partition_init_handle(req, module);
-			if (!ac) {
-				return LDB_ERR_OPERATIONS_ERROR;
+	if (req->operation != LDB_SEARCH) {
+		/* Is this a special DN, we need to replicate to every backend? */
+		for (i=0; data->replicate && data->replicate[i]; i++) {
+			if (ldb_dn_compare(data->replicate[i], 
+					   dn) == 0) {
+				struct partition_context *ac;
+				
+				ac = partition_init_handle(req, module);
+				if (!ac) {
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				
+				return partition_send_all(module, ac, NULL, req);
 			}
-			
-			return partition_send_all(module, ac, req);
 		}
 	}
 
@@ -371,7 +383,11 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	if (search_options && (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
 		int ret, i;
 		struct partition_context *ac;
-		
+		struct ldb_control *remove_control = NULL;
+		if ((search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
+			/* We have processed this flag, so we are done with this control now */
+			remove_control = search_control;
+		}
 		ac = partition_init_handle(req, module);
 		if (!ac) {
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -379,12 +395,12 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 		/* Search from the base DN */
 		if (!req->op.search.base || ldb_dn_is_null(req->op.search.base)) {
-			return partition_send_all(module, ac, req);
+			return partition_send_all(module, ac, remove_control, req);
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
 			if (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0) {
-				ret = partition_send_request(ac, data->partitions[i]);
+				ret = partition_send_request(ac, remove_control, data->partitions[i]);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
@@ -399,9 +415,8 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		
 		return LDB_SUCCESS;
 	} else {
-		struct ldb_module *backend = find_backend(module, req, req->op.search.base);
-	
-		return ldb_next_request(backend, req);
+		/* Handle this like all other requests */
+		return partition_replicate(module, req, req->op.search.base);
 	}
 }
 
@@ -672,7 +687,7 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 			
-	return partition_send_all(module, ac, req);
+	return partition_send_all(module, ac, NULL, req);
 }
 
 static int sort_compare(void *void1,

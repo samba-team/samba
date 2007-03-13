@@ -1059,14 +1059,35 @@ struct control_handler ldap_known_controls[] = {
 	{ "2.16.840.1.113730.3.4.2", decode_manageDSAIT_request, encode_manageDSAIT_request },
 	{ "2.16.840.1.113730.3.4.9", decode_vlv_request, encode_vlv_request },
 	{ "2.16.840.1.113730.3.4.10", decode_vlv_response, encode_vlv_response },
+/* DSDB_CONTROL_CURRENT_PARTITION_OID is internal only, and has no network representation */
+	{ "1.3.6.1.4.1.7165.4.3.2", NULL, NULL },
+/* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
+	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ NULL, NULL, NULL }
 };
 
-BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl)
+BOOL ldap_decode_control_value(void *mem_ctx, DATA_BLOB value, struct ldb_control *ctrl)
 {
 	int i;
+
+	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
+		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
+			if (!ldap_known_controls[i].decode || !ldap_known_controls[i].decode(mem_ctx, value, &ctrl->data)) {
+				return False;
+			}
+			break;
+		}
+	}
+	if (ldap_known_controls[i].oid == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
+BOOL ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl, DATA_BLOB *value)
+{
 	DATA_BLOB oid;
-	DATA_BLOB value;
 
 	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -1096,19 +1117,7 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldb_contr
 		goto end_tag;
 	}
 
-	if (!asn1_read_OctetString(data, &value)) {
-		return False;
-	}
-
-	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
-		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].decode(mem_ctx, value, &ctrl->data)) {
-				return False;
-			}
-			break;
-		}
-	}
-	if (ldap_known_controls[i].oid == NULL) {
+	if (!asn1_read_OctetString(data, value)) {
 		return False;
 	}
 
@@ -1124,6 +1133,26 @@ BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldb_contr
 {
 	DATA_BLOB value;
 	int i;
+
+	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
+		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
+			if (!ldap_known_controls[i].encode) {
+				if (ctrl->critical) {
+					return False;
+				} else {
+					/* not encoding this control */
+					return True;
+				}
+			}
+			if (!ldap_known_controls[i].encode(mem_ctx, ctrl->data, &value)) {
+				return False;
+			}
+			break;
+		}
+	}
+	if (ldap_known_controls[i].oid == NULL) {
+		return False;
+	}
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -1141,18 +1170,6 @@ BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldb_contr
 
 	if (!ctrl->data) {
 		goto pop_tag;
-	}
-
-	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
-		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].encode(mem_ctx, ctrl->data, &value)) {
-				return False;
-			}
-			break;
-		}
-	}
-	if (ldap_known_controls[i].oid == NULL) {
-		return False;
 	}
 
 	if (!asn1_write_OctetString(data, value.data, value.length)) {
