@@ -103,6 +103,7 @@ slaptest -u -f $SLAPD_CONF >&2 || {
     cat > $MODCONF <<EOF 
 modulepath	/usr/lib/ldap
 moduleload	back_bdb
+moduleload	syncprov
 EOF
 }
 
