@@ -29,6 +29,162 @@
 #include "dsdb/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 
+/*****************************************************************************
+ * Windows 2003 (w2k3) does the following steps when changing the server role
+ * from domain controller back to domain member
+ *
+ * We mostly do the same.
+ *****************************************************************************/
+
+/*
+ * lookup DC:
+ * - using nbt name<1C> request and a samlogon mailslot request
+ * or
+ * - using a DNS SRV _ldap._tcp.dc._msdcs. request and a CLDAP netlogon request
+ *
+ * see: unbecomeDC_send_cldap() and unbecomeDC_recv_cldap()
+ */
+
+/*
+ * Open 1st LDAP connection to the DC using admin credentials
+ *
+ * see: unbecomeDC_ldap_connect()
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * see: unbecomeDC_ldap_rootdse()
+ *
+ * Request:
+ *	basedn:	""
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	defaultNamingContext
+ *		configurationNamingContext
+ * Result:
+ *      ""
+ *		defaultNamingContext:	<domain_partition>
+ *		configurationNamingContext:CN=Configuration,<domain_partition>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: unbecomeDC_ldap_computer_object()
+ *
+ * Request:
+ *	basedn:	<domain_partition>
+ *	scope:	sub
+ *	filter:	(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=<new_dc_account_name>))
+ *	attrs:	distinguishedName
+ *		userAccountControl
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Domain Controllers,<domain_partition>
+ *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Domain Controllers,<domain_partition>
+ *		userAccoountControl:	532480 <0x82000>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: unbecomeDC_ldap_modify_computer()
+ *
+ * Request:
+ *	basedn:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	userAccountControl
+ * Result:
+ *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *		userAccoountControl:	532480 <0x82000>
+ */
+
+/*
+ * LDAP modify 1st LDAP connection:
+ *
+ * see: unbecomeDC_ldap_modify_computer()
+ * 
+ * Request (replace):
+ *	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+ *	userAccoountControl:	4096 <0x1000>
+ * Result:
+ *	<success>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ * 
+ * see: unbecomeDC_ldap_move_computer()
+ *
+ * Request:
+ *	basedn:	<WKGUID=aa312825768811d1aded00c04fd8d5cd,<domain_partition>>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	1.1
+ * Result:
+ *	CN=Computers,<domain_partition>
+ */
+
+/*
+ * LDAP search 1st LDAP connection:
+ *
+ * not implemented because it doesn't give any new information
+ *
+ * Request:
+ *	basedn:	CN=Computers,<domain_partition>
+ *	scope:	base
+ *	filter:	(objectClass=*)
+ *	attrs:	distinguishedName
+ * Result:
+ *	CN=Computers,<domain_partition>
+ *		distinguishedName:	CN=Computers,<domain_partition>
+ */
+
+/*
+ * LDAP modifyRDN 1st LDAP connection:
+ * 
+ * see: unbecomeDC_ldap_move_computer()
+ *
+ * Request:
+ *      entry:		CN=<new_dc_netbios_name>,CN=Domain Controllers,<domain_partition>
+ *	newrdn:		CN=<new_dc_netbios_name>
+ *	deleteoldrdn:	TRUE
+ *	newparent:	CN=Computers,<domain_partition>
+ * Result:
+ *	<success>
+ */
+
+/*
+ * LDAP unbind on the 1st LDAP connection
+ *
+ * not implemented, because it's not needed...
+ */
+
+/*
+ * Open 1st DRSUAPI connection to the DC using admin credentials
+ * DsBind with DRSUAPI_DS_BIND_GUID ("e24d201a-4fd6-11d1-a3da-0000f875ae0d")
+ *
+ * see:	unbecomeDC_drsuapi_connect_send(), unbecomeDC_drsuapi_connect_recv(),
+ *	unbecomeDC_drsuapi_bind_send() and unbecomeDC_drsuapi_bind_recv()
+ */
+
+/*
+ * DsRemoveDsServer to remove the 
+ * CN=<machine_name>,CN=Servers,CN=<site_name>,CN=Configuration,<domain_partition>
+ * and CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=<site_name>,CN=Configuration,<domain_partition>
+ * on the 1st DRSUAPI connection
+ *
+ * see: unbecomeDC_drsuapi_remove_ds_server_send() and unbecomeDC_drsuapi_remove_ds_server_recv()
+ */
+
+/*
+ * DsUnbind on the 1st DRSUAPI connection
+ *
+ * not implemented, because it's not needed...
+ */
+
+
 struct libnet_UnbecomeDC_state {
 	struct composite_context *creq;
 
