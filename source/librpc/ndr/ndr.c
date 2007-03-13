@@ -160,10 +160,18 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 
 
 /*
-  expand the available space in the buffer to 'size'
+  expand the available space in the buffer to ndr->offset + extra_size
 */
-NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
+NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 {
+	uint32_t size = extra_size + ndr->offset;
+
+	if (size < ndr->offset) {
+		/* extra_size overflowed the offset */
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand to %u",
+					size);
+	}
+
 	if (ndr->alloc_size > size) {
 		return NT_STATUS_OK;
 	}
