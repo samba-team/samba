@@ -530,6 +530,25 @@ static void dcerpc_composite_fail(struct rpc_request *req)
 }
 
 /*
+  remove requests from the pending or queued queues
+ */
+static int dcerpc_req_dequeue(struct rpc_request *req)
+{
+	switch (req->state) {
+	case RPC_REQUEST_QUEUED:
+		DLIST_REMOVE(req->p->conn->request_queue, req);
+		break;
+	case RPC_REQUEST_PENDING:
+		DLIST_REMOVE(req->p->conn->pending, req);
+		break;
+	case RPC_REQUEST_DONE:
+		break;
+	}
+	return 0;
+}
+
+
+/*
   mark the dcerpc connection dead. All outstanding requests get an error
 */
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status)
@@ -537,9 +556,9 @@ static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS stat
 	/* all pending requests get the error */
 	while (conn->pending) {
 		struct rpc_request *req = conn->pending;
+		dcerpc_req_dequeue(req);
 		req->state = RPC_REQUEST_DONE;
 		req->status = status;
-		DLIST_REMOVE(conn->pending, req);
 		if (req->async.callback) {
 			req->async.callback(req);
 		}
@@ -639,13 +658,14 @@ static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event 
 {
 	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
 
-	if (req->state != RPC_REQUEST_PENDING) {
+	if (req->state == RPC_REQUEST_DONE) {
 		return;
 	}
 
+	dcerpc_req_dequeue(req);
+
 	req->status = NT_STATUS_IO_TIMEOUT;
 	req->state = RPC_REQUEST_DONE;
-	DLIST_REMOVE(req->p->conn->pending, req);
 	if (req->async.callback) {
 		req->async.callback(req);
 	}
@@ -716,6 +736,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	req->p = p;
 	req->recv_handler = dcerpc_bind_recv_handler;
 	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
+	talloc_set_destructor(req, dcerpc_req_dequeue);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob,
 						    True);
@@ -821,8 +842,8 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 	talloc_steal(req, raw_packet->data);
 
 	if (req->recv_handler != NULL) {
+		dcerpc_req_dequeue(req);
 		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(c->pending, req);
 		req->recv_handler(req, raw_packet, pkt);
 		return;
 	}
@@ -894,15 +915,6 @@ req_done:
 }
 
 /*
-  make sure requests are cleaned up 
- */
-static int dcerpc_req_destructor(struct rpc_request *req)
-{
-	DLIST_REMOVE(req->p->conn->pending, req);
-	return 0;
-}
-
-/*
   perform the send side of a async dcerpc request
 */
 static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
@@ -923,7 +935,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->p = p;
 	req->call_id = next_call_id(p->conn);
 	req->status = NT_STATUS_OK;
-	req->state = RPC_REQUEST_PENDING;
+	req->state = RPC_REQUEST_QUEUED;
 	req->payload = data_blob(NULL, 0);
 	req->flags = 0;
 	req->fault_code = 0;
@@ -950,6 +962,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	}
 
 	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
+	talloc_set_destructor(req, dcerpc_req_dequeue);
 
 	dcerpc_ship_next_request(p->conn);
 
@@ -959,7 +972,6 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 				dcerpc_timeout_handler, req);
 	}
 
-	talloc_set_destructor(req, dcerpc_req_destructor);
 	return req;
 }
 
@@ -991,6 +1003,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 
 	DLIST_REMOVE(c->request_queue, req);
 	DLIST_ADD(c->pending, req);
+	req->state = RPC_REQUEST_PENDING;
 
 	init_ncacn_hdr(p->conn, &pkt);
 
@@ -1072,7 +1085,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 {
 	NTSTATUS status;
 
-	while (req->state == RPC_REQUEST_PENDING) {
+	while (req->state != RPC_REQUEST_DONE) {
 		struct event_context *ctx = dcerpc_event_context(req->p);
 		if (event_loop_once(ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -1366,10 +1379,13 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 
 	/* make sure the recv code doesn't free the request, as we
 	   need to grab the flags element before it is freed */
-	talloc_increase_ref_count(req);
+	if (talloc_reference(p, req) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = dcerpc_request_recv(req, mem_ctx, &response);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_unlink(p, req);
 		return status;
 	}
 
@@ -1378,14 +1394,14 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	/* prepare for ndr_pull_* */
 	pull = ndr_pull_init_flags(p->conn, &response, mem_ctx);
 	if (!pull) {
-		talloc_free(req);
+		talloc_unlink(p, req);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (pull->data) {
 		pull->data = talloc_steal(pull, pull->data);
 	}
-	talloc_free(req);
+	talloc_unlink(p, req);
 
 	if (flags & DCERPC_PULL_BIGENDIAN) {
 		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
@@ -1590,6 +1606,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	req->p = p;
 	req->recv_handler = dcerpc_alter_recv_handler;
 	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
+	talloc_set_destructor(req, dcerpc_req_dequeue);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob, True);
 	if (!composite_is_ok(c)) return c;
