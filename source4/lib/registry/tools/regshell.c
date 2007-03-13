@@ -23,7 +23,6 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
-#include "lib/registry/reg_backend_rpc.h"
 #include "system/time.h"
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_security.h"
