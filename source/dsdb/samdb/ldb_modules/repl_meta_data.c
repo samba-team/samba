@@ -492,8 +492,10 @@ static int replmd_add_originating(struct ldb_module *module,
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
-		if (sa->systemFlags & 0x00000001) {
-			/* attribute is not replicated so it has no meta data */
+		if ((sa->systemFlags & 0x00000001) || (sa->systemFlags & 0x00000004)) {
+			/* if the attribute is not replicated (0x00000001)
+			 * or constructed (0x00000004) it has no metadata
+			 */
 			continue;
 		}
 
