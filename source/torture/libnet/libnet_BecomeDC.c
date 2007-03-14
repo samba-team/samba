@@ -3,7 +3,7 @@
 
    libnet_BecomeDC() tests
 
-   Copyright (C) Stefan (metze) Metzmacher 2006
+   Copyright (C) Stefan Metzmacher <metze@samba.org> 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

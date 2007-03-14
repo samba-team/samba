@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Stefan Metzmacher	2006
+   Copyright (C) Stefan Metzmacher <metze@samba.org> 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

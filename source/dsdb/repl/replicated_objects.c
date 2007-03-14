@@ -2,7 +2,7 @@
    Unix SMB/CIFS mplementation.
    Helper functions for applying replicated objects
    
-   Copyright (C) Stefan Metzmacher 2007
+   Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

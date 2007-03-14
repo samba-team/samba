@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2005
-   Copyright (C) Stefa Metzmacher 2007
+   Copyright (C) Stefa Metzmacher <metze@samba.org> 2007
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
