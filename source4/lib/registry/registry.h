@@ -183,6 +183,10 @@ struct reg_diff
 struct auth_session_info;
 struct event_context;
 
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+
 _PUBLIC_ WERROR reg_open_local (TALLOC_CTX *mem_ctx, 
 				struct registry_context **ctx, 
 				struct auth_session_info *session_info, 
