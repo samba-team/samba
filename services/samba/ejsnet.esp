@@ -9,7 +9,7 @@
 jsonrpc_include("resources.esp");
 
 
-function _init_ctx(params, error)
+function _NetContext(params, error)
 {
   if (params.length < 1)
   {
@@ -26,24 +26,27 @@ function _init_ctx(params, error)
     return error;
   }
   
-  if (creds.domain == undefined)
+  if (creds.domain == undefined ||
+      typeof(creds.domain) != "string")
   {
     error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "credentials.domain is undefined");
+		   "a valid string is expected in credentials.domain");
     return error;
   }
   
-  if (creds.username == undefined)
+  if (creds.username == undefined ||
+      typeof(creds.username) != "string")
   {
     error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "credentials.username is undefined");
+		   "a valid string is expected in credentials.username");
     return error;
   }
   
-  if (creds.password == undefined)
+  if (creds.password == undefined ||
+      typeof(creds.username) != "string")
   {
     error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "credentials.password is undefined");
+		   "a valid string is expected in credentials.password");
     return error;
   }
   
@@ -56,7 +59,7 @@ function _init_ctx(params, error)
 
   return session.resources.set(netCtx, "netCtx", error);
 }
-jsonrpc.method.init_ctx = _init_ctx;
+jsonrpc.method.NetContext = _NetContext;
 
 
 /*
