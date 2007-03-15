@@ -3851,6 +3851,20 @@ if test x"$with_ads_support" != x"no"; then
                [Whether the type krb5_addresses type exists])
   fi
 
+  AC_CACHE_CHECK([whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal],
+		samba_cv_HAVE_SHORT_KRB5_MK_ERROR_INTERFACE, [
+    AC_TRY_COMPILE([#include <krb5.h>],
+    [
+    krb5_mk_error(0,0,0);],
+    samba_cv_HAVE_SHORT_KRB5_MK_ERROR_INTERFACE=yes,
+    samba_cv_HAVE_SHORT_KRB5_MK_ERROR_INTERFACE=no)])
+
+  if test x"$samba_cv_HAVE_SHORT_KRB5_MK_ERROR_INTERFACE" = x"yes"; then
+    AC_DEFINE(HAVE_SHORT_KRB5_MK_ERROR_INTERFACE,1,
+              [whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal])
+  fi
+
+
   #
   #
   # Now the decisions whether we can support krb5
