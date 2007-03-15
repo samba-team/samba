@@ -59,6 +59,10 @@
 #define MS_MOVE 8192 
 #endif 
 
+#ifndef MS_BIND
+#define MS_BIND 4096
+#endif
+
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 
 const char *thisprogram;
