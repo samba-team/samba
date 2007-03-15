@@ -352,12 +352,19 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
 
-	/* We've finished with principal and sname now. */
+	/*
+	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
+	 * to point to the *address* of the krb5_principal, and the gss libraries
+	 * to a shallow copy of the krb5_principal pointer - so we need to keep
+	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
+	 * Just one more way in which MIT engineers screwed me over.... JRA.
+	 */
+
 	SAFE_FREE(sname);
-	krb5_free_principal(ctx, principal);
-	krb5_free_context(ctx);	
 
 	if (gss_rc) {
+		krb5_free_principal(ctx, principal);
+		krb5_free_context(ctx);	
 		return ADS_ERROR_GSS(gss_rc, minor_status);
 	}
 
@@ -415,8 +422,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 		if (gss_rc == 0) break;
 	}
 
-	gss_release_name(&minor_status, &serv_name);
-
 	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
 			    (int *)&conf_state,NULL);
 	if (gss_rc) {
@@ -471,6 +476,11 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	gss_release_buffer(&minor_status, &input_token);
 
 failed:
+
+	gss_release_name(&minor_status, &serv_name);
+	krb5_free_principal(ctx, principal);
+	krb5_free_context(ctx);	
+
 	if(scred)
 		ber_bvfree(scred);
 	return status;
