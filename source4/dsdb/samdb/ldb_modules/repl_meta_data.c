@@ -700,7 +700,7 @@ static int replmd_replicated_apply_add_callback(struct ldb_context *ldb,
 						void *private_data,
 						struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	struct replmd_replicated_request *ar = talloc_get_type(private_data,
 					       struct replmd_replicated_request);
 
@@ -794,7 +794,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 				replmd_replicated_apply_add_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return ldb_next_request(ar->module, ar->sub.change_req);
 #else
 	ret = ldb_next_request(ar->module, ar->sub.change_req);
@@ -839,7 +839,7 @@ static int replmd_replicated_apply_merge_callback(struct ldb_context *ldb,
 						  void *private_data,
 						  struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	struct replmd_replicated_request *ar = talloc_get_type(private_data,
 					       struct replmd_replicated_request);
 
@@ -1034,7 +1034,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				replmd_replicated_apply_merge_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return ldb_next_request(ar->module, ar->sub.change_req);
 #else
 	ret = ldb_next_request(ar->module, ar->sub.change_req);
@@ -1077,7 +1077,7 @@ static int replmd_replicated_apply_search_callback(struct ldb_context *ldb,
 
 	talloc_free(ares);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	if (is_done) {
 		ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
 		if (ar->sub.search_ret != LDB_SUCCESS) {
@@ -1117,7 +1117,7 @@ static int replmd_replicated_apply_search(struct replmd_replicated_request *ar)
 				   replmd_replicated_apply_search_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return ldb_next_request(ar->module, ar->sub.search_req);
 #else
 	ret = ldb_next_request(ar->module, ar->sub.search_req);
@@ -1137,7 +1137,7 @@ static int replmd_replicated_apply_search(struct replmd_replicated_request *ar)
 
 static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	if (ar->index_current >= ar->objs->num_objects) {
 		return replmd_replicated_uptodate_vector(ar);
 	}
@@ -1153,7 +1153,7 @@ static int replmd_replicated_uptodate_modify_callback(struct ldb_context *ldb,
 						      void *private_data,
 						      struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	struct replmd_replicated_request *ar = talloc_get_type(private_data,
 					       struct replmd_replicated_request);
 
@@ -1453,7 +1453,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 				replmd_replicated_uptodate_modify_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return ldb_next_request(ar->module, ar->sub.change_req);
 #else
 	ret = ldb_next_request(ar->module, ar->sub.change_req);
@@ -1493,7 +1493,7 @@ static int replmd_replicated_uptodate_search_callback(struct ldb_context *ldb,
 
 	talloc_free(ares);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	if (is_done) {
 		ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
 		if (ar->sub.search_ret != LDB_SUCCESS) {
@@ -1530,7 +1530,7 @@ static int replmd_replicated_uptodate_search(struct replmd_replicated_request *a
 				   replmd_replicated_uptodate_search_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return ldb_next_request(ar->module, ar->sub.search_req);
 #else
 	ret = ldb_next_request(ar->module, ar->sub.search_req);
@@ -1580,7 +1580,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: active this code when ldb support full async code */ 
+#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return replmd_replicated_apply_next(ar);
 #else
 	while (ar->index_current < ar->objs->num_objects &&
