@@ -252,7 +252,7 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 	krb5_init_context( &krb_ctx );
 	krb5_parse_name( krb_ctx, targetname, &host_principal );
 
-	/* don't free the printcap until after you call
+	/* don't free the principal until after you call
 	   gss_release_name() or else you'll get a segv
 	   as the krb5_copy_principal() does a structure 
 	   copy and not a deep copy.    --jerry*/
@@ -275,7 +275,7 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 	
 	gss_release_name( &minor, &targ_name );
 
-	/* now we can feree the principal */
+	/* now we can free the principal */
 
 	krb5_free_principal( krb_ctx, host_principal );
 	krb5_free_context( krb_ctx );
