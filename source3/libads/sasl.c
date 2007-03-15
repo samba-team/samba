@@ -311,9 +311,9 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	int gss_rc, rc;
 	uint8 *p;
 	uint32 max_msg_size = 0;
-	char *sname;
+	char *sname = NULL;
 	ADS_STATUS status;
-	krb5_principal principal;
+	krb5_principal principal = NULL;
 	krb5_context ctx = NULL;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
@@ -331,24 +331,32 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	initialize_krb5_error_table();
 	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
 	if (!ADS_ERR_OK(status)) {
+		SAFE_FREE(sname);
 		return status;
 	}
 	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
 	if (!ADS_ERR_OK(status)) {
+		SAFE_FREE(sname);
+		krb5_free_context(ctx);	
 		return status;
 	}
 	status = ADS_ERROR_KRB5(smb_krb5_parse_name(ctx, sname, &principal));
 	if (!ADS_ERR_OK(status)) {
+		SAFE_FREE(sname);
+		krb5_free_context(ctx);	
 		return status;
 	}
-
-	free(sname);
-	krb5_free_context(ctx);	
 
 	input_name.value = &principal;
 	input_name.length = sizeof(principal);
 
 	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
+
+	/* We've finished with principal and sname now. */
+	SAFE_FREE(sname);
+	krb5_free_principal(ctx, principal);
+	krb5_free_context(ctx);	
+
 	if (gss_rc) {
 		return ADS_ERROR_GSS(gss_rc, minor_status);
 	}
