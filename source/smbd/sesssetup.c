@@ -176,6 +176,7 @@ static BOOL make_krb5_skew_error(DATA_BLOB *pblob_out)
 
 	*pblob_out = data_blob(NULL,0);
 
+	initialize_krb5_error_table();
 	kerr = krb5_init_context(&context);
 	if (kerr) {
 		return False;
