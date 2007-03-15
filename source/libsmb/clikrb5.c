@@ -75,6 +75,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 	krb5_error_code ret;
 	char *utf8_name;
 
+	*principal = NULL;
 	if (push_utf8_allocate(&utf8_name, name) == (size_t)-1) {
 		return ENOMEM;
 	}
@@ -97,6 +98,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 	krb5_error_code ret;
 	char *utf8_name;
 
+	*unix_name = NULL;
 	ret = krb5_unparse_name(context, principal, &utf8_name);
 	if (ret) {
 		return ret;
@@ -1430,6 +1432,37 @@ done:
 	SAFE_FREE(opt);
 	opt = NULL;
 #endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
+}
+
+ krb5_error_code smb_krb5_mk_error(krb5_context context,
+				krb5_error_code error_code,
+				const krb5_principal server,
+				krb5_data *reply)
+{
+#ifdef HAVE_SHORT_KRB5_MK_ERROR_INTERFACE /* MIT */
+	/*
+	 * The MIT interface is *terrible*.
+	 * We have to construct this ourselves...
+	 */
+	krb5_error e;
+
+	memset(&e, 0, sizeof(e));
+	krb5_us_timeofday(context, &e.stime, &e.susec);
+	e.server = server;
+	e.error = error_code - krb5_err_base;
+
+	return krb5_mk_error(context, &e, reply);
+#else /* Heimdal. */
+	return krb5_mk_error(context,
+				error_code,
+				NULL,
+				NULL, /* e_data */
+				NULL,
+				server,
+				NULL,
+				NULL,
+				reply);
+#endif
 }
 
 #else /* HAVE_KRB5 */

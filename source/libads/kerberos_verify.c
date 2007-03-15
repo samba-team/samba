@@ -7,6 +7,7 @@
    Copyright (C) Guenther Deschner 2003, 2005
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Jeremy Allison 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,9 +38,12 @@ const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
  ads_keytab_add_entry function for details.
 ***********************************************************************************/
 
-static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt, 
-			krb5_keyblock **keyblock)
+static BOOL ads_keytab_verify_ticket(krb5_context context,
+					krb5_auth_context auth_context,
+					const DATA_BLOB *ticket,
+					krb5_ticket **pp_tkt,
+					krb5_keyblock **keyblock,
+					krb5_error_code *perr)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
@@ -51,6 +55,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	fstring my_name, my_fqdn;
 	int i;
 	int number_matched_principals = 0;
+	krb5_data packet;
+
+	*pp_tkt = NULL;
+	*keyblock = NULL;
+	*perr = 0;
 
 	/* Generate the list of principal names which we expect
 	 * clients might want to use for authenticating to the file
@@ -103,11 +112,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			}
 
 			number_matched_principals++;
-			p_packet->length = ticket->length;
-			p_packet->data = (char *)ticket->data;
+			packet.length = ticket->length;
+			packet.data = (char *)ticket->data;
 			*pp_tkt = NULL;
 
-			ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, p_packet,
+			ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, &packet,
 							  	      kt_entry.principal, keytab,
 								      NULL, pp_tkt, keyblock);
 
@@ -125,7 +134,8 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 				* entries - Guenther */
 					
 				if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
-				    ret == KRB5KRB_AP_ERR_TKT_EXPIRED) {
+				    ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
+				    ret == KRB5KRB_AP_ERR_SKEW) {
 					break;
 				}
 			} else {
@@ -184,6 +194,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	if (keytab) {
 		krb5_kt_close(context, keytab);
 	}
+	*perr = ret;
 	return auth_ok;
 }
 
@@ -191,32 +202,40 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
  Try to verify a ticket using the secrets.tdb.
 ***********************************************************************************/
 
-static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-				      krb5_principal host_princ,
-				      const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
-				      krb5_keyblock **keyblock)
+static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
+						krb5_auth_context auth_context,
+						krb5_principal host_princ,
+						const DATA_BLOB *ticket,
+						krb5_ticket **pp_tkt,
+						krb5_keyblock **keyblock,
+						krb5_error_code *perr)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
 	krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, ENCTYPE_DES_CBC_MD5, 0, 0 };
+	krb5_data packet;
 	int i;
+
+	*pp_tkt = NULL;
+	*keyblock = NULL;
+	*perr = 0;
 
 #if defined(ENCTYPE_ARCFOUR_HMAC)
 	enctypes[2] = ENCTYPE_ARCFOUR_HMAC;
 #endif
 
-	ZERO_STRUCTP(keyblock);
-
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
+		*perr = KRB5_CONFIG_CANTOPEN;
 		return False;
 	}
 
 	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	if (!password_s) {
 		DEBUG(1,("ads_secrets_verify_ticket: failed to fetch machine password\n"));
+		*perr = KRB5_LIBOS_CANTREADPWD;
 		return False;
 	}
 
@@ -225,14 +244,15 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
-	p_packet->length = ticket->length;
-	p_packet->data = (char *)ticket->data;
+	packet.length = ticket->length;
+	packet.data = (char *)ticket->data;
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
 		krb5_keyblock *key = NULL;
 
 		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
+			ret = ENOMEM;
 			goto out;
 		}
 	
@@ -243,7 +263,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 		krb5_auth_con_setuseruserkey(context, auth_context, key);
 
-		if (!(ret = krb5_rd_req(context, &auth_context, p_packet, 
+		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
 					NULL,
 					NULL, NULL, pp_tkt))) {
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
@@ -260,7 +280,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 		/* successfully decrypted but ticket is just not valid at the moment */
 		if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
-		    ret == KRB5KRB_AP_ERR_TKT_EXPIRED) {
+		    ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
+		    ret == KRB5KRB_AP_ERR_SKEW) {
 			break;
 		}
 
@@ -270,7 +291,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
  out:
 	SAFE_FREE(password_s);
-
+	*perr = ret;
 	return auth_ok;
 }
 
@@ -280,9 +301,11 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 ***********************************************************************************/
 
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
-			   const char *realm, time_t time_offset,
-			   const DATA_BLOB *ticket, 
-			   char **principal, PAC_DATA **pac_data,
+			   const char *realm,
+			   time_t time_offset,
+			   const DATA_BLOB *ticket,
+			   char **principal,
+			   PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key)
 {
@@ -296,20 +319,22 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	krb5_rcache rcache = NULL;
 	krb5_keyblock *keyblock = NULL;
 	time_t authtime;
-	int ret;
-
+	krb5_error_code ret = 0;
+	
 	krb5_principal host_princ = NULL;
 	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
-	BOOL got_replay_mutex = False;
-
 	BOOL auth_ok = False;
+	BOOL got_replay_mutex = False;
 	BOOL got_auth_data = False;
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(auth_data);
-	ZERO_STRUCTP(ap_rep);
-	ZERO_STRUCTP(session_key);
+
+	*principal = NULL;
+	*pac_data = NULL;
+	*ap_rep = data_blob(NULL,0);
+	*session_key = data_blob(NULL,0);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -339,6 +364,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	asprintf(&host_princ_s, "%s$", global_myname());
+	if (!host_princ_s) {
+		goto out;
+	}
+
 	strlower_m(host_princ_s);
 	ret = smb_krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
@@ -353,6 +382,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 
 	if (!grab_server_mutex("replay cache mutex")) {
 		DEBUG(1,("ads_verify_ticket: unable to protect replay cache with mutex.\n"));
+		ret = KRB5_CC_IO;
 		goto out;
 	}
 
@@ -375,11 +405,11 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	if (lp_use_kerberos_keytab()) {
-		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, &keyblock);
+		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &tkt, &keyblock, &ret);
 	}
 	if (!auth_ok) {
 		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-						    ticket, &packet, &tkt, &keyblock);
+						    ticket, &tkt, &keyblock, &ret);
 	}
 
 	release_server_mutex();
@@ -395,6 +425,15 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
+		/* Try map the error return in case it's something like
+		 * a clock skew error.
+		 */
+		sret = krb5_to_nt_status(ret);
+		if (NT_STATUS_IS_OK(sret) || NT_STATUS_EQUAL(sret,NT_STATUS_UNSUCCESSFUL)) {
+			sret = NT_STATUS_LOGON_FAILURE;
+		}
+		DEBUG(10,("ads_verify_ticket: returning error %s\n",
+			nt_errstr(sret) ));
 		goto out;
 	} 
 	
@@ -409,8 +448,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	*ap_rep = data_blob(packet.data, packet.length);
-	SAFE_FREE(packet.data);
-	packet.length = 0;
+	if (packet.data) {
+		kerberos_free_data_contents(context, &packet);
+		ZERO_STRUCT(packet);
+	}
 
 	get_krb5_smb_session_key(context, auth_context, session_key, True);
 	dump_data_pw("SMB session key (from ticket)\n", session_key->data, session_key->length);
