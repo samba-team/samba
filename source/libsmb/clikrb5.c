@@ -1432,7 +1432,13 @@ done:
 	memset(&e, 0, sizeof(e));
 	krb5_us_timeofday(context, &e.stime, &e.susec);
 	e.server = server;
+#if defined(krb5_err_base)
 	e.error = error_code - krb5_err_base;
+#elif defined(ERROR_TABLE_BASE_krb5)
+	e.error = error_code - ERROR_TABLE_BASE_krb5;
+#else
+	e.error = error_code; /* Almost certainly wrong, but what can we do... ? */
+#endif
 
 	return krb5_mk_error(context, &e, reply);
 #else /* Heimdal. */
