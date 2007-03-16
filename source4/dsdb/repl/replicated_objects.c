@@ -103,6 +103,14 @@ static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
 	W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
 
+	/*
+	 * The following rid_crypt obfuscation isn't session specific
+	 * and not really needed here, because we allways know the rid of the
+	 * user account.
+	 *
+	 * But for the rest of samba it's easier when we remove this static
+	 * obfuscation here
+	 */
 	if (rid_crypt) {
 		uint32_t i, num_hashes;
 
