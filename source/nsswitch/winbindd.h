@@ -40,6 +40,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+#define WB_REPLACE_CHAR		'_'
+
 /* bits for fd_event.flags */
 #define EVENT_FD_READ 1
 #define EVENT_FD_WRITE 2
