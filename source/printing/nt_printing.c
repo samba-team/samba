@@ -3864,6 +3864,15 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 
 	fstrcpy(info->printername, printername);
 
+#ifdef HAVE_CUPS
+	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+		/* Pull the location and comment strings from cups if we don't
+		   already have one */
+		if ( !strlen(info->location) || !strlen(info->comment) )
+			cups_pull_comment_location( info );
+	}
+#endif
+
 	len += unpack_devicemode(&info->devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
