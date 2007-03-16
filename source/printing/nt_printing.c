@@ -3743,9 +3743,7 @@ static void map_to_os2_driver(fstring drivername)
 ****************************************************************************/
 static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char* sharename)
 {
-	int snum;
-
-	snum = lp_servicenumber(sharename);
+	int snum = lp_servicenumber(sharename);
 
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s", 
@@ -3768,6 +3766,15 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char 
 	pstrcpy(info->comment, "");
 	fstrcpy(info->printprocessor, "winprint");
 	fstrcpy(info->datatype, "RAW");
+
+#ifdef HAVE_CUPS
+	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+		/* Pull the location and comment strings from cups if we don't
+		   already have one */
+		if ( !strlen(info->location) || !strlen(info->comment) )
+			cups_pull_comment_location( info );
+	}
+#endif
 
 	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 
