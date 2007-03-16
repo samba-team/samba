@@ -414,6 +414,11 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
+	if (!(*domain_name = talloc_strdup(mem_ctx, *domain_name))) {
+		TALLOC_FREE(tmp_ctx);
+		return False;
+	}
+
 	/*
 	 * winbind_lookup_rids allocates its own array. We've been given the
 	 * array, so copy it over
