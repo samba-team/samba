@@ -239,7 +239,7 @@ void smb_krb5_locator_close(void *private_data)
 {
 	DEBUG(10,("smb_krb5_locator_close: called\n"));
 
-	gfree_all();
+	/* gfree_all(); */
 }
 
 /**
@@ -324,7 +324,7 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 	/* if we didn't found any KDCs on our site go to the main list */
 
 	if (NT_STATUS_IS_OK(status) && sitename && (count == 0)) {
-		ip_list = NULL;
+		SAFE_FREE(ip_list);
 		SAFE_FREE(sitename);
 		status = get_kdc_list(realm, NULL, &ip_list, &count);
 	}
@@ -364,6 +364,8 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 			break;
 		}
 	}
+
+	SAFE_FREE(ip_list);
 
 	return ret;
 }
