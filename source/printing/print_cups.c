@@ -1198,6 +1198,145 @@ struct printif	cups_printif =
 	cups_job_submit,
 };
 
+BOOL cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
+{
+	http_t		*http = NULL;		/* HTTP connection to server */
+	ipp_t		*request = NULL,	/* IPP Request */
+			*response = NULL;	/* IPP Response */
+	ipp_attribute_t	*attr;		/* Current attribute */
+	cups_lang_t	*language = NULL;	/* Default language */
+	char		*name,		/* printer-name attribute */
+			*info,		/* printer-info attribute */
+			*location;	/* printer-location attribute */
+	char		uri[HTTP_MAX_URI];
+	static const char *requested[] =/* Requested attributes */
+			{
+			  "printer-name",
+			  "printer-info",
+			  "printer-location"
+			};
+	BOOL ret = False;
+
+	DEBUG(5, ("pulling %s location\n", printer->sharename));
+
+	/*
+	 * Make sure we don't ask for passwords...
+	 */
+
+        cupsSetPasswordCB(cups_passwd_cb);
+
+	/*
+	 * Try to connect to the server...
+	 */
+
+	if ((http = cups_connect()) == NULL) {
+		goto out;
+	}
+
+	request = ippNew();
+
+	request->request.op.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
+	request->request.op.request_id   = 1;
+
+	language = cupsLangDefault();
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
+                     "attributes-charset", NULL, cupsLangEncoding(language));
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
+                     "attributes-natural-language", NULL, language->language);
+
+	slprintf(uri, sizeof(uri) - 1, "ipp://%s/printers/%s",
+		 lp_cups_server(), printer->sharename);
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
+                     "printer-uri", NULL, uri);
+
+        ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	              "requested-attributes",
+		      (sizeof(requested) / sizeof(requested[0])),
+		      NULL, requested);
+
+	/*
+	 * Do the request and get back a response...
+	 */
+
+	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
+		DEBUG(0,("Unable to get printer attributes - %s\n",
+			 ippErrorString(cupsLastError())));
+		goto out;
+	}
+
+	for (attr = response->attrs; attr != NULL;) {
+		/*
+		 * Skip leading attributes until we hit a printer...
+		 */
+
+		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
+			attr = attr->next;
+
+		if (attr == NULL)
+        		break;
+
+		/*
+		 * Pull the needed attributes from this printer...
+		 */
+
+		name       = NULL;
+		info       = NULL;
+		location   = NULL;
+
+		while ( attr && (attr->group_tag == IPP_TAG_PRINTER) ) {
+			/* Grab the comment if we don't have one */
+        		if ( (strcmp(attr->name, "printer-info") == 0)
+			     && (attr->value_tag == IPP_TAG_TEXT)
+			     && !strlen(printer->comment) ) 
+			{
+				DEBUG(5,("cups_pull_comment_location: Using cups comment: %s\n",
+					 attr->values[0].string.text));				
+			    	pstrcpy(printer->comment,attr->values[0].string.text);
+			}
+
+			/* Grab the location if we don't have one */ 
+			if ( (strcmp(attr->name, "printer-location") == 0)
+			     && (attr->value_tag == IPP_TAG_TEXT) 
+			     && !strlen(printer->location) )
+			{
+				DEBUG(5,("cups_pull_comment_location: Using cups location: %s\n",
+					 attr->values[0].string.text));				
+			    	fstrcpy(printer->location,attr->values[0].string.text);
+			}
+
+        		attr = attr->next;
+		}
+
+		/*
+		 * See if we have everything needed...
+		 */
+
+		if (name == NULL)
+			break;
+
+	}
+
+	ippDelete(response);
+	response = NULL;
+
+	ret = True;
+
+ out:
+	if (response)
+		ippDelete(response);
+
+	if (language)
+		cupsLangFree(language);
+
+	if (http)
+		httpClose(http);
+
+	return ret;
+}
+
 #else
  /* this keeps fussy compilers happy */
  void print_cups_dummy(void);
