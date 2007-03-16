@@ -200,6 +200,7 @@ void gfree_all( void )
 	gfree_debugsyms();
 	gfree_charcnv();
 	gfree_messages();
+	gfree_interfaces();
 
 	/* release the talloc null_context memory last */
 	talloc_disable_null_tracking();
