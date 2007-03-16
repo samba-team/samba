@@ -231,6 +231,18 @@ void load_interfaces(void)
 }
 
 
+void gfree_interfaces(void)
+{
+	while (local_interfaces) {
+		struct interface *iface = local_interfaces;
+		DLIST_REMOVE(local_interfaces, local_interfaces);
+		ZERO_STRUCTPN(iface);
+		SAFE_FREE(iface);
+	}
+
+	SAFE_FREE(probed_ifaces);
+}
+
 /****************************************************************************
 return True if the list of probed interfaces has changed
 ****************************************************************************/
