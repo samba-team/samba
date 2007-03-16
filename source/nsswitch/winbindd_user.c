@@ -243,7 +243,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
 
-	ws_name_replace( s->username, '_' );
+	ws_name_replace( s->username, WB_REPLACE_CHAR );
 	 
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
@@ -344,6 +344,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
+
+	ws_name_return( state->request.data.username, WB_REPLACE_CHAR );
 
 	if (!parse_domain_user(state->request.data.username, domname,
 			       username)) {

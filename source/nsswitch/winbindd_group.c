@@ -508,7 +508,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
 
-	ws_name_replace( name_group, '_' );
+	ws_name_replace( name_group, WB_REPLACE_CHAR );
         
 	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, domain->name,
 					 name_group, &group_sid, &name_type)) {
@@ -1274,6 +1274,8 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	}
 
 	s->state = state;
+
+	ws_name_return( state->request.data.username, WB_REPLACE_CHAR );
 
 	if (!parse_domain_user_talloc(state->mem_ctx,
 				      state->request.data.username,
