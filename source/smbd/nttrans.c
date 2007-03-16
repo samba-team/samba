@@ -353,7 +353,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		return(ERROR_DOS(ERRSRV,ERRnofids));
 	}
 
-	/* TODO: Add pipe to db */
+	/* Add pipe to db */
 	
 	if ( !store_pipe_opendb( p ) ) {
 		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));

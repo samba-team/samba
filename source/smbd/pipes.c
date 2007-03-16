@@ -300,7 +300,5 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 	
-	/* TODO: REMOVE PIPE FROM DB */
-
 	return(outsize);
 }
