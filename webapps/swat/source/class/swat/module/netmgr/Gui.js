@@ -85,6 +85,26 @@ qx.Proto.displayData = function(module, rpcRequest)
 };
 
 
+qx.Proto.getParentNode = function(module, node)
+{
+  var tree = this._tree;
+  var nodes = tree.getTableModel().getData();
+  if (nodes == undefined)
+  {
+    return undefined;
+  }
+
+  if (node.parentNodeId == 0)
+  {
+    // there is no parent node
+    return node;
+  }
+  
+  var parentNode = nodes[node.parentNodeId];
+  return parentNode;
+};
+
+
 qx.Proto._addHostNode = function(module, rpcRequest)
 {
   var fsm = module.fsm;
@@ -93,22 +113,20 @@ qx.Proto._addHostNode = function(module, rpcRequest)
   // Get the tree widget
   var tree = this._tree;
   var dataModel = tree.getDataModel();
-
-  // Add new host and its service branches
+  
+  // Add new host and its service leaves
   var hostNodeId = dataModel.addBranch(null, hostname, false);
   
-  var domainNodeId = dataModel.addBranch(hostNodeId, "Domain", false);
-  var usersNodeId = dataModel.addBranch(hostNodeId, "Users", false);
-  var groupsNodeId = dataModel.addBranch(hostNodeId, "Groups", false);
-  var srvcsNodeId = dataModel.addBranch(hostNodeId, "Services", false);
-
-  // Services don't expand
-  dataModel.setState(domainNodeId, { bHideOpenClose : true });
-  dataModel.setState(usersNodeId, { bHideOpenClose : true });
-  dataModel.setState(groupsNodeId, { bHideOpenClose : true });
-  dataModel.setState(srvcsNodeId, { bHideOpenClose : true });
+  var domainNodeId = dataModel.addLeaf(hostNodeId, "Domain", false);
+  var usersNodeId = dataModel.addLeaf(hostNodeId, "Users", false);
+  var groupsNodeId = dataModel.addLeaf(hostNodeId, "Groups", false);
+  var srvcsNodeId = dataModel.addLeaf(hostNodeId, "Services", false);
   
   dataModel.setData();
+  tree.addEventListener("changeSelection", fsm.eventListener, fsm);
+
+  var hostNode = dataModel.getData()[hostNodeId];
+  hostNode.credentials = undefined;
 };
 
 

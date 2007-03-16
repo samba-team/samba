@@ -43,7 +43,7 @@ qx.Proto.buildFsm = function(module)
 		result.data.origin == origins.Server &&
 		result.data.code == serverErrors.ResourceError)
 	    {
-	      this.debug("error" + result);
+	      alert("Error when receiving rpc: '" + result.id + "'" + " exception: " + result.data);
 	    }
 	    else
 	    {
@@ -63,7 +63,13 @@ qx.Proto.buildFsm = function(module)
           {
             "swat.main.canvas" :
               "Transition_Idle_to_AwaitRpcResult_via_canvas_appear"
-          }
+          },
+
+	  "changeSelection" :
+	  {
+	    "tree" :
+	      "Transition_Idle_to_AwaitRpcResult_via_tree_selection_changed"
+	  }
         }
     });
 
@@ -87,6 +93,37 @@ qx.Proto.buildFsm = function(module)
   // Add the new transition
   state.addTransition(trans);
 
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Idle_to_AwaitRpcResult_via_tree_selection_changed",
+    {
+      "nextState" : "State_AwaitRpcResult",
+
+      "ontransition" :
+      function(fsm, event)
+      {
+	var nodes = event.getData();
+	var selectedNode = nodes[0];
+
+	var gui = swat.module.netmgr.Gui.getInstance();
+	var parentNode = gui.getParentNode(module, selectedNode);
+
+	if (typeof(parentNode.credentials) == "object")
+	{
+	  var creds = parentNode.credentials;
+	  var request = _this.callRpc("samba.ejsnet", "NetContext", [ creds ]);
+	  request.setUserData("requestType", "NetContext");
+	}
+	else
+	{
+	  // TODO: display a login dialog
+	}
+      }
+      
+    });
+
+  // Add the new transition
+  state.addTransition(trans);
+  
   blockedEvents =
   {
     "appear":
