@@ -744,6 +744,8 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 	
+	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+
 	if (!canonicalize_username(state->request.data.auth.user,
 			       name_domain, name_user)) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
@@ -1332,6 +1334,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 	
+	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
 
 	if (domain->online == False) {
