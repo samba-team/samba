@@ -54,9 +54,13 @@ int cli_set_port(struct cli_state *cli, int port)
  should never go into a blocking read.
 ****************************************************************************/
 
-static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
+static BOOL client_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
+	NTSTATUS status;
+	int fd = cli->fd;
+	char *buffer = cli->inbuf;
+	unsigned int timeout = cli->timeout;
 
 	for(;;) {
 		ret = receive_smb_raw(fd, buffer, timeout);
@@ -70,6 +74,15 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 		/* Ignore session keepalive packets. */
 		if(CVAL(buffer,0) != SMBkeepalive)
 			break;
+	}
+	status = cli_decrypt_message(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("SMB decryption failed on incoming packet! Error %s\n",
+			nt_errstr(status)));
+		cli->smb_rw_error = READ_BAD_DECRYPT;
+		close(cli->fd);
+		cli->fd = -1;
+		return False;
 	}
 	show_msg(buffer);
 	return ret;
@@ -88,7 +101,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return False; 
 
  again:
-	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	ret = client_receive_smb(cli);
 	
 	if (ret) {
 		/* it might be an oplock break request */
@@ -132,7 +145,7 @@ static ssize_t write_socket(int fd, const char *buf, size_t len)
                                                                                                                                             
         DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
         ret = write_data(fd,buf,len);
-                                                                                                                                            
+
         DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
         if(ret <= 0)
                 DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
@@ -147,15 +160,27 @@ static ssize_t write_socket(int fd, const char *buf, size_t len)
 
 BOOL cli_send_smb(struct cli_state *cli)
 {
+	NTSTATUS status;
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1)
+	if (cli->fd == -1) {
 		return False;
+	}
 
 	cli_calculate_sign_mac(cli);
+
+	status = cli_encrypt_message(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		close(cli->fd);
+		cli->fd = -1;
+		cli->smb_rw_error = WRITE_ERROR;
+		DEBUG(0,("Error in encrypting client message. Error %s\n",
+			nt_errstr(status) ));
+		return False;
+	}
 
 	len = smb_len(cli->outbuf) + 4;
 
@@ -173,8 +198,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 	}
 	/* Increment the mid so we can tell between responses. */
 	cli->mid++;
-	if (!cli->mid)
+	if (!cli->mid) {
 		cli->mid++;
+	}
 	return True;
 }
 
