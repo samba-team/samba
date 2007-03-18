@@ -191,14 +191,14 @@ BOOL conn_idle_all(time_t t)
 {
 	int deadtime = lp_deadtime()*60;
 	pipes_struct *plist = NULL;
-	BOOL allidle = True;
-	connection_struct *conn, *next;
+	connection_struct *conn;
 
 	if (deadtime <= 0)
 		deadtime = DEFAULT_SMBD_TIMEOUT;
 
-	for (conn=Connections;conn;conn=next) {
-		next=conn->next;
+	for (conn=Connections;conn;conn=conn->next) {
+
+		time_t age = t - conn->lastused;
 
 		/* Update if connection wasn't idle. */
 		if (conn->lastused != conn->lastused_count) {
@@ -207,12 +207,12 @@ BOOL conn_idle_all(time_t t)
 		}
 
 		/* close dirptrs on connections that are idle */
-		if ((t-conn->lastused) > DPTR_IDLE_TIMEOUT) {
+		if (age > DPTR_IDLE_TIMEOUT) {
 			dptr_idlecnum(conn);
 		}
 
-		if (conn->num_files_open > 0 || (t-conn->lastused)<deadtime) {
-			allidle = False;
+		if (conn->num_files_open > 0 || age < deadtime) {
+			return False;
 		}
 	}
 
@@ -221,11 +221,14 @@ BOOL conn_idle_all(time_t t)
 	 * idle with a handle open.
 	 */
 
-	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist))
-		if (plist->pipe_handles && plist->pipe_handles->count)
-			allidle = False;
+	for (plist = get_first_internal_pipe(); plist;
+	     plist = get_next_internal_pipe(plist)) {
+		if (plist->pipe_handles && plist->pipe_handles->count) {
+			return False;
+		}
+	}
 	
-	return allidle;
+	return True;
 }
 
 /****************************************************************************
@@ -303,6 +306,8 @@ void conn_free(connection_struct *conn)
 	DLIST_REMOVE(Connections, conn);
 
 	bitmap_clear(bmap, conn->cnum);
+
+	SMB_ASSERT(num_open > 0);
 	num_open--;
 
 	conn_free_internal(conn);
