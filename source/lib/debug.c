@@ -688,20 +688,15 @@ void check_log_size( void )
 	int         maxlog;
 	SMB_STRUCT_STAT st;
 
-	/*
-	 *  We need to be root to check/change log-file, skip this and let the main
-	 *  loop check do a new check as root.
-	 */
-
-	if( geteuid() != 0 )
-		return;
-
 	if(log_overflow || !need_to_check_log_size() )
 		return;
 
 	maxlog = lp_max_log_size() * 1024;
 
 	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
+
+		become_root_uid_only();
+
 		(void)reopen_logs();
 		if( dbf && get_file_size( debugf ) > maxlog ) {
 			pstring name;
@@ -714,6 +709,8 @@ void check_log_size( void )
 				(void)rename(name, debugf);
 			}
 		}
+
+		unbecome_root_uid_only();
 	}
 
 	/*

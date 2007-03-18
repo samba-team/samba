@@ -1448,13 +1448,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
   
 	update_monitored_printq_cache();
   
-	/*
-	 * Now we are root, check if the log files need pruning.
-	 * Force a log file check.
-	 */
-	force_check_log_size();
-	check_log_size();
-
 	/* Send any queued printer notify message to interested smbd's. */
 
 	print_notify_send_messages(0);
