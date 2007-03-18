@@ -22,7 +22,6 @@
 #include "includes.h"
 
 uint16 global_smbpid;
-extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
@@ -221,6 +220,7 @@ BOOL push_deferred_smb_message(uint16 mid,
 struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
+	char *name;
 	BOOL (*handler)(const struct timeval *now, void *private_data);
 	void *private_data;
 };
@@ -241,17 +241,19 @@ static void idle_event_handler(struct event_context *ctx,
 		return;
 	}
 
-	event->te = event_add_timed(smbd_event_context(), event,
+	event->te = event_add_timed(ctx, event,
 				    timeval_sum(now, &event->interval),
-				    "idle_event_handler",
+				    event->name,
 				    idle_event_handler, event);
 
 	/* We can't do much but fail here. */
 	SMB_ASSERT(event->te != NULL);
 }
 
-struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
+struct idle_event *event_add_idle(struct event_context *event_ctx,
+				  TALLOC_CTX *mem_ctx,
 				  struct timeval interval,
+				  const char *name,
 				  BOOL (*handler)(const struct timeval *now,
 						  void *private_data),
 				  void *private_data)
@@ -269,9 +271,15 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 	result->handler = handler;
 	result->private_data = private_data;
 
-	result->te = event_add_timed(smbd_event_context(), result,
+	if (!(result->name = talloc_asprintf(result, "idle_evt(%s)", name))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	result->te = event_add_timed(event_ctx, result,
 				     timeval_sum(&now, &interval),
-				     "idle_event_handler",
+				     result->name,
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("event_add_timed failed\n"));
@@ -1363,12 +1371,7 @@ static BOOL timeout_processing(int *select_timeout,
 		last_idle_closed_check = t;
 	}
 
-	if (keepalive && (t - last_keepalive_sent_time)>keepalive) {
-		if (!send_keepalive(smbd_server_fd())) {
-			DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-			return False;
-		}
-
+	if (lp_keepalive() && (t - last_keepalive_sent_time)> lp_keepalive()) {
 		/* send a keepalive for a password server or the like.
 			This is attached to the auth_info created in the
 		negprot */
