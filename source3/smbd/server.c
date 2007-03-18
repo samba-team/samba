@@ -814,6 +814,18 @@ static BOOL init_structs(void )
 	return True;
 }
 
+/*
+ * Send keepalive packets to our client
+ */
+static BOOL keepalive_fn(const struct timeval *now, void *private_data)
+{
+	if (!send_keepalive(smbd_server_fd())) {
+		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		return False;
+	}
+	return True;
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -1106,6 +1118,20 @@ extern void build_options(BOOL screen);
 
 	/* register our message handlers */
 	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis, NULL);
+
+	if (lp_keepalive() != 0) {
+		struct timeval interval;
+
+		interval.tv_sec = lp_keepalive();
+		interval.tv_usec = 0;
+
+		if (!(event_add_idle(smbd_event_context(), NULL,
+				     interval, "keepalive", keepalive_fn,
+				     NULL))) {
+			DEBUG(0, ("Could not add keepalive event\n"));
+			exit(1);
+		}
+	}
 
 	smbd_process();
 
