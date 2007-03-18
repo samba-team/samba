@@ -38,7 +38,7 @@
 	<citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> log,
 	<command>vfs_ext_audit</command> is identical to 
-	<citerefentry><refentrytitle>vfs_ext_audit</refentrytitle>
+	<citerefentry><refentrytitle>vfs_audit</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>.
 	</para>
 
