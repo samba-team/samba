@@ -1317,7 +1317,8 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
+static BOOL timeout_processing(int *select_timeout,
+			       time_t *last_timeout_processing_time)
 {
 	static time_t last_keepalive_sent_time = 0;
 	static time_t last_idle_closed_check = 0;
@@ -1382,7 +1383,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	}
 
 	/* check for connection timeouts */
-	allidle = conn_idle_all(t, deadtime);
+	allidle = conn_idle_all(t);
 
 	if (allidle && conn_num_open()>0) {
 		DEBUG(2,("Closing idle connection 2.\n"));
@@ -1541,12 +1542,8 @@ void smbd_process(void)
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	while (True) {
-		int deadtime = lp_deadtime()*60;
 		int select_timeout = setup_select_timeout();
 		int num_echos;
-
-		if (deadtime <= 0)
-			deadtime = DEFAULT_SMBD_TIMEOUT;
 
 		errno = 0;      
 		
@@ -1556,7 +1553,8 @@ void smbd_process(void)
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
-			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing(&select_timeout,
+					       &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1568,7 +1566,8 @@ void smbd_process(void)
 #endif
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
-			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing(&select_timeout,
+					       &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1589,7 +1588,7 @@ void smbd_process(void)
 		process_smb(InBuffer, OutBuffer);
 
 		if (smb_echo_count != num_echos) {
-			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing( &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1606,7 +1605,9 @@ void smbd_process(void)
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
 			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+				if(!timeout_processing(
+					   &select_timeout,
+					   &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */
 				last_timeout_processing_time = new_check_time; /* Reset time. */

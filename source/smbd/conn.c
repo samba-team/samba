@@ -187,11 +187,15 @@ void conn_close_all(void)
  Idle inactive connections.
 ****************************************************************************/
 
-BOOL conn_idle_all(time_t t, int deadtime)
+BOOL conn_idle_all(time_t t)
 {
+	int deadtime = lp_deadtime()*60;
 	pipes_struct *plist = NULL;
 	BOOL allidle = True;
 	connection_struct *conn, *next;
+
+	if (deadtime <= 0)
+		deadtime = DEFAULT_SMBD_TIMEOUT;
 
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
