@@ -79,7 +79,6 @@ extern userdom_struct current_user_info;
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
 
-int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
 
 extern int extra_time_offset;
@@ -315,6 +314,7 @@ typedef struct {
 	int iIdmapNegativeTime;
 
 	BOOL bResetOnZeroVC;
+	int iKeepalive;
 	param_opt_struct *param_opt;
 } global;
 
@@ -1008,7 +1008,7 @@ static struct parm_struct parm_table[] = {
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
-	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
+	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED}, 
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"kernel change notify", P_BOOL, P_LOCAL, &sDefault.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 
@@ -1666,6 +1666,8 @@ static void init_globals(BOOL first_time_only)
 	/* By default disallow guest access to usershares. */
 	Globals.bUsershareAllowGuests = False;
 
+	Globals.iKeepalive = DEFAULT_KEEPALIVE;
+
 	/* By default no shares out of the registry */
 	Globals.bRegistryShares = False;
 }
@@ -1903,6 +1905,7 @@ FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend) /* deprecated */
 FN_GLOBAL_STRING(lp_idmap_alloc_backend, &Globals.szIdmapAllocBackend)
 FN_GLOBAL_INTEGER(lp_idmap_expire_time, &Globals.iIdmapExpireTime)
 FN_GLOBAL_INTEGER(lp_idmap_negative_time, &Globals.iIdmapNegativeTime)
+FN_GLOBAL_INTEGER(lp_keepalive, &Globals.iKeepalive)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
