@@ -1328,9 +1328,7 @@ void check_reload(time_t t)
 static BOOL timeout_processing(int *select_timeout,
 			       time_t *last_timeout_processing_time)
 {
-	static time_t last_idle_closed_check = 0;
 	time_t t;
-	BOOL allidle = True;
 
 	if (smb_read_error == READ_EOF) {
 		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
@@ -1350,30 +1348,11 @@ static BOOL timeout_processing(int *select_timeout,
 
 	*last_timeout_processing_time = t = time(NULL);
 
-	if(last_idle_closed_check == 0)
-		last_idle_closed_check = t;
-
 	/* become root again if waiting */
 	change_to_root_user();
 
 	/* check if we need to reload services */
 	check_reload(t);
-
-	/* automatic timeout if all connections are closed */      
-	if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) {
-		DEBUG( 2, ( "Closing idle connection\n" ) );
-		return False;
-	} else {
-		last_idle_closed_check = t;
-	}
-
-	/* check for connection timeouts */
-	allidle = conn_idle_all(t);
-
-	if (allidle && conn_num_open()>0) {
-		DEBUG(2,("Closing idle connection 2.\n"));
-		return False;
-	}
 
 	if(global_machine_password_needs_changing && 
 			/* for ADS we need to do a regular ADS password change, not a domain
