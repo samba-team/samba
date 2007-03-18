@@ -1328,7 +1328,6 @@ void check_reload(time_t t)
 static BOOL timeout_processing(int *select_timeout,
 			       time_t *last_timeout_processing_time)
 {
-	static time_t last_keepalive_sent_time = 0;
 	static time_t last_idle_closed_check = 0;
 	time_t t;
 	BOOL allidle = True;
@@ -1351,9 +1350,6 @@ static BOOL timeout_processing(int *select_timeout,
 
 	*last_timeout_processing_time = t = time(NULL);
 
-	if(last_keepalive_sent_time == 0)
-		last_keepalive_sent_time = t;
-
 	if(last_idle_closed_check == 0)
 		last_idle_closed_check = t;
 
@@ -1369,20 +1365,6 @@ static BOOL timeout_processing(int *select_timeout,
 		return False;
 	} else {
 		last_idle_closed_check = t;
-	}
-
-	if (lp_keepalive() && (t - last_keepalive_sent_time)> lp_keepalive()) {
-		/* send a keepalive for a password server or the like.
-			This is attached to the auth_info created in the
-		negprot */
-		if (negprot_global_auth_context && negprot_global_auth_context->challenge_set_method 
-				&& negprot_global_auth_context->challenge_set_method->send_keepalive) {
-
-			negprot_global_auth_context->challenge_set_method->send_keepalive
-			(&negprot_global_auth_context->challenge_set_method->private_data);
-		}
-
-		last_keepalive_sent_time = t;
 	}
 
 	/* check for connection timeouts */
