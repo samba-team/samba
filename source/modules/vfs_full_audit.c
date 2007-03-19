@@ -174,6 +174,13 @@ static int smb_full_audit_mknod(vfs_handle_struct *handle,
 		       const char *pathname, mode_t mode, SMB_DEV_T dev);
 static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 			    const char *path, char *resolved_path);
+static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
+			struct sys_notify_context *ctx,
+			struct notify_entry *e,
+			void (*callback)(struct sys_notify_context *ctx,
+					void *private_data,
+					struct notify_event *ev),
+			void *private_data, void *handle_p);
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
 			    const char *path, uint flags);
 static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -398,6 +405,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	{SMB_VFS_OP(smb_full_audit_mknod),	SMB_VFS_OP_MKNOD,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_realpath),	SMB_VFS_OP_REALPATH,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_notify_watch),SMB_VFS_OP_NOTIFY_WATCH,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_chflags),	SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_LOGGER},
@@ -1406,6 +1415,23 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 
 	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
+
+	return result;
+}
+
+static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
+			struct sys_notify_context *ctx,
+			struct notify_entry *e,
+			void (*callback)(struct sys_notify_context *ctx,
+					void *private_data,
+					struct notify_event *ev),
+			void *private_data, void *handle_p)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, callback, private_data, handle_p);
+
+	do_log(SMB_VFS_OP_NOTIFY_WATCH, NT_STATUS_IS_OK(result), handle, "");
 
 	return result;
 }
