@@ -1646,7 +1646,7 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	if (!state->privileged) {
 		char *error_string = NULL;
-		DEBUG(2, ("winbindd_pam_auth_crap: privileged access "
+		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access "
 			  "denied.  !\n"));
 		DEBUGADD(2, ("winbindd_pam_auth_crap: Ensure permissions "
 			     "on %s are set correctly.\n",
