@@ -436,7 +436,7 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	/* Fill in request and send down pipe */
 	init_request(request, req_type);
 	
-	if (write_sock(request, sizeof(*request), 0) == -1) {
+	if (write_sock(request, sizeof(*request), 0, 1) == -1) {
 		_pam_log(pamh, ctrl, LOG_ERR, "pam_winbind_request: write to socket failed!");
 		close_sock();
 		return PAM_SERVICE_ERR;
