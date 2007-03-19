@@ -34,8 +34,7 @@
  * These definitions depend on smb.h
  */
 
-struct print_job_info
-{
+struct print_job_info {
 	uint16 id;
 	uint16 priority;
 	size_t size;
@@ -77,6 +76,19 @@ struct rpc_pipe_client {
 
 	/* The following is only non-null on a netlogon pipe. */
 	struct dcinfo *dc;
+};
+
+/* Transport encryption state. */
+enum smb_trans_enc_type { SMB_TRANS_ENC_NTLM, SMB_TRANS_ENC_KRB5 };
+
+struct smb_trans_enc_state {
+	enum smb_trans_enc_type smb_enc_type;
+	union {
+		NTLMSSP_STATE *ntlmssp_state;
+#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
+		gss_ctx_id_t context_handle;
+#endif
+	};
 };
 
 struct cli_state {
@@ -136,6 +148,8 @@ struct cli_state {
 	TALLOC_CTX *mem_ctx;
 
 	smb_sign_info sign_info;
+
+	struct smb_trans_enc_state *trans_enc_state; /* Setup if we're encrypting SMB's. */
 
 	/* the session key for this CLI, outside 
 	   any per-pipe authenticaion */
