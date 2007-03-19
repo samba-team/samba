@@ -1036,13 +1036,12 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	char    *buf = NULL;
 	ssize_t byte_count;
 
-	if ((buf=(char *)SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
-		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
-				fname, PE_HEADER_SIZE));
+	if ((buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE)) == NULL) {
+		DEBUG(0,("get_file_version: PE file [%s] DOS Header malloc failed bytes = %d\n",
+				fname, DOS_HEADER_SIZE));
 		goto error_exit;
 	}
 
-	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
 	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
 		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %lu\n",
 			 fname, (unsigned long)byte_count));
@@ -1064,7 +1063,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		goto no_version_info;
 	}
 
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
+	/* Note: DOS_HEADER_SIZE and NE_HEADER_SIZE are incidentally same */
+	if ((byte_count = vfs_read_data(fsp, buf, NE_HEADER_SIZE)) < NE_HEADER_SIZE) {
 		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %lu\n",
 			 fname, (unsigned long)byte_count));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -1075,13 +1075,13 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
 		unsigned int num_sections;
 		unsigned int section_table_bytes;
-		
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
-			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
-					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
-			 * else besides a PE file, but it unlikely at this point.
-			 */
+
+		/* Just skip over optional header to get to section table */
+		if (SMB_VFS_LSEEK(fsp, fsp->fh->fd,
+				SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-(NE_HEADER_SIZE-PE_HEADER_SIZE),
+				SEEK_CUR) == (SMB_OFF_T)-1) {
+			DEBUG(3,("get_file_version: File [%s] Windows optional header too short, errno = %d\n",
+				fname, errno));
 			goto error_exit;
 		}
 
