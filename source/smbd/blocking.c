@@ -51,6 +51,9 @@ static blocking_lock_record *blocking_lock_queue;
 /* dlink list we move cancelled lock records onto. */
 static blocking_lock_record *blocking_lock_cancelled_queue;
 
+/* The event that makes us process our blocking lock queue */
+static struct timed_event *brl_timeout;
+
 /****************************************************************************
  Destructor for the above structure.
 ****************************************************************************/
@@ -73,6 +76,63 @@ static BOOL in_chained_smb(void)
 static void received_unlock_msg(int msg_type, struct process_id src,
 				void *buf, size_t len,
 				void *private_data);
+static void process_blocking_lock_queue(void);
+
+static void brl_timeout_fn(struct event_context *event_ctx,
+			   struct timed_event *te,
+			   const struct timeval *now,
+			   void *private_data)
+{
+	SMB_ASSERT(brl_timeout == te);
+	TALLOC_FREE(brl_timeout);
+
+	change_to_root_user();	/* TODO: Possibly run all timed events as
+				 * root */
+
+	process_blocking_lock_queue();
+}
+
+/****************************************************************************
+ After a change to blocking_lock_queue, recalculate the timed_event for the
+ next processing.
+****************************************************************************/
+
+static BOOL recalc_brl_timeout(void)
+{
+	blocking_lock_record *brl;
+	struct timeval next_timeout;
+
+	TALLOC_FREE(brl_timeout);
+
+	next_timeout = timeval_zero();	
+
+	for (brl = blocking_lock_queue; brl; brl = brl->next) {
+		if (timeval_is_zero(&brl->expire_time)) {
+			continue;
+		}
+
+		if (timeval_is_zero(&next_timeout)) {
+			next_timeout = brl->expire_time;
+		}
+		else {
+			next_timeout = timeval_min(&next_timeout,
+						   &brl->expire_time);
+		}
+	}
+
+	if (timeval_is_zero(&next_timeout)) {
+		return True;
+	}
+
+	if (!(brl_timeout = event_add_timed(smbd_event_context(), NULL,
+					    next_timeout, "brl_timeout",
+					    brl_timeout_fn, NULL))) {
+		return False;
+	}
+
+	return True;
+}
+
 
 /****************************************************************************
  Function to push a blocking lock request onto the lock queue.
@@ -152,6 +212,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 	}
 
 	DLIST_ADD_END(blocking_lock_queue, blr, blocking_lock_record *);
+	recalc_brl_timeout();
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!set_lock_msg) {
@@ -591,57 +652,14 @@ static void received_unlock_msg(int msg_type, struct process_id src,
 }
 
 /****************************************************************************
- Return the number of milliseconds to the next blocking locks timeout, or default_timeout
-*****************************************************************************/
-
-unsigned int blocking_locks_timeout_ms(unsigned int default_timeout_ms)
-{
-	unsigned int timeout_ms = default_timeout_ms;
-	struct timeval tv_curr;
-	SMB_BIG_INT min_tv_dif_us = 0x7FFFFFFF; /* A large +ve number. */
-	blocking_lock_record *blr = blocking_lock_queue;
-
-	/* note that we avoid the GetTimeOfDay() syscall if there are no blocking locks */
-	if (!blr) {
-		return timeout_ms;
-	}
-
-	tv_curr = timeval_current();
-
-	for (; blr; blr = blr->next) {
-		SMB_BIG_INT tv_dif_us;
-
-		if (timeval_is_zero(&blr->expire_time)) {
-			continue; /* Never timeout. */
-		}
-
-		tv_dif_us = usec_time_diff(&blr->expire_time, &tv_curr);
-		min_tv_dif_us = MIN(min_tv_dif_us, tv_dif_us);
-	}
-
-	if (min_tv_dif_us < 0) {
-		min_tv_dif_us = 0;
-	}
-
-	timeout_ms = (unsigned int)(min_tv_dif_us / (SMB_BIG_INT)1000);
-
-	if (timeout_ms < 1) {
-		timeout_ms = 1;
-	}
-
-	DEBUG(10,("blocking_locks_timeout_ms: returning %u\n", timeout_ms));
-
-	return timeout_ms;
-}
-
-/****************************************************************************
  Process the blocking lock queue. Note that this is only called as root.
 *****************************************************************************/
 
-void process_blocking_lock_queue(void)
+static void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
 	blocking_lock_record *blr, *next = NULL;
+	BOOL recalc_timeout = False;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
@@ -693,6 +711,7 @@ void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
+			recalc_timeout = True;
 			continue;
 		}
 
@@ -718,6 +737,7 @@ void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
+			recalc_timeout = True;
 			continue;
 		}
 
@@ -742,6 +762,7 @@ void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
+			recalc_timeout = True;
 			change_to_root_user();
 			continue;
 		}
@@ -767,8 +788,13 @@ void process_blocking_lock_queue(void)
 
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
+			recalc_timeout = True;
 		}
 		change_to_root_user();
+	}
+
+	if (recalc_timeout) {
+		recalc_brl_timeout();
 	}
 }
 
