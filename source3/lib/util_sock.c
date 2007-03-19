@@ -789,13 +789,13 @@ BOOL send_smb(int fd, char *buffer)
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
-			srv_free_buffer(buf_out);
+			srv_free_enc_buffer(buf_out);
 			return False;
 		}
 		nwritten += ret;
 	}
 
-	srv_free_buffer(buf_out);
+	srv_free_enc_buffer(buf_out);
 	return True;
 }
 
