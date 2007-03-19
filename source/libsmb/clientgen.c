@@ -164,6 +164,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
+	char *buf_out;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1) {
@@ -172,7 +173,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 
 	cli_calculate_sign_mac(cli);
 
-	status = cli_encrypt_message(cli);
+	status = cli_encrypt_message(cli, &buf_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(cli->fd);
 		cli->fd = -1;
@@ -182,11 +183,12 @@ BOOL cli_send_smb(struct cli_state *cli)
 		return False;
 	}
 
-	len = smb_len(cli->outbuf) + 4;
+	len = smb_len(buf_out) + 4;
 
 	while (nwritten < len) {
-		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
+		ret = write_socket(cli->fd,buf_out+nwritten,len - nwritten);
 		if (ret <= 0) {
+			cli_free_enc_buffer(cli, buf_out);
 			close(cli->fd);
 			cli->fd = -1;
 			cli->smb_rw_error = WRITE_ERROR;
@@ -196,6 +198,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 		}
 		nwritten += ret;
 	}
+
+	cli_free_enc_buffer(cli, buf_out);
+
 	/* Increment the mid so we can tell between responses. */
 	cli->mid++;
 	if (!cli->mid) {
@@ -447,6 +452,8 @@ void cli_shutdown(struct cli_state *cli)
 	SAFE_FREE(cli->inbuf);
 
 	cli_free_signing_context(cli);
+	cli_free_encryption_context(cli);
+
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
