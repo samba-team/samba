@@ -573,6 +573,7 @@ static struct {
 	{ SMB_VFS_OP_LINK,	"link" },
 	{ SMB_VFS_OP_MKNOD,	"mknod" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
+	{ SMB_VFS_OP_NOTIFY_WATCH, "notify_watch" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
