@@ -604,31 +604,33 @@ BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
 	if (smbacl4_GetFileOwner(fsp, &sbuf))
 		return False;
 
-	/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
-	if (!unpack_nt_owners(SNUM(fsp->conn), &newUID, &newGID, security_info_sent, psd))
-	{
-		DEBUG(8, ("unpack_nt_owners failed"));
-		return False;
-	}
-	if (((newUID != (uid_t)-1) && (sbuf.st_uid != newUID)) ||
-		((newGID != (gid_t)-1) && (sbuf.st_gid != newGID))) {
-		need_chown = True;
-	}
-	if (need_chown) {
-		if ((newUID == (uid_t)-1 || newUID == current_user.ut.uid)) {
-			if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
-				DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
-					fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, strerror(errno) ));
-				return False;
+	if (params.do_chown) {
+		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
+		if (!unpack_nt_owners(SNUM(fsp->conn), &newUID, &newGID, security_info_sent, psd))
+		{
+			DEBUG(8, ("unpack_nt_owners failed"));
+			return False;
+		}
+		if (((newUID != (uid_t)-1) && (sbuf.st_uid != newUID)) ||
+			((newGID != (gid_t)-1) && (sbuf.st_gid != newGID))) {
+			need_chown = True;
+		}
+		if (need_chown) {
+			if ((newUID == (uid_t)-1 || newUID == current_user.ut.uid)) {
+				if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
+					DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
+						fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, strerror(errno) ));
+					return False;
+				}
+				DEBUG(10,("chown %s, %u, %u succeeded.\n",
+					fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
+				if (smbacl4_GetFileOwner(fsp, &sbuf))
+					return False;
+				need_chown = False;
+			} else { /* chown is needed, but _after_ changing acl */
+				sbuf.st_uid = newUID; /* OWNER@ in case of e_special */
+				sbuf.st_gid = newGID; /* GROUP@ in case of e_special */
 			}
-			DEBUG(10,("chown %s, %u, %u succeeded.\n",
-				fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-			if (smbacl4_GetFileOwner(fsp, &sbuf))
-				return False;
-			need_chown = False;
-		} else { /* chown is needed, but _after_ changing acl */
-			sbuf.st_uid = newUID; /* OWNER@ in case of e_special */
-			sbuf.st_gid = newGID; /* GROUP@ in case of e_special */
 		}
 	}
 
