@@ -4,6 +4,7 @@
 
    Copyright (C) Andrew Tridgell 		1992-2004
    Copyright (C) Stefan (metze) Metzmacher	2002   
+   Copyright (C) Jeremy Allison			2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,17 +37,21 @@
 #define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
 #endif
 
-/**
+#define NTTIME_INFINITY (NTTIME)0x8000000000000000LL
+
+/***************************************************************************
  External access to time_t_min and time_t_max.
-**/
+****************************************************************************/
+
 time_t get_time_t_max(void)
 {
 	return TIME_T_MAX;
 }
 
-/**
-a gettimeofday wrapper
-**/
+/***************************************************************************
+ A gettimeofday wrapper.
+****************************************************************************/
+
 void GetTimeOfDay(struct timeval *tval)
 {
 #ifdef HAVE_GETTIMEOFDAY_TZ
@@ -54,14 +59,6 @@ void GetTimeOfDay(struct timeval *tval)
 #else
 	gettimeofday(tval);
 #endif
-}
-
-struct timespec convert_time_t_to_timespec(time_t t)
-{
-	struct timespec ts;
-	ts.tv_sec = t;
-	ts.tv_nsec = 0;
-	return ts;
 }
 
 #if (SIZEOF_LONG == 8)
@@ -111,10 +108,10 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	*nt = t2;
 }
 
+/****************************************************************************
+ Check if it's a null unix time.
+****************************************************************************/
 
-/**
-check if it's a null unix time
-**/
 BOOL null_time(time_t t)
 {
 	return t == 0 || 
@@ -122,13 +119,24 @@ BOOL null_time(time_t t)
 		t == (time_t)-1;
 }
 
+/****************************************************************************
+ Check if it's a null NTTIME.
+****************************************************************************/
 
-/**
-check if it's a null NTTIME
-**/
 BOOL null_nttime(NTTIME t)
 {
 	return t == 0 || t == (NTTIME)-1;
+}
+
+/****************************************************************************
+ Check if it's a null timespec.
+****************************************************************************/
+
+BOOL null_timespec(struct timespec ts)
+{
+	return ts.tv_sec == 0 || 
+		ts.tv_sec == (time_t)0xFFFFFFFF || 
+		ts.tv_sec == (time_t)-1;
 }
 
 /*******************************************************************
@@ -547,8 +555,9 @@ NTTIME timeval_to_nttime(const struct timeval *tv)
 }
 
 /*******************************************************************
-yield the difference between *A and *B, in seconds, ignoring leap seconds
+ Yield the difference between *A and *B, in seconds, ignoring leap seconds.
 ********************************************************************/
+
 static int tm_diff(struct tm *a, struct tm *b)
 {
 	int ay = a->tm_year + (1900 - 1);
@@ -566,9 +575,10 @@ static int tm_diff(struct tm *a, struct tm *b)
 
 int extra_time_offset=0;
 
-/**
-  return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
- */
+/*******************************************************************
+ Return the UTC offset in seconds west of UTC, or 0 if it cannot be determined.
+********************************************************************/
+
 int get_time_zone(time_t t)
 {
 	struct tm *tm = gmtime(&t);
@@ -778,7 +788,7 @@ void put_long_date(char *p, time_t t)
  structure.
 ****************************************************************************/
 
-time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
+time_t get_create_time(const SMB_STRUCT_STAT *st,BOOL fake_dirs)
 {
 	time_t ret, ret1;
 
@@ -800,7 +810,7 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 	return ret;
 }
 
-struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
+struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,BOOL fake_dirs)
 {
 	struct timespec ts;
 	ts.tv_sec = get_create_time(st, fake_dirs);
@@ -812,7 +822,7 @@ struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
  Get/Set all the possible time fields from a stat struct as a timespec.
 ****************************************************************************/
 
-struct timespec get_atimespec(SMB_STRUCT_STAT *pst)
+struct timespec get_atimespec(const SMB_STRUCT_STAT *pst)
 {
 #if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
 	struct timespec ret;
@@ -852,7 +862,7 @@ void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 #endif
 }
 
-struct timespec get_mtimespec(SMB_STRUCT_STAT *pst)
+struct timespec get_mtimespec(const SMB_STRUCT_STAT *pst)
 {
 #if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
 	struct timespec ret;
@@ -892,7 +902,7 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 #endif
 }
 
-struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
+struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst)
 {
 #if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
 	struct timespec ret;
@@ -1018,6 +1028,81 @@ time_t convert_timespec_to_time_t(struct timespec ts)
 		return ts.tv_sec + 1;
 	}
 	return ts.tv_sec;
+}
+
+struct timespec convert_time_t_to_timespec(time_t t)
+{
+	struct timespec ts;
+	ts.tv_sec = t;
+	ts.tv_nsec = 0;
+	return ts;
+}
+
+/****************************************************************************
+ Convert a normalized timeval to a timespec.
+****************************************************************************/
+
+struct timespec convert_timeval_to_timespec(const struct timeval tv)
+{
+	struct timespec ts;
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	return ts;
+}
+
+/****************************************************************************
+ Convert a normalized timespec to a timeval.
+****************************************************************************/
+
+struct timeval convert_timespec_to_timeval(const struct timespec ts)
+{
+	struct timeval tv;
+	tv.tv_sec = ts.tv_sec;
+	tv.tv_usec = ts.tv_nsec / 1000;
+	return tv;
+}
+
+/****************************************************************************
+ Return a timespec for the current time
+****************************************************************************/
+
+struct timespec timespec_current(void)
+{
+	struct timeval tv;
+	struct timespec ts;
+	GetTimeOfDay(&tv);
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = tv.tv_sec * 1000;
+	return ts;
+}
+
+/****************************************************************************
+ Return the lesser of two timespecs.
+****************************************************************************/
+
+struct timespec timespec_min(const struct timespec *ts1,
+			   const struct timespec *ts2)
+{
+	if (ts1->tv_sec < ts2->tv_sec) return *ts1;
+	if (ts1->tv_sec > ts2->tv_sec) return *ts2;
+	if (ts1->tv_nsec < ts2->tv_nsec) return *ts1;
+	return *ts2;
+}
+
+/****************************************************************************
+  compare two timespec structures. 
+  Return -1 if ts1 < ts2
+  Return 0 if ts1 == ts2
+  Return 1 if ts1 > ts2
+****************************************************************************/
+
+int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
+{
+	if (ts1->tv_sec  > ts2->tv_sec)  return 1;
+	if (ts1->tv_sec  < ts2->tv_sec)  return -1;
+	if (ts1->tv_nsec > ts2->tv_nsec) return 1;
+	if (ts1->tv_nsec < ts2->tv_nsec) return -1;
+	return 0;
 }
 
 /****************************************************************************
@@ -1180,6 +1265,10 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 		return (time_t)-1;
 	}
 
+	if (*nt == NTTIME_INFINITY) {
+		return (time_t)-1;
+	}
+
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
 	d=~*nt;
@@ -1248,7 +1337,7 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		
 	if (t == (time_t)-1) {
 		/* that's what NT uses for infinite */
-		*nt = 0x8000000000000000LL;
+		*nt = NTTIME_INFINITY;
 		return;
 	}		
 
@@ -1278,10 +1367,10 @@ BOOL null_mtime(time_t mtime)
  and asctime fail.
 ****************************************************************************/
 
-const char *time_to_asc(const time_t *t)
+const char *time_to_asc(const time_t t)
 {
 	const char *asct;
-	struct tm *lt = localtime(t);
+	struct tm *lt = localtime(&t);
 
 	if (!lt) {
 		return "unknown time";
@@ -1306,7 +1395,7 @@ const char *display_time(NTTIME nttime)
 	if (nttime==0)
 		return "Now";
 
-	if (nttime==0x8000000000000000LL)
+	if (nttime==NTTIME_INFINITY)
 		return "Never";
 
 	high = 65536;	
@@ -1335,10 +1424,9 @@ BOOL nt_time_is_set(const NTTIME *nt)
 		return False;
 	}
 
-	if (*nt == 0x8000000000000000LL) {
+	if (*nt == NTTIME_INFINITY) {
 		return False;
 	}
 
 	return True;
 }
-

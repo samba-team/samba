@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
+
+   Copyright (C) James Peach 2007
    Copyright (C) Jeremy Allison 1994-2002.
 
    Extensively modified by Andrew Tridgell, 1995
@@ -352,6 +354,7 @@ Byte offset   Type     name                description
 
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
+#define SMB_SET_FILE_UNIX_INFO2        0x20B   /* UNIX File Info2 */
 
 #define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
@@ -435,6 +438,18 @@ Offset Size         Name
 #define UNIX_EXTRA_MASK                 0007000
 #define UNIX_ALL_MASK                   0007777
 
+/* Flags for chflags (CIFS_UNIX_EXTATTR_CAP capability) and
+ * SMB_QUERY_FILE_UNIX_INFO2.
+ */
+#define EXT_SECURE_DELETE               0x00000001
+#define EXT_ENABLE_UNDELETE             0x00000002
+#define EXT_SYNCHRONOUS                 0x00000004
+#define EXT_IMMUTABLE			0x00000008
+#define EXT_OPEN_APPEND_ONLY            0x00000010
+#define EXT_DO_NOT_BACKUP               0x00000020
+#define EXT_NO_UPDATE_ATIME             0x00000040
+#define EXT_HIDDEN			0x00000080
+
 #define SMB_QUERY_FILE_UNIX_LINK       0x201
 #define SMB_SET_FILE_UNIX_LINK         0x201
 #define SMB_SET_FILE_UNIX_HLINK        0x203
@@ -455,8 +470,35 @@ Offset Size         Name
 #define SMB_QUERY_FILE_UNIX_INFO2      0x20B   /* UNIX File Info2 */
 #define SMB_SET_FILE_UNIX_INFO2        0x20B
 
+/*
+SMB_QUERY_FILE_UNIX_INFO2 is SMB_QUERY_FILE_UNIX_BASIC with create
+time and file flags appended. The corresponding info level for
+findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
+    Size    Offset  Value
+    ---------------------
+    0      LARGE_INTEGER EndOfFile  File size
+    8      LARGE_INTEGER Blocks     Number of blocks used on disk
+    16     LARGE_INTEGER ChangeTime Attribute change time
+    24     LARGE_INTEGER LastAccessTime           Last access time
+    32     LARGE_INTEGER LastModificationTime     Last modification time
+    40     LARGE_INTEGER Uid        Numeric user id for the owner
+    48     LARGE_INTEGER Gid        Numeric group id of owner
+    56     ULONG Type               Enumeration specifying the file type
+    60     LARGE_INTEGER devmajor   Major device number if type is device
+    68     LARGE_INTEGER devminor   Minor device number if type is device
+    76     LARGE_INTEGER uniqueid   This is a server-assigned unique id
+    84     LARGE_INTEGER permissions		Standard UNIX permissions
+    92     LARGE_INTEGER nlinks			Number of hard links
+    100    LARGE_INTEGER CreationTime		Create/birth time
+    108    ULONG FileFlags          File flags enumeration
+    112    ULONG FileFlagsMask      Mask of valid flags
+*/
+
 /* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
+#define SMB_FIND_FILE_UNIX_INFO2       0x20B /* UNIX File Info2 */
+
+#define SMB_FILE_UNIX_INFO2_SIZE 116
 
 /*
  Info level for TRANS2_QFSINFO - returns version of CIFS UNIX extensions, plus
@@ -564,6 +606,37 @@ number of entries sent will be zero.
 
 */
 
+#define SMB_QUERY_POSIX_WHOAMI     0x202
+
+enum smb_whoami_flags {
+    SMB_WHOAMI_GUEST = 0x1 /* Logged in as (or squashed to) guest */
+};
+
+/* Mask of which WHOAMI bits are valid. This should make it easier for clients
+ * to cope with servers that have different sets of WHOAMI flags (as more get
+ * added).
+ */
+#define SMB_WHOAMI_MASK 0x00000001
+
+/*
+   SMBWhoami - Query the user mapping performed by the server for the
+   connected tree. This is a subcommand of the TRANS2_QFSINFO.
+
+   Returns:
+	4 bytes unsigned -	mapping flags (smb_whoami_flags)
+	4 bytes unsigned -	flags mask
+
+	8 bytes unsigned -	primary UID
+	8 bytes unsigned -	primary GID
+	4 bytes unsigned -	number of supplementary GIDs
+	4 bytes unsigned -	number of SIDs
+	4 bytes unsigned -	SID list byte count
+	4 bytes -		pad / reserved (must be zero)
+
+	8 bytes unsigned[] -	list of GIDs (may be empty)
+	DOM_SID[] -		list of SIDs (may be empty)
+*/
+
 /* The query/set info levels for POSIX ACLs. */
 #define SMB_QUERY_POSIX_ACL  0x204
 #define SMB_SET_POSIX_ACL  0x204
@@ -589,7 +662,7 @@ number of entries sent will be zero.
 
 #define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
 
-/* Definition of parameter block of SMB_SET_POSIX_LOCK */
+/* Definition of data block of SMB_SET_POSIX_LOCK */
 /*
   [2 bytes] lock_type - 0 = Read, 1 = Write, 2 = Unlock
   [2 bytes] lock_flags - 1 = Wait (only valid for setlock)
@@ -628,11 +701,11 @@ number of entries sent will be zero.
 #define SMB_O_NOFOLLOW			0x400
 #define SMB_O_DIRECT			0x800
 
-/* Definition of request parameter block for SMB_POSIX_PATH_OPEN */
+/* Definition of request data block for SMB_POSIX_PATH_OPEN */
 /*
   [4 bytes] flags (as smb_ntcreate_Flags).
-  [4 bytes] open_mode
-  [4 bytes] mode_t		- same encoding as "Standard UNIX permissions" above.
+  [4 bytes] open_mode			- SMB_O_xxx flags above.
+  [8 bytes] mode_t (permissions)	- same encoding as "Standard UNIX permissions" above in SMB_SET_FILE_UNIX_BASIC.
   [2 bytes] ret_info_level	- optimization. Info level to be returned.
 */
 
@@ -641,8 +714,20 @@ number of entries sent will be zero.
 #define SMB_NO_INFO_LEVEL_RETURNED 0xFFFF
 
 /*
-  [2 bytes] reply info level    - as requested or 0xFFFF if not available.
+  [2 bytes] - flags field. Identical to flags reply for oplock response field in SMBNTCreateX)
+  [2 bytes] - FID returned.
+  [4 bytes] - CreateAction (same as in NTCreateX response).
+  [2 bytes] - reply info level    - as requested or 0xFFFF if not available.
+  [2 bytes] - padding (must be zero)
   [n bytes] - info level reply  - if available.
 */
+
+/* Definition of request data block for SMB_POSIX_UNLINK */
+/*
+  [2 bytes] flags (defined below).
+*/
+
+#define SMB_POSIX_UNLINK_FILE_TARGET 0
+#define SMB_POSIX_UNLINK_DIRECTORY_TARGET 1
 
 #endif

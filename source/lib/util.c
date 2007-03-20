@@ -200,6 +200,7 @@ void gfree_all( void )
 	gfree_debugsyms();
 	gfree_charcnv();
 	gfree_messages();
+	gfree_interfaces();
 
 	/* release the talloc null_context memory last */
 	talloc_disable_null_tracking();
@@ -579,6 +580,13 @@ void dos_clean_name(char *s)
 	/* remove any double slashes */
 	all_string_sub(s, "\\\\", "\\", 0);
 
+	/* Remove leading .\\ characters */
+	if(strncmp(s, ".\\", 2) == 0) {
+		trim_string(s, ".\\", NULL);
+		if(*s == 0)
+			pstrcpy(s,".\\");
+	}
+
 	while ((p = strstr_m(s,"\\..\\")) != NULL) {
 		pstring s1;
 
@@ -593,7 +601,6 @@ void dos_clean_name(char *s)
 	}  
 
 	trim_string(s,NULL,"\\..");
-
 	all_string_sub(s, "\\.\\", "\\", 0);
 }
 
@@ -631,6 +638,13 @@ void unix_clean_name(char *s)
 	}  
 
 	trim_string(s,NULL,"/..");
+	all_string_sub(s, "/./", "/", 0);
+}
+
+void clean_name(char *s)
+{
+	dos_clean_name(s);
+	unix_clean_name(s);
 }
 
 /*******************************************************************
@@ -913,17 +927,6 @@ void *malloc_(size_t size)
 }
 
 /****************************************************************************
- Internal malloc wrapper. Externally visible.
-****************************************************************************/
-
-void *memalign_(size_t align, size_t size)
-{
-#undef memalign
-	return memalign(align, size);
-#define memalign(align, s) __ERROR_DONT_USE_MEMALIGN_DIRECTLY
-}
-
-/****************************************************************************
  Internal calloc wrapper. Not externally visible.
 ****************************************************************************/
 
@@ -974,11 +977,7 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count)
 		return NULL;
 	}
 
-#if defined(PARANOID_MALLOC_CHECKER)
-	return memalign_(align, el_size*count);
-#else
 	return sys_memalign(align, el_size*count);
-#endif
 }
 
 /****************************************************************************
@@ -2092,6 +2091,9 @@ BOOL is_myname_or_ipaddr(const char *s)
 		return True;
 
 	/* check for loopback */
+
+	if (strequal(servername, "127.0.0.1")) 
+		return True;
 
 	if (strequal(servername, "localhost")) 
 		return True;

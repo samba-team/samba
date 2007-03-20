@@ -517,6 +517,7 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 	if ((mlock(memcredp->nt_hash, memcredp->len)) == -1) {
 		DEBUG(0,("failed to mlock memory: %s (%d)\n", 
 			strerror(errno), errno));
+		SAFE_FREE(memcredp->nt_hash);
 		return map_nt_error_from_unix(errno);
 	}
 

@@ -229,12 +229,15 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrnam", status);
+		SAFE_FREE(buf);
 		return NULL;
 	}
+	SAFE_FREE(buf);
 	return &grp;
 }
 
@@ -266,12 +269,15 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrgid", status);
+		SAFE_FREE(buf);
 		return NULL;
 	}
+	SAFE_FREE(buf);
 	return &grp;
 }
 

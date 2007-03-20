@@ -21,10 +21,10 @@
 
 #include "includes.h"
 
-
 /****************************************************************************
-Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
+ Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
+
 BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
@@ -32,28 +32,29 @@ BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count)
 {
-  cli_send_trans(cli, SMBtrans, 
+	cli_send_trans(cli, SMBtrans, 
                  pipe_name, 
                  0,0,                         /* fid, flags */
                  setup, setup_count, max_setup_count,
                  params, param_count, max_param_count,
                  data, data_count, max_data_count);
 
-  return (cli_receive_trans(cli, SMBtrans, 
+	return (cli_receive_trans(cli, SMBtrans, 
                             rparam, (unsigned int *)rparam_count,
                             rdata, (unsigned int *)rdata_count));
 }
 
 /****************************************************************************
-call a remote api
+ Call a remote api
 ****************************************************************************/
+
 BOOL cli_api(struct cli_state *cli,
 	     char *param, int prcnt, int mprcnt,
 	     char *data, int drcnt, int mdrcnt,
 	     char **rparam, unsigned int *rprcnt,
 	     char **rdata, unsigned int *rdrcnt)
 {
-  cli_send_trans(cli,SMBtrans,
+	cli_send_trans(cli,SMBtrans,
                  PIPE_LANMAN,             /* Name */
                  0,0,                     /* fid, flags */
                  NULL,0,0,                /* Setup, length, max */
@@ -61,15 +62,15 @@ BOOL cli_api(struct cli_state *cli,
                  data, drcnt, mdrcnt      /* Data, length, max */ 
                 );
 
-  return (cli_receive_trans(cli,SMBtrans,
+	return (cli_receive_trans(cli,SMBtrans,
                             rparam, rprcnt,
                             rdata, rdrcnt));
 }
 
-
 /****************************************************************************
-perform a NetWkstaUserLogon
+ Perform a NetWkstaUserLogon.
 ****************************************************************************/
+
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 {
 	char *rparam = NULL;
@@ -129,8 +130,9 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 }
 
 /****************************************************************************
-call a NetShareEnum - try and browse available connections on a host
+ Call a NetShareEnum - try and browse available connections on a host.
 ****************************************************************************/
+
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state)
 {
 	char *rparam = NULL;
@@ -196,14 +198,14 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 	return count;
 }
 
-
 /****************************************************************************
-call a NetServerEnum for the specified workgroup and servertype mask.  This
-function then calls the specified callback function for each name returned.
+ Call a NetServerEnum for the specified workgroup and servertype mask.  This
+ function then calls the specified callback function for each name returned.
 
-The callback function takes 4 arguments: the machine name, the server type,
-the comment and a state pointer.
+ The callback function takes 4 arguments: the machine name, the server type,
+ the comment and a state pointer.
 ****************************************************************************/
+
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *, void *),
 		       void *state)
@@ -286,99 +288,99 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	return(count > 0);
 }
 
-
-
 /****************************************************************************
-Send a SamOEMChangePassword command
+ Send a SamOEMChangePassword command.
 ****************************************************************************/
+
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password)
 {
-  pstring param;
-  unsigned char data[532];
-  char *p = param;
-  unsigned char old_pw_hash[16];
-  unsigned char new_pw_hash[16];
-  unsigned int data_len;
-  unsigned int param_len = 0;
-  char *rparam = NULL;
-  char *rdata = NULL;
-  unsigned int rprcnt, rdrcnt;
+	pstring param;
+	unsigned char data[532];
+	char *p = param;
+	unsigned char old_pw_hash[16];
+	unsigned char new_pw_hash[16];
+	unsigned int data_len;
+	unsigned int param_len = 0;
+	char *rparam = NULL;
+	char *rdata = NULL;
+	unsigned int rprcnt, rdrcnt;
 
-  if (strlen(user) >= sizeof(fstring)-1) {
-    DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
-    return False;
-  }
+	if (strlen(user) >= sizeof(fstring)-1) {
+		DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
+		return False;
+	}
 
-  SSVAL(p,0,214); /* SamOEMChangePassword command. */
-  p += 2;
-  pstrcpy_base(p, "zsT", param);
-  p = skip_string(p,1);
-  pstrcpy_base(p, "B516B16", param);
-  p = skip_string(p,1);
-  pstrcpy_base(p,user, param);
-  p = skip_string(p,1);
-  SSVAL(p,0,532);
-  p += 2;
+	SSVAL(p,0,214); /* SamOEMChangePassword command. */
+	p += 2;
+	pstrcpy_base(p, "zsT", param);
+	p = skip_string(p,1);
+	pstrcpy_base(p, "B516B16", param);
+	p = skip_string(p,1);
+	pstrcpy_base(p,user, param);
+	p = skip_string(p,1);
+	SSVAL(p,0,532);
+	p += 2;
 
-  param_len = PTR_DIFF(p,param);
+	param_len = PTR_DIFF(p,param);
 
-  /*
-   * Get the Lanman hash of the old password, we
-   * use this as the key to make_oem_passwd_hash().
-   */
-  E_deshash(old_password, old_pw_hash);
+	/*
+	 * Get the Lanman hash of the old password, we
+	 * use this as the key to make_oem_passwd_hash().
+	 */
+	E_deshash(old_password, old_pw_hash);
 
-  encode_pw_buffer(data, new_password, STR_ASCII);
+	encode_pw_buffer(data, new_password, STR_ASCII);
   
 #ifdef DEBUG_PASSWORD
-  DEBUG(100,("make_oem_passwd_hash\n"));
-  dump_data(100, (char *)data, 516);
+	DEBUG(100,("make_oem_passwd_hash\n"));
+	dump_data(100, (char *)data, 516);
 #endif
-  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
+	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
-  /* 
-   * Now place the old password hash in the data.
-   */
-  E_deshash(new_password, new_pw_hash);
+	/* 
+	 * Now place the old password hash in the data.
+	 */
+	E_deshash(new_password, new_pw_hash);
 
-  E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
+	E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
 
-  data_len = 532;
+	data_len = 532;
     
-  if (cli_send_trans(cli,SMBtrans,
+	if (cli_send_trans(cli,SMBtrans,
                     PIPE_LANMAN,                          /* name */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
                     (char *)data,data_len,0                       /* data, length, max */
                    ) == False) {
-    DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
-              user ));
-    return False;
-  }
+		DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
+			user ));
+		return False;
+	}
 
-  if (!cli_receive_trans(cli,SMBtrans,
+	if (!cli_receive_trans(cli,SMBtrans,
                        &rparam, &rprcnt,
                        &rdata, &rdrcnt)) {
-	  DEBUG(0,("cli_oem_change_password: Failed to recieve reply to password change for user %s\n",
-		   user ));
-	  return False;
-  }
+		DEBUG(0,("cli_oem_change_password: Failed to recieve reply to password change for user %s\n",
+			user ));
+		return False;
+	}
   
-  if (rparam)
-	  cli->rap_error = SVAL(rparam,0);
+	if (rparam) {
+		cli->rap_error = SVAL(rparam,0);
+	}
   
-  SAFE_FREE(rparam);
-  SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
-  return (cli->rap_error == 0);
+	return (cli->rap_error == 0);
 }
 
-
 /****************************************************************************
-send a qpathinfo call
+ Send a qpathinfo call.
 ****************************************************************************/
+
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *change_time,
                    time_t *access_time,
@@ -458,10 +460,10 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	return True;
 }
 
-
 /****************************************************************************
-send a setpathinfo call
+ Send a setpathinfo call.
 ****************************************************************************/
+
 BOOL cli_setpathinfo(struct cli_state *cli, const char *fname, 
                      time_t create_time,
                      time_t access_time,
@@ -556,9 +558,8 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
 	return True;
 }
 
-
 /****************************************************************************
-send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
+ Send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level.
 ****************************************************************************/
 
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
@@ -631,10 +632,10 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	return True;
 }
 
-
 /****************************************************************************
-send a qfileinfo QUERY_FILE_NAME_INFO call
+ Send a qfileinfo QUERY_FILE_NAME_INFO call.
 ****************************************************************************/
+
 BOOL cli_qfilename(struct cli_state *cli, int fnum, 
 		   pstring name)
 {
@@ -674,10 +675,10 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
 	return True;
 }
 
-
 /****************************************************************************
-send a qfileinfo call
+ Send a qfileinfo call.
 ****************************************************************************/
+
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint16 *mode, SMB_OFF_T *size,
 		   struct timespec *create_time,
@@ -749,10 +750,10 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
-
 /****************************************************************************
-send a qpathinfo BASIC_INFO call
+ Send a qpathinfo BASIC_INFO call.
 ****************************************************************************/
+
 BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name, 
                           SMB_STRUCT_STAT *sbuf, uint32 *attributes )
 {
@@ -765,18 +766,12 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	pstring path;
 	int len;
 	
-	/* send full paths to dfs root shares */
-	
-	if ( cli->dfsroot )
-		pstr_sprintf(path, "\\%s\\%s\\%s", cli->desthost, cli->share, name );
-	else
-		pstrcpy( path, name );
-	
+	pstrcpy( path, name );
 	/* cleanup */
 	
 	len = strlen( path );
-	if ( path[len] == '\\' )
-		path[len] = '\0';
+	if ( path[len-1] == '\\' || path[len-1] == '/')
+		path[len-1] = '\0';
 
 	p = param;
 	memset(p, 0, 6);
@@ -820,7 +815,7 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 }
 
 /****************************************************************************
-send a qfileinfo call
+ Send a qfileinfo call.
 ****************************************************************************/
 
 BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
@@ -875,11 +870,10 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutd
 	return True;
 }
 
-
-
 /****************************************************************************
-send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call
+ Send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call.
 ****************************************************************************/
+
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name)
 {
 	unsigned int data_len = 0;

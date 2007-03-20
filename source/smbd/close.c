@@ -373,9 +373,9 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	 * Ensure pending modtime is set after close.
 	 */
 
-	if(fsp->pending_modtime && fsp->pending_modtime_owner) {
+	if (fsp->pending_modtime_owner && !null_timespec(fsp->pending_modtime)) {
 		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
-	} else if (fsp->last_write_time) {
+	} else if (!null_timespec(fsp->last_write_time)) {
 		set_filetime(conn, fsp->fsp_name, fsp->last_write_time);
 	}
 

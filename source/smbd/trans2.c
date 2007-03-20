@@ -5,6 +5,7 @@
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005
    Copyright (C) Steve French			2005
+   Copyright (C) James Peach			2007
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -34,6 +35,16 @@ extern struct current_user current_user;
 #define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
+static char *store_file_unix_basic(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf);
+
+static char *store_file_unix_basic_info2(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf);
+
 /********************************************************************
  Roundup a value to the nearest allocation roundup size boundary.
  Only do this for Windows clients.
@@ -56,7 +67,7 @@ SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
  account sparse files.
 ********************************************************************/
 
-SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
 
@@ -1191,15 +1202,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 					continue;
 				}
 			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
+				pstring link_target;
 
 				/* Needed to show the msdfs symlinks as 
 				 * directories */
 
 				if(lp_host_msdfs() && 
 				   lp_msdfs_root(SNUM(conn)) &&
-				   ((ms_dfs_link = is_msdfs_link(NULL,conn, pathreal, NULL, NULL, &sbuf)) == True)) {
-
-					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+				   ((ms_dfs_link = is_msdfs_link(conn, pathreal, link_target, &sbuf)) == True)) {
+					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s "
+						"as a directory\n",
+						pathreal));
 					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
 
 				} else {
@@ -1578,51 +1591,21 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		/* CIFS UNIX Extension. */
 
 		case SMB_FIND_FILE_UNIX:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
+		case SMB_FIND_FILE_UNIX_INFO2:
 			p+= 4;
 			SIVAL(p,0,reskey); p+= 4;    /* Used for continuing search. */
 
 			/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
-			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
-			p+= 8;
 
-			SOFF_T(p,0,get_allocation_size(conn,NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
-			p+= 8;
-
-			put_long_date_timespec(p,get_ctimespec(&sbuf));       /* Inode change Time 64 Bit */
-			put_long_date_timespec(p+8,get_atimespec(&sbuf));     /* Last access time 64 Bit */
-			put_long_date_timespec(p+16,get_mtimespec(&sbuf));    /* Last modification time 64 Bit */
-			p+= 24;
-
-			SIVAL(p,0,sbuf.st_uid);               /* user id for the owner */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,sbuf.st_gid);               /* group id of owner */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,unix_filetype(sbuf.st_mode));
-			p+= 4;
-
-			SIVAL(p,0,unix_dev_major(sbuf.st_rdev));   /* Major device number if type is device */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,unix_dev_minor(sbuf.st_rdev));   /* Minor device number if type is device */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SINO_T_VAL(p,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
-			p+= 8;
-
-			SIVAL(p,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
-			SIVAL(p,4,0);
-			p+= 8;
-
-			SIVAL(p,0,sbuf.st_nlink);             /* number of hard links */
-			SIVAL(p,4,0);
-			p+= 8;
+			if (info_level == SMB_FIND_FILE_UNIX) {
+				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
+				p = store_file_unix_basic(conn, p,
+							NULL, &sbuf);
+			} else {
+				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
+				p = store_file_unix_basic_info2(conn, p,
+							NULL, &sbuf);
+			}
 
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			p += len;
@@ -1732,6 +1715,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
+		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
@@ -1745,7 +1729,13 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(ntstatus);
 	}
 
-	RESOLVE_DFSPATH_WCARD(directory, conn, inbuf, outbuf);
+	ntstatus = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory, &mask_contains_wcard);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(ntstatus);
+	}
 
 	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
@@ -2037,6 +2027,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
+		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
@@ -2232,7 +2223,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
 {
-	char *pdata = *ppdata;
+	char *pdata;
 	char *params = *pparams;
 	uint16 info_level;
 	int data_len, len;
@@ -2530,6 +2521,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
+					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
 			break;
 
@@ -2563,6 +2555,114 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
 				return ERROR_DOS(ERRSRV,ERRerror);
 			}
+			break;
+		}
+
+		case SMB_QUERY_POSIX_WHOAMI:
+		{
+			uint32_t flags = 0;
+			uint32_t sid_bytes;
+			int i;
+
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
+
+			if (max_data_bytes < 40) {
+				return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+			}
+
+			/* We ARE guest if global_sid_Builtin_Guests is
+			 * in our list of SIDs.
+			 */
+			if (nt_token_check_sid(&global_sid_Builtin_Guests,
+				    current_user.nt_user_token)) {
+				flags |= SMB_WHOAMI_GUEST;
+			}
+
+			/* We are NOT guest if global_sid_Authenticated_Users
+			 * is in our list of SIDs.
+			 */
+			if (nt_token_check_sid(&global_sid_Authenticated_Users,
+				    current_user.nt_user_token)) {
+				flags &= ~SMB_WHOAMI_GUEST;
+			}
+
+			/* NOTE: 8 bytes for UID/GID, irrespective of native
+			 * platform size. This matches
+			 * SMB_QUERY_FILE_UNIX_BASIC and friends.
+			 */
+			data_len = 4 /* flags */
+			    + 4 /* flag mask */
+			    + 8 /* uid */
+			    + 8 /* gid */
+			    + 4 /* ngroups */
+			    + 4 /* num_sids */
+			    + 4 /* SID bytes */
+			    + 4 /* pad/reserved */
+			    + (current_user.ut.ngroups * 8)
+				/* groups list */
+			    + (current_user.nt_user_token->num_sids *
+				    SID_MAX_SIZE)
+				/* SID list */;
+
+			SIVAL(pdata, 0, flags);
+			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
+			SBIG_UINT(pdata, 8, (SMB_BIG_UINT)current_user.ut.uid);
+			SBIG_UINT(pdata, 16, (SMB_BIG_UINT)current_user.ut.gid);
+
+
+			if (data_len >= max_data_bytes) {
+				/* Potential overflow, skip the GIDs and SIDs. */
+
+				SIVAL(pdata, 24, 0); /* num_groups */
+				SIVAL(pdata, 28, 0); /* num_sids */
+				SIVAL(pdata, 32, 0); /* num_sid_bytes */
+				SIVAL(pdata, 36, 0); /* reserved */
+
+				data_len = 40;
+				break;
+			}
+
+			SIVAL(pdata, 24, current_user.ut.ngroups);
+			SIVAL(pdata, 28,
+				current_user.nt_user_token->num_sids);
+
+			/* We walk the SID list twice, but this call is fairly
+			 * infrequent, and I don't expect that it's performance
+			 * sensitive -- jpeach
+			 */
+			for (i = 0, sid_bytes = 0;
+			    i < current_user.nt_user_token->num_sids; ++i) {
+				sid_bytes +=
+				    sid_size(&current_user.nt_user_token->user_sids[i]);
+			}
+
+			/* SID list byte count */
+			SIVAL(pdata, 32, sid_bytes);
+
+			/* 4 bytes pad/reserved - must be zero */
+			SIVAL(pdata, 36, 0);
+			data_len = 40;
+
+			/* GID list */
+			for (i = 0; i < current_user.ut.ngroups; ++i) {
+				SBIG_UINT(pdata, data_len,
+					(SMB_BIG_UINT)current_user.ut.groups[i]);
+				data_len += 8;
+			}
+
+			/* SID list */
+			for (i = 0;
+			    i < current_user.nt_user_token->num_sids; ++i) {
+				int sid_len =
+				    sid_size(&current_user.nt_user_token->user_sids[i]);
+
+				sid_linearize(pdata + data_len, sid_len,
+				    &current_user.nt_user_token->user_sids[i]);
+				data_len += sid_len;
+			}
+
 			break;
 		}
 
@@ -2871,7 +2971,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 static char *store_file_unix_basic(connection_struct *conn,
 				char *pdata,
 				files_struct *fsp,
-				SMB_STRUCT_STAT *psbuf)
+				const SMB_STRUCT_STAT *psbuf)
 {
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
 	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_mode));
@@ -2915,6 +3015,121 @@ static char *store_file_unix_basic(connection_struct *conn,
 
 	SIVAL(pdata,0,psbuf->st_nlink);             /* number of hard links */
 	SIVAL(pdata,4,0);
+	pdata += 8;
+
+	return pdata;
+}
+
+/* Forward and reverse mappings from the UNIX_INFO2 file flags field and
+ * the chflags(2) (or equivalent) flags.
+ *
+ * XXX: this really should be behind the VFS interface. To do this, we would
+ * need to alter SMB_STRUCT_STAT so that it included a flags and a mask field.
+ * Each VFS module could then implement it's own mapping as appropriate for the
+ * platform. We would then pass the SMB flags into SMB_VFS_CHFLAGS.
+ */
+static const struct {unsigned stat_fflag; unsigned smb_fflag;}
+	info2_flags_map[] =
+{
+#ifdef UF_NODUMP
+    { UF_NODUMP, EXT_DO_NOT_BACKUP },
+#endif
+
+#ifdef UF_IMMUTABLE
+    { UF_IMMUTABLE, EXT_IMMUTABLE },
+#endif
+
+#ifdef UF_APPEND
+    { UF_APPEND, EXT_OPEN_APPEND_ONLY },
+#endif
+
+#ifdef UF_HIDDEN
+    { UF_HIDDEN, EXT_HIDDEN },
+#endif
+
+    /* Do not remove. We need to guarantee that this array has at least one
+     * entry to build on HP-UX.
+     */
+    { 0, 0 }
+
+};
+
+static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
+				uint32 *smb_fflags, uint32 *smb_fmask)
+{
+#ifdef HAVE_STAT_ST_FLAGS
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
+	    *smb_fmask |= info2_flags_map[i].smb_fflag;
+	    if (psbuf->st_flags & info2_flags_map[i].stat_fflag) {
+		    *smb_fflags |= info2_flags_map[i].smb_fflag;
+	    }
+	}
+#endif /* HAVE_STAT_ST_FLAGS */
+}
+
+static BOOL map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
+				const uint32 smb_fflags,
+				const uint32 smb_fmask,
+				int *stat_fflags)
+{
+#ifdef HAVE_STAT_ST_FLAGS
+	uint32 max_fmask = 0;
+	int i;
+
+	*stat_fflags = psbuf->st_flags;
+
+	/* For each flags requested in smb_fmask, check the state of the
+	 * corresponding flag in smb_fflags and set or clear the matching
+	 * stat flag.
+	 */
+
+	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
+	    max_fmask |= info2_flags_map[i].smb_fflag;
+	    if (smb_fmask & info2_flags_map[i].smb_fflag) {
+		    if (smb_fflags & info2_flags_map[i].smb_fflag) {
+			    *stat_fflags |= info2_flags_map[i].stat_fflag;
+		    } else {
+			    *stat_fflags &= ~info2_flags_map[i].stat_fflag;
+		    }
+	    }
+	}
+
+	/* If smb_fmask is asking to set any bits that are not supported by
+	 * our flag mappings, we should fail.
+	 */
+	if ((smb_fmask & max_fmask) != smb_fmask) {
+		return False;
+	}
+
+	return True;
+#else
+	return False;
+#endif /* HAVE_STAT_ST_FLAGS */
+}
+
+
+/* Just like SMB_QUERY_FILE_UNIX_BASIC, but with the addition
+ * of file flags and birth (create) time.
+ */
+static char *store_file_unix_basic_info2(connection_struct *conn,
+				char *pdata,
+				files_struct *fsp,
+				const SMB_STRUCT_STAT *psbuf)
+{
+	uint32 file_flags = 0;
+	uint32 flags_mask = 0;
+
+	pdata = store_file_unix_basic(conn, pdata, fsp, psbuf);
+
+	/* Create (birth) time 64 bit */
+	put_long_date_timespec(pdata, get_create_timespec(psbuf, False));
+	pdata += 8;
+
+	map_info2_flags_from_sbuf(psbuf, &file_flags, &flags_mask);
+	SIVAL(pdata, 0, file_flags); /* flags */
+	SIVAL(pdata, 4, flags_mask); /* mask */
 	pdata += 8;
 
 	return pdata;
@@ -2969,6 +3184,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
+
+		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+		}
 
 		if(fsp && (fsp->fake_file_handle)) {
 			/*
@@ -3026,12 +3245,22 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
+		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+		}
+
 		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
 
-		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			}
+			return ERROR_NT(status);
+		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3175,18 +3404,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 
 	if (fsp) {
-		if (fsp->pending_modtime) {
+		if (!null_timespec(fsp->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts.tv_sec = fsp->pending_modtime;
-			mtime_ts.tv_nsec = 0;
+			mtime_ts = fsp->pending_modtime;
 		}
 	} else {
 		/* Do we have this path open ? */
 		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
-		if (fsp1 && fsp1->pending_modtime) {
+		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts.tv_sec = fsp1->pending_modtime;
-			mtime_ts.tv_nsec = 0;
+			mtime_ts = fsp1->pending_modtime;
 		}
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
@@ -3539,6 +3766,22 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			break;
 
+		case SMB_QUERY_FILE_UNIX_INFO2:
+
+			pdata = store_file_unix_basic_info2(conn, pdata, fsp, &sbuf);
+			data_size = PTR_DIFF(pdata,(*ppdata));
+
+			{
+				int i;
+				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_INFO2 "));
+
+				for (i=0; i<100; i++)
+					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
+				DEBUG(4,("\n"));
+			}
+
+			break;
+
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
 				pstring buffer;
@@ -3743,14 +3986,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 		return status;
 	}
 
+	status = check_name(conn, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* source must already exist. */
 	if (!VALID_STAT(sbuf1)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	status = check_name(conn, oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
@@ -3758,14 +4001,14 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 		return status;
 	}
 
+	status = check_name(conn, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* Disallow if newname already exists. */
 	if (VALID_STAT(sbuf2)) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
-	status = check_name(conn, newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* No links from a directory. */
@@ -3798,7 +4041,7 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 				files_struct *fsp,
 				const char *fname,
 				const SMB_STRUCT_STAT *psbuf,
-				struct utimbuf tvs)
+				struct timespec ts[2])
 {
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
@@ -3810,26 +4053,30 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (null_mtime(tvs.actime)) {
-		tvs.actime = psbuf->st_atime;
+	if (null_timespec(ts[0])) {
+		ts[0] = get_atimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
-	if (null_mtime(tvs.modtime)) {
-		tvs.modtime = psbuf->st_mtime;
+	if (null_timespec(ts[1])) {
+		ts[1] = get_mtimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
-	DEBUG(6,("smb_set_file_time: actime: %s " , ctime(&tvs.actime)));
-	DEBUG(6,("smb_set_file_time: modtime: %s ", ctime(&tvs.modtime)));
+	DEBUG(6,("smb_set_file_time: actime: %s " , time_to_asc(convert_timespec_to_time_t(ts[0])) ));
+	DEBUG(6,("smb_set_file_time: modtime: %s ", time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
 	/*
 	 * Try and set the times of this file if
 	 * they are different from the current values.
 	 */
 
-	if (psbuf->st_mtime == tvs.modtime && psbuf->st_atime == tvs.actime) {
-		return NT_STATUS_OK;
+	{
+		struct timespec mts = get_mtimespec(psbuf);
+		struct timespec ats = get_atimespec(psbuf);
+		if ((timespec_compare(&ts[0], &ats) == 0) && (timespec_compare(&ts[1], &mts) == 0)) {
+			return NT_STATUS_OK;
+		}
 	}
 
 	if(fsp != NULL) {
@@ -3843,15 +4090,16 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 		 * away and will set it on file close and after a write. JRA.
 		 */
 
-		if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
-			fsp_set_pending_modtime(fsp, tvs.modtime);
+		if (!null_timespec(ts[1])) {
+			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
+				time_to_asc(convert_timespec_to_time_t(ts[1])) ));
+			fsp_set_pending_modtime(fsp, ts[1]);
 		}
 
 	}
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
-	if(file_utime(conn, fname, &tvs)!=0) {
+	if(file_ntimes(conn, fname, ts)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
 	if (action != 0) {
@@ -4030,6 +4278,12 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	delete_on_close = (CVAL(pdata,0) ? True : False);
 	dosmode = dos_mode(conn, fname, psbuf);
 
+	DEBUG(10,("smb_set_file_disposition_info: file %s, dosmode = %u, "
+		"delete_on_close = %u\n",
+		fsp->fsp_name,
+		(unsigned int)dosmode,
+		(unsigned int)delete_on_close ));
+
 	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
  
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4132,7 +4386,6 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		pstring rel_name;
 		char *last_dirp = NULL;
 
-		unix_format(link_target);
 		if (*link_target == '/') {
 			/* No absolute paths allowed. */
 			return NT_STATUS_ACCESS_DENIED;
@@ -4186,7 +4439,10 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	RESOLVE_DFSPATH_STATUS(oldname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
@@ -4211,6 +4467,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32 len;
 	pstring newname;
 	pstring base_name;
+	BOOL dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
 
@@ -4226,12 +4483,15 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
+	srvstr_get_path_wcard(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	RESOLVE_DFSPATH_STATUS(newname, conn, inbuf, outbuf);
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
@@ -4255,7 +4515,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, newname ));
-		status = rename_internals(conn, fname, base_name, 0, overwrite, False);
+		status = rename_internals(conn, fname, base_name, 0, overwrite, False, dest_has_wcard);
 	}
 
 	return status;
@@ -4304,6 +4564,11 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
+		fname ? fname : fsp->fsp_name,
+		(unsigned int)num_file_acls,
+		(unsigned int)num_def_acls));
 
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
 			pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
@@ -4386,6 +4651,14 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
+	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
+			"lock_pid = %u, count = %.0f, offset = %.0f\n",
+		fsp->fsp_name,
+		(unsigned int)lock_type,
+		(unsigned int)lock_pid,
+		(double)count,
+		(double)offset ));
+
 	if (lock_type == UNLOCK_LOCK) {
 		status = do_unlock(fsp,
 				lock_pid,
@@ -4439,22 +4712,25 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					const char *fname,
 					const SMB_STRUCT_STAT *psbuf)
 {
-	struct utimbuf tvs;
+	struct timespec ts[2];
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* access time */
-	tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
+	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastAccess));
 	/* write time */
-	tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastWrite));
+
+	DEBUG(10,("smb_set_info_standard: file %s\n",
+		fname ? fname : fsp->fsp_name ));
 
 	return smb_set_file_time(conn,
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
 }
 
 /****************************************************************************
@@ -4469,10 +4745,10 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					SMB_STRUCT_STAT *psbuf)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-	time_t write_time;
-	time_t changed_time;
+	struct timespec write_time;
+	struct timespec changed_time;
 	uint32 dosmode = 0;
-	struct utimbuf tvs;
+	struct timespec ts[2];
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (total_data < 36) {
@@ -4492,26 +4768,31 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	/* Ignore create time at offset pdata. */
 
 	/* access time */
-	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
+	ts[0] = interpret_long_date(pdata+8);
 
-	write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
-	changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
+	write_time = interpret_long_date(pdata+16);
+	changed_time = interpret_long_date(pdata+24);
 
-	tvs.modtime = MIN(write_time, changed_time);
+	/* mtime */
+	ts[1] = timespec_min(&write_time, &changed_time);
 
-	if (write_time > tvs.modtime && write_time != (time_t)-1) {
-		tvs.modtime = write_time;
+	if ((timespec_compare(&write_time, &ts[1]) == 1) && !null_timespec(write_time)) {
+		ts[1] = write_time;
 	}
+
 	/* Prefer a defined time to an undefined one. */
-	if (null_mtime(tvs.modtime)) {
-		tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
+	if (null_timespec(ts[1])) {
+		ts[1] = null_timespec(write_time) ? changed_time : write_time;
 	}
+
+	DEBUG(10,("smb_set_file_basic_info: file %s\n",
+		fname ? fname : fsp->fsp_name ));
 
 	return smb_set_file_time(conn,
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
 }
 
 /****************************************************************************
@@ -4725,7 +5006,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					const char *fname,
 					SMB_STRUCT_STAT *psbuf)
 {
-	struct utimbuf tvs;
+	struct timespec ts[2];
 	uint32 raw_unixmode;
 	mode_t unixmode;
 	SMB_OFF_T size = 0;
@@ -4752,8 +5033,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+24)); /* access_time */
-	tvs.modtime = convert_timespec_to_time_t(interpret_long_date(pdata+32)); /* modification_time */
+	ts[0] = interpret_long_date(pdata+24); /* access_time */
+	ts[1] = interpret_long_date(pdata+32); /* modification_time */
 	set_owner = (uid_t)IVAL(pdata,40);
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
@@ -4796,8 +5077,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
 		size = get_file_size(*psbuf);
-		tvs.modtime = psbuf->st_mtime;
-		tvs.actime = psbuf->st_atime;
+		ts[0] = get_atimespec(psbuf);
+		ts[1] = get_mtimespec(psbuf);
 		/* 
 		 * We continue here as we might want to change the 
 		 * owner uid/gid.
@@ -4876,7 +5157,68 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				fsp,
 				fname,
 				psbuf,
-				tvs);
+				ts);
+}
+
+/****************************************************************************
+ Deal with SMB_SET_FILE_UNIX_INFO2.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					files_struct *fsp,
+					const char *fname,
+					SMB_STRUCT_STAT *psbuf)
+{
+	NTSTATUS status;
+	uint32 smb_fflags;
+	uint32 smb_fmask;
+
+	if (total_data < 116) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Start by setting all the fields that are common between UNIX_BASIC
+	 * and UNIX_INFO2.
+	 */
+	status = smb_set_file_unix_basic(conn, pdata, total_data,
+				fsp, fname, psbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	smb_fflags = IVAL(pdata, 108);
+	smb_fmask = IVAL(pdata, 112);
+
+	/* NB: We should only attempt to alter the file flags if the client
+	 * sends a non-zero mask.
+	 */
+	if (smb_fmask != 0) {
+		int stat_fflags = 0;
+
+		if (!map_info2_flags_to_sbuf(psbuf, smb_fflags, smb_fmask,
+			    &stat_fflags)) {
+			/* Client asked to alter a flag we don't understand. */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (fsp && fsp->fh->fd != -1) {
+			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
+			return NT_STATUS_NOT_SUPPORTED;
+		} else {
+			if (SMB_VFS_CHFLAGS(conn, fname, stat_fflags) != 0) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
+	}
+
+	/* XXX: need to add support for changing the create_time here. You
+	 * can do this for paths on Darwin with setattrlist(2). The right way
+	 * to hook this up is probably by extending the VFS utimes interface.
+	 */
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -4896,19 +5238,25 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	mode_t unixmode = (mode_t)0;
 	files_struct *fsp = NULL;
 	uint16 info_level_return = 0;
+	int info;
 	char *pdata = *ppdata;
 
-	if (total_data < 10) {
+	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	raw_unixmode = IVAL(pdata,8);
+	/* Next 4 bytes are not yet defined. */
+
 	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+
+	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
+		fname, (unsigned int)unixmode ));
 
 	status = open_directory(conn,
 				fname,
@@ -4918,19 +5266,21 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				FILE_CREATE,
 				0,
 				mod_unixmode,
-				NULL,
+				&info,
 				&fsp);
 
         if (NT_STATUS_IS_OK(status)) {
                 close_file(fsp, NORMAL_CLOSE);
         }
 
-	info_level_return = SVAL(pdata,12);
+	info_level_return = SVAL(pdata,16);
  
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
+		*pdata_return_size = 12 + SMB_FILE_UNIX_BASIC_SIZE;
+	} else if (info_level_return ==  SMB_QUERY_FILE_UNIX_INFO2) {
+		*pdata_return_size = 12 + SMB_FILE_UNIX_INFO2_SIZE;
 	} else {
-		*pdata_return_size = 8;
+		*pdata_return_size = 12;
 	}
 
 	/* Realloc the data size */
@@ -4941,15 +5291,21 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	}
 
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
-	SSVAL(pdata,2,0);
+	SSVAL(pdata,2,0); /* No fnum. */
+	SIVAL(pdata,4,info); /* Was directory created. */
 
-	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,6,0); /* Padding. */
-		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
-	} else {
-		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,6,0); /* Padding. */
+	switch (info_level_return) {
+	case SMB_QUERY_FILE_UNIX_BASIC:
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+		SSVAL(pdata,10,0); /* Padding. */
+		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,10,0); /* Padding. */
+		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+	default:
+		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+		SSVAL(pdata,10,0); /* Padding. */
 	}
 
 	return status;
@@ -4982,7 +5338,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	int info = 0;
 	uint16 info_level_return = 0;
 
-	if (total_data < 14) {
+	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5034,6 +5390,8 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	raw_unixmode = IVAL(pdata,8);
+	/* Next 4 bytes are not yet defined. */
+
 	status = unix_perms_from_wire(conn,
 				psbuf,
 				raw_unixmode,
@@ -5055,6 +5413,11 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	if (wire_open_mode & SMB_O_DIRECT) {
 		mod_unixmode |= FILE_FLAG_NO_BUFFERING;
 	}
+
+	DEBUG(10,("smb_posix_open: file %s, smb_posix_flags = %u, mode 0%o\n",
+		fname,
+		(unsigned int)wire_open_mode,
+		(unsigned int)unixmode ));
 
 	status = open_file_ntcreate(conn,
 				fname,
@@ -5080,12 +5443,16 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		extended_oplock_granted = True;
 	}
 
-	info_level_return = SVAL(pdata,12);
+	info_level_return = SVAL(pdata,16);
  
+	/* Allocate the correct return size. */
+
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		*pdata_return_size = 8 + SMB_FILE_UNIX_BASIC_SIZE;
+		*pdata_return_size = 12 + SMB_FILE_UNIX_BASIC_SIZE;
+	} else if (info_level_return ==  SMB_QUERY_FILE_UNIX_INFO2) {
+		*pdata_return_size = 12 + SMB_FILE_UNIX_INFO2_SIZE;
 	} else {
-		*pdata_return_size = 8;
+		*pdata_return_size = 12;
 	}
 
 	/* Realloc the data size */
@@ -5109,13 +5476,20 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	SSVAL(pdata,2,fsp->fnum);
-	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
-		SSVAL(pdata,4,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,6,0); /* padding. */
-		store_file_unix_basic(conn, pdata + 8, fsp, psbuf);
-	} else {
-		SSVAL(pdata,4,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,6,0); /* padding. */
+	SIVAL(pdata,4,info); /* Was file created etc. */
+
+	switch (info_level_return) {
+	case SMB_QUERY_FILE_UNIX_BASIC:
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+		SSVAL(pdata,10,0); /* padding. */
+		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+		SSVAL(pdata,10,0); /* padding. */
+		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+	default:
+		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+		SSVAL(pdata,10,0); /* padding. */
 	}
 	return NT_STATUS_OK;
 }
@@ -5132,11 +5506,27 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
+	uint16 flags = 0;
 	int info = 0;
+
+	if (total_data < 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	flags = SVAL(pdata,0);
 
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	if ((flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) &&
+			!VALID_STAT_OF_DIR(*psbuf)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	DEBUG(10,("smb_posix_unlink: %s %s\n",
+		(flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) ? "directory" : "file",
+		fname));
 
 	if (VALID_STAT_OF_DIR(*psbuf)) {
 		status = open_directory(conn,
@@ -5150,17 +5540,34 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 					&info,				
 					&fsp);
 	} else {
+		char del = 1;
+
 		status = open_file_ntcreate(conn,
 				fname,
 				psbuf,
 				DELETE_ACCESS,
 				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				FILE_OPEN,
-				FILE_DELETE_ON_CLOSE,
+				0,
 				FILE_FLAG_POSIX_SEMANTICS|0777,
-				INTERNAL_OPEN_ONLY,
+				0, /* No oplock, but break existing ones. */
 				&info,
 				&fsp);
+		/* 
+		 * For file opens we must set the delete on close
+		 * after the open.
+		 */
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = smb_set_file_disposition_info(conn,
+							&del,
+							1,
+							fsp,
+							fname,
+							psbuf);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5251,9 +5658,20 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return ERROR_NT(status);
 		}
 
-		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			}
+			return ERROR_NT(status);
+		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
+		}
+
+		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -5266,12 +5684,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
 			return UNIXERROR(ERRDOS,ERRbadpath);
 		}    
-
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
-		}
-
 	}
 
 	if (!CAN_WRITE(conn)) {
@@ -5294,9 +5706,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
-	if (fsp && fsp->pending_modtime) {
+	if (fsp && !null_timespec(fsp->pending_modtime)) {
 		/* the pending modtime overrides the current modtime */
-		sbuf.st_mtime = fsp->pending_modtime;
+		set_mtimespec(&sbuf, fsp->pending_modtime);
 	}
 
 	switch (info_level) {
@@ -5409,6 +5821,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_SET_FILE_UNIX_BASIC:
 		{
 			status = smb_set_file_unix_basic(conn,
+							pdata,
+							total_data,
+							fsp,
+							fname,
+							&sbuf);
+			break;
+		}
+
+		case SMB_SET_FILE_UNIX_INFO2:
+		{
+			status = smb_set_file_unix_info2(conn,
 							pdata,
 							total_data,
 							fsp,
@@ -5576,6 +5999,12 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(status);
 	}
 
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
+		return ERROR_NT(status);
+	}
+
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
@@ -5605,12 +6034,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		}
 	} else if (IVAL(pdata,0) != 4) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
-	status = check_name(conn, directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
-		return ERROR_NT(status);
 	}
 
 	status = create_directory(conn, directory);

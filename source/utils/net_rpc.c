@@ -3585,12 +3585,20 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
  **/
 BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 {
+	struct cli_state *targetcli;
+	pstring targetpath;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if (cli_list(cp_clistate->cli_share_src, mask, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
-		d_fprintf(stderr, "listing %s failed with error: %s\n", 
+	if ( !cli_resolve_path( "", cp_clistate->cli_share_src, mask, &targetcli, targetpath ) ) {
+		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
+		return False;
+	}
+
+	if (cli_list(targetcli, targetpath, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
+		d_fprintf(stderr, "listing %s failed with error: %s\n", 
+			mask, cli_errstr(targetcli));
 		return False;
 	}
 
@@ -4934,12 +4942,12 @@ static int rpc_file_close(int argc, const char **argv)
  * @param str3   strings for FILE_INFO_3
  **/
 
-static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
+static void display_file_info_3( FILE_INFO_3 *info3 )
 {
 	fstring user = "", path = "";
 
-	rpcstr_pull_unistr2_fstring(user, &str3->uni_user_name);
-	rpcstr_pull_unistr2_fstring(path, &str3->uni_path_name);
+	rpcstr_pull_unistr2_fstring(user, info3->user);
+	rpcstr_pull_unistr2_fstring(path, info3->path);
 
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 		 info3->id, user, info3->perms, info3->num_locks, path);
@@ -4994,8 +5002,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 		 "\nFileId  Opened by            Perms  Locks  Path"\
 		 "\n------  ---------            -----  -----  ---- \n");
 	for (i = 0; i < ctr.num_entries; i++)
-		display_file_info_3(&ctr.file.info3[i].info_3, 
-				    &ctr.file.info3[i].info_3_str);
+		display_file_info_3(&ctr.file.info3[i]);
  done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
@@ -6072,6 +6079,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!pipe_hnd) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6081,6 +6089,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
  			nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6093,6 +6102,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
@@ -6112,6 +6122,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
+			cli_shutdown(cli);
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
@@ -6133,6 +6144,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6151,6 +6163,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &nt_status);
 	if (!pipe_hnd) {
 		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6161,6 +6174,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6173,6 +6187,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6191,6 +6206,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
+			cli_shutdown(cli);
 			talloc_destroy(mem_ctx);
 			return -1;
 		};

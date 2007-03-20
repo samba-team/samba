@@ -158,13 +158,76 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 
 
 #ifdef HAVE_KRB5
+
+#if 0
+/* Experiment that failed. See "only happens with a KDC" comment below. */
 /****************************************************************************
-reply to a session setup spnego negotiate packet for kerberos
+ Cerate a clock skew error blob for a Windows client.
 ****************************************************************************/
+
+static BOOL make_krb5_skew_error(DATA_BLOB *pblob_out)
+{
+	krb5_context context = NULL;
+	krb5_error_code kerr = 0;
+	krb5_data reply;
+	krb5_principal host_princ = NULL;
+	char *host_princ_s = NULL;
+	BOOL ret = False;
+
+	*pblob_out = data_blob(NULL,0);
+
+	initialize_krb5_error_table();
+	kerr = krb5_init_context(&context);
+	if (kerr) {
+		return False;
+	}
+	/* Create server principal. */
+	asprintf(&host_princ_s, "%s$@%s", global_myname(), lp_realm());
+	if (!host_princ_s) {
+		goto out;
+	}
+	strlower_m(host_princ_s);
+
+	kerr = smb_krb5_parse_name(context, host_princ_s, &host_princ);
+	if (kerr) {
+		DEBUG(10,("make_krb5_skew_error: smb_krb5_parse_name failed for name %s: Error %s\n",
+			host_princ_s, error_message(kerr) ));
+		goto out;
+	}
+	
+	kerr = smb_krb5_mk_error(context, KRB5KRB_AP_ERR_SKEW, host_princ, &reply);
+	if (kerr) {
+		DEBUG(10,("make_krb5_skew_error: smb_krb5_mk_error failed: Error %s\n",
+			error_message(kerr) ));
+		goto out;
+	}
+
+	*pblob_out = data_blob(reply.data, reply.length);
+	kerberos_free_data_contents(context,&reply);
+	ret = True;
+
+  out:
+
+	if (host_princ_s) {
+		SAFE_FREE(host_princ_s);
+	}
+	if (host_princ) {
+		krb5_free_principal(context, host_princ);
+	}
+	krb5_free_context(context);
+	return ret;
+}
+#endif
+
+/****************************************************************************
+ Reply to a session setup spnego negotiate packet for kerberos.
+****************************************************************************/
+
 static int reply_spnego_kerberos(connection_struct *conn, 
 				 char *inbuf, char *outbuf,
 				 int length, int bufsize,
-				 DATA_BLOB *secblob)
+				 DATA_BLOB *secblob,
+				 BOOL *p_invalidate_vuid)
 {
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB ticket;
@@ -191,9 +254,13 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	ZERO_STRUCT(ap_rep_wrapped);
 	ZERO_STRUCT(response);
 
+	/* Normally we will always invalidate the intermediate vuid. */
+	*p_invalidate_vuid = True;
+
 	mem_ctx = talloc_init("reply_spnego_kerberos");
-	if (mem_ctx == NULL)
+	if (mem_ctx == NULL) {
 		return ERROR_NT(nt_status_squash(NT_STATUS_NO_MEMORY));
+	}
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		talloc_destroy(mem_ctx);
@@ -205,9 +272,50 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ticket);
 
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1,("Failed to verify incoming ticket!\n"));	
+#if 0
+		/* Experiment that failed. See "only happens with a KDC" comment below. */
+
+		if (NT_STATUS_EQUAL(ret, NT_STATUS_TIME_DIFFERENCE_AT_DC)) {
+
+			/*
+			 * Windows in this case returns NT_STATUS_MORE_PROCESSING_REQUIRED
+			 * with a negTokenTarg blob containing an krb5_error struct ASN1 encoded
+			 * containing KRB5KRB_AP_ERR_SKEW. The client then fixes its
+			 * clock and continues rather than giving an error. JRA.
+			 * -- Looks like this only happens with a KDC. JRA.
+			 */
+
+			BOOL ok = make_krb5_skew_error(&ap_rep);
+			if (!ok) {
+				talloc_destroy(mem_ctx);
+				return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
+			}
+			ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_ERROR);
+			response = spnego_gen_auth_response(&ap_rep_wrapped, ret, OID_KERBEROS5_OLD);
+			reply_sesssetup_blob(conn, outbuf, response, NT_STATUS_MORE_PROCESSING_REQUIRED);
+
+			/*
+			 * In this one case we don't invalidate the intermediate vuid.
+			 * as we're expecting the client to re-use it for the next
+			 * sessionsetupX packet. JRA.
+			 */
+
+			*p_invalidate_vuid = False;
+
+			data_blob_free(&ap_rep);
+			data_blob_free(&ap_rep_wrapped);
+			data_blob_free(&response);
+			talloc_destroy(mem_ctx);
+			return -1; /* already replied */
+		}
+#else
+		if (!NT_STATUS_EQUAL(ret, NT_STATUS_TIME_DIFFERENCE_AT_DC)) {
+			ret = NT_STATUS_LOGON_FAILURE;
+		}
+#endif
+		DEBUG(1,("Failed to verify incoming ticket with error %s!\n", nt_errstr(ret)));	
 		talloc_destroy(mem_ctx);
-		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
+		return ERROR_NT(nt_status_squash(ret));
 	}
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
@@ -523,32 +631,19 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 }
 
 /****************************************************************************
- Reply to a session setup spnego negotiate packet.
+ Is this a krb5 mechanism ?
 ****************************************************************************/
 
-static int reply_spnego_negotiate(connection_struct *conn, 
-				  char *inbuf,
-				  char *outbuf,
-				  uint16 vuid,
-				  int length, int bufsize,
-				  DATA_BLOB blob1,
-				  AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
+static NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out, BOOL *p_is_krb5)
 {
 	char *OIDs[ASN1_MAX_OIDS];
-	DATA_BLOB secblob;
 	int i;
-	DATA_BLOB chal;
-#ifdef HAVE_KRB5
-	BOOL got_kerberos_mechanism = False;
-#endif
-	NTSTATUS nt_status;
+
+	*p_is_krb5 = False;
 
 	/* parse out the OIDs and the first sec blob */
-	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
-		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
-
-		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
+	if (!parse_negTokenTarg(blob_in, OIDs, pblob_out)) {
+		return NT_STATUS_LOGON_FAILURE;
 	}
 
 	/* only look at the first OID for determining the mechToken --
@@ -564,24 +659,53 @@ static int reply_spnego_negotiate(connection_struct *conn,
 #ifdef HAVE_KRB5	
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
 	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		got_kerberos_mechanism = True;
+		*p_is_krb5 = True;
 	}
 #endif
 		
 	for (i=0;OIDs[i];i++) {
-		DEBUG(3,("Got OID %s\n", OIDs[i]));
+		DEBUG(5,("parse_spnego_mechanisms: Got OID %s\n", OIDs[i]));
 		free(OIDs[i]);
 	}
-	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Reply to a session setup spnego negotiate packet.
+****************************************************************************/
+
+static int reply_spnego_negotiate(connection_struct *conn, 
+				  char *inbuf,
+				  char *outbuf,
+				  uint16 vuid,
+				  int length, int bufsize,
+				  DATA_BLOB blob1,
+				  AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
+{
+	DATA_BLOB secblob;
+	DATA_BLOB chal;
+	BOOL got_kerberos_mechanism = False;
+	NTSTATUS status;
+
+	status = parse_spnego_mechanisms(blob1, &secblob, &got_kerberos_mechanism);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+		return ERROR_NT(nt_status_squash(status));
+	}
+
+	DEBUG(3,("reply_spnego_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
+		BOOL destroy_vuid = True;
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
-						length, bufsize, &secblob);
+						length, bufsize, &secblob, &destroy_vuid);
 		data_blob_free(&secblob);
-		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
-
+		if (destroy_vuid) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(vuid);
+		}
 		return ret;
 	}
 #endif
@@ -590,28 +714,27 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		auth_ntlmssp_end(auth_ntlmssp_state);
 	}
 
-	nt_status = auth_ntlmssp_start(auth_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	status = auth_ntlmssp_start(auth_ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);
-
-		return ERROR_NT(nt_status_squash(nt_status));
+		return ERROR_NT(nt_status_squash(status));
 	}
 
-	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
+	status = auth_ntlmssp_update(*auth_ntlmssp_state, 
 					secblob, &chal);
 
 	data_blob_free(&secblob);
 
 	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state,
-			     &chal, nt_status, True);
+			     &chal, status, True);
 
 	data_blob_free(&chal);
 
 	/* already replied */
 	return -1;
 }
-	
+
 /****************************************************************************
  Reply to a session setup spnego auth packet.
 ****************************************************************************/
@@ -622,8 +745,10 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     DATA_BLOB blob1,
 			     AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
-	DATA_BLOB auth, auth_reply;
-	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+	DATA_BLOB auth = data_blob(NULL,0);
+	DATA_BLOB auth_reply = data_blob(NULL,0);
+	DATA_BLOB secblob = data_blob(NULL,0);
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
@@ -634,6 +759,33 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
+
+	if (auth.data[0] == ASN1_APPLICATION(0)) {
+		/* Might be a second negTokenTarg packet */
+
+		BOOL got_krb5_mechanism = False;
+		status = parse_spnego_mechanisms(auth, &secblob, &got_krb5_mechanism);
+		if (NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("reply_spnego_auth: Got secblob of size %lu\n", (unsigned long)secblob.length));
+#ifdef HAVE_KRB5
+			if ( got_krb5_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
+				BOOL destroy_vuid = True;
+				int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
+								length, bufsize, &secblob, &destroy_vuid);
+				data_blob_free(&secblob);
+				data_blob_free(&auth);
+				if (destroy_vuid) {
+					/* Kill the intermediate vuid */
+					invalidate_vuid(vuid);
+				}
+				return ret;
+			}
+#endif
+		}
+	}
+
+	/* If we get here it wasn't a negTokenTarg auth packet. */
+	data_blob_free(&secblob);
 	
 	if (!*auth_ntlmssp_state) {
 		/* Kill the intermediate vuid */
@@ -643,14 +795,14 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
 	
-	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
+	status = auth_ntlmssp_update(*auth_ntlmssp_state, 
 					auth, &auth_reply);
 
 	data_blob_free(&auth);
 
 	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
 			     auth_ntlmssp_state,
-			     &auth_reply, nt_status, True);
+			     &auth_reply, status, True);
 		
 	data_blob_free(&auth_reply);
 

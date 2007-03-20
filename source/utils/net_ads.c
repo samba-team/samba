@@ -1118,6 +1118,72 @@ done:
 }
 
 /*******************************************************************
+ Set a machines dNSHostName and servicePrincipalName attributes
+ ********************************************************************/
+
+static ADS_STATUS net_set_os_attributes(TALLOC_CTX *ctx, ADS_STRUCT *ads_s, 
+					const char *os_name, const char *os_version )
+{
+	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
+	char *new_dn;
+	ADS_MODLIST mods;
+	LDAPMessage *res = NULL;
+	char *dn_string = NULL;
+	const char *machine_name = global_myname();
+	int count;
+	char *os_sp = NULL;
+	
+	if ( !os_name || !os_version ) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	
+	/* Find our DN */
+	
+	status = ads_find_machine_acct(ads_s, &res, machine_name);
+	if (!ADS_ERR_OK(status)) 
+		return status;
+		
+	if ( (count = ads_count_replies(ads_s, res)) != 1 ) {
+		DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
+		return ADS_ERROR(LDAP_NO_MEMORY);	
+	}
+	
+	if ( (dn_string = ads_get_dn(ads_s, res)) == NULL ) {
+		DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
+		goto done;
+	}
+	
+	new_dn = talloc_strdup(ctx, dn_string);
+	ads_memfree(ads_s, dn_string);
+	if (!new_dn) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	
+	/* now do the mods */
+	
+	if (!(mods = ads_init_mods(ctx))) {
+		goto done;
+	}
+
+	os_sp = talloc_asprintf( ctx, "Samba %s", SAMBA_VERSION_STRING );
+	
+	/* fields of primary importance */
+	
+	ads_mod_str(ctx, &mods, "operatingSystem", os_name);
+	ads_mod_str(ctx, &mods, "operatingSystemVersion", os_version);
+	if ( os_sp )
+		ads_mod_str(ctx, &mods, "operatingSystemServicePack", os_sp);
+
+	status = ads_gen_mod(ads_s, new_dn, mods);
+
+done:
+	ads_msgfree(ads_s, res);
+	TALLOC_FREE( os_sp );	
+	
+	return status;
+}
+
+/*******************************************************************
   join a domain using ADS (LDAP mods)
  ********************************************************************/
 
@@ -1386,6 +1452,8 @@ int net_ads_join(int argc, const char **argv)
 	int i;
 	fstring dc_name;
 	struct in_addr dcip;
+	const char *os_name = NULL;
+	const char *os_version = NULL;
 	
 	nt_status = check_ads_config();
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1427,7 +1495,21 @@ int net_ads_join(int argc, const char **argv)
 		}
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
-				d_fprintf(stderr, "Please supply a valid OU path\n");
+				d_fprintf(stderr, "Please supply a valid OU path.\n");
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+				goto fail;
+			}		
+		}
+		else if ( !StrnCaseCmp(argv[i], "osName", strlen("osName")) ) {
+			if ( (os_name = get_string_param(argv[i])) == NULL ) {
+				d_fprintf(stderr, "Please supply a operating system name.\n");
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+				goto fail;
+			}		
+		}
+		else if ( !StrnCaseCmp(argv[i], "osVer", strlen("osVer")) ) {
+			if ( (os_version = get_string_param(argv[i])) == NULL ) {
+				d_fprintf(stderr, "Please supply a valid operating system version.\n");
 				nt_status = NT_STATUS_INVALID_PARAMETER;
 				goto fail;
 			}		
@@ -1546,7 +1628,18 @@ int net_ads_join(int argc, const char **argv)
 		}
 	}
 
+	/* Try to set the operatingSystem attributes if asked */
+
+	if ( os_name && os_version ) {
+		status = net_set_os_attributes( ctx, ads, os_name, os_version );
+		if ( !ADS_ERR_OK(status) )  {
+			d_fprintf(stderr, "Failed to set operatingSystem attributes.  "
+				  "Are you a Domain Admin?\n");
+		}
+	}
+
 	/* Now build the keytab, using the same ADS connection */
+
 	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
 		DEBUG(1,("Error creating host keytab!\n"));
 	}
@@ -1819,13 +1912,16 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
+	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
 	if (argc < 1) {
+		talloc_destroy(mem_ctx);
 		return net_ads_printer_usage(argc, argv);
 	}
 	
@@ -1853,6 +1949,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		d_fprintf(stderr, "Unable to open a connnection to %s to obtain data "
 			 "for %s\n", servername, printername);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
@@ -1864,37 +1961,60 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		d_fprintf(stderr, "Could not find machine account for server %s\n", 
 			 servername);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
 	srv_dn = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
+	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn[0]);
+	printername_escaped = escape_rdn_val_string_alloc(printername);
+	if (!srv_cn_escaped || !printername_escaped) {
+		SAFE_FREE(srv_cn_escaped);
+		SAFE_FREE(printername_escaped);
+		d_fprintf(stderr, "Internal error, out of memory!");
+		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn);
+
+	SAFE_FREE(srv_cn_escaped);
+	SAFE_FREE(printername_escaped);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
 	if (!pipe_hnd) {
 		d_fprintf(stderr, "Unable to open a connnection to the spoolss pipe on %s\n",
 			 servername);
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
 	if (!W_ERROR_IS_OK(get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
 							      printername))) {
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
                 d_fprintf(stderr, "ads_publish_printer: %s\n", ads_errstr(rc));
+		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
                 return -1;
         }
  
         d_printf("published printer\n");
+	SAFE_FREE(prt_dn);
 	ads_destroy(&ads);
+	talloc_destroy(mem_ctx);
  
 	return 0;
 }
@@ -2158,6 +2278,7 @@ static int net_ads_dn_usage(int argc, const char **argv)
 		"The DN standard LDAP DN, and the attributes are a list of LDAP fields \n"\
 		"to show in the results\n\n"\
 		"Example: net ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' sAMAccountName\n\n"
+		"Note: the DN must be provided properly escaped. See RFC 4514 for details\n\n"
 		);
 	net_common_flags_usage(argc, argv);
 	return -1;

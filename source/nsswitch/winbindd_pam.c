@@ -744,6 +744,8 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 	
+	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+
 	if (!canonicalize_username(state->request.data.auth.user,
 			       name_domain, name_user)) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
@@ -1332,6 +1334,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 	
+	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
 
 	if (domain->online == False) {
@@ -2088,7 +2092,9 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, user;
-	
+	uid_t caller_uid = (uid_t)-1;
+	uid_t request_uid = state->request.data.logoff.uid;
+
 	DEBUG(3, ("[%5lu]: pam logoff %s\n", (unsigned long)state->pid,
 		state->request.data.logoff.user));
 
@@ -2099,12 +2105,38 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 	state->request.data.logoff.krb5ccname
 		[sizeof(state->request.data.logoff.krb5ccname)-1]='\0';
 
+	if (request_uid == (gid_t)-1) {
+		goto failed;
+	}
+
 	if (!canonicalize_username(state->request.data.logoff.user, name_domain, user)) {
 		goto failed;
 	}
 
 	if ((domain = find_auth_domain(state, name_domain)) == NULL) {
 		goto failed;
+	}
+
+	if ((sys_getpeereid(state->sock, &caller_uid)) != 0) {
+		DEBUG(1,("winbindd_pam_logoff: failed to check peerid: %s\n", 
+			strerror(errno)));
+		goto failed;
+	}
+
+	switch (caller_uid) {
+		case -1:
+			goto failed;
+		case 0:
+			/* root must be able to logoff any user - gd */
+			state->request.data.logoff.uid = request_uid;
+			break;
+		default:
+			if (caller_uid != request_uid) {
+				DEBUG(1,("winbindd_pam_logoff: caller requested invalid uid\n"));
+				goto failed;
+			}
+			state->request.data.logoff.uid = caller_uid;
+			break;
 	}
 
 	sendto_domain(state, domain);

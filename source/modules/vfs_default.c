@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Wrap disk only vfs functions to sidestep dodgy compilers.
    Copyright (C) Tim Potter 1998
+   Copyright (C) Jeremy Allison 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -612,13 +613,35 @@ static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
 	return result;
 }
 
-static int vfswrap_utime(vfs_handle_struct *handle,  const char *path, struct utimbuf *times)
+/*********************************************************************
+ nsec timestamp resolution call. Convert down to whatever the underlying
+ system will support.
+**********************************************************************/
+
+static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const struct timespec ts[2])
 {
 	int result;
 
-	START_PROFILE(syscall_utime);
-	result = utime(path, times);
-	END_PROFILE(syscall_utime);
+	START_PROFILE(syscall_ntimes);
+#if defined(HAVE_UTIMES)
+	{
+		struct timeval tv[2];
+		tv[0] = convert_timespec_to_timeval(ts[0]);
+		tv[1] = convert_timespec_to_timeval(ts[1]);
+		result = utimes(path, tv);
+	}
+#elif defined(HAVE_UTIME)
+	{
+		struct utimebuf times;
+		times.actime = convert_timespec_to_time_t(ts[0]);
+		times.modtime = convert_timespec_to_time_t(ts[1]);
+		result = utime(path, times);
+	}
+#else
+	errno = ENOSYS;
+	result = -1;
+#endif
+	END_PROFILE(syscall_ntimes);
 	return result;
 }
 
@@ -786,7 +809,7 @@ static BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd
 static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp, int fd,
 				int leasetype)
 {
-	int result;
+	int result = -1;
 
 	START_PROFILE(syscall_linux_setlease);
 
@@ -796,7 +819,8 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp, 
 		return -1;
 
 	result = linux_setlease(fd, leasetype);
-	
+#else
+	errno = ENOSYS;
 #endif
 	END_PROFILE(syscall_linux_setlease);
 	return result;
@@ -877,6 +901,12 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 	 * Do nothing, leave everything to notify_internal.c
 	 */
 	return NT_STATUS_OK;
+}
+
+static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flags)
+{
+	errno = ENOSYS;
+	return -1;
 }
 
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
@@ -1238,7 +1268,7 @@ static vfs_op_tuple vfs_default_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_getwd),	SMB_VFS_OP_GETWD,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_utime),	SMB_VFS_OP_UTIME,
+	{SMB_VFS_OP(vfswrap_ntimes),	SMB_VFS_OP_NTIMES,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_ftruncate),	SMB_VFS_OP_FTRUNCATE,
 	 SMB_VFS_LAYER_OPAQUE},
@@ -1261,6 +1291,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_realpath),	SMB_VFS_OP_REALPATH,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_notify_watch),	SMB_VFS_OP_NOTIFY_WATCH,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_chflags),	SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

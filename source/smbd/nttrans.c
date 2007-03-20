@@ -353,7 +353,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		return(ERROR_DOS(ERRSRV,ERRnofids));
 	}
 
-	/* TODO: Add pipe to db */
+	/* Add pipe to db */
 	
 	if ( !store_pipe_opendb( p ) ) {
 		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
@@ -469,7 +469,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = 0;
-	files_struct *fsp=NULL;
+	files_struct *fsp = NULL;
 	char *p = NULL;
 	struct timespec c_timespec;
 	struct timespec a_timespec;
@@ -491,7 +491,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			(unsigned int)create_options,
 			(unsigned int)root_dir_fid ));
 
-	/* If it's an IPC, use the pipe handler. */
+	/*
+	 * If it's an IPC, use the pipe handler.
+	 */
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
@@ -502,7 +504,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return(ERROR_DOS(ERRDOS,ERRnoaccess));
 		}
 	}
-			
+
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -522,7 +524,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp) {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadfid));
+			return ERROR_DOS(ERRDOS,ERRbadfid);
 		}
 
 		if(!dir_fsp->is_directory) {
@@ -533,7 +535,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				return ERROR_NT(status);
 			}
 
-			/* 
+			/*
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
@@ -564,7 +566,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * Ensure it ends in a '\'.
 		 */
 
-		if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
+		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
 			pstrcat(fname, "/");
 			dir_name_len++;
 		}
@@ -582,7 +584,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return ERROR_NT(status);
 		}
 
-		/* 
+		/*
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
@@ -613,7 +615,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
 	 * desired access and the share access.
 	 */
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntcreateX);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	if (oplock_request) {
@@ -664,19 +673,19 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
-	/* 
+	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
 	if(create_options & FILE_DIRECTORY_FILE) {
-		oplock_request = 0;
-		
+
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
+		oplock_request = 0;
 		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
@@ -695,7 +704,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
+
 	} else {
+
 		/*
 		 * Ordinary file case.
 		 */
@@ -721,6 +732,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					new_file_attributes,
 					oplock_request,
 					&info, &fsp);
+
 		if (!NT_STATUS_IS_OK(status)) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
@@ -773,7 +785,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					return ERROR_NT(status);
 				}
 			} else {
-
 				restore_case_semantics(conn, file_attributes);
 				END_PROFILE(SMBntcreateX);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
@@ -786,7 +797,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	restore_case_semantics(conn, file_attributes);
-		
+
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
 	if(fattr == 0) {
@@ -827,11 +838,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-	
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-	
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
@@ -871,8 +882,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		SIVAL(p,0,info);
 	}
 	p += 4;
-	
-	/* Create time. */  
+
+	/* Create time. */
 	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 	a_timespec = get_atimespec(&sbuf);
 	m_timespec = get_mtimespec(&sbuf);
@@ -883,7 +894,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec);
+	put_long_date_timespec(p, c_timespec); /* create time. */
 	p += 8;
 	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
@@ -1252,15 +1263,27 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	}
 
+	/*
+	 * Ordinary file or directory.
+	 */
+		
 	/*
 	 * Check if POSIX semantics are wanted.
 	 */
-
+		
 	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
     
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1273,7 +1296,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
 	}
-    
+
 	/* This is the correct thing to do (check every time) but can_delete is
 	   expensive (it may have to read the parent directory permissions). So
 	   for now we're not doing it unless we have a strong hint the client
@@ -1317,14 +1340,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		oplock_request = 0;
-
 		/*
 		 * We will get a create directory here if the Win32
 		 * app specified a security descriptor in the 
 		 * CreateDirectory() call.
 		 */
 
+		oplock_request = 0;
 		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
@@ -1464,11 +1486,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * and we granted one (by whatever means) - set the
 	 * correct bit for extended oplock reply.
 	 */
-    
+
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
 	}
-  
+
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
 	}
@@ -1592,15 +1614,15 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-        /* Source must already exist. */
-	if (!VALID_STAT(sbuf1)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 	status = check_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+        /* Source must already exist. */
+	if (!VALID_STAT(sbuf1)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	/* Ensure attributes match. */
 	fattr = dos_mode(conn,oldname,&sbuf1);
 	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
@@ -1612,14 +1634,14 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-	/* Disallow if newname already exists. */
-	if (VALID_STAT(sbuf2)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
 	status = check_name(conn, newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/* Disallow if newname already exists. */
+	if (VALID_STAT(sbuf2)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	/* No links from a directory. */
@@ -1675,7 +1697,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp_set_pending_modtime(fsp2, sbuf1.st_mtime);
+	fsp_set_pending_modtime(fsp2, get_mtimespec(&sbuf1));
 
 	status = close_file(fsp2,NORMAL_CLOSE);
 
@@ -1708,15 +1730,15 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
-	BOOL path1_contains_wcard = False;
-	BOOL path2_contains_wcard = False;
+	BOOL src_has_wcard = False;
+	BOOL dest_has_wcard = False;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &path1_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1734,23 +1756,38 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path2_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH(oldname, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
-	
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
+
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
+
 	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
 	
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, oldname, newname, attrs, False, path1_contains_wcard);
+			status = rename_internals(conn, oldname, newname, attrs, False, src_has_wcard, dest_has_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			if (path1_contains_wcard || path2_contains_wcard) {
+			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
@@ -1758,7 +1795,7 @@ int reply_ntrename(connection_struct *conn,
 			}
 			break;
 		case RENAME_FLAG_COPY:
-			if (path1_contains_wcard || path2_contains_wcard) {
+			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
@@ -1899,7 +1936,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	pstring new_name;
 	files_struct *fsp = NULL;
 	BOOL replace_if_exists = False;
-	BOOL path_contains_wcard = False;
+	BOOL dest_has_wcard = False;
 	NTSTATUS status;
 
         if(parameter_count < 5) {
@@ -1909,13 +1946,14 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4, STR_TERMINATE, &status, &path_contains_wcard);
+	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4,
+			STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
 	status = rename_internals(conn, fsp->fsp_name,
-				  new_name, 0, replace_if_exists, path_contains_wcard);
+				  new_name, 0, replace_if_exists, False, dest_has_wcard);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {

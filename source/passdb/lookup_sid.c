@@ -411,7 +411,13 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 			names[i] = "";
 			types[i] = SID_NAME_UNKNOWN;
 		}
+		TALLOC_FREE(tmp_ctx);
 		return True;
+	}
+
+	if (!(*domain_name = talloc_strdup(mem_ctx, *domain_name))) {
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/*
@@ -1115,7 +1121,7 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
  *THE LEGACY* convert uid_t to SID function.
 *****************************************************************/  
 
-void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
+static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	uint32 rid;
 	BOOL ret;
@@ -1149,7 +1155,7 @@ void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
  *THE LEGACY* convert gid_t to SID function.
 *****************************************************************/  
 
-void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
+static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	BOOL ret;
 
@@ -1180,7 +1186,7 @@ void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
  *THE LEGACY* convert SID to uid function.
 *****************************************************************/  
 
-BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
+static BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum lsa_SidType type;
 	uint32 rid;
@@ -1229,7 +1235,7 @@ done:
  Group mapping is used for gids that maps to Wellknown SIDs
 *****************************************************************/  
 
-BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	uint32 rid;
 	GROUP_MAP map;

@@ -89,7 +89,7 @@ smb.conf changes
     idmap expire time			New		900
     idmap negative time			New		120
     kernel change notify		Per share	Yes
-    max stat cache size 		Modified 	1024MB
+    max stat cache size 		Modified 	1024KB
     printjob username			New		%U
     winbind normalize names		New		no
 
@@ -304,11 +304,11 @@ o   J Raynor <raynorj@mn.rr.com>
 
 
 o   Jiri Sasek <Jiri.Sasek@Sun.COM>
-    I Fix possible NULL dereference in adt_tree.c
+    * Fix possible NULL dereference in adt_tree.c
 
 
 o   Karolin Seeger <ks@sernet.de>
-    * Improvements to 'net sam policy'
+    * Add 'net sam policy' commands.
     * Fixes for "net usershare" and "guest_ok=y"
 
 

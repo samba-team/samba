@@ -3,6 +3,7 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell                  1994-1998
    Copyright (C) Gerald (Jerry) Carter            2004
+   Copyright (C) Jeremy Allison                   2007
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,16 @@
 
 #include "includes.h"
 
+/********************************************************************
+ Important point.
+
+ DFS paths are *always* of the form \server\share\<pathname> (the \ characters
+ are not C escaped here).
+
+ - but if we're using POSIX paths then <pathname> may contain
+   '/' separators, not '\\' separators. So cope with '\\' or '/'
+   as a separator when looking at the pathname part.... JRA.
+********************************************************************/
 
 struct client_connection {
 	struct client_connection *prev, *next;
@@ -194,14 +205,14 @@ static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
 	
 	if ( p ) {
 		pstrcpy( p->mount, mnt );
-		dos_clean_name( p->mount );
+		clean_name(p->mount);
 	}
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-const char * cli_cm_get_mntpoint( struct cli_state *c )
+const char *cli_cm_get_mntpoint( struct cli_state *c )
 {
 	struct client_connection *p;
 	int i;
@@ -221,8 +232,9 @@ const char * cli_cm_get_mntpoint( struct cli_state *c )
  Add a new connection to the list
 ********************************************************************/
 
-static struct cli_state* cli_cm_connect( const char *server, const char *share,
-                                         BOOL show_hdr )
+static struct cli_state *cli_cm_connect( const char *server,
+					const char *share,
+					BOOL show_hdr)
 {
 	struct client_connection *node;
 	
@@ -247,7 +259,7 @@ static struct cli_state* cli_cm_connect( const char *server, const char *share,
  Return a connection to a server.
 ********************************************************************/
 
-static struct cli_state* cli_cm_find( const char *server, const char *share )
+static struct cli_state *cli_cm_find( const char *server, const char *share )
 {
 	struct client_connection *p;
 
@@ -264,7 +276,9 @@ static struct cli_state* cli_cm_find( const char *server, const char *share )
  global variable as a side-effect (but only if the connection is successful).
 ****************************************************************************/
 
-struct cli_state* cli_cm_open( const char *server, const char *share, BOOL show_hdr )
+struct cli_state *cli_cm_open(const char *server,
+				const char *share,
+				BOOL show_hdr)
 {
 	struct cli_state *c;
 	
@@ -272,8 +286,9 @@ struct cli_state* cli_cm_open( const char *server, const char *share, BOOL show_
 
 	c = cli_cm_find( server, share );
 	
-	if ( !c )
-		c = cli_cm_connect( server, share, show_hdr );
+	if ( !c ) {
+		c = cli_cm_connect(server, share, show_hdr);
+	}
 
 	return c;
 }
@@ -295,7 +310,6 @@ void cli_cm_shutdown( void )
 	}
 
 	connections = NULL;
-
 	return;
 }
 
@@ -354,110 +368,104 @@ void cli_cm_set_dest_ip(struct in_addr ip )
 	have_ip = True;
 }
 
-/********************************************************************
- split a dfs path into the server and share name components
-********************************************************************/
+/**********************************************************************
+ split a dfs path into the server, share name, and extrapath components
+**********************************************************************/
 
-static void split_dfs_path( const char *nodepath, fstring server, fstring share )
+static void split_dfs_path( const char *nodepath, fstring server, fstring share, pstring extrapath )
 {
-	char *p;
+	char *p, *q;
 	pstring path;
 
 	pstrcpy( path, nodepath );
 
-	if ( path[0] != '\\' )
+	if ( path[0] != '\\' ) {
 		return;
+	}
 
-	p = strrchr_m( path, '\\' );
-
-	if ( !p )
+	p = strchr_m( path + 1, '\\' );
+	if ( !p ) {
 		return;
+	}
 
 	*p = '\0';
 	p++;
 
+	/* Look for any extra/deep path */
+	q = strchr_m(p, '\\');
+	if (q != NULL) {
+		*q = '\0';
+		q++;
+		pstrcpy( extrapath, q );
+	} else {
+		pstrcpy( extrapath, '\0' );
+	}
+	
 	fstrcpy( share, p );
 	fstrcpy( server, &path[1] );
 }
 
 /****************************************************************************
- return the original path truncated at the first wildcard character
- (also strips trailing \'s).  Trust the caller to provide a NULL 
+ Return the original path truncated at the directory component before
+ the first wildcard character. Trust the caller to provide a NULL 
  terminated string
 ****************************************************************************/
 
-static void clean_path( pstring clean, const char *path )
+static void clean_path(const char *path, pstring path_out)
 {
-	int len;
-	char *p;
-	pstring newpath;
+	size_t len;
+	char *p1, *p2, *p;
 		
-	pstrcpy( newpath, path );
-	p = newpath;
-	
-	while ( p ) {
-		/* first check for '*' */
-		
-		p = strrchr_m( newpath, '*' );
-		if ( p ) {
-			*p = '\0';
-			p = newpath;
-			continue;
+	/* No absolute paths. */
+	while (IS_DIRECTORY_SEP(*path)) {
+		path++;
+	}
+
+	pstrcpy(path_out, path);
+
+	p1 = strchr_m(path_out, '*');
+	p2 = strchr_m(path_out, '?');
+
+	if (p1 || p2) {
+		if (p1 && p2) {
+			p = MIN(p1,p2);
+		} else if (!p1) {
+			p = p2;
+		} else {
+			p = p1;
 		}
-	
-		/* first check for '?' */
-		
-		p = strrchr_m( newpath, '?' );
-		if ( p ) {
+		*p = '\0';
+
+		/* Now go back to the start of this component. */
+		p1 = strrchr_m(path_out, '/');
+		p2 = strrchr_m(path_out, '\\');
+		p = MAX(p1,p2);
+		if (p) {
 			*p = '\0';
-			p = newpath;
 		}
 	}
-	
-	/* strip a trailing backslash */
-	
-	len = strlen( newpath );
-	if ( (len > 0) && (newpath[len-1] == '\\') )
-		newpath[len-1] = '\0';
-		
-	pstrcpy( clean, newpath );
+
+	/* Strip any trailing separator */
+
+	len = strlen(path_out);
+	if ( (len > 0) && IS_DIRECTORY_SEP(path_out[len-1])) {
+		path_out[len-1] = '\0';
+	}
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-BOOL cli_dfs_make_full_path( pstring path, const char *server, const char *share,
-                            const char *dir )
+static void cli_dfs_make_full_path( struct cli_state *cli,
+					const char *dir,
+					pstring path_out)
 {
-	pstring servicename;
-	char *sharename;
-	const char *directory;
-
-	
-	/* make a copy so we don't modify the global string 'service' */
-	
-	pstrcpy(servicename, share);
-	sharename = servicename;
-	
-	if (*sharename == '\\') {
-	
-		server = sharename+2;
-		sharename = strchr_m(server,'\\');
-		
-		if (!sharename) 
-			return False;
-			
-		*sharename = 0;
-		sharename++;
+	/* Ensure the extrapath doesn't start with a separator. */
+	while (IS_DIRECTORY_SEP(*dir)) {
+		dir++;
 	}
 
-	directory = dir;
-	if ( *directory == '\\' )
-		directory++;
-	
-	pstr_sprintf( path, "\\%s\\%s\\%s", server, sharename, directory );
-
-	return True;
+	pstr_sprintf( path_out, "\\%s\\%s\\%s", cli->desthost, cli->share, dir);
 }
 
 /********************************************************************
@@ -483,9 +491,11 @@ static BOOL cli_dfs_check_error( struct cli_state *cli, NTSTATUS status )
  get the dfs referral link
 ********************************************************************/
 
-BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path, 
-                           CLIENT_DFS_REFERRAL**refs, size_t *num_refs,
-			   uint16 *consumed)
+BOOL cli_dfs_get_referral( struct cli_state *cli,
+			const char *path, 
+			CLIENT_DFS_REFERRAL**refs,
+			size_t *num_refs,
+			uint16 *consumed)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -529,10 +539,9 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 		uint16 ref_size;
 		int i;
 		uint16 node_offset;
-		
-		
+
 		referrals = SMB_XMALLOC_ARRAY( CLIENT_DFS_REFERRAL, num_referrals );
-	
+
 		/* start at the referrals array */
 	
 		p = rdata+8;
@@ -554,7 +563,6 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 
 			p += ref_size;
 		}
-	
 	}
 	
 	*num_refs = num_referrals;
@@ -566,113 +574,165 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 	return True;
 }
 
+
 /********************************************************************
 ********************************************************************/
 
-BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const char *path,
-                       struct cli_state **targetcli, pstring targetpath )
+BOOL cli_resolve_path( const char *mountpt,
+			struct cli_state *rootcli,
+			const char *path,
+			struct cli_state **targetcli,
+			pstring targetpath)
 {
 	CLIENT_DFS_REFERRAL *refs = NULL;
 	size_t num_refs;
 	uint16 consumed;
 	struct cli_state *cli_ipc;
-	pstring fullpath, cleanpath;
+	pstring dfs_path, cleanpath, extrapath;
 	int pathlen;
 	fstring server, share;
 	struct cli_state *newcli;
 	pstring newpath;
 	pstring newmount;
-	char *ppath;
+	char *ppath, *temppath = NULL;
 	
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	
-	if ( !rootcli || !path || !targetcli )
+	if ( !rootcli || !path || !targetcli ) {
 		return False;
+	}
 		
-	*targetcli = NULL;
-	
-	/* send a trans2_query_path_info to check for a referral */
-	
-	clean_path( cleanpath, 	path );
-	cli_dfs_make_full_path( fullpath, rootcli->desthost, rootcli->share, cleanpath );
+	/* Don't do anything if this is not a DFS root. */
 
-	/* don't bother continuing if this is not a dfs root */
-	
-	if ( !rootcli->dfsroot || cli_qpathinfo_basic( rootcli, cleanpath, &sbuf, &attributes ) ) {
+	if ( !rootcli->dfsroot) {
 		*targetcli = rootcli;
 		pstrcpy( targetpath, path );
 		return True;
 	}
 
-	/* special case where client asked for a path that does not exist */
+	*targetcli = NULL;
+
+	/* Send a trans2_query_path_info to check for a referral. */
+
+	clean_path(path, cleanpath);
+	cli_dfs_make_full_path(rootcli, cleanpath, dfs_path );
+
+	if (cli_qpathinfo_basic( rootcli, dfs_path, &sbuf, &attributes ) ) {
+		/* This is an ordinary path, just return it. */
+		*targetcli = rootcli;
+		pstrcpy( targetpath, path );
+		goto done;
+	}
+
+	/* Special case where client asked for a path that does not exist */
 
 	if ( cli_dfs_check_error(rootcli, NT_STATUS_OBJECT_NAME_NOT_FOUND) ) {
 		*targetcli = rootcli;
 		pstrcpy( targetpath, path );
-		return True;
+		goto done;
 	}
 
-	/* we got an error, check for DFS referral */
-			
-	if ( !cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED) ) 
-		return False;
+	/* We got an error, check for DFS referral. */
 
-	/* check for the referral */
-
-	if ( !(cli_ipc = cli_cm_open( rootcli->desthost, "IPC$", False )) )
+	if ( !cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED))  {
 		return False;
-	
-	if ( !cli_dfs_get_referral(cli_ipc, fullpath, &refs, &num_refs, &consumed) 
-		|| !num_refs )
-	{
+	}
+
+	/* Check for the referral. */
+
+	if ( !(cli_ipc = cli_cm_open( rootcli->desthost, "IPC$", False )) ) {
 		return False;
 	}
 	
-	/* just store the first referral for now
-	   Make sure to recreate the original string including any wildcards */
+	if ( !cli_dfs_get_referral(cli_ipc, dfs_path, &refs, &num_refs, &consumed) 
+			|| !num_refs ) {
+		return False;
+	}
 	
-	cli_dfs_make_full_path( fullpath, rootcli->desthost, rootcli->share, path );
-	pathlen = strlen( fullpath )*2;
+	/* Just store the first referral for now. */
+
+	split_dfs_path( refs[0].dfspath, server, share, extrapath );
+	SAFE_FREE(refs);
+
+	/* Make sure to recreate the original string including any wildcards. */
+	
+	cli_dfs_make_full_path( rootcli, path, dfs_path);
+	pathlen = strlen( dfs_path )*2;
 	consumed = MIN(pathlen, consumed );
-	pstrcpy( targetpath, &fullpath[consumed/2] );
+	pstrcpy( targetpath, &dfs_path[consumed/2] );
+	dfs_path[consumed/2] = '\0';
 
-	split_dfs_path( refs[0].dfspath, server, share );
-	SAFE_FREE( refs );
-	
-	/* open the connection to the target path */
+	/*
+ 	 * targetpath is now the unconsumed part of the path.
+ 	 * dfs_path is now the consumed part of the path (in \server\share\path format).
+ 	 */
+
+	/* Open the connection to the target server & share */
 	
 	if ( (*targetcli = cli_cm_open(server, share, False)) == NULL ) {
-		d_printf("Unable to follow dfs referral [//%s/%s]\n",
+		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
-			
 		return False;
+	}
+	
+	if (strlen(extrapath) > 0) {
+		string_append(&temppath, extrapath);
+		string_append(&temppath, targetpath);
+		pstrcpy( targetpath, temppath );
 	}
 	
 	/* parse out the consumed mount path */
 	/* trim off the \server\share\ */
 
-	fullpath[consumed/2] = '\0';
-	dos_clean_name( fullpath );
-	if ((ppath = strchr_m( fullpath, '\\' )) == NULL)
+	ppath = dfs_path;
+
+	if (*ppath != '\\') {
+		d_printf("cli_resolve_path: dfs_path (%s) not in correct format.\n",
+			dfs_path );
 		return False;
-	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
-		return False;
-	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
-		return False;
-	ppath++;
+	}
+
+	ppath++; /* Now pointing at start of server name. */
 	
+	if ((ppath = strchr_m( dfs_path, '\\' )) == NULL) {
+		return False;
+	}
+
+	ppath++; /* Now pointing at start of share name. */
+
+	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL) {
+		return False;
+	}
+
+	ppath++; /* Now pointing at path component. */
+
 	pstr_sprintf( newmount, "%s\\%s", mountpt, ppath );
+
 	cli_cm_set_mntpoint( *targetcli, newmount );
 
-	/* check for another dfs referral, note that we are not 
-	   checking for loops here */
+	/* Check for another dfs referral, note that we are not 
+	   checking for loops here. */
 
-	if ( !strequal( targetpath, "\\" ) ) {
+	if ( !strequal( targetpath, "\\" ) &&  !strequal( targetpath, "/")) {
 		if ( cli_resolve_path( newmount, *targetcli, targetpath, &newcli, newpath ) ) {
+			/*
+			 * When cli_resolve_path returns true here it's always
+ 			 * returning the complete path in newpath, so we're done
+ 			 * here.
+ 			 */
 			*targetcli = newcli;
 			pstrcpy( targetpath, newpath );
+			return True;
 		}
+	}
+
+  done:
+
+	/* If returning True ensure we return a dfs root full path. */
+	if ( (*targetcli)->dfsroot ) {
+		pstrcpy(dfs_path, targetpath );
+		cli_dfs_make_full_path( *targetcli, dfs_path, targetpath); 
 	}
 
 	return True;
@@ -690,6 +750,7 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	pstring fullpath;
 	BOOL res;
 	uint16 cnum;
+	pstring newextrapath;
 	
 	if ( !cli || !sharename )
 		return False;
@@ -698,8 +759,9 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 
 	/* special case.  never check for a referral on the IPC$ share */
 
-	if ( strequal( sharename, "IPC$" ) )
+	if ( strequal( sharename, "IPC$" ) ) {
 		return False;
+	}
 		
 	/* send a trans2_query_path_info to check for a referral */
 	
@@ -719,13 +781,13 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	}
 
 	cli->cnum = cnum;
-		
+
 	if (!res || !num_refs ) {
 		SAFE_FREE( refs );
 		return False;
 	}
 	
-	split_dfs_path( refs[0].dfspath, newserver, newshare );
+	split_dfs_path( refs[0].dfspath, newserver, newshare, newextrapath );
 
 	/* check that this is not a self-referral */
 

@@ -652,7 +652,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
-	dos_clean_name(rname);
+	clean_name(rname);
 
 	if (fnum == -1) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
@@ -1650,7 +1650,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 					if (sys_stat(argv[Optind], &stbuf) == 0) {
 						newer_than = stbuf.st_mtime;
 						DEBUG(1,("Getting files newer than %s",
-							time_to_asc(&newer_than)));
+							time_to_asc(newer_than)));
 						newOptind++;
 						Optind++;
 					} else {

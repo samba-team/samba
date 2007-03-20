@@ -159,7 +159,8 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@
 
-BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
+BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@ \
+	@SMBMOUNT_PROGS@
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
@@ -788,6 +789,10 @@ WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 
 WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) @WINBIND_NSS_EXTRA_OBJS@
 
+SMB_KRB5_LOCATOR_OBJ1 = libads/smb_krb5_locator.o
+SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		       $(LIBNMB_OBJ) $(RPC_PARSE_OBJ1) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DOSERR_OBJ)
+
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
@@ -1275,6 +1280,12 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		$(LDAP_LIBS) $(KRB5LIBS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
+@SMB_KRB5_LOCATOR@: $(SMB_KRB5_LOCATOR_OBJ) 
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(SMB_KRB5_LOCATOR_OBJ) \
+		$(LDAP_LIBS) $(LIBS) -lcom_err \
+		@SONAMEFLAG@`basename $@`
+
 bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ $(GPLIBS) \
@@ -1655,7 +1666,8 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
 installman: installdirs
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
+	@SMBMOUNT_PROGS="@SMBMOUNT_PROGS@" $(SHELL) \
+		$(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
 

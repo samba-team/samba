@@ -43,6 +43,8 @@ WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 	struct current_user user;
 	struct junction_map jn;
 	struct referral* old_referral_list = NULL;
+	BOOL self_ref = False;
+	int consumedcnt = 0;
 	BOOL exists = False;
 
 	pstring dfspath, servername, sharename;
@@ -67,7 +69,7 @@ WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 	pstrcat(altpath, sharename);
 
 	/* The following call can change the cwd. */
-	if(get_referred_path(p->mem_ctx, dfspath, &jn, NULL, NULL)) {
+	if(get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref)) {
 		exists = True;
 		jn.referral_count += 1;
 		old_referral_list = jn.referral_list;
@@ -106,6 +108,8 @@ WERROR _dfs_Remove(pipes_struct *p, NETDFS_Q_DFS_REMOVE *q_u,
 {
 	struct current_user user;
 	struct junction_map jn;
+	BOOL self_ref = False;
+	int consumedcnt = 0;
 	BOOL found = False;
 
 	pstring dfspath, servername, sharename;
@@ -137,7 +141,7 @@ WERROR _dfs_Remove(pipes_struct *p, NETDFS_Q_DFS_REMOVE *q_u,
 	DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 		dfspath, servername, sharename));
 
-	if(!get_referred_path(p->mem_ctx, dfspath, &jn, NULL, NULL)) {
+	if(!get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref)) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}
 
@@ -346,6 +350,7 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 	int consumedcnt = sizeof(pstring);
 	pstring path;
 	BOOL ret = False;
+	BOOL self_ref = False;
 	struct junction_map jn;
 
 	unistr2_to_ascii(path, uni_path, sizeof(path)-1);
@@ -353,7 +358,7 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 		return WERR_DFS_NO_SUCH_SERVER;
   
 	/* The following call can change the cwd. */
-	if(!get_referred_path(p->mem_ctx, path, &jn, &consumedcnt, NULL) || consumedcnt < strlen(path)) {
+	if(!get_referred_path(p->mem_ctx, path, &jn, &consumedcnt, &self_ref) || consumedcnt < strlen(path)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}
@@ -489,4 +494,3 @@ WERROR _dfs_SetInfo2(pipes_struct *p, NETDFS_Q_DFS_SETINFO2 *q_u, NETDFS_R_DFS_S
 	/* FIXME: Implement your code here */
 	return WERR_NOT_SUPPORTED;
 }
-

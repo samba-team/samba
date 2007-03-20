@@ -222,6 +222,12 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 			lock_flav,
 			blocking_lock);
 
+	/* blocking ie. pending, locks also count here,
+	 * as this is an efficiency counter to avoid checking
+	 * the lock db. on close. JRA. */
+
+	fsp->current_lock_count++;
+
 	return br_lck;
 }
 
@@ -267,6 +273,9 @@ NTSTATUS do_unlock(files_struct *fsp,
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
+
+	SMB_ASSERT(fsp->current_lock_count > 0);
+	fsp->current_lock_count--;
 
 	return NT_STATUS_OK;
 }
@@ -315,6 +324,9 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
+	SMB_ASSERT(fsp->current_lock_count > 0);
+	fsp->current_lock_count--;
+
 	return NT_STATUS_OK;
 }
 
@@ -327,6 +339,14 @@ void locking_close_file(files_struct *fsp)
 	struct byte_range_lock *br_lck;
 
 	if (!lp_locking(fsp->conn->params)) {
+		return;
+	}
+
+	/* If we have not outstanding locks or pending
+	 * locks then we don't need to look in the lock db.
+	 */
+
+	if (fsp->current_lock_count == 0) {
 		return;
 	}
 
@@ -362,6 +382,9 @@ BOOL locking_init(int read_only)
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
+
+	/* Activate the per-hashchain freelist */
+	tdb_set_max_dead(tdb, 5);
 
 	if (!posix_locking_init(read_only))
 		return False;
@@ -858,15 +881,29 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	return True;
 }
 
+static int pull_delete_on_close_flag(TDB_DATA key, TDB_DATA dbuf,
+				     void *private_data)
+{
+	BOOL *result = (BOOL *)private_data;
+	struct locking_data *data;
+
+	if (dbuf.dsize < sizeof(struct locking_data)) {
+		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
+	}
+
+	data = (struct locking_data *)dbuf.dptr;
+
+	*result = data->u.s.delete_on_close;
+	return 0;
+}
+
 BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
-	BOOL result;
-	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode, NULL, NULL);
-	if (!lck) {
-		return False;
-	}
-	result = lck->delete_on_close;
-	TALLOC_FREE(lck);
+	TDB_DATA key = locking_key(dev, inode);
+	BOOL result = False;
+
+	tdb_parse_record(tdb, key, pull_delete_on_close_flag,
+			 (void *)&result);
 	return result;
 }
 

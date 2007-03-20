@@ -47,20 +47,35 @@
  A wrapper for memalign
 ********************************************************************/
 
-void* sys_memalign( size_t align, size_t size )
+void *sys_memalign( size_t align, size_t size )
 {
-#if defined(HAVE_MEMALIGN)
-	return memalign( align, size );
-#elif defined(HAVE_POSIX_MEMALIGN)
-	char *p = NULL;
+#if defined(HAVE_POSIX_MEMALIGN)
+	void *p = NULL;
 	int ret = posix_memalign( &p, align, size );
 	if ( ret == 0 )
 		return p;
 		
 	return NULL;
+#elif defined(HAVE_MEMALIGN)
+	return memalign( align, size );
 #else
-	DEBUG(0,("memalign functionalaity not available on this platform!\n"));
-	return NULL;
+	/* On *BSD systems memaligns doesn't exist, but memory will
+	 * be aligned on allocations of > pagesize. */
+#if defined(SYSCONF_SC_PAGESIZE)
+	size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
+#elif defined(HAVE_GETPAGESIZE)
+	size_t pagesize = (size_t)getpagesize();
+#else
+	size_t pagesize = (size_t)-1;
+#endif
+	if (pagesize == (size_t)-1) {
+		DEBUG(0,("memalign functionalaity not available on this platform!\n"));
+		return NULL;
+	}
+	if (size < pagesize) {
+		size = pagesize;
+	}
+	return SMB_MALLOC(size);
 #endif
 }
 

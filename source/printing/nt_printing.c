@@ -1036,13 +1036,12 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	char    *buf = NULL;
 	ssize_t byte_count;
 
-	if ((buf=(char *)SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
-		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
-				fname, PE_HEADER_SIZE));
+	if ((buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE)) == NULL) {
+		DEBUG(0,("get_file_version: PE file [%s] DOS Header malloc failed bytes = %d\n",
+				fname, DOS_HEADER_SIZE));
 		goto error_exit;
 	}
 
-	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
 	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
 		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %lu\n",
 			 fname, (unsigned long)byte_count));
@@ -1064,7 +1063,8 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		goto no_version_info;
 	}
 
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
+	/* Note: DOS_HEADER_SIZE and NE_HEADER_SIZE are incidentally same */
+	if ((byte_count = vfs_read_data(fsp, buf, NE_HEADER_SIZE)) < NE_HEADER_SIZE) {
 		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %lu\n",
 			 fname, (unsigned long)byte_count));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -1075,13 +1075,13 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
 		unsigned int num_sections;
 		unsigned int section_table_bytes;
-		
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
-			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
-					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
-			 * else besides a PE file, but it unlikely at this point.
-			 */
+
+		/* Just skip over optional header to get to section table */
+		if (SMB_VFS_LSEEK(fsp, fsp->fh->fd,
+				SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-(NE_HEADER_SIZE-PE_HEADER_SIZE),
+				SEEK_CUR) == (SMB_OFF_T)-1) {
+			DEBUG(3,("get_file_version: File [%s] Windows optional header too short, errno = %d\n",
+				fname, errno));
 			goto error_exit;
 		}
 
@@ -1823,7 +1823,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			driver_unix_convert(new_name, conn, NULL, &st);
-			if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+			if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
@@ -1839,7 +1839,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1857,7 +1857,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1876,7 +1876,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &st);
-				if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1904,7 +1904,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					driver_unix_convert(new_name, conn, NULL, &st);
-					if ( !NT_STATUS_IS_OK(copy_file(new_name, old_name, conn,
+					if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name,
 							OPENX_FILE_EXISTS_TRUNCATE|
 							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -3034,7 +3034,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 {
 	ADS_STATUS ads_rc;
 	LDAPMessage *res;
-	char *prt_dn = NULL, *srv_dn, *srv_cn_0;
+	char *prt_dn = NULL, *srv_dn, *srv_cn_0, *srv_cn_escaped, *sharename_escaped;
 	char *srv_dn_utf8, **srv_cn_utf8;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
@@ -3080,11 +3080,29 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	ldap_memfree(srv_dn_utf8);
 	ldap_memfree(srv_cn_utf8);
 
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_0, 
-		 printer->info_2->sharename, srv_dn);
+	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
+	if (!srv_cn_escaped) {
+		SAFE_FREE(srv_cn_0);
+		ldap_memfree(srv_dn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	sharename_escaped = escape_rdn_val_string_alloc(printer->info_2->sharename);
+	if (!sharename_escaped) {
+		SAFE_FREE(srv_cn_escaped);
+		SAFE_FREE(srv_cn_0);
+		ldap_memfree(srv_dn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
 
 	SAFE_FREE(srv_dn);
 	SAFE_FREE(srv_cn_0);
+	SAFE_FREE(srv_cn_escaped);
+	SAFE_FREE(sharename_escaped);
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
@@ -3725,9 +3743,7 @@ static void map_to_os2_driver(fstring drivername)
 ****************************************************************************/
 static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char* sharename)
 {
-	int snum;
-
-	snum = lp_servicenumber(sharename);
+	int snum = lp_servicenumber(sharename);
 
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s", 
@@ -3750,6 +3766,15 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char 
 	pstrcpy(info->comment, "");
 	fstrcpy(info->printprocessor, "winprint");
 	fstrcpy(info->datatype, "RAW");
+
+#ifdef HAVE_CUPS
+	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+		/* Pull the location and comment strings from cups if we don't
+		   already have one */
+		if ( !strlen(info->location) || !strlen(info->comment) )
+			cups_pull_comment_location( info );
+	}
+#endif
 
 	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 
@@ -3845,6 +3870,15 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	}
 
 	fstrcpy(info->printername, printername);
+
+#ifdef HAVE_CUPS
+	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+		/* Pull the location and comment strings from cups if we don't
+		   already have one */
+		if ( !strlen(info->location) || !strlen(info->comment) )
+			cups_pull_comment_location( info );
+	}
+#endif
 
 	len += unpack_devicemode(&info->devmode,dbuf.dptr+len, dbuf.dsize-len);
 

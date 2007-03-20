@@ -259,7 +259,9 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if ( (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY) &&
 		((SVAL(inbuf, smb_flg2) & FLAGS2_UNKNOWN_BIT4) == 0) ) 
 	{
-		set_remote_arch( RA_VISTA );		
+		if (get_remote_arch() != RA_SAMBA) {
+			set_remote_arch( RA_VISTA );
+		}
 	}
 
 	/* do spnego in user level security if the client

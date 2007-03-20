@@ -243,7 +243,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
 
-	ws_name_replace( s->username, '_' );
+	ws_name_replace( s->username, WB_REPLACE_CHAR );
 	 
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
@@ -262,7 +262,7 @@ static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query user's %s\\%s uid\n",
+		DEBUG(5, ("Could not query uid for user %s\\%s\n",
 			  s->domain->name, s->username));
 		request_error(s->state);
 		return;
@@ -289,7 +289,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	if ( s->gid == (gid_t)-1 ) {
 
 		if (!success) {
-			DEBUG(5, ("Could not query user's %s\\%s\n gid",
+			DEBUG(5, ("Could not query gid for user %s\\%s\n",
 				  s->domain->name, s->username));
 			goto failed;
 		}
@@ -344,6 +344,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
+
+	ws_name_return( state->request.data.username, WB_REPLACE_CHAR );
 
 	if (!parse_domain_user(state->request.data.username, domname,
 			       username)) {

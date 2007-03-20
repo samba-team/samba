@@ -44,9 +44,12 @@ extern BOOL global_encrypted_passwords_negotiated;
  set.
 ****************************************************************************/
 
+/* Custom version for processing POSIX paths. */
+#define IS_PATH_SEP(c,posix_only) ((c) == '/' || (!(posix_only) && (c) == '\\'))
+
 NTSTATUS check_path_syntax_internal(pstring destname,
 				    const pstring srcname,
-				    BOOL windows_path,
+				    BOOL posix_path,
 				    BOOL *p_last_component_contains_wcard)
 {
 	char *d = destname;
@@ -57,12 +60,12 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 	*p_last_component_contains_wcard = False;
 
 	while (*s) {
-		if (IS_DIRECTORY_SEP(*s)) {
+		if (IS_PATH_SEP(*s,posix_path)) {
 			/*
 			 * Safe to assume is not the second part of a mb char as this is handled below.
 			 */
 			/* Eat multiple '/' or '\\' */
-			while (IS_DIRECTORY_SEP(*s)) {
+			while (IS_PATH_SEP(*s,posix_path)) {
 				s++;
 			}
 			if ((d != destname) && (*s != '\0')) {
@@ -77,7 +80,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 		}
 
 		if (start_of_name_component) {
-			if ((s[0] == '.') && (s[1] == '.') && (IS_DIRECTORY_SEP(s[2]) || s[2] == '\0')) {
+			if ((s[0] == '.') && (s[1] == '.') && (IS_PATH_SEP(s[2],posix_path) || s[2] == '\0')) {
 				/* Uh oh - "/../" or "\\..\\"  or "/..\0" or "\\..\0" ! */
 
 				/*
@@ -107,8 +110,8 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 				/* We're still at the start of a name component, just the previous one. */
 				continue;
 
-			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_DIRECTORY_SEP(s[1]))) {
-				if (!windows_path) {
+			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_PATH_SEP(s[1],posix_path))) {
+				if (posix_path) {
 					/* Eat the '.' */
 					s++;
 					continue;
@@ -118,7 +121,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 		}
 
 		if (!(*s & 0x80)) {
-			if (windows_path) {
+			if (!posix_path) {
 				if (*s <= 0x1f) {
 					return NT_STATUS_OBJECT_NAME_INVALID;
 				}
@@ -176,7 +179,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 {
 	BOOL ignore;
-	return check_path_syntax_internal(destname, srcname, True, &ignore);
+	return check_path_syntax_internal(destname, srcname, False, &ignore);
 }
 
 /****************************************************************************
@@ -187,7 +190,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 
 NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *p_contains_wcard)
 {
-	return check_path_syntax_internal(destname, srcname, True, p_contains_wcard);
+	return check_path_syntax_internal(destname, srcname, False, p_contains_wcard);
 }
 
 /****************************************************************************
@@ -196,10 +199,10 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
  set (a safe assumption).
 ****************************************************************************/
 
-static NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
+NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 {
 	BOOL ignore;
-	return check_path_syntax_internal(destname, srcname, False, &ignore);
+	return check_path_syntax_internal(destname, srcname, True, &ignore);
 }
 
 /****************************************************************************
@@ -223,6 +226,16 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 	}
 
 	*contains_wcard = False;
+
+	if (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) {
+		/* 
+		 * For a DFS path the function parse_dfs_path()
+		 * will do the path processing, just make a copy.
+		 */
+		pstrcpy(dest, tmppath);
+		*err = NT_STATUS_OK;
+		return ret;
+	}
 
 	if (lp_posix_pathnames()) {
 		*err = check_path_syntax_posix(dest, tmppath);
@@ -251,6 +264,17 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 	} else {
 		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
 	}
+
+	if (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) {
+		/* 
+		 * For a DFS path the function parse_dfs_path()
+		 * will do the path processing, just make a copy.
+		 */
+		pstrcpy(dest, tmppath);
+		*err = NT_STATUS_OK;
+		return ret;
+	}
+
 	if (lp_posix_pathnames()) {
 		*err = check_path_syntax_posix(dest, tmppath);
 	} else {
@@ -631,7 +655,14 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			END_PROFILE(SMBcheckpath);
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		goto path_err;
+	}
 
 	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
 
@@ -710,7 +741,14 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBgetatr);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
   
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
@@ -789,9 +827,22 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBsetatr);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
   
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBsetatr);
+		return ERROR_NT(status);
+	}
+
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsetatr);
 		return ERROR_NT(status);
@@ -804,12 +855,6 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		 */
 		END_PROFILE(SMBsetatr);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBsetatr);
-		return ERROR_NT(status);
 	}
 
 	mode = SVAL(inbuf,smb_vwv0);
@@ -827,7 +872,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 	}
 
-	if (!set_filetime(conn,fname,mtime)) {
+	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
 		END_PROFILE(SMBsetatr);
 		return UNIXERROR(ERRDOS, ERRnoaccess);
 	}
@@ -944,7 +989,14 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(nt_status);
 	}
 
-	RESOLVE_DFSPATH_WCARD(path, conn, inbuf, outbuf);
+	nt_status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, path, &mask_contains_wcard);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		END_PROFILE(SMBsearch);
+		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(nt_status);
+	}
   
 	p++;
 	status_len = SVAL(p, 0);
@@ -954,16 +1006,13 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	if (status_len == 0) {
 		SMB_STRUCT_STAT sbuf;
-		pstring dir2;
 
 		pstrcpy(directory,path);
-		pstrcpy(dir2,path);
 		nt_status = unix_convert(conn, directory, True, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			END_PROFILE(SMBsearch);
 			return ERROR_NT(nt_status);
 		}
-		unix_format(dir2);
 
 		nt_status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -971,23 +1020,16 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			return ERROR_NT(nt_status);
 		}
 
-		p = strrchr_m(dir2,'/');
-		if (p == NULL) {
-			pstrcpy(mask,dir2);
-			*dir2 = 0;
+		p = strrchr_m(directory,'/');
+		if (!p) {
+			pstrcpy(mask,directory);
+			pstrcpy(directory,".");
 		} else {
 			*p = 0;
 			pstrcpy(mask,p+1);
 		}
 
-		p = strrchr_m(directory,'/');
-		if (!p) {
-			*directory = 0;
-		} else {
-			*p = 0;
-		}
-
-		if (strlen(directory) == 0) {
+		if (*directory == '\0') {
 			pstrcpy(directory,".");
 		}
 		memset((char *)status,'\0',21);
@@ -1007,6 +1049,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		}
 		string_set(&conn->dirpath,dptr_path(dptr_num));
 		pstrcpy(mask, dptr_wcard(dptr_num));
+		/*
+		 * For a 'continue' search we have no string. So
+		 * check from the initial saved string.
+		 */
+		mask_contains_wcard = ms_has_wild(mask);
 	}
 
 	p = smb_buf(outbuf) + 3;
@@ -1202,7 +1249,14 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopen);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1210,6 +1264,12 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(status);
 	}
     
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopen);
+		return ERROR_NT(status);
+	}
+
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
 		END_PROFILE(SMBopen);
@@ -1320,9 +1380,22 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopenX);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopenX);
+		return ERROR_NT(status);
+	}
+
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
 		return ERROR_NT(status);
@@ -1470,7 +1543,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int com;
 	int outsize = 0;
 	uint32 fattr = SVAL(inbuf,smb_vwv0);
-	struct utimbuf times;
+	struct timespec ts[2];
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	SMB_STRUCT_STAT sbuf;
@@ -1484,7 +1557,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  
 	com = SVAL(inbuf,smb_com);
 
-	times.modtime = srv_make_unix_date3(inbuf + smb_vwv1);
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date3(inbuf + smb_vwv1)); /* mtime. */
 
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1492,9 +1565,22 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcreate);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcreate);
+		return ERROR_NT(status);
+	}
+
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		return ERROR_NT(status);
@@ -1531,8 +1617,8 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
  
-	times.actime = sbuf.st_atime;
-	file_utime(conn, fname, &times);
+	ts[0] = get_atimespec(&sbuf); /* atime. */
+	file_ntimes(conn, fname, ts);
 
 	outsize = set_message(outbuf,1,0,True);
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
@@ -1582,9 +1668,22 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		pstrcat(fname,"TMXXXXXX");
 	}
 
-	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBctemp);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBctemp);
+		return ERROR_NT(status);
+	}
+
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
 		return ERROR_NT(status);
@@ -1858,6 +1957,12 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		if (dirtype == 0) {
 			dirtype = FILE_ATTRIBUTE_NORMAL;
 		}
+
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		status = can_delete(conn,directory,dirtype,can_defer);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -1920,6 +2025,13 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			}
 				
 			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+
+			status = check_name(conn, fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
+				return status;
+			}
+
 			status = can_delete(conn, fname, dirtype, can_defer);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
@@ -1966,8 +2078,15 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		END_PROFILE(SMBunlink);
 		return ERROR_NT(status);
 	}
-	
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
+
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &path_contains_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBunlink);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
@@ -3109,7 +3228,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int outsize = 0;
-	time_t mtime;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
@@ -3151,8 +3269,8 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Take care of any time sent in the close.
 		 */
 
-		mtime = srv_make_unix_date3(inbuf+smb_vwv1);
-		fsp_set_pending_modtime(fsp, mtime);
+		fsp_set_pending_modtime(fsp,
+				convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv1)));
 
 		/*
 		 * close_file() returns the unix errno if an error
@@ -3185,7 +3303,7 @@ int reply_writeclose(connection_struct *conn,
 	NTSTATUS close_status = NT_STATUS_OK;
 	SMB_OFF_T startpos;
 	char *data;
-	time_t mtime;
+	struct timespec mtime;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBwriteclose);
 
@@ -3196,7 +3314,7 @@ int reply_writeclose(connection_struct *conn,
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	mtime = srv_make_unix_date3(inbuf+smb_vwv4);
+	mtime = convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv4));
 	data = smb_buf(inbuf) + 1;
   
 	if (numtowrite && is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
@@ -3206,7 +3324,7 @@ int reply_writeclose(connection_struct *conn,
   
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	set_filetime(conn, fsp->fsp_name,mtime);
+	set_filetime(conn, fsp->fsp_name, mtime);
   
 	/*
 	 * More insanity. W2K only closes the file if writelen > 0.
@@ -3598,7 +3716,14 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmkdir);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3606,6 +3731,12 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmkdir);
+		return ERROR_NT(status);
+	}
+  
 	status = create_directory(conn, directory);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
@@ -3810,7 +3941,14 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBrmdir);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3854,7 +3992,6 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 	char *p,*p2, *pname1, *pname2;
 	int available_space, actual_space;
 	
-
 	pname1 = strrchr_m(name1,'/');
 	pname2 = strrchr_m(name2,'/');
 
@@ -4008,6 +4145,11 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return status;
 	}
 
+	status = check_name(conn, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+  
 	/* Ensure newname contains a '/' */
 	if(strrchr_m(newname,'/') == 0) {
 		pstring tmpstr;
@@ -4152,9 +4294,13 @@ static void notify_rename(connection_struct *conn, BOOL is_dir,
  code. 
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn, pstring name,
-			  pstring newname, uint32 attrs,
-			  BOOL replace_if_exists, BOOL has_wild)
+NTSTATUS rename_internals(connection_struct *conn,
+				pstring name,
+				pstring newname,
+				uint32 attrs,
+				BOOL replace_if_exists,
+				BOOL src_has_wild,
+				BOOL dest_has_wild)
 {
 	pstring directory;
 	pstring mask;
@@ -4165,20 +4311,22 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	struct share_mode_lock *lck = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname;
+	long offset = 0;
+	pstring destname;
 
 	*directory = *mask = 0;
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(conn, name, has_wild, last_component_src,
-			      &sbuf1);
+	status = unix_convert(conn, name, src_has_wild, last_component_src, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = unix_convert(conn, newname, True, last_component_dest,
-			      &sbuf2);
+	status = unix_convert(conn, newname, dest_has_wild, last_component_dest, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4212,10 +4360,11 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params))
+	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
+	}
 
-	if (!has_wild) {
+	if (!src_has_wild) {
 		/*
 		 * No wildcards - just process the one file.
 		 */
@@ -4242,6 +4391,21 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 			  conn->short_case_preserve, directory, 
 			  newname, last_component_dest, is_short_name));
 
+		/* Ensure the source name is valid for us to access. */
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/* The dest name still may have wildcards. */
+		if (dest_has_wild) {
+			if (!resolve_wildcards(directory,newname)) {
+				DEBUG(6, ("rename_internals: resolve_wildcards %s %s failed\n", 
+					  directory,newname));
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+				
 		/*
 		 * Check for special case with case preserving and not
 		 * case sensitive, if directory and newname are identical,
@@ -4276,8 +4440,12 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 			}
 		}
 	
-		resolve_wildcards(directory,newname);
-	
+		/* Ensure the dest name is valid for us to access. */
+		status = check_name(conn, newname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		/*
 		 * The source object must exist.
 		 */
@@ -4369,136 +4537,130 @@ NTSTATUS rename_internals(connection_struct *conn, pstring name,
 			nt_errstr(status), directory,newname));
 
 		return status;
-	} else {
-		/*
-		 * Wildcards - process each file that matches.
-		 */
-		struct smb_Dir *dir_hnd = NULL;
-		const char *dname;
-		long offset = 0;
-		pstring destname;
-		
-		if (strequal(mask,"????????.???"))
-			pstrcpy(mask,"*");
+	}
+
+	/*
+	 * Wildcards - process each file that matches.
+	 */
+	if (strequal(mask,"????????.???")) {
+		pstrcpy(mask,"*");
+	}
 			
-		status = check_name(conn, directory);
+	status = check_name(conn, directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	dir_hnd = OpenDir(conn, directory, mask, attrs);
+	if (dir_hnd == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
+		
+	status = NT_STATUS_NO_SUCH_FILE;
+	/*
+	 * Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	 * - gentest fix. JRA
+	 */
+			
+	while ((dname = ReadDirName(dir_hnd, &offset))) {
+		pstring fname;
+		BOOL sysdir_entry = False;
+
+		pstrcpy(fname,dname);
+				
+		/* Quick check for "." and ".." */
+		if (fname[0] == '.') {
+			if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+				if (attrs & aDIR) {
+					sysdir_entry = True;
+				} else {
+					continue;
+				}
+			}
+		}
+
+		if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+			continue;
+		}
+
+		if(!mask_match(fname, mask, conn->case_sensitive)) {
+			continue;
+		}
+				
+		if (sysdir_entry) {
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+			break;
+		}
+
+		status = NT_STATUS_ACCESS_DENIED;
+		slprintf(fname, sizeof(fname)-1, "%s/%s", directory, dname);
+
+		/* Ensure the source name is valid for us to access. */
+		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-	
-		dir_hnd = OpenDir(conn, directory, mask, attrs);
-		if (dir_hnd == NULL) {
-			return map_nt_error_from_unix(errno);
+
+		if (!vfs_object_exist(conn, fname, &sbuf1)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			DEBUG(6, ("rename %s failed. Error %s\n",
+				  fname, nt_errstr(status)));
+			continue;
 		}
-		
-		status = NT_STATUS_NO_SUCH_FILE;
-		/*
-		 * Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		 * - gentest fix. JRA
-		 */
-			
-		while ((dname = ReadDirName(dir_hnd, &offset))) {
-			pstring fname;
-			BOOL sysdir_entry = False;
-
-			pstrcpy(fname,dname);
-				
-			/* Quick check for "." and ".." */
-			if (fname[0] == '.') {
-				if (!fname[1]
-				    || (fname[1] == '.' && !fname[2])) {
-					if (attrs & aDIR) {
-						sysdir_entry = True;
-					} else {
-						continue;
-					}
-				}
-			}
-
-			if (!is_visible_file(conn, directory, dname, &sbuf1,
-					     False)) {
-				continue;
-			}
-
-			if(!mask_match(fname, mask, conn->case_sensitive)) {
-				continue;
-			}
-				
-			if (sysdir_entry) {
-				status = NT_STATUS_OBJECT_NAME_INVALID;
-				break;
-			}
-
-			status = NT_STATUS_ACCESS_DENIED;
-			slprintf(fname, sizeof(fname)-1, "%s/%s", directory,
-				 dname);
-			if (!vfs_object_exist(conn, fname, &sbuf1)) {
-				status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				DEBUG(6, ("rename %s failed. Error %s\n",
-					  fname, nt_errstr(status)));
-				continue;
-			}
-			status = can_rename(conn,fname,attrs,&sbuf1);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(6, ("rename %s refused\n", fname));
-				continue;
-			}
-			pstrcpy(destname,newname);
-			
-			if (!resolve_wildcards(fname,destname)) {
-				DEBUG(6, ("resolve_wildcards %s %s failed\n", 
-					  fname, destname));
-				continue;
-			}
-				
-			if (strcsequal(fname,destname)) {
-				rename_open_files(conn, NULL, sbuf1.st_dev,
-						  sbuf1.st_ino, newname);
-				DEBUG(3,("rename_internals: identical names "
-					 "in wildcard rename %s - success\n",
-					 fname));
-				count++;
-				status = NT_STATUS_OK;
-				continue;
-			}
-
-			if (!replace_if_exists
-			    && vfs_file_exist(conn,destname, NULL)) {
-				DEBUG(6,("file_exist %s\n", destname));
-				status = NT_STATUS_OBJECT_NAME_COLLISION;
-				continue;
-			}
-				
-			if (rename_path_prefix_equal(fname, destname)) {
-				return NT_STATUS_SHARING_VIOLATION;
-			}
-
-			lck = get_share_mode_lock(NULL, sbuf1.st_dev,
-						  sbuf1.st_ino, NULL, NULL);
-
-			if (!SMB_VFS_RENAME(conn,fname,destname)) {
-				rename_open_files(conn, lck, sbuf1.st_dev,
-						  sbuf1.st_ino, newname);
-				count++;
-				status = NT_STATUS_OK;
-			}
-			TALLOC_FREE(lck);
-			DEBUG(3,("rename_internals: doing rename on %s -> "
-				 "%s\n",fname,destname));
+		status = can_rename(conn,fname,attrs,&sbuf1);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(6, ("rename %s refused\n", fname));
+			continue;
 		}
-		CloseDir(dir_hnd);
+		pstrcpy(destname,newname);
+			
+		if (!resolve_wildcards(fname,destname)) {
+			DEBUG(6, ("resolve_wildcards %s %s failed\n", 
+				  fname, destname));
+			continue;
+		}
+				
+		/* Ensure the dest name is valid for us to access. */
+		status = check_name(conn, destname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (strcsequal(fname,destname)) {
+			rename_open_files(conn, NULL, sbuf1.st_dev,
+					  sbuf1.st_ino, newname);
+			DEBUG(3,("rename_internals: identical names "
+				 "in wildcard rename %s - success\n",
+				 fname));
+			count++;
+			status = NT_STATUS_OK;
+			continue;
+		}
+
+		if (!replace_if_exists && vfs_file_exist(conn,destname, NULL)) {
+			DEBUG(6,("file_exist %s\n", destname));
+			status = NT_STATUS_OBJECT_NAME_COLLISION;
+			continue;
+		}
+				
+		if (rename_path_prefix_equal(fname, destname)) {
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
+		lck = get_share_mode_lock(NULL, sbuf1.st_dev,
+					  sbuf1.st_ino, NULL, NULL);
+
+		if (!SMB_VFS_RENAME(conn,fname,destname)) {
+			rename_open_files(conn, lck, sbuf1.st_dev,
+					  sbuf1.st_ino, newname);
+			count++;
+			status = NT_STATUS_OK;
+		}
+		TALLOC_FREE(lck);
+		DEBUG(3,("rename_internals: doing rename on %s -> "
+			 "%s\n",fname,destname));
 	}
-
-#if 0
-	/* Don't think needed any more - JRA. */
-		if (!NT_STATUS_EQUAL(error,NT_STATUS_NO_SUCH_FILE)) {
-			if (!rcdest && bad_path_dest) {
-				if (ms_has_wild(last_component_dest))
-					return NT_STATUS_OBJECT_NAME_INVALID;
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
-#endif
+	CloseDir(dir_hnd);
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
@@ -4520,30 +4682,45 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	char *p;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	NTSTATUS status;
-	BOOL path1_contains_wcard = False;
-	BOOL path2_contains_wcard = False;
+	BOOL src_has_wcard = False;
+	BOOL dest_has_wcard = False;
 
 	START_PROFILE(SMBmv);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &path1_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
 	}
 	p++;
-	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path2_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &src_has_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmv);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
+
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBmv);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, name, newname, attrs, False, path1_contains_wcard);
+	status = rename_internals(conn, name, newname, attrs, False, src_has_wcard, dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
@@ -4567,8 +4744,12 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  * TODO: check error codes on all callers
  */
 
-NTSTATUS copy_file(char *src, char *dest1,connection_struct *conn, int ofun,
-		   int count, BOOL target_is_directory)
+NTSTATUS copy_file(connection_struct *conn,
+			char *src,
+			char *dest1,
+			int ofun,
+			int count,
+			BOOL target_is_directory)
 {
 	SMB_STRUCT_STAT src_sbuf, sbuf2;
 	SMB_OFF_T ret=-1;
@@ -4653,7 +4834,7 @@ NTSTATUS copy_file(char *src, char *dest1,connection_struct *conn, int ofun,
 	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp_set_pending_modtime( fsp2, src_sbuf.st_mtime);
+	fsp_set_pending_modtime( fsp2, get_mtimespec(&src_sbuf));
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -4688,14 +4869,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	int count=0;
 	int error = ERRnoaccess;
 	int err = 0;
-	BOOL has_wild;
-	BOOL exists=False;
 	int tid2 = SVAL(inbuf,smb_vwv0);
 	int ofun = SVAL(inbuf,smb_vwv1);
 	int flags = SVAL(inbuf,smb_vwv2);
 	BOOL target_is_directory=False;
-	BOOL path_contains_wcard1 = False;
-	BOOL path_contains_wcard2 = False;
+	BOOL source_has_wild = False;
+	BOOL dest_has_wild = False;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	NTSTATUS status;
 	START_PROFILE(SMBcopy);
@@ -4703,12 +4882,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	*directory = *mask = 0;
 
 	p = smb_buf(inbuf);
-	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &path_contains_wcard1);
+	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
 	}
-	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path_contains_wcard2);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
@@ -4723,16 +4902,31 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf);
-	RESOLVE_DFSPATH_WCARD(newname, conn, inbuf, outbuf);
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &source_has_wild);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
-	status = unix_convert(conn, name, path_contains_wcard1, NULL, &sbuf1);
+	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wild);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcopy);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
+
+	status = unix_convert(conn, name, source_has_wild, NULL, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
 	}
 
-	status = unix_convert(conn, newname, path_contains_wcard2, NULL, &sbuf2);
+	status = unix_convert(conn, newname, dest_has_wild, NULL, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
@@ -4776,25 +4970,38 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params))
+	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
 		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
+	}
 
-	has_wild = path_contains_wcard1;
-
-	if (!has_wild) {
+	if (!source_has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		if (resolve_wildcards(directory,newname)
-		    && NT_STATUS_IS_OK(status = copy_file(
-					       directory,newname,conn,ofun,
-					       count,target_is_directory))) 
-			count++;
-		if(!count && !NT_STATUS_IS_OK(status)) {
-			END_PROFILE(SMBcopy);
+		if (dest_has_wild) {
+			if (!resolve_wildcards(directory,newname)) {
+				END_PROFILE(SMBcopy);
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+		}
+
+		status = check_name(conn, directory);
+		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
-		if (!count) {
-			exists = vfs_file_exist(conn,directory,NULL);
+		
+		status = check_name(conn, newname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
+		}
+		
+		status = copy_file(conn,directory,newname,ofun,
+					count,target_is_directory);
+
+		if(!NT_STATUS_IS_OK(status)) {
+			END_PROFILE(SMBcopy);
+			return ERROR_NT(status);
+		} else {
+			count++;
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
@@ -4833,13 +5040,27 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			error = ERRnoaccess;
 			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 			pstrcpy(destname,newname);
-			if (resolve_wildcards(fname,destname) &&
-					NT_STATUS_IS_OK(status = copy_file(
-						fname,destname,conn,ofun,
-						count,target_is_directory))) {
+			if (!resolve_wildcards(fname,destname)) {
+				continue;
+			}
+
+			status = check_name(conn, fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+		
+			status = check_name(conn, destname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+		
+			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname, destname));
+
+			status = copy_file(conn,fname,destname,ofun,
+					count,target_is_directory);
+			if (NT_STATUS_IS_OK(status)) {
 				count++;
 			}
-			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 		}
 		CloseDir(dir_hnd);
 	}
@@ -4888,7 +5109,14 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
   
-	RESOLVE_DFSPATH(newdir, conn, inbuf, outbuf);
+	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newdir);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(pathworks_setdir);
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		return ERROR_NT(status);
+	}
 
 	if (strlen(newdir) != 0) {
 		if (!vfs_directory_exist(conn,newdir,NULL)) {
@@ -5440,7 +5668,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-	struct utimbuf unix_times;
+	struct timespec ts[2];
 	int outsize = 0;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBsetattrE);
@@ -5457,15 +5685,15 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * time as UNIX can't set this.
 	 */
 
-	unix_times.actime = srv_make_unix_date2(inbuf+smb_vwv3);
-	unix_times.modtime = srv_make_unix_date2(inbuf+smb_vwv5);
+	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv3)); /* atime. */
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv5)); /* mtime. */
   
 	/* 
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
 	 * Sometimes times are sent as zero - ignore them.
 	 */
 
-	if (null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
+	if (null_timespec(ts[0]) && null_timespec(ts[1])) {
 		/* Ignore request */
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
@@ -5473,20 +5701,22 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		}
 		END_PROFILE(SMBsetattrE);
 		return(outsize);
-	} else if (!null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
+	} else if (!null_timespec(ts[0]) && null_timespec(ts[1])) {
 		/* set modify time = to access time if modify time was unset */
-		unix_times.modtime = unix_times.actime;
+		ts[1] = ts[0];
 	}
 
 	/* Set the date on this file */
 	/* Should we set pending modtime here ? JRA */
-	if(file_utime(conn, fsp->fsp_name, &unix_times)) {
+	if(file_ntimes(conn, fsp->fsp_name, ts)) {
 		END_PROFILE(SMBsetattrE);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
   
-	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
-		fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
+	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%u modtime=%u\n",
+		fsp->fnum,
+		(unsigned int)ts[0].tv_sec,
+		(unsigned int)ts[1].tv_sec));
 
 	END_PROFILE(SMBsetattrE);
 	return(outsize);

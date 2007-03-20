@@ -38,6 +38,11 @@
  * --metze
  */
 
+/* NOTE: As of approximately Samba 3.0.24, the vfswrap_* functions are not
+ * global symbols. They are included here only as an pointer that opaque
+ * operations should not call further into the VFS.
+ */
+
 static int skel_connect(vfs_handle_struct *handle,  const char *service, const char *user)    
 {
 	return 0;
@@ -211,9 +216,9 @@ static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
 	return vfswrap_getwd(NULL,  buf);
 }
 
-static int skel_utime(vfs_handle_struct *handle,  const char *path, struct utimbuf *times)
+static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struct timespec ts[2])
 {
-	return vfswrap_utime(NULL,  path, times);
+	return vfswrap_ntimes(NULL,  path, ts);
 }
 
 static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
@@ -236,6 +241,7 @@ static int skel_symlink(vfs_handle_struct *handle,  const char *oldpath, const c
 	return vfswrap_symlink(NULL,  oldpath, newpath);
 }
 
+
 static int skel_readlink(vfs_handle_struct *handle,  const char *path, char *buf, size_t bufsiz)
 {
 	return vfswrap_readlink(NULL,  path, buf, bufsiz);
@@ -256,25 +262,43 @@ static char *skel_realpath(vfs_handle_struct *handle,  const char *path, char *r
 	return vfswrap_realpath(NULL,  path, resolved_path);
 }
 
-static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, struct security_descriptor_info **ppdesc)
+static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,
+	    struct sys_notify_context *ctx, struct notify_entry *e,
+	    void (*callback)(struct sys_notify_context *ctx, void *private_data, struct notify_event *ev),
+	    void *private_data, void *handle_p)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
 	errno = ENOSYS;
 	return 0;
 }
 
-static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info, struct security_descriptor_info **ppdesc)
+static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	const char *name, uint32 security_info, SEC_DESC **ppdesc)
 {
 	errno = ENOSYS;
 	return 0;
 }
 
-static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
+	fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
 	return False;
 }
 
-static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
+	char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
 	return False;
@@ -578,7 +602,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(skel_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_ftruncate),			SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_lock),				SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_getlock),			SMB_VFS_OP_GETLOCK,		SMB_VFS_LAYER_OPAQUE},
@@ -587,6 +611,10 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_notify_watch),			SMB_VFS_OP_NOTIFY_WATCH,	SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_chflags),			SMB_VFS_OP_CHFLAGS,		SMB_VFS_LAYER_OPAQUE},
+
+
 
 	/* NT File ACL operations */
 

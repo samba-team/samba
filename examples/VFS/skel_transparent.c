@@ -210,9 +210,9 @@ static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
 	return SMB_VFS_NEXT_GETWD(handle, buf);
 }
 
-static int skel_utime(vfs_handle_struct *handle,  const char *path, struct utimbuf *times)
+static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struct timespec ts[2])
 {
-	return SMB_VFS_NEXT_UTIME(handle, path, times);
+	return SMB_VFS_NEXT_NTIMES(handle, path, ts);
 }
 
 static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
@@ -255,22 +255,40 @@ static char *skel_realpath(vfs_handle_struct *handle,  const char *path, char *r
 	return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 }
 
-static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, struct security_descriptor_info **ppdesc)
+static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,
+	    struct sys_notify_context *ctx, struct notify_entry *e,
+	    void (*callback)(struct sys_notify_context *ctx, void *private_data, struct notify_event *ev),
+	    void *private_data, void *handle_p)
+{
+	return SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, callback,
+		private_data, handle_p);
+}
+
+static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags)
+{
+	return SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+}
+
+static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
 	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info, ppdesc);
 }
 
-static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info, struct security_descriptor_info **ppdesc)
+static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	const char *name, uint32 security_info, SEC_DESC **ppdesc)
 {
 	return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info, ppdesc);
 }
 
-static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, fd, security_info_sent, psd);
 }
 
-static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	const char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent, psd);
 }
@@ -545,7 +563,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_ftruncate),			SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_lock),				SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_getlock),			SMB_VFS_OP_GETLOCK,		SMB_VFS_LAYER_TRANSPARENT},
@@ -554,6 +572,8 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_notify_watch),			SMB_VFS_OP_NOTIFY_WATCH,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_chflags),			SMB_VFS_OP_CHFLAGS,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* NT File ACL operations */
 
