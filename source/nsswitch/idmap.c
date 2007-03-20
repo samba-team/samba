@@ -297,7 +297,6 @@ NTSTATUS idmap_init(void)
 		char *p = NULL;
 		const char *q = NULL;		
 
-		DEBUG(0, ("WARNING: idmap backend is deprecated!\n"));
 		compat = 1;
 
 		if ( (compat_backend = talloc_strdup( idmap_ctx, *compat_list )) == NULL ) {
@@ -336,6 +335,15 @@ NTSTATUS idmap_init(void)
 	for (i = 0; dom_list[i]; i++) {
 	       	const char *parm_backend;
 		char *config_option;
+
+		/* ignore BUILTIN and local MACHINE domains */
+		if ( strequal(dom_list[i], "BUILTIN") 
+		     || strequal(dom_list[i], get_global_sam_name() ) ) 
+		{
+			DEBUG(0,("idmap_init: Ignoring invalid domain %s\n", 
+				 dom_list[i]));
+			continue;
+		}
 
 		if (strequal(dom_list[i], lp_workgroup())) {
 			pri_dom_is_in_list = True;
@@ -577,17 +585,22 @@ NTSTATUS idmap_init(void)
 			alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
 		}
 	}
-	if ( ! alloc_methods) {
-		DEBUG(0, ("ERROR: Could not get methods for alloc backend %s\n", alloc_backend));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	ret = alloc_methods->init(compat_params);
-	if ( ! NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("ERROR: Initialization failed for alloc backend %s\n", alloc_backend));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+	if ( alloc_methods) {
+		ret = alloc_methods->init(compat_params);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			DEBUG(0, ("idmap_init: Initialization failed for alloc "
+				  "backend %s\n", alloc_backend));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	} else {
+		DEBUG(2, ("idmap_init: Unable to get methods for alloc backend %s\n", 
+			  alloc_backend));
+		/* certain compat backends are just readonly */
+		if ( compat )
+			ret = NT_STATUS_OK;
+		else
+			ret = NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* cleanpu temporary strings */
@@ -595,7 +608,7 @@ NTSTATUS idmap_init(void)
 	
 	backend_init_status = NT_STATUS_OK;
 	
-	return NT_STATUS_OK;
+	return ret;
 
 done:
 	DEBUG(0, ("Aborting IDMAP Initialization ...\n"));
