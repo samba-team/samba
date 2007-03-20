@@ -1305,7 +1305,8 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
+	if (sid_check_is_in_builtin(sid) ||
+	    sid_check_is_in_wellknown_domain(sid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
 		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
