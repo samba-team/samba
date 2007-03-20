@@ -49,7 +49,44 @@ BOOL srv_encryption_on(void)
 }
 
 /******************************************************************************
- Shutdown a server encryption state.
+ Create an auth_ntlmssp_state and ensure pointer copy is correct.
+******************************************************************************/
+
+static NTSTATUS make_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
+{
+	NTSTATUS status = auth_ntlmssp_start(&ec->auth_ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return nt_status_squash(status);
+	}
+
+	/*
+	 * We must remember to update the pointer copy for the common
+	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
+	 */
+	ec->es->ntlmssp_state = ec->auth_ntlmssp_state->ntlmssp_state;
+	return status;
+}
+
+/******************************************************************************
+ Destroy an auth_ntlmssp_state and ensure pointer copy is correct.
+******************************************************************************/
+
+static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
+{
+	/*
+	 * We must remember to update the pointer copy for the common
+	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
+	 */
+
+	if (ec->auth_ntlmssp_state) {
+		auth_ntlmssp_end(&ec->auth_ntlmssp_state);
+		/* The auth_ntlmssp_end killed this already. */
+		ec->es->ntlmssp_state = NULL;
+	}
+}
+
+/******************************************************************************
+ Shutdown a server encryption context.
 ******************************************************************************/
 
 static void srv_free_encryption_context(struct smb_srv_trans_enc_ctx **pp_ec)
@@ -61,18 +98,44 @@ static void srv_free_encryption_context(struct smb_srv_trans_enc_ctx **pp_ec)
 	}
 
 	if (ec->es) {
-		struct smb_trans_enc_state *es = ec->es;
-		if (es->smb_enc_type == SMB_TRANS_ENC_NTLM &&
-				ec->auth_ntlmssp_state) {
-			auth_ntlmssp_end(&ec->auth_ntlmssp_state);
-			/* The auth_ntlmssp_end killed this already. */
-			es->ntlmssp_state = NULL;
+		if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
+			destroy_auth_ntlmssp(ec);
 		}
 		common_free_encryption_state(&ec->es);
 	}
 
 	SAFE_FREE(ec);
 	*pp_ec = NULL;
+}
+
+/******************************************************************************
+ Create a server encryption context.
+******************************************************************************/
+
+static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_enc_type smb_enc_type)
+{
+	struct smb_srv_trans_enc_ctx *ec;
+
+	ec = SMB_MALLOC_P(struct smb_srv_trans_enc_ctx);
+	if (!ec) {
+		return NULL;
+	}
+	ZERO_STRUCTP(partial_srv_trans_enc_ctx);
+	ec->es = SMB_MALLOC_P(struct smb_trans_enc_state);
+	if (!ec->es) {
+		SAFE_FREE(ec);
+		return NULL;
+	}
+	ZERO_STRUCTP(ec->es);
+	ec->es->smb_enc_type = smb_enc_type;
+	if (smb_enc_type == SMB_TRANS_ENC_NTLM) {
+		NTSTATUS status = make_auth_ntlmssp(ec);
+		if (!NT_STATUS_IS_OK(status)) {
+			srv_free_encryption_context(&ec);
+			return NULL;
+		}
+	}
+	return ec;
 }
 
 /******************************************************************************
@@ -125,29 +188,33 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(char **ppdata, size_t *p_data_size,
 #endif
 
 /******************************************************************************
- Do the NTLM SPNEGO encryption negotiation. Parameters are in/out.
+ Do the NTLM SPNEGO (or raw) encryption negotiation. Parameters are in/out.
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_spnego_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
+static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob, BOOL spnego_wrap)
 {
 	NTSTATUS status;
 	DATA_BLOB chal = data_blob(NULL, 0);
 	DATA_BLOB response = data_blob(NULL, 0);
-	struct smb_srv_trans_enc_ctx *ec = partial_srv_trans_enc_ctx;
 
-	status = auth_ntlmssp_start(&ec->auth_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return nt_status_squash(status);
+	partial_srv_trans_enc_ctx = make_srv_encryption_context(SMB_TRANS_ENC_NTLM);
+	if (!partial_srv_trans_enc_ctx) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, secblob, &chal);
+	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state, secblob, &chal);
 
 	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
 	 * for success ... */
 
-	response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
-	data_blob_free(&chal);
+	if (spnego_wrap) {
+		response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+		data_blob_free(&chal);
+	} else {
+		/* Return the raw blob. */
+		response = chal;
+	}
 
 	SAFE_FREE(*ppdata);
 	*ppdata = response.data;
@@ -179,20 +246,13 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
 
 	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 
-	partial_srv_trans_enc_ctx = SMB_MALLOC_P(struct smb_srv_trans_enc_ctx);
-	if (!partial_srv_trans_enc_ctx) {
-		data_blob_free(&secblob);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(partial_srv_trans_enc_ctx);
-
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
 	if (got_kerberos_mechanism && lp_use_kerberos_keytab()) ) {
 		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
 	} else 
 #endif
 	{
-		status = srv_enc_spnego_ntlm_negotiate(ppdata, p_data_size, secblob);
+		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, secblob, True);
 	}
 
 	data_blob_free(&secblob);
@@ -220,7 +280,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_
 
 	/* We must have a partial context here. */
 
-	if (!ec || ec->auth_ntlmssp_state == NULL) {
+	if (!ec || !ec->es || ec->auth_ntlmssp_state == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -237,6 +297,44 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_
 	response = spnego_gen_auth_response(&auth_reply, status, OID_NTLMSSP);
 	data_blob_free(&auth_reply);
 
+	SAFE_FREE(*ppdata);
+	*ppdata = response.data;
+	*p_data_size = response.length;
+	return status;
+}
+
+/******************************************************************************
+ Raw NTLM encryption negotiation. Parameters are in/out.
+ This function does both steps.
+******************************************************************************/
+
+static NTSTATUS srv_enc_raw_ntlm_auth(unsigned char **ppdata, size_t *p_data_size)
+{
+	NTSTATUS status;
+	DATA_BLOB blob = data_blob_const(*ppdata, *p_data_size);
+	DATA_BLOB response = data_blob(NULL,0);
+	struct smb_srv_trans_enc_ctx *ec;
+
+	if (!partial_srv_trans_enc_ctx) {
+		/* This is the initial step. */
+		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, blob, False);
+		if (!NT_STATUS_IS_OK(status)) {
+			srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+			return nt_status_squash(status);
+		}
+		return status;
+	}
+
+	ec = partial_srv_trans_enc_ctx;
+	if (!ec || !ec->es || ec->auth_ntlmssp_state == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Second step. */
+	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state, blob, &response);
+
+	/* Return the raw blob. */
 	SAFE_FREE(*ppdata);
 	*ppdata = response.data;
 	*p_data_size = response.length;
@@ -265,11 +363,22 @@ NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_siz
 	}
 
 	if (pdata[0] == ASN1_CONTEXT(1)) {
-		/* Its a auth packet */
+		/* It's an auth packet */
 		return srv_enc_spnego_ntlm_auth(ppdata, p_data_size);
 	}
 
-	return NT_STATUS_INVALID_PARAMETER;
+	/* Maybe it's a raw unwrapped auth ? */
+	if (*p_data_size < 7) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strncmp((char *)pdata, "NTLMSSP", 7) == 0) {
+		return srv_enc_raw_ntlm_auth(ppdata, p_data_size);
+	}
+
+	DEBUG(1,("srv_request_encryption_setup: Unknown packet\n"));
+
+	return NT_STATUS_LOGON_FAILURE;
 }
 
 /******************************************************************************
