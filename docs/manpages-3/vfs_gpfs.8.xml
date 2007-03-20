@@ -75,8 +75,10 @@
 
 		</varlistentry>
 
+
 		<varlistentry>
 		<term>nfs4:acedup = [dontcare|reject|ignore|merge]</term>
+		<listitem>
 		<para>
 		This parameter configures how Samba handles duplicate ACEs encountered in GPFS ACLs.
 		GPFS allows/creates duplicate ACE for different bits for same ID.
@@ -89,6 +91,25 @@
 		<listitem><para><command>ignore</command> - don't include the second matching ACE</para></listitem>
 		<listitem><para><command>merge</command> - bitwise OR the 2 ace.flag fields and 2 ace.mask fields of the 2 duplicate ACEs into 1 ACE</para></listitem>
 		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+		
+		<varlistentry>
+		<term>nfs4:chown = [yes|no]</term>
+		<listitem>
+		<para>This parameter allows enabling or disabling the chown supported
+		by the underlying filesystem. This parameter should be enabled with
+		care as it might leave your system insecure.</para>
+		<para>Some filesystems allow chown as a) giving b) stealing. It is the latter
+		that is considered a risk.</para>
+		
+		<para>Following is the behaviour of Samba for different values : </para>
+		<itemizedlist>
+		<listitem><para><command>yes</command> - Enable chown if as supported by the under filesystem</para></listitem>
+		<listitem><para><command>no (default)</command> - Disable chown</para></listitem>
+		</itemizedlist>
+		</listitem>
 		</varlistentry>
 
 	</variablelist>
