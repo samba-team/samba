@@ -282,3 +282,15 @@ NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
 	return common_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
 }
+
+/******************************************************************************
+ Start a raw ntlmssp encryption.
+******************************************************************************/
+
+NTSTATUS cli_ntlm_smb_encryption_on(struct cli_state *cli, 
+				const char *user,
+				const char *pass,
+				const char *workgroup)
+{
+
+}

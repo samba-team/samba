@@ -763,7 +763,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		}
 	}
 
-	/* we have a reference conter on ntlmssp_state, if we are signing
+	/* we have a reference counter on ntlmssp_state, if we are signing
 	   then the state will be kept by the signing engine */
 
 	ntlmssp_end(&ntlmssp_state);
@@ -973,7 +973,6 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	}
 
 	return NT_STATUS_OK;
-
 }
 
 /****************************************************************************
