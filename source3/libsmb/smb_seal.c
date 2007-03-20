@@ -25,7 +25,7 @@
  Is encryption turned on ?
 ******************************************************************************/
 
-static BOOL internal_encryption_on(struct smb_trans_enc_state *es)
+BOOL common_encryption_on(struct smb_trans_enc_state *es)
 {
 	return ((es != NULL) && es->enc_on);
 }
@@ -35,7 +35,7 @@ static BOOL internal_encryption_on(struct smb_trans_enc_state *es)
  NTLM decrypt an incoming buffer.
 ******************************************************************************/
 
-static NTSTATUS internal_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
+NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
 	size_t orig_len = smb_len(buf);
@@ -70,7 +70,7 @@ static NTSTATUS internal_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char 
  NTLM encrypt an outgoing buffer. Return the encrypted pointer in ppbuf_out.
 ******************************************************************************/
 
-static NTSTATUS internal_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, char **ppbuf_out)
+NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, char **ppbuf_out)
 {
 	NTSTATUS status;
 	char *buf_out;
@@ -123,7 +123,7 @@ static NTSTATUS internal_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char 
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-static NTSTATUS internal_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
+NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -135,7 +135,7 @@ static NTSTATUS internal_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *b
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-static NTSTATUS srv_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out)
+NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -146,19 +146,19 @@ static NTSTATUS srv_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, c
  Encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
 ******************************************************************************/
 
-static NTSTATUS internal_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out)
+NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out)
 {
-	if (!internal_encryption_on(es)) {
+	if (!common_encryption_on(es)) {
 		/* Not encrypting. */
 		*buf_out = buffer;
 		return NT_STATUS_OK;
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		return internal_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
+		return common_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
 	} else {
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-		return internal_gss_encrypt_buffer(es->context_handle, buffer, buf_out);
+		return common_gss_encrypt_buffer(es->context_handle, buffer, buf_out);
 #else
 		return NT_STATUS_NOT_SUPPORTED;
 #endif
@@ -171,17 +171,17 @@ static NTSTATUS internal_encrypt_buffer(struct smb_trans_enc_state *es, char *bu
  New data must be less than or equal to the current length.
 ******************************************************************************/
 
-static NTSTATUS internal_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
+NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 {
-	if (!internal_encryption_on(es)) {
+	if (!common_encryption_on(es)) {
 		/* Not decrypting. */
 		return NT_STATUS_OK;
 	}
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		return internal_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
+		return common_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
 	} else {
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-		return internal_gss_decrypt_buffer(es->context_handle, buf);
+		return common_gss_decrypt_buffer(es->context_handle, buf);
 #else
 		return NT_STATUS_NOT_SUPPORTED;
 #endif
@@ -192,7 +192,7 @@ static NTSTATUS internal_decrypt_buffer(struct smb_trans_enc_state *es, char *bu
  Shutdown an encryption state.
 ******************************************************************************/
 
-static void internal_free_encryption_context(struct smb_trans_enc_state **pp_es)
+void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 {
 	struct smb_trans_enc_state *es = *pp_es;
 
@@ -201,7 +201,9 @@ static void internal_free_encryption_context(struct smb_trans_enc_state **pp_es)
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		ntlmssp_end(&es->ntlmssp_state);
+		if (es->ntlmssp_state) {
+			ntlmssp_end(&es->ntlmssp_state);
+		}
 	}
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
 	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
@@ -216,9 +218,9 @@ static void internal_free_encryption_context(struct smb_trans_enc_state **pp_es)
  Free an encryption-allocated buffer.
 ******************************************************************************/
 
-static void internal_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
+void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 {
-	if (!internal_encryption_on(es)) {
+	if (!common_encryption_on(es)) {
 		return;
 	}
 
@@ -242,7 +244,7 @@ static void internal_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 
 BOOL cli_encryption_on(struct cli_state *cli)
 {
-	return internal_encryption_on(cli->trans_enc_state);
+	return common_encryption_on(cli->trans_enc_state);
 }
 
 /******************************************************************************
@@ -251,7 +253,7 @@ BOOL cli_encryption_on(struct cli_state *cli)
 
 void cli_free_encryption_context(struct cli_state *cli)
 {
-	return internal_free_encryption_context(&cli->trans_enc_state);
+	return common_free_encryption_state(&cli->trans_enc_state);
 }
 
 /******************************************************************************
@@ -260,7 +262,7 @@ void cli_free_encryption_context(struct cli_state *cli)
 
 void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 {
-	return internal_free_enc_buffer(cli->trans_enc_state, buf);
+	return common_free_enc_buffer(cli->trans_enc_state, buf);
 }
 
 /******************************************************************************
@@ -269,7 +271,7 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 
 NTSTATUS cli_decrypt_message(struct cli_state *cli)
 {
-	return internal_decrypt_buffer(cli->trans_enc_state, cli->inbuf);
+	return common_decrypt_buffer(cli->trans_enc_state, cli->inbuf);
 }
 
 /******************************************************************************
@@ -278,61 +280,5 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
-	return internal_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
-}
-
-/******************************************************************************
- Server side encryption.
-******************************************************************************/
-
-/******************************************************************************
- Global server state.
-******************************************************************************/
-
-static struct smb_trans_enc_state *partial_srv_trans_enc_state;
-static struct smb_trans_enc_state *srv_trans_enc_state;
-
-/******************************************************************************
- Is server encryption on ?
-******************************************************************************/
-
-BOOL srv_encryption_on(void)
-{
-	return internal_encryption_on(srv_trans_enc_state);
-}
-
-/******************************************************************************
- Shutdown a server encryption state.
-******************************************************************************/
-
-void srv_free_encryption_context(void)
-{
-	return internal_free_encryption_context(&srv_trans_enc_state);
-}
-
-/******************************************************************************
- Free an encryption-allocated buffer.
-******************************************************************************/
-
-void srv_free_enc_buffer(char *buf)
-{
-	return internal_free_enc_buffer(srv_trans_enc_state, buf);
-}
-
-/******************************************************************************
- Decrypt an incoming buffer.
-******************************************************************************/
-
-NTSTATUS srv_decrypt_buffer(char *buf)
-{
-	return internal_decrypt_buffer(srv_trans_enc_state, buf);
-}
-
-/******************************************************************************
- Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
-******************************************************************************/
-
-NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
-{
-	return internal_encrypt_buffer(srv_trans_enc_state, buffer, buf_out);
+	return common_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
 }
