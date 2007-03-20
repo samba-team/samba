@@ -2758,6 +2758,33 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				}
 				break;
 			}
+		case SMB_REQUEST_TRANSPORT_ENCRYPTION:
+			{
+				NTSTATUS status;
+				size_t data_len = total_data;
+
+				if (!lp_unix_extensions()) {
+					return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				}
+
+				DEBUG( 4,("call_trans2setfsinfo: request transport encrption.\n"));
+
+				status = srv_request_encryption_setup((unsigned char **)&pdata, &data_len);
+
+				if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+					error_packet_set(outbuf, 0, 0, status, __LINE__,__FILE__);
+				} else if (!NT_STATUS_IS_OK(status)) {
+					return ERROR_NT(status);
+				}
+
+				send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
+
+				if (NT_STATUS_IS_OK(status)) {
+					/* Server-side transport encryption is now *on*. */
+					srv_encryption_start();
+				}
+				return -1;
+			}
 		case SMB_FS_QUOTA_INFORMATION:
 			{
 				files_struct *fsp = NULL;

@@ -634,7 +634,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
  Is this a krb5 mechanism ?
 ****************************************************************************/
 
-static NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out, BOOL *p_is_krb5)
+NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out, BOOL *p_is_krb5)
 {
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;

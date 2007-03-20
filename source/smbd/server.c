@@ -743,6 +743,8 @@ static void exit_server_common(enum server_exit_reason how,
 	locking_end();
 	printing_end();
 
+	server_encryption_shutdown();
+
 	if (how != SERVER_EXIT_NORMAL) {
 		int oldlevel = DEBUGLEVEL;
 		char *last_inbuf = get_InBuffer();
