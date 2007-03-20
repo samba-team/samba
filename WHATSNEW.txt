@@ -1,15 +1,231 @@
                    ==================================
-                   Release Notes for Samba 3.0.25pre1
-                              Feb 28, 2007
+                   Release Notes for Samba 3.0.25pre2
+                              Mar 21, 2007
                    ==================================
 
-This is a preview release of the Samba 3.0.25 code base and
-is provided for testing only.  This release is *not* intended
+This is the second preview release of the Samba 3.0.25 code base 
+and is provided for testing only.  This release is *not* intended
 for production servers.  There has been a substantial amount
 of development since the 3.0.23/3.0.24 series of stable releases.
 We would like to ask the Samba community for help in testing
 these changes as we work towards the next significant production
 upgrade Samba 3.0 release.
+
+Major features included in the 3.0.25 code base include:
+
+  o Significant improvements in the winbind off-line logon support.
+  o Support for secure DDNS updates as part of the 'net ads join' 
+    process.
+  o Rewritten IdMap interface which allows for TTL based caching and 
+    per domain backends.
+  o New plug-in interface for the "winbind nss info" parameter.
+  o New file change notify subsystem which is able to make use of 
+    inotify on Linux.
+  o Support for passing Windows security descriptors to a VFS 
+    plug-in allowing for multiple Unix ACL implements to running side 
+    by side on the Same server.
+  o Improved compatibility with Windows Vista clients.
+  o Man pages for VFS plugins.
+
+
+Off-line Logons and AD Site Support
+===================================
+
+Winbind's capability to support offline logons has been greatly
+improved with the 3.0.25 release including support for locating 
+domain controllers asynchronously using Active Directory Site
+information.
+
+
+New IdMap Interface for Winbindd
+================================
+
+The 3.0.25 release of Samba will include a rewritten IdMap interface
+for winbindd which replaces the "idmap backend" parameter.  The
+initial design document may be found at
+
+	http://www.samba.org/~idra/samba3_newidmap.pdf
+
+The final 3.0.25 release will include full documentation in the
+distributed manpages.
+
+
+Dynamic DNS Updates
+===================
+
+The "net ads join" command is now able to register the host's DNS A
+records with Windows 2000 SP4 and 2003 DNS servers.  This 
+feature must be enabled at compile time using the --with-dnsupdate 
+when running the ./configure script.  There is also a related "net ads 
+dns" command for refreshing a host's records which could be launched
+from a dhcp client script when a new IP address is obtained.
+
+
+Support for Additional ACL Modules
+==================================
+
+Samba's POSIX ACL support has been moved inside of the VFS layer 
+which means it is now possible to support multiple ACL implementations
+on the same server including NFSv3 and GPFS ACLs.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25pre1
+------------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Description	  Default
+    --------------                      -----------	  -------
+    debug prefix timestamp              New               No
+    lock spin count                     Removed           n/a
+
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix CIFS POSIX unlink behavior.
+    * Change POSIX_UNLINK to allow clients to differentiate between 
+      unlink/rmdir calls.
+    * Add smbclient implementations of POSIX open/mkdir/unlink/rmdir.
+    * Refactor MS-DFS server and client code.
+    * Support deep MS-DFS referrals in Samba client applications.
+    * Change the VFS interface to use struct timespec for utimes.
+    * Fix build failures on *BSD platforms caused by introduction of 
+      memalign().
+    * Optimize exit path in the byte-range locking code in smbd to 
+      only read the locking db if there are outstanding lock requests.
+    * Fix long-standing bug in our chain processing code.
+    * BUG 4384: Fix bug in old search code.
+    * Add support for the UNIX_INFO2 info level.
+    * Add in the "create info" field to the reply from POSIX_OPEN 
+      and POSIX_MKDIR.
+    * Refactor the sessionsetupX code a little to allow us to return 
+      a NT_STATUS_TIME_DIFFERENCE_AT_DC error to a client.
+    * Fix memory leaks in the LDAP sasl bind code.
+    * Fix crash in vfs audit/full audit modules caused by API changes.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Ensure nfsv4 chown logic is controlled by "nfs4:chown=[yes|no]".
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix server affinity bug in Winbind's ADS connection handling.
+    * Fix crash when enumerating local group membership in usrmgr.exe
+      on a Samba DC.
+    * Rework parsing for NetFileEnum() and NetSessionEnum()
+    * Add server stub for NetFileClose()
+    * Return correct information for sessions and open files
+      including session duration, number of open files, and open pipes.
+    * Fixes for "winbind normalize names" functionality: 
+      - Fix getgroups() call called using a normalized name
+      - Fix some more name mappings that could cause for example
+        a user to be unable to unlock the screen as the username
+        would not match in the PAM authenticate call.
+     * Blacklist BUILTIN and MACHINE domains from the idmap domains as 
+       these should only be handled by the winbindd_passdb.c backend.
+     * Allow the alloc init to fail for backwards compatible 
+       configurations such as with idmap_ad.
+     * Remove the deprecated flags from idmap backend, et. al. These 
+       are mutually exclusive with the "idmap domains".
+     * Add the osname and osver options to 'net ads join'
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Adding experimental krb5 lib locator plugin.
+    * Ensure that Samba clients are correctly reported by the %a 
+      smb.conf as "Samba" and not "Vista".
+    * Prevent a user from issuing a PAM_DELETE_CREDS request in 
+      pam_close_session() for another user.
+
+
+o   Steve French <sfrench@us.ibm.com> 
+    * Fix mount.cifs compile on old libc missing bind mount #define.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * Fix memory leaks in the error paths used by winbindd's credential 
+      cache code.
+    * BUG 4409: Add minsize parameter to the vfs_recycle plugin.
+
+
+o   Zack Kirsch <zack.kirsch@isilon.com>
+    * Memory leak fixes on error paths in various places.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 4365: Fix NTLMv2 implementation on Samba member servers not 
+      running winbindd.
+    * Reduce contention on the tdb free list by periodic reclamation
+      of dead tdb records into groups
+    * Split tdb free lists per hash chain.
+    * Coverity fixes.
+    * Add winbindd_priv_request_response() request that kills the 
+      existing winbind pipe connection if it's not privileged to prevent
+      race conditions during the challenge/response authentication sequence.
+
+
+o   David Leonard <dleonard@vintela.com>.
+    * BUG 4369: Fix smbclient's showacls on files in subdirectories.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Compiler warning fixes.
+    * Allow smbcontrol to use POPT_COMMON_SAMBA options to allow setting
+      debug level.
+   * Add "debug prefix timestamp" to allow syslog type timestamps to be 
+     added in the Samba log files.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fix "password never expires" policy which would be incorrectly 
+      require all users to change their password at login time.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
+
+
+o   Lars Mueller <lmuelle@samba.org>
+    * Fix make install to include smbmount, et. al. docs.
+
+
+o   James Peach <jpeach@apple.com>
+    * Support the SMB_QUERY_POSIX_WHOAMI info level on QueryFsInfo.
+
+
+o   Andy Polyakov <appro@fy.chalmers.se>
+    * Pull the CUPS comment and location attributes when not overridden 
+      by values stored in Samba's ntprinters.tdb.
+    * BUG 3275: Allow upload of x64 printer drivers by relaxing the COFF 
+      header parsing code in smbd.
+
+
+o   Robert Shearman <rob@codeweavers.com>
+    * Allow NULL domain and username in the form of user@domain to be 
+      interpreted correctly by ntlm_auth for use by Wine applications.
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 4438, 4440: Fix bugs in "net sam provision".
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix an integer overflow in the ndr library code used by PIDL.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==================================
+                   Release Notes for Samba 3.0.25pre1
+                              Feb 28, 2007
+                   ==================================
 
 Major features included in the 3.0.25 code base include:
 
@@ -334,9 +550,6 @@ o   Don Watson <dwwatson@us.ibm.com>
 
 o   Martin Zielinski <mz@seh.de>
     * Printing fixes for Windows Vista clients.
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
