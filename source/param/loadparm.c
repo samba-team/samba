@@ -3524,9 +3524,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		parm_ptr =
 			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
-	}
 
-	if (snum >= 0) {
 		if (!ServicePtrs[snum]->copymap)
 			init_copymap(ServicePtrs[snum]);
 
