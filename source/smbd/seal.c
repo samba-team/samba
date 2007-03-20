@@ -118,15 +118,46 @@ NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-static NTSTATUS srv_enc_spnego_gss_negotiate(char **ppdata, size_t *p_data_size, DATA_BLOB *psecblob)
+static NTSTATUS srv_enc_spnego_gss_negotiate(char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 #endif
 
 /******************************************************************************
+ Do the NTLM SPNEGO encryption negotiation. Parameters are in/out.
+ Until success we do everything on the partial enc ctx.
+******************************************************************************/
+
+static NTSTATUS srv_enc_spnego_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
+{
+	NTSTATUS status;
+	DATA_BLOB chal = data_blob(NULL, 0);
+	DATA_BLOB response = data_blob(NULL, 0);
+	struct smb_srv_trans_enc_ctx *ec = partial_srv_trans_enc_ctx;
+
+	status = auth_ntlmssp_start(&ec->auth_ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return nt_status_squash(status);
+	}
+
+	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, secblob, &chal);
+
+	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
+	 * for success ... */
+
+	response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+	data_blob_free(&chal);
+
+	SAFE_FREE(*ppdata);
+	*ppdata = response.data;
+	*p_data_size = response.length;
+	return status;
+}
+
+/******************************************************************************
  Do the SPNEGO encryption negotiation. Parameters are in/out.
- Covers the NTLM case. Based off code in smbd/sesssionsetup.c
+ Based off code in smbd/sesssionsetup.c
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
@@ -135,10 +166,7 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL,0);
 	DATA_BLOB secblob = data_blob(NULL, 0);
-	DATA_BLOB chal = data_blob(NULL, 0);
-	DATA_BLOB response = data_blob(NULL, 0);
 	BOOL got_kerberos_mechanism = False;
-	struct smb_srv_trans_enc_ctx *ec = NULL;
 
 	blob = data_blob_const(*ppdata, *p_data_size);
 
@@ -160,47 +188,59 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
 	if (got_kerberos_mechanism && lp_use_kerberos_keytab()) ) {
-		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, &secblob);
-		if (!NT_STATUS_IS_OK(status)) {
-			data_blob_free(&secblob);
-			srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-		}
-		return status;
-	}
+		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
+	} else 
 #endif
-
-	/* Deal with an NTLM enc. setup. */
-	ec = partial_srv_trans_enc_ctx;
-
-	status = auth_ntlmssp_start(&ec->auth_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-		return nt_status_squash(status);
+	{
+		status = srv_enc_spnego_ntlm_negotiate(ppdata, p_data_size, secblob);
 	}
 
-	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, secblob, &chal);
 	data_blob_free(&secblob);
 
-	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
-	 * for success ... */
-
-	response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
-	data_blob_free(&chal);
-
-	SAFE_FREE(*ppdata);
-	*ppdata = response.data;
-	*p_data_size = response.length;
+	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+	}
 
 	return status;
 }
 
 /******************************************************************************
  Complete a SPNEGO encryption negotiation. Parameters are in/out.
+ We only get this for a NTLM auth second stage.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_spnego_auth(unsigned char **ppdata, size_t *p_data_size)
+static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_size)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	NTSTATUS status;
+	DATA_BLOB blob = data_blob(NULL,0);
+	DATA_BLOB auth = data_blob(NULL,0);
+	DATA_BLOB auth_reply = data_blob(NULL,0);
+	DATA_BLOB response = data_blob(NULL,0);
+	struct smb_srv_trans_enc_ctx *ec = partial_srv_trans_enc_ctx;
+
+	/* We must have a partial context here. */
+
+	if (!ec || ec->auth_ntlmssp_state == NULL) {
+		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	blob = data_blob_const(*ppdata, *p_data_size);
+	if (!spnego_parse_auth(blob, &auth)) {
+		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, auth, &auth_reply);
+	data_blob_free(&auth);
+
+	response = spnego_gen_auth_response(&auth_reply, status, OID_NTLMSSP);
+	data_blob_free(&auth_reply);
+
+	SAFE_FREE(*ppdata);
+	*ppdata = response.data;
+	*p_data_size = response.length;
+	return status;
 }
 
 /******************************************************************************
@@ -226,7 +266,7 @@ NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_siz
 
 	if (pdata[0] == ASN1_CONTEXT(1)) {
 		/* Its a auth packet */
-		return srv_enc_spnego_auth(ppdata, p_data_size);
+		return srv_enc_spnego_ntlm_auth(ppdata, p_data_size);
 	}
 
 	return NT_STATUS_INVALID_PARAMETER;
@@ -238,7 +278,9 @@ NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_siz
 
 void srv_encryption_start(void)
 {
+	/* Throw away the context we're using currently (if any). */
 	srv_free_encryption_context(&srv_trans_enc_ctx);
+
 	/* Steal the partial pointer. Deliberate shallow copy. */
 	srv_trans_enc_ctx = partial_srv_trans_enc_ctx;
 	srv_trans_enc_ctx->es->enc_on = True;
