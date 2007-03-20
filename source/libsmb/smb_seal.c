@@ -123,7 +123,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
+ NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -135,7 +135,7 @@ NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out)
+ NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
