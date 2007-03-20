@@ -599,12 +599,18 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
+	uint32 discard;
 
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (sid_compare_domain(sid, &domain->sid) == 0)
+		/* We need to use sid_peek_check_rid, because we want 
+		 * to make sure that the SIDs we send to the backends are
+		 * as specific as possible.
+		 */
+		if (sid_peek_check_rid(&domain->sid, sid, &discard) == 0) {
 			return domain;
+		}
 	}
 
 	/* Not found */
