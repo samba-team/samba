@@ -11,53 +11,67 @@ jsonrpc_include("resources.esp");
 
 function _NetContext(params, error)
 {
+  var credParams, credentials;
+  var resName;
+
   if (params.length < 1)
   {
-    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "too few parameters(usage: [ <credentials ])");
-    return error;
+    /* create default NetContext based on already provided credentials */
+    credentials = session.authinfo.credentials;
+    resName = "netCtx";
   }
-  
-  var creds = params[0];
-  if (creds == undefined)
+  else
   {
-    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "credentials parameter is undefined");
-    return error;
-  }
+    /* create user specified credentials object */
+    credParams = params[0];
+    if (typeof(credParams) != "object")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "credentials parameter is expected to be an object");
+      return error;
+    }
   
-  if (creds.domain == undefined ||
-      typeof(creds.domain) != "string")
-  {
-    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "a valid string is expected in credentials.domain");
-    return error;
-  }
+    if (typeof(credParams.domain) != "string")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "a valid string is expected in credentials.domain");
+      return error;
+    }
   
-  if (creds.username == undefined ||
-      typeof(creds.username) != "string")
-  {
-    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "a valid string is expected in credentials.username");
-    return error;
-  }
+    if (typeof(credParams.username) != "string")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "a valid string is expected in credentials.username");
+      return error;
+    }
   
-  if (creds.password == undefined ||
-      typeof(creds.username) != "string")
-  {
-    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		   "a valid string is expected in credentials.password");
-    return error;
-  }
+    if (typeof(credParams.username) != "string")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "a valid string is expected in credentials.password");
+      return error;
+    }
   
-  var credentials = credentials_init();
-  credentials.set_domain(creds.domain);
-  credentials.set_username(creds.username);
-  credentials.set_password(creds.password);
-  
-  var netCtx = NetContext(credentials);
+    credentials = credentials_init();
+    credentials.set_domain(credParams.domain);
+    credentials.set_username(credParams.username);
+    credentials.set_password(credParams.password);
 
-  return session.resources.set(netCtx, "netCtx", error);
+    resName = "netCtx[" + credParams.domain + "/" + credParams.username + "]";
+  }
+
+  /* was this NetContext created yet ? */
+  var resId = session.resources.find(key, error);
+  if (resId != undefined)
+  {
+    /* yes, return its resource id */
+    return resId;
+  }
+
+  /* no, create the new context and assign it a resource id */
+  var netCtx = NetContext(credentials);
+  resId = session.resources.set(netCtx, resName, error);
+  return resId;
 }
 jsonrpc.method.NetContext = _NetContext;
 
