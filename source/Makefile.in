@@ -472,7 +472,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/statcache.o \
+	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
