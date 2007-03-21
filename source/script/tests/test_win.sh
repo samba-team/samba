@@ -17,26 +17,26 @@ if [ -z $SMBTORTURE_REMOTE_HOST ]; then
 fi
 
 name="BASE against Windows 2003"
-testit "$name" $WINTEST_DIR/wintest_base.sh $SMBTORTURE_REMOTE_HOST \
+testit "$name" smb $WINTEST_DIR/wintest_base.sh $SMBTORTURE_REMOTE_HOST \
 	$SMBTORTURE_USERNAME $SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP
 
 name="RAW against Windows 2003"
-testit "$name" $WINTEST_DIR/wintest_raw.sh $SMBTORTURE_REMOTE_HOST \
+testit "$name" smb $WINTEST_DIR/wintest_raw.sh $SMBTORTURE_REMOTE_HOST \
 	$SMBTORTURE_USERNAME $SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP
 
 name="RPC against Windows 2003"
-testit "$name" $WINTEST_DIR/wintest_rpc.sh $SMBTORTURE_REMOTE_HOST \
+testit "$name" smb $WINTEST_DIR/wintest_rpc.sh $SMBTORTURE_REMOTE_HOST \
 	$SMBTORTURE_USERNAME $SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP
 
 name="NET against Windows 2003"
-testit "$name" $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST \
+testit "$name" smb $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST \
 	$SMBTORTURE_USERNAME $SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP
 
 name="Windows 2003 against smbd"
-testit "$name" $WINTEST_DIR/wintest_client.sh $SMBTORTURE_REMOTE_HOST
+testit "$name" smb $WINTEST_DIR/wintest_client.sh $SMBTORTURE_REMOTE_HOST
 
 dc_tests="RPC-DRSUAPI RPC-SPOOLSS ncacn_np ncacn_ip_tcp"
 for name in $dc_tests; do
-	testit "$name against Windows 2003 DC" $WINTEST_DIR/wintest_2k3_dc.sh \
+	testit "$name against Windows 2003 DC" rpc $WINTEST_DIR/wintest_2k3_dc.sh \
 		"$name"
 done

@@ -3,70 +3,23 @@
 # Copyright (C) 2005-2007 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later.
 
-package Samba4;
+package Samba3;
 
 use strict;
 use FindBin qw($RealBin);
 use POSIX;
 
-sub new($$$$) {
-	my ($classname, $bindir, $ldap, $setupdir) = @_;
-	my $self = { ldap => $ldap, bindir => $bindir, setupdir => $setupdir };
+sub new($$$) {
+	my ($classname, $bindir, $setupdir) = @_;
+	my $self = { bindir => $bindir, setupdir => $setupdir };
 	bless $self;
 	return $self;
-}
-
-sub slapd_start($$$)
-{
-    my $count = 0;
-	my ($self, $conf, $uri) = @_;
-	# running slapd in the background means it stays in the same process group, so it can be
-	# killed by timelimit
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d$ENV{FEDORA_DS_LOGLEVEL} > $ENV{LDAPDIR}/logs 2>&1 &");
-	} else {
-		my $oldpath = $ENV{PATH};
-		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		system("slapd -d$ENV{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $ENV{LDAPDIR}/logs 2>&1 &");
-		$ENV{PATH} = $oldpath;
-	}
-	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
-	        $count++;
-		if ($count > 10) {
-		    $self->slapd_stop();
-		    return 0;
-		}
-		sleep(1);
-	}
-	return 1;
-}
-
-sub slapd_stop($)
-{
-	my ($self) = @_;
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
-		system("$ENV{LDAPDIR}/slapd-samba4/stop-slapd");
-	} else {
-		open(IN, "<$ENV{PIDDIR}/slapd.pid") or 
-			die("unable to open slapd pid file");
-		kill 9, <IN>;
-		close(IN);
-	}
 }
 
 sub check_or_start($$$$) 
 {
 	my ($self, $env_vars, $socket_wrapper_dir, $max_time) = @_;
 	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
-
-	# Start slapd before smbd
-	if ($self->{ldap}) {
-		$self->slapd_start($ENV{SLAPD_CONF}, $ENV{LDAP_URI}) or 
-			die("couldn't start slapd");
-
-		print "LDAP PROVISIONING...";
-		$self->provision_ldap();
-	}
 
 	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless
 		defined($socket_wrapper_dir) or $< == 0;
@@ -149,13 +102,6 @@ sub provision($$$)
 	return \%ret;
 }
 
-sub provision_ldap($)
-{
-	my ($self) = @_;
-    system("$self->{bindir}/smbscript $self->{setupdir}/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}") and
-		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}");
-}
-
 sub stop($)
 {
 	my ($self) = @_;
@@ -171,8 +117,6 @@ sub stop($)
 		kill 9, <IN>;
 		close(IN);
 	}
-
-	$self->slapd_stop() if ($self->{ldap});
 
 	return $failed;
 }

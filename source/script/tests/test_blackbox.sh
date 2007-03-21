@@ -20,7 +20,7 @@ ADDARGS="$@"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-testit "smbclient" $incdir/../../../testprogs/blackbox/test_smbclient.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$PREFIX" "$ADDARGS"
-testit "cifsdd" $incdir/../../../testprogs/blackbox/test_cifsdd.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$ADDARGS"
+testit "smbclient" smb $incdir/../../../testprogs/blackbox/test_smbclient.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$PREFIX" "$ADDARGS"
+testit "cifsdd" smb $incdir/../../../testprogs/blackbox/test_cifsdd.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$ADDARGS"
 
 testok $0 $failed
