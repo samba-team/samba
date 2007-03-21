@@ -15,18 +15,56 @@
 
 <refsynopsisdiv>
 	<title>DESCRIPTION</title>
-
-	<para>TODO</para>
+	<para>The idmap_rid backend provides a way to use an algorithmic
+	mapping scheme to map UIDs/GIDs and SIDs. No database is required
+	in this case as the mapping is deterministic.</para>
 </refsynopsisdiv>
 
 <refsect1>
 	<title>IDMAP OPTIONS</title>
-	<para>TODO</para>
+
+	<variablelist>
+		<varlistentry>
+		<term>range = low - high</term>
+		<listitem><para>
+			Defines the available matching uid and gid range for which the
+			backend is authoritative. Note that the range acts as a filter.
+			If algorithmically determined UID or GID fall outside the
+			range, they are ignored and the corresponding map is discarded.
+			It is intended as a way to avoid accidental UID/GID overlaps
+			between local and remotely defined IDs.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>base_rid = INTEGER</term>
+		<listitem><para>
+			Defines the base integer used to build SIDs out of an UID or a GID,
+			and to rebase the UID or GID to be obtained froma SID. User RIDs
+			by default starts at 1000 (512 hexadecimal), this means a good value
+			for base_rid can be 1000 as the resulting ID is calculated this way:
+			ID = RID - BASE_RID + LOW RANGE ID.
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
 </refsect1>
 
 <refsect1>
 	<title>EXAMPLES</title>
-	<para>TODO</para>
+	<para>This example shows how to configure 2 domains with idmap_rid</para>
+
+	<programlisting>
+	[global]
+	    idmap domain = MAIN TRUSTED1
+
+	    idmap config MAIN:backend      = rid
+	    idmap config MAIN:base_rid     = 1000
+	    idmap config MAIN:range        = 10000 - 49999
+
+	    idmap config TRUSTED1:backend  = rid
+	    idmap config TRUSTED1:base_rid = 1000
+	    idmap config TRUSTED1:range    = 50000 - 99999
+	</programlisting>
 </refsect1>
 
 <refsect1>
