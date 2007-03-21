@@ -310,8 +310,8 @@ typedef struct {
 	int client_signing;
 	int server_signing;
 	int iUsershareMaxShares;
-	int iIdmapExpireTime;
-	int iIdmapNegativeTime;
+	int iIdmapCacheTime;
+	int iIdmapNegativeCacheTime;
 
 	BOOL bResetOnZeroVC;
 	param_opt_struct *param_opt;
@@ -1271,8 +1271,8 @@ static struct parm_struct parm_table[] = {
 	{"idmap domains", P_LIST, P_GLOBAL, &Globals.szIdmapDomains, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap backend", P_LIST, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED }, 
 	{"idmap alloc backend", P_STRING, P_GLOBAL, &Globals.szIdmapAllocBackend, NULL, NULL, FLAG_ADVANCED}, 
-	{"idmap expire time", P_INTEGER, P_GLOBAL, &Globals.iIdmapExpireTime, NULL, NULL, FLAG_ADVANCED}, 
-	{"idmap negative time", P_INTEGER, P_GLOBAL, &Globals.iIdmapNegativeTime, NULL, NULL, FLAG_ADVANCED}, 
+	{"idmap cache time", P_INTEGER, P_GLOBAL, &Globals.iIdmapCacheTime, NULL, NULL, FLAG_ADVANCED}, 
+	{"idmap negative cache time", P_INTEGER, P_GLOBAL, &Globals.iIdmapNegativeCacheTime, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED }, 
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE }, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED }, 
@@ -1637,8 +1637,8 @@ static void init_globals(BOOL first_time_only)
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
-	Globals.iIdmapExpireTime = 900; /* 15 minutes by default */
-	Globals.iIdmapNegativeTime = 120; /* 2 minutes by default */
+	Globals.iIdmapCacheTime = 900; /* 15 minutes by default */
+	Globals.iIdmapNegativeCacheTime = 120; /* 2 minutes by default */
 
 	Globals.bPassdbExpandExplicit = False;
 
@@ -1900,8 +1900,8 @@ FN_GLOBAL_BOOL(lp_winbind_normalize_names, &Globals.bWinbindNormalizeNames)
 FN_GLOBAL_LIST(lp_idmap_domains, &Globals.szIdmapDomains)
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend) /* deprecated */
 FN_GLOBAL_STRING(lp_idmap_alloc_backend, &Globals.szIdmapAllocBackend)
-FN_GLOBAL_INTEGER(lp_idmap_expire_time, &Globals.iIdmapExpireTime)
-FN_GLOBAL_INTEGER(lp_idmap_negative_time, &Globals.iIdmapNegativeTime)
+FN_GLOBAL_INTEGER(lp_idmap_cache_time, &Globals.iIdmapCacheTime)
+FN_GLOBAL_INTEGER(lp_idmap_negative_cache_time, &Globals.iIdmapNegativeCacheTime)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
