@@ -57,7 +57,6 @@ int cli_set_port(struct cli_state *cli, int port)
 static BOOL client_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
-	NTSTATUS status;
 	int fd = cli->fd;
 	char *buffer = cli->inbuf;
 	unsigned int timeout = cli->timeout;
@@ -75,14 +74,16 @@ static BOOL client_receive_smb(struct cli_state *cli)
 		if(CVAL(buffer,0) != SMBkeepalive)
 			break;
 	}
-	status = cli_decrypt_message(cli);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("SMB decryption failed on incoming packet! Error %s\n",
-			nt_errstr(status)));
-		cli->smb_rw_error = READ_BAD_DECRYPT;
-		close(cli->fd);
-		cli->fd = -1;
-		return False;
+	if (cli_encryption_on(cli)) {
+		NTSTATUS status = cli_decrypt_message(cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("SMB decryption failed on incoming packet! Error %s\n",
+				nt_errstr(status)));
+			cli->smb_rw_error = READ_BAD_DECRYPT;
+			close(cli->fd);
+			cli->fd = -1;
+			return False;
+		}
 	}
 	show_msg(buffer);
 	return ret;
@@ -129,13 +130,15 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return ret;
 	}
 
-	if (!cli_check_sign_mac(cli)) {
-		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
-		cli->smb_rw_error = READ_BAD_SIG;
-		close(cli->fd);
-		cli->fd = -1;
-		return False;
-	};
+	if (!cli_encryption_on(cli)) {
+		if (!cli_check_sign_mac(cli)) {
+			DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
+			cli->smb_rw_error = READ_BAD_SIG;
+			close(cli->fd);
+			cli->fd = -1;
+			return False;
+		}
+	}
 	return True;
 }
 
@@ -160,7 +163,6 @@ static ssize_t write_socket(int fd, const char *buf, size_t len)
 
 BOOL cli_send_smb(struct cli_state *cli)
 {
-	NTSTATUS status;
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
@@ -171,16 +173,18 @@ BOOL cli_send_smb(struct cli_state *cli)
 		return False;
 	}
 
-	cli_calculate_sign_mac(cli);
-
-	status = cli_encrypt_message(cli, &buf_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		close(cli->fd);
-		cli->fd = -1;
-		cli->smb_rw_error = WRITE_ERROR;
-		DEBUG(0,("Error in encrypting client message. Error %s\n",
-			nt_errstr(status) ));
-		return False;
+	if (cli_encryption_on(cli)) {
+		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			close(cli->fd);
+			cli->fd = -1;
+			cli->smb_rw_error = WRITE_ERROR;
+			DEBUG(0,("Error in encrypting client message. Error %s\n",
+				nt_errstr(status) ));
+			return False;
+		}
+	} else {
+		cli_calculate_sign_mac(cli);
 	}
 
 	len = smb_len(buf_out) + 4;
