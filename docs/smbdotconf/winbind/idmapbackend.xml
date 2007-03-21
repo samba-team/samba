@@ -1,37 +1,30 @@
 <samba:parameter name="idmap backend"
                  context="G"
-				 type="string"
+		 type="string"
                  advanced="1" developer="1" hide="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	The purpose of the idmap backend parameter is to allow idmap to NOT use the local idmap
-	tdb file to obtain SID to UID / GID mappings for unmapped SIDs, but instead to obtain them from a common
-	LDAP backend. This way all domain members and controllers will have the same UID and GID
-	to SID mappings. This avoids the risk of UID / GID inconsistencies across UNIX / Linux
-	systems that are sharing information over protocols other than SMB/CIFS (ie: NFS).
+	The idmap backend provides a plugin interface for Winbind to use
+	varying backends to store SID/uid/gid mapping tables.  This
+	option is mutually exclusive with the newer and more flexible
+	<smbconfoption name="idmap domains"/> parameter.  The main difference
+	between the &quot;idmap backend&quot; and the &quot;idmap domains&quot;
+	is that the former only allows on backend for all domains while the
+	latter supports configuring backends on a per domain basis.
 	</para>
 
+	<para>Examples of SID/uid/gid backends include tdb (<citerefentry>
+	<refentrytitle>idmap_tdb</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	ldap (<citerefentry><refentrytitle>idmap_ldap</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>), rid (<citerefentry>
+	<refentrytitle>idmap_rid</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	and ad (<citerefentry><refentrytitle>idmap_tdb</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>).
 	<para>
-	An alternate method of SID to UID / GID  mapping can be achieved using the rid
-	plug-in. This plug-in uses the account RID to derive the UID and GID by adding the
-	RID to a base value specified. This utility requires that the parameter
-	<quote>allow trusted domains = No</quote> must be specified, as it is not compatible
-	with multiple domain environments. The idmap uid and idmap gid ranges must also be
-	specified.
-	</para>
-
-	<para>
-	Finally, using the ad module, the UID and GID can directly
-	be retrieved from an Active Directory LDAP Server that supports an
-	RFC2307 compliant LDAP schema. ad supports "Services for Unix"
-	(SFU) version 2.x and 3.0.  
-	</para>
-
 </description>
 
 <value type="default"></value>
-<value type="example">ldap:ldap://ldapslave.example.com</value>
-<value type="example">rid:"BUILTIN=1000-1999,DOMNAME=2000-100000000"</value>
+<value type="example">ldap:ldap://ldapslave.example.com/</value>
 <value type="example">ad</value>
 </samba:parameter>
