@@ -313,7 +313,7 @@ Behaviour:
  --one                      abort when the first test fails
  --immediate                print test output for failed tests during run
  --verbose                  be verbose
- --analyse-cmd CMD			command to run after each test
+ --analyse-cmd CMD          command to run after each test
 ";
 	exit(0);
 }
@@ -346,6 +346,7 @@ my $tests = shift;
 # quick hack to disable rpc validation when using valgrind - its way too slow
 unless (defined($ENV{VALGRIND})) {
 	$ENV{VALIDATE} = "validate";
+    $ENV{MALLOC_CHECK_} = 2;
 }
 
 my $old_pwd = "$RealBin/../..";

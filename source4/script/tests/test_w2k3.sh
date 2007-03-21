@@ -26,8 +26,6 @@ incdir=`dirname $0`
 
 OPTIONS="-U$username%$password -W $domain --option realm=$realm"
 
-failed=0
-
 name="RPC-SPOOLSS on ncacn_np"
 testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*"
 
@@ -48,5 +46,3 @@ name="RPC-DRSUAPI on ncacn_ip_tcp with seal"
 testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
 name="RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian"
 testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
-
-testok $0 $failed
