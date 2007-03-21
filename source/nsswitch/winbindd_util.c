@@ -608,7 +608,7 @@ struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 		 * to make sure that the SIDs we send to the backends are
 		 * as specific as possible.
 		 */
-		if (sid_peek_check_rid(&domain->sid, sid, &discard) == 0) {
+		if (sid_peek_check_rid(&domain->sid, sid, &discard)) {
 			return domain;
 		}
 	}
