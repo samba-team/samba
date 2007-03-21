@@ -104,17 +104,17 @@
 
 	<programlisting>
 	[global]
-	    idmap domain = default
-
-	    idmap config default:backend = ldap
-	    idmap alloc backend:ldap_base_dn = ou=idmap,dc=example,dc=com
-	    idmap alloc backend:ldap_url = ldap://localhost/
-	    idmap config default:range   = 10000 - 50000
+	    idmap domain = ALLDOMAINS
+	    idmap config ALLDOMAINS:default      = yes
+	    idmap config ALLDOMAINS:backend      = ldap
+	    idmap config ALLDOMAINS:ldap_base_dn = ou=idmap,dc=example,dc=com
+	    idmap config ALLDOMAINS:ldap_url     = ldap://localhost/
+	    idmap config default:range           = 10000 - 50000
 
 	    idmap alloc backend = ldap
-	    idmap alloc backend:ldap_base_dn = ou=idmap,dc=example,dc=com
-	    idmap alloc backend:ldap_url = ldap://master.example.com/
-	    idmap alloc config:range = 10000 - 50000
+	    idmap alloc config:ldap_base_dn = ou=idmap,dc=example,dc=com
+	    idmap alloc config:ldap_url     = ldap://master.example.com/
+	    idmap alloc config:range        = 10000 - 50000
 	</programlisting>
 </refsect1>
 

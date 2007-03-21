@@ -12,9 +12,9 @@
 	</para>
 
 	<para>
-	Values constist of the short domain name for Winbind's primary or collection
-	of trusted domains.  The keyword &quot;default&quot; is used to
-	represent all domains not explicitly listed.
+	Values consist of the short domain name for Winbind's primary or collection
+	of trusted domains.  You may also use an arbitrary string to represent a catchall
+	domain backend for any domain not explicitly listed.
 	</para>
 
 	<para>

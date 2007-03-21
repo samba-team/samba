@@ -24,7 +24,5 @@
 	</para>
 </description>
 
-<value type="default"></value>
-<value type="example">ldap:ldap://ldapslave.example.com/</value>
-<value type="example">ad</value>
+<value type="default">tdb</value>
 </samba:parameter>
