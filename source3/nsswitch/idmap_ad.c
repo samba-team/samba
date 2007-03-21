@@ -194,21 +194,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 		}
 	}
 
-	/* idmap AD can work well only if it is the default module (trusts)
-	 * with additional BUILTIN and alloc using TDB */
-	if ( ! dom->default_domain) {
-		DEBUG(1, ("WARNING: idmap_ad is not configured as the default domain.\n"
-			  "For best results we suggest you to configure this module as\n"
-			  "default and configure BULTIN to use idmap_tdb\n"
-			  "ex: idmap domains = BUILTIN %s\n"
-			  "    idmap alloc config: range = 5000 - 9999\n"
-			  "    idmap config %s: default = yes\n"
-			  "    idmap config %s: backend = ad\n"
-			  "    idmap config %s: range = 10000 - 10000000  #this is optional\n"
-			  "NOTE: make sure the ranges do not overlap\n",
-			  dom->name, dom->name, dom->name, dom->name));
-	}
-
 	if ( !dom->readonly ) {
 		DEBUG(1, ("WARNING: forcing to readonly, as idmap_ad can't write on AD.\n"));
 		dom->readonly = true;
