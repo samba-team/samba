@@ -194,11 +194,15 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 * to a trans call. This is not an error and should not
 	 * be treated as such. Note that STATUS_NO_MORE_FILES is
 	 * returned when a trans2 findfirst/next finishes.
+	 * When setting up an encrypted transport we can also
+	 * see NT_STATUS_MORE_PROCESSING_REQUIRED here.
 	 */
 	status = cli_nt_error(cli);
 	
-	if (NT_STATUS_IS_ERR(status) || NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES)) {
-		goto out;
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (NT_STATUS_IS_ERR(status) || NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES)) {
+			goto out;
+		}
 	}
 
 	/* parse out the lengths */
@@ -303,8 +307,10 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			goto out;
 		}
-		if (NT_STATUS_IS_ERR(cli_nt_error(cli))) {
-			goto out;
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			if (NT_STATUS_IS_ERR(cli_nt_error(cli))) {
+				goto out;
+			}
 		}
 
 		/* parse out the total lengths again - they can shrink! */
