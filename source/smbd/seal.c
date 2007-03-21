@@ -145,7 +145,7 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 void srv_free_enc_buffer(char *buf)
 {
 	if (srv_trans_enc_ctx) {
-		return common_free_enc_buffer(srv_trans_enc_ctx->es, buf);
+		common_free_enc_buffer(srv_trans_enc_ctx->es, buf);
 	}
 }
 
