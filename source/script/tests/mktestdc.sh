@@ -70,7 +70,7 @@ cat >$CONFFILE<<EOF
 [global]
 	iconv:native = $nativeiconv
 	netbios name = $NETBIOSNAME
-        netbios aliases = $SERVER
+	netbios aliases = $SERVER
 	workgroup = $DOMAIN
 	realm = $REALM
 	private dir = $PRIVATEDIR
@@ -80,10 +80,10 @@ cat >$CONFFILE<<EOF
 	share backend = $SHARE_BACKEND
 	setup directory = $SRCDIR/setup
 	js include = $SRCDIR/scripting/libjs
-        winbindd socket directory = $WINBINDD_SOCKET_DIR
+	winbindd socket directory = $WINBINDD_SOCKET_DIR
 	name resolve order = bcast
 	interfaces = 127.0.0.1/8
-        tls dh params file = $DHFILE
+	tls dh params file = $DHFILE
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
 	server role = domain controller
@@ -91,14 +91,12 @@ cat >$CONFFILE<<EOF
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
-	torture:subunitdir = $SRCDIR/bin/torture
 	torture:basedir = $TEST_DATA_PREFIX
 
 	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
-        gensec:require_pac = true
-
-        log level = $SMBD_LOGLEVEL
+	gensec:require_pac = true
+	log level = $SMBD_LOGLEVEL
 
 [tmp]
 	path = $TMPDIR

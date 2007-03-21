@@ -1,7 +1,7 @@
 #!/bin/sh
 
  if [ `whoami` != "root" ]; then
-       echo "Windows tests will not run without root privilages."
+       echo "Windows tests will not run without root privileges."
        exit 1
  fi
 

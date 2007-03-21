@@ -22,7 +22,6 @@ shift 4
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-failed=0
 for bindoptions in seal,padcheck $VALIDATE bigendian; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
    case $transport in
@@ -32,9 +31,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
    esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    testit "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    plantest "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
    done
  done
 done
-
-testok $0 $failed

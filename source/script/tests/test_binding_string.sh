@@ -16,7 +16,6 @@ shift 4
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-failed=0;
 for I in "ncacn_np:$server" \
 		 "ncacn_ip_tcp:$server" \
 		 "ncacn_np:$server[rpcecho]"  \
@@ -28,7 +27,5 @@ for I in "ncacn_np:$server" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$server" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$server" 
 do
-	testit "$I" rpc bin/smbtorture $TORTURE_OPTIONS "$I" -U"$username"%"$password" -W $domain --option=torture:quick=yes RPC-ECHO "$*"
+	plantest "$I" rpc bin/smbtorture $TORTURE_OPTIONS "$I" -U"$username"%"$password" -W $domain --option=torture:quick=yes RPC-ECHO "$*"
 done
-
-testok $0 $failed
