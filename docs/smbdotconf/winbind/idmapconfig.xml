@@ -1,0 +1,32 @@
+<samba:parameter name="idmap config"
+                 context="G"
+		 type="string"
+                 advanced="1" developer="1" hide="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The idmap config prefix provides a means of managing each domain 
+	defined by the <smbconfoption name="idmap domains"/> option using Samba's
+	parameteric option support.  The idmap config prefix should be 
+	followed by the name of the domain, a colon, and either the option
+	name &quot;backend&quot; or a setting specific to the chosen
+	backend.</para>
+
+	<para>
+	The following example illustrates how to configure the <citerefentry>
+	<refentrytitle>idmap_ad</refentrytitle><manvolnum>8</manvolnum></citerefentry> 
+	for the CORP domain and the <citerefentry><refentrytitle>idmap_tdb</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> backend for all other domains.
+	</para>
+
+	<programlisting>
+	idmap domains = CORP default 
+	idmap config CORP:backend = ad
+	idmap config CORP:read_only = yes
+	idmap config default:backend = tdb
+	idmap config default:default = yes
+	idmap config default:range   = 1000 - 9999
+	</programlisting>
+	
+</description>
+</samba:parameter>
