@@ -238,6 +238,14 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 		return;
 	}
 
+	/* We know this is an smb buffer, and we
+	 * didn't malloc, only copy, for a keepalive,
+	 * so ignore session keepalives. */
+
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return;
+	}
+
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
 		SAFE_FREE(buf);
 		return;
@@ -267,7 +275,7 @@ BOOL cli_encryption_on(struct cli_state *cli)
 
 void cli_free_encryption_context(struct cli_state *cli)
 {
-	return common_free_encryption_state(&cli->trans_enc_state);
+	common_free_encryption_state(&cli->trans_enc_state);
 }
 
 /******************************************************************************
@@ -276,7 +284,7 @@ void cli_free_encryption_context(struct cli_state *cli)
 
 void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 {
-	return common_free_enc_buffer(cli->trans_enc_state, buf);
+	common_free_enc_buffer(cli->trans_enc_state, buf);
 }
 
 /******************************************************************************
