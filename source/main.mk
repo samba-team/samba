@@ -283,7 +283,7 @@ realdistclean: distclean removebackup
 
 check:: test
 
-SELFTEST = $(srcdir)/script/tests/selftest.pl --prefix=${selftest_prefix} --builddir=$(builddir) --srcdir=$(srcdir) --expected-failures=samba4-knownfail --skip=samba4-skip
+SELFTEST = $(srcdir)/script/tests/selftest.pl --prefix=${selftest_prefix} --builddir=$(builddir) --srcdir=$(srcdir) --expected-failures=samba4-knownfail --skip=samba4-skip $(TEST_OPTIONS) 
 
 test: all libraries
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) --immediate

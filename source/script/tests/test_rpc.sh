@@ -35,7 +35,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    testit "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
    done
  done
 done
@@ -49,7 +49,7 @@ for bindoptions in connect $VALIDATE ; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    testit "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
    done
  done
 done

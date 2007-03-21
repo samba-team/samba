@@ -27,7 +27,7 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    testit "$name" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done
 
 testok $0 $failed

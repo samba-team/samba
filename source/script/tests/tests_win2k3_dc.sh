@@ -18,5 +18,5 @@ export SRCDIR=$SRCDIR
 tests="RPC-DRSUAPI RPC-SPOOLSS ncacn_np ncacn_ip_tcp"
 
 for name in $tests; do
-	testit $name $SRCDIR/script/tests/win/wintest_2k3_dc.sh $name
+	testit $name rpc $SRCDIR/script/tests/win/wintest_2k3_dc.sh $name
 done

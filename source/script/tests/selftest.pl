@@ -90,8 +90,6 @@ Abort as soon as one test fails.
 
 =item I<VALGRIND>
 
-=item I<TEST_LDAP>
-
 =item I<TLS_ENABLED>
 
 =item I<srcdir>
@@ -117,6 +115,7 @@ use Getopt::Long;
 use POSIX;
 use Cwd;
 use lib "$RealBin";
+use Samba3;
 use Samba4;
 use SocketWrapper;
 
@@ -131,6 +130,8 @@ my $opt_expected_failures = undef;
 my $opt_skip = undef;
 my $opt_verbose = 0;
 my $opt_testenv = 0;
+my $opt_ldap = undef;
+my $opt_analyse_cmd = undef;
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -305,12 +306,14 @@ Target Specific:
  --socket-wrapper-pcap=FILE save traffic to pcap file
  --socket-wrapper           enable socket wrapper
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
+ --ldap                     run against ldap
 
 Behaviour:
  --quick                    run quick overall test
  --one                      abort when the first test fails
  --immediate                print test output for failed tests during run
  --verbose                  be verbose
+ --analyse-cmd CMD			command to run after each test
 ";
 	exit(0);
 }
@@ -329,7 +332,9 @@ my $result = GetOptions (
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
 		'verbose' => \$opt_verbose,
-		'testenv' => \$opt_testenv
+		'testenv' => \$opt_testenv,
+		'ldap' => \$opt_ldap,
+		'analyse-cmd=s' => \$opt_analyse_cmd,
 	    );
 
 exit(1) if (not $result);
@@ -338,26 +343,31 @@ ShowHelp() if ($opt_help);
 
 my $tests = shift;
 
-my $torture_maxtime = $ENV{TORTURE_MAXTIME};
-unless (defined($torture_maxtime)) {
-	$torture_maxtime = 1200;
-}
-
 # quick hack to disable rpc validation when using valgrind - its way too slow
 unless (defined($ENV{VALGRIND})) {
 	$ENV{VALIDATE} = "validate";
 }
 
 my $old_pwd = "$RealBin/../..";
-my $ldap = (defined($ENV{TEST_LDAP}) and ($ENV{TEST_LDAP} eq "yes"))?1:0;
+my $ldap = 0;
+if (defined($ENV{TEST_LDAP})) {
+	$ldap = ($ENV{TEST_LDAP} eq "yes");
+}
+if (defined($opt_ldap)) {
+	$ldap = $opt_ldap;
+}
+
+my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
+if ($ldap) {
+	# LDAP is slow
+	$torture_maxtime *= 2;
+}
 
 $prefix =~ s+//+/+;
 $ENV{PREFIX} = $prefix;
 
 $ENV{SRCDIR} = $srcdir;
 
-my $bindir = "$srcdir/bin";
-my $setupdir = "$srcdir/setup";
 my $testsdir = "$srcdir/script/tests";
 
 my $tls_enabled = not $opt_quick;
@@ -377,32 +387,6 @@ $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 
 my @torture_options = ();
 
-my $testenv_vars = {};
-
-if ($opt_target eq "samba4") {
-	$testenv_vars = Samba4::provision($prefix);
-} elsif ($opt_target eq "win") {
-	die ("Windows tests will not run without root privileges.") 
-		if (`whoami` ne "root");
-
-	die("Windows tests will not run with socket wrapper enabled.") 
-        if ($opt_socket_wrapper);
-
-	die("Windows tests will not run quickly.") if ($opt_quick);
-
-	die("Environment variable WINTESTCONF has not been defined.\n".
-		"Windows tests will not run unconfigured.") if (not defined($ENV{WINTESTCONF}));
-
-	die ("$ENV{WINTESTCONF} could not be read.") if (! -r $ENV{WINTESTCONF});
-
-	$ENV{WINTEST_DIR}="$ENV{SRCDIR}/script/tests/win";
-} elsif ($opt_target eq "none") {
-} else {
-	die("unknown target `$opt_target'");
-}
-
-foreach (keys %$testenv_vars) { $ENV{$_} = $testenv_vars->{$_}; }
-
 if ($opt_socket_wrapper_pcap) {
 	$ENV{SOCKET_WRAPPER_PCAP_FILE} = $opt_socket_wrapper_pcap;
 	# Socket wrapper pcap implies socket wrapper
@@ -416,15 +400,16 @@ if ($opt_socket_wrapper)
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 }
 
-# Start slapd before smbd
-if ($ldap) {
-	Samba4::slapd_start($bindir, $ENV{SLAPD_CONF}, $ENV{LDAP_URI}) or die("couldn't start slapd");
+my $target;
 
-    print "LDAP PROVISIONING...";
-	Samba4::provision_ldap($bindir, $setupdir);
-
-    # LDAP is slow
-	$torture_maxtime *= 2;
+if ($opt_target eq "samba4") {
+	$target = new Samba4("$srcdir/bin", $ldap, "$srcdir/setup");
+} elsif ($opt_target eq "samba3") {
+	$target = new Samba3("$srcdir/bin", "$srcdir/setup");
+} elsif ($opt_target eq "win") {
+	die("Windows tests will not run with socket wrapper enabled.") 
+		if ($opt_socket_wrapper);
+	$target = new Windows();
 }
 
 if (defined($opt_expected_failures)) {
@@ -445,18 +430,14 @@ if (defined($opt_skip)) {
 	close(SKIP);
 }
 
-my $test_fifo = "$prefix/smbd_test.fifo";
+my $testenv_vars;
+$testenv_vars = $target->provision("dc", "$prefix/dc");
 
-$ENV{SMBD_TEST_FIFO} = $test_fifo;
-$ENV{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+foreach (keys %$testenv_vars) { $ENV{$_} = $testenv_vars->{$_}; }
 
 SocketWrapper::set_default_iface(1);
-my $max_time = 5400;
-if (defined($ENV{SMBD_MAX_TIME})) {
-	$max_time = $ENV{SMBD_MAX_TIME};
-}
-Samba4::smbd_check_or_start($bindir, $test_fifo, $ENV{SMBD_TEST_LOG}, 
-	                $socket_wrapper_dir, $max_time, $ENV{CONFFILE});
+$target->check_or_start($testenv_vars, $socket_wrapper_dir, 
+	($ENV{SMBD_MAX_TIME} or 5400));
 
 SocketWrapper::set_default_iface(6);
 
@@ -468,7 +449,7 @@ my $interfaces = join(',', ("127.0.0.6/8",
 						 "127.0.0.11/8"));
 
 push (@torture_options, "--option=interfaces=$interfaces");
-push (@torture_options, $ENV{CONFIGURATION});
+push (@torture_options, $testenv_vars->{CONFIGURATION});
 # ensure any one smbtorture call doesn't run too long
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
 push (@torture_options, "--target=$opt_target");
@@ -479,34 +460,30 @@ push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
 $ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
 print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 
-open(DATA, ">$test_fifo");
-
 my @todo = ();
 
-if ($opt_target eq "win") {
-	system("$testsdir/test_win.sh");
-} else { 
-	if ($opt_quick) {
-		open(IN, "$testsdir/tests_quick.sh|");
-	} else {
-		open(IN, "$testsdir/tests_all.sh|");
-	}
-	while (<IN>) {
-		if ($_ eq "-- TEST --\n") {
-			my $name = <IN>;
-			$name =~ s/\n//g;
-			my $cmdline = <IN>;
-			$cmdline =~ s/\n//g;
-			push (@todo, [$name, $cmdline]) 
-				if (not defined($tests) or $name =~ /$tests/);
-		} else {
-			print;
-		}
-	}
-	close(IN) or die("Error creating recipe");
+if ($opt_quick) {
+	open(IN, "$testsdir/tests_quick.sh|");
+} else {
+	open(IN, "$testsdir/tests_all.sh|");
 }
+while (<IN>) {
+	if ($_ eq "-- TEST --\n") {
+		my $name = <IN>;
+		$name =~ s/\n//g;
+		my $env = <IN>;
+		$env =~ s/\n//g;
+		my $cmdline = <IN>;
+		$cmdline =~ s/\n//g;
+		push (@todo, [$name, $env, $cmdline]) 
+			if (not defined($tests) or $name =~ /$tests/);
+	} else {
+		print;
+	}
+}
+close(IN) or die("Error creating recipe");
 
-Samba4::wait_for_start();
+$target->wait_for_start();
 
 # start off with 0 failures
 $ENV{failed} = 0;
@@ -515,10 +492,11 @@ my $suitestotal = $#todo + 1;
 my $i = 0;
 $| = 1;
 
+# The Kerberos tests fail if this variable is set.
 delete $ENV{DOMAIN};
 
 if ($opt_testenv) {
-	my $term = $ENV{TERM} or "xterm";
+	my $term = ($ENV{TERM} or "xterm");
 	system("$term -e 'echo -e \"Welcome to the Samba4 Test environment
 This matches the client environment used in make test
 smbd is pid `cat \$PIDDIR/smbd.pid`
@@ -532,9 +510,10 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 } else {
 	foreach (@todo) {
 		$i++;
-		my $cmd = $$_[1];
+		my $cmd = $$_[2];
 		$cmd =~ s/([\(\)])/\\$1/g;
 		my $name = $$_[0];
+		my $envname = $$_[1];
 		
 		if (skip($name)) {
 			print "SKIPPED: $name\n";
@@ -542,29 +521,23 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 			next;
 		}
 
+		$target->setup_env($envname);
+
 		if ($from_build_farm) {
 			run_test_buildfarm($name, $cmd, $i, $suitestotal);
 		} else {
 			run_test_plain($name, $cmd, $i, $suitestotal);
+		}
+
+		if (defined($opt_analyse_cmd)) {
+			system("$opt_analyse_cmd \"$name\"");
 		}
 	}
 }
 
 print "\n";
 
-close(DATA);
-
-sleep(2);
-
-my $failed = $? >> 8;
-
-if (-f "$ENV{PIDDIR}/smbd.pid" ) {
-	open(IN, "<$ENV{PIDDIR}/smbd.pid") or die("unable to open smbd pid file");
-	kill 9, <IN>;
-	close(IN);
-}
-
-Samba4::slapd_stop() if ($ldap);
+my $failed = $target->stop();
 
 my $end = time();
 my $duration = ($end-$start);
@@ -573,7 +546,6 @@ if ($numfailed == 0) {
 	my $ok = $statistics->{TESTS_EXPECTED_OK} + $statistics->{TESTS_EXPECTED_FAIL};
 	print "ALL OK ($ok tests in $statistics->{SUITES_OK} testsuites)\n";
 } else {
-
 	unless ($from_build_farm) {
 		if (not $opt_immediate and not $opt_verbose) {
 			foreach (@$suitesfailed) {

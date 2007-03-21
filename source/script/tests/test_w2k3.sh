@@ -29,7 +29,7 @@ OPTIONS="-U$username%$password -W $domain --option realm=$realm"
 failed=0
 
 name="RPC-SPOOLSS on ncacn_np"
-testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*"
+testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*"
 
 for bindoptions in padcheck connect sign seal ntlm,sign ntlm,seal $VALIDATE bigendian; do
    for transport in ncacn_ip_tcp ncacn_np; do
@@ -39,14 +39,14 @@ for bindoptions in padcheck connect sign seal ntlm,sign ntlm,seal $VALIDATE bige
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $OPTIONS $t "$*"
+    testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $OPTIONS $t "$*"
    done
  done
 done
 
 name="RPC-DRSUAPI on ncacn_ip_tcp with seal"
-testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
+testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
 name="RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian"
-testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
+testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
 
 testok $0 $failed
