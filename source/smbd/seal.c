@@ -180,8 +180,8 @@ NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-static NTSTATUS srv_enc_spnego_gss_negotiate(char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -246,8 +246,8 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
 
 	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-	if (got_kerberos_mechanism && lp_use_kerberos_keytab()) ) {
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+	if (got_kerberos_mechanism && lp_use_kerberos_keytab() ) {
 		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
 	} else 
 #endif

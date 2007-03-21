@@ -124,7 +124,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
  gss-api decrypt an incoming buffer.
 ******************************************************************************/
 
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
  NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
 {
 	return NT_STATUS_NOT_SUPPORTED;
@@ -136,10 +136,65 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
  gss-api encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
 ******************************************************************************/
 
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
- NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out)
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+ NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **ppbuf_out)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	OM_uint32 ret = 0;
+	OM_uint32 minor = 0;
+	int flags_got = 0;
+	gss_buffer_desc in_buf, out_buf;
+	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+
+	*ppbuf_out = NULL;
+
+	if (buf_len < 8) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	in_buf.value = buf + 8;
+	in_buf.length = buf_len - 8;
+
+	ret = gss_wrap(&minor,
+			context_handle,
+			True,			/* we want sign+seal. */
+			GSS_C_QOP_DEFAULT,
+			&in_buf,
+			&flags_got,		/* did we get sign+seal ? */
+			&out_buf);
+
+	if (ret != GSS_S_COMPLETE) {
+		/* Um - no mapping for gss-errs to NTSTATUS yet. */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!flags_got) {
+		/* Sign+seal not supported. */
+		gss_release_buffer(&minor, &out_buf);
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* Ya see - this is why I *hate* gss-api. I don't 
+	 * want to have to malloc another buffer of the
+	 * same size + 8 bytes just to get a continuous
+	 * header + buffer, but gss won't let me pass in
+	 * a pre-allocated buffer. Bastards (and you know
+	 * who you are....). I might fix this by
+	 * going to "encrypt_and_send" passing in a file
+	 * descriptor and doing scatter-gather write with
+	 * TCP cork on Linux. But I shouldn't have to
+	 * bother :-*(. JRA.
+	 */
+
+	*ppbuf_out = SMB_MALLOC(out_buf.length + 8); /* We know this can't wrap. */
+	if (!*ppbuf_out) {
+		gss_release_buffer(&minor, &out_buf);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smb_setlen(*ppbuf_out, out_buf.length + 8);
+	memcpy(*ppbuf_out+8, out_buf.value, out_buf.length);
+	gss_release_buffer(&minor, &out_buf);
+	return NT_STATUS_OK;
 }
 #endif
 
@@ -162,14 +217,15 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 		return NT_STATUS_OK;
 	}
 
-	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		return common_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
-	} else {
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-		return common_gss_encrypt_buffer(es->context_handle, buffer, buf_out);
-#else
-		return NT_STATUS_NOT_SUPPORTED;
+	switch (es->smb_enc_type) {
+		case SMB_TRANS_ENC_NTLM:
+			return common_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+		case SMB_TRANS_ENC_GSS:
+			return common_gss_encrypt_buffer(es->context_handle, buffer, buf_out);
 #endif
+		default:
+			return NT_STATUS_NOT_SUPPORTED;
 	}
 }
 
@@ -191,14 +247,15 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 		return NT_STATUS_OK;
 	}
 
-	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		return common_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
-	} else {
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
-		return common_gss_decrypt_buffer(es->context_handle, buf);
-#else
-		return NT_STATUS_NOT_SUPPORTED;
+	switch (es->smb_enc_type) {
+		case SMB_TRANS_ENC_NTLM:
+			return common_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+		case SMB_TRANS_ENC_GSS:
+			return common_gss_decrypt_buffer(es->context_handle, buf);
 #endif
+		default:
+			return NT_STATUS_NOT_SUPPORTED;
 	}
 }
 
@@ -219,7 +276,7 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 			ntlmssp_end(&es->ntlmssp_state);
 		}
 	}
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
 		/* Free the gss context handle. */
 	}
@@ -251,7 +308,7 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 		return;
 	}
 
-#if defined(HAVE_GSSAPI_SUPPORT) && defined(HAVE_KRB5)
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 	/* gss-api free buffer.... */
 #endif
 }
