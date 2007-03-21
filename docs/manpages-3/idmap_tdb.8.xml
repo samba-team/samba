@@ -10,7 +10,7 @@
 
 <refnamediv>
 	<refname>idmap_tdb</refname>
-	<refpurpose>Samba's idmap_tdb Backend for winbindd</refpurpose>
+	<refpurpose>Samba's idmap_tdb Backend for Winbind</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -32,7 +32,7 @@
 			Defines the available matching uid and gid range for which the
 			backend is authoritative.  Note that the range commonly matches
 			the allocation range due to the fact that the same backend will
-			store and retreive SID/uid/gid mapping entries.  If the parameter 
+			store and retrieve SID/uid/gid mapping entries.  If the parameter 
 			is absent, Winbind fail over to use the &quot;idmap uid&quot; and 
 			&quot;idmap gid&quot; options from smb.conf.  
                 </para></listitem>
@@ -69,7 +69,6 @@
 	    idmap domain = default
 
 	    idmap config default:backend = tdb
-	    idmap config default:default = yes
 	    idmap config default:range   = 10000 - 50000
 
 	    idmap alloc backend = tdb
