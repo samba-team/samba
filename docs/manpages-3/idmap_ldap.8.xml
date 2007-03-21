@@ -98,8 +98,11 @@
 
 	<para>
 	The follow sets of a LDAP configuration which uses a slave server
-	running on localhost for fetching SID/gid/uid mappings while
-	sending update requests to the directory master server.
+	running on localhost for fast fetching SID/gid/uid mappings, it
+	implies correct configuration of referrals.
+	The idmap alloc backend is pointed directly to the master to skip
+	the referral (and consequent reconnection to the master) that the
+	slave would return as allocation requires writing on the master.
 	</para>
 
 	<programlisting>
