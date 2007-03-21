@@ -1187,10 +1187,10 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 					krb5_data *reply);
 
 /* Call for SMB transport encryption. */
-#if defined(HAVE_GSSAPI_SUPPORT)
+#if defined(HAVE_GSSAPI)
 NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf);
 #endif
-#if defined(HAVE_GSSAPI_SUPPORT) 
+#if defined(HAVE_GSSAPI) 
 NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **buf_out);
 #endif
 
