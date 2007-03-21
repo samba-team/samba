@@ -22,11 +22,8 @@ incdir=`dirname $0`
 SMBD_TEST_FIFO=""
 export SMBD_TEST_FIFO
 
-failed=0
 for t in $local_tests; do
-	testit "$t" none $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
+	plantest "$t" none $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
 done
 
-testit "tdb stress" none $VALGRIND bin/tdbtorture
-
-testok $0 $failed
+plantest "tdb stress" none $VALGRIND bin/tdbtorture

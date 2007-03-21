@@ -20,15 +20,11 @@ incdir=`dirname $0`
 
 tests="BASE-RW1"
 
-failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then
 	continue;
     fi
     start=""
     name="$t"
-    testit "$name" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    plantest "$name" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done
-
-testok $0 $failed
-
