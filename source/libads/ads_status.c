@@ -85,6 +85,10 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 	case ENUM_ADS_ERROR_KRB5:
 		return krb5_to_nt_status(status.err.rc);
 #endif
+#ifdef HAVE_GSSAPI
+	case ENUM_ADS_ERROR_GSS:
+		return NT_STATUS_UNSUCCESSFUL;
+#endif
 	default:
 		break;
 	}
@@ -143,5 +147,3 @@ const char *ads_errstr(ADS_STATUS status)
 	}
 
 }
-
-

@@ -732,32 +732,32 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 
 BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 {
-	NTSTATUS status;
-
 	if (!receive_smb_raw(fd, buffer, timeout)) {
 		return False;
 	}
 
-	status = srv_decrypt_buffer(buffer);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("receive_smb: SMB decryption failed on incoming packet! Error %s\n",
-			nt_errstr(status) ));
-		if (smb_read_error == 0) {
-			smb_read_error = READ_BAD_DECRYPT;
+	if (srv_encryption_on()) {
+		NTSTATUS status = srv_decrypt_buffer(buffer);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("receive_smb: SMB decryption failed on incoming packet! Error %s\n",
+				nt_errstr(status) ));
+			if (smb_read_error == 0) {
+				smb_read_error = READ_BAD_DECRYPT;
+			}
+			return False;
 		}
-		return False;
+	} else {
+		/* Check the incoming SMB signature. */
+		if (!srv_check_sign_mac(buffer, True)) {
+			DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
+			if (smb_read_error == 0) {
+				smb_read_error = READ_BAD_SIG;
+			}
+			return False;
+		}
 	}
 
-	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(buffer, True)) {
-		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-		if (smb_read_error == 0) {
-			smb_read_error = READ_BAD_SIG;
-		}
-		return False;
-	};
-
-	return(True);
+	return True;
 }
 
 /****************************************************************************
@@ -766,20 +766,21 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 
 BOOL send_smb(int fd, char *buffer)
 {
-	NTSTATUS status;
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	char *buf_out;
+	char *buf_out = buffer;
 
 	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buffer);
-
-	status = srv_encrypt_buffer(buffer, &buf_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("send_smb: SMB encryption failed on outgoing packet! Error %s\n",
-			nt_errstr(status) ));
-		return False;
+	if (!srv_encryption_on()) {
+		srv_calculate_sign_mac(buf_out);
+	} else {
+		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("send_smb: SMB encryption failed on outgoing packet! Error %s\n",
+				nt_errstr(status) ));
+			return False;
+		}
 	}
 
 	len = smb_len(buf_out) + 4;
