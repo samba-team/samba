@@ -82,6 +82,8 @@ smb.conf changes
     Parameter Name                      Description	  Default
     --------------                      -----------	  -------
     debug prefix timestamp              New               No
+    idmap cache time			Renamed           900
+    idmap negative cache time           Renamed           120
     lock spin count                     Removed           n/a
 
 
