@@ -38,6 +38,8 @@
 			It is intended as a way to avoid accidental UID/GID overlaps
 			between local and remotely defined IDs.
 		</para></listitem>
+		</varlistentry>
+	</variablelist>
 </refsect1>
 
 <refsect1>
