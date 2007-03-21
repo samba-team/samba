@@ -1799,18 +1799,19 @@ static int cmd_posix_encrypt(void)
 		d_printf("posix_encrypt domain user password\n");
 		return 1;
 	}
-	fstrcat(domain,buf);
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("posix_encrypt domain user password\n");
-		return 1;
-	}
-	fstrcat(user,buf);
+	fstrcpy(domain,buf);
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		d_printf("posix_encrypt domain user password\n");
 		return 1;
 	}
-	fstrcat(password,buf);
+	fstrcpy(user,buf);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("posix_encrypt domain user password\n");
+		return 1;
+	}
+	fstrcpy(password,buf);
 
 	status = cli_raw_ntlm_smb_encryption_start(cli,
 						user,
