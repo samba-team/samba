@@ -163,8 +163,11 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 			&out_buf);
 
 	if (ret != GSS_S_COMPLETE) {
+		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
+		DEBUG(0,("common_gss_encrypt_buffer: gss_wrap failed. Error %s\n",
+			ads_errstr(adss) ));
 		/* Um - no mapping for gss-errs to NTSTATUS yet. */
-		return NT_STATUS_UNSUCCESSFUL;
+		return ads_ntstatus(adss);
 	}
 
 	if (!flags_got) {
