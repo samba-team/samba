@@ -2781,7 +2781,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
-					srv_encryption_start();
+					status = srv_encryption_start();
+					if (!NT_STATUS_IS_OK(status)) {
+						exit_server_cleanly("Failure in setting up encrypted transport");
+					}
 				}
 				return -1;
 			}

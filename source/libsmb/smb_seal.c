@@ -154,6 +154,12 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 		return NT_STATUS_OK;
 	}
 
+	/* Ignore session keepalives. */
+	if(CVAL(buffer,0) == SMBkeepalive) {
+		*buf_out = buffer;
+		return NT_STATUS_OK;
+	}
+
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
 		return common_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
 	} else {
@@ -177,6 +183,12 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 		/* Not decrypting. */
 		return NT_STATUS_OK;
 	}
+
+	/* Ignore session keepalives. */
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return NT_STATUS_OK;
+	}
+
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
 		return common_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
 	} else {
@@ -281,16 +293,4 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
 	return common_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
-}
-
-/******************************************************************************
- Start a raw ntlmssp encryption.
-******************************************************************************/
-
-NTSTATUS cli_ntlm_smb_encryption_on(struct cli_state *cli, 
-				const char *user,
-				const char *pass,
-				const char *workgroup)
-{
-
 }

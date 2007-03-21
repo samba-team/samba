@@ -385,8 +385,36 @@ NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_siz
  Negotiation was successful - turn on server-side encryption.
 ******************************************************************************/
 
-void srv_encryption_start(void)
+static NTSTATUS check_enc_good(struct smb_srv_trans_enc_ctx *ec)
 {
+	if (!ec || !ec->es) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
+		if ((ec->es->ntlmssp_state->neg_flags & (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL)) !=
+				(NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	/* Todo - check gssapi case. */
+
+	return NT_STATUS_OK;
+}
+
+/******************************************************************************
+ Negotiation was successful - turn on server-side encryption.
+******************************************************************************/
+
+NTSTATUS srv_encryption_start(void)
+{
+	NTSTATUS status;
+
+	/* Check that we are really doing sign+seal. */
+	status = check_enc_good(partial_srv_trans_enc_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	/* Throw away the context we're using currently (if any). */
 	srv_free_encryption_context(&srv_trans_enc_ctx);
 
@@ -395,6 +423,7 @@ void srv_encryption_start(void)
 	srv_trans_enc_ctx->es->enc_on = True;
 
 	partial_srv_trans_enc_ctx = NULL;
+	return NT_STATUS_OK;
 }
 
 /******************************************************************************
