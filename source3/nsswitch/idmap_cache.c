@@ -103,7 +103,7 @@ NTSTATUS idmap_cache_build_idkey(TALLOC_CTX *ctx, char **idkey, const struct id_
 NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
-	time_t timeout = time(NULL) + lp_idmap_expire_time();
+	time_t timeout = time(NULL) + lp_idmap_cache_time();
 	TDB_DATA keybuf, databuf;
 	char *sidkey;
 	char *idkey;
@@ -219,7 +219,7 @@ done:
 NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
-	time_t timeout = time(NULL) + lp_idmap_negative_time();
+	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
 	TDB_DATA keybuf, databuf;
 	char *sidkey;
 	char *valstr;
@@ -258,7 +258,7 @@ done:
 NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
-	time_t timeout = time(NULL) + lp_idmap_negative_time();
+	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
 	TDB_DATA keybuf, databuf;
 	char *idkey;
 	char *valstr;
