@@ -310,20 +310,21 @@ cleanup:
 static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA_BLOB *out)
 {
 	uint16 setup;
-	char param[2];
+	char param[4];
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
 	NTSTATUS status = NT_STATUS_OK;
 
 	setup = TRANSACT2_SETFSINFO;
 
-	SSVAL(param,0,SMB_REQUEST_TRANSPORT_ENCRYPTION);
+	SSVAL(param,0,0);
+	SSVAL(param,2,SMB_REQUEST_TRANSPORT_ENCRYPTION);
 
 	if (!cli_send_trans(cli, SMBtrans2,
 				NULL,
 				0, 0,
 				&setup, 1, 0,
-				param, 2, 0,
+				param, 4, 0,
 				(char *)in->data, in->length, CLI_BUFFER_SIZE)) {
 		status = cli_nt_error(cli);
 		goto out;

@@ -2769,7 +2769,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 
 				DEBUG( 4,("call_trans2setfsinfo: request transport encrption.\n"));
 
-				status = srv_request_encryption_setup((unsigned char **)&pdata, &data_len);
+				status = srv_request_encryption_setup((unsigned char **)ppdata, &data_len);
 
 				if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 					error_packet_set(outbuf, 0, 0, status, __LINE__,__FILE__);
@@ -2777,7 +2777,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return ERROR_NT(status);
 				}
 
-				send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
+				send_trans2_replies( outbuf, bufsize, params, 0, *ppdata, data_len, max_data_bytes);
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
