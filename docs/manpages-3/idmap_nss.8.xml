@@ -29,9 +29,8 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The follow sets of a LDAP configuration which uses a slave server
-	running on localhost for fetching SID/gid/uid mappings while
-	sending update requests to the directory master server.
+	This example shows how to use idmap_nss to check the local accounts for its
+	own domain while using allocation to create new mappings for trusted domains
 	</para>
 
 	<programlisting>
