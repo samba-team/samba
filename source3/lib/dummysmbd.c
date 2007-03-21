@@ -63,3 +63,8 @@ void srv_free_enc_buffer(char *buf)
 {
 	;
 }
+
+BOOL srv_encryption_on(void)
+{
+	return False;
+}
