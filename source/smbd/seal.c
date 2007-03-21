@@ -318,7 +318,7 @@ static NTSTATUS srv_enc_raw_ntlm_auth(unsigned char **ppdata, size_t *p_data_siz
 	if (!partial_srv_trans_enc_ctx) {
 		/* This is the initial step. */
 		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, blob, False);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 			srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 			return nt_status_squash(status);
 		}
