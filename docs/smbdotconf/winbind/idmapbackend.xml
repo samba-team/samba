@@ -21,7 +21,7 @@
 	<refentrytitle>idmap_rid</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
 	and ad (<citerefentry><refentrytitle>idmap_tdb</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>).
-	<para>
+	</para>
 </description>
 
 <value type="default"></value>
