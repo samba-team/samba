@@ -604,13 +604,8 @@ struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		/* We need to use sid_peek_check_rid, because we want 
-		 * to make sure that the SIDs we send to the backends are
-		 * as specific as possible.
-		 */
-		if (sid_peek_check_rid(&domain->sid, sid, &discard)) {
+		if (sid_compare_domain(sid, &domain->sid) == 0)
 			return domain;
-		}
 	}
 
 	/* Not found */
