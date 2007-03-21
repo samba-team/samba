@@ -267,6 +267,52 @@ NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_end
 	return status;
 }
 
+
+/*
+  add a socket address to the list of events, one event per dcerpc endpoint
+*/
+static NTSTATUS add_socket_rpc_pipe_iface(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+					 struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	struct dcesrv_socket_context *dcesrv_sock;
+	NTSTATUS status;
+			
+	if (e->ep_description->endpoint == NULL) {
+		DEBUG(0, ("Endpoint mandatory for named pipes\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
+	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
+
+	/* remember the endpoint of this socket */
+	dcesrv_sock->endpoint		= e;
+	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
+
+	status = NT_STATUS_OK;
+#if 0
+
+	status = stream_setup_smb_pipe(event_ctx, model_ops, &dcesrv_stream_ops, 
+				     e->ep_description->endpoint, dcesrv_sock);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n", 
+			 e->ep_description->endpoint, nt_errstr(status)));
+	}
+#endif
+	return status;
+}
+
+NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+				   struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	NTSTATUS status;
+
+	status = add_socket_rpc_pipe_iface(dce_ctx, e, event_ctx, model_ops);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return status;
+}
+
 /*
   add a socket address to the list of events, one event per dcerpc endpoint
 */
@@ -324,5 +370,3 @@ NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoin
 
 	return NT_STATUS_OK;
 }
-
-

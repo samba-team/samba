@@ -1409,9 +1409,9 @@ static void dcesrv_task_init(struct task_server *task)
 			break;
 			
 		case NCACN_NP:
-/*			FIXME: status = dcesrv_add_ep_np(dce_ctx, e, task->event_ctx, task->model_ops);
+			status = dcesrv_add_ep_np(dce_ctx, e, task->event_ctx, task->model_ops);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
-*/			break;
+			break;
 
 		default:
 			status = NT_STATUS_NOT_SUPPORTED;
