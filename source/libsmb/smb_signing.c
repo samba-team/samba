@@ -585,7 +585,9 @@ void cli_free_signing_context(struct cli_state *cli)
  
 void cli_calculate_sign_mac(struct cli_state *cli)
 {
-	cli->sign_info.sign_outgoing_message(cli->outbuf, &cli->sign_info);
+	if (!cli_encryption_on(cli)) {
+		cli->sign_info.sign_outgoing_message(cli->outbuf, &cli->sign_info);
+	}
 }
 
 /**
@@ -596,6 +598,9 @@ void cli_calculate_sign_mac(struct cli_state *cli)
  
 BOOL cli_check_sign_mac(struct cli_state *cli) 
 {
+	if (cli_encryption_on(cli)) {
+		return True;
+	}
 	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, True)) {
 		free_signing_context(&cli->sign_info);	
 		return False;
@@ -612,6 +617,9 @@ BOOL client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
 	struct smb_sign_info *si = &cli->sign_info;
 	struct smb_basic_signing_context *data = (struct smb_basic_signing_context *)si->signing_context;
 
+	if (cli_encryption_on(cli)) {
+		return True;
+	}
 	if (!si->doing_signing) {
 		return True;
 	}
@@ -637,6 +645,9 @@ BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
 	struct smb_sign_info *si = &cli->sign_info;
 	struct smb_basic_signing_context *data = (struct smb_basic_signing_context *)si->signing_context;
 
+	if (cli_encryption_on(cli)) {
+		return True;
+	}
 	if (!si->doing_signing) {
 		return True;
 	}
@@ -798,8 +809,18 @@ BOOL srv_oplock_set_signing(BOOL onoff)
 BOOL srv_check_sign_mac(char *inbuf, BOOL must_be_ok)
 {
 	/* Check if it's a session keepalive. */
-	if(CVAL(inbuf,0) == SMBkeepalive)
+	if(CVAL(inbuf,0) == SMBkeepalive) {
 		return True;
+	}
+
+	/* 
+	 * If we have an encrypted transport
+	 * don't sign - we're already doing that.
+	 */
+
+	if (srv_encryption_on()) {
+		return True;
+	}
 
 	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info, must_be_ok);
 }
@@ -811,9 +832,18 @@ BOOL srv_check_sign_mac(char *inbuf, BOOL must_be_ok)
 void srv_calculate_sign_mac(char *outbuf)
 {
 	/* Check if it's a session keepalive. */
-	/* JRA Paranioa test - do we ever generate these in the server ? */
-	if(CVAL(outbuf,0) == SMBkeepalive)
+	if(CVAL(outbuf,0) == SMBkeepalive) {
 		return;
+	}
+
+	/* 
+	 * If we have an encrypted transport
+	 * don't check sign - we're already doing that.
+	 */
+
+	if (srv_encryption_on()) {
+		return;
+	}
 
 	srv_sign_info.sign_outgoing_message(outbuf, &srv_sign_info);
 }

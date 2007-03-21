@@ -302,3 +302,116 @@ cleanup:
 
 	return ret;	
 }
+
+/******************************************************************************
+ Send/receive the request encryption blob.
+******************************************************************************/
+
+static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA_BLOB *out)
+{
+	uint16 setup;
+	char param[2];
+	char *rparam=NULL, *rdata=NULL;
+	unsigned int rparam_count=0, rdata_count=0;
+	NTSTATUS status = NT_STATUS_OK;
+
+	setup = TRANSACT2_SETFSINFO;
+
+	SSVAL(param,0,SMB_REQUEST_TRANSPORT_ENCRYPTION);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+				NULL,
+				0, 0,
+				&setup, 1, 0,
+				param, 2, 0,
+				(char *)in->data, in->length, CLI_BUFFER_SIZE)) {
+		status = cli_nt_error(cli);
+		goto out;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+				&rparam, &rparam_count,
+				&rdata, &rdata_count)) {
+		status = cli_nt_error(cli);
+		goto out;
+	}
+
+	if (cli_is_error(cli)) {
+		status = cli_nt_error(cli);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			goto out;
+		}
+	}
+
+	*out = data_blob(rdata, rdata_count);
+
+  out:
+
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+	return status;
+}
+
+/******************************************************************************
+ Start a raw ntlmssp encryption.
+******************************************************************************/
+
+NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli, 
+				const char *user,
+				const char *pass,
+				const char *domain)
+{
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out = data_blob(NULL, 0);
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct smb_trans_enc_state *es = NULL;
+
+	es = SMB_MALLOC_P(struct smb_trans_enc_state);
+	if (!es) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(es);
+	es->smb_enc_type = SMB_TRANS_ENC_NTLM;
+	status = ntlmssp_client_start(&es->ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	ntlmssp_want_feature(es->ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	es->ntlmssp_state->neg_flags |= (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
+
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_username(es->ntlmssp_state, user))) {
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_domain(es->ntlmssp_state, domain))) {
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_password(es->ntlmssp_state, pass))) {
+		goto fail;
+	}
+
+	do {
+		status = ntlmssp_update(es->ntlmssp_state, blob_in, &blob_out);
+		data_blob_free(&blob_in);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {
+			status = enc_blob_send_receive(cli, &blob_out, &blob_in);
+		}
+		data_blob_free(&blob_out);
+	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
+	data_blob_free(&blob_in);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/* Replace the old state, if any. */
+		if (cli->trans_enc_state) {
+			common_free_encryption_state(&cli->trans_enc_state);
+		}
+		cli->trans_enc_state = es;
+		cli->trans_enc_state->enc_on = True;
+	}
+
+  fail:
+
+	common_free_encryption_state(&es);
+	return status;
+}
