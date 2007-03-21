@@ -109,7 +109,7 @@
 	    idmap config ALLDOMAINS:backend      = ldap
 	    idmap config ALLDOMAINS:ldap_base_dn = ou=idmap,dc=example,dc=com
 	    idmap config ALLDOMAINS:ldap_url     = ldap://localhost/
-	    idmap config default:range           = 10000 - 50000
+	    idmap config ALLDOMAINS:range        = 10000 - 50000
 
 	    idmap alloc backend = ldap
 	    idmap alloc config:ldap_base_dn = ou=idmap,dc=example,dc=com
