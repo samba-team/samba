@@ -38,30 +38,33 @@ BOOL common_encryption_on(struct smb_trans_enc_state *es)
 NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
-	size_t orig_len = smb_len(buf);
-	size_t new_len = orig_len - NTLMSSP_SIG_SIZE;
+	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
 	DATA_BLOB sig;
 
-	if (orig_len < 8 + NTLMSSP_SIG_SIZE) {
+	if (buf_len < 8 + NTLMSSP_SIG_SIZE) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
+	/* Adjust for the signature. */
+	buf_len -= NTLMSSP_SIG_SIZE;
+
 	/* Save off the signature. */
-	sig = data_blob(buf+orig_len-NTLMSSP_SIG_SIZE, NTLMSSP_SIG_SIZE);
+	sig = data_blob(buf+buf_len, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_unseal_packet(ntlmssp_state,
 		(unsigned char *)buf + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
-		new_len - 8,
+		buf_len - 8,
 		(unsigned char *)buf,
-		new_len,
+		buf_len,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&sig);
 		return status;
 	}
+
 	/* Reset the length. */
-	smb_setlen(buf, new_len);
+	smb_setlen(buf, smb_len(buf) - NTLMSSP_SIG_SIZE);
 	return NT_STATUS_OK;
 }
 
@@ -74,13 +77,12 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 {
 	NTSTATUS status;
 	char *buf_out;
-	size_t orig_len = smb_len(buf);
-	size_t new_len = orig_len + NTLMSSP_SIG_SIZE;
+	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
 	DATA_BLOB sig;
 
 	*ppbuf_out = NULL;
 
-	if (orig_len < 8) {
+	if (buf_len < 8) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -91,19 +93,19 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 
 	/* Copy the original buffer. */
 
-	buf_out = SMB_XMALLOC_ARRAY(char, new_len);
-	memcpy(buf_out, buf, orig_len);
+	buf_out = SMB_XMALLOC_ARRAY(char, buf_len + NTLMSSP_SIG_SIZE);
+	memcpy(buf_out, buf, buf_len);
 	/* Last 16 bytes undefined here... */
 
-	smb_setlen(buf_out, new_len);
+	smb_setlen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE);
 
 	sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_seal_packet(ntlmssp_state,
 		(unsigned char *)buf_out + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
-		orig_len - 8,
+		buf_len - 8,
 		(unsigned char *)buf_out,
-		orig_len,
+		buf_len,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -112,7 +114,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 		return status;
 	}
 
-	memcpy(buf_out+orig_len, sig.data, NTLMSSP_SIG_SIZE);
+	memcpy(buf_out+buf_len, sig.data, NTLMSSP_SIG_SIZE);
 	*ppbuf_out = buf_out;
 	return NT_STATUS_OK;
 }
