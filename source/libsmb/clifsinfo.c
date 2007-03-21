@@ -409,6 +409,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 		}
 		cli->trans_enc_state = es;
 		cli->trans_enc_state->enc_on = True;
+		es = NULL;
 	}
 
   fail:
