@@ -54,8 +54,8 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 	status = ntlmssp_unseal_packet(ntlmssp_state,
 		(unsigned char *)buf + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
 		buf_len - 8,
-		(unsigned char *)buf,
-		buf_len,
+		(unsigned char *)buf + 8,
+		buf_len - 8,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -104,8 +104,8 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 	status = ntlmssp_seal_packet(ntlmssp_state,
 		(unsigned char *)buf_out + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
 		buf_len - 8,
-		(unsigned char *)buf_out,
-		buf_len,
+		(unsigned char *)buf_out + 8,
+		buf_len - 8,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
