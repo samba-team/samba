@@ -47,7 +47,7 @@ static bool test_setup_server(struct torture_context *tctx)
 
 	torture_assert_ntstatus_ok(tctx, torture_setup_server(mem_ctx, 
 									"setupserver-success",
-									"./script/tests/mktestsetup.sh",
+									"./script/tests/mktestdc.sh",
 									"./bin/smbd", &pid),
 							   "starting smbd failed");
 

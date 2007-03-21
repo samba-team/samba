@@ -23,12 +23,12 @@ DATADIR=../testdata
 PATH=bin:$PATH
 export PATH
 
-testit "base.js" $SCRIPTDIR/base.js $CONFIGURATION
-testit "samr.js" "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD
-testit "echo.js" "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD
-testit "ejsnet.js" $SCRIPTDIR/ejsnet.js $CONFIGURATION -U$USERNAME%$PASSWORD $DOMAIN ejstestuser
-testit "ldb.js" $SCRIPTDIR/ldb.js `pwd` $CONFIGURATION
-testit "samba3sam.js" $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
-testit "winreg" scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U$USERNAME%$PASSWORD
+testit "base.js" rpc "$SCRIPTDIR/base.js" $CONFIGURATION
+testit "samr.js" rpc "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD
+testit "echo.js" rpc "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD
+testit "ejsnet.js" rpc "$SCRIPTDIR/ejsnet.js" $CONFIGURATION -U$USERNAME%$PASSWORD $DOMAIN ejstestuser
+testit "ldb.js" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION
+testit "samba3sam.js" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
+testit "winreg" rpc scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U$USERNAME%$PASSWORD
 
 testok $0 $failed

@@ -24,9 +24,9 @@ export SMBD_TEST_FIFO
 
 failed=0
 for t in $local_tests; do
-	testit "$t" $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
+	testit "$t" none $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
 done
 
-testit "tdb stress" $VALGRIND bin/tdbtorture
+testit "tdb stress" none $VALGRIND bin/tdbtorture
 
 testok $0 $failed

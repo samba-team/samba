@@ -30,5 +30,5 @@ for t in $tests; do
 	continue;
     fi
     start=""
-    testit "$t" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    testit "$t" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done

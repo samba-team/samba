@@ -17,18 +17,18 @@ incdir=`dirname $0`
 
 p=ldap
 for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
-    testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
+    testit "TESTING PROTOCOL $p with options $options" ldap ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
     p=ldaps
     for options in "" "-U$USERNAME%$PASSWORD"; do
-	testit "TESTING PROTOCOL $p with options $options" ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
+	testit "TESTING PROTOCOL $p with options $options" ldap ../testprogs/blackbox/test_ldb.sh $p $SERVER $options
     done
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
 do
-	testit "$t" bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ $t
+	testit "$t" ldap bin/smbtorture $TORTURE_OPTIONS "-U$USERNAME%$PASSWORD" //$SERVER/_none_ $t
 done
 
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
@@ -36,11 +36,11 @@ done
 test "$TORTURE_QUICK" = "yes" || {
    LDBDIR=lib/ldb
    export LDBDIR
-   testit "ldb" $LDBDIR/tests/test-tdb.sh
+   testit "ldb" ldap $LDBDIR/tests/test-tdb.sh
 }
 
 SCRIPTDIR=../testprogs/ejs
 
-testit "ejs ldap" $SCRIPTDIR/ldap.js $CONFIGURATION $SERVER -U$USERNAME%$PASSWORD
+testit "ejs ldap" ldap $SCRIPTDIR/ldap.js $CONFIGURATION $SERVER -U$USERNAME%$PASSWORD
 
 testok $0 $failed

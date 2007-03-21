@@ -365,8 +365,10 @@ MANPAGE = man/locktest.1
 GCOV_FLAGS = -ftest-coverage -fprofile-arcs
 GCOV_LIBS = -lgcov
 
+COV_TARGET = test
+
 test_cov:
-	@$(MAKE) test \
+	@$(MAKE) $(COV_TARGET) \
 		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
 		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
 		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
@@ -377,8 +379,19 @@ gcov: test_cov
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
+lcov-split: 
+	rm -f samba.info
+	@$(MAKE) $(COV_TARGET) \
+		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
+		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
+		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
+		SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
+		TEST_OPTIONS="--analyse-cmd=\"lcov --base-directory `pwd` --directory . --capture --output-file samba.info -t\""
+	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
+	genhtml -o coverage samba.info
+
 lcov: test_cov
-	rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
+	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
 
