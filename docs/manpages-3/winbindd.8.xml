@@ -202,17 +202,17 @@ hosts:		files wins
 	is done on a first come, first served basis, although all existing 
 	users and groups will be mapped as soon as a client performs a user 
 	or group enumeration command.  The allocated unix ids are stored 
-	in a database file under the Samba lock directory and will be 
-	remembered. </para>
+	in a database and will be remembered. </para>
 
 	<para>WARNING: The SID to unix id database is the only location 
 	where the user and group mappings are stored by winbindd.  If this 
-	file is deleted or corrupted, there is no way for winbindd to 
+	store is deleted or corrupted, there is no way for winbindd to 
 	determine which user and group ids correspond to Windows NT user 
 	and group rids. </para>
 
         <para>See the <smbconfoption><name>idmap
-        backend</name></smbconfoption> parameter in
+        domains</name></smbconfoption> or the old <smbconfoption><name>idmap
+	backend</name></smbconfoption> parameters in
         <filename>smb.conf</filename> for options for sharing this
         database, such as via LDAP.</para>
 </refsect1>
