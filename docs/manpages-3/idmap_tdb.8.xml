@@ -66,10 +66,10 @@
 
 	<programlisting>
 	[global]
-	    idmap domain = default
-
-	    idmap config default:backend = tdb
-	    idmap config default:range   = 10000 - 50000
+	    idmap domain = ALLDOMAINS
+	    idmap config ALLDOMAINS:default = yes
+	    idmap config ALLDOMAINS:backend = tdb
+	    idmap config ALLDOMAINS:range   = 10000 - 50000
 
 	    idmap alloc backend = tdb
 	    idmap alloc config:range = 10000 - 50000
