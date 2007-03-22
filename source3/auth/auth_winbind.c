@@ -108,7 +108,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	/* we are contacting the privileged pipe */
 	become_root();
-	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_priv_request_response(WINBINDD_PAM_AUTH_CRAP,
+						&request, &response);
 	unbecome_root();
 
 	if ( result == NSS_STATUS_UNAVAIL )  {
