@@ -1252,7 +1252,7 @@ NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring na
 {
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL dummy;
-	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn))) {
+	if (dfs_pathnames) {
 		status = dfs_redirect(conn, name, False, &dummy);
 	}
 	return status;
@@ -1268,7 +1268,7 @@ NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring na
 NTSTATUS resolve_dfspath_wcard(connection_struct *conn, BOOL dfs_pathnames, pstring name, BOOL *ppath_contains_wcard)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn))) {
+	if (dfs_pathnames) {
 		status = dfs_redirect(conn, name, True, ppath_contains_wcard);
 	}
 	return status;
