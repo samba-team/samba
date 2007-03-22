@@ -41,7 +41,7 @@
 #include <sys/acl.h>
 #endif
 
-#ifdef HAVE_SYS_ACL_H
+#ifdef HAVE_ACL_LIBACL_H
 #include <acl/libacl.h>
 #endif
 
