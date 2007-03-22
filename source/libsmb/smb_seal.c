@@ -121,13 +121,54 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 
 /******************************************************************************
  Generic code for client and server.
- gss-api decrypt an incoming buffer.
+ gss-api decrypt an incoming buffer. We insist that the size of the
+ unwrapped buffer must be smaller or identical to the incoming buffer.
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
  NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	OM_uint32 ret = 0;
+	OM_uint32 minor = 0;
+	int flags_got = 0;
+	gss_buffer_desc in_buf, out_buf;
+	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+
+	if (buf_len < 8) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	in_buf.value = buf + 8;
+	in_buf.length = buf_len - 8;
+
+	ret = gss_unwrap(&minor,
+			context_handle,
+			&in_buf,
+			&out_buf,
+			&flags_got,		/* did we get sign+seal ? */
+			(gss_qop_t *) NULL);	
+
+	if (ret != GSS_S_COMPLETE) {
+		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
+		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap failed. Error %s\n",
+			ads_errstr(adss) ));
+		/* Um - no mapping for gss-errs to NTSTATUS yet. */
+		return ads_ntstatus(adss);
+	}
+
+	if (out_buf.length > in_buf.length) {
+		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap size (%u) too large (%u) !\n",
+			(unsigned int)out_buf.length,
+			(unsigned int)in_buf.length ));
+		gss_release_buffer(&minor, &out_buf);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	memcpy(buf + 8, out_buf.value, out_buf.length);
+	smb_setlen(buf, out_buf.length + 4);
+
+	gss_release_buffer(&minor, &out_buf);
+	return NT_STATUS_OK;
 }
 #endif
 
@@ -194,8 +235,9 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	smb_setlen(*ppbuf_out, out_buf.length + 8);
 	memcpy(*ppbuf_out+8, out_buf.value, out_buf.length);
+	smb_setlen(*ppbuf_out, out_buf.length + 4);
+
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
 }
