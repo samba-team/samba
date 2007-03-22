@@ -500,7 +500,7 @@ static int
 smbc_check_server(SMBCCTX * context,
                   SMBCSRV * server) 
 {
-        int size;
+        size_t size;
         struct sockaddr addr;
 
         /*
