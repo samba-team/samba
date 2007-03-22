@@ -7,7 +7,15 @@ INSTALLCMD	= @INSTALL@
 SAMBA_SOURCE	= @SAMBA_SOURCE@
 SHLIBEXT	= @SHLIBEXT@
 OBJEXT		= @OBJEXT@ 
-FLAGS		=  $(CFLAGS) -Iinclude -I$(SAMBA_SOURCE)/include -I$(SAMBA_SOURCE)/popt -I$(SAMBA_SOURCE)/smbwrapper  -I. $(CPPFLAGS) -I$(SAMBA_SOURCE) -fPIC
+FLAGS		=  $(CFLAGS) $(CPPFLAGS) -fPIC \
+		-Iinclude -I$(SAMBA_SOURCE)/include \
+		-I$(SAMBA_SOURCE)/popt  \
+		-I$(SAMBA_SOURCE)/lib/replace  \
+		-I$(SAMBA_SOURCE)/lib/talloc  \
+		-I$(SAMBA_SOURCE)/tdb/include  \
+		-I$(SAMBA_SOURCE)/smbwrapper \
+		-I$(SAMBA_SOURCE)/librpc \
+		-I$(SAMBA_SOURCE) -I.
 
 
 prefix		= @prefix@
