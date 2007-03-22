@@ -454,7 +454,7 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	nsd_logprintf(NSD_LOG_MIN,
 		"send_next_request (winbind) %d, timeout = %d sec\n",
 			rq->f_cmd_data, timeout);
-	status = winbindd_send_request((int)rq->f_cmd_data,request);
+	status = winbindd_send_request((int)rq->f_cmd_data,request,0);
 	SAFE_FREE(request);
 
 	if (status != NSS_STATUS_SUCCESS) {
