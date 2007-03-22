@@ -66,7 +66,7 @@ Support for Additional ACL Modules
 
 Samba's POSIX ACL support has been moved inside of the VFS layer 
 which means it is now possible to support multiple ACL implementations
-on the same server including NFSv3 and GPFS ACLs.
+on the same server including NFSv4 and GPFS ACLs.
 
 
 ######################################################################
@@ -284,7 +284,7 @@ Support for Additional ACL Modules
 
 Samba's POSIX ACL support has been moved inside of the VFS layer 
 which means it is now possible to support multiple ACL implementations
-on the same server including NFSv3 and GPFS ACLs.
+on the same server including NFSv4 and GPFS ACLs.
 
 
 ######################################################################
