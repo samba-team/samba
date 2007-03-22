@@ -98,8 +98,14 @@ static void srv_free_encryption_context(struct smb_srv_trans_enc_ctx **pp_ec)
 	}
 
 	if (ec->es) {
-		if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-			destroy_auth_ntlmssp(ec);
+		switch (ec->es->smb_enc_type) {
+			case SMB_TRANS_ENC_NTLM:
+				destroy_auth_ntlmssp(ec);
+				break;
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+			case SMB_TRANS_ENC_GSS:
+				break;
+#endif
 		}
 		common_free_encryption_state(&ec->es);
 	}
@@ -128,12 +134,25 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 	}
 	ZERO_STRUCTP(ec->es);
 	ec->es->smb_enc_type = smb_enc_type;
-	if (smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		NTSTATUS status = make_auth_ntlmssp(ec);
-		if (!NT_STATUS_IS_OK(status)) {
+	switch (smb_enc_type) {
+		case SMB_TRANS_ENC_NTLM:
+			{
+				NTSTATUS status = make_auth_ntlmssp(ec);
+				if (!NT_STATUS_IS_OK(status)) {
+					srv_free_encryption_context(&ec);
+					return NULL;
+				}
+			}
+			break;
+
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+		case SMB_TRANS_ENC_GSS:
+			/* Acquire our credentials by calling gss_acquire_cred here. */
+			break;
+#endif
+		default:
 			srv_free_encryption_context(&ec);
 			return NULL;
-		}
 	}
 	return ec;
 }
@@ -183,6 +202,13 @@ NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
 {
+	if (!partial_srv_trans_enc_ctx) {
+		partial_srv_trans_enc_ctx = make_srv_encryption_context(SMB_TRANS_ENC_GSS);
+		if (!partial_srv_trans_enc_ctx) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	return NT_STATUS_NOT_SUPPORTED;
 }
 #endif
