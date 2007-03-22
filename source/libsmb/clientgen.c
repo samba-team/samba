@@ -166,7 +166,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	char *buf_out;
+	char *buf_out = cli->outbuf;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1) {
