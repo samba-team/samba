@@ -599,7 +599,6 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
-	uint32 discard;
 
 	/* Search through list */
 
