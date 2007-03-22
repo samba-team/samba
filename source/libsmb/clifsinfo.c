@@ -373,26 +373,26 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	}
 	ZERO_STRUCTP(es);
 	es->smb_enc_type = SMB_TRANS_ENC_NTLM;
-	status = ntlmssp_client_start(&es->ntlmssp_state);
+	status = ntlmssp_client_start(&es->s.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	ntlmssp_want_feature(es->ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
-	es->ntlmssp_state->neg_flags |= (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
+	ntlmssp_want_feature(es->s.ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	es->s.ntlmssp_state->neg_flags |= (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_username(es->ntlmssp_state, user))) {
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_username(es->s.ntlmssp_state, user))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_domain(es->ntlmssp_state, domain))) {
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_domain(es->s.ntlmssp_state, domain))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_password(es->ntlmssp_state, pass))) {
+	if (!NT_STATUS_IS_OK(status = ntlmssp_set_password(es->s.ntlmssp_state, pass))) {
 		goto fail;
 	}
 
 	do {
-		status = ntlmssp_update(es->ntlmssp_state, blob_in, &blob_out);
+		status = ntlmssp_update(es->s.ntlmssp_state, blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {
 			status = enc_blob_send_receive(cli, &blob_out, &blob_in);

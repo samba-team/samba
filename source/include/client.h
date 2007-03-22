@@ -89,7 +89,7 @@ struct smb_trans_enc_state {
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		gss_ctx_id_t context_handle;
 #endif
-	};
+	} s;
 };
 
 struct cli_state {

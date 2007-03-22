@@ -264,10 +264,10 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_encrypt_buffer(es->ntlmssp_state, buffer, buf_out);
+			return common_ntlm_encrypt_buffer(es->s.ntlmssp_state, buffer, buf_out);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			return common_gss_encrypt_buffer(es->context_handle, buffer, buf_out);
+			return common_gss_encrypt_buffer(es->s.context_handle, buffer, buf_out);
 #endif
 		default:
 			return NT_STATUS_NOT_SUPPORTED;
@@ -294,10 +294,10 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_decrypt_buffer(es->ntlmssp_state, buf);
+			return common_ntlm_decrypt_buffer(es->s.ntlmssp_state, buf);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			return common_gss_decrypt_buffer(es->context_handle, buf);
+			return common_gss_decrypt_buffer(es->s.context_handle, buf);
 #endif
 		default:
 			return NT_STATUS_NOT_SUPPORTED;
@@ -317,8 +317,8 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (es->ntlmssp_state) {
-			ntlmssp_end(&es->ntlmssp_state);
+		if (es->s.ntlmssp_state) {
+			ntlmssp_end(&es->s.ntlmssp_state);
 		}
 	}
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
