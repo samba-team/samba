@@ -229,63 +229,6 @@ Release Notes for older release follow:
                               Feb 28, 2007
                    ==================================
 
-Major features included in the 3.0.25 code base include:
-
-  o Significant improvements in the winbind off-line logon support.
-  o Support for secure DDNS updates as part of the 'net ads join' 
-    process.
-  o Rewritten IdMap interface which allows for TTL based caching and 
-    per domain backends.
-  o New plug-in interface for the "winbind nss info" parameter.
-  o New file change notify subsystem which is able to make use of 
-    inotify on Linux.
-  o Support for passing Windows security descriptors to a VFS 
-    plug-in allowing for multiple Unix ACL implements to running side 
-    by side on the Same server.
-  o Improved compatibility with Windows Vista clients.
-  o Man pages for VFS plugins.
-
-
-Off-line Logons and AD Site Support
-===================================
-
-Winbind's capability to support offline logons has been greatly
-improved with the 3.0.25 release including support for locating 
-domain controllers asynchronously using Active Directory Site
-information.
-
-
-New IdMap Interface for Winbindd
-================================
-
-The 3.0.25 release of Samba will include a rewritten IdMap interface
-for winbindd which replaces the "idmap backend" parameter.  The
-initial design document may be found at
-
-	http://www.samba.org/~idra/samba3_newidmap.pdf
-
-The final 3.0.25 release will include full documentation in the
-distributed manpages.
-
-
-Dynamic DNS Updates
-===================
-
-The "net ads join" command is now able to register the host's DNS A
-records with Windows 2000 SP4 and 2003 DNS servers.  This 
-feature must be enabled at compile time using the --with-dnsupdate 
-when running the ./configure script.  There is also a related "net ads 
-dns" command for refreshing a host's records which could be launched
-from a dhcp client script when a new IP address is obtained.
-
-
-Support for Additional ACL Modules
-==================================
-
-Samba's POSIX ACL support has been moved inside of the VFS layer 
-which means it is now possible to support multiple ACL implementations
-on the same server including NFSv4 and GPFS ACLs.
-
 
 ######################################################################
 Changes
