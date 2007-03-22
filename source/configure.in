@@ -915,7 +915,8 @@ AC_CHECK_HEADERS(shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h)
 AC_CHECK_HEADERS(syscall.h sys/syscall.h)
 
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/acl.h acl/libacl.h)
+AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
 AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
 
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
