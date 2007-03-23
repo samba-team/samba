@@ -1,6 +1,7 @@
 # filesys
 AC_HEADER_DIRENT 
-AC_CHECK_HEADERS(fcntl.h sys/fcntl.h sys/acl.h sys/resource.h sys/ioctl.h sys/mode.h sys/filio.h sys/fs/s5param.h sys/filsys.h )
+AC_CHECK_HEADERS(fcntl.h sys/fcntl.h sys/resource.h sys/ioctl.h sys/mode.h sys/filio.h sys/fs/s5param.h sys/filsys.h)
+AC_CHECK_HEADERS(sys/acl.h acl/libacl.h)
 
 # select
 AC_CHECK_HEADERS(sys/select.h)
