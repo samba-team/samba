@@ -5295,17 +5295,20 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	SIVAL(pdata,4,info); /* Was directory created. */
 
 	switch (info_level_return) {
-	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,10,0); /* Padding. */
-		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
-	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,10,0); /* Padding. */
-		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
-	default:
-		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,10,0); /* Padding. */
+		case SMB_QUERY_FILE_UNIX_BASIC:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+			SSVAL(pdata,10,0); /* Padding. */
+			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			break;
+		case SMB_QUERY_FILE_UNIX_INFO2:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+			SSVAL(pdata,10,0); /* Padding. */
+			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			break;
+		default:
+			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+			SSVAL(pdata,10,0); /* Padding. */
+			break;
 	}
 
 	return status;
@@ -5479,17 +5482,20 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	SIVAL(pdata,4,info); /* Was file created etc. */
 
 	switch (info_level_return) {
-	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,10,0); /* padding. */
-		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
-	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,10,0); /* padding. */
-		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
-	default:
-		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,10,0); /* padding. */
+		case SMB_QUERY_FILE_UNIX_BASIC:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+			SSVAL(pdata,10,0); /* padding. */
+			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			break;
+		case SMB_QUERY_FILE_UNIX_INFO2:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+			SSVAL(pdata,10,0); /* padding. */
+			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			break;
+		default:
+			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+			SSVAL(pdata,10,0); /* padding. */
+			break;
 	}
 	return NT_STATUS_OK;
 }
