@@ -1417,7 +1417,7 @@ int main(int argc, char **argv, char **envp)
 					  "group %s\n", string_arg);
 				goto done;
 			}
-            break;
+			break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
 				d_fprintf(stderr, "Could not get groups for user %s\n", 
