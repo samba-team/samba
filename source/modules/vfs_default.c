@@ -632,7 +632,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 	}
 #elif defined(HAVE_UTIME)
 	{
-		struct utimebuf times;
+		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ts[0]);
 		times.modtime = convert_timespec_to_time_t(ts[1]);
 		result = utime(path, times);
