@@ -181,7 +181,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 					id = idbuf;
 				} else {
 					id = gr->gr_name;
-	}
+				}
 			case SMB_ACL_GROUP_OBJ:
 				tag = "group";
 				break;

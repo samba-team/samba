@@ -915,10 +915,28 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	{
+		BOOL can_write = False;
 		NT_USER_TOKEN *token = conn->nt_user_token ?
-			conn->nt_user_token : vuser->nt_user_token;
+			conn->nt_user_token :
+			(vuser ? vuser->nt_user_token : NULL);
 
-		BOOL can_write = share_access_check(token,
+		/*
+		 * I don't believe this can happen. But the
+		 * logic above is convoluted enough to confuse
+		 * automated checkers, so be sure. JRA.
+		 */
+
+		if (token == NULL) {
+			DEBUG(0,("make_connection: connection to %s "
+				 "denied due to missing "
+				 "NT token.\n",
+				  lp_servicename(snum)));
+			conn_free(conn);
+			*status = NT_STATUS_ACCESS_DENIED;
+			return NULL;
+		}
+
+		can_write = share_access_check(token,
 						    lp_servicename(snum),
 						    FILE_WRITE_DATA);
 
