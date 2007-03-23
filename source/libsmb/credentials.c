@@ -101,7 +101,9 @@ static void creds_init_64(struct dcinfo *dc,
 	unsigned char sum2[8];
 
 	/* Just in case this isn't already there */
-	memcpy(dc->mach_pw, mach_pw, 16);
+	if (dc->mach_pw != mach_pw) {
+		memcpy(dc->mach_pw, mach_pw, 16);
+	}
 
 	sum[0] = IVAL(clnt_chal_in->data, 0) + IVAL(srv_chal_in->data, 0);
 	sum[1] = IVAL(clnt_chal_in->data, 4) + IVAL(srv_chal_in->data, 4);
