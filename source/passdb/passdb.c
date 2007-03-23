@@ -718,7 +718,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	}
 
 	/* the 'other' acb bits not being changed here */
-	other_acb =  (pdb_get_acct_ctrl(sam_pass) & (!(ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST|ACB_NORMAL)));
+	other_acb =  (pdb_get_acct_ctrl(sam_pass) & (~(ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST|ACB_NORMAL)));
 	if (local_flags & LOCAL_TRUST_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
