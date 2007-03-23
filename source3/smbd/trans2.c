@@ -1601,13 +1601,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
 				p = store_file_unix_basic(conn, p,
 							NULL, &sbuf);
+				len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			} else {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 				p = store_file_unix_basic_info2(conn, p,
 							NULL, &sbuf);
+				nameptr = p;
+				p += 4;
+				len = srvstr_push(outbuf, p, fname, -1, 0);
+				SIVAL(nameptr, 0, len);
 			}
 
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
 
