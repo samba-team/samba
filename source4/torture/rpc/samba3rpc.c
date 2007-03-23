@@ -2287,7 +2287,7 @@ static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 		return False;
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+	blob = data_blob_talloc_zero(mem_ctx, r.out.needed);
 	if (blob.data == NULL) {
 		d_printf("(%s) data_blob_talloc failed\n", __location__);
 		return False;
