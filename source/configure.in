@@ -1225,7 +1225,8 @@ fi
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
-AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync memset strlcpy strlcat setpgid)
+AC_CHECK_FUNCS(fstat strchr utime utimes chflags)
+AC_CHECK_FUNCS(getrlimit fsync memset strlcpy strlcat setpgid)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
