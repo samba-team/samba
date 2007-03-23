@@ -99,6 +99,7 @@ static NTSTATUS set_path_info2(void *mem_ctx,
 {
 	union smb_setfileinfo sfinfo;
 
+	ZERO_STRUCT(sfinfo.basic_info.in);
 	sfinfo.generic.level = RAW_SFILEINFO_UNIX_INFO2;
 	sfinfo.generic.in.file.path = fname;
 
