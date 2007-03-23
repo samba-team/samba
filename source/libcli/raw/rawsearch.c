@@ -607,7 +607,12 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		return ofs;
 
 	case RAW_SEARCH_DATA_UNIX_INFO2:
-		if (blob->length < (116 + 8 + 1)) {
+		/*   8 - size of ofs + file_index
+		 * 116 - size of unix_info2
+		 *   4 - size of name length
+		 *   2 - "." is the shortest name
+		 */
+		if (blob->length < (116 + 8 + 4 + 2)) {
 			return -1;
 		}
 
@@ -630,11 +635,16 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		data->unix_info2.file_flags	    = IVAL(blob->data, 116);
 		data->unix_info2.flags_mask	    = IVAL(blob->data, 120);
 
-		/* There is no length field for this name but we know it's null terminated. */
-		len = smbcli_blob_pull_unix_string(tree->session, mem_ctx, blob,
-					   &data->unix_info2.name, 116 + 8, 0);
+		/* There is a 4 byte length field for this name. The length
+		 * does not include the NULL terminator.
+		 */
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
+				       &data->unix_info2.name,
+				       8 + 116, /* offset to length */
+				       8 + 116 + 4, /* offset to string */
+				       0);
 
-		if (ofs != 0 && ofs < (116 + 8 + len)) {
+		if (ofs != 0 && ofs < (8 + 116 + 4 + len)) {
 			return -1;
 		}
 

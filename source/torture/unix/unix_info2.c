@@ -298,7 +298,7 @@ static BOOL verify_setinfo_flags(void *mem_ctx,
 		if (info2.file_flags & smb_fmask) {
 			torture_assert_ntstatus_equal(torture,
 					status, NT_STATUS_OK,
-					"setting UNIX_INFO2 flags");
+					"setting valid UNIX_INFO2 flag");
 
 			if (!query_path_info2(mem_ctx, torture, cli,
 						fname, &info2)) {
@@ -314,7 +314,7 @@ static BOOL verify_setinfo_flags(void *mem_ctx,
 			 */
 			torture_assert_ntstatus_equal(torture,
 					status, NT_STATUS_INVALID_PARAMETER,
-					"setting UNIX_INFO2 flags");
+					"setting invalid UNIX_INFO2 flag");
 		}
 	}
 

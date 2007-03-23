@@ -2576,7 +2576,7 @@ union smb_search_data {
 		NTTIME create_time;
 		uint32_t file_flags;
 		uint32_t flags_mask;
-		const char *name;
+		struct smb_wire_string name;
 	} unix_info2;
 };
 
