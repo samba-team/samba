@@ -3995,7 +3995,8 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 }
 
 /***************************************************************************
- Return info about the next service  in a service. snum==GLOBAL_SECTION_SNUM gives the globals.
+ Return info about the next parameter in a service.
+ snum==GLOBAL_SECTION_SNUM gives the globals.
  Return NULL when out of parameters.
 ***************************************************************************/
 
