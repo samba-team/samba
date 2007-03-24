@@ -1319,9 +1319,6 @@ BOOL cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 
 	}
 
-	ippDelete(response);
-	response = NULL;
-
 	ret = True;
 
  out:
