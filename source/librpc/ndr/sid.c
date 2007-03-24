@@ -211,7 +211,7 @@ NTSTATUS ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_flags, struct sec_d
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sd_size));
-		if (r->sd_size < 0 || r->sd_size > 0x40000) {
+		if (r->sd_size > 0x40000) { /* sd_size is unsigned */
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));

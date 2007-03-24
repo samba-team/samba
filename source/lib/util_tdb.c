@@ -25,18 +25,6 @@
 #undef calloc
 #undef strdup
 
-/***************************************************************
- Allow a caller to set a "alarm" flag that tdb can check to abort
- a blocking lock on SIGALRM.
-***************************************************************/
-
-static sig_atomic_t *palarm_fired;
-
-static void tdb_set_lock_alarm(sig_atomic_t *palarm)
-{
-	palarm_fired = palarm;
-}
-
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
@@ -77,7 +65,6 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
 	gotalarm = 0;
-	tdb_set_lock_alarm(CONST_DISCARD(sig_atomic_t *, &gotalarm));
 
 	if (timeout) {
 		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
