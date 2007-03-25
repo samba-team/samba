@@ -1051,6 +1051,8 @@ static BOOL run_tcon_test(int dummy)
 	char buf[4];
 	BOOL ret = True;
 
+	memset(buf, '\0', sizeof(buf));
+
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
