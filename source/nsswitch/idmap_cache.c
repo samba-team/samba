@@ -104,7 +104,7 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_cache_time();
-	TDB_DATA keybuf, databuf;
+	TDB_DATA databuf;
 	char *sidkey;
 	char *idkey;
 	char *valstr;
@@ -128,16 +128,13 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 		goto done;
 	}
 
-	keybuf.dptr = sidkey;
-	keybuf.dsize = strlen(sidkey)+1;
-	databuf.dptr = valstr;
-	databuf.dsize = strlen(valstr)+1;
+	databuf = string_term_tdb_data(valstr);
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keybuf.dptr, valstr , ctime(&timeout),
+	           " %s (%d seconds %s)\n", sidkey, valstr , ctime(&timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	if (tdb_store(cache->tdb, keybuf, databuf, TDB_REPLACE) != 0) {
+	if (tdb_store_bystring(cache->tdb, sidkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -153,16 +150,13 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 		goto done;
 	}
 
-	keybuf.dptr = idkey;
-	keybuf.dsize = strlen(idkey)+1;
-	databuf.dptr = valstr;
-	databuf.dsize = strlen(valstr)+1;
+	databuf = string_term_tdb_data(valstr);
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keybuf.dptr, valstr, ctime(&timeout),
+	           " %s (%d seconds %s)\n", idkey, valstr, ctime(&timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	if (tdb_store(cache->tdb, keybuf, databuf, TDB_REPLACE) != 0) {
+	if (tdb_store_bystring(cache->tdb, idkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -178,7 +172,6 @@ done:
 NTSTATUS idmap_cache_del(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
-	TDB_DATA keybuf;
 	char *sidkey = NULL;
 	char *idkey = NULL;
 
@@ -192,21 +185,17 @@ NTSTATUS idmap_cache_del(struct idmap_cache_ctx *cache, const struct id_map *id)
 
 	/* delete SID */
 
-	keybuf.dptr = sidkey;
-	keybuf.dsize = strlen(sidkey)+1;
-	DEBUG(10, ("Deleting cache entry (key = %s)\n", keybuf.dptr));
+	DEBUG(10, ("Deleting cache entry (key = %s)\n", sidkey));
 
-	if (tdb_delete(cache->tdb, keybuf) != 0) {
+	if (tdb_delete_bystring(cache->tdb, sidkey) != 0) {
 		DEBUG(3, ("Failed to delete cache entry!\n"));
 	}
 
 	/* delete ID */
 
-	keybuf.dptr = idkey;
-	keybuf.dsize = strlen(idkey)+1;
-	DEBUG(10, ("Deleting cache entry (key = %s)\n", keybuf.dptr));
+	DEBUG(10, ("Deleting cache entry (key = %s)\n", idkey));
 
-	if (tdb_delete(cache->tdb, keybuf) != 0) {
+	if (tdb_delete_bystring(cache->tdb, idkey) != 0) {
 		DEBUG(3, ("Failed to delete cache entry!\n"));
 	}
 
@@ -220,7 +209,7 @@ NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struc
 {
 	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
-	TDB_DATA keybuf, databuf;
+	TDB_DATA databuf;
 	char *sidkey;
 	char *valstr;
 
@@ -235,16 +224,13 @@ NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struc
 		goto done;
 	}
 
-	keybuf.dptr = sidkey;
-	keybuf.dsize = strlen(sidkey)+1;
-	databuf.dptr = valstr;
-	databuf.dsize = strlen(valstr)+1;
+	databuf = string_term_tdb_data(valstr);
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keybuf.dptr, valstr, ctime(&timeout),
+	           " %s (%d seconds %s)\n", sidkey, valstr, ctime(&timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	if (tdb_store(cache->tdb, keybuf, databuf, TDB_REPLACE) != 0) {
+	if (tdb_store_bystring(cache->tdb, sidkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -259,7 +245,7 @@ NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct
 {
 	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
-	TDB_DATA keybuf, databuf;
+	TDB_DATA databuf;
 	char *idkey;
 	char *valstr;
 
@@ -274,16 +260,13 @@ NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct
 		goto done;
 	}
 
-	keybuf.dptr = idkey;
-	keybuf.dsize = strlen(idkey)+1;
-	databuf.dptr = valstr;
-	databuf.dsize = strlen(valstr)+1;
+	databuf = string_term_tdb_data(valstr);
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keybuf.dptr, valstr, ctime(&timeout),
+	           " %s (%d seconds %s)\n", idkey, valstr, ctime(&timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	if (tdb_store(cache->tdb, keybuf, databuf, TDB_REPLACE) != 0) {
+	if (tdb_store_bystring(cache->tdb, idkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -369,7 +352,7 @@ BOOL idmap_cache_is_negative(const char *val)
 NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
-	TDB_DATA keybuf, databuf;
+	TDB_DATA databuf;
 	time_t t;
 	char *sidkey;
 	char *endptr;
@@ -380,10 +363,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
-	keybuf.dptr = sidkey;
-	keybuf.dsize = strlen(sidkey)+1;
-
-	databuf = tdb_fetch(cache->tdb, keybuf);
+	databuf = tdb_fetch_bystring(cache->tdb, sidkey);
 
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", sidkey));
@@ -395,7 +375,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 	if ((endptr == NULL) || (*endptr != '/')) {
 		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
 		/* remove the entry */
-		tdb_delete(cache->tdb, keybuf);
+		tdb_delete_bystring(cache->tdb, sidkey);
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
@@ -411,7 +391,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		ret = idmap_cache_fill_map(id, endptr+1);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 			/* if not valid form delete the entry */
-			tdb_delete(cache->tdb, keybuf);
+			tdb_delete_bystring(cache->tdb, sidkey);
 			ret = NT_STATUS_NONE_MAPPED;
 			goto done;
 		}
@@ -444,7 +424,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 			} else {				
 				/* We're expired, delete the entry and return
 				   not mapped */
-				tdb_delete(cache->tdb, keybuf);
+				tdb_delete_bystring(cache->tdb, sidkey);
 				ret = NT_STATUS_NONE_MAPPED;
 			}			
 		} else {
@@ -479,7 +459,7 @@ done:
 NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
-	TDB_DATA keybuf, databuf;
+	TDB_DATA databuf;
 	time_t t;
 	char *idkey;
 	char *endptr;
@@ -490,10 +470,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 	ret = idmap_cache_build_idkey(cache, &idkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
-	keybuf.dptr = idkey;
-	keybuf.dsize = strlen(idkey)+1;
-
-	databuf = tdb_fetch(cache->tdb, keybuf);
+	databuf = tdb_fetch_bystring(cache->tdb, idkey);
 
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", idkey));
@@ -505,7 +482,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 	if ((endptr == NULL) || (*endptr != '/')) {
 		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
 		/* remove the entry */
-		tdb_delete(cache->tdb, keybuf);
+		tdb_delete_bystring(cache->tdb, idkey);
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
@@ -521,7 +498,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		ret = idmap_cache_fill_map(id, endptr+1);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 			/* if not valid form delete the entry */
-			tdb_delete(cache->tdb, keybuf);
+			tdb_delete_bystring(cache->tdb, idkey);
 			ret = NT_STATUS_NONE_MAPPED;
 			goto done;
 		}
@@ -554,7 +531,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 			} else {
 				/* We're expired, delete the entry and
 				   return not mapped */
-				tdb_delete(cache->tdb, keybuf);
+				tdb_delete_bystring(cache->tdb, idkey);
 				ret = NT_STATUS_NONE_MAPPED;
 			}			
 		} else {
