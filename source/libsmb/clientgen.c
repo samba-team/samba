@@ -106,6 +106,11 @@ BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 
  again:
 	ret = client_receive_smb(cli, eat_keepalives);
+
+	if (!eat_keepalives && (CVAL(cli->inbuf,0) == SMBkeepalive)) {
+		/* Give back the keepalive. */
+		return True;
+	}
 	
 	if (ret) {
 		/* it might be an oplock break request */
