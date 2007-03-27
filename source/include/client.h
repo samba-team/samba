@@ -90,6 +90,7 @@ struct smb_tran_enc_state_gss {
 
 struct smb_trans_enc_state {
 	enum smb_trans_enc_type smb_enc_type;
+	uint16 enc_ctx_num;
 	BOOL enc_on;
 	union {
 		NTLMSSP_STATE *ntlmssp_state;

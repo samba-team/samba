@@ -307,7 +307,7 @@ cleanup:
  Send/receive the request encryption blob.
 ******************************************************************************/
 
-static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA_BLOB *out)
+static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA_BLOB *out, DATA_BLOB *param_out)
 {
 	uint16 setup;
 	char param[4];
@@ -345,6 +345,7 @@ static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA
 	}
 
 	*out = data_blob(rdata, rdata_count);
+	*param_out = data_blob(rparam, rparam_count);
 
   out:
 
@@ -364,6 +365,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 {
 	DATA_BLOB blob_in = data_blob(NULL, 0);
 	DATA_BLOB blob_out = data_blob(NULL, 0);
+	DATA_BLOB param_out = data_blob(NULL, 0);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct smb_trans_enc_state *es = NULL;
 
@@ -394,8 +396,12 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	do {
 		status = ntlmssp_update(es->s.ntlmssp_state, blob_in, &blob_out);
 		data_blob_free(&blob_in);
+		data_blob_free(&param_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {
-			status = enc_blob_send_receive(cli, &blob_out, &blob_in);
+			status = enc_blob_send_receive(cli, &blob_out, &blob_in, &param_out);
+		}
+		if (param_out.length == 2) {
+			es->enc_ctx_num = SVAL(param_out.data, 0);
 		}
 		data_blob_free(&blob_out);
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));

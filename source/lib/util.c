@@ -517,6 +517,19 @@ void show_msg(char *buf)
 }
 
 /*******************************************************************
+ Set the length and marker of an encrypted smb packet.
+********************************************************************/
+
+void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
+{
+	_smb_setlen(buf,len);
+
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'S');
+	SSVAL(buf,6,enc_ctx_num);
+}
+
+/*******************************************************************
  Set the length and marker of an smb packet.
 ********************************************************************/
 

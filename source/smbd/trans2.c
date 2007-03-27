@@ -2765,6 +2765,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 		case SMB_REQUEST_TRANSPORT_ENCRYPTION:
 			{
 				NTSTATUS status;
+				size_t param_len = 0;
 				size_t data_len = total_data;
 
 				if (!lp_unix_extensions()) {
@@ -2773,7 +2774,12 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 
 				DEBUG( 4,("call_trans2setfsinfo: request transport encrption.\n"));
 
-				status = srv_request_encryption_setup((unsigned char **)ppdata, &data_len);
+				status = srv_request_encryption_setup(conn,
+									(unsigned char **)ppdata,
+									&data_len,
+									(unsigned char **)pparams,
+									&param_len
+									);
 
 				if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 					error_packet_set(outbuf, 0, 0, status, __LINE__,__FILE__);
@@ -2781,11 +2787,11 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return ERROR_NT(status);
 				}
 
-				send_trans2_replies( outbuf, bufsize, params, 0, *ppdata, data_len, max_data_bytes);
+				send_trans2_replies(outbuf, bufsize, *pparams, param_len, *ppdata, data_len, max_data_bytes);
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
-					status = srv_encryption_start();
+					status = srv_encryption_start(conn);
 					if (!NT_STATUS_IS_OK(status)) {
 						exit_server_cleanly("Failure in setting up encrypted transport");
 					}
