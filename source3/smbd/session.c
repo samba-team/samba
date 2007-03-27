@@ -61,7 +61,6 @@ BOOL session_claim(user_struct *vuser)
 	struct in_addr *client_ip;
 	struct sessionid sessionid;
 	uint32 pid = (uint32)sys_getpid();
-	TDB_DATA key;		
 	fstring keystr;
 	char * hostname;
 	int tdb_store_flag;  /* If using utmp, we do an inital 'lock hold' store,
@@ -87,10 +86,8 @@ BOOL session_claim(user_struct *vuser)
 	if (lp_utmp()) {
 		for (i=1;i<MAX_SESSION_ID;i++) {
 			slprintf(keystr, sizeof(keystr)-1, "ID/%d", i);
-			key.dptr = keystr;
-			key.dsize = strlen(keystr)+1;
 			
-			if (tdb_store(tdb, key, data, TDB_INSERT) == 0) break;
+			if (tdb_store_bystring(tdb, keystr, data, TDB_INSERT) == 0) break;
 		}
 		
 		if (i == MAX_SESSION_ID) {
@@ -108,10 +105,6 @@ BOOL session_claim(user_struct *vuser)
 		slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, 
 			 SESSION_TEMPLATE, (long unsigned int)sys_getpid(), 
 			 vuser->vuid);
-
-		key.dptr = keystr;
-		key.dsize = strlen(keystr)+1;
-			
 		tdb_store_flag = TDB_REPLACE;
 	}
 
@@ -142,14 +135,14 @@ BOOL session_claim(user_struct *vuser)
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
 				sessionid.username, sessionid.id_str));
 		if (tdb_store_flag == TDB_MODIFY) {
-			tdb_delete(tdb, key);
+			tdb_delete_bystring(tdb, keystr);
 		}
 		return False;
 	}
 
 	data.dptr = (char *)&sessionid;
 	data.dsize = sizeof(sessionid);
-	if (tdb_store(tdb, key, data, tdb_store_flag) != 0) {
+	if (tdb_store_bystring(tdb, keystr, data, tdb_store_flag) != 0) {
 		DEBUG(1,("session_claim: unable to create session id record\n"));
 		return False;
 	}
@@ -177,7 +170,6 @@ void session_yield(user_struct *vuser)
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
 	struct in_addr *client_ip;
-	TDB_DATA key;
 
 	if (!tdb) return;
 
@@ -185,10 +177,7 @@ void session_yield(user_struct *vuser)
 		return;
 	}
 
-	key.dptr = vuser->session_keystr;
-	key.dsize = strlen(vuser->session_keystr)+1;
-
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch_bystring(tdb, vuser->session_keystr);
 
 	if (dbuf.dsize != sizeof(sessionid))
 		return;
@@ -207,7 +196,7 @@ void session_yield(user_struct *vuser)
 
 	smb_pam_close_session(sessionid.username, sessionid.id_str, sessionid.hostname);
 
-	tdb_delete(tdb, key);
+	tdb_delete_bystring(tdb, vuser->session_keystr);
 }
 
 /********************************************************************
