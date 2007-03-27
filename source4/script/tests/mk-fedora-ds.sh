@@ -7,6 +7,8 @@ echo "FEDORA_DS_LOGLEVEL=0"
 FEDORA_DS_DIR=$LDAPDIR/slapd-samba4
 echo FEDORA_DS_DIR=$FEDORA_DS_DIR
 
+echo "FEDORA_DS_PIDFILE=$FEDORA_DS_DIR/logs/slapd-samba4.pid"
+
 cat >$FEDORA_DS_INF <<EOF
 [General]
 SuiteSpotUserID = $ROOT
