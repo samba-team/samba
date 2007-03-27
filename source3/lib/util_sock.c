@@ -746,15 +746,15 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 			}
 			return False;
 		}
-	} else {
-		/* Check the incoming SMB signature. */
-		if (!srv_check_sign_mac(buffer, True)) {
-			DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-			if (smb_read_error == 0) {
-				smb_read_error = READ_BAD_SIG;
-			}
-			return False;
+	}
+
+	/* Check the incoming SMB signature. */
+	if (!srv_check_sign_mac(buffer, True)) {
+		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
+		if (smb_read_error == 0) {
+			smb_read_error = READ_BAD_SIG;
 		}
+		return False;
 	}
 
 	return True;
@@ -772,9 +772,9 @@ BOOL send_smb(int fd, char *buffer)
 	char *buf_out = buffer;
 
 	/* Sign the outgoing packet if required. */
-	if (!srv_encryption_on()) {
-		srv_calculate_sign_mac(buf_out);
-	} else {
+	srv_calculate_sign_mac(buf_out);
+
+	if (srv_encryption_on()) {
 		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("send_smb: SMB encryption failed on outgoing packet! Error %s\n",

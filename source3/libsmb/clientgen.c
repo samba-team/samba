@@ -74,6 +74,7 @@ static BOOL client_receive_smb(struct cli_state *cli)
 		if(CVAL(buffer,0) != SMBkeepalive)
 			break;
 	}
+
 	if (cli_encryption_on(cli)) {
 		NTSTATUS status = cli_decrypt_message(cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -130,15 +131,14 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return ret;
 	}
 
-	if (!cli_encryption_on(cli)) {
-		if (!cli_check_sign_mac(cli)) {
-			DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
-			cli->smb_rw_error = READ_BAD_SIG;
-			close(cli->fd);
-			cli->fd = -1;
-			return False;
-		}
+	if (!cli_check_sign_mac(cli)) {
+		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
+		cli->smb_rw_error = READ_BAD_SIG;
+		close(cli->fd);
+		cli->fd = -1;
+		return False;
 	}
+
 	return True;
 }
 
@@ -173,6 +173,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 		return False;
 	}
 
+	cli_calculate_sign_mac(cli);
+
 	if (cli_encryption_on(cli)) {
 		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -183,8 +185,6 @@ BOOL cli_send_smb(struct cli_state *cli)
 				nt_errstr(status) ));
 			return False;
 		}
-	} else {
-		cli_calculate_sign_mac(cli);
 	}
 
 	len = smb_len(buf_out) + 4;
