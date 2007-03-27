@@ -743,7 +743,6 @@ static WERROR regdb_set_secdesc(const char *key,
 	TALLOC_CTX *mem_ctx;
 	char *tdbkey;
 	WERROR err = WERR_NOMEM;
-	uint8 *data;
 	TDB_DATA tdbdata;
 
 	if (!(mem_ctx = talloc_init("regdb_set_secdesc"))) {
@@ -758,13 +757,12 @@ static WERROR regdb_set_secdesc(const char *key,
 	}
 	normalize_dbkey(tdbkey);
 
-	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc, &data,
+	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
+						   (uint8 **)&tdbdata.dptr,
 						   &tdbdata.dsize));
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
-
-	tdbdata.dptr = (char *)data;
 
 	if (tdb_trans_store_bystring(tdb_reg, tdbkey, tdbdata, 0) == -1) {
 		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
