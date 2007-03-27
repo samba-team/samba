@@ -520,8 +520,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 	struct cache_entry *centry;
 	TDB_DATA key;
 
-	key.dptr = kstr;
-	key.dsize = strlen(kstr);
+	key = string_tdb_data(kstr);
 	data = tdb_fetch(wcache->tdb, key);
 	if (!data.dptr) {
 		/* a cache miss */
@@ -605,8 +604,7 @@ static void wcache_delete(const char *format, ...)
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
 
-	key.dptr = kstr;
-	key.dsize = strlen(kstr);
+	key = string_tdb_data(kstr);
 
 	tdb_delete(wcache->tdb, key);
 	free(kstr);
@@ -757,8 +755,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
 
-	key.dptr = kstr;
-	key.dsize = strlen(kstr);
+	key = string_tdb_data(kstr);
 	data.dptr = (char *)centry->data;
 	data.dsize = centry->ofs;
 
@@ -896,7 +893,7 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 
 	fstr_sprintf(key_str, "CRED/%s", sid_string_static(sid));
 
-	data = tdb_fetch(cache->tdb, make_tdb_data(key_str, strlen(key_str)));
+	data = tdb_fetch(cache->tdb, string_tdb_data(key_str));
 	if (!data.dptr) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -2486,7 +2483,7 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 		TDB_DATA data;
 		time_t t;
 
-		data = tdb_fetch(cache->tdb, make_tdb_data(cred->name, strlen(cred->name)));
+		data = tdb_fetch(cache->tdb, string_tdb_data(cred->name));
 		if (!data.dptr) {
 			DEBUG(10,("wcache_remove_oldest_cached_creds: entry for [%s] not found\n", 
 				cred->name));
