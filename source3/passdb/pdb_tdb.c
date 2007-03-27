@@ -1025,7 +1025,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, struct samu *
 
 static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu *user, const char *sname)
 {
-	TDB_DATA 	data, key;
+	TDB_DATA 	data;
 	fstring 	keystr;
 	fstring		name;
 
@@ -1040,8 +1040,6 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
 
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
 
 	/* open the database */
 		
@@ -1052,7 +1050,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
 	
 	/* get the record */
 	
-	data = tdb_fetch(tdbsam, key);
+	data = tdb_fetch_bystring(tdbsam, keystr);
 	if (!data.dptr) {
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
@@ -1085,7 +1083,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
 static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, struct samu *user, uint32 rid)
 {
 	NTSTATUS                nt_status = NT_STATUS_UNSUCCESSFUL;
-	TDB_DATA 		data, key;
+	TDB_DATA 		data;
 	fstring 		keystr;
 	fstring			name;
 
@@ -1097,8 +1095,6 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, struct samu 
 	/* set search key */
 	
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
 
 	/* open the database */
 		
@@ -1109,7 +1105,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, struct samu 
 
 	/* get the record */
 	
-	data = tdb_fetch (tdbsam, key);
+	data = tdb_fetch_bystring (tdbsam, keystr);
 	if (!data.dptr) {
 		DEBUG(5,("pdb_getsampwrid (TDB): error looking up RID %d by key %s.\n", rid, keystr));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
@@ -1142,7 +1138,6 @@ static NTSTATUS tdbsam_getsampwsid(struct pdb_methods *my_methods, struct samu *
 
 static BOOL tdb_delete_samacct_only( struct samu *sam_pass )
 {
-	TDB_DATA 	key;
 	fstring 	keystr;
 	fstring		name;
 
@@ -1152,12 +1147,10 @@ static BOOL tdb_delete_samacct_only( struct samu *sam_pass )
   	/* set the search key */
 	
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
 	
 	/* it's outaa here!  8^) */
 	
-	if (tdb_delete(tdbsam, key) != TDB_SUCCESS) {
+	if (tdb_delete_bystring(tdbsam, keystr) != TDB_SUCCESS) {
 		DEBUG(5, ("Error deleting entry from tdb passwd database!\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
 		return False;
@@ -1173,7 +1166,6 @@ static BOOL tdb_delete_samacct_only( struct samu *sam_pass )
 static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct samu *sam_pass)
 {
 	NTSTATUS        nt_status = NT_STATUS_UNSUCCESSFUL;
-	TDB_DATA 	key;
 	fstring 	keystr;
 	uint32		rid;
 	fstring		name;
@@ -1192,14 +1184,12 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
   	/* set the search key */
 
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
 	
 	rid = pdb_get_user_rid(sam_pass);
 
 	/* it's outaa here!  8^) */
 
-	if ( tdb_delete(tdbsam, key) != TDB_SUCCESS ) {
+	if ( tdb_delete_bystring(tdbsam, keystr) != TDB_SUCCESS ) {
 		DEBUG(5, ("Error deleting entry from tdb passwd database!\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1209,12 +1199,10 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
   	/* set the search key */
 	
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
 
 	/* it's outaa here!  8^) */
 	
-	if ( tdb_delete(tdbsam, key) != TDB_SUCCESS ) {
+	if ( tdb_delete_bystring(tdbsam, keystr) != TDB_SUCCESS ) {
 		DEBUG(5, ("Error deleting entry from tdb rid database!\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1236,7 +1224,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
 ****************************************************************************/
 static BOOL tdb_update_samacct_only( struct samu* newpwd, int flag )
 {
-	TDB_DATA 	key, data;
+	TDB_DATA 	data;
 	uint8		*buf = NULL;
 	fstring 	keystr;
 	fstring		name;
@@ -1260,12 +1248,10 @@ static BOOL tdb_update_samacct_only( struct samu* newpwd, int flag )
 
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
 
 	/* add the account */
 	
-	if ( tdb_store(tdbsam, key, data, flag) != TDB_SUCCESS ) {
+	if ( tdb_store_bystring(tdbsam, keystr, data, flag) != TDB_SUCCESS ) {
 		DEBUG(0, ("Unable to modify passwd TDB!"));
 		DEBUGADD(0, (" Error: %s", tdb_errorstr(tdbsam)));
 		DEBUGADD(0, (" occured while storing the main record (%s)\n",
@@ -1287,7 +1273,7 @@ done:
 ****************************************************************************/
 static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
 {
-	TDB_DATA 	key, data;
+	TDB_DATA 	data;
 	fstring 	keystr;
 	fstring		name;
 
@@ -1295,16 +1281,13 @@ static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
 	strlower_m(name);
 
 	/* setup RID data */
-	data.dsize = strlen(name) + 1;
-	data.dptr = name;
+	data = string_term_tdb_data(name);
 
 	/* setup the RID index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX,  pdb_get_user_rid(newpwd));
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
 	
 	/* add the reference */
-	if (tdb_store(tdbsam, key, data, flag) != TDB_SUCCESS) {
+	if (tdb_store_bystring(tdbsam, keystr, data, flag) != TDB_SUCCESS) {
 		DEBUG(0, ("Unable to modify TDB passwd !"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(tdbsam)));
 		DEBUGADD(0, (" occured while storing the RID index (%s)\n", keystr));
