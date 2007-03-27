@@ -867,8 +867,7 @@ static pid_t get_updating_pid(const char *sharename)
 	if (!pdb)
 		return (pid_t)-1;
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
-    	key.dptr = keystr;
-	key.dsize = strlen(keystr);
+    	key = string_tdb_data(keystr);
 
 	data = tdb_fetch(pdb->tdb, key);
 	release_print_db(pdb);
@@ -905,8 +904,7 @@ static void set_updating_pid(const fstring sharename, BOOL updating)
 		return;
 
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
-    	key.dptr = keystr;
-	key.dsize = strlen(keystr);
+    	key = string_tdb_data(keystr);
 	
 	DEBUG(5, ("set_updating_pid: %s updating lpq cache for print share %s\n", 
 		updating ? "" : "not ",
@@ -1233,8 +1231,7 @@ static void print_queue_update_internal( const char *sharename,
 
 	/* store the new queue status structure */
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr);
+	key = string_tdb_data(keystr);
 
 	status.qcount = qcount;
 	data.dptr = (char *)&status;
@@ -2701,8 +2698,8 @@ int print_queue_status(int snum,
 
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr);
+	key = string_tdb_data(keystr);
+
 	data = tdb_fetch(pdb->tdb, key);
 	if (data.dptr) {
 		if (data.dsize == sizeof(*status)) {
