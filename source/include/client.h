@@ -81,13 +81,20 @@ struct rpc_pipe_client {
 /* Transport encryption state. */
 enum smb_trans_enc_type { SMB_TRANS_ENC_NTLM, SMB_TRANS_ENC_GSS };
 
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+struct smb_tran_enc_state_gss {
+	gss_ctx_id_t gss_ctx;
+	gss_cred_id_t creds;
+};
+#endif
+
 struct smb_trans_enc_state {
 	enum smb_trans_enc_type smb_enc_type;
 	BOOL enc_on;
 	union {
 		NTLMSSP_STATE *ntlmssp_state;
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		gss_ctx_id_t context_handle;
+		struct smb_tran_enc_state_gss *gss_state;
 #endif
 	} s;
 };
