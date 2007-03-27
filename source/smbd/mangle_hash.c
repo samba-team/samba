@@ -437,8 +437,7 @@ static void cache_mangled_name( const char mangled_name[13], char *raw_name )
 	}
 
 	/* Allocate a new cache entry.  If the allocation fails, just return. */
-	data_val.dptr = raw_name;
-	data_val.dsize = strlen(raw_name)+1;
+	data_val = string_term_tdb_data(raw_name);
 	if (tdb_store_bystring(tdb_mangled_cache, mangled_name_key, data_val, TDB_REPLACE) != 0) {
 		DEBUG(0,("cache_mangled_name: Error storing entry %s -> %s\n", mangled_name_key, raw_name));
 	} else {
