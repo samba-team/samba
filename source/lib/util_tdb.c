@@ -56,6 +56,11 @@ TDB_DATA string_tdb_data(const char *string)
 	return make_tdb_data(string, strlen(string));
 }
 
+TDB_DATA string_term_tdb_data(const char *string)
+{
+	return make_tdb_data(string, strlen(string) + 1);
+}
+
 /****************************************************************************
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
@@ -108,7 +113,7 @@ int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int tim
 
 int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock(tdb, key);
 }
@@ -116,7 +121,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 				   int timeout)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock_with_timeout(tdb, key, timeout);
 }
@@ -127,7 +132,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 
 	tdb_chainunlock(tdb, key);
 }
@@ -138,7 +143,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
@@ -149,7 +154,7 @@ int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, un
 
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	tdb_chainunlock_read(tdb, key);
 }
@@ -160,9 +165,8 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Output is int32 in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 	int32 ret;
 
@@ -184,7 +188,9 @@ int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 
 int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
 {
-	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
+	TDB_DATA key = string_term_tdb_data(keystr);
+
+	return tdb_fetch_int32_byblob(tdb, key);
 }
 
 /****************************************************************************
@@ -192,9 +198,8 @@ int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
  Input is int32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32 v)
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
 {
-	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	int32 v_store;
 
@@ -212,7 +217,9 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int
 
 int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
 {
-	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
+	TDB_DATA key = string_term_tdb_data(keystr);
+
+	return tdb_store_int32_byblob(tdb, key, v);
 }
 
 /****************************************************************************
@@ -220,9 +227,8 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32 *value)
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
 {
-	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 
 	data = tdb_fetch(tdb, key);
@@ -243,7 +249,9 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, u
 
 BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
 {
-	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+	TDB_DATA key = string_term_tdb_data(keystr);
+
+	return tdb_fetch_uint32_byblob(tdb, key, value);
 }
 
 /****************************************************************************
@@ -251,9 +259,8 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32 value)
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
 {
-	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	uint32 v_store;
 	BOOL ret = True;
@@ -275,7 +282,9 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, u
 
 BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 {
-	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+	TDB_DATA key = string_term_tdb_data(keystr);
+
+	return tdb_store_uint32_byblob(tdb, key, value);
 }
 /****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -1
@@ -284,15 +293,15 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 
 int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
-	
+	TDB_DATA key = string_term_tdb_data(keystr);
+
 	return tdb_store(tdb, key, data, flags);
 }
 
 int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 			     TDB_DATA data, int flags)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 	
 	return tdb_trans_store(tdb, key, data, flags);
 }
@@ -304,7 +313,7 @@ int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 
 TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 
 	return tdb_fetch(tdb, key);
 }
@@ -315,7 +324,7 @@ TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 
 int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 
 	return tdb_delete(tdb, key);
 }
@@ -725,7 +734,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
-		char *key_str = (char*) SMB_STRNDUP(key.dptr, key.dsize);
+		char *key_str = SMB_STRNDUP(key.dptr, key.dsize);
 		if (!key_str) {
 			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
 			smb_panic("strndup failed!\n");
