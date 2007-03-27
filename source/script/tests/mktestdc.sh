@@ -17,6 +17,7 @@ if test -z "$SMBD_LOGLEVEL"; then
 	SMBD_LOGLEVEL=1
 fi
 
+SERVER_ROLE="domain controller"
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=SAMBA.EXAMPLE.COM
@@ -86,7 +87,7 @@ cat >$CONFFILE<<EOF
 	tls dh params file = $DHFILE
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
-	server role = domain controller
+	server role = $SERVER_ROLE
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false
@@ -203,9 +204,13 @@ EOF
 
 $srcdir/bin/ldbadd -H $PRIVATEDIR/share.ldb < $PRIVATEDIR/share.ldif >/dev/null || exit 1
 
+. `dirname $0`/mk-keyblobs.sh
+
 cat >$KRB5_CONFIG<<EOF
+#Generated krb5.conf for $REALM
+
 [libdefaults]
- default_realm = SAMBA.EXAMPLE.COM
+ default_realm = $REALM
  dns_lookup_realm = false
  dns_lookup_kdc = false
  ticket_lifetime = 24h
@@ -215,7 +220,7 @@ cat >$KRB5_CONFIG<<EOF
  SAMBA.EXAMPLE.COM = {
   kdc = 127.0.0.1:88
   admin_server = 127.0.0.1:88
-  default_domain = samba.example.com
+  default_domain = $DNSNAME
  }
 
 [appdefaults]
@@ -227,10 +232,8 @@ cat >$KRB5_CONFIG<<EOF
 	pkinit_anchors = FILE:$CAFILE
 
 [domain_realm]
- .samba.example.com = SAMBA.EXAMPLE.COM
+ .$DNSNAME = $REALM
 EOF
-
-. `dirname $0`/mk-keyblobs.sh
 
 #Ensure the config file is valid before we start
 $srcdir/bin/testparm $CONFIGURATION -v --suppress-prompt >/dev/null 2>&1 || {
