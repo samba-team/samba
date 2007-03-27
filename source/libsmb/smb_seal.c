@@ -126,8 +126,9 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
- NTSTATUS common_gss_decrypt_buffer(gss_ctx_id_t context_handle, char *buf)
+ NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
 {
+	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
 	OM_uint32 ret = 0;
 	OM_uint32 minor = 0;
 	int flags_got = 0;
@@ -142,7 +143,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 	in_buf.length = buf_len - 8;
 
 	ret = gss_unwrap(&minor,
-			context_handle,
+			gss_ctx,
 			&in_buf,
 			&out_buf,
 			&flags_got,		/* did we get sign+seal ? */
@@ -178,8 +179,9 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
- NTSTATUS common_gss_encrypt_buffer(gss_ctx_id_t context_handle, char *buf, char **ppbuf_out)
+ NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf, char **ppbuf_out)
 {
+	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
 	OM_uint32 ret = 0;
 	OM_uint32 minor = 0;
 	int flags_got = 0;
@@ -196,7 +198,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 	in_buf.length = buf_len - 8;
 
 	ret = gss_wrap(&minor,
-			context_handle,
+			gss_ctx,
 			True,			/* we want sign+seal. */
 			GSS_C_QOP_DEFAULT,
 			&in_buf,
@@ -267,7 +269,7 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 			return common_ntlm_encrypt_buffer(es->s.ntlmssp_state, buffer, buf_out);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			return common_gss_encrypt_buffer(es->s.context_handle, buffer, buf_out);
+			return common_gss_encrypt_buffer(es->s.gss_state, buffer, buf_out);
 #endif
 		default:
 			return NT_STATUS_NOT_SUPPORTED;
@@ -297,12 +299,28 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 			return common_ntlm_decrypt_buffer(es->s.ntlmssp_state, buf);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			return common_gss_decrypt_buffer(es->s.context_handle, buf);
+			return common_gss_decrypt_buffer(es->s.gss_state, buf);
 #endif
 		default:
 			return NT_STATUS_NOT_SUPPORTED;
 	}
 }
+
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+/******************************************************************************
+ Shutdown a gss encryption state.
+******************************************************************************/
+
+static void common_free_gss_state(struct smb_tran_enc_state_gss **pp_gss_state)
+{
+	OM_uint32 minor = 0;
+	struct smb_tran_enc_state_gss *gss_state = *pp_gss_state;
+
+	gss_release_cred(&minor, &gss_state->creds);
+	gss_delete_sec_context(&minor, &gss_state->gss_ctx, NULL);
+	SAFE_FREE(*pp_gss_state);
+}
+#endif
 
 /******************************************************************************
  Shutdown an encryption state.
@@ -324,6 +342,9 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
 		/* Free the gss context handle. */
+		if (es->s.gss_state) {
+			common_free_gss_state(&es->s.gss_state);
+		}
 	}
 #endif
 	SAFE_FREE(es);

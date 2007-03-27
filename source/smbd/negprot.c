@@ -228,6 +228,10 @@ static DATA_BLOB negprot_spnego(void)
 		name_to_fqdn(myname, global_myname());
 		strlower_m(myname);
 		asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm());
+		if (host_princ_s == NULL) {
+			blob = data_blob(NULL, 0);
+			return blob;
+		}
 		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, host_princ_s);
 		SAFE_FREE(host_princ_s);
 	}
