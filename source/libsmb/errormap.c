@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell 2001
  *  Copyright (C) Andrew Bartlett 2001
  *  Copyright (C) Tim Potter 2000
+ *  Copyright (C) Jeremy Allison 2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1566,3 +1567,104 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 	/* Default return */
 	return NT_STATUS_ACCESS_DENIED;
 }
+
+#if defined(HAVE_GSSAPI)
+/*******************************************************************************
+ Map between gssapi errors and NT status. I made these up :-(. JRA.
+*******************************************************************************/
+
+static const struct {
+		unsigned long gss_err;
+		NTSTATUS ntstatus;
+} gss_to_ntstatus_errormap[] = {
+#if defined(GSS_S_CALL_INACCESSIBLE_READ)
+		{GSS_S_CALL_INACCESSIBLE_READ, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_CALL_INACCESSIBLE_WRITE)
+		{GSS_S_CALL_INACCESSIBLE_WRITE, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_CALL_BAD_STRUCTURE)
+		{GSS_S_CALL_BAD_STRUCTURE, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_BAD_MECH)
+		{GSS_S_BAD_MECH, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_BAD_NAME)
+		{GSS_S_BAD_NAME, NT_STATUS_INVALID_ACCOUNT_NAME},
+#endif
+#if defined(GSS_S_BAD_NAMETYPE)
+		{GSS_S_BAD_NAMETYPE, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_BAD_BINDINGS)
+		{GSS_S_BAD_BINDINGS, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_BAD_STATUS)
+		{GSS_S_BAD_STATUS, NT_STATUS_UNSUCCESSFUL},
+#endif
+#if defined(GSS_S_BAD_SIG)
+		{GSS_S_BAD_SIG, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_NO_CRED)
+		{GSS_S_NO_CRED, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_NO_CONTEXT)
+		{GSS_S_NO_CONTEXT, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_DEFECTIVE_TOKEN)
+		{GSS_S_DEFECTIVE_TOKEN, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_DEFECTIVE_CREDENTIAL)
+		{GSS_S_DEFECTIVE_CREDENTIAL, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_CREDENTIALS_EXPIRED)
+		{GSS_S_CREDENTIALS_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
+#endif
+#if defined(GSS_S_CONTEXT_EXPIRED)
+		{GSS_S_CONTEXT_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
+#endif
+#if defined(GSS_S_BAD_QOP)
+		{GSS_S_BAD_QOP, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_UNAUTHORIZED)
+		{GSS_S_UNAUTHORIZED, NT_STATUS_ACCESS_DENIED},
+#endif
+#if defined(GSS_S_UNAVAILABLE)
+		{GSS_S_UNAVAILABLE, NT_STATUS_UNSUCCESSFUL},
+#endif
+#if defined(GSS_S_BAD_NAMETYPE)
+		{GSS_S_DUPLICATE_ELEMENT, NT_STATUS_INVALID_PARAMETER},
+#endif
+#if defined(GSS_S_BAD_NAMETYPE)
+		{GSS_S_NAME_NOT_MN, NT_STATUS_INVALID_PARAMETER},
+#endif
+		{ 0, NT_STATUS_OK }
+};
+
+/*********************************************************************
+ Map an NT error code from a gssapi error code.
+*********************************************************************/
+
+NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor)
+{
+	int i = 0;
+
+	if (gss_maj == GSS_S_COMPLETE) {
+		return NT_STATUS_OK;
+	}
+
+	if (gss_maj == GSS_S_FAILURE) {
+		return map_nt_error_from_unix((int)minor);
+	}
+	
+	/* Look through list */
+	while(gss_to_ntstatus_errormap[i].gss_err != 0) {
+		if (gss_to_ntstatus_errormap[i].gss_err == gss_maj) {
+			return gss_to_ntstatus_errormap[i].ntstatus;
+		}
+		i++;
+	}
+
+	/* Default return */
+	return NT_STATUS_ACCESS_DENIED;
+}
+#endif
