@@ -23,7 +23,7 @@ sub slapd_start($$$)
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d$ENV{FEDORA_DS_LOGLEVEL} > $ENV{LDAPDIR}/logs 2>&1 &");
+	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d$ENV{FEDORA_DS_LOGLEVEL} -i $ENV{FEDORA_DS_PIDFILE}> $ENV{LDAPDIR}/logs 2>&1 &");
 	} else {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
