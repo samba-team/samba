@@ -167,6 +167,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = cli->outbuf;
+	BOOL enc_on = cli_encryption_on(cli);
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1) {
@@ -175,7 +176,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 
 	cli_calculate_sign_mac(cli);
 
-	if (cli_encryption_on(cli)) {
+	if (enc_on) {
 		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			close(cli->fd);
@@ -192,7 +193,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,buf_out+nwritten,len - nwritten);
 		if (ret <= 0) {
-			cli_free_enc_buffer(cli, buf_out);
+			if (enc_on) {
+				cli_free_enc_buffer(cli, buf_out);
+			}
 			close(cli->fd);
 			cli->fd = -1;
 			cli->smb_rw_error = WRITE_ERROR;

@@ -1186,14 +1186,6 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 					const krb5_principal server,
 					krb5_data *reply);
 
-/* Call for SMB transport encryption. */
-#if defined(HAVE_GSSAPI)
-NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf);
-#endif
-#if defined(HAVE_GSSAPI) 
-NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf, char **buf_out);
-#endif
-
 #endif /* HAVE_KRB5 */
 
 

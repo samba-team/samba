@@ -249,6 +249,14 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 
 void srv_free_enc_buffer(char *buf)
 {
+	/* We know this is an smb buffer, and we
+	 * didn't malloc, only copy, for a keepalive,
+	 * so ignore session keepalives. */
+
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return;
+	}
+
 	if (srv_trans_enc_ctx) {
 		common_free_enc_buffer(srv_trans_enc_ctx->es, buf);
 	}
@@ -260,9 +268,15 @@ void srv_free_enc_buffer(char *buf)
 
 NTSTATUS srv_decrypt_buffer(char *buf)
 {
+	/* Ignore session keepalives. */
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return NT_STATUS_OK;
+	}
+
 	if (srv_trans_enc_ctx) {
 		return common_decrypt_buffer(srv_trans_enc_ctx->es, buf);
 	}
+
 	return NT_STATUS_OK;
 }
 
@@ -270,13 +284,19 @@ NTSTATUS srv_decrypt_buffer(char *buf)
  Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
 ******************************************************************************/
 
-NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
+NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out)
 {
+	*buf_out = buf;
+
+	/* Ignore session keepalives. */
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return NT_STATUS_OK;
+	}
+
 	if (srv_trans_enc_ctx) {
-		return common_encrypt_buffer(srv_trans_enc_ctx->es, buffer, buf_out);
+		return common_encrypt_buffer(srv_trans_enc_ctx->es, buf, buf_out);
 	}
 	/* Not encrypting. */
-	*buf_out = buffer;
 	return NT_STATUS_OK;
 }
 
@@ -340,7 +360,11 @@ static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_si
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_size)
+static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
+					unsigned char **ppdata,
+					size_t *p_data_size,
+					unsigned char **pparam,
+					size_t *p_param_size)
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL,0);
@@ -371,6 +395,17 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
 
 	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		return nt_status_squash(status);
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return the context we're using for this encryption state. */
+		*pparam = SMB_MALLOC(2);
+		if (!*pparam) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SSVAL(*pparam,0,partial_srv_trans_enc_ctx->es->enc_ctx_num);
+		*p_param_size = 2;
 	}
 
 	return status;
@@ -381,7 +416,11 @@ static NTSTATUS srv_enc_spnego_negotiate(unsigned char **ppdata, size_t *p_data_
  We only get this for a NTLM auth second stage.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_size)
+static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
+					unsigned char **ppdata,
+					size_t *p_data_size,
+					unsigned char **pparam,
+					size_t *p_param_size)
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL,0);
@@ -409,6 +448,16 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_
 	response = spnego_gen_auth_response(&auth_reply, status, OID_NTLMSSP);
 	data_blob_free(&auth_reply);
 
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return the context we're using for this encryption state. */
+		*pparam = SMB_MALLOC(2);
+		if (!*pparam) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SSVAL(*pparam,0,ec->es->enc_ctx_num);
+		*p_param_size = 2;
+	}
+
 	SAFE_FREE(*ppdata);
 	*ppdata = response.data;
 	*p_data_size = response.length;
@@ -420,7 +469,11 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(unsigned char **ppdata, size_t *p_data_
  This function does both steps.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_raw_ntlm_auth(unsigned char **ppdata, size_t *p_data_size)
+static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
+					unsigned char **ppdata,
+					size_t *p_data_size,
+					unsigned char **pparam,
+					size_t *p_param_size)
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob_const(*ppdata, *p_data_size);
@@ -446,6 +499,16 @@ static NTSTATUS srv_enc_raw_ntlm_auth(unsigned char **ppdata, size_t *p_data_siz
 	/* Second step. */
 	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state, blob, &response);
 
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return the context we're using for this encryption state. */
+		*pparam = SMB_MALLOC(2);
+		if (!*pparam) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SSVAL(*pparam,0,ec->es->enc_ctx_num);
+		*p_param_size = 2;
+	}
+
 	/* Return the raw blob. */
 	SAFE_FREE(*ppdata);
 	*ppdata = response.data;
@@ -457,26 +520,29 @@ static NTSTATUS srv_enc_raw_ntlm_auth(unsigned char **ppdata, size_t *p_data_siz
  Do the SPNEGO encryption negotiation. Parameters are in/out.
 ******************************************************************************/
 
-NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_size)
+NTSTATUS srv_request_encryption_setup(connection_struct *conn,
+					unsigned char **ppdata,
+					size_t *p_data_size,
+					unsigned char **pparam,
+					size_t *p_param_size)
 {
 	unsigned char *pdata = *ppdata;
+
+	SAFE_FREE(*pparam);
+	*p_param_size = 0;
 
 	if (*p_data_size < 1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (pdata[0] == ASN1_APPLICATION(0)) {
-		/* 
-		 * Until success we do everything on the partial
-		 * enc state.
-		 */
 		/* its a negTokenTarg packet */
-		return srv_enc_spnego_negotiate(ppdata, p_data_size);
+		return srv_enc_spnego_negotiate(conn, ppdata, p_data_size, pparam, p_param_size);
 	}
 
 	if (pdata[0] == ASN1_CONTEXT(1)) {
 		/* It's an auth packet */
-		return srv_enc_spnego_ntlm_auth(ppdata, p_data_size);
+		return srv_enc_spnego_ntlm_auth(conn, ppdata, p_data_size, pparam, p_param_size);
 	}
 
 	/* Maybe it's a raw unwrapped auth ? */
@@ -485,7 +551,7 @@ NTSTATUS srv_request_encryption_setup(unsigned char **ppdata, size_t *p_data_siz
 	}
 
 	if (strncmp((char *)pdata, "NTLMSSP", 7) == 0) {
-		return srv_enc_raw_ntlm_auth(ppdata, p_data_size);
+		return srv_enc_raw_ntlm_auth(conn, ppdata, p_data_size, pparam, p_param_size);
 	}
 
 	DEBUG(1,("srv_request_encryption_setup: Unknown packet\n"));
@@ -518,7 +584,7 @@ static NTSTATUS check_enc_good(struct smb_srv_trans_enc_ctx *ec)
  Negotiation was successful - turn on server-side encryption.
 ******************************************************************************/
 
-NTSTATUS srv_encryption_start(void)
+NTSTATUS srv_encryption_start(connection_struct *conn)
 {
 	NTSTATUS status;
 

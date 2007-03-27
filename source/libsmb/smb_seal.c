@@ -21,6 +21,27 @@
 #include "includes.h"
 
 /******************************************************************************
+ Pull out the encryption context for this packet. 0 means global context.
+******************************************************************************/
+
+NTSTATUS get_enc_ctx_num(char *buf, uint16 *p_enc_ctx_num)
+{
+	if (smb_len(buf) < 8) {
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+
+	if (buf[4] == (char)0xFF && buf[5] == 'S') {
+		if (buf [6] == 'M' && buf[7] == 'B') {
+			/* Not an encrypted buffer. */
+			return NT_STATUS_NOT_FOUND;
+		}
+		*p_enc_ctx_num = SVAL(buf,6);
+		return NT_STATUS_OK;
+	}
+	return NT_STATUS_INVALID_NETWORK_RESPONSE;
+}
+
+/******************************************************************************
  Generic code for client and server.
  Is encryption turned on ?
 ******************************************************************************/
@@ -52,7 +73,7 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 	sig = data_blob(buf+buf_len, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_unseal_packet(ntlmssp_state,
-		(unsigned char *)buf + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
+		(unsigned char *)buf + 8, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
 		buf_len - 8,
 		(unsigned char *)buf + 8,
 		buf_len - 8,
@@ -73,7 +94,10 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
  NTLM encrypt an outgoing buffer. Return the encrypted pointer in ppbuf_out.
 ******************************************************************************/
 
-NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, char **ppbuf_out)
+NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
+				uint16 enc_ctx_num,
+				char *buf,
+				char **ppbuf_out)
 {
 	NTSTATUS status;
 	char *buf_out;
@@ -97,12 +121,12 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 	memcpy(buf_out, buf, buf_len);
 	/* Last 16 bytes undefined here... */
 
-	smb_setlen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE);
+	smb_set_enclen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
 
 	sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_seal_packet(ntlmssp_state,
-		(unsigned char *)buf_out + 8, /* 4 byte len + 0xFF 'S' 'M' 'B' */
+		(unsigned char *)buf_out + 8, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
 		buf_len - 8,
 		(unsigned char *)buf_out + 8,
 		buf_len - 8,
@@ -126,7 +150,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
- NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
+NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
 {
 	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
 	OM_uint32 ret = 0;
@@ -179,7 +203,10 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
- NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf, char **ppbuf_out)
+NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
+					uint16 enc_ctx_num,
+		 			char *buf,
+					char **ppbuf_out)
 {
 	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
 	OM_uint32 ret = 0;
@@ -238,7 +265,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf, cha
 	}
 
 	memcpy(*ppbuf_out+8, out_buf.value, out_buf.length);
-	smb_setlen(*ppbuf_out, out_buf.length + 4);
+	smb_set_enclen(*ppbuf_out, out_buf.length + 4, enc_ctx_num);
 
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
@@ -258,18 +285,12 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 		return NT_STATUS_OK;
 	}
 
-	/* Ignore session keepalives. */
-	if(CVAL(buffer,0) == SMBkeepalive) {
-		*buf_out = buffer;
-		return NT_STATUS_OK;
-	}
-
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_encrypt_buffer(es->s.ntlmssp_state, buffer, buf_out);
+			return common_ntlm_encrypt_buffer(es->s.ntlmssp_state, es->enc_ctx_num, buffer, buf_out);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			return common_gss_encrypt_buffer(es->s.gss_state, buffer, buf_out);
+			return common_gss_encrypt_buffer(es->s.gss_state, es->enc_ctx_num, buffer, buf_out);
 #endif
 		default:
 			return NT_STATUS_NOT_SUPPORTED;
@@ -286,11 +307,6 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 {
 	if (!common_encryption_on(es)) {
 		/* Not decrypting. */
-		return NT_STATUS_OK;
-	}
-
-	/* Ignore session keepalives. */
-	if(CVAL(buf,0) == SMBkeepalive) {
 		return NT_STATUS_OK;
 	}
 
@@ -361,21 +377,19 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 		return;
 	}
 
-	/* We know this is an smb buffer, and we
-	 * didn't malloc, only copy, for a keepalive,
-	 * so ignore session keepalives. */
-
-	if(CVAL(buf,0) == SMBkeepalive) {
-		return;
-	}
-
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
 		SAFE_FREE(buf);
 		return;
 	}
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-	/* gss-api free buffer.... */
+	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
+		OM_uint32 min;
+		gss_buffer_desc rel_buf;
+		rel_buf.value = buf;
+		rel_buf.length = smb_len(buf) + 4;
+		gss_release_buffer(&min, &rel_buf);
+	}
 #endif
 }
 
@@ -389,6 +403,9 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 
 BOOL cli_encryption_on(struct cli_state *cli)
 {
+	/* If we supported multiple encrytion contexts
+	 * here we'd look up based on tid.
+	 */
 	return common_encryption_on(cli->trans_enc_state);
 }
 
@@ -407,6 +424,17 @@ void cli_free_encryption_context(struct cli_state *cli)
 
 void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 {
+	/* We know this is an smb buffer, and we
+	 * didn't malloc, only copy, for a keepalive,
+	 * so ignore session keepalives. */
+
+	if(CVAL(buf,0) == SMBkeepalive) {
+		return;
+	}
+
+	/* If we supported multiple encrytion contexts
+	 * here we'd look up based on tid.
+	 */
 	common_free_enc_buffer(cli->trans_enc_state, buf);
 }
 
@@ -416,6 +444,23 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 
 NTSTATUS cli_decrypt_message(struct cli_state *cli)
 {
+	NTSTATUS status;
+	uint16 enc_ctx_num;
+
+	/* Ignore session keepalives. */
+	if(CVAL(cli->inbuf,0) == SMBkeepalive) {
+		return NT_STATUS_OK;
+	}
+
+	status = get_enc_ctx_num(cli->inbuf, &enc_ctx_num);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	return common_decrypt_buffer(cli->trans_enc_state, cli->inbuf);
 }
 
@@ -425,5 +470,13 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
+	/* Ignore session keepalives. */
+	if(CVAL(cli->inbuf,0) == SMBkeepalive) {
+		return NT_STATUS_OK;
+	}
+
+	/* If we supported multiple encrytion contexts
+	 * here we'd look up based on tid.
+	 */
 	return common_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
 }
