@@ -85,6 +85,85 @@ static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
 	}
 }
 
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+
+/******************************************************************************
+ Import a name.
+******************************************************************************/
+
+static NTSTATUS get_gss_creds(const char *service,
+				const char *name,
+				gss_cred_usage_t cred_type,
+				gss_cred_id_t *p_srv_cred)
+{
+	OM_uint32 ret;
+        OM_uint32 min;
+	gss_name_t srv_name;
+	gss_buffer_desc input_name;
+	char *host_princ_s = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	asprintf(&host_princ_s, "%s@%s", service, name);
+	if (host_princ_s == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	input_name.value = host_princ_s;
+	input_name.length = strlen(host_princ_s) + 1;
+
+	ret = gss_import_name(&min,
+				&input_name,
+				GSS_C_NT_HOSTBASED_SERVICE,
+				&srv_name);
+
+	if (ret != GSS_S_COMPLETE) {
+		SAFE_FREE(host_princ_s);
+		return map_nt_error_from_gss(ret, min);
+	}
+
+	ret = gss_acquire_cred(&min,
+				&srv_name,
+				GSS_C_INDEFINITE,
+				GSS_C_NULL_OID_SET,
+				cred_type,
+				p_srv_cred,
+				NULL,
+				NULL);
+
+	if (ret != GSS_S_COMPLETE) {
+		status = map_nt_error_from_gss(ret, min);
+	}
+
+	SAFE_FREE(host_princ_s);
+	gss_release_name(&min, &srv_name);
+	return status;
+}
+
+/******************************************************************************
+ Create a gss state.
+******************************************************************************/
+
+static NTSTATUS make_auth_gss(struct smb_srv_trans_enc_ctx *ec)
+{
+	NTSTATUS status;
+	gss_cred_id_t srv_cred;
+	fstring fqdn;
+
+	name_to_fqdn(fqdn, global_myname());
+	strlower_m(fqdn);
+
+	status = get_gss_creds("cifs", fqdn, GSS_C_ACCEPT, &srv_cred);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = get_gss_creds("host", fqdn, GSS_C_ACCEPT, &srv_cred);
+		if (!NT_STATUS_IS_OK(status)) {
+			return nt_status_squash(status);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+#endif
+
 /******************************************************************************
  Shutdown a server encryption context.
 ******************************************************************************/
@@ -148,6 +227,13 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
 			/* Acquire our credentials by calling gss_acquire_cred here. */
+			{
+				NTSTATUS status = make_auth_gss(ec);
+				if (!NT_STATUS_IS_OK(status)) {
+					srv_free_encryption_context(&ec);
+					return NULL;
+				}
+			}
 			break;
 #endif
 		default:
