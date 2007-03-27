@@ -471,7 +471,7 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
 	/* Ignore session keepalives. */
-	if(CVAL(cli->inbuf,0) == SMBkeepalive) {
+	if(CVAL(cli->outbuf,0) == SMBkeepalive) {
 		return NT_STATUS_OK;
 	}
 
