@@ -5159,7 +5159,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 	key = make_printers_secdesc_tdbkey( sharename );
 
-	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
+	if (tdb_prs_store_bystring(tdb_printers, key, &ps)==0) {
 		status = WERR_OK;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", sharename));
@@ -5280,7 +5280,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 	key = make_printers_secdesc_tdbkey( sharename  );
 
-	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
+	if (tdb_prs_fetch_bystring(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
 		prs_mem_free(&ps);
@@ -5297,7 +5297,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
 		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
-			tdb_prs_store(tdb_printers, key, &ps);
+			tdb_prs_store_bystring(tdb_printers, key, &ps);
 		}
 
 		prs_mem_free(&ps);
