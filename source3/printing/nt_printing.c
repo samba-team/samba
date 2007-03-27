@@ -240,8 +240,7 @@ static TDB_DATA make_printer_tdbkey( const char *sharename )
 	
 	pstr_sprintf( keystr, "%s%s", PRINTERS_PREFIX, share );
 	
-	key.dptr = keystr;
-	key.dsize = strlen(keystr)+1;
+	key = string_term_tdb_data(keystr);
 
 	return key;
 }
@@ -250,17 +249,20 @@ static TDB_DATA make_printer_tdbkey( const char *sharename )
  generate a new TDB_DATA key for storing a printer security descriptor
 ****************************************************************************/
 
-static char *make_printers_secdesc_tdbkey( const char* sharename  )
+static TDB_DATA make_printers_secdesc_tdbkey( const char* sharename  )
 {
 	fstring share;
 	static pstring keystr;
-	
+	TDB_DATA key;
+
 	fstrcpy( share, sharename );
 	strlower_m( share );
 	
 	pstr_sprintf( keystr, "%s%s", SECDESC_PREFIX, share );
 
-	return keystr;
+	key = string_term_tdb_data(keystr);
+
+	return key;
 }
 
 /****************************************************************************
@@ -491,8 +493,7 @@ static int normalize_printers_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		new_key = make_printer_tdbkey( key.dptr+strlen(PRINTERS_PREFIX) );
 	}
 	else if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) == 0 ) {
-		new_key.dptr = make_printers_secdesc_tdbkey( key.dptr+strlen(SECDESC_PREFIX) );
-		new_key.dsize = strlen( new_key.dptr ) + 1;
+		new_key = make_printers_secdesc_tdbkey( key.dptr+strlen(SECDESC_PREFIX) );
 	}
 	else {
 		/* ignore this record */
@@ -820,7 +821,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 {
 	pstring buf, key;
 	int len;
-	TDB_DATA kbuf,dbuf;
+	TDB_DATA dbuf;
 	int i;
 
 	for (i=0;i<number;i++) {
@@ -831,11 +832,9 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[i].name);
-		kbuf.dsize = strlen(key)+1;
-		kbuf.dptr = key;
 		dbuf.dsize = len;
 		dbuf.dptr = buf;
-		if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) break;
+		if (tdb_store_bystring(tdb_forms, key, dbuf, TDB_REPLACE) != 0) break;
        }
 
        return i;
@@ -896,7 +895,6 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
 {
 	pstring key;
-	TDB_DATA kbuf;
 	int n=0;
 	fstring form_name;
 
@@ -918,9 +916,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[n].name);
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-	if (tdb_delete(tdb_forms, kbuf) != 0) {
+	if (tdb_delete_bystring(tdb_forms, key) != 0) {
 		*ret = WERR_NOMEM;
 		return False;
 	}
@@ -1935,7 +1931,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	pstring key;
 	char *buf;
 	int i, ret;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 
 	architecture = get_short_archi(driver->environment);
 	if (!architecture) {
@@ -2020,13 +2016,10 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 		goto again;
 	}
 
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 	
-	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
+	ret = tdb_store_bystring(tdb_drivers, key, dbuf, TDB_REPLACE);
 
 done:
 	if (ret)
@@ -2094,7 +2087,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring drivername, const char *arch, uint32 version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	const char *architecture;
 	int len = 0;
 	int i;
@@ -2115,11 +2108,8 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, version, drivername);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
 	
-	dbuf = tdb_fetch(tdb_drivers, kbuf);
+	dbuf = tdb_fetch_bystring(tdb_drivers, key);
 	if (!dbuf.dptr) 
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 
@@ -2352,8 +2342,7 @@ uint32 del_a_printer(const char *sharename)
 	kbuf = make_printer_tdbkey( sharename );
 	tdb_delete(tdb_printers, kbuf);
 
-	kbuf.dptr = make_printers_secdesc_tdbkey( sharename );
-	kbuf.dsize = strlen(kbuf.dptr) + 1;
+	kbuf= make_printers_secdesc_tdbkey( sharename );
 	tdb_delete(tdb_printers, kbuf);
 
 	close_all_print_db();
@@ -4083,7 +4072,7 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 {
 	int                     len = 0;
 	pstring                 key;
-	TDB_DATA                kbuf, dbuf;
+	TDB_DATA                dbuf;
 	NT_PRINTER_INFO_LEVEL_2 info;
 
 
@@ -4100,10 +4089,7 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
 
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	dbuf = tdb_fetch(tdb_drivers, kbuf);
+	dbuf = tdb_fetch_bystring(tdb_drivers, key);
 	if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
@@ -4196,7 +4182,6 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 BOOL del_driver_init(char *drivername)
 {
 	pstring key;
-	TDB_DATA kbuf;
 
 	if (!drivername || !*drivername) {
 		DEBUG(3,("del_driver_init: No drivername specified!\n"));
@@ -4205,12 +4190,9 @@ BOOL del_driver_init(char *drivername)
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, drivername);
 
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
 	DEBUG(6,("del_driver_init: Removing driver init data for [%s]\n", drivername));
 
-	return (tdb_delete(tdb_drivers, kbuf) == 0);
+	return (tdb_delete_bystring(tdb_drivers, key) == 0);
 }
 
 /****************************************************************************
@@ -4226,7 +4208,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	pstring key;
 	char *buf;
 	int buflen, len, ret;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 
 	buf = NULL;
 	buflen = 0;
@@ -4250,12 +4232,10 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
 
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
-	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
+	ret = tdb_store_bystring(tdb_drivers, key, dbuf, TDB_REPLACE);
 
 done:
 	if (ret == -1)
@@ -5022,7 +5002,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
 {
 	pstring 	key;
 	const char     *arch;
-	TDB_DATA 	kbuf, dbuf;
+	TDB_DATA 	dbuf;
 	NT_PRINTER_DRIVER_INFO_LEVEL	ctr;
 
 	/* delete the tdb data first */
@@ -5040,12 +5020,9 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
 	ctr.info_3 = info_3;
 	dump_a_printer_driver( ctr, 3 );
 
-	kbuf.dptr=key;
-	kbuf.dsize=strlen(key)+1;
-
 	/* check if the driver actually exists for this environment */
 	
-	dbuf = tdb_fetch( tdb_drivers, kbuf );
+	dbuf = tdb_fetch_bystring( tdb_drivers, key );
 	if ( !dbuf.dptr ) {
 		DEBUG(8,("delete_printer_driver: Driver unknown [%s]\n", key));
 		return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -5055,7 +5032,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
 	
 	/* ok... the driver exists so the delete should return success */
 		
-	if (tdb_delete(tdb_drivers, kbuf) == -1) {
+	if (tdb_delete_bystring(tdb_drivers, key) == -1) {
 		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
@@ -5085,7 +5062,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
-	char *key;
+	TDB_DATA kbuf;
 	WERROR status;
 
 	mem_ctx = talloc_init("nt_printing_setsec");
@@ -5157,9 +5134,9 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	key = make_printers_secdesc_tdbkey( sharename );
+	kbuf = make_printers_secdesc_tdbkey( sharename );
 
-	if (tdb_prs_store_bystring(tdb_printers, key, &ps)==0) {
+	if (tdb_prs_store(tdb_printers, kbuf, &ps)==0) {
 		status = WERR_OK;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", sharename));
@@ -5267,7 +5244,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
-	char *key;
+	TDB_DATA kbuf;
 	char *temp;
 
 	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
@@ -5278,9 +5255,9 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 	/* Fetch security descriptor from tdb */
 
-	key = make_printers_secdesc_tdbkey( sharename  );
+	kbuf = make_printers_secdesc_tdbkey( sharename  );
 
-	if (tdb_prs_fetch_bystring(tdb_printers, key, &ps, ctx)!=0 ||
+	if (tdb_prs_fetch(tdb_printers, kbuf, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
 		prs_mem_free(&ps);
@@ -5297,7 +5274,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
 		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
-			tdb_prs_store_bystring(tdb_printers, key, &ps);
+			tdb_prs_store(tdb_printers, kbuf, &ps);
 		}
 
 		prs_mem_free(&ps);
