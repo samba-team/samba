@@ -48,13 +48,13 @@ int cli_set_port(struct cli_state *cli, int port)
  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds
 
- This is exactly the same as receive_smb except that it never returns
+ This is exactly the same as receive_smb except that it can be set to never return
  a session keepalive packet (just as receive_smb used to do).
  receive_smb was changed to return keepalives as the oplock processing means this call
  should never go into a blocking read.
 ****************************************************************************/
 
-static BOOL client_receive_smb(struct cli_state *cli)
+static BOOL client_receive_smb(struct cli_state *cli, BOOL eat_keepalives)
 {
 	BOOL ret;
 	int fd = cli->fd;
@@ -71,8 +71,10 @@ static BOOL client_receive_smb(struct cli_state *cli)
 		}
 
 		/* Ignore session keepalive packets. */
-		if(CVAL(buffer,0) != SMBkeepalive)
-			break;
+		if (eat_keepalives && (CVAL(buffer,0) == SMBkeepalive)) {
+			continue;
+		}
+		break;
 	}
 
 	if (cli_encryption_on(cli)) {
@@ -94,7 +96,7 @@ static BOOL client_receive_smb(struct cli_state *cli)
  Recv an smb.
 ****************************************************************************/
 
-BOOL cli_receive_smb(struct cli_state *cli)
+BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 {
 	BOOL ret;
 
@@ -103,7 +105,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return False; 
 
  again:
-	ret = client_receive_smb(cli);
+	ret = client_receive_smb(cli, eat_keepalives);
 	
 	if (ret) {
 		/* it might be an oplock break request */
@@ -140,6 +142,24 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	}
 
 	return True;
+}
+
+/****************************************************************************
+ Recv an smb - eat keepalives.
+****************************************************************************/
+
+BOOL cli_receive_smb(struct cli_state *cli)
+{
+	return cli_receive_smb_internal(cli, True);
+}
+
+/****************************************************************************
+ Recv an smb - return keepalives.
+****************************************************************************/
+
+BOOL cli_receive_smb_return_keepalive(struct cli_state *cli)
+{
+	return cli_receive_smb_internal(cli, False);
 }
 
 static ssize_t write_socket(int fd, const char *buf, size_t len)
