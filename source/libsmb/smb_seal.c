@@ -332,8 +332,12 @@ static void common_free_gss_state(struct smb_tran_enc_state_gss **pp_gss_state)
 	OM_uint32 minor = 0;
 	struct smb_tran_enc_state_gss *gss_state = *pp_gss_state;
 
-	gss_release_cred(&minor, &gss_state->creds);
-	gss_delete_sec_context(&minor, &gss_state->gss_ctx, NULL);
+	if (gss_state->creds != GSS_C_NO_CREDENTIAL) {
+		gss_release_cred(&minor, &gss_state->creds);
+	}
+	if (gss_state->gss_ctx != GSS_C_NO_CONTEXT) {
+		gss_delete_sec_context(&minor, &gss_state->gss_ctx, NULL);
+	}
 	SAFE_FREE(*pp_gss_state);
 }
 #endif
