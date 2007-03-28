@@ -97,7 +97,7 @@ static NTSTATUS get_gss_creds(const char *service,
 				gss_cred_id_t *p_srv_cred)
 {
 	OM_uint32 ret;
-        OM_uint32 min;
+	OM_uint32 min;
 	gss_name_t srv_name;
 	gss_buffer_desc input_name;
 	char *host_princ_s = NULL;
@@ -141,6 +141,8 @@ static NTSTATUS get_gss_creds(const char *service,
 
 /******************************************************************************
  Create a gss state.
+ Try and get the cifs/server@realm principal first, then fall back to
+ host/server@realm.
 ******************************************************************************/
 
 static NTSTATUS make_auth_gss(struct smb_srv_trans_enc_ctx *ec)
@@ -159,6 +161,18 @@ static NTSTATUS make_auth_gss(struct smb_srv_trans_enc_ctx *ec)
 			return nt_status_squash(status);
 		}
 	}
+
+	ec->es->s.gss_state = SMB_MALLOC_P(struct smb_tran_enc_state_gss);
+	if (!ec->es->s.gss_state) {
+		OM_uint32 min;
+		gss_release_cred(&min, &srv_cred);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(ec->es->s.gss_state);
+	ec->es->s.gss_state->creds = srv_cred;
+
+	/* No context yet. */
+	ec->es->s.gss_state->gss_ctx = GSS_C_NO_CONTEXT;
 
 	return NT_STATUS_OK;
 }
@@ -197,19 +211,21 @@ static void srv_free_encryption_context(struct smb_srv_trans_enc_ctx **pp_ec)
  Create a server encryption context.
 ******************************************************************************/
 
-static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_enc_type smb_enc_type)
+static NTSTATUS make_srv_encryption_context(enum smb_trans_enc_type smb_enc_type, struct smb_srv_trans_enc_ctx **pp_ec)
 {
 	struct smb_srv_trans_enc_ctx *ec;
 
+	*pp_ec = NULL;
+
 	ec = SMB_MALLOC_P(struct smb_srv_trans_enc_ctx);
 	if (!ec) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(partial_srv_trans_enc_ctx);
 	ec->es = SMB_MALLOC_P(struct smb_trans_enc_state);
 	if (!ec->es) {
 		SAFE_FREE(ec);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(ec->es);
 	ec->es->smb_enc_type = smb_enc_type;
@@ -219,7 +235,7 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 				NTSTATUS status = make_auth_ntlmssp(ec);
 				if (!NT_STATUS_IS_OK(status)) {
 					srv_free_encryption_context(&ec);
-					return NULL;
+					return status;
 				}
 			}
 			break;
@@ -231,16 +247,17 @@ static struct smb_srv_trans_enc_ctx *make_srv_encryption_context(enum smb_trans_
 				NTSTATUS status = make_auth_gss(ec);
 				if (!NT_STATUS_IS_OK(status)) {
 					srv_free_encryption_context(&ec);
-					return NULL;
+					return status;
 				}
 			}
 			break;
 #endif
 		default:
 			srv_free_encryption_context(&ec);
-			return NULL;
+			return NT_STATUS_INVALID_PARAMETER;
 	}
-	return ec;
+	*pp_ec = ec;
+	return NT_STATUS_OK;
 }
 
 /******************************************************************************
@@ -308,14 +325,68 @@ NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out)
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
 {
+	OM_uint32 ret;
+	OM_uint32 min;
+	OM_uint32 flags = 0;
+	gss_buffer_desc in_buf, out_buf;
+	struct smb_tran_enc_state_gss *gss_state;
+
 	if (!partial_srv_trans_enc_ctx) {
-		partial_srv_trans_enc_ctx = make_srv_encryption_context(SMB_TRANS_ENC_GSS);
-		if (!partial_srv_trans_enc_ctx) {
-			return NT_STATUS_NO_MEMORY;
+		NTSTATUS status = make_srv_encryption_context(SMB_TRANS_ENC_GSS, &partial_srv_trans_enc_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
-	return NT_STATUS_NOT_SUPPORTED;
+	gss_state = partial_srv_trans_enc_ctx->es->s.gss_state;
+
+	in_buf.value = secblob.data;
+	in_buf.length = secblob.length;
+
+	out_buf.value = NULL;
+	out_buf.length = 0;
+
+	ret = gss_accept_sec_context(&min,
+				&gss_state->gss_ctx,
+				gss_state->creds,
+				&in_buf,
+				GSS_C_NO_CHANNEL_BINDINGS,
+				NULL,
+				NULL,		/* Ignore oids. */
+				&out_buf,	/* To return. */
+				&flags,
+				NULL,		/* Ingore time. */
+				NULL);		/* Ignore delegated creds. */
+
+	if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
+		return gss_err_to_ntstatus(ret, min);
+	}
+
+	/* Ensure we've got sign+seal available. */
+	if (ret == GSS_S_COMPLETE) {
+		if ((flags & (GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)) !=
+				(GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)) {
+			DEBUG(0,("srv_enc_spnego_gss_negotiate: quality of service not good enough "
+				"for SMB sealing.\n"));
+			gss_release_buffer(&min, &out_buf);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	SAFE_FREE(*ppdata);
+	*ppdata = memdup(out_buf.value, out_buf.length);
+	if (!*ppdata) {
+		gss_release_buffer(&min, &out_buf);
+		return NT_STATUS_NO_MEMORY;
+	}
+	*p_data_size = out_buf.length;
+	gss_release_buffer(&min, &out_buf);
+
+	if (ret != GSS_S_CONTINUE_NEEDED) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else {
+		return NT_STATUS_OK;
+	}
 }
 #endif
 
@@ -330,9 +401,9 @@ static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_si
 	DATA_BLOB chal = data_blob(NULL, 0);
 	DATA_BLOB response = data_blob(NULL, 0);
 
-	partial_srv_trans_enc_ctx = make_srv_encryption_context(SMB_TRANS_ENC_NTLM);
-	if (!partial_srv_trans_enc_ctx) {
-		return NT_STATUS_NO_MEMORY;
+	status = make_srv_encryption_context(SMB_TRANS_ENC_NTLM, &partial_srv_trans_enc_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state, secblob, &chal);
