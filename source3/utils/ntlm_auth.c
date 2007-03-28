@@ -761,7 +761,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, (const char *)request.data, request.length);
+	dump_data(10, request.data, request.length);
 
 	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
 	
@@ -914,7 +914,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, (const char *)request.data, request.length);
+	dump_data(10, request.data, request.length);
 
 	if (use_cached_creds && !opt_password && !first) {
 		nt_status = do_ccache_ntlm_auth(initial_message, request, &reply);
@@ -1135,7 +1135,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			}
 
 			DEBUG(10, ("got NTLMSSP packet:\n"));
-			dump_data(10, (const char *)request.negTokenInit.mechToken.data,
+			dump_data(10, request.negTokenInit.mechToken.data,
 				  request.negTokenInit.mechToken.length);
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;

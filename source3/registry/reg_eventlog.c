@@ -237,7 +237,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	already_in = False;
 	wrklist = NULL;
-	dump_data( 1, (const char *)rval->data_p, rval->size );
+	dump_data( 1, rval->data_p, rval->size );
 	if ( ( numsources =
 	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
 					&wrklist ) ) > 0 ) {
@@ -280,7 +280,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 		*( wp + numsources ) = ( char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
 		mbytes = regval_build_multi_sz( wp, &msz_wp );
-		dump_data( 1, ( char * ) msz_wp, mbytes );
+		dump_data( 1, ( uint8 * ) msz_wp, mbytes );
 		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
 				     ( char * ) msz_wp, mbytes );
 		regdb_store_values( evtlogpath, values );

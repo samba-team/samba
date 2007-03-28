@@ -3044,7 +3044,7 @@ int reply_nttrans(connection_struct *conn,
 		}
 
 		memcpy( state->setup, &inbuf[smb_nt_SetupStart], state->setup_count);
-		dump_data(10, (char *)state->setup, state->setup_count);
+		dump_data(10, (uint8 *)state->setup, state->setup_count);
 	}
 
 	if ((state->received_data == state->total_data) &&

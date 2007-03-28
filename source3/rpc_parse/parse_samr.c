@@ -6661,13 +6661,13 @@ static void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, DATA_BLOB *sess_key,
 	switch (switch_value) {
 	case 0x18:
 		SamOEMhashBlob(ctr->info.id24->pass, 516, sess_key);
-		dump_data(100, (char *)sess_key->data, sess_key->length);
-		dump_data(100, (char *)ctr->info.id24->pass, 516);
+		dump_data(100, sess_key->data, sess_key->length);
+		dump_data(100, ctr->info.id24->pass, 516);
 		break;
 	case 0x17:
 		SamOEMhashBlob(ctr->info.id23->pass, 516, sess_key);
-		dump_data(100, (char *)sess_key->data, sess_key->length);
-		dump_data(100, (char *)ctr->info.id23->pass, 516);
+		dump_data(100, sess_key->data, sess_key->length);
+		dump_data(100, ctr->info.id23->pass, 516);
 		break;
 	case 0x07:
 		break;
@@ -6970,9 +6970,9 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 	case 18:
 		SamOEMhashBlob(ctr->info.id18->lm_pwd, 16, sess_key);
 		SamOEMhashBlob(ctr->info.id18->nt_pwd, 16, sess_key);
-		dump_data(100, (char *)sess_key->data, sess_key->length);
-		dump_data(100, (char *)ctr->info.id18->lm_pwd, 16);
-		dump_data(100, (char *)ctr->info.id18->nt_pwd, 16);
+		dump_data(100, sess_key->data, sess_key->length);
+		dump_data(100, ctr->info.id18->lm_pwd, 16);
+		dump_data(100, ctr->info.id18->nt_pwd, 16);
 		break;
 	}
 }
