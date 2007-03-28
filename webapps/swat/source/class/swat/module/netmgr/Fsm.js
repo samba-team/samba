@@ -62,7 +62,9 @@ qx.Proto.buildFsm = function(module)
           "appear" :
           {
             "swat.main.canvas" :
-              "Transition_Idle_to_AwaitRpcResult_via_canvas_appear"
+              "Transition_Idle_to_AwaitRpcResult_via_canvas_appear",
+            "vlayout":
+              "Transition_Idle_to_AwaitRpcResult_via_vlayout_appear"
           },
 
 	  "changeSelection" :
@@ -80,14 +82,29 @@ qx.Proto.buildFsm = function(module)
     "Transition_Idle_to_AwaitRpcResult_via_canvas_appear",
     {
       "nextState" : "State_AwaitRpcResult",
-		    
+
+      "ontransition" : function(fsm, event)
+      {
+        var request = _this.callRpc(fsm, "samba.ejsnet", "NetContext", []);
+	request.setUserData("requestType", "NetContext");
+      }
+    });
+
+  // Add the new transition
+  state.addTransition(trans);
+
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Idle_to_AwaitRpcResult_via_vlayout_appear",
+    {
+      "nextState" : "State_AwaitRpcResult",
+
       "ontransition" :
-	function(fsm, event)
-	{
+        function(fsm, event)
+        {
 	  // Request our netbios name to add proper node to the tree
 	  var request = _this.callRpc(fsm, "samba.config", "lp_get", [ "netbios name" ]);
 	  request.setUserData("requestType", "hostname");
-	}
+        }
     });
 
   // Add the new transition
@@ -98,25 +115,15 @@ qx.Proto.buildFsm = function(module)
     {
       "nextState" : "State_AwaitRpcResult",
 
-      "ontransition" :
-      function(fsm, event)
+      "ontransition" : function(fsm, event)
       {
 	var nodes = event.getData();
 	var selectedNode = nodes[0];
 
 	var gui = swat.module.netmgr.Gui.getInstance();
 	var parentNode = gui.getParentNode(module, selectedNode);
-
-	if (typeof(parentNode.credentials) == "object")
-	{
-	  var creds = parentNode.credentials;
-	  var request = _this.callRpc("samba.ejsnet", "NetContext", [ creds ]);
-	  request.setUserData("requestType", "NetContext");
-	}
-	else
-	{
-	  // TODO: display a login dialog
-	}
+	
+        var params = (parentNode.credentials == undefined) ? [] : [ parentNode.credentials ];
       }
       
     });
@@ -128,10 +135,12 @@ qx.Proto.buildFsm = function(module)
   {
     "appear":
     {
-      "tree" : qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
+      "tree" : qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED,
+      "vlayout" : qx.util.fsm.FiniteStateMachine.EventHandling.BLOCKED
     }
   }
 
+  // Add blocked events
   this.addAwaitRpcResultState(module, blockedEvents);
   
 };
