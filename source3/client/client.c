@@ -3891,6 +3891,8 @@ static int do_message_op(void)
 	char *p;
 	int rc = 0;
 	fstring new_workgroup;
+	BOOL tar_opt = False;
+	BOOL service_opt = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
@@ -3937,13 +3939,43 @@ static int do_message_op(void)
 		x_setbuf( dbf, NULL );
 	}
 
-	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
-				POPT_CONTEXT_KEEP_FIRST);
+	/* skip argv(0) */
+	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "service <password>");
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
+
+		/* if the tar option has been called previouslt, now we need to eat out the leftovers */
+		/* I see no other way to keep things sane --SSS */
+		if (tar_opt == True) {
+			while (poptPeekArg(pc)) {
+				poptGetArg(pc);
+			}
+			tar_opt = False;
+		}
+
+		/* if the service has not yet been specified lets see if it is available in the popt stack */
+		if (!service_opt && poptPeekArg(pc)) {
+			pstrcpy(service, poptGetArg(pc));
+			/* Convert any '/' characters in the service name to '\' characters */
+			string_replace(service, '/','\\');
+
+			if (count_chars(service,'\\') < 3) {
+				d_printf("\n%s: Not enough '\\' characters in service\n",service);
+				poptPrintUsage(pc, stderr, 0);
+				exit(1);
+			}
+			service_opt = True;
+		}
+
+		/* if the service has already been retrieved then check if we have also a password */
+		if (service_opt && (!cmdline_auth_info.got_pass) && poptPeekArg(pc)) {
+			pstrcpy(cmdline_auth_info.password, poptGetArg(pc));
+			cmdline_auth_info.got_pass = True;
+		}
+	
 		switch (opt) {
 		case 'M':
 			/* Messages are sent to NetBIOS name type 0x3
@@ -3998,13 +4030,9 @@ static int do_message_op(void)
 					poptPrintUsage(pc, stderr, 0);
 					exit(1);
 				}
-				/* Now we must eat (optnum - i) options - they have
-				 * been processed by tar_parseargs().
-				 */
-				optnum -= i;
-				for (i = 0; i < optnum; i++)
-					poptGetOptArg(pc);
 			}
+			/* this must be the last option, mark we have parsed it so that we know we have */
+			tar_opt = True;
 			break;
 		case 'D':
 			pstrcpy(base_directory,poptGetOptArg(pc));
@@ -4015,8 +4043,34 @@ static int do_message_op(void)
 		}
 	}
 
-	poptGetArg(pc);
+	/* We may still have some leftovers after the last popt option has been called */
+	if (tar_opt == True) {
+		while (poptPeekArg(pc)) {
+			poptGetArg(pc);
+		}
+		tar_opt = False;
+	}
 
+	/* if the service has not yet been specified lets see if it is available in the popt stack */
+	if (!service_opt && poptPeekArg(pc)) {
+		pstrcpy(service, poptGetArg(pc));
+		/* Convert any '/' characters in the service name to '\' characters */
+		string_replace(service, '/','\\');
+
+		if (count_chars(service,'\\') < 3) {
+			d_printf("\n%s: Not enough '\\' characters in service\n",service);
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+		service_opt = True;
+	}
+
+	/* if the service has already been retrieved then check if we have also a password */
+	if (service_opt && (!cmdline_auth_info.got_pass) && poptPeekArg(pc)) {
+		pstrcpy(cmdline_auth_info.password, poptGetArg(pc));
+		cmdline_auth_info.got_pass = True;
+	}
+	
 	/* check for the -P option */
 
 	if ( port != 0 )
@@ -4054,23 +4108,6 @@ static int do_message_op(void)
 		set_global_myname( calling_name );
 	else
 		pstrcpy( calling_name, global_myname() );
-
-	if(poptPeekArg(pc)) {
-		pstrcpy(service,poptGetArg(pc));  
-		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace(service, '/','\\');
-
-		if (count_chars(service,'\\') < 3) {
-			d_printf("\n%s: Not enough '\\' characters in service\n",service);
-			poptPrintUsage(pc, stderr, 0);
-			exit(1);
-		}
-	}
-
-	if (poptPeekArg(pc) && !cmdline_auth_info.got_pass) { 
-		cmdline_auth_info.got_pass = True;
-		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
-	}
 
 	init_names();
 
