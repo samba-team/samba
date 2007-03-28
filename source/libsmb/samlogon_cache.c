@@ -59,9 +59,10 @@ BOOL netsamlogon_cache_shutdown(void)
 ***********************************************************************/
 void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 {
-	fstring domain;
 	TDB_DATA key;
 	BOOL got_tdb = False;
+	DOM_SID sid;
+	fstring key_str, sid_string;
 
 	/* We may need to call this function from smbd which will not have
            winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
@@ -77,29 +78,24 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 		got_tdb = True;
 	}
 
-	unistr2_to_ascii(domain, &user->uni_logon_dom, sizeof(domain) - 1);
+	sid_copy(&sid, &user->dom_sid.sid);
+	sid_append_rid(&sid, user->user_rid);
 
-	/* Clear U/DOMAIN/RID cache entry */
+	/* Clear U/SID cache entry */
 
-	asprintf(&key.dptr, "U/%s/%d", domain, user->user_rid);
-	key.dsize = strlen(key.dptr) - 1; /* keys are not NULL terminated */
+	fstr_sprintf(key_str, "U/%s", sid_to_string(sid_string, &sid));
 
-	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key.dptr));
+	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
 
-	tdb_delete(tdb, key);
+	tdb_delete(tdb, string_tdb_data(key_str));
 
-	SAFE_FREE(key.dptr);
+	/* Clear UG/SID cache entry */
 
-	/* Clear UG/DOMAIN/RID cache entry */
-
-	asprintf(&key.dptr, "UG/%s/%d", domain, user->user_rid);
-	key.dsize = strlen(key.dptr) - 1; /* keys are not NULL terminated */
+	fstr_sprintf(key_str, "UG/%s", sid_to_string(sid_string, &sid));
 
 	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key.dptr));
 
-	tdb_delete(tdb, key);
-
-	SAFE_FREE(key.dptr);
+	tdb_delete(tdb, string_tdb_data(key_str));
 
 	if (got_tdb)
 		tdb_close(tdb);
