@@ -393,7 +393,7 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 
 #if defined(KRB5_KRBHST_INIT)
 /* Heimdal */
- krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters)
+ krb5_error_code smb_krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters)
 {
 	krb5_krbhst_handle hnd;
 	krb5_krbhst_info *hinfo;
@@ -407,7 +407,7 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 
 	rc = krb5_krbhst_init(ctx, realm->data, KRB5_KRBHST_KDC, &hnd);
 	if (rc) {
-		DEBUG(0, ("krb5_locate_kdc: krb5_krbhst_init failed (%s)\n", error_message(rc)));
+		DEBUG(0, ("smb_krb5_locate_kdc: krb5_krbhst_init failed (%s)\n", error_message(rc)));
 		return rc;
 	}
 
@@ -417,14 +417,14 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 	krb5_krbhst_reset(ctx, hnd);
 
 	if (!num_kdcs) {
-		DEBUG(0, ("krb5_locate_kdc: zero kdcs found !\n"));
+		DEBUG(0, ("smb_krb5_locate_kdc: zero kdcs found !\n"));
 		krb5_krbhst_free(ctx, hnd);
 		return -1;
 	}
 
 	sa = SMB_MALLOC_ARRAY( struct sockaddr, num_kdcs );
 	if (!sa) {
-		DEBUG(0, ("krb5_locate_kdc: malloc failed\n"));
+		DEBUG(0, ("smb_krb5_locate_kdc: malloc failed\n"));
 		krb5_krbhst_free(ctx, hnd);
 		naddrs = 0;
 		return -1;
@@ -454,7 +454,7 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 
 #else /* ! defined(KRB5_KRBHST_INIT) */
 
- krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm,
+ krb5_error_code smb_krb5_locate_kdc(krb5_context ctx, const krb5_data *realm,
 		struct sockaddr **addr_pp, int *naddrs, int get_masters)
 {
 	DEBUG(0, ("unable to explicitly locate the KDC on this platform\n"));
@@ -462,6 +462,14 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 }
 
 #endif /* KRB5_KRBHST_INIT */
+
+#else /* ! HAVE_KRB5_LOCATE_KDC */
+
+ krb5_error_code smb_krb5_locate_kdc(krb5_context ctx, const krb5_data *realm,
+		struct sockaddr **addr_pp, int *naddrs, int get_masters)
+{
+	return krb5_locate_kdc(ctx, realm, addr_pp, naddrs, get_masters);
+}
 
 #endif /* HAVE_KRB5_LOCATE_KDC */
 

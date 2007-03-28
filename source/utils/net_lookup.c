@@ -238,9 +238,9 @@ static int net_lookup_kdc(int argc, const char **argv)
 		realm.length = strlen((const char *)realm.data);
 	}
 
-	rc = krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);
+	rc = smb_krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);
 	if (rc) {
-		DEBUG(1, ("krb5_locate_kdc failed (%s)\n", error_message(rc)));
+		DEBUG(1, ("smb_krb5_locate_kdc failed (%s)\n", error_message(rc)));
 		return -1;
 	}
 	for (i=0;i<num_kdcs;i++)
