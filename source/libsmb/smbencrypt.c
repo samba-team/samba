@@ -36,9 +36,9 @@ void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBencrypt_hash: lm#, challenge, response\n"));
-	dump_data(100, (const char *)p21, 16);
-	dump_data(100, (const char *)c8, 8);
-	dump_data(100, (const char *)p24, 24);
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
 #endif
 }
 
@@ -146,16 +146,16 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
-	dump_data(120, pwd, strlen(pwd));
-	dump_data(100, (char *)nt_p16, 16);
+	dump_data(120, (uint8 *)pwd, strlen(pwd));
+	dump_data(100, nt_p16, 16);
 #endif
 
 	E_deshash(pwd, (uchar *)p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, pwd, strlen(pwd));
-	dump_data(100, (char *)p16, 16);
+	dump_data(120, (uint8 *)pwd, strlen(pwd));
+	dump_data(100, p16, 16);
 #endif
 }
 
@@ -204,10 +204,10 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
-	dump_data(100, (const char *)user, user_byte_len);
-	dump_data(100, (const char *)domain, domain_byte_len);
-	dump_data(100, (const char *)owf, 16);
-	dump_data(100, (const char *)kr_buf, 16);
+	dump_data(100, (uint8 *)user, user_byte_len);
+	dump_data(100, (uint8 *)domain, domain_byte_len);
+	dump_data(100, (uint8 *)owf, 16);
+	dump_data(100, (uint8 *)kr_buf, 16);
 #endif
 
 	SAFE_FREE(user);
@@ -238,9 +238,9 @@ void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p
 	E_P24(p21, ntlmchalresp, p24);
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("NTLMSSPOWFencrypt: p21, c8, p24\n"));
-	dump_data(100, (char *)p21, 21);
-	dump_data(100, (const char *)ntlmchalresp, 8);
-	dump_data(100, (char *)p24, 24);
+	dump_data(100, p21, 21);
+	dump_data(100, ntlmchalresp, 8);
+	dump_data(100, p24, 24);
 #endif
 }
 
@@ -257,9 +257,9 @@ void SMBNTencrypt_hash(const uchar nt_hash[16], uchar *c8, uchar *p24)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBNTencrypt: nt#, challenge, response\n"));
-	dump_data(100, (char *)p21, 16);
-	dump_data(100, (char *)c8, 8);
-	dump_data(100, (char *)p24, 24);
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
 #endif
 }
 
@@ -287,9 +287,9 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
-	dump_data(100, (const char *)srv_chal->data, srv_chal->length);
-	dump_data(100, (const char *)cli_chal->data, cli_chal->length);
-	dump_data(100, (const char *)resp_buf, 16);
+	dump_data(100, srv_chal->data, srv_chal->length);
+	dump_data(100, cli_chal->data, cli_chal->length);
+	dump_data(100, resp_buf, 16);
 #endif
 }
 
@@ -306,7 +306,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
-	dump_data(100, (const char *)sess_key, 16);
+	dump_data(100, sess_key, 16);
 #endif
 }
 
@@ -320,7 +320,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
-	dump_data(100, (const char *)sess_key, 16);
+	dump_data(100, sess_key, 16);
 #endif
 }
 
@@ -340,7 +340,7 @@ void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_lmv1_jerry:\n"));
-	dump_data(100, (const char *)sess_key, 16);
+	dump_data(100, sess_key, 16);
 #endif
 }
 
@@ -544,7 +544,7 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 	byte_len = IVAL(in_buffer, 512);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, (const char *)in_buffer, 516);
+	dump_data(100, in_buffer, 516);
 #endif
 
 	/* Password cannot be longer than the size of the password buffer */
@@ -560,7 +560,7 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (const char *)new_pwrd, *new_pw_len);
+	dump_data(100, (uint8 *)new_pwrd, *new_pw_len);
 	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif

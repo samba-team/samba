@@ -967,9 +967,9 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	}
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)*cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, *cached_nt_pass, NT_HASH_LEN);
 	if (*cached_salt) {
-		dump_data(100, (const char *)*cached_salt, NT_HASH_LEN);
+		dump_data(100, *cached_salt, NT_HASH_LEN);
 	}
 #endif
 	status = centry->status;
@@ -1008,7 +1008,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 	}
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)nt_pass, NT_HASH_LEN);
+	dump_data(100, nt_pass, NT_HASH_LEN);
 #endif
 
 	centry_put_time(centry, time(NULL));
@@ -2226,7 +2226,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 		return False;
 	}
 
-	dump_data(11, data.dptr, data.dsize);
+	dump_data(11, (uint8 *)data.dptr, data.dsize);
 
 	response->extra_data.data = data.dptr;
 	return True;
@@ -2723,9 +2723,9 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 	}
 
 	DEBUG(0,("cache_traverse_validate_fn: unknown cache entry\nkey :\n"));
-	dump_data(0, kbuf.dptr, kbuf.dsize);
+	dump_data(0, (uint8 *)kbuf.dptr, kbuf.dsize);
 	DEBUG(0,("data :\n"));
-	dump_data(0, dbuf.dptr, dbuf.dsize);
+	dump_data(0, (uint8 *)dbuf.dptr, dbuf.dsize);
 	return 1; /* terminate. */
 }
 

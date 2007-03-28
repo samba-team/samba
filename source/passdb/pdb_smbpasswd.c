@@ -1023,7 +1023,7 @@ This is no longer supported.!\n", pwd->smb_name));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("mod_smbfilepwd_entry: "));
-	dump_data(100, ascii_p16, wr_len);
+	dump_data(100, (uint8 *)ascii_p16, wr_len);
 #endif
 
 	if(wr_len > sizeof(linebuf)) {
