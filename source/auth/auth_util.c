@@ -241,8 +241,8 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 const uchar nt_interactive_pwd[16], 
 					 const uchar *dc_sess_key)
 {
-	char lm_pwd[16];
-	char nt_pwd[16];
+	unsigned char lm_pwd[16];
+	unsigned char nt_pwd[16];
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
@@ -268,10 +268,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SamOEMhash((uchar *)lm_pwd, key, sizeof(lm_pwd));
+		SamOEMhash(lm_pwd, key, sizeof(lm_pwd));
 	
 	if (nt_interactive_pwd)
-		SamOEMhash((uchar *)nt_pwd, key, sizeof(nt_pwd));
+		SamOEMhash(nt_pwd, key, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
@@ -282,11 +282,11 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SMBOWFencrypt((const unsigned char *)lm_pwd, chal,
+		SMBOWFencrypt(lm_pwd, chal,
 			      local_lm_response);
 
 	if (nt_interactive_pwd)
-		SMBOWFencrypt((const unsigned char *)nt_pwd, chal,
+		SMBOWFencrypt(nt_pwd, chal,
 			      local_nt_response);
 	
 	/* Password info paranoia */
