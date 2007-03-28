@@ -26,7 +26,7 @@ Makefile.settings: configure
 	@echo Makefile.settings not present, trying to run configure...
 	./configure
 
-configure: configure.in
+configure: configure.ac
 	@echo configure not present, trying to regenerate it...
 	autoreconf
 endif
