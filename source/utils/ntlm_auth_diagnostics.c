@@ -243,10 +243,10 @@ static BOOL test_ntlm_in_both(void)
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
-	char lm_key[8];
-	char lm_hash[16];
-	char user_session_key[16];
-	char nt_hash[16];
+	uint8 lm_key[8];
+	uint8 lm_hash[16];
+	uint8 user_session_key[16];
+	uint8 nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
@@ -257,10 +257,10 @@ static BOOL test_ntlm_in_both(void)
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, (unsigned char *)nt_hash);
-	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, (unsigned char *)lm_hash); 
+	E_deshash(opt_password, lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -268,8 +268,8 @@ static BOOL test_ntlm_in_both(void)
 					      &nt_response,
 					      &nt_response,
 					      flags,
-					      (unsigned char *)lm_key,
-					      (unsigned char *)user_session_key,
+					      lm_key,
+					      user_session_key,
 					      &error_string, NULL);
 	
 	data_blob_free(&nt_response);
