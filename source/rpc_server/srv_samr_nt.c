@@ -3553,7 +3553,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			SamOEMhashBlob(ctr->info.id24->pass, 516, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id24->pass, 516);
+			dump_data(100, ctr->info.id24->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -3565,7 +3565,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id25->pass, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id25->pass, 532);
+			dump_data(100, ctr->info.id25->pass, 532);
 
 			r_u->status = set_user_info_25(p->mem_ctx,
 						       ctr->info.id25, pwd);
@@ -3582,7 +3582,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id26->pass, 516);
+			dump_data(100, ctr->info.id26->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -3594,7 +3594,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id23->pass, 516);
+			dump_data(100, ctr->info.id23->pass, 516);
 
 			r_u->status = set_user_info_23(p->mem_ctx,
 						       ctr->info.id23, pwd);
@@ -3728,7 +3728,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			}
 			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id23->pass, 516);
+			dump_data(100, ctr->info.id23->pass, 516);
 
 			r_u->status = set_user_info_23(p->mem_ctx,
 						       ctr->info.id23, pwd);
@@ -3739,7 +3739,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
 
-			dump_data(100, (char *)ctr->info.id26->pass, 516);
+			dump_data(100, ctr->info.id26->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;

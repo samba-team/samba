@@ -1150,10 +1150,10 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 		unsigned char key[16];
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("lm cypher:"));
-		dump_data(100, (char *)lm_cypher, 16);
+		dump_data(100, lm_cypher, 16);
 
 		DEBUG(100,("nt cypher:"));
-		dump_data(100, (char *)nt_cypher, 16);
+		dump_data(100, nt_cypher, 16);
 #endif
 
 		memset(key, 0, 16);
@@ -1166,10 +1166,10 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of lm owf password:"));
-		dump_data(100, (char *)lm_owf, 16);
+		dump_data(100, lm_owf, 16);
 
 		DEBUG(100,("encrypt of nt owf password:"));
-		dump_data(100, (char *)nt_owf, 16);
+		dump_data(100, nt_owf, 16);
 #endif
 		/* set up pointers to cypher blocks */
 		lm_cypher = lm_owf;

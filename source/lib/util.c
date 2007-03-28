@@ -513,7 +513,7 @@ void show_msg(char *buf)
 	if (DEBUGLEVEL < 50)
 		bcc = MIN(bcc, 512);
 
-	dump_data(10, smb_buf(buf), bcc);	
+	dump_data(10, (uint8 *)smb_buf(buf), bcc);	
 }
 
 /*******************************************************************
@@ -2253,9 +2253,8 @@ void print_asc(int level, const unsigned char *buf,int len)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const char *buf1,int len)
+void dump_data(int level, const unsigned char *buf,int len)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
 	int i=0;
 	if (len<=0) return;
 
@@ -2292,7 +2291,7 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 	DEBUG(11, ("%s", msg));
 	if (data != NULL && len > 0)
 	{
-		dump_data(11, (const char *)data, len);
+		dump_data(11, data, len);
 	}
 #endif
 }

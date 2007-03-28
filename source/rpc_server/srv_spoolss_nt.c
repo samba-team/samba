@@ -1097,7 +1097,7 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
 		DEBUG(3, ("notify2_unpack_msg: value1 = %d, value2 = %d\n", msg->notify.value[0],
 			  msg->notify.value[1]));
 	else
-		dump_data(3, msg->notify.data, msg->len);
+		dump_data(3, (uint8 *)msg->notify.data, msg->len);
 
 	return True;
 }
