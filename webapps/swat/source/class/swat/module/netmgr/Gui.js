@@ -13,22 +13,22 @@ function()
 
 
 //qx.OO.addProperty({ name : "_tree", type : "object" });
+//qx.OO.addProperty({ name : "_panel", type : "object" });
 
 qx.Proto.buildGui = function(module)
 {
   var fsm = module.fsm;
 
-  // We need a horizontal box layout for the database name
-  var vlayout = new qx.ui.layout.VerticalBoxLayout();
-  vlayout.set({
-                  top: 20,
-                  left: 20,
-                  right: 20,
-                  bottom: 20
+  var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+  hlayout.set({
+                top: 0,
+                left: 0,
+                right: 0,
+		height: "80%"
               });
-  
+
   // Create a hosts tree
-  this._tree = new qx.ui.treevirtual.TreeVirtual(["Net"]);
+  this._tree = new qx.ui.treevirtual.TreeVirtual(["Hosts"]);
   var tree = this._tree;
 
   // Set the tree's properties
@@ -36,8 +36,8 @@ qx.Proto.buildGui = function(module)
              backgroundColor: 255,
 	     border: qx.renderer.border.BorderPresets.getInstance().thinInset,
              overflow: "hidden",
-             width: "30%",
-             height: "1*",
+             width: "20%",
+             height: "100%",
              alwaysShowOpenCloseSymbol: true
            });
 
@@ -48,9 +48,43 @@ qx.Proto.buildGui = function(module)
 
   // Give a tree widget nicer name to handle
   fsm.addObject("tree", tree, "swat.main.fsmUtils.disable_during_rpc");
+
+  // "Panel" for list view
+  this._panel = new qx.ui.layout.VerticalBoxLayout();
+  var panel = this._panel;
   
-  // Add the label to the horizontal layout
-  vlayout.add(tree);
+  panel.set({
+              top: 0,
+              right: 20,
+              width: "80%",
+              height: "100%"
+            });
+  
+  // Add the tree view and panel for list view to the layout
+  hlayout.add(tree);
+  hlayout.add(panel);
+
+  var statusLayout = new qx.ui.layout.HorizontalBoxLayout();
+  statusLayout.set({
+                     top: 0,
+                     left: 0,
+                     right: 0,
+                     height: "100%"
+                   });
+
+  var vlayout = new qx.ui.layout.VerticalBoxLayout();
+  vlayout.set({
+                top: 20,
+                left: 20,
+                width: "100%",
+                bottom: 20
+              });
+
+  vlayout.add(hlayout);
+  vlayout.add(statusLayout);
+
+  vlayout.addEventListener("appear", fsm.eventListener, fsm);
+  fsm.addObject("vlayout", vlayout);
 
   module.canvas.add(vlayout);
 };
@@ -73,7 +107,8 @@ qx.Proto.displayData = function(module, rpcRequest)
   switch (requestType)
   {
     case "hostname":
-      this._addHostNode(module, rpcRequest);
+      // Add local host node
+      this._addHostNode(module, rpcRequest, true);
       break;
 
     case "NetContext":
@@ -105,7 +140,7 @@ qx.Proto.getParentNode = function(module, node)
 };
 
 
-qx.Proto._addHostNode = function(module, rpcRequest)
+qx.Proto._addHostNode = function(module, rpcRequest, local)
 {
   var fsm = module.fsm;
   var hostname = rpcRequest.getUserData("result").data;
@@ -126,7 +161,10 @@ qx.Proto._addHostNode = function(module, rpcRequest)
   tree.addEventListener("changeSelection", fsm.eventListener, fsm);
 
   var hostNode = dataModel.getData()[hostNodeId];
+
+  // Set host-specific properties
   hostNode.credentials = undefined;
+  hostNode.local = local
 };
 
 
