@@ -162,8 +162,12 @@ sub Enum($$$)
 	pidl_code "$dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, guint32 *param _U_)";
 	pidl_code "{";
 	indent;
-	pidl_code "g$e->{BASE_TYPE} parameter;";
+	pidl_code "g$e->{BASE_TYPE} parameter=0;";
+	pidl_code "if(param){";
+	indent;
 	pidl_code "parameter=(g$e->{BASE_TYPE})*param;";
+	deindent;
+	pidl_code "}";
 	pidl_code "offset = dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &parameter);";
 	pidl_code "if(param){";
 	indent;
