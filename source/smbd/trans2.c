@@ -1160,16 +1160,28 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,curr_dirpos));
       
-		if (!dname) 
+		if (!dname) {
 			return(False);
+		}
+
+		/*
+		 * fname may get mangled, dname is never mangled.
+		 * Whenever we're accessing the filesystem we use
+		 * pathreal which is composed from dname.
+		 */
 
 		pstrcpy(fname,dname);      
 
-		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask)))
+		/* This will mangle fname if it's an illegal name. */
+		mangle_map(fname,False,True,conn->params);
+
+		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask))) {
 			got_match = mask_match(fname, mask, conn->case_sensitive);
+		}
 
 		if(!got_match && check_mangled_names &&
 		   !mangle_is_8_3(fname, False, conn->params)) {
+			pstring mangled_name;
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -1178,21 +1190,25 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * that some people have been seeing.... JRA.
 			 */
 
-			pstring newname;
-			pstrcpy( newname, fname);
-			mangle_map( newname, True, False, conn->params);
-			if(!(got_match = *got_exact_match = exact_match(conn, newname, mask)))
-				got_match = mask_match(newname, mask, conn->case_sensitive);
+			pstrcpy(mangled_name, fname);
+
+			/* Force the mangling into 8.3. */
+			mangle_map( mangled_name, True, False, conn->params);
+			if(!(got_match = *got_exact_match = exact_match(conn, mangled_name, mask))) {
+				got_match = mask_match(mangled_name, mask, conn->case_sensitive);
+			}
 		}
 
-		if(got_match) {
-			BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
-			if (dont_descend && !isdots)
+		if (got_match) {
+			BOOL isdots = (strequal(dname,"..") || strequal(dname,"."));
+			if (dont_descend && !isdots) {
 				continue;
+			}
 	  
 			pstrcpy(pathreal,conn->dirpath);
-			if(needslash)
+			if(needslash) {
 				pstrcat(pathreal,"/");
+			}
 			pstrcat(pathreal,dname);
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
@@ -1230,12 +1246,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			if (!dir_check_ftype(conn,mode,dirtype)) {
-				DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
+				DEBUG(5,("get_lanman2_dir_entry: [%s] attribs didn't match %x\n",fname,dirtype));
 				continue;
 			}
 
-			if (!(mode & aDIR))
+			if (!(mode & aDIR)) {
 				file_size = get_file_size(sbuf);
+			}
 			allocation_size = get_allocation_size(conn,NULL,&sbuf);
 
 			mdate_ts = get_mtimespec(&sbuf);
@@ -1252,15 +1269,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			mdate = convert_timespec_to_time_t(mdate_ts);
 			adate = convert_timespec_to_time_t(adate_ts);
 			
-			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
+			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",pathreal,fname));
 	  
 			found = True;
 
 			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
 		}
 	}
-
-	mangle_map(fname,False,True,conn->params);
 
 	p = pdata;
 	last_entry_ptr = p;
