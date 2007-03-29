@@ -889,7 +889,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 /* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V3,
+	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING_V3,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -1294,7 +1294,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V3,
+	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */

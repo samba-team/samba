@@ -1453,7 +1453,7 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	}
 
 	if (orig_num_locks != num_locks) {
-		dbuf.dptr = (char *)locks;
+		dbuf.dptr = (uint8 *)locks;
 		dbuf.dsize = num_locks * sizeof(*locks);
 
 		if (dbuf.dsize) {
@@ -1499,7 +1499,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
 	TDB_DATA key;
 
-	key.dptr = (char *)&br_lck->key;
+	key.dptr = (uint8 *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
 
 	if (br_lck->read_only) {
@@ -1517,7 +1517,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 		}
 	} else {
 		TDB_DATA data;
-		data.dptr = (char *)br_lck->lock_data;
+		data.dptr = (uint8 *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
 		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
@@ -1558,7 +1558,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->key.device = fsp->dev;
 	br_lck->key.inode = fsp->inode;
 
-	key.dptr = (char *)&br_lck->key;
+	key.dptr = (uint8 *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
 
 	if (!fsp->lockdb_clean) {

@@ -295,7 +295,7 @@ static Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 	key.dsize = sizeof( int32 );
 
 	srecno = recno;
-	key.dptr = ( char * ) &srecno;
+	key.dptr = ( uint8 * ) &srecno;
 
 	ret = tdb_fetch( tdb, key );
 

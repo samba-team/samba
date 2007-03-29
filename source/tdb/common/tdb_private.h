@@ -196,7 +196,7 @@ int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct *rec);
-char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len);
+unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len);
 int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		   tdb_off_t offset, tdb_len_t len,
 		   int (*parser)(TDB_DATA key, TDB_DATA data,

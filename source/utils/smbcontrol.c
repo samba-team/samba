@@ -887,7 +887,7 @@ static BOOL do_winbind_offline(const struct process_id pid,
 
 	for (retry = 0; retry < 5; retry++) {
 		TDB_DATA d;
-		char buf[4];
+		uint8 buf[4];
 
 		ZERO_STRUCT(d);
 

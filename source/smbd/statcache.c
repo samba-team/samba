@@ -131,7 +131,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	 */
   
 	data_val.dsize = translated_path_length + 1;
-	data_val.dptr = translated_path;
+	data_val.dptr = (uint8 *)translated_path;
 
 	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val, TDB_REPLACE) != 0) {
 		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n", original_path, translated_path));
@@ -242,7 +242,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 			}
 		} else {
 			BOOL retval;
-			char *translated_path = data_val.dptr;
+			char *translated_path = (char *)data_val.dptr;
 			size_t translated_path_length = data_val.dsize - 1;
 
 			DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] -> [%s]\n", chk_name, translated_path ));
@@ -329,7 +329,7 @@ unsigned int fast_string_hash(TDB_DATA *key)
 {
         unsigned int n = 0;
         const char *p;
-        for (p = key->dptr; *p != '\0'; p++) {
+        for (p = (const char *)key->dptr; *p != '\0'; p++) {
                 n = ((n << 5) + n) ^ (unsigned int)(*p);
         }
         return n;

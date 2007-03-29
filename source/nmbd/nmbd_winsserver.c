@@ -103,7 +103,7 @@ static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA dat
 	}
 
 	namerec->subnet = wins_server_subnet;
-	push_ascii_nstring(namerec->name.name, key.dptr);
+	push_ascii_nstring(namerec->name.name, (const char *)key.dptr);
 	namerec->name.name_type = key.dptr[sizeof(unstring)];
 	/* Add the scope. */
 	push_ascii(namerec->name.scope, global_scope(), 64, STR_TERMINATE);
@@ -159,7 +159,7 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	len = (2 + 1 + (7*4)); /* "wbddddddd" */
 	len += (namerec->data.num_ips * 4);
 
-	data.dptr = (char *)SMB_MALLOC(len);
+	data.dptr = (uint8 *)SMB_MALLOC(len);
 	if (!data.dptr) {
 		return data;
 	}
@@ -197,7 +197,7 @@ static TDB_DATA name_to_key(const struct nmb_name *nmbname)
 	pull_ascii_nstring(keydata, sizeof(unstring), nmbname->name);
 	strupper_m(keydata);
 	keydata[sizeof(unstring)] = nmbname->name_type;
-	key.dptr = keydata;
+	key.dptr = (uint8 *)keydata;
 	key.dsize = sizeof(keydata);
 
 	return key;

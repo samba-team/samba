@@ -237,9 +237,9 @@ static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 		return;
 	}
 
-	key.dptr = keyname;
+	key.dptr = (unsigned char *)keyname;
 	key.dsize = keylen;
-	dbuf.dptr = data;
+	dbuf.dptr = (unsigned char *)data;
 	dbuf.dsize = datalen;
 
 	if (tdb_store(tdb, key, dbuf, TDB_INSERT) == -1) {
@@ -261,9 +261,9 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 		return;
 	}
 
-	key.dptr = keyname;
+	key.dptr = (unsigned char *)keyname;
 	key.dsize = keylen;
-	dbuf.dptr = data;
+	dbuf.dptr = (unsigned char *)data;
 	dbuf.dsize = datalen;
 
 	printf("Storing key:\n");
@@ -283,7 +283,7 @@ static void show_tdb(char *keyname, size_t keylen)
 		return;
 	}
 
-	key.dptr = keyname;
+	key.dptr = (unsigned char *)keyname;
 	key.dsize = keylen;
 
 	dbuf = tdb_fetch(tdb, key);
@@ -308,7 +308,7 @@ static void delete_tdb(char *keyname, size_t keylen)
 		return;
 	}
 
-	key.dptr = keyname;
+	key.dptr = (unsigned char *)keyname;
 	key.dsize = keylen;
 
 	if (tdb_delete(tdb, key) != 0) {
@@ -331,7 +331,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 		return;
 	}
 
-	key.dptr = keyname;
+	key.dptr = (unsigned char *)keyname;
 	key.dsize = keylen;
 
 	dbuf = tdb_fetch(tdb, key);
@@ -404,16 +404,16 @@ static int print_crec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *s
 static int print_arec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("\nkey %d bytes\n", (int)key.dsize);
-	print_asc(key.dptr, key.dsize);
+	print_asc((const char *)key.dptr, key.dsize);
 	printf("\ndata %d bytes\n", (int)dbuf.dsize);
-	print_data(dbuf.dptr, dbuf.dsize);
+	print_data((const char *)dbuf.dptr, dbuf.dsize);
 	return 0;
 }
 
 static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("key %d bytes: ", (int)key.dsize);
-	print_asc(key.dptr, key.dsize);
+	print_asc((const char *)key.dptr, key.dsize);
 	printf("\n");
 	return 0;
 }
@@ -421,7 +421,7 @@ static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *st
 static int print_hexkey(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("key %d bytes\n", (int)key.dsize);
-	print_data(key.dptr, key.dsize);
+	print_data((const char *)key.dptr, key.dsize);
 	printf("\n");
 	return 0;
 }

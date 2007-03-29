@@ -188,7 +188,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	for ( i = start_record; i < end_record; i++ ) {
 		/* read a record, add the amt to nbytes */
 		key.dsize = sizeof( int32 );
-		key.dptr = ( char * ) ( int32 * ) & i;
+		key.dptr = ( uint8 * ) ( int32 * ) & i;
 		ret = tdb_fetch( the_tdb, key );
 		if ( ret.dsize == 0 ) {
 			DEBUG( 8,
@@ -233,7 +233,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	if ( start_record != new_start ) {
 		for ( i = start_record; i < new_start; i++ ) {
 			key.dsize = sizeof( int32 );
-			key.dptr = ( char * ) ( int32 * ) & i;
+			key.dptr = ( uint8 * ) ( int32 * ) & i;
 			tdb_delete( the_tdb, key );
 		}
 
@@ -500,7 +500,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 
 	n_packed =
-		tdb_pack( (char *)packed_ee, ee->record.length + MARGIN,
+		tdb_pack( (uint8 *)packed_ee, ee->record.length + MARGIN,
 			  "ddddddwwwwddddddBBdBBBd", ee->record.length,
 			  ee->record.reserved1, next_record,
 			  ee->record.time_generated, ee->record.time_written,
@@ -529,10 +529,10 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* increment the record count */
 
 	kbuf.dsize = sizeof( int32 );
-	kbuf.dptr = (char * ) & next_record;
+	kbuf.dptr = (uint8 * ) & next_record;
 
 	ebuf.dsize = n_packed;
-	ebuf.dptr = (char *)packed_ee;
+	ebuf.dptr = (uint8 *)packed_ee;
 
 	if ( tdb_store( the_tdb, kbuf, ebuf, 0 ) ) {
 		/* DEBUG(1,("write_eventlog_tdb: Can't write record %d to eventlog\n",next_record)); */

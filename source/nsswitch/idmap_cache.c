@@ -370,10 +370,10 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	t = strtol(databuf.dptr, &endptr, 10);
+	t = strtol((const char *)databuf.dptr, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
-		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
+		DEBUG(2, ("Invalid gencache data format: %s\n", (const char *)databuf.dptr));
 		/* remove the entry */
 		tdb_delete_bystring(cache->tdb, sidkey);
 		ret = NT_STATUS_NONE_MAPPED;
@@ -477,10 +477,10 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	t = strtol(databuf.dptr, &endptr, 10);
+	t = strtol((const char *)databuf.dptr, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
-		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
+		DEBUG(2, ("Invalid gencache data format: %s\n", (const char *)databuf.dptr));
 		/* remove the entry */
 		tdb_delete_bystring(cache->tdb, idkey);
 		ret = NT_STATUS_NONE_MAPPED;

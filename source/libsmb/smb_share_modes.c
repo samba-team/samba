@@ -96,7 +96,7 @@ static TDB_DATA get_locking_key(uint64_t dev, uint64_t ino)
 	memset(&lk, '\0', sizeof(struct locking_key));
 	lk.dev = (SMB_DEV_T)dev;
 	lk.inode = (SMB_INO_T)ino;
-	ld.dptr = (char *)&lk;
+	ld.dptr = (uint8 *)&lk;
 	ld.dsize = sizeof(lk);
 	return ld;
 }
@@ -258,13 +258,13 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
-	char *new_data_p = NULL;
+	uint8 *new_data_p = NULL;
 	size_t new_data_size = 0;
 
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = (char *)malloc(
+		db_data.dptr = (uint8 *)malloc(
 			(2*sizeof(struct share_mode_entry)) +
 			strlen(sharepath) + 1 +
 			strlen(filename) + 1);
@@ -299,7 +299,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Entry exists, we must add a new entry. */
-	new_data_p = (char *)malloc(
+	new_data_p = (uint8 *)malloc(
 		db_data.dsize + sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
@@ -370,10 +370,10 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
-	char *new_data_p = NULL;
+	uint8 *new_data_p = NULL;
 	size_t remaining_size = 0;
 	size_t i, num_share_modes;
-	const char *remaining_ptr = NULL;
+	const uint8 *remaining_ptr = NULL;
 
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
@@ -397,7 +397,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
-	new_data_p = (char *)malloc(
+	new_data_p = (uint8 *)malloc(
 		db_data.dsize - sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);

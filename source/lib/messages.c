@@ -159,7 +159,7 @@ static TDB_DATA message_key_pid(struct process_id pid)
 
 	slprintf(key, sizeof(key)-1, "PID/%s", procid_str_static(&pid));
 	
-	kbuf.dptr = (char *)key;
+	kbuf.dptr = (uint8 *)key;
 	kbuf.dsize = strlen(key)+1;
 	return kbuf;
 }
@@ -233,7 +233,7 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
 	TDB_DATA dbuf;
 	TDB_DATA old_dbuf;
 	struct message_rec rec;
-	char *ptr;
+	uint8 *ptr;
 	struct message_rec prec;
 
 	/* NULL pointer means implicit length zero. */
@@ -256,7 +256,7 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
 
 	kbuf = message_key_pid(pid);
 
-	dbuf.dptr = (char *)SMB_MALLOC(len + sizeof(rec));
+	dbuf.dptr = (uint8 *)SMB_MALLOC(len + sizeof(rec));
 	if (!dbuf.dptr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -323,7 +323,7 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
 
 	/* Not a new record. Check for duplicates. */
 
-	for(ptr = (char *)old_dbuf.dptr; ptr < old_dbuf.dptr + old_dbuf.dsize; ) {
+	for(ptr = old_dbuf.dptr; ptr < old_dbuf.dptr + old_dbuf.dsize; ) {
 		/*
 		 * First check if the message header matches, then, if it's a non-zero
 		 * sized message, check if the data matches. If so it's a duplicate and
@@ -387,7 +387,7 @@ unsigned int messages_pending_for_pid(struct process_id pid)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
-	char *buf;
+	uint8 *buf;
 	unsigned int message_count = 0;
 
 	kbuf = message_key_pid(pid);
@@ -443,7 +443,7 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 		return False;
 	}
 
-	*msgs_buf = dbuf.dptr;
+	*msgs_buf = (char *)dbuf.dptr;
 	*total_len = dbuf.dsize;
 
 	return True;

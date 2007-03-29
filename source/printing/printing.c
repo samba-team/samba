@@ -76,7 +76,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	ZERO_STRUCT( jinfo );
 	fstrcpy( jinfo.sharename, sharename );
 	jinfo.jobid = jobid;
-	key.dptr = (char*)&jinfo;
+	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
 	data = tdb_fetch(rap_tdb, key);
@@ -93,7 +93,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	if (rap_jobid == 0)
 		rap_jobid = ++next_rap_jobid;
 	SSVAL(buf,0,rap_jobid);
-	data.dptr = (char*)buf;
+	data.dptr = buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_store(rap_tdb, key, data, TDB_REPLACE);
 	tdb_store(rap_tdb, data, key, TDB_REPLACE);
@@ -114,7 +114,7 @@ BOOL rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 		return False;
 
 	SSVAL(buf,0,rap_jobid);
-	key.dptr = (char*)buf;
+	key.dptr = buf;
 	key.dsize = sizeof(rap_jobid);
 	data = tdb_fetch(rap_tdb, key);
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) ) 
@@ -149,7 +149,7 @@ static void rap_jobid_delete(const char* sharename, uint32 jobid)
 	ZERO_STRUCT( jinfo );
 	fstrcpy( jinfo.sharename, sharename );
 	jinfo.jobid = jobid;
-	key.dptr = (char*)&jinfo;
+	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
 	data = tdb_fetch(rap_tdb, key);
@@ -166,7 +166,7 @@ static void rap_jobid_delete(const char* sharename, uint32 jobid)
 	rap_jobid = SVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 	SSVAL(buf,0,rap_jobid);
-	data.dptr = (char*)buf;
+	data.dptr = buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_delete(rap_tdb, key);
 	tdb_delete(rap_tdb, data);
@@ -273,7 +273,7 @@ static TDB_DATA print_key(uint32 jobid)
 	TDB_DATA ret;
 
 	SIVAL(&j, 0, jobid);
-	ret.dptr = (char *)&j;
+	ret.dptr = (uint8 *)&j;
 	ret.dsize = sizeof(j);
 	return ret;
 }
@@ -282,7 +282,7 @@ static TDB_DATA print_key(uint32 jobid)
  unpack a pjob from a tdb buffer 
 ***********************************************************************/
  
-int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
+int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 {
 	int	len = 0;
 	int	used;
@@ -518,7 +518,7 @@ static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 	TDB_DATA 		old_data, new_data;
 	BOOL 			ret = False;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
-	char			*buf = NULL;
+	uint8			*buf = NULL;
 	int			len, newlen, buflen;
 	
 
@@ -554,7 +554,7 @@ static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
 	
 		if (buflen != len) {
-			buf = (char *)SMB_REALLOC(buf, len);
+			buf = (uint8 *)SMB_REALLOC(buf, len);
 			if (!buf) {
 				DEBUG(0,("pjob_store: failed to enlarge buffer!\n"));
 				goto done;
@@ -917,7 +917,7 @@ static void set_updating_pid(const fstring sharename, BOOL updating)
 	}
 	
 	SIVAL( buffer, 0, updating_pid);
-	data.dptr = (char *)buffer;
+	data.dptr = buffer;
 	data.dsize = 4;		/* we always assume this is a 4 byte value */
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
@@ -984,7 +984,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 				queue[i].fs_file);
 	}
 
-	if ((data.dptr = (char *)SMB_MALLOC(data.dsize)) == NULL)
+	if ((data.dptr = (uint8 *)SMB_MALLOC(data.dsize)) == NULL)
 		return;
 
         len = 0;
@@ -1234,7 +1234,7 @@ static void print_queue_update_internal( const char *sharename,
 	key = string_tdb_data(keystr);
 
 	status.qcount = qcount;
-	data.dptr = (char *)&status;
+	data.dptr = (uint8 *)&status;
 	data.dsize = sizeof(status);
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
 
@@ -1357,7 +1357,7 @@ static void print_queue_receive(int msg_type, struct process_id src,
 	int printing_type;
 	size_t len;
 
-	len = tdb_unpack( (char *)buf, msglen, "fdPP",
+	len = tdb_unpack( buf, msglen, "fdPP",
 		sharename,
 		&printing_type,
 		lpqcommand,
@@ -1442,7 +1442,7 @@ static void print_queue_update(int snum, BOOL force)
 	fstring key;
 	fstring sharename;
 	pstring lpqcommand, lprmcommand;
-	char *buffer = NULL;
+	uint8 *buffer = NULL;
 	size_t len = 0;
 	size_t newlen;
 	struct tdb_print_db *pdb;
@@ -1496,7 +1496,7 @@ static void print_queue_update(int snum, BOOL force)
 		lpqcommand, 
 		lprmcommand );
 
-	buffer = SMB_XMALLOC_ARRAY( char, len );
+	buffer = SMB_XMALLOC_ARRAY( uint8, len );
 
 	/* now pack the buffer */
 	newlen = tdb_pack( buffer, len, "fdPP",
@@ -1604,7 +1604,7 @@ BOOL print_notify_register_pid(int snum)
 
 	if (i == data.dsize) {
 		/* We weren't in the list. Realloc. */
-		data.dptr = (char *)SMB_REALLOC(data.dptr, data.dsize + 8);
+		data.dptr = (uint8 *)SMB_REALLOC(data.dptr, data.dsize + 8);
 		if (!data.dptr) {
 			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n",
 						printername));
@@ -2299,7 +2299,7 @@ static BOOL add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 	uint32 store_jobid;
 
 	SIVAL(&store_jobid, 0, jobid);
-	data.dptr = (char *)&store_jobid;
+	data.dptr = (uint8 *)&store_jobid;
 	data.dsize = 4;
 
 	DEBUG(10,("add_to_jobs_changed: Added jobid %u\n", (unsigned int)jobid ));

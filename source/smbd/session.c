@@ -140,7 +140,7 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-	data.dptr = (char *)&sessionid;
+	data.dptr = (uint8 *)&sessionid;
 	data.dsize = sizeof(sessionid);
 	if (tdb_store_bystring(tdb, keystr, data, tdb_store_flag) != 0) {
 		DEBUG(1,("session_claim: unable to create session id record\n"));
