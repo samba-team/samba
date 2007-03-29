@@ -114,7 +114,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = talloc_array(ldb, char, size);
+	data->dptr = talloc_array(ldb, uint8_t, size);
 	if (!data->dptr) {
 		talloc_free(dn);
 		errno = ENOMEM;

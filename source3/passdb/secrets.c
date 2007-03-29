@@ -105,7 +105,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	if (!tdb)
 		return False;
 	return tdb_trans_store(tdb, string_tdb_data(key),
-			       make_tdb_data((const char *)data, size),
+			       make_tdb_data(data, size),
 			       TDB_REPLACE) == 0;
 }
 
@@ -330,7 +330,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
  *
  * @return length of the packed representation of the whole structure
  **/
-static size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
+static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx;
 	size_t len = 0;
@@ -362,7 +362,7 @@ static size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return size of structure unpacked from buffer
  **/
-static size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
+static size_t tdb_sid_unpack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx, len = 0;
 	
@@ -393,7 +393,7 @@ static size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return length of the packed representation of the whole structure
  **/
-static size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize,
+static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
 					TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
@@ -427,7 +427,7 @@ static size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize,
  *
  * @return size of structure unpacked from buffer
  **/
-static size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize,
+static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
 					  TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
@@ -462,13 +462,13 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	size_t size = 0;
 	
 	/* unpacking structures */
-	char* pass_buf;
+	uint8 *pass_buf;
 	int pass_len = 0;
 
 	ZERO_STRUCT(pass);
 
 	/* fetching trusted domain password structure */
-	if (!(pass_buf = (char *)secrets_fetch(trustdom_keystr(domain),
+	if (!(pass_buf = (uint8 *)secrets_fetch(trustdom_keystr(domain),
 					       &size))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
@@ -543,7 +543,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	/* domain sid */
 	sid_copy(&pass.domain_sid, sid);
 	
-	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_buf_len, &pass);
+	pass_len = tdb_trusted_dom_pass_pack((uint8 *)pass_buf, pass_buf_len, &pass);
 
 	return secrets_store(trustdom_keystr(domain), (void *)&pass_buf, pass_len);
 }
@@ -813,7 +813,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 
 	/* searching for keys in secrets db -- way to go ... */
 	for (k = keys; k; k = k->next) {
-		char *packed_pass;
+		uint8 *packed_pass;
 		size_t size = 0, packed_size = 0;
 		struct trusted_dom_pass pass;
 		char *secrets_key;
@@ -821,7 +821,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		
 		/* important: ensure null-termination of the key string */
 		secrets_key = talloc_strndup(tmp_ctx,
-					     k->node_key.dptr,
+					     (const char *)k->node_key.dptr,
 					     k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
@@ -830,7 +830,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		packed_pass = (char *)secrets_fetch(secrets_key, &size);
+		packed_pass = (uint8 *)secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size,
 							  &pass);
 		/* packed representation isn't needed anymore */
@@ -1033,7 +1033,7 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 	if (vers.dptr == NULL) {
 		/* First opener, no version. */
 		SIVAL(&ver,0,1);
-		vers.dptr = (char *)&ver;
+		vers.dptr = (uint8 *)&ver;
 		vers.dsize = 4;
 		tdb_store_bystring(tdb_sc, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
 		vers.dptr = NULL;
@@ -1090,7 +1090,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 				pdc->remote_machine,
 				pdc->domain);
 
-	value.dptr = (char *)TALLOC(mem_ctx, value.dsize);
+	value.dptr = TALLOC_ARRAY(mem_ctx, uint8, value.dsize);
 	if (!value.dptr) {
 		TALLOC_FREE(keystr);
 		return False;

@@ -205,7 +205,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		return False;
 	}
 
-	t = strtol(databuf.dptr, &endptr, 10);
+	t = strtol((const char *)databuf.dptr, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
 		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
@@ -279,7 +279,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		char *fmt;
 
 		/* ensure null termination of the key string */
-		keystr = SMB_STRNDUP(node->node_key.dptr, node->node_key.dsize);
+		keystr = SMB_STRNDUP((const char *)node->node_key.dptr, node->node_key.dsize);
 		if (!keystr) {
 			break;
 		}
@@ -295,7 +295,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			node = node->next;
 			continue;
 		}
-		entry = SMB_STRNDUP(databuf.dptr, databuf.dsize);
+		entry = SMB_STRNDUP((const char *)databuf.dptr, databuf.dsize);
 		if (!entry) {
 			SAFE_FREE(databuf.dptr);
 			SAFE_FREE(keystr);

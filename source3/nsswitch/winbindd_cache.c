@@ -378,7 +378,7 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 {
 	TDB_DATA data;
 	fstring key_str;
-	char buf[8];
+	uint8 buf[8];
 	
 	if (!wcache->tdb) {
 		DEBUG(10,("store_cache_seqnum: tdb == NULL\n"));
@@ -756,7 +756,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	va_end(ap);
 
 	key = string_tdb_data(kstr);
-	data.dptr = (char *)centry->data;
+	data.dptr = centry->data;
 	data.dsize = centry->ofs;
 
 	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
@@ -2081,8 +2081,8 @@ do_query:
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
 		       void *state)
 {
-	if (strncmp(kbuf.dptr, "UL/", 3) == 0 ||
-	    strncmp(kbuf.dptr, "GL/", 3) == 0)
+	if (strncmp((const char *)kbuf.dptr, "UL/", 3) == 0 ||
+	    strncmp((const char *)kbuf.dptr, "GL/", 3) == 0)
 		tdb_delete(the_tdb, kbuf);
 
 	return 0;
@@ -2152,7 +2152,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DR/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
-		      make_tdb_data((const char *)response, sizeof(*response)),
+		      make_tdb_data((uint8 *)response, sizeof(*response)),
 		      TDB_REPLACE) == -1)
 		return;
 
@@ -2166,7 +2166,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
-		      make_tdb_data((const char *)response->extra_data.data,
+		      make_tdb_data(response->extra_data.data,
 				    response->length - sizeof(*response)),
 		      TDB_REPLACE) == 0)
 		return;
@@ -2342,13 +2342,13 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 {
 	struct cache_entry *centry;
 
-	centry = wcache_fetch_raw(kbuf.dptr);
+	centry = wcache_fetch_raw((char *)kbuf.dptr);
 	if (!centry) {
 		return 0;
 	}
 
 	if (!NT_STATUS_IS_OK(centry->status)) {
-		DEBUG(10,("deleting centry %s\n", kbuf.dptr));
+		DEBUG(10,("deleting centry %s\n", (const char *)kbuf.dptr));
 		tdb_delete(the_tdb, kbuf);
 	}
 
@@ -2391,7 +2391,7 @@ static int traverse_fn_cached_creds(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DAT
 {
 	int *cred_count = (int*)state;
  
-	if (strncmp(kbuf.dptr, "CRED/", 5) == 0) {
+	if (strncmp((const char *)kbuf.dptr, "CRED/", 5) == 0) {
 		(*cred_count)++;
 	}
 	return 0;
@@ -2425,7 +2425,7 @@ static int traverse_fn_get_credlist(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DAT
 {
 	struct cred_list *cred;
 
-	if (strncmp(kbuf.dptr, "CRED/", 5) == 0) {
+	if (strncmp((const char *)kbuf.dptr, "CRED/", 5) == 0) {
 
 		cred = SMB_MALLOC_P(struct cred_list);
 		if (cred == NULL) {
@@ -2437,7 +2437,7 @@ static int traverse_fn_get_credlist(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DAT
 		
 		/* save a copy of the key */
 		
-		fstrcpy(cred->name, kbuf.dptr);		
+		fstrcpy(cred->name, (const char *)kbuf.dptr);		
 		DLIST_ADD(wcache_cred_list, cred);
 	}
 	
@@ -2717,7 +2717,7 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 	for (i = 0; key_val[i].keyname; i++) {
 		size_t namelen = strlen(key_val[i].keyname);
 		if (kbuf.dsize >= namelen && (
-				strncmp(key_val[i].keyname, kbuf.dptr, namelen)) == 0) {
+				strncmp(key_val[i].keyname, (const char *)kbuf.dptr, namelen)) == 0) {
 			return key_val[i].validate_data_fn(kbuf, dbuf);
 		}
 	}

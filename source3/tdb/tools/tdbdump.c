@@ -73,7 +73,7 @@ static int dump_tdb(const char *fname, const char *keyname)
 	if (!keyname) {
 		tdb_traverse(tdb, traverse_fn, NULL);
 	} else {
-		key.dptr = (char *)keyname;
+		key.dptr = (unsigned char *)keyname;
 		key.dsize = strlen( keyname);
 		value = tdb_fetch(tdb, key);
 		if (!value.dptr) {

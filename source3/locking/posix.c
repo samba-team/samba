@@ -340,7 +340,7 @@ static TDB_DATA fd_array_key(SMB_DEV_T dev, SMB_INO_T inode)
 	memset(&key, '\0', sizeof(key));
 	key.device = dev;
 	key.inode = inode;
-	kbuf.dptr = (char *)&key;
+	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
@@ -358,7 +358,7 @@ static TDB_DATA locking_ref_count_key(SMB_DEV_T dev, SMB_INO_T inode)
 	key.device = dev;
 	key.inode = inode;
 	key.r = 'r';
-	kbuf.dptr = (char *)&key;
+	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
@@ -442,7 +442,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 	if (dbuf.dptr == NULL) {
-		dbuf.dptr = (char *)SMB_MALLOC_P(int);
+		dbuf.dptr = (uint8 *)SMB_MALLOC_P(int);
 		if (!dbuf.dptr) {
 			smb_panic("increment_windows_lock_ref_count: malloc fail.\n");
 		}
@@ -573,7 +573,7 @@ static void add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	dbuf.dptr = (char *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
+	dbuf.dptr = (uint8 *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!dbuf.dptr) {
 		smb_panic("add_fd_to_close_entry: Realloc fail !\n");
 	}

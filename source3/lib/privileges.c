@@ -295,7 +295,7 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	
 	/* no packing.  static size structure, just write it out */
 	
-	data.dptr  = (char*)mask;
+	data.dptr  = (uint8 *)mask;
 	data.dsize = sizeof(SE_PRIV);
 
 	return ( tdb_store_bystring(tdb, keystr, data, TDB_REPLACE) != -1 );
@@ -482,7 +482,7 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 
 	/* check we have a PRIV_+SID entry */
 
-	if ( strncmp(key.dptr, PRIVPREFIX, prefixlen) != 0)
+	if ( strncmp((const char *)key.dptr, PRIVPREFIX, prefixlen) != 0)
 		return 0;
 		
 	/* check to see if we are looking for a particular privilege */
@@ -499,7 +499,7 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 			return 0;
 	}
 		
-	fstrcpy( sid_string, &key.dptr[strlen(PRIVPREFIX)] );
+	fstrcpy( sid_string, (const char *)&key.dptr[strlen(PRIVPREFIX)] );
 
 	/* this is a last ditch safety check to preventing returning
 	   and invalid SID (i've somehow run into this on development branches) */

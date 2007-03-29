@@ -87,7 +87,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	data = tdb_fetch_bystring(tdb, shortname);
 	if (data.dptr) {
 		/* maybe its a duplicate long name? */
-		if (!strequal(name, data.dptr)) {
+		if (!strequal(name, (const char *)data.dptr)) {
 			/* we have a collision */
 			collisions++;
 			printf("Collision between %s and %s   ->  %s "
@@ -98,7 +98,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = CONST_DISCARD(char *, name);
+		namedata.dptr = CONST_DISCARD(uint8 *, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}

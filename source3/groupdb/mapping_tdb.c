@@ -99,7 +99,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 	
 	sid_to_string(string_sid, &map->sid);
 
-	len = tdb_pack(buf, sizeof(buf), "ddff",
+	len = tdb_pack((uint8 *)buf, sizeof(buf), "ddff",
 			map->gid, map->sid_name_use, map->nt_name, map->comment);
 
 	if (len > sizeof(buf))
@@ -108,7 +108,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
 	dbuf.dsize = len;
-	dbuf.dptr = buf;
+	dbuf.dptr = (uint8 *)buf;
 	if (tdb_store_bystring(tdb, key, dbuf, flag) != 0) return False;
 
 	return True;
@@ -176,13 +176,13 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		if (strncmp((const char *)kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
 
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+		fstrcpy(string_sid, (const char *)kbuf.dptr+strlen(GROUP_PREFIX));
 
 		string_to_sid(&map->sid, string_sid);
 		
@@ -226,13 +226,13 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		if (strncmp((const char *)kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
 
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+		fstrcpy(string_sid, (const char *)kbuf.dptr+strlen(GROUP_PREFIX));
 
 		string_to_sid(&map->sid, string_sid);
 		
@@ -315,14 +315,14 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
+		if (strncmp((const char *)kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
 			continue;
 
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
 
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+		fstrcpy(string_sid, (const char *)kbuf.dptr+strlen(GROUP_PREFIX));
 				
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
 				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
@@ -409,7 +409,7 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 		return NT_STATUS_OK;
 	}
 
-	p = dbuf.dptr;
+	p = (const char *)dbuf.dptr;
 
 	while (next_token(&p, string_sid, " ", sizeof(string_sid))) {
 
@@ -528,11 +528,11 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	const char *p;
 	fstring alias_string;
 
-	if (strncmp(key.dptr, MEMBEROF_PREFIX,
+	if (strncmp((const char *)key.dptr, MEMBEROF_PREFIX,
 		    strlen(MEMBEROF_PREFIX)) != 0)
 		return 0;
 
-	p = data.dptr;
+	p = (const char *)data.dptr;
 
 	while (next_token(&p, alias_string, " ", sizeof(alias_string))) {
 
@@ -550,7 +550,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		 * list currently scanned. The key represents the alias
 		 * member. Add that. */
 
-		member_string = strchr(key.dptr, '/');
+		member_string = strchr((const char *)key.dptr, '/');
 
 		/* Above we tested for MEMBEROF_PREFIX which includes the
 		 * slash. */

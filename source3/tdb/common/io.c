@@ -332,16 +332,16 @@ int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 
 
 /* read a lump of data, allocating the space for it */
-char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len)
+unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len)
 {
-	char *buf;
+	unsigned char *buf;
 
 	/* some systems don't like zero length malloc */
 	if (len == 0) {
 		len = 1;
 	}
 
-	if (!(buf = (char *)malloc(len))) {
+	if (!(buf = (unsigned char *)malloc(len))) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_OOM;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_alloc_read malloc failed len=%d (%s)\n",
@@ -376,7 +376,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		if (tdb->methods->tdb_oob(tdb, offset+len, 0) != 0) {
 			return -1;
 		}
-		data.dptr = offset + (char *)tdb->map_ptr;
+		data.dptr = offset + (unsigned char *)tdb->map_ptr;
 		return parser(key, data, private_data);
 	}
 
