@@ -60,7 +60,7 @@ enum tdb_debug_level {TDB_DEBUG_FATAL = 0, TDB_DEBUG_ERROR,
 		      TDB_DEBUG_WARNING, TDB_DEBUG_TRACE};
 
 typedef struct TDB_DATA {
-	char *dptr;
+	unsigned char *dptr;
 	size_t dsize;
 } TDB_DATA;
 

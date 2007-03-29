@@ -433,7 +433,7 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 	memset(&key, '\0', sizeof(key));
 	key.dev = dev;
 	key.ino = inode;
-	kbuf.dptr = (char *)&key;
+	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
@@ -532,7 +532,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	/* Get any delete token. */
 	if (data->u.s.delete_token_size) {
-		char *p = dbuf.dptr + sizeof(*data) +
+		uint8 *p = dbuf.dptr + sizeof(*data) +
 				(lck->num_share_modes *
 				sizeof(struct share_mode_entry));
 
@@ -578,7 +578,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	/* Save off the associated service path and filename. */
-	lck->servicepath = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
+	lck->servicepath = talloc_strdup(lck, (const char *)dbuf.dptr + sizeof(*data) +
 					(lck->num_share_modes *
 					sizeof(struct share_mode_entry)) +
 					data->u.s.delete_token_size );
@@ -586,7 +586,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		smb_panic("talloc_strdup failed\n");
 	}
 
-	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
+	lck->filename = talloc_strdup(lck, (const char *)dbuf.dptr + sizeof(*data) +
 					(lck->num_share_modes *
 					sizeof(struct share_mode_entry)) +
 					data->u.s.delete_token_size +
@@ -646,7 +646,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		delete_token_size +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
-	result.dptr = TALLOC_ARRAY(lck, char, result.dsize);
+	result.dptr = TALLOC_ARRAY(lck, uint8, result.dsize);
 
 	if (result.dptr == NULL) {
 		smb_panic("talloc failed\n");
@@ -668,7 +668,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 
 	/* Store any delete on close token. */
 	if (lck->delete_token) {
-		char *p = result.dptr + offset;
+		uint8 *p = result.dptr + offset;
 
 		memcpy(p, &lck->delete_token->uid, sizeof(uid_t));
 		p += sizeof(uid_t);
@@ -683,10 +683,10 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		offset = p - result.dptr;
 	}
 
-	safe_strcpy(result.dptr + offset, lck->servicepath,
+	safe_strcpy((char *)result.dptr + offset, lck->servicepath,
 		    result.dsize - offset - 1);
 	offset += sp_len + 1;
-	safe_strcpy(result.dptr + offset, lck->filename,
+	safe_strcpy((char *)result.dptr + offset, lck->filename,
 		    result.dsize - offset - 1);
 
 	if (DEBUGLEVEL >= 10) {
@@ -1318,10 +1318,10 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	sharepath = dbuf.dptr + sizeof(*data) +
+	sharepath = (const char *)dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		data->u.s.delete_token_size;
-	fname = dbuf.dptr + sizeof(*data) +
+	fname = (const char *)dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		data->u.s.delete_token_size +
 		strlen(sharepath) + 1;

@@ -50,7 +50,7 @@ static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *p
 	}
 #endif
 
-	pkbuf->dptr = (char *)pkey;
+	pkbuf->dptr = (uint8 *)pkey;
 	pkbuf->dsize = sizeof(*pkey);
 }
 
@@ -200,7 +200,7 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	safe_strcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine)-1);
 	safe_strcpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
-	dbuf.dptr = (char *)&crec;
+	dbuf.dptr = (uint8 *)&crec;
 	dbuf.dsize = sizeof(crec);
 
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
@@ -313,7 +313,7 @@ BOOL store_pipe_opendb( smb_np_struct *p )
 		goto done;
 	}
 	
-	data.dptr = (char*)prec;
+	data.dptr = (uint8 *)prec;
 	data.dsize = sizeof(struct pipe_open_rec);
 	
 	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
