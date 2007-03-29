@@ -525,7 +525,7 @@ void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
 	_smb_setlen(buf,len);
 
 	SCVAL(buf,4,0xFF);
-	SCVAL(buf,5,'S');
+	SCVAL(buf,5,'E');
 	SSVAL(buf,6,enc_ctx_num);
 }
 
