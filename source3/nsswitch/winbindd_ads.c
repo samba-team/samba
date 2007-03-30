@@ -931,6 +931,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			if (num_retries < 5) {
 				num_retries++;
 				num_members = 0;
+				ads_msgfree(ads, res);
+				res = NULL;
 				continue;
 			} else {
 				DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
@@ -946,6 +948,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 						 &attrs[0],
 						 &num_members,
 						 &more_values);
+
+		ads_msgfree(ads, res);
+		res = NULL;
 
 		if ((members == NULL) || (num_members == 0))
 			break;
