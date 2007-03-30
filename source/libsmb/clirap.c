@@ -86,9 +86,9 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	SSVAL(p,0,132); /* api number */
 	p += 2;
 	pstrcpy_base(p,"OOWb54WrLh",param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	pstrcpy_base(p,"WB21BWDWWDDDDDDDzzzD",param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	SSVAL(p,0,1);
 	p += 2;
 	pstrcpy_base(p,user,param);
@@ -147,9 +147,9 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 	SSVAL(p,0,0); /* api number */
 	p += 2;
 	pstrcpy_base(p,"WrLeh",param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	pstrcpy_base(p,"B13BWz",param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	SSVAL(p,0,1);
 	/*
 	 * Win2k needs a *smaller* buffer than 0xFFFF here -
@@ -225,11 +225,11 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SSVAL(p,0,0x68); /* api number */
 	p += 2;
 	pstrcpy_base(p,"WrLehDz", param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
   
 	pstrcpy_base(p,"B16BBDz", param);
 
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	SSVAL(p,0,uLevel);
 	SSVAL(p,2,CLI_BUFFER_SIZE);
 	p += 4;
@@ -314,11 +314,11 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	SSVAL(p,0,214); /* SamOEMChangePassword command. */
 	p += 2;
 	pstrcpy_base(p, "zsT", param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	pstrcpy_base(p, "B516B16", param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	pstrcpy_base(p,user, param);
-	p = skip_string(p,1);
+	p = skip_string(param,sizeof(param),p,1);
 	SSVAL(p,0,532);
 	p += 2;
 

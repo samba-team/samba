@@ -424,14 +424,43 @@ void string_replace( pstring s, char oldc, char newc )
 }
 
 /**
- Skip past some strings in a buffer.
-**/
+ *  Skip past some strings in a buffer - old version - no checks.
+ *  **/
 
-char *skip_string(char *buf,size_t n)
+char *push_skip_string(char *buf,size_t n)
 {
 	while (n--)
 		buf += strlen(buf) + 1;
 	return(buf);
+}
+
+/**
+ Skip past some strings in a buffer. Buffer may not be
+ null terminated. end_ptr points to the first byte after
+ then end of the buffer.
+**/
+
+char *skip_string(const char *base, size_t len, char *buf, size_t n)
+{
+	const char *end_ptr = base + len;
+
+	if (end_ptr < base || !base || !buf || buf >= end_ptr) {
+		return NULL;
+	}
+
+	while (n--) {
+		/* Skip the string */
+		while (*buf) {
+			buf++;
+			if (buf >= end_ptr) {
+				return NULL;
+			}
+		}
+		/* Skip the '\0' */
+		buf++;
+	}
+
+	return buf;
 }
 
 /**
@@ -2591,4 +2620,3 @@ size_t utf16_len_n(const void *src, size_t n)
 
 	return len;
 }
-
