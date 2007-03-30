@@ -91,7 +91,7 @@
 /* put string s at p with max len n and increment p past string */
 #define PUTSTRING(p,s,n) do {\
   push_ascii(p,s?s:"",n?n:256,STR_TERMINATE);\
-  p = skip_string(p,1);\
+  p = push_skip_string(p,1);\
   } while(0)
 /* put string s and p, using fixed len l, and increment p by l */
 #define PUTSTRINGF(p,s,l) do {\
@@ -111,7 +111,7 @@
 /* get asciiz string s from p, increment p past string */
 #define GETSTRING(p,s) do {\
   pull_ascii_pstring(s,p);\
-  p = skip_string(p,1);\
+  p = push_skip_string(p,1);\
   } while(0)
 /* get fixed length l string s from p, increment p by l */
 #define GETSTRINGF(p,s,l) do {\
