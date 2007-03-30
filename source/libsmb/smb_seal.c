@@ -164,7 +164,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
+static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
 {
 	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
 	OM_uint32 ret = 0;
@@ -215,7 +215,7 @@ NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, cha
  gss-api encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
 ******************************************************************************/
 
-NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
+static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
 					uint16 enc_ctx_num,
 		 			char *buf,
 					char **ppbuf_out)
