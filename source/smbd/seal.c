@@ -91,7 +91,7 @@ static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
  Import a name.
 ******************************************************************************/
 
-static NTSTATUS get_gss_creds(const char *service,
+static NTSTATUS get_srv_gss_creds(const char *service,
 				const char *name,
 				gss_cred_usage_t cred_type,
 				gss_cred_id_t *p_srv_cred)
@@ -154,9 +154,9 @@ static NTSTATUS make_auth_gss(struct smb_srv_trans_enc_ctx *ec)
 	name_to_fqdn(fqdn, global_myname());
 	strlower_m(fqdn);
 
-	status = get_gss_creds("cifs", fqdn, GSS_C_ACCEPT, &srv_cred);
+	status = get_srv_gss_creds("cifs", fqdn, GSS_C_ACCEPT, &srv_cred);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = get_gss_creds("host", fqdn, GSS_C_ACCEPT, &srv_cred);
+		status = get_srv_gss_creds("host", fqdn, GSS_C_ACCEPT, &srv_cred);
 		if (!NT_STATUS_IS_OK(status)) {
 			return nt_status_squash(status);
 		}

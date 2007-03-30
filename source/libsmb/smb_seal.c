@@ -30,13 +30,15 @@ NTSTATUS get_enc_ctx_num(char *buf, uint16 *p_enc_ctx_num)
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
-	if (buf[4] == (char)0xFF && buf[5] == 'S') {
-		if (buf [6] == 'M' && buf[7] == 'B') {
+	if (buf[4] == (char)0xFF) {
+		if (buf[5] == 'S' && buf [6] == 'M' && buf[7] == 'B') {
 			/* Not an encrypted buffer. */
 			return NT_STATUS_NOT_FOUND;
 		}
-		*p_enc_ctx_num = SVAL(buf,6);
-		return NT_STATUS_OK;
+		if (buf[5] == 'E') {
+			*p_enc_ctx_num = SVAL(buf,6);
+			return NT_STATUS_OK;
+		}
 	}
 	return NT_STATUS_INVALID_NETWORK_RESPONSE;
 }
@@ -54,44 +56,55 @@ BOOL common_encryption_on(struct smb_trans_enc_state *es)
 /******************************************************************************
  Generic code for client and server.
  NTLM decrypt an incoming buffer.
+ Abartlett tells me that SSPI puts the signature first before the encrypted
+ output, so cope with the same for compatibility.
 ******************************************************************************/
 
 NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
 	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+	size_t data_len;
+	char *inbuf;
 	DATA_BLOB sig;
 
 	if (buf_len < 8 + NTLMSSP_SIG_SIZE) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	/* Adjust for the signature. */
-	buf_len -= NTLMSSP_SIG_SIZE;
+	inbuf = smb_xmemdup(buf, buf_len);
 
-	/* Save off the signature. */
-	sig = data_blob(buf+buf_len, NTLMSSP_SIG_SIZE);
+	/* Adjust for the signature. */
+	data_len = buf_len - 8 - NTLMSSP_SIG_SIZE;
+
+	/* Point at the signature. */
+	sig = data_blob_const(inbuf+8, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_unseal_packet(ntlmssp_state,
-		(unsigned char *)buf + 8, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
-		buf_len - 8,
-		(unsigned char *)buf + 8,
-		buf_len - 8,
+		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'E' <enc> <ctx> */
+		data_len,
+		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE,
+		data_len,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&sig);
+		SAFE_FREE(inbuf);
 		return status;
 	}
 
+	memcpy(buf + 8, inbuf + 8 + NTLMSSP_SIG_SIZE, data_len);
+	SAFE_FREE(inbuf);
+
 	/* Reset the length. */
-	smb_setlen(buf, smb_len(buf) - NTLMSSP_SIG_SIZE);
+	smb_setlen(buf, data_len + 4);
 	return NT_STATUS_OK;
 }
 
 /******************************************************************************
  Generic code for client and server.
  NTLM encrypt an outgoing buffer. Return the encrypted pointer in ppbuf_out.
+ Abartlett tells me that SSPI puts the signature first before the encrypted
+ output, so do the same for compatibility.
 ******************************************************************************/
 
 NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
@@ -101,12 +114,12 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 {
 	NTSTATUS status;
 	char *buf_out;
-	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+	size_t data_len = smb_len(buf) - 4; /* Ignore the 0xFF SMB bytes. */
 	DATA_BLOB sig;
 
 	*ppbuf_out = NULL;
 
-	if (buf_len < 8) {
+	if (data_len == 0) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -115,21 +128,21 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 	 * check needed.
 	 */
 
-	/* Copy the original buffer. */
+	buf_out = SMB_XMALLOC_ARRAY(char, 8 + NTLMSSP_SIG_SIZE + data_len);
 
-	buf_out = SMB_XMALLOC_ARRAY(char, buf_len + NTLMSSP_SIG_SIZE);
-	memcpy(buf_out, buf, buf_len);
-	/* Last 16 bytes undefined here... */
+	/* Copy the data from the original buffer. */
+
+	memcpy(buf_out + 8 + NTLMSSP_SIG_SIZE, buf + 8, data_len);
 
 	smb_set_enclen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
 
 	sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
 
 	status = ntlmssp_seal_packet(ntlmssp_state,
-		(unsigned char *)buf_out + 8, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
-		buf_len - 8,
-		(unsigned char *)buf_out + 8,
-		buf_len - 8,
+		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
+		data_len,
+		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE,
+		data_len,
 		&sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -138,7 +151,8 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 		return status;
 	}
 
-	memcpy(buf_out+buf_len, sig.data, NTLMSSP_SIG_SIZE);
+	/* First 16 data bytes are signature for SSPI compatibility. */
+	memcpy(buf_out + 8, sig.data, NTLMSSP_SIG_SIZE);
 	*ppbuf_out = buf_out;
 	return NT_STATUS_OK;
 }
@@ -195,14 +209,12 @@ NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, cha
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
 }
-#endif
 
 /******************************************************************************
  Generic code for client and server.
  gss-api encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
 ******************************************************************************/
 
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
 					uint16 enc_ctx_num,
 		 			char *buf,
