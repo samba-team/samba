@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Inter-process communication and named pipe handling
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2007.
 
    SMB Version handling
    Copyright (C) John H Terpstra 1995-1998
