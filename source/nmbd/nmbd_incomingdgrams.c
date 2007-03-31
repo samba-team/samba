@@ -431,13 +431,13 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	fstring comment;
 	char *s = get_safe_offset(buf,len,buf,9);
 
-	if (!s) {
-		return;
-	}
 	START_PROFILE(lm_host_announce);
+	if (!s) {
+		goto done;
+	}
 	s = skip_string(buf,len,s,1);
 	if (!s) {
-		return;
+		goto done;
 	}
 	pull_ascii(comment, s, sizeof(fstring), 43, STR_TERMINATE);
 
