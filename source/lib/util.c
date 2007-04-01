@@ -3120,7 +3120,7 @@ int this_is_smp(void)
 char *get_safe_offset(const char *buf_base, size_t buf_len, char *ptr, size_t off)
 {
 	const char *end_base = buf_base + buf_len;
-	const char *end_ptr = ptr + off;
+	char *end_ptr = ptr + off;
 
 	if (!buf_base || !ptr) {
 		return NULL;
@@ -3131,7 +3131,7 @@ char *get_safe_offset(const char *buf_base, size_t buf_len, char *ptr, size_t of
 	}
 
 	if (end_ptr < end_base) {
-		return ptr;
+		return end_ptr;
 	}
 	return NULL;
 }
