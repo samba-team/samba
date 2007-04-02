@@ -106,7 +106,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 
 	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
 
-	return tcopy_passwd(pwnam_cache, temp);
+	return tcopy_passwd(mem_ctx, temp);
 }
 
 struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 
