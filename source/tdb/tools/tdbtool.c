@@ -38,7 +38,8 @@
 #include "pstring.h"
 
 static int do_command(void);
-char *cmdname, *arg1, *arg2;
+const char *cmdname;
+char *arg1, *arg2;
 size_t arg1len, arg2len;
 int do_connections;
 int bIterate = 0;
@@ -209,7 +210,7 @@ static void terror(const char *why)
 	printf("%s\n", why);
 }
 
-static void create_tdb(char * tdbname)
+static void create_tdb(const char *tdbname)
 {
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open(tdbname, 0, TDB_CLEAR_IF_FIRST,
@@ -219,7 +220,7 @@ static void create_tdb(char * tdbname)
 	}
 }
 
-static void open_tdb(char *tdbname)
+static void open_tdb(const char *tdbname)
 {
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open(tdbname, 0, 0, O_RDWR, 0600);
@@ -639,17 +640,17 @@ static char *convert_string(char *instring, size_t *sizep)
 
 int main(int argc, char *argv[])
 {
-    cmdname = (char *) "";
+    cmdname = "";
     arg1 = NULL;
     arg1len = 0;
     arg2 = NULL;
     arg2len = 0;
 
     if (argv[1]) {
-	cmdname = (char *) "open";
+	cmdname = "open";
 	arg1 = argv[1];
         do_command();
-	cmdname = (char *) "";
+	cmdname =  "";
 	arg1 = NULL;
     }
 
