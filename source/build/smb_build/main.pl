@@ -71,7 +71,9 @@ foreach my $key (values %$OUTPUT) {
 $mkenv->write("Makefile");
 header::create_smb_build_h($OUTPUT, "include/build.h");
 
-cflags::create_cflags($OUTPUT, "extra_cflags.txt");
+cflags::create_cflags($OUTPUT, $config::config{srcdir},
+		    $config::config{builddir}, "extra_cflags.txt");
+
 
 summary::show($OUTPUT, \%config::config);
 

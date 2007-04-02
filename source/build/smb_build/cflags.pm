@@ -6,9 +6,12 @@
 package cflags;
 use strict;
 
-sub create_cflags($$)
+sub create_cflags($$$$)
 {
-	my ($CTX, $file) = @_;
+	my $CTX = shift;
+	my $srcdir = shift;
+	my $builddir = shift;
+	my $file = shift;
 
 	open(CFLAGS_TXT,">$file") || die ("Can't open `$file'\n");
 
@@ -18,7 +21,18 @@ sub create_cflags($$)
 		next unless defined ($key->{FINAL_CFLAGS});
 		next unless ($#{$key->{FINAL_CFLAGS}} >= 0);
 
-		my $cflags = join(' ', @{$key->{FINAL_CFLAGS}});
+		# Rewrite CFLAGS so that both the source and the build
+		# directories are in the path.
+		my $cflags = "";
+		foreach my $flag (@{$key->{FINAL_CFLAGS}}) {
+			my $dir;
+			if (($dir) = ($flag =~ /^-I([^\/].*)$/)) {
+				$cflags .= " -I$builddir/$dir";
+				$cflags .= " -I$srcdir/$dir";
+			} else {
+				$cflags .= " $flag";
+			}
+		}
 
 		foreach (@{$key->{OBJ_LIST}}) {
 			my $ofile = $_;
