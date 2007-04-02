@@ -141,6 +141,9 @@ INSTALL_LINK_FLAGS=$extra_link_flags
 LD=$self->{config}->{LD} 
 LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
 
+HOSTLD=$self->{config}->{HOSTLD}
+# It's possible that we ought to have HOSTLD_LDFLAGS as well
+
 STLD=$self->{config}->{STLD}
 STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
@@ -387,11 +390,23 @@ sub Binary($$)
 $self->output(<< "__EOD__"
 $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
+__EOD__
+	);
+
+	if ($ctx->{"USE_HOSTCC"} =~ m/yes/i) {
+		$self->output(<< "__EOD__"
+	\@\$(HOSTLD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
+__EOD__
+		);
+	} else {
+		$self->output(<< "__EOD__"
 	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
-);
+		);
+	}
 }
 
 sub Manpage($$)

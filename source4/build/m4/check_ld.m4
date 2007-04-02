@@ -36,6 +36,17 @@ SHLIBEXT="so"
 SONAMEFLAG=""
 PICFLAG=""
 
+# allow for --with-hostld=gcc
+AC_ARG_WITH(hostld,[  --with-hostld=linker    choose host linker],
+[HOSTLD=$withval],
+[
+if test z"$cross_compiling" = "yes"; then
+	HOSTLD='$(HOSTCC)'
+else
+	HOSTLD='$(LD)'
+fi
+])
+
 AC_MSG_CHECKING([ability to build shared libraries])
 
 # and these are for particular systems
@@ -143,6 +154,8 @@ AC_MSG_CHECKING([LD])
 AC_MSG_RESULT([$LD])
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
+
+AC_SUBST(HOSTLD)
 
 AC_MSG_CHECKING([STLD])
 AC_MSG_RESULT([$STLD])
