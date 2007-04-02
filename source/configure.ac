@@ -78,6 +78,10 @@ CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
 AC_SUBST(ac_default_prefix)
 
+for d in build/smb_build bin include ; do
+    test -d ${builddir}/$d || AS_MKDIR_P(${builddir}/$d)
+done
+
 echo "configure: creating build/smb_build/config.pm"
 cat >build/smb_build/config.pm<<CEOF
 # config.pm - Autogenerate by configure. DO NOT EDIT!
@@ -107,15 +111,30 @@ $SMB_INFO_LIBRARIES
 CEOF
 
 AC_OUTPUT_COMMANDS(
-[test "x$ac_abs_srcdir" != "x$ac_abs_builddir" && 
- (cd $builddir; 
-	test -d heimdal || cp -r $srcdir/heimdal $builddir/
-	test -d heimdal_build || cp -r $srcdir/heimdal_build $builddir/
-	test -d build || samba_builddir="$builddir" samba_srcdir="$srcdir" $PERL $srcdir/script/buildtree.pl
-	test -f $builddir/include/smb.h || cp $srcdir/include/smb.h $builddir/include
+[
+test "x$ac_abs_srcdir" != "x$ac_abs_builddir" && (
+	cd $builddir;
+	# NOTE: We *must* use -R so we don't follow symlinks (at least on BSD
+	# systems).
+	test -d heimdal || cp -R $srcdir/heimdal $builddir/
+	test -d heimdal_build || cp -R $srcdir/heimdal_build $builddir/
+	test -d build || builddir="$builddir" \
+			srcdir="$srcdir" \
+			$PERL ${srcdir}/script/buildtree.pl
  )
-$PERL -I${builddir} -I${srcdir} -I${srcdir}/build ${srcdir}/build/smb_build/main.pl || exit $?],[
-PERL="$PERL";export PERL;export srcdir; export builddir;
+
+$PERL -I${builddir} -I${builddir}/build \
+    -I${srcdir} -I${srcdir}/build \
+    ${srcdir}/build/smb_build/main.pl || exit $?
+],
+[
+srcdir="$srcdir"
+builddir="$builddir"
+PERL="$PERL"
+
+export PERL
+export srcdir
+export builddir
 ])
 AC_OUTPUT
 
