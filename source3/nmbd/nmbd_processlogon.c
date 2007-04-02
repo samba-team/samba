@@ -91,7 +91,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	pstrcpy(my_name, global_myname());
 
-	code = get_safe_offset(buf,len,buf,2) ? SVAL(buf,0) : -1;
+	code = get_safe_SVAL(buf,len,buf,0,-1);
 	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
 	switch (code) {

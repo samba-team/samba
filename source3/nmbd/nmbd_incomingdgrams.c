@@ -429,7 +429,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	unstring work_name;
 	unstring source_name;
 	fstring comment;
-	char *s = get_safe_offset(buf,len,buf,9);
+	char *s = get_safe_str_ptr(buf,len,buf,9);
 
 	START_PROFILE(lm_host_announce);
 	if (!s) {
