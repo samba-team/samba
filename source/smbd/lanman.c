@@ -921,9 +921,6 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	uLevel = SVAL(p,0);
-	output_format2 = p + 4;
-
 	memset((char *)&desc,'\0',sizeof(desc));
 
 	DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
