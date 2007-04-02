@@ -114,6 +114,64 @@ use vars qw(@parsed_files);
 
 @parsed_files = ();
 
+sub _read_config_file
+{
+	use File::Basename;
+	use Cwd;
+
+	my $srcdir = shift;
+	my $builddir = shift;
+	my $filename = shift;
+	my @dirlist;
+
+	# We need to change our working directory because config.mk files can
+	# give shell commands as the argument to "include". These shell
+	# commands can take arguments that are relative paths and we don't have
+	# a way of sensibly rewriting these.
+	my $cwd = getcwd;
+	chomp $cwd;
+
+	if ($srcdir ne $builddir) {
+		# Push the builddir path on the front, so we prefer builddir
+		# to srcdir when the file exists in both.
+		@dirlist = ($builddir, $srcdir);
+	} else {
+		@dirlist = ($srcdir);
+	}
+
+	foreach my $d (@dirlist) {
+		my @lines;
+		my $basedir;
+
+		chdir $cwd;
+		chdir $d;
+
+		# We need to catch the exception from open in the case where
+		# the filename is actually a shell pipeline. Why is this
+		# different to opening a regular file? Because this is perl!
+		eval {
+			open(CONFIG_MK, "./$filename");
+			@lines = <CONFIG_MK>;
+			close(CONFIG_MK);
+		};
+
+		chdir $cwd;
+		next unless (@lines);
+
+		# I blame abartlett for this crazy hack -- jpeach
+		if ($filename =~ /\|$/) {
+			$basedir = $builddir;
+		} else {
+			$basedir = dirname($filename);
+		}
+		$basedir =~ s!^($builddir|$srcdir)[/]!!;
+		return ($filename, $basedir, @lines);
+	}
+
+	chdir $cwd;
+	return;
+}
+
 ###########################################################
 # The parsing function which parses the file
 #
@@ -131,45 +189,27 @@ sub run_config_mk($$$$)
 	my $section = "GLOBAL";
 	my $makefile = "";
 
-	my $parsing_file = $filename;
-	my $retry_parsing_file = undef;
 	my $basedir;
 
-	$ENV{samba_builddir} = $builddir;
-	$ENV{samba_srcdir} = $srcdir;
+	my $parsing_file;
+	my @lines;
 
-	if (($srcdir ne ".") or ($builddir ne ".")) {
-		$parsing_file = $builddir."/".$filename;
-		$retry_parsing_file = $srcdir."/".$filename;
-	}
+	$ENV{builddir} = $builddir;
+	$ENV{srcdir} = $srcdir;
 
-	if (open(CONFIG_MK, $parsing_file)) {
-		$retry_parsing_file = undef;
-	} else {
-		die("Can't open $parsing_file") unless defined($retry_parsing_file);
-	}
+	($parsing_file, $basedir, @lines) =
+	    _read_config_file($srcdir, $builddir, $filename);
 
-	if (defined($retry_parsing_file)) {
-		if (open(CONFIG_MK, $parsing_file)) {
-			$parsing_file = $retry_parsing_file;
-			$retry_parsing_file = undef;
-		} else {
-			die("Can't open neither '$parsing_file' nor '$retry_parsing_file'\n");
-		}
-	}
-
-        if ($parsing_file =~ /\|$/) { 
-	        $basedir = $builddir;
-	} else {
-	        $basedir = dirname($filename);
-		push (@parsed_files, $parsing_file);
-	}
-	
-	my @lines = <CONFIG_MK>;
-	close(CONFIG_MK);
+	die ("$0: can't open '$filename'")
+		unless ($parsing_file and $basedir and @lines);
 
 	my $line = "";
 	my $prev = "";
+
+	# Emit a line that lets us match up final makefile output with the
+	# corresponding input files. The curlies are so you can match the
+	# BEGIN/END pairs in a text editor.
+	$makefile .= "# BEGIN{ $parsing_file\n";
 
 	foreach (@lines) {
 		$linenum++;
@@ -229,6 +269,8 @@ sub run_config_mk($$$$)
 
 		die("$parsing_file:$linenum: Bad line while parsing $parsing_file");
 	}
+
+	$makefile .= "# }END $parsing_file\n";
 
 	foreach my $section (keys %{$result}) {
 		my ($type, $name) = split(/::/, $section, 2);
