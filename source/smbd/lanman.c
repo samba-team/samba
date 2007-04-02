@@ -2340,7 +2340,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *np = get_safe_str_ptr(param,tpscnt,param,2);
-	char *p = skip_string(param,tpscnt,np,2);
+	char *p = skip_string(param,tpscnt,skip_string(param,tpscnt,np,1),1);
 	fstring user;
 	fstring pass1,pass2;
 
