@@ -125,7 +125,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 		 */
 		status = brl_lock(pvfs->brl_context,
 				  f->brl_handle,
-				  req->smbpid,
+				  locks[pending->pending_lock].pid,
 				  locks[pending->pending_lock].offset,
 				  locks[pending->pending_lock].count,
 				  rw, pending);
@@ -174,7 +174,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 
 		status = brl_lock(pvfs->brl_context,
 				  f->brl_handle,
-				  req->smbpid,
+				  locks[i].pid,
 				  locks[i].offset,
 				  locks[i].count,
 				  rw, pending);
