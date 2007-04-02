@@ -435,7 +435,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	if (!s) {
 		goto done;
 	}
-	s = skip_string(buf,len,s,1);
+	s = skip_string(buf,len,s);
 	if (!s) {
 		goto done;
 	}
@@ -574,7 +574,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);
 
-	p = skip_string(outbuf,sizeof(outbuf),p,1);
+	p = skip_string(outbuf,sizeof(outbuf),p);
 
 	/* Look for backup browsers in this workgroup. */
 
@@ -610,7 +610,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
     DEBUG(5,("send_backup_list_response: Adding server %s number %d\n",
               p, count));
 
-    p = skip_string(outbuf,sizeof(outbuf),p,1);
+    p = skip_string(outbuf,sizeof(outbuf),p);
   }
 #endif
 

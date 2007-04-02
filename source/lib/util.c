@@ -3156,7 +3156,7 @@ char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t o
 		return NULL;
 	}
 	/* Check if a valid string exists at this offset. */
-	if (skip_string(buf_base,buf_len, ptr + off, 1) == NULL) {
+	if (skip_string(buf_base,buf_len, ptr + off) == NULL) {
 		return NULL;
 	}
 	return ptr + off;

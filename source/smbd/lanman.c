@@ -778,8 +778,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	char *QueueName = p;
 	unsigned int uLevel;
 	int count=0;
@@ -796,7 +796,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	memset((char *)&status,'\0',sizeof(status));
 	memset((char *)&desc,'\0',sizeof(desc));
 
-	p = skip_string(param,tpscnt,p,1);
+	p = skip_string(param,tpscnt,p);
 	if (!p) {
 		return False;
 	}
@@ -905,8 +905,8 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 				int *rdata_len, int *rparam_len)
 {
 	char *param_format = get_safe_str_ptr(param,tpscnt,param,2);
-	char *output_format1 = skip_string(param,tpscnt,param_format,1);
-	char *p = skip_string(param,tpscnt,output_format1,1);
+	char *output_format1 = skip_string(param,tpscnt,param_format);
+	char *p = skip_string(param,tpscnt,output_format1);
 	unsigned int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	char *output_format2 = get_safe_str_ptr(param,tpscnt,p,4);
 	int services = lp_numservices();
@@ -1279,8 +1279,8 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 				char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param, tpscnt, param, 2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param, tpscnt, p, 0, -1);
 	int buf_len = get_safe_SVAL(param,tpscnt, p, 2, 0);
 	uint32 servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
@@ -1333,7 +1333,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
 	if (strcmp(str1, "WrLehDz") == 0) {
-		if (skip_string(param,tpscnt,p,1) == NULL) {
+		if (skip_string(param,tpscnt,p) == NULL) {
 			return False;
 		}
 		pull_ascii_fstring(domain, p);
@@ -1435,8 +1435,8 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid,
 				char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int buf_len = get_safe_SVAL(param,tpscnt,p,2,0);
 	int counted=0;
@@ -1625,9 +1625,9 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *netname = skip_string(param,tpscnt,str2,1);
-	char *p = skip_string(param,tpscnt,netname,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *netname = skip_string(param,tpscnt,str2);
+	char *p = skip_string(param,tpscnt,netname);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int snum;
   
@@ -1691,8 +1691,8 @@ static BOOL api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 				int               *rparam_len )
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int buf_len = get_safe_SVAL(param,tpscnt,p,2,0);
 	char *p2;
@@ -1795,8 +1795,8 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	fstring sharename;
 	fstring comment;
@@ -1822,7 +1822,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	}
 
 	/* Do we have a string ? */
-	if (skip_string(data,mdrcnt,data,1) == NULL) {
+	if (skip_string(data,mdrcnt,data) == NULL) {
 		return False;
 	}
 	pull_ascii_fstring(sharename,data);
@@ -1848,7 +1848,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	}
 
 	/* Do we have a string ? */
-	if (skip_string(data,mdrcnt,data+offset,1) == NULL) {
+	if (skip_string(data,mdrcnt,data+offset) == NULL) {
 		return False;
 	}
 	pull_ascii_fstring(comment, offset? (data+offset) : "");
@@ -1861,7 +1861,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	}
 
 	/* Do we have a string ? */
-	if (skip_string(data,mdrcnt,data+offset,1) == NULL) {
+	if (skip_string(data,mdrcnt,data+offset) == NULL) {
 		return False;
 	}
 	pull_ascii_pstring(pathname, offset? (data+offset) : "");
@@ -1935,8 +1935,8 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	int errflags=0;
 	int resume_context, cli_buf_size;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 
 	struct pdb_search *search;
 	struct samr_displayentry *entries;
@@ -2038,9 +2038,9 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *UserName = skip_string(param,tpscnt,str2,1);
-	char *p = skip_string(param,tpscnt,UserName,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *UserName = skip_string(param,tpscnt,str2);
+	char *p = skip_string(param,tpscnt,UserName);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	const char *level_string;
 	int count=0;
@@ -2184,8 +2184,8 @@ static BOOL api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	struct samr_displayentry *users;
 
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2339,21 +2339,25 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *np = get_safe_str_ptr(param,tpscnt,param,2);
-	char *p = skip_string(param,tpscnt,skip_string(param,tpscnt,np,1),1);
+	char *p = NULL;
 	fstring user;
 	fstring pass1,pass2;
+
+	/* Skip 2 strings. */
+	p = skip_string(param,tpscnt,np);
+	p = skip_string(param,tpscnt,p);
 
 	if (!np || !p) {
 		return False;
 	}
 
 	/* Do we have a string ? */
-	if (skip_string(param,tpscnt,p,1) == NULL) {
+	if (skip_string(param,tpscnt,p) == NULL) {
 		return False;
 	}
 	pull_ascii_fstring(user,p);
 
-	p = skip_string(param,tpscnt,p,1);
+	p = skip_string(param,tpscnt,p);
 	if (!p) {
 		return False;
 	}
@@ -2461,32 +2465,32 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 	 */
 
 	/* Do we have a string ? */
-	if (skip_string(param,tpscnt,p,1) == 0) {
+	if (skip_string(param,tpscnt,p) == 0) {
 		return False;
 	}
 	if(!strequal(p, "zsT")) {
 		DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", p));
 		return False;
 	}
-	p = skip_string(param, tpscnt, p, 1);
+	p = skip_string(param, tpscnt, p);
 	if (!p) {
 		return False;
 	}
 
 	/* Do we have a string ? */
-	if (skip_string(param,tpscnt,p,1) == 0) {
+	if (skip_string(param,tpscnt,p) == 0) {
 		return False;
 	}
 	if(!strequal(p, "B516B16")) {
 		DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
 		return False;
 	}
-	p = skip_string(param,tpscnt,p,1);
+	p = skip_string(param,tpscnt,p);
 	if (!p) {
 		return False;
 	}
 	/* Do we have a string ? */
-	if (skip_string(param,tpscnt,p,1) == 0) {
+	if (skip_string(param,tpscnt,p) == 0) {
 		return False;
 	}
 	p += pull_ascii_fstring(user,p);
@@ -2521,8 +2525,8 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 {
 	int function = get_safe_SVAL(param,tpscnt,param,0,0);
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	uint32 jobid;
 	int snum;
 	fstring sharename;
@@ -2600,8 +2604,8 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 {
 	int function = get_safe_SVAL(param,tpscnt,param,0,0);
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *QueueName = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *QueueName = skip_string(param,tpscnt,str2);
 	int errcode = NERR_notsupported;
 	int snum;
 	WERROR werr = WERR_OK;
@@ -2621,7 +2625,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 	}
 	*rdata_len = 0;
 
-	if (skip_string(param,tpscnt,QueueName,1) == NULL) {
+	if (skip_string(param,tpscnt,QueueName) == NULL) {
 		return False;
 	}
 	snum = print_queue_snum(QueueName);
@@ -2685,8 +2689,8 @@ static BOOL api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 {
 	struct pack_desc desc;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	uint32 jobid;
 	fstring sharename;
 	int uLevel = get_safe_SVAL(param,tpscnt,p,2,-1);
@@ -2768,8 +2772,8 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	char *p2;
 	int struct_len;
@@ -2872,7 +2876,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 					      current_user_info.domain,
 					      comment, sizeof(comment));
 			StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
-			p2 = skip_string(*rdata,*rdata_len,p2,1);
+			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
 			}
@@ -2909,8 +2913,8 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	char *p2;
 	int level = get_safe_SVAL(param,tpscnt,p,0,-1);
 
@@ -2949,7 +2953,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
 	pstrcpy(p2,get_local_machine_name());
 	strupper_m(p2);
-	p2 = skip_string(*rdata,*rdata_len,p2,1);
+	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
 	}
@@ -2957,7 +2961,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
 	pstrcpy(p2,current_user_info.smb_name);
-	p2 = skip_string(*rdata,*rdata_len,p2,1);
+	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
 	}
@@ -2966,7 +2970,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
 	pstrcpy(p2,lp_workgroup());
 	strupper_m(p2);
-	p2 = skip_string(*rdata,*rdata_len,p2,1);
+	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
 	}
@@ -2978,7 +2982,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
 	pstrcpy(p2,lp_workgroup());	/* don't know.  login domain?? */
-	p2 = skip_string(*rdata,*rdata_len,p2,1);
+	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
 	}
@@ -2986,7 +2990,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* don't know */
 	pstrcpy(p2,"");
-	p2 = skip_string(*rdata,*rdata_len,p2,1);
+	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
 	}
@@ -3177,9 +3181,9 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *UserName = skip_string(param,tpscnt,str2,1);
-	char *p = skip_string(param,tpscnt,UserName,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *UserName = skip_string(param,tpscnt,str2);
+	char *p = skip_string(param,tpscnt,UserName);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	char *p2;
 	const char *level_string;
@@ -3248,14 +3252,14 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	if (uLevel >= 10) {
 		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
 		pstrcpy(p2,"Comment");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
 
 		SIVAL(p,usri11_usr_comment,PTR_DIFF(p2,p)); /* user_comment */
 		pstrcpy(p2,"UserComment");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3263,7 +3267,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
 		pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3276,13 +3280,13 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
 		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3292,7 +3296,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SSVALS(p,usri11_num_logons,-1);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
 		pstrcpy(p2,"\\\\*");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3300,7 +3304,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 
 		SIVAL(p,usri11_workstations,PTR_DIFF(p2,p)); /* workstations */
 		pstrcpy(p2,"");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3312,7 +3316,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		/* a simple way to get logon hours at all times. */
 		memset(p2,0xff,21);
 		SCVAL(p2,21,0);           /* fix zero termination */
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3327,7 +3331,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
 		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3336,7 +3340,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
 		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
-		p2 = skip_string(*rdata,*rdata_len,p2,1);
+		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
@@ -3344,14 +3348,14 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
    			pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
-			p2 = skip_string(*rdata,*rdata_len,p2,1);
+			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
 			}
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
 			pstrcpy(p2,"");
-			p2 = skip_string(*rdata,*rdata_len,p2,1);
+			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
 			}
@@ -3373,7 +3377,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 				standard_sub_basic("", "", tmp, sizeof(tmp));
 				pstrcpy(p2, tmp);
 			}
-			p2 = skip_string(*rdata,*rdata_len,p2,1);
+			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
 			}
@@ -3397,8 +3401,8 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	struct pack_desc desc;
 	char* name;
@@ -3500,15 +3504,15 @@ static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *user = skip_string(param,tpscnt,str2,1);
-	char *resource = skip_string(param,tpscnt,user,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *user = skip_string(param,tpscnt,str2);
+	char *resource = skip_string(param,tpscnt,user);
 
 	if (!str1 || !str2 || !user || !resource) {
 		return False;
 	}
 
-	if (skip_string(param,tpscnt,resource,1) == NULL) {
+	if (skip_string(param,tpscnt,resource) == NULL) {
 		return False;
 	}
 	DEBUG(3,("WAccessGetUserPerms user=%s resource=%s\n",user,resource));
@@ -3545,8 +3549,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	int count;
 	int i;
@@ -3644,8 +3648,8 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	char *name = p;
 	int uLevel;
 	int count;
@@ -3662,7 +3666,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	memset((char *)&desc,'\0',sizeof(desc));
 	memset((char *)&status,'\0',sizeof(status));
 
-	p = skip_string(param,tpscnt,p,1);
+	p = skip_string(param,tpscnt,p);
 	if (!p) {
 		return False;
 	}
@@ -3797,8 +3801,8 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	char* PrinterName = p;
 	int uLevel;
 	struct pack_desc desc;
@@ -3811,7 +3815,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 
 	memset((char *)&desc,'\0',sizeof(desc));
 
-	p = skip_string(param,tpscnt,p,1);
+	p = skip_string(param,tpscnt,p);
 	if (!p) {
 		return False;
 	}
@@ -3877,8 +3881,8 @@ static BOOL api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	int queuecnt;
 	int i, n, succnt=0;
@@ -3958,8 +3962,8 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	int succnt;
 	struct pack_desc desc;
@@ -4021,8 +4025,8 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	int succnt;
 	struct pack_desc desc;
@@ -4084,8 +4088,8 @@ static BOOL api_WPrintPortEnum(connection_struct *conn, uint16 vuid,
 				int *rdata_len,int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	int succnt;
 	struct pack_desc desc;
@@ -4154,8 +4158,8 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
-	char *str2 = skip_string(param,tpscnt,str1,1);
-	char *p = skip_string(param,tpscnt,str2,1);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	struct pack_desc desc;
 	struct sessionid *session_list;
@@ -4354,12 +4358,12 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 	}
 	api_command = SVAL(params,0);
 	/* Is there a string at position params+2 ? */
-	if (skip_string(params,tpscnt,params+2,1)) {
+	if (skip_string(params,tpscnt,params+2)) {
 		name1 = params + 2;
 	} else {
 		name1 = "";
 	}
-	name2 = skip_string(params,tpscnt,params+2,1);
+	name2 = skip_string(params,tpscnt,params+2);
 	if (!name2) {
 		name2 = "";
 	}

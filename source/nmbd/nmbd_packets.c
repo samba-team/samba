@@ -1899,7 +1899,7 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
 	SSVAL(ptr,smb_vwv16,2);
 	p2 = smb_buf(ptr);
 	safe_strcpy_base(p2, mailslot, dgram->data, sizeof(dgram->data));
-	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2,1);
+	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2);
   
 	if (((p2+len) > dgram->data+sizeof(dgram->data)) || ((p2+len) < p2)) {
 		DEBUG(0, ("send_mailslot: Cannot write beyond end of packet\n"));
