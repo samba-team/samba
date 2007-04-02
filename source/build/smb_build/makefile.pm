@@ -71,10 +71,12 @@ sub _prepare_path_vars($)
 prefix = $self->{config}->{prefix}
 exec_prefix = $self->{config}->{exec_prefix}
 selftest_prefix = $self->{config}->{selftest_prefix}
-srcdir = $self->{config}->{srcdir}
-VPATH = \$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
+
 builddir = $self->{config}->{builddir}
+srcdir = $self->{config}->{srcdir}
 datarootdir = $self->{config}->{datarootdir}
+
+VPATH = \$(builddir):\$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 
 BASEDIR = $self->{config}->{prefix}
 BINDIR = $self->{config}->{bindir}
@@ -329,7 +331,7 @@ sub StaticLibrary($$)
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
-		
+
 	$self->output(<< "__EOD__"
 #
 $ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
