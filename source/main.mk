@@ -377,27 +377,23 @@ include/includes.d: include/includes.h
 # if it also exists. So better use $* which is foo/bar
 # and append .c manually to get foo/bar.c
 #
-# But if srcdir != builddir, $* does not contain the filename
-# that was found be traversing VPATH. So we are back to $<.
-#	-- jpeach
-#
 
 # Run a static analysis checker
 CHECK = $(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $< -o $@
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
 
 # Run the configured compiler
 COMPILE = $(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $< -o $@
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
 
 # Run the compiler for the build host
 HCOMPILE = $(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(HOSTCC_CFLAGS) -c $< -o $@
+    $(HOSTCC_CFLAGS) -c $*.c -o $@
 
 # Precompile headers
 PCHCOMPILE = @$(CC) -Ilib/replace \
     `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $< -o $@
+    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
 
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
