@@ -337,6 +337,7 @@ sub StaticLibrary($$)
 $ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
 	\@rm -f \$@
+	\@mkdir -p $ctx->{STATICDIR}
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 
 __EOD__
