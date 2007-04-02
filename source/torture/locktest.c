@@ -58,6 +58,7 @@ struct record {
 	char conn, f;
 	uint64_t start, len;
 	char needed;
+	uint16_t pid;
 };
 
 #define PRESETS 0
@@ -208,9 +209,35 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = NT_STATUS_IS_OK(smbcli_lock64(cli[server][conn]->tree, 
-						 fnum[server][conn][f],
-						 start, len, LOCK_TIMEOUT, op));
+			NTSTATUS res;
+			struct smbcli_tree *tree=cli[server][conn]->tree;
+			int fn=fnum[server][conn][f];
+
+			if (!(tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+				res=smbcli_lock(tree, fn, start, len, LOCK_TIMEOUT, rec->lock_op);
+			} else {
+				union smb_lock parms;
+				int ltype;
+				struct smb_lock_entry lock[1];
+
+				parms.lockx.level = RAW_LOCK_LOCKX;
+				parms.lockx.in.file.fnum = fn;
+	
+				ltype = (rec->lock_op == READ_LOCK? 1 : 0);
+				ltype |= LOCKING_ANDX_LARGE_FILES;
+				parms.lockx.in.mode = ltype;
+				parms.lockx.in.timeout = LOCK_TIMEOUT;
+				parms.lockx.in.ulock_cnt = 0;
+				parms.lockx.in.lock_cnt = 1;
+				lock[0].pid = rec->pid;
+				lock[0].offset = start;
+				lock[0].count = len;
+				parms.lockx.in.locks = &lock[0];
+
+				res = smb_raw_lock(tree, &parms);
+			}
+
+			ret[server] = NT_STATUS_IS_OK(res); 
 			status[server] = smbcli_nt_error(cli[server][conn]->tree);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
@@ -231,9 +258,32 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = NT_STATUS_IS_OK(smbcli_unlock64(cli[server][conn]->tree, 
-						   fnum[server][conn][f],
-						   start, len));
+			NTSTATUS res;
+			struct smbcli_tree *tree=cli[server][conn]->tree;
+			int fn=fnum[server][conn][f];
+
+
+			if (!(tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+				res=smbcli_unlock(tree, fn, start, len);
+			} else {
+				union smb_lock parms;
+				struct smb_lock_entry lock[1];
+
+				parms.lockx.level = RAW_LOCK_LOCKX;
+				parms.lockx.in.file.fnum = fn;
+				parms.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+				parms.lockx.in.timeout = 0;
+				parms.lockx.in.ulock_cnt = 1;
+				parms.lockx.in.lock_cnt = 0;
+				lock[0].pid = rec->pid;
+				lock[0].count = len;
+				lock[0].offset = start;
+				parms.lockx.in.locks = &lock[0];
+
+				res = smb_raw_lock(tree, &parms);
+			}
+
+			ret[server] = NT_STATUS_IS_OK(res);
 			status[server] = smbcli_nt_error(cli[server][conn]->tree);
 		}
 		if (showall || 
@@ -358,6 +408,10 @@ static void test_locks(char *share[NSERVERS])
 				random() % (lock_range-(recorded[n].start-lock_base));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
+			recorded[n].pid = random()%3;
+			if (recorded[n].pid == 2) {
+				recorded[n].pid = 0xFFFF; /* see if its magic */
+			}
 			r1 = random() % 100;
 			r2 = random() % 100;
 			if (r1 < READ_PCT) {
