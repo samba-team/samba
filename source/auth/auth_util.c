@@ -562,13 +562,13 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	
 
 	if ( !(result = make_server_info(NULL)) ) {
-		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ( !(pwd = getpwnam_alloc(result, pdb_get_username(sampass))) ) {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
 			  pdb_get_username(sampass)));
+		TALLOC_FREE(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
