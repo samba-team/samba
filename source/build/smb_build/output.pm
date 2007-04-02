@@ -90,6 +90,7 @@ sub generate_static_library($)
 
 	if (defined($lib->{OBJ_FILES})) {
 		$lib->{TARGET_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
+		$lib->{STATICDIR} = 'bin/static';
 	} else {
 		$lib->{TARGET_STATIC_LIBRARY} = "";
 	}
