@@ -85,7 +85,7 @@ BOOL cli_send_mailslot(BOOL unique, const char *mailslot,
 	SSVAL(ptr,smb_vwv16,2);
 	p2 = smb_buf(ptr);
 	fstrcpy(p2,mailslot);
-	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2,1);
+	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2);
 	if (!p2) {
 		return False;
 	}
