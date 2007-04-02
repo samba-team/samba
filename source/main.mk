@@ -349,16 +349,6 @@ unused_macros:
 
 .SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .$(SHLIBEXT) .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .idl .hd
 
-# Dependencies command
-DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
-    `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
-# Dependencies for host objects
-HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
-    `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) $< -o $@
-# Dependencies for precompiled headers
-PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
-    $(CFLAGS) $< -o $@
-
 .c.d:
 	@echo "Generating dependencies for $<"
 	@$(DEPENDS)
@@ -370,30 +360,6 @@ PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
 	@$(PCHDEPENDS)
-
-#
-# $< is broken in older BSD versions:
-# when $@ is foo/bar.o, $< could be torture/foo/bar.c
-# if it also exists. So better use $* which is foo/bar
-# and append .c manually to get foo/bar.c
-#
-
-# Run a static analysis checker
-CHECK = $(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
-
-# Run the configured compiler
-COMPILE = $(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
-
-# Run the compiler for the build host
-HCOMPILE = $(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(HOSTCC_CFLAGS) -c $*.c -o $@
-
-# Precompile headers
-PCHCOMPILE = @$(CC) -Ilib/replace \
-    `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CFLAGS) $(PICFLAG) -c $*.c -o $@
 
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
