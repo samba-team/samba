@@ -39,7 +39,7 @@ static int seen_insert(struct tdb_context *mem_tdb, tdb_off_t rec_ptr)
 	TDB_DATA key, data;
 
 	memset(&data, '\0', sizeof(data));
-	key.dptr = (char *)&rec_ptr;
+	key.dptr = (unsigned char *)&rec_ptr;
 	key.dsize = sizeof(rec_ptr);
 	return tdb_store(mem_tdb, key, data, TDB_INSERT);
 }

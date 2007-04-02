@@ -98,7 +98,7 @@ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
-void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log);
+void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log_ctx);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
 TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
