@@ -46,6 +46,7 @@ sub new($$$)
 	$self->output("default: all\n\n");
 
 	$self->_prepare_path_vars();
+	$self->_prepare_suffix_rules();
 	$self->_prepare_compiler_linker();
 
 	if (!$self->{automatic_deps}) {
@@ -99,6 +100,57 @@ PIDDIR = $self->{config}->{piddir}
 MANDIR = $self->{config}->{mandir}
 PRIVATEDIR = $self->{config}->{privatedir}
 WINBINDD_SOCKET_DIR = $self->{config}->{winbindd_socket_dir}
+
+__EOD__
+);
+}
+
+sub _prepare_suffix_rules($)
+{
+	my ($self) = @_;
+	my $first_prereq = '$*.c';
+
+	if ($self->{config}->{GNU_MAKE} eq 'yes') {
+		$first_prereq = '$<';
+	}
+
+	$self->output(<< "__EOD__"
+# Dependencies command
+DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
+    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CFLAGS) $first_prereq-o \$@
+# Dependencies for host objects
+HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
+    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(HOSTCC_CFLAGS) $first_prereq -o \$@
+# Dependencies for precompiled headers
+PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
+    \$(CFLAGS) $first_prereq -o \$@
+
+# \$< is broken in older BSD versions:
+# when \$@ is foo/bar.o, \$< could be torture/foo/bar.c
+# if it also exists. So better use \$* which is foo/bar
+# and append .c manually to get foo/bar.c
+#
+# If we have GNU Make, it is safe to use \$<, which also lets
+# building with \$srcdir != \$builddir work.
+
+# Run a static analysis checker
+CHECK = \$(CC_CHECKER) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
+
+# Run the configured compiler
+COMPILE = \$(CC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
+
+# Run the compiler for the build host
+HCOMPILE = \$(HOSTCC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(HOSTCC_CFLAGS) -c $first_prereq -o \$@
+
+# Precompile headers
+PCHCOMPILE = @\$(CC) -Ilib/replace \\
+    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
 
 __EOD__
 );
