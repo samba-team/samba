@@ -3114,24 +3114,74 @@ int this_is_smp(void)
 }
 
 /****************************************************************
- Return a safe offset into a buffer, or NULL.
+ Check if an offset into a buffer is safe.
 ****************************************************************/
 
-char *get_safe_offset(const char *buf_base, size_t buf_len, char *ptr, size_t off)
+BOOL is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off)
 {
 	const char *end_base = buf_base + buf_len;
 	char *end_ptr = ptr + off;
 
 	if (!buf_base || !ptr) {
-		return NULL;
+		return False;
 	}
 
 	if (end_base < buf_base || end_ptr < ptr) {
-		return NULL; /* wrap. */
+		return False; /* wrap. */
 	}
 
 	if (end_ptr < end_base) {
-		return end_ptr;
+		return True;
 	}
-	return NULL;
+	return False;
+}
+
+/****************************************************************
+ Return a safe pointer into a buffer, or NULL.
+****************************************************************/
+
+char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off)
+{
+	return is_offset_safe(buf_base, buf_len, ptr, off) ?
+			ptr + off : NULL;
+}
+
+/****************************************************************
+ Return a safe pointer into a string within a buffer, or NULL.
+****************************************************************/
+
+char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off)
+{
+	if (!is_offset_safe(buf_base, buf_len, ptr, off)) {
+		return NULL;
+	}
+	/* Check if a valid string exists at this offset. */
+	if (skip_string(buf_base,buf_len, ptr + off, 1) == NULL) {
+		return NULL;
+	}
+	return ptr + off;
+}
+
+/****************************************************************
+ Return an SVAL at a pointer, or failval if beyond the end.
+****************************************************************/
+
+int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
+{
+	if (!is_offset_safe(buf_base, buf_len, ptr, off+2)) {
+		return failval;
+	}
+	return SVAL(ptr,0);
+}
+
+/****************************************************************
+ Return an IVAL at a pointer, or failval if beyond the end.
+****************************************************************/
+
+int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
+{
+	if (!is_offset_safe(buf_base, buf_len, ptr, off+4)) {
+		return failval;
+	}
+	return IVAL(ptr,0);
 }
