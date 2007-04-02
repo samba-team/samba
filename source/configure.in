@@ -605,7 +605,6 @@ fi
 # case statement; its first reference must be unconditional.
 #
 case "$host_os" in
-# Try to work out if this is the native HPUX compiler that uses the -Ae flag.
     *hpux*)
 #
 # Defines needed for HPUX support.
@@ -1765,14 +1764,15 @@ SHLIBEXT="so"
 			;;
 		*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
 			# Use special PIC flags for the native HP-UX compiler.
-			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
 				SHLD="cc"
 				LDSHFLAGS="-b -Wl,-B,symbolic,-b,-z"
 				SONAMEFLAG="-Wl,+h "
 				PICFLAG="+z"
-			elif test "${GCC}" = "yes"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
+			else 
+				PICFLAG="+z"
 			fi
 			if test "$host_cpu" = "ia64"; then
 				SHLIBEXT="so"
@@ -3184,16 +3184,26 @@ if test x"$with_ldap_support" != x"no"; then
   fi
 
   ##################################################################
-  # HP/UX does not have ber_tag_t, disable LDAP there
-  AC_CHECK_TYPE(ber_tag_t,,,[#include <lber.h>])
-  if test x"$ac_cv_type_ber_tag_t" != x"yes"; then
-	if test x"$with_ldap_support" = x"yes"; then
-	 AC_MSG_ERROR(ber_tag_t is needed for LDAP support)
-	else
+  # HP/UX does not have ber_tag_t in lber.h - it must be configured as
+  # unsigned int in include/includes.h
+  case $host_os in
+	*hpux*)
 	 AC_MSG_WARN(ber_tag_t is needed for LDAP support)
-	fi
-	with_ldap_support=no
-  fi
+	 AC_MSG_WARN(ber_tag_t must be configured in includes.h for hpux)
+	with_ldap_support=yes
+  	;;
+	*)
+  	AC_CHECK_TYPE(ber_tag_t,,,[#include <lber.h>])
+  	if test x"$ac_cv_type_ber_tag_t" != x"yes"; then
+		if test x"$with_ldap_support" = x"yes"; then
+	 	AC_MSG_ERROR(ber_tag_t is needed for LDAP support)
+		else
+	 	AC_MSG_WARN(ber_tag_t is needed for LDAP support)
+		fi
+		with_ldap_support=no
+  	fi
+  	;;
+  esac
 fi
 
 if test x"$with_ldap_support" != x"no"; then
@@ -3285,6 +3295,21 @@ else
     # Check to see whether there is enough LDAP functionality to be able
     # to build AD support.
 
+# HPUX only has ldap_init; ok, we take care of this in smbldap.c
+case "$host_os" in
+	*hpux*)
+    AC_CHECK_FUNC_EXT(ldap_init,$LDAP_LIBS)
+
+    if test x"$ac_cv_func_ext_ldap_init" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support on HPUX requires ldap_init)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_init on HPUX))
+	    with_ads_support=no
+	fi
+    fi
+    ;;
+	*)
     AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
 
     if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
@@ -3295,6 +3320,9 @@ else
 	    with_ads_support=no
 	fi
     fi
+    ;;
+esac
+
 
     AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
 
