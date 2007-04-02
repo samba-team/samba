@@ -20,7 +20,7 @@ lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 $(srcdir)/lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
-	@CPP="$(CPP)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
+	@CPP="$(CPP)" srcdir="$(srcdir)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
 		--header --outputdir=lib/registry \
 		--tdr-parser -- $(srcdir)/lib/registry/regf.idl
 
