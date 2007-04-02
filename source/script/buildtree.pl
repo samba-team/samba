@@ -15,8 +15,8 @@ use vars qw/*name *dir *prune/;
 *name   = *File::Find::name;
 *dir    = *File::Find::dir;
 *prune  = *File::Find::prune;
-my $builddir = abs_path($ENV{samba_builddir});
-my $srcdir = abs_path($ENV{samba_srcdir});
+my $builddir = abs_path($ENV{builddir});
+my $srcdir = abs_path($ENV{srcdir});
 sub wanted;
 
 
