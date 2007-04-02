@@ -173,6 +173,15 @@
 
 #if HAVE_LBER_H
 #include <lber.h>
+#ifdef HPUX
+/* Define ber_tag_t and ber_int_t for using
+ * HP LDAP-UX Integration products' LDAP libraries.
+*/
+#ifndef ber_tag_t
+typedef unsigned int ber_tag_t;
+typedef unsigned int ber_int_t;
+#endif
+#endif /* HPUX */
 #ifndef LBER_USE_DER
 #define LBER_USE_DER 0x01
 #endif
