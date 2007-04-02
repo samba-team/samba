@@ -396,7 +396,7 @@ $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{
 __EOD__
 	);
 
-	if ($ctx->{"USE_HOSTCC"} =~ m/yes/i) {
+	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
 		$self->output(<< "__EOD__"
 	\@\$(HOSTLD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
