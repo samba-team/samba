@@ -276,8 +276,6 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 
 static void display_print_info_3(PRINTER_INFO_3 *i3)
 {
-	printf("\tflags:[0x%x]\n", i3->flags);
-
 	display_sec_desc(i3->secdesc);
 
 	printf("\n");
@@ -2578,7 +2576,7 @@ static BOOL compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 		goto done;
 	}
 	
-	if ( (ctr1.printers_3->flags != ctr1.printers_3->flags ) || !sec_desc_equal( sd1, sd2 ) ) {
+	if (!sec_desc_equal( sd1, sd2 ) ) {
 		printf("Security Descriptors *not* equal!\n");
 		result = False;
 		goto done;
