@@ -80,7 +80,7 @@ static int fetch_func(struct ctdb_call_info *call)
 /*
   benchmark incrementing an integer
 */
-static void bench_incr(struct ctdb_context *ctdb)
+static void bench_incr(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
 	int loops=0;
 	int ret, i;
@@ -98,7 +98,7 @@ static void bench_incr(struct ctdb_context *ctdb)
 		call.key.dsize = 4;
 
 		for (i=0;i<num_repeats;i++) {
-			ret = ctdb_call(ctdb, &call);
+			ret = ctdb_call(ctdb_db, &call);
 			if (ret != 0) {
 				printf("incr call failed - %s\n", ctdb_errstr(ctdb));
 				return;
@@ -113,7 +113,7 @@ static void bench_incr(struct ctdb_context *ctdb)
 
 	call.call_id = FUNC_FETCH;
 
-	ret = ctdb_call(ctdb, &call);
+	ret = ctdb_call(ctdb_db, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		return;
@@ -195,6 +195,7 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
@@ -274,16 +275,16 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb, incr_func,  FUNC_INCR);
-	ret = ctdb_set_call(ctdb, fetch_func, FUNC_FETCH);
-
 	/* attach to a specific database */
-	ret = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (ret == -1) {
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
+
+	/* setup a ctdb call function */
+	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
+	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
 
