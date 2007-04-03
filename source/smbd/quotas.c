@@ -936,6 +936,10 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #define dqb_curfiles dqb_curinodes
 #define dqb_fhardlimit dqb_ihardlimit
 #define dqb_fsoftlimit dqb_isoftlimit
+#ifdef _AIXVERSION_530 
+#include <sys/statfs.h>
+#include <sys/vmount.h>
+#endif /* AIX 5.3 */
 #else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
 #include <sys/quota.h>
 #include <devnm.h>
@@ -1205,11 +1209,37 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
+#ifdef _AIXVERSION_530
+  {
+    struct statfs statbuf;
+    quota64_t user_quota;
+    if (statfs(path,&statbuf) != 0)
+      return False;
+    if(statbuf.f_vfstype == MNT_J2)
+    {
+    /* For some reason we need to be root for jfs2 */
+      become_root_uid_only();
+      r = quotactl(path,QCMD(Q_J2GETQUOTA,USRQUOTA),euser_id,(char *) &user_quota);
+      unbecome_root_uid_only();
+    /* Copy results to old struct to let the following code work as before */
+      D.dqb_curblocks  = user_quota.bused;
+      D.dqb_bsoftlimit = user_quota.bsoft;
+      D.dqb_bhardlimit = user_quota.bhard;
+    }
+    else if(statbuf.f_vfstype == MNT_JFS)
+    {
+#endif /* AIX 5.3 */
   save_re_uid();
   if (set_re_uid() != 0) 
     return False;
   r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
   restore_re_uid();
+#ifdef _AIXVERSION_530
+    }
+    else
+      r = 1; /* Fail for other FS-types */
+  }
+#endif /* AIX 5.3 */
 #else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
 #endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
