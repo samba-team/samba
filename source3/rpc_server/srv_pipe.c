@@ -2382,7 +2382,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 		case PI_SVCCTL:
 			svcctl_get_pipe_fns( &cmds, &n_cmds );
 			break;
-	        case PI_EVENTLOG:
+		case PI_EVENTLOG:
 			eventlog_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_UNIXINFO:
@@ -2396,6 +2396,9 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			rpcecho_get_pipe_fns( &cmds, &n_cmds );
 			break;
 #endif
+		case PI_EPMAPPER:
+			epmapper_get_pipe_fns( &cmds, &n_cmds );
+			break;
 		default:
 			DEBUG(0,("get_pipe_fns: Unknown pipe index! [%d]\n", idx));
 	}

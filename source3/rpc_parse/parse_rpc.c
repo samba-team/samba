@@ -211,6 +211,16 @@ interface/version dce/rpc pipe identification
 	}, 0x01                             \
 }
 
+#define SYNT_EPMAPPER_V3					\
+{											\
+	{										\
+		0xe1af8308, 0x5d1f,0x11c9, \
+		{ 0x91,0xa4},						\
+		         {0x08,0x00,				\
+			      0x2b,0x14,0xa0,0xfa}      \
+	}, 0x03 \
+}
+
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
@@ -234,6 +244,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ PIPE_UNIXINFO, SYNT_UNIXINFO_V0      , PIPE_UNIXINFO , TRANS_SYNT_V2 },
 	{ PIPE_NTSVCS  , SYNT_NTSVCS_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_EPMAPPER, SYNT_EPMAPPER_V3	   , PIPE_EPMAPPER , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

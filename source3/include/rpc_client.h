@@ -25,6 +25,7 @@
 
 #include "librpc/gen_ndr/cli_echo.h"
 #include "librpc/gen_ndr/cli_unixinfo.h"
+#include "librpc/gen_ndr/cli_epmapper.h"
 #include "librpc/gen_ndr/cli_dfs.h"
 #include "librpc/gen_ndr/cli_lsa.h"
 #include "librpc/gen_ndr/cli_srvsvc.h"
