@@ -2388,6 +2388,7 @@ BOOL smb_io_printer_info_2(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_2 
 
 BOOL smb_io_printer_info_3(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
 {
+	uint32 offset = 0;
 	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printer_info_3");
@@ -2395,8 +2396,41 @@ BOOL smb_io_printer_info_3(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_3 
 	
 	buffer->struct_start=prs_offset(ps);
 	
-	if (!prs_uint32("flags", ps, depth, &info->flags))
-		return False;
+	if (MARSHALLING(ps)) {
+		/* Ensure the SD is 8 byte aligned in the buffer. */
+		uint start = prs_offset(ps); /* Remember the start position. */
+		uint off_val = 0;
+
+		/* Write a dummy value. */
+		if (!prs_uint32("offset", ps, depth, &off_val))
+			return False;
+
+		/* 8 byte align. */
+		if (!prs_align_uint64(ps))
+			return False;
+
+		/* Remember where we must seek back to write the SD. */
+		offset = prs_offset(ps);
+
+		/* Calculate the real offset for the SD. */
+
+		off_val = offset - start;
+
+		/* Seek back to where we store the SD offset & store. */
+		prs_set_offset(ps, start);
+		if (!prs_uint32("offset", ps, depth, &off_val))
+			return False;
+
+		/* Return to after the 8 byte align. */
+		prs_set_offset(ps, offset);
+
+	} else {
+		if (!prs_uint32("offset", ps, depth, &offset))
+			return False;
+		/* Seek within the buffer. */
+		if (!prs_set_offset(ps, offset))
+			return False;
+	}
 	if (!sec_io_desc("sec_desc", &info->secdesc, ps, depth))
 		return False;
 
@@ -3143,9 +3177,8 @@ return the size required by a struct in the stream
 
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 {
-	/* The 4 is for the self relative pointer.. */
-	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
-	return 4 + (uint32)sec_desc_size( info->secdesc );
+	/* The 8 is for the self relative pointer - 8 byte aligned.. */
+	return 8 + (uint32)sec_desc_size( info->secdesc );
 }
 
 /*******************************************************************
