@@ -6163,6 +6163,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
   	pstring pathname;
 	int reply_size = 0;
 	int max_referral_level;
+	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
@@ -6176,8 +6177,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
 	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), total_params - 2, STR_TERMINATE);
-	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
-		return UNIXERROR(ERRDOS,ERRbadfile);
+	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata,&status)) < 0)
+		return ERROR_NT(status);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);

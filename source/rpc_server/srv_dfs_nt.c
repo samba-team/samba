@@ -69,7 +69,7 @@ WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 	pstrcat(altpath, sharename);
 
 	/* The following call can change the cwd. */
-	if(get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref)) {
+	if(NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref))) {
 		exists = True;
 		jn.referral_count += 1;
 		old_referral_list = jn.referral_list;
@@ -141,7 +141,7 @@ WERROR _dfs_Remove(pipes_struct *p, NETDFS_Q_DFS_REMOVE *q_u,
 	DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 		dfspath, servername, sharename));
 
-	if(!get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref)) {
+	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, dfspath, &jn, &consumedcnt, &self_ref))) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}
 
@@ -358,7 +358,7 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 		return WERR_DFS_NO_SUCH_SERVER;
   
 	/* The following call can change the cwd. */
-	if(!get_referred_path(p->mem_ctx, path, &jn, &consumedcnt, &self_ref) || consumedcnt < strlen(path)) {
+	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, path, &jn, &consumedcnt, &self_ref)) || consumedcnt < strlen(path)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}
