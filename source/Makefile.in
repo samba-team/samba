@@ -225,7 +225,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
 		 librpc/gen_ndr/ndr_srvsvc.o librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o \
-		 librpc/gen_ndr/ndr_notify.o
+		 librpc/gen_ndr/ndr_notify.o \
+		 librpc/gen_ndr/ndr_epmapper.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -328,7 +329,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
 		   librpc/gen_ndr/cli_srvsvc.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
-		   librpc/gen_ndr/cli_eventlog.o \
+		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_epmapper.o \
 		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
@@ -347,6 +348,8 @@ RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
 
 RPC_UNIXINFO_OBJ = librpc/gen_ndr/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o 
 REGFIO_OBJ = registry/regfio.o
+
+RPC_EPMAPPER_OBJ = librpc/gen_ndr/srv_epmapper.o rpc_server/srv_epmapper_nt.o
 
 RPC_REG_OBJ =  librpc/gen_ndr/srv_winreg.o rpc_server/srv_winreg_nt.o $(REGFIO_OBJ)
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o 
@@ -756,8 +759,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
-            $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) utils/passwd_util.o \
-	    $(LIBGPO_OBJ) $(NSS_INFO_OBJ)
+			$(RPC_EPMAPPER_OBJ) $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
+			utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -936,7 +939,8 @@ cac: SHOWFLAGS $(LIBMSRPC)
 #####################################################################
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
-	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl
+	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
+	epmapper.idl
 
 idl: 
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
@@ -1301,6 +1305,11 @@ bin/librpc_samr.@SHLIBEXT@: proto_exists $(RPC_SAMR_OBJ)
 bin/librpc_unixinfo.@SHLIBEXT@: proto_exists $(RPC_UNIXINFO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_UNIXINFO_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_epmapper.@SHLIBEXT@: proto_exists $(RPC_EPMAPPER_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EPMAPPER_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_srvsvc.@SHLIBEXT@: proto_exists $(RPC_SVC_OBJ)

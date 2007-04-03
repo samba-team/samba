@@ -187,7 +187,7 @@ typedef uint32 codepoint_t;
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
 #define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
+#define PIPE_EPMAPPER "\\PIPE\\epmapper"
 #define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_EVENTLOG "\\PIPE\\eventlog"
 #define PIPE_UNIXINFO    "\\PIPE\\unixinfo"
@@ -209,7 +209,8 @@ typedef uint32 codepoint_t;
 #define PI_EVENTLOG 		12
 #define PI_UNIXINFO		13
 #define PI_NTSVCS		14
-#define PI_MAX_PIPES		15
+#define PI_EPMAPPER		15
+#define PI_MAX_PIPES		16
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
@@ -1897,5 +1898,7 @@ enum usershare_err {
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
+
+#include "librpc/gen_ndr/epmapper.h"
 
 #endif /* _SMB_H */
