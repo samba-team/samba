@@ -18,7 +18,6 @@ PUBLIC_HEADERS = include/tdb.h
 # Start BINARY tdbtool
 [BINARY::tdbtool]
 INSTALLDIR = BINDIR
-ENABLE = NO
 OBJ_FILES= \
 		tools/tdbtool.o
 PRIVATE_DEPENDENCIES = \
