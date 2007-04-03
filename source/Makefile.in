@@ -170,6 +170,8 @@ SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
 
 PAM_MODULES = @PAM_MODULES@
 
+NSS_MODULES = @WINBIND_WINS_NSS@ @WINBIND_NSS@
+
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
 VFS_MODULES = @VFS_MODULES@
@@ -822,6 +824,8 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 ######################################################################
 all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(SHLIBS) $(MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+
+nss_modules : $(NSS_MODULES)
 
 pam_modules : $(PAM_MODULES)
 
@@ -1876,6 +1880,14 @@ Makefile: $(srcdir)/Makefile.in config.status
 
 ######################################################################
 # Samba Testing Framework
+
+# Check for NSS module problems. 
+test_nss_modules: nss_modules
+	@echo "Testing $(NSS_MODULES) "
+	@for module in $(NSS_MODULES); do \
+		./script/tests/dlopen.sh $${module} \
+			|| exit 1; \
+	done
 
 # Check for PAM module problems.  Specifically, check that every module we
 # built can actually be loaded by a minimal PAM-aware application.
