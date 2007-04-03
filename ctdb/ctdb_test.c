@@ -76,6 +76,7 @@ static int fetch_func(struct ctdb_call_info *call)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
@@ -153,16 +154,16 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb, sort_func,  FUNC_SORT);
-	ret = ctdb_set_call(ctdb, fetch_func, FUNC_FETCH);
-
 	/* attach to a specific database */
-	ret = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (ret == -1) {
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
+
+	/* setup a ctdb call function */
+	ret = ctdb_set_call(ctdb_db, sort_func,  FUNC_SORT);
+	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
@@ -183,7 +184,7 @@ int main(int argc, const char *argv[])
 		call.call_data.dptr = (uint8_t *)&v;
 		call.call_data.dsize = sizeof(v);
 
-		ret = ctdb_call(ctdb, &call);
+		ret = ctdb_call(ctdb_db, &call);
 		if (ret == -1) {
 			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
@@ -195,7 +196,7 @@ int main(int argc, const char *argv[])
 	call.call_data.dptr = NULL;
 	call.call_data.dsize = 0;
 
-	ret = ctdb_call(ctdb, &call);
+	ret = ctdb_call(ctdb_db, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
