@@ -3127,6 +3127,8 @@ int this_is_smp(void)
 
 /****************************************************************
  Check if an offset into a buffer is safe.
+ If this returns True it's safe to indirect into the byte at
+ pointer ptr+off.
 ****************************************************************/
 
 BOOL is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off)
@@ -3180,10 +3182,14 @@ char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t o
 
 int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
 {
-	if (!is_offset_safe(buf_base, buf_len, ptr, off+2)) {
+	/*
+	 * Note we use off+1 here, not off+2 as SVAL accesses ptr[0] and ptr[1],
+ 	 * NOT ptr[2].
+ 	 */
+	if (!is_offset_safe(buf_base, buf_len, ptr, off+1)) {
 		return failval;
 	}
-	return SVAL(ptr,0);
+	return SVAL(ptr,off);
 }
 
 /****************************************************************
@@ -3192,8 +3198,12 @@ int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 
 int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
 {
-	if (!is_offset_safe(buf_base, buf_len, ptr, off+4)) {
+	/*
+	 * Note we use off+3 here, not off+4 as IVAL accesses 
+	 * ptr[0] ptr[1] ptr[2] ptr[3] NOT ptr[4].
+ 	 */
+	if (!is_offset_safe(buf_base, buf_len, ptr, off+3)) {
 		return failval;
 	}
-	return IVAL(ptr,0);
+	return IVAL(ptr,off);
 }

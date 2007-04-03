@@ -2365,7 +2365,11 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid,
 
 	memset(pass1,'\0',sizeof(pass1));
 	memset(pass2,'\0',sizeof(pass2));
-	if (!is_offset_safe(param,tpscnt,p,32)) {
+	/*
+	 * We use 31 here not 32 as we're checking
+	 * the last byte we want to access is safe.
+	 */
+	if (!is_offset_safe(param,tpscnt,p,31)) {
 		return False;
 	}
 	memcpy(pass1,p,16);
@@ -2537,7 +2541,11 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
-	if (!is_offset_safe(param,tpscnt,p,2)) {
+	/*
+	 * We use 1 here not 2 as we're checking
+	 * the last byte we want to access is safe.
+	 */
+	if (!is_offset_safe(param,tpscnt,p,1)) {
 		return False;
 	}
 	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
@@ -2701,7 +2709,11 @@ static BOOL api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
-	if (!is_offset_safe(param,tpscnt,p,2)) {
+	/*
+	 * We use 1 here not 2 as we're checking
+	 * the last byte we want to access is safe.
+	 */
+	if (!is_offset_safe(param,tpscnt,p,1)) {
 		return False;
 	}
 	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
