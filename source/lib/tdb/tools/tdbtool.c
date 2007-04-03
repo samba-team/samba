@@ -26,13 +26,11 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "tdb.h"
-#include "pstring.h"
 
 static int do_command(void);
 const char *cmdname;
 char *arg1, *arg2;
 size_t arg1len, arg2len;
-int do_connections;
 int bIterate = 0;
 char *line;
 TDB_DATA iterate_kbuf;
@@ -43,7 +41,6 @@ enum commands {
 	CMD_OPEN_TDB,
 	CMD_ERASE,
 	CMD_DUMP,
-	CMD_CDUMP,
 	CMD_INSERT,
 	CMD_MOVE,
 	CMD_STORE,
@@ -71,7 +68,6 @@ COMMAND_TABLE cmd_table[] = {
 	{"open",	CMD_OPEN_TDB},
 	{"erase",	CMD_ERASE},
 	{"dump",	CMD_DUMP},
-	{"cdump",	CMD_CDUMP},
 	{"insert",	CMD_INSERT},
 	{"move",	CMD_MOVE},
 	{"store",	CMD_STORE},
@@ -94,31 +90,8 @@ COMMAND_TABLE cmd_table[] = {
 
 /* a tdb tool for manipulating a tdb database */
 
-/* these are taken from smb.h - make sure they are in sync */
-
-typedef struct connections_key {
-	pid_t pid;
-	int cnum;
-	fstring name;
-} connections_key;
-
-typedef struct connections_data {
-	int magic;
-	pid_t pid;
-	int cnum;
-	uid_t uid;
-	gid_t gid;
-	char name[24];
-	char addr[24];
-	char machine[FSTRING_LEN];
-	time_t start;
-	unsigned bcast_msg_flags;
-} connections_data;
-
 static TDB_CONTEXT *tdb;
 
-static int print_crec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
-static int print_arec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 static int print_hexkey(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
@@ -177,7 +150,6 @@ static void help(void)
 "  open      dbname     : open an existing database\n"
 "  erase                : erase the database\n"
 "  dump                 : dump the database as strings\n"
-"  cdump                : dump the database as connection records\n"
 "  keys                 : dump the database keys as strings\n"
 "  hexkeys              : dump the database keys as hex values\n"
 "  info                 : print summary info about the database\n"
@@ -351,49 +323,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 	return;
 }
 
-static int print_conn_key(TDB_DATA key)
-{
-	printf( "\nkey %d bytes\n", (int)key.dsize);
-	printf( "pid    =%5d   ", ((connections_key*)key.dptr)->pid);
-	printf( "cnum   =%10d  ", ((connections_key*)key.dptr)->cnum);
-	printf( "name   =[%s]\n", ((connections_key*)key.dptr)->name);
-	return 0;
-}
-
-static int print_conn_data(TDB_DATA dbuf)
-{
-	printf( "\ndata %d bytes\n", (int)dbuf.dsize);
-	printf( "pid    =%5d   ", ((connections_data*)dbuf.dptr)->pid);
-	printf( "cnum   =%10d  ", ((connections_data*)dbuf.dptr)->cnum);
-	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->name);
-	
-	printf( "uid    =%5d   ",  ((connections_data*)dbuf.dptr)->uid);
-	printf( "addr   =[%s]\n", ((connections_data*)dbuf.dptr)->addr);
-	printf( "gid    =%5d   ",  ((connections_data*)dbuf.dptr)->gid);
-	printf( "machine=[%s]\n", ((connections_data*)dbuf.dptr)->machine);
-	printf( "start  = %s\n",   ctime(&((connections_data*)dbuf.dptr)->start));
-	printf( "magic  = 0x%x ",   ((connections_data*)dbuf.dptr)->magic);
-	printf( "flags  = 0x%x\n",  ((connections_data*)dbuf.dptr)->bcast_msg_flags);
-	return 0;
-}
-
 static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
-{
-	if (do_connections && (dbuf.dsize == sizeof(connections_data)))
-		print_crec(the_tdb, key, dbuf, state);
-	else
-		print_arec(the_tdb, key, dbuf, state);
-	return 0;
-}
-
-static int print_crec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
-{
-	print_conn_key(key);
-	print_conn_data(dbuf);
-	return 0;
-}
-
-static int print_arec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("\nkey %d bytes\n", (int)key.dsize);
 	print_asc((const char *)key.dptr, key.dsize);
@@ -484,8 +414,6 @@ static int do_command(void)
 	enum commands mycmd = CMD_HELP;
 	int cmd_len;
 
-	do_connections = 0;
-
 	if (cmdname && strlen(cmdname) == 0) {
 	    mycmd = CMD_NEXT;
 	} else {
@@ -528,11 +456,6 @@ static int do_command(void)
 		tdb_traverse(tdb, do_delete_fn, NULL);
 		return 0;
 	    case CMD_DUMP:
-		bIterate = 0;
-		tdb_traverse(tdb, print_rec, NULL);
-		return 0;
-	    case CMD_CDUMP:
-		do_connections = 1;
 		bIterate = 0;
 		tdb_traverse(tdb, print_rec, NULL);
 		return 0;
