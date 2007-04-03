@@ -866,7 +866,7 @@ timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
 	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@
 
-wins : SHOWFLAGS @WINBIND_WINS_NSS@
+wins : SHOWFLAGS proto_exists @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
