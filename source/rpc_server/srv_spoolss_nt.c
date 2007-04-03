@@ -4220,8 +4220,6 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd,
 	
 	/* These are the components of the SD we are returning. */
 
-	printer->flags = 0x4; 
-
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
