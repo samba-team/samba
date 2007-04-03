@@ -6,6 +6,7 @@
 #include "librpc/rpc/dcerpc_table.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
 #include "librpc/gen_ndr/ndr_echo.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
@@ -24,6 +25,9 @@ NTSTATUS dcerpc_register_builtin_interfaces(void)
 	if (NT_STATUS_IS_ERR(status)) return status;
 
 	status = librpc_register_interface(&dcerpc_table_rpcecho);
+	if (NT_STATUS_IS_ERR(status)) return status;
+
+	status = librpc_register_interface(&dcerpc_table_epmapper);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
 	status = librpc_register_interface(&dcerpc_table_eventlog);
