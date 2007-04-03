@@ -27,9 +27,19 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+/* uncomment this to to fast debugging on the krb5 ticket renewal event */
+#ifdef DEBUG_KRB5_TKT_RENEWAL
+#undef DEBUG_KRB5_TKT_RENEWAL
+#endif
+
 #define MAX_CCACHES 100
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
+
+/* The Krb5 ticket refresh handler should be scheduled 
+   at one-half of the period from now till the tkt 
+   expiration */
+#define KRB5_EVENT_REFRESH_TIME(x) ((x) - (((x) - time(NULL))/2))
 
 /****************************************************************
  Find an entry by name.
@@ -115,7 +125,13 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 			"for: %s in ccache: %s\n", 
 			entry->principal_name, entry->ccname));
 
-		new_start = entry->refresh_time;
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+		new_start = time(NULL) + 30;		
+#else
+		/* The tkt should be refreshed at one-half the period
+		   from now to the expiration time */
+		new_start = KRB5_EVENT_REFRESH_TIME(entry->refresh_time);
+#endif
 
 		goto done;
 	}
@@ -126,6 +142,12 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 				    entry->principal_name,
 				    entry->service,
 				    &new_start);
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+	new_start = time(NULL) + 30;
+#else
+	new_start = KRB5_EVENT_REFRESH_TIME(new_start);
+#endif
+
 	gain_root_privilege();
 
 	if (ret) {
@@ -168,7 +190,6 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 		talloc_get_type_abort(private_data, struct WINBINDD_CCACHE_ENTRY);
 #ifdef HAVE_KRB5
 	int ret;
-	time_t new_start;
 	struct timeval t;
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
 	struct winbindd_domain *domain = NULL;
@@ -215,9 +236,6 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 		DEBUG(10,("krb5_ticket_gain_handler: successful kinit for: %s in ccache: %s\n",
 			entry->principal_name, entry->ccname));
 
-		/* Renew at 1/2 the expiration time */
-		new_start = entry->refresh_time / 2;
-
 		goto got_ticket;
 	}
 
@@ -233,11 +251,11 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 
   got_ticket:
 
-#if 0 /* TESTING */
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
 	t = timeval_set(time(NULL) + 30, 0);
 #else
-	t = timeval_set(new_start, 0);
-#endif /* TESTING */
+	t = timeval_set(KRB5_EVENT_REFRESH_TIME(entry->refresh_time), 0);
+#endif
 
 	entry->event = event_add_timed(winbind_event_context(), entry,
 					t,
@@ -372,7 +390,11 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		} else {
 			/* Renew at 1/2 the ticket expiration time */
 			entry->event = event_add_timed(winbind_event_context(), entry,
-						timeval_set((ticket_end - 1)/2, 0),
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+						timeval_set(time(NULL)+30, 0),
+#else
+						timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0),
+#endif
 						"krb5_ticket_refresh_handler",
 						krb5_ticket_refresh_handler,
 						entry);
@@ -493,6 +515,7 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const
 	if (pass) {
 		memcredp->len += strlen(pass)+1;
 	}
+
 
 #if defined(LINUX)
 	/* aligning the memory on on x86_64 and compiling 
