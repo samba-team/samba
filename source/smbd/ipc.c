@@ -478,8 +478,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 
 	if (state->total_data)  {
 		/* Can't use talloc here, the core routines do realloc on the
-		 * params and data. */
-		state->data = (char *)SMB_MALLOC(state->total_data);
+		 * params and data. Out of paranoia, 100 bytes too many. */
+		state->data = (char *)SMB_MALLOC(state->total_data+100);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
@@ -487,6 +487,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
+		/* null-terminate the slack space */
+		memset(&state->data[state->total_data], 0, 100);
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
 		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
@@ -498,8 +500,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 
 	if (state->total_param) {
 		/* Can't use talloc here, the core routines do realloc on the
-		 * params and data. */
-		state->param = (char *)SMB_MALLOC(state->total_param);
+		 * params and data. Out of paranoia, 100 bytes too many */
+		state->param = (char *)SMB_MALLOC(state->total_param+100);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_param));
@@ -508,6 +510,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
+		/* null-terminate the slack space */
+		memset(&state->param[state->total_param], 0, 100);
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
 		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
