@@ -49,6 +49,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle handle;
 	int i;
 	struct dcerpc_syntax_id syntax;
+	uint32_t num_towers;
 
 	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(handle);
@@ -58,6 +59,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.entry_handle = &handle;	
 	r.out.entry_handle = &handle;
 	r.in.max_towers = 100;
+	r.out.num_towers = &num_towers;
 
 	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &syntax);
 
@@ -140,6 +142,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct GUID uuid;
 	struct rpc_if_id_t iface;
 	struct policy_handle handle;
+	uint32_t num_ents;
 
 	ZERO_STRUCT(handle);
 
@@ -150,6 +153,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.entry_handle = &handle;
 	r.out.entry_handle = &handle;
 	r.in.max_ents = 10;
+	r.out.num_ents = &num_ents;
 
 	do {
 		int i;
