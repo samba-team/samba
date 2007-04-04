@@ -477,7 +477,7 @@ failed:
 
 	gss_release_name(&minor_status, &serv_name);
 	if (context_handle != GSS_C_NO_CONTEXT)
-		gss_delete_sec_context(&min_status, &context_handle, GSS_C_NO_BUFFER);
+		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
 	krb5_free_principal(ctx, principal);
 	krb5_free_context(ctx);	
 
