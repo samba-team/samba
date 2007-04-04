@@ -10,6 +10,8 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+sysconfdir=@sysconfdir@
+localstatedir=@localstatedir@
 datarootdir=@datarootdir@
 
 selftest_prefix=@selftest_prefix@
