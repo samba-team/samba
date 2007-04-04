@@ -369,8 +369,6 @@ $ENV{PREFIX} = $prefix;
 
 $ENV{SRCDIR} = $srcdir;
 
-my $testsdir = "$srcdir/script/tests";
-
 my $tls_enabled = not $opt_quick;
 my $from_build_farm = (defined($ENV{RUN_FROM_BUILD_FARM}) and 
                       ($ENV{RUN_FROM_BUILD_FARM} eq "yes"));
@@ -399,6 +397,8 @@ if ($opt_socket_wrapper)
 {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w");
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
+} else {
+	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless $< == 0;
 }
 
 my $target;
@@ -431,14 +431,9 @@ if (defined($opt_skip)) {
 	close(SKIP);
 }
 
-my $testenv_vars;
-$testenv_vars = $target->provision("dc", "$prefix/dc");
+my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
 
 foreach (keys %$testenv_vars) { $ENV{$_} = $testenv_vars->{$_}; }
-
-SocketWrapper::set_default_iface(1);
-$target->check_or_start($testenv_vars, $socket_wrapper_dir, 
-	($ENV{SMBD_MAX_TIME} or 5400));
 
 SocketWrapper::set_default_iface(6);
 
@@ -463,6 +458,8 @@ print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 
 my @todo = ();
 
+my $testsdir = "$srcdir/script/tests";
+
 if ($opt_quick) {
 	open(IN, "$testsdir/tests_quick.sh|");
 } else {
@@ -483,11 +480,6 @@ while (<IN>) {
 	}
 }
 close(IN) or die("Error creating recipe");
-
-$target->wait_for_start();
-
-# start off with 0 failures
-$ENV{failed} = 0;
 
 my $suitestotal = $#todo + 1;
 my $i = 0;
@@ -522,7 +514,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 			next;
 		}
 
-		$target->setup_env($envname);
+		# $target->setup_env($envname);
 
 		if ($from_build_farm) {
 			run_test_buildfarm($name, $cmd, $i, $suitestotal);
@@ -558,13 +550,6 @@ if ($numfailed == 0) {
 		}
 
 		print "FAILED ($statistics->{TESTS_UNEXPECTED_FAIL} failures and $statistics->{TESTS_ERROR} errors in $statistics->{SUITES_FAIL} testsuites)\n";
-	} else {
-		print <<EOF	    
-************************
-*** TESTSUITE FAILED ***
-************************
-EOF
-;
 	}
 }
 print "DURATION: $duration seconds\n";
