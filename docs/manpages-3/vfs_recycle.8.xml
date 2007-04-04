@@ -151,6 +151,7 @@
 		<listitem>
 		<para>List of files that should not be put into the
 		repository when deleted, but deleted in the normal way.
+		Wildcards such as * and ? are supported.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -160,7 +161,7 @@
 		<listitem>
 		<para>List of directories whose files should not be put
 		into the repository when deleted, but deleted in the
-		normal way.
+		normal way. Wildcards such as * and ? are supported.
 		</para>
 		</listitem>
 		</varlistentry>
