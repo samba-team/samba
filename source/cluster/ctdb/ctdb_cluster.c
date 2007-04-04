@@ -193,7 +193,8 @@ void cluster_ctdb_init(struct event_context *ev)
 	const char *address;
 	const char *transport;
 	struct cluster_state *state;
-	int ret, lacount;
+	int ret, lacount, i;
+	const char *db_list[] = { "brlock", "opendb" };
 
 	nlist = lp_parm_string(-1, "ctdb", "nlist");
 	if (nlist == NULL) return;
@@ -255,10 +256,12 @@ void cluster_ctdb_init(struct event_context *ev)
 		goto failed;
         }
 
-	ret = ctdb_attach(state->ctdb, "cluster.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (ret == -1) {
-		DEBUG(0,("ctdb_attach failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
+	/* attach all the databases we will need */
+	for (i=0;i<ARRAY_SIZE(db_list);i++) {
+		struct ctdb_db_context *ctdb_db;
+		ctdb_db = ctdb_attach(state->ctdb, db_list[i], TDB_DEFAULT, 
+				      O_RDWR|O_CREAT|O_TRUNC, 0666);
+		if (ctdb_db == NULL) goto failed;
 	}
 
 	/* start the protocol running */

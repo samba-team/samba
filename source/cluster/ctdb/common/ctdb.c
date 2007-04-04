@@ -32,10 +32,19 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
+#ifdef USE_INFINIBAND
+	int ctdb_ibw_init(struct ctdb_context *ctdb);
+#endif /* USE_INFINIBAND */
 
 	if (strcmp(transport, "tcp") == 0) {
 		return ctdb_tcp_init(ctdb);
 	}
+#ifdef USE_INFINIBAND
+	if (strcmp(transport, "ib") == 0) {
+		return ctdb_ibw_init(ctdb);
+	}
+#endif /* USE_INFINIBAND */
+
 	ctdb_set_error(ctdb, "Unknown transport '%s'\n", transport);
 	return -1;
 }
@@ -141,15 +150,15 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 /*
   add a node to the list of active nodes
 */
-int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id)
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id)
 {
 	struct ctdb_registered_call *call;
 
-	call = talloc(ctdb, struct ctdb_registered_call);
+	call = talloc(ctdb_db, struct ctdb_registered_call);
 	call->fn = fn;
 	call->id = id;
 
-	DLIST_ADD(ctdb->calls, call);	
+	DLIST_ADD(ctdb_db->calls, call);	
 	return 0;
 }
 
