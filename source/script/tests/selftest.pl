@@ -387,14 +387,13 @@ $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 my @torture_options = ();
 
 if ($opt_socket_wrapper_pcap) {
-	$ENV{SOCKET_WRAPPER_PCAP_FILE} = $opt_socket_wrapper_pcap;
+	SocketWrapper::setup_pcap($opt_socket_wrapper_pcap);
 	# Socket wrapper pcap implies socket wrapper
 	$opt_socket_wrapper = 1;
 }
 
 my $socket_wrapper_dir;
-if ($opt_socket_wrapper) 
-{
+if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w");
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } else {
@@ -433,9 +432,12 @@ if (defined($opt_skip)) {
 
 my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
 
-foreach (keys %$testenv_vars) { $ENV{$_} = $testenv_vars->{$_}; }
-
 SocketWrapper::set_default_iface(6);
+
+foreach ("PASSWORD", "DOMAIN", "SERVER", "CONFIGURATION", 
+	      "USERNAME", "PREFIX", "NETBIOSNAME", "KRB5_CONFIG") {
+	$ENV{$_} = $testenv_vars->{$_};
+}
 
 my $interfaces = join(',', ("127.0.0.6/8", 
 		                 "127.0.0.7/8",
@@ -514,7 +516,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 			next;
 		}
 
-		# $target->setup_env($envname);
+		# $target->setup_env($envname, "$prefix/$envname", $socket_wrapper_dir);
 
 		if ($from_build_farm) {
 			run_test_buildfarm($name, $cmd, $i, $suitestotal);

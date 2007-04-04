@@ -31,6 +31,7 @@ sub setup_pcap($)
 {
 	my ($pcap_file) = @_;
 
+	$ENV{SOCKET_WRAPPER_PCAP_FILE} = $pcap_file;
 }
 
 sub set_default_iface($)
