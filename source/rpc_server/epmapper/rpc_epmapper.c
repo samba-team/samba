@@ -80,8 +80,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 }
 
 
-static error_status_t dcesrv_epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
-				 struct epm_Insert *r)
+static error_status_t dcesrv_epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct epm_Insert *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
