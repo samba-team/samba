@@ -629,8 +629,10 @@ static int wb_aix_user_attrib(const char *key, char *attributes[],
 
 		if (strcmp(attributes[i], S_ID) == 0) {
 			results[i].attr_un.au_int = pwd->pw_uid;
+#ifdef _AIXVERSION_530
 		} else if (strcmp(attributes[i], S_PGID) == 0) {
 			results[i].attr_un.au_int = pwd->pw_gid;
+#endif
 		} else if (strcmp(attributes[i], S_PWD) == 0) {
 			results[i].attr_un.au_char = strdup(pwd->pw_passwd);
 		} else if (strcmp(attributes[i], S_HOME) == 0) {
@@ -769,7 +771,9 @@ static attrlist_t **wb_aix_attrlist(void)
 		{S_PGRP, 	AL_USERATTR,	SEC_CHAR},
 		{S_HOME, 	AL_USERATTR, 	SEC_CHAR},
 		{S_SHELL, 	AL_USERATTR,	SEC_CHAR},
+#ifdef _AIXVERSION_530
 		{S_PGID, 	AL_USERATTR,	SEC_INT},
+#endif
 		{S_GECOS, 	AL_USERATTR,	SEC_CHAR},
 		{S_SHELL, 	AL_USERATTR,	SEC_CHAR},
 		{S_PGRP, 	AL_USERATTR,	SEC_CHAR},
