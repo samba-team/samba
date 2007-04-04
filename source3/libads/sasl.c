@@ -301,7 +301,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	uint32 minor_status;
 	gss_name_t serv_name;
 	gss_buffer_desc input_name;
-	gss_ctx_id_t context_handle;
+	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
 	uint32 ret_flags, conf_state;
@@ -367,8 +367,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 		krb5_free_context(ctx);	
 		return ADS_ERROR_GSS(gss_rc, minor_status);
 	}
-
-	context_handle = GSS_C_NO_CONTEXT;
 
 	input_token.value = NULL;
 	input_token.length = 0;
@@ -478,6 +476,8 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 failed:
 
 	gss_release_name(&minor_status, &serv_name);
+	if (context_handle != GSS_C_NO_CONTEXT)
+		gss_delete_sec_context(&min_status, &context_handle, GSS_C_NO_BUFFER);
 	krb5_free_principal(ctx, principal);
 	krb5_free_context(ctx);	
 
