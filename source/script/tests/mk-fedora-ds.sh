@@ -65,6 +65,23 @@ perl $FEDORA_DS_PREFIX/bin/ds_newinst.pl $FEDORA_DS_INF >&2 || exit 1;
      ls | grep -v ^00core | xargs rm
 )
 
+cat >>$FEDORA_DS_DIR/dse.ldif<<EOF
+dn: cn=bitwise,cn=plugins,cn=config
+objectClass: top
+objectClass: nsSlapdPlugin
+objectClass: extensibleObject
+cn: bitwise
+nsslapd-pluginPath: $FEDORA_DS_PREFIX/lib/fedora-ds/plugins/libbitwise-plugin.so
+nsslapd-pluginInitfunc: bitwise_init
+nsslapd-pluginType: matchingRule
+nsslapd-pluginEnabled: on
+nsslapd-pluginId: bitwise
+nsslapd-pluginVersion: 1.1.0a3
+nsslapd-pluginVendor: Fedora Project
+nsslapd-pluginDescription: Allow bitwise matching rules
+
+EOF
+
 $srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb --option=convert:target=fedora-ds -I $srcdir/setup/schema-map-fedora-ds-1.0 -O $FEDORA_DS_DIR/schema/99_ad.ldif >&2
 
 PROVISION_OPTIONS="$PROVISION_OPTIONS --ldap-module=nsuniqueid"
