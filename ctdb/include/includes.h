@@ -20,6 +20,10 @@ typedef bool BOOL;
 
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
+#ifndef discard_const
+#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+#endif
+
 struct timeval timeval_zero(void);
 bool timeval_is_zero(const struct timeval *tv);
 struct timeval timeval_current(void);

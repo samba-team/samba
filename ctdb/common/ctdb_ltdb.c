@@ -25,7 +25,21 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
+#include "lib/util/dlinklist.h"
 
+/*
+  find an attached ctdb_db handle given a name
+ */
+struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *name)
+{
+	struct ctdb_db_context *tmp_db;
+	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
+		if (strcmp(name, tmp_db->db_name) == 0) {
+			return tmp_db;
+		}
+	}
+	return NULL;
+}
 
 /*
   attach to a specific database
@@ -43,7 +57,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
 
-	data.dptr = name;
+	data.dptr = discard_const(name);
 	data.dsize = strlen(name);
 	ctdb_db->db_id = ctdb_hash(&data);
 
