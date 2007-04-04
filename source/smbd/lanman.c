@@ -441,12 +441,18 @@ static int check_printq_info(struct pack_desc* desc,
 			desc->subformat = "z";
 			break;
 		default:
+			DEBUG(0,("check_printq_info: invalid level %d\n",
+				uLevel ));
 			return False;
 	}
-	if (strcmp(desc->format,id1) != 0) {
+	if (id1 == NULL || strcmp(desc->format,id1) != 0) {
+		DEBUG(0,("check_printq_info: invalid format %s\n",
+			id1 ? id1 : "<NULL>" ));
 		return False;
 	}
-	if (desc->subformat && strcmp(desc->subformat,id2) != 0) {
+	if (desc->subformat && (id2 == NULL || strcmp(desc->subformat,id2) != 0)) {
+		DEBUG(0,("check_printq_info: invalid subformat %s\n",
+			id2 ? id2 : "<NULL>" ));
 		return False;
 	}
 	return True;
@@ -802,9 +808,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	}
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	str3 = get_safe_str_ptr(param,tpscnt,p,4);
-	if (!str3) {
-		return False;
-	}
+	/* str3 may be null here and is checked in check_printq_info(). */
 
 	/* remove any trailing username */
 	if ((p = strchr_m(QueueName,'%')))
@@ -917,7 +921,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	int *subcntarr = NULL;
 	int queuecnt = 0, subcnt = 0, succnt = 0;
  
-	if (!param_format || !output_format1 || !p || !output_format2) {
+	if (!param_format || !output_format1 || !p) {
 		return False;
 	}
 
@@ -2682,9 +2686,16 @@ static int check_printjob_info(struct pack_desc* desc,
 	case 2: desc->format = "WWzWWDDzz"; break;
 	case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
 	case 4: desc->format = "WWzWWDDzzzzzDDDDDDD"; break;
-	default: return False;
+	default:
+		DEBUG(0,("check_printjob_info: invalid level %d\n",
+			uLevel ));
+		return False;
 	}
-	if (strcmp(desc->format,id) != 0) return False;
+	if (id == NULL || strcmp(desc->format,id) != 0) {
+		DEBUG(0,("check_printjob_info: invalid format %s\n",
+			id ? id : "<NULL>" ));
+		return False;
+	}
 	return True;
 }
 
@@ -3761,9 +3772,13 @@ static int check_printdest_info(struct pack_desc* desc,
 			desc->format = "zzzWWzzzWW";
 			break;
 		default:
+			DEBUG(0,("check_printdest_info: invalid level %d\n",
+				uLevel));
 			return False;
 	}
-	if (strcmp(desc->format,id) != 0) {
+	if (id == NULL || strcmp(desc->format,id) != 0) {
+		DEBUG(0,("check_printdest_info: invalid string %s\n", 
+			id ? id : "<NULL>" ));
 		return False;
 	}
 	return True;
