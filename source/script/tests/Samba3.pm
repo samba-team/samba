@@ -121,9 +121,9 @@ sub stop($)
 	return $failed;
 }
 
-sub setup_env($$)
+sub setup_env($$$)
 {
-	my ($self, $name) = @_;
+	my ($self, $name, $socket_wrapper_dir) = @_;
 }
 
 1;

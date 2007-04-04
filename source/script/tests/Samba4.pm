@@ -68,8 +68,7 @@ sub check_or_start($$$$)
 		$self->provision_ldap();
 	}
 
-	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless
-		defined($socket_wrapper_dir) or $< == 0;
+	SocketWrapper::set_default_iface(1);
 
 	unlink($env_vars->{SMBD_TEST_FIFO});
 	POSIX::mkfifo($env_vars->{SMBD_TEST_FIFO}, 0700);
@@ -115,21 +114,22 @@ sub check_or_start($$$$)
 	return $pid;
 }
 
-sub wait_for_start($)
+sub wait_for_start($$)
 {
+	my ($self, $testenv_vars) = @_;
 	# give time for nbt server to register its names
 	print "delaying for nbt name registration\n";
 
 	# This will return quickly when things are up, but be slow if we 
 	# need to wait for (eg) SSL init 
-	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{SERVER}");
-	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{SERVER}");
-	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{SERVER}");
-	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
-	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{NETBIOSNAME}");
-	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
-	system("bin/nmblookup $ENV{CONFIGURATION} $ENV{NETBIOSNAME}");
-	system("bin/nmblookup $ENV{CONFIGURATION} -U $ENV{SERVER} $ENV{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{SERVER}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 }
 
 sub provision($$$)
@@ -177,9 +177,18 @@ sub stop($)
 	return $failed;
 }
 
-sub setup_env($$)
+sub setup_env($$$)
 {
-	my ($self, $name) = @_;
+	my ($self, $name, $path, $socket_wrapper_dir) = @_;
+
+	my $env = $self->provision($name, $path);
+
+	$self->check_or_start($env, $socket_wrapper_dir, 
+		($ENV{SMBD_MAX_TIME} or 5400));
+
+	$self->wait_for_start($env);
+
+	return $env;
 }
 
 1;
