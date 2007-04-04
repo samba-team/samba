@@ -311,23 +311,48 @@ done:
 }
 
 /**
- * Check if needle is contained exactly in haystack
- * @param haystack list of parameters separated by delimimiter character
- * @param needle string to be matched exactly to haystack
- * @return True if found
+ * Check if any of the components of "exclude_list" are contained in path.
+ * Return True if found
  **/
-static BOOL checkparam(const char **haystack_list, const char *needle)
-{
-	int i;
 
-	if (haystack_list == NULL || haystack_list[0] == NULL ||
-		*haystack_list[0] == '\0' || needle == NULL || *needle == '\0') {
+static BOOL matchdirparam(const char **dir_exclude_list, char *path)
+{
+	char *startp = NULL, *endp = NULL;
+
+	if (dir_exclude_list == NULL || dir_exclude_list[0] == NULL ||
+		*dir_exclude_list[0] == '\0' || path == NULL || *path == '\0') {
 		return False;
 	}
 
-	for(i=0; haystack_list[i] ; i++) {
-		if(strequal(haystack_list[i], needle)) {
-			return True;
+	/* 
+	 * Walk the components of path, looking for matches with the
+	 * exclude list on each component. 
+	 */
+
+	for (startp = path; startp; startp = endp) {
+		int i;
+
+		while (*startp == '/') {
+			startp++;
+		}
+		endp = strchr(startp, '/');
+		if (endp) {
+			*endp = '\0';
+		}
+
+		for(i=0; dir_exclude_list[i] ; i++) {
+			if(unix_wild_match(dir_exclude_list[i], startp)) {
+				/* Repair path. */
+				if (endp) {
+					*endp = '/';
+				}
+				return True;
+			}
+		}
+
+		/* Repair path. */
+		if (endp) {
+			*endp = '/';
 		}
 	}
 
@@ -485,11 +510,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 		goto done;
 	}
 
-	/* FIXME: this check will fail if we have more than one level of directories,
-	 * we shoud check for every level 1, 1/2, 1/2/3, 1/2/3/4 .... 
-	 * 	---simo
-	 */
-	if (checkparam(recycle_exclude_dir(handle), path_name)) {
+	if (matchdirparam(recycle_exclude_dir(handle), path_name)) {
 		DEBUG(3, ("recycle: directory %s is excluded \n", path_name));
 		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
 		goto done;
