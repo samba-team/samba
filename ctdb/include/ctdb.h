@@ -95,6 +95,11 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 				    int open_flags, mode_t mode);
 
 /*
+  find an attached ctdb_db handle given a name
+ */
+struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *name);
+
+/*
   error string for last ctdb error
 */
 const char *ctdb_errstr(struct ctdb_context *);
