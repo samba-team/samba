@@ -89,6 +89,17 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
 int ctdb_start(struct ctdb_context *ctdb);
 
 /*
+  attach to a ctdb database
+*/
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
+				    int open_flags, mode_t mode);
+
+/*
+  find an attached ctdb_db handle given a name
+ */
+struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *name);
+
+/*
   error string for last ctdb error
 */
 const char *ctdb_errstr(struct ctdb_context *);
@@ -99,20 +110,15 @@ typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 /*
   setup a ctdb call function
 */
-int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id);
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id);
 
-/*
-  attach to a ctdb database
-*/
-int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-		int open_flags, mode_t mode);
 
 
 /*
   make a ctdb call. The associated ctdb call function will be called on the DMASTER
   for the given record
 */
-int ctdb_call(struct ctdb_context *ctdb, struct ctdb_call *call);
+int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
 /*
   wait for all nodes to be connected - useful for test code

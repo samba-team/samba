@@ -31,12 +31,13 @@
 /*
   local version of ctdb_call
 */
-static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
+static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 			   struct ctdb_ltdb_header *header, TDB_DATA *data,
 			   uint32_t caller)
 {
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
 	c = talloc(ctdb, struct ctdb_call_info);
 	CTDB_NO_MEMORY(ctdb, c);
@@ -50,7 +51,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
 	c->reply_data = NULL;
 	c->status = 0;
 
-	for (fn=ctdb->calls;fn;fn=fn->next) {
+	for (fn=ctdb_db->calls;fn;fn=fn->next) {
 		if (fn->id == call->call_id) break;
 	}
 	if (fn == NULL) {
@@ -76,7 +77,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, struct ctdb_call *call,
 	}
 
 	if (c->new_data) {
-		if (ctdb_ltdb_store(ctdb, call->key, header, *c->new_data) != 0) {
+		if (ctdb_ltdb_store(ctdb_db, call->key, header, *c->new_data) != 0) {
 			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
 			return -1;
 		}
@@ -170,12 +171,13 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
   always knows who the dmaster is. The lmaster will then send a
   CTDB_REPLY_DMASTER to the new dmaster
 */
-static void ctdb_call_send_dmaster(struct ctdb_context *ctdb, 
+static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db, 
 				   struct ctdb_req_call *c, 
 				   struct ctdb_ltdb_header *header,
 				   TDB_DATA *key, TDB_DATA *data)
 {
 	struct ctdb_req_dmaster *r;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int len;
 	
 	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize;
@@ -186,6 +188,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	r->hdr.destnode  = ctdb_lmaster(ctdb, key);
 	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = c->hdr.reqid;
+	r->db_id         = c->db_id;
 	r->dmaster       = header->laccessor;
 	r->keylen        = key->dsize;
 	r->datalen       = data->dsize;
@@ -200,7 +203,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 
 		/* update the ltdb to record the new dmaster */
 		header->dmaster = r->hdr.destnode;
-		ctdb_ltdb_store(ctdb, *key, header, *data);
+		ctdb_ltdb_store(ctdb_db, *key, header, *data);
 	}
 
 	talloc_free(r);
@@ -219,6 +222,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_reply_dmaster *r;
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header header;
+	struct ctdb_db_context *ctdb_db;
 	int ret, len;
 
 	key.dptr = c->data;
@@ -226,8 +230,18 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dptr = c->data + c->keylen;
 	data.dsize = c->datalen;
 
+	for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
+		if (ctdb_db->db_id == c->db_id) {
+			break;
+		}
+	}
+	if (!ctdb_db) {
+		ctdb_send_error(ctdb, hdr, ret, "Unknown database in request. db_id==0x%08x",c->db_id);
+		return;
+	}
+
 	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data2);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, &data2);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
@@ -240,7 +254,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	header.dmaster = c->dmaster;
-	if (ctdb_ltdb_store(ctdb, key, &header, data) != 0) {
+	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
 		return;
 	}
@@ -278,6 +292,17 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	int ret, len;
 	struct ctdb_ltdb_header header;
 	struct ctdb_call call;
+	struct ctdb_db_context *ctdb_db;
+
+	for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
+		if (ctdb_db->db_id == c->db_id) {
+			break;
+		}
+	}
+	if (!ctdb_db) {
+		ctdb_send_error(ctdb, hdr, ret, "Unknown database in request. db_id==0x%08x",c->db_id);
+		return;
+	}
 
 	call.call_id  = c->callid;
 	call.key.dptr = c->data;
@@ -289,7 +314,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_fetch(ctdb, call.key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, call.key, &header, &data);
 	if (ret != 0) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
@@ -307,12 +332,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record */
 	if (header.laccessor == c->hdr.srcnode &&
 	    header.lacount >= ctdb->max_lacount) {
-		ctdb_call_send_dmaster(ctdb, c, &header, &call.key, &data);
+		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
 		talloc_free(data.dptr);
 		return;
 	}
 
-	ctdb_call_local(ctdb, &call, &header, &data, c->hdr.srcnode);
+	ctdb_call_local(ctdb_db, &call, &header, &data, c->hdr.srcnode);
 
 	len = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
@@ -342,6 +367,7 @@ enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 struct ctdb_call_state {
 	enum call_state state;
 	struct ctdb_req_call *c;
+	struct ctdb_db_context *ctdb_db;
 	struct ctdb_node *node;
 	const char *errmsg;
 	struct ctdb_call call;
@@ -384,10 +410,15 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_dmaster *c = (struct ctdb_reply_dmaster *)hdr;
 	struct ctdb_call_state *state;
+	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
+	if (state == NULL) {
+		return;
+	}
+	ctdb_db = state->ctdb_db;
+
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -398,12 +429,12 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   and data */
 	state->header.dmaster = ctdb->vnn;
 
-	if (ctdb_ltdb_store(ctdb, state->call.key, &state->header, data) != 0) {
+	if (ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 		return;
 	}
 
-	ctdb_call_local(ctdb, &state->call, &state->header, &data, ctdb->vnn);
+	ctdb_call_local(ctdb_db, &state->call, &state->header, &data, ctdb->vnn);
 
 	state->state = CTDB_CALL_DONE;
 }
@@ -483,22 +514,24 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
   this is used so that locally processed ctdb_call requests are processed
   in an event driven manner
 */
-struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb, 
+struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
 					     struct ctdb_call *call,
 					     struct ctdb_ltdb_header *header,
 					     TDB_DATA *data)
 {
 	struct ctdb_call_state *state;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int ret;
 
-	state = talloc_zero(ctdb, struct ctdb_call_state);
+	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
 	state->call = *call;
+	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb, &state->call, header, data, ctdb->vnn);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
 
 	return state;
 }
@@ -510,13 +543,14 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
   This constructs a ctdb_call request and queues it for processing. 
   This call never blocks.
 */
-struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, struct ctdb_call *call)
+struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 {
 	uint32_t len;
 	struct ctdb_call_state *state;
 	int ret;
 	struct ctdb_ltdb_header header;
 	TDB_DATA data;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
 	/*
 	  if we are the dmaster for this key then we don't need to
@@ -524,14 +558,14 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, struct ctdb_ca
 	  locally. To find out if we are the dmaster we need to look
 	  in our ltdb
 	*/
-	ret = ctdb_ltdb_fetch(ctdb, call->key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, &data);
 	if (ret != 0) return NULL;
 
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		return ctdb_call_local_send(ctdb, call, &header, &data);
+		return ctdb_call_local_send(ctdb_db, call, &header, &data);
 	}
 
-	state = talloc_zero(ctdb, struct ctdb_call_state);
+	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
@@ -544,6 +578,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, struct ctdb_ca
 	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
+	state->c->db_id         = ctdb_db->db_id;
 	state->c->callid        = call->call_id;
 	state->c->keylen        = call->key.dsize;
 	state->c->calldatalen   = call->call_data.dsize;
@@ -557,6 +592,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, struct ctdb_ca
 	state->node   = ctdb->nodes[header.dmaster];
 	state->state  = CTDB_CALL_WAIT;
 	state->header = header;
+	state->ctdb_db = ctdb_db;
 
 	talloc_set_destructor(state, ctdb_call_destructor);
 
@@ -601,9 +637,9 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 /*
   full ctdb_call. Equivalent to a ctdb_call_send() followed by a ctdb_call_recv()
 */
-int ctdb_call(struct ctdb_context *ctdb, struct ctdb_call *call)
+int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 {
 	struct ctdb_call_state *state;
-	state = ctdb_call_send(ctdb, call);
+	state = ctdb_call_send(ctdb_db, call);
 	return ctdb_call_recv(state, call);
 }
