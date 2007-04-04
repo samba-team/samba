@@ -190,7 +190,7 @@ static int process_options(int argc, char **argv, int local_flags)
 
 	if (!lp_load(configfile,True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			dyn_CONFIGFILE);
+			configfile);
 		exit(1);
 	}
 
