@@ -76,6 +76,7 @@ struct ctdb_upcalls {
 	void (*node_connected)(struct ctdb_node *);
 };
 
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -87,15 +88,23 @@ struct ctdb_context {
 	unsigned flags;
 	struct idr_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
-	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;
-	struct tdb_wrap *ltdb;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
 	unsigned max_lacount;
 	ctdb_message_fn_t message_handler;
 	void *message_private;
+	struct ctdb_db_context *db_list;
+};
+
+struct ctdb_db_context {
+	struct ctdb_db_context *next, *prev;
+	struct ctdb_context *ctdb;
+	uint32_t db_id;
+	const char *db_name;
+	struct tdb_wrap *ltdb;
+	struct ctdb_registered_call *calls; /* list of registered calls */
 };
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
@@ -157,6 +166,7 @@ struct ctdb_req_header {
 
 struct ctdb_req_call {
 	struct ctdb_req_header hdr;
+	uint32_t db_id;
 	uint32_t callid;
 	uint32_t keylen;
 	uint32_t calldatalen;
@@ -184,6 +194,7 @@ struct ctdb_reply_redirect {
 
 struct ctdb_req_dmaster {
 	struct ctdb_req_header hdr;
+	uint32_t db_id;
 	uint32_t dmaster;
 	uint32_t keylen;
 	uint32_t datalen;
@@ -220,9 +231,9 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
-int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
+int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
-int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 
+int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 

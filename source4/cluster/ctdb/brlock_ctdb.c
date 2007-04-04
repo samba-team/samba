@@ -46,6 +46,7 @@ enum my_functions {FUNC_BRL_LOCK=1, FUNC_BRL_UNLOCK=2,
 /* this struct is typically attached to tcon */
 struct brl_context {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	struct server_id server;
 	struct messaging_context *messaging_ctx;
 };
@@ -115,6 +116,12 @@ static struct brl_context *brl_ctdb_init(TALLOC_CTX *mem_ctx, struct server_id s
 	}
 
 	brl->ctdb = ctdb;
+	brl->ctdb_db = ctdb_db_handle(ctdb, "brlock");
+	if (brl->ctdb_db == NULL) {
+		DEBUG(0,("Failed to get attached ctdb db handle for brlock\n"));
+		talloc_free(brl);
+		return NULL;
+	}
 	brl->server = server;
 	brl->messaging_ctx = messaging_ctx;
 
@@ -393,7 +400,7 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, &call);
+	ret = ctdb_call(brl->ctdb_db, &call);
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -617,7 +624,7 @@ static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 		
-	ret = ctdb_call(brl->ctdb, &call);
+	ret = ctdb_call(brl->ctdb_db, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -705,7 +712,7 @@ static NTSTATUS brl_ctdb_remove_pending(struct brl_context *brl,
 	req.notify_ptr = notify_ptr;
 	req.server = brl->server;
 		
-	ret = ctdb_call(brl->ctdb, &call);
+	ret = ctdb_call(brl->ctdb_db, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -792,7 +799,7 @@ static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 	req.brl = brl;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, &call);
+	ret = ctdb_call(brl->ctdb_db, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -887,7 +894,7 @@ static NTSTATUS brl_ctdb_close(struct brl_context *brl,
 	req.server = brl->server;
 	req.ntvfs = brlh->ntvfs;
 
-	ret = ctdb_call(brl->ctdb, &call);
+	ret = ctdb_call(brl->ctdb_db, &call);
 	if (ret == -1) {
 		DEBUG(0,("ctdb_call failed - %s\n", __location__));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -914,12 +921,19 @@ void brl_ctdb_init_ops(void)
 {
 	struct ctdb_context *ctdb = talloc_get_type(cluster_backend_handle(), 
 						    struct ctdb_context);
+	struct ctdb_db_context *ctdb_db;
 
 	brl_set_ops(&brlock_tdb_ops);
 
-	ctdb_set_call(ctdb, brl_ctdb_lock_func,  FUNC_BRL_LOCK);
-	ctdb_set_call(ctdb, brl_ctdb_unlock_func,  FUNC_BRL_UNLOCK);
-	ctdb_set_call(ctdb, brl_ctdb_remove_pending_func,  FUNC_BRL_REMOVE_PENDING);
-	ctdb_set_call(ctdb, brl_ctdb_locktest_func,  FUNC_BRL_LOCKTEST);
-	ctdb_set_call(ctdb, brl_ctdb_close_func,  FUNC_BRL_CLOSE);
+	ctdb_db = ctdb_db_handle(ctdb, "brlock");
+	if (ctdb_db == NULL) {
+		DEBUG(0,("Failed to get attached ctdb db handle for brlock\n"));
+		return;
+	}
+
+	ctdb_set_call(ctdb_db, brl_ctdb_lock_func,  FUNC_BRL_LOCK);
+	ctdb_set_call(ctdb_db, brl_ctdb_unlock_func,  FUNC_BRL_UNLOCK);
+	ctdb_set_call(ctdb_db, brl_ctdb_remove_pending_func,  FUNC_BRL_REMOVE_PENDING);
+	ctdb_set_call(ctdb_db, brl_ctdb_locktest_func,  FUNC_BRL_LOCKTEST);
+	ctdb_set_call(ctdb_db, brl_ctdb_close_func,  FUNC_BRL_CLOSE);
 }
