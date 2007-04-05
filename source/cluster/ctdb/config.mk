@@ -3,6 +3,10 @@
 OBJ_FILES = brlock_ctdb.o
 
 ##################
+[SUBSYSTEM::opendb_ctdb]
+OBJ_FILES = opendb_ctdb.o
+
+##################
 [SUBSYSTEM::ctdb_tcp]
 OBJ_FILES = \
 		tcp/tcp_init.o \
