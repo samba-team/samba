@@ -259,7 +259,7 @@ void cluster_ctdb_init(struct event_context *ev)
 	/* attach all the databases we will need */
 	for (i=0;i<ARRAY_SIZE(db_list);i++) {
 		struct ctdb_db_context *ctdb_db;
-		ctdb_db = ctdb_attach(state->ctdb, db_list[i], TDB_DEFAULT, 
+		ctdb_db = ctdb_attach(state->ctdb, db_list[i], TDB_INTERNAL, 
 				      O_RDWR|O_CREAT|O_TRUNC, 0666);
 		if (ctdb_db == NULL) goto failed;
 	}
