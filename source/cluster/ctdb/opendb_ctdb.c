@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Ronnie Sahlberg 2007
+   Copyright (C) Andrew Tridgell 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
