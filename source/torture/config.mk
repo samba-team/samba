@@ -78,6 +78,7 @@ OBJ_FILES = \
 		raw/write.o \
 		raw/lock.o \
 		raw/lockbench.o \
+		raw/openbench.o \
 		raw/rename.o \
 		raw/eas.o \
 		raw/streams.o \
