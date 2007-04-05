@@ -193,8 +193,13 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 	TDB_DATA dbuf;
 	DATA_BLOB blob;
 	NTSTATUS status;
-		
+
 	dbuf = lck->data;
+
+	if (dbuf.dsize == 0) {
+		/* empty record in ctdb means the record isn't there */
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
