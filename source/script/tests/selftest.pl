@@ -435,7 +435,7 @@ my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
 SocketWrapper::set_default_iface(6);
 
 foreach ("PASSWORD", "DOMAIN", "SERVER", "CONFIGURATION", 
-	      "USERNAME", "PREFIX", "NETBIOSNAME", "KRB5_CONFIG") {
+	      "USERNAME", "PREFIX", "NETBIOSNAME", "KRB5_CONFIG", "PIDDIR") {
 	$ENV{$_} = $testenv_vars->{$_};
 }
 
