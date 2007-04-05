@@ -811,9 +811,18 @@ BOOL torture_rpc_dssync(struct torture_context *torture)
 	ctx = test_create_context(mem_ctx);
 	
 	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
+	if (!ret) {
+		return ret;
+	}
 	ret &= test_LDAPBind(ctx, ctx->admin.credentials, &ctx->admin.ldap);
+	if (!ret) {
+		return ret;
+	}
 	ret &= test_GetInfo(ctx);
 	ret &= _test_DsBind(ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
+	if (!ret) {
+		return ret;
+	}
 	ret &= test_FetchData(ctx);
 	ret &= test_FetchNT4Data(ctx);
 
