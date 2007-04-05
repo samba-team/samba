@@ -518,9 +518,10 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 }
 
 /*
- parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+ parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status, 
+BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
+				const char *mechOID,
 				DATA_BLOB *auth)
 {
 	ASN1_DATA data;
@@ -541,14 +542,20 @@ BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	asn1_check_enumerated(&data, negResult);
 	asn1_end_tag(&data);
 
-	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+	*auth = data_blob(NULL,0);
+
+	if (asn1_tag_remaining(&data)) {
 		asn1_start_tag(&data,ASN1_CONTEXT(1));
-		asn1_check_OID(&data, OID_NTLMSSP);
+		asn1_check_OID(&data, mechOID);
 		asn1_end_tag(&data);
-		
-		asn1_start_tag(&data,ASN1_CONTEXT(2));
-		asn1_read_OctetString(&data, auth);
-		asn1_end_tag(&data);
+
+		if (asn1_tag_remaining(&data)) {
+			asn1_start_tag(&data,ASN1_CONTEXT(2));
+			asn1_read_OctetString(&data, auth);
+			asn1_end_tag(&data);
+		}
+	} else if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+		data.has_error = 1;
 	}
 
 	asn1_end_tag(&data);
