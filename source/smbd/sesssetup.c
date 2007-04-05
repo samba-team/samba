@@ -1060,6 +1060,11 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		native_os, native_lanman, primary_domain));
 
 	if ( ra_type == RA_WIN2K ) {
+		/* Vista sets neither the OS or lanman strings */
+
+		if ( !strlen(native_os) && !strlen(native_lanman) )
+			set_remote_arch(RA_VISTA);
+		
 		/* Windows 2003 doesn't set the native lanman string, 
 		   but does set primary domain which is a bug I think */
 			   
