@@ -165,7 +165,8 @@ static void cldap_request_timeout(struct event_context *event_ctx,
 		return;
 	}
 
-	req->state = CLDAP_REQUEST_TIMEOUT;
+	req->state = CLDAP_REQUEST_ERROR;
+	req->status = NT_STATUS_IO_TIMEOUT;
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
@@ -186,10 +187,14 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 		status = socket_sendto(cldap->sock, &req->encoded, &len,
 				       req->dest);
 		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(3,("Failed to send cldap request of length %u to %s:%d\n",
+			DEBUG(0,("Failed to send cldap request of length %u to %s:%d\n",
 				 (unsigned)req->encoded.length, req->dest->addr, req->dest->port));
 			DLIST_REMOVE(cldap->send_queue, req);
-			talloc_free(req);
+			req->state = CLDAP_REQUEST_ERROR;
+			req->status = status;
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
 			continue;
 		}
 
@@ -442,9 +447,10 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		}
 	}
 
-	if (req->state == CLDAP_REQUEST_TIMEOUT) {
+	if (req->state == CLDAP_REQUEST_ERROR) {
+		status = req->status;
 		talloc_free(req);
-		return NT_STATUS_IO_TIMEOUT;
+		return status;
 	}
 
 	ldap_msg = talloc(mem_ctx, struct ldap_message);
