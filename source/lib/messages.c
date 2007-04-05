@@ -183,13 +183,18 @@ static NTSTATUS message_notify(struct process_id procid)
 	SMB_ASSERT(pid > 0);
 
 	if (euid != 0) {
-		become_root_uid_only();
+		/* If we're not root become so to send the message. */
+		save_re_uid();
+		set_effective_uid(0);
 	}
 
 	ret = kill(pid, SIGUSR1);
 
 	if (euid != 0) {
-		unbecome_root_uid_only();
+		/* Go back to who we were. */
+		int saved_errno = errno;
+		restore_re_uid_fromroot();
+		errno = saved_errno;
 	}
 
 	if (ret == -1) {

@@ -1390,9 +1390,9 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	become_root_uid_only();
+	become_root();
 	res = pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime);
-	unbecome_root_uid_only();
+	unbecome_root();
 
 	if (!res) {
 		DEBUG(0, ("pdb_update_bad_password_count: pdb_get_account_policy failed.\n"));
@@ -1435,9 +1435,9 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	become_root_uid_only();
+	become_root();
 	res = pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration);
-	unbecome_root_uid_only();
+	unbecome_root();
 
 	if (!res) {
 		DEBUG(0, ("pdb_update_autolock_flag: pdb_get_account_policy failed.\n"));
