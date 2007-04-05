@@ -114,7 +114,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			}
 			data_blob_free(&tmp_blob);
 		} else if (rc == LDAP_SASL_BIND_IN_PROGRESS) {
-			if (!spnego_parse_auth_response(blob, nt_status, 
+			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
 							&blob_in)) {
 
 				ntlmssp_end(&ntlmssp_state);
