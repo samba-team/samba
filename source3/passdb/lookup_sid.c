@@ -465,10 +465,10 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 			return False;
 		}
 
-		become_root_uid_only();
+		become_root();
 		result = pdb_lookup_rids(domain_sid, num_rids, rids,
 					 *names, *types);
-		unbecome_root_uid_only();
+		unbecome_root();
 
 		return (NT_STATUS_IS_OK(result) ||
 			NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) ||
@@ -1127,9 +1127,9 @@ void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	ZERO_STRUCTP(psid);
 
-	become_root_uid_only();
+	become_root();
 	ret = pdb_uid_to_rid(uid, &rid);
-	unbecome_root_uid_only();
+	unbecome_root();
 
 	if (ret) {
 		/* This is a mapped user */
@@ -1160,9 +1160,9 @@ void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	ZERO_STRUCTP(psid);
 
-	become_root_uid_only();
+	become_root();
 	ret = pdb_gid_to_sid(gid, psid);
-	unbecome_root_uid_only();
+	unbecome_root();
 
 	if (ret) {
 		/* This is a mapped group */
@@ -1200,9 +1200,9 @@ BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		union unid_t id;
 		BOOL ret;
 
-		become_root_uid_only();
+		become_root();
 		ret = pdb_sid_to_id(psid, &id, &type);
-		unbecome_root_uid_only();
+		unbecome_root();
 
 		if (ret) {
 			if (type != SID_NAME_USER) {
@@ -1251,9 +1251,9 @@ BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	     sid_check_is_in_wellknown_domain(psid))) {
 		BOOL ret;
 
-		become_root_uid_only();
+		become_root();
 		ret = pdb_getgrsid(&map, *psid);
-		unbecome_root_uid_only();
+		unbecome_root();
 
 		if (ret) {
 			*pgid = map.gid;
@@ -1266,9 +1266,9 @@ BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
 		BOOL ret;
 
-		become_root_uid_only();
+		become_root();
 		ret = pdb_sid_to_id(psid, &id, &type);
-		unbecome_root_uid_only();
+		unbecome_root();
 
 		if (ret) {
 			if ((type != SID_NAME_DOM_GRP) &&

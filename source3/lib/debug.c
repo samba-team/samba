@@ -695,7 +695,7 @@ void check_log_size( void )
 
 	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
 
-		become_root_uid_only();
+		become_root();
 
 		(void)reopen_logs();
 		if( dbf && get_file_size( debugf ) > maxlog ) {
@@ -710,7 +710,7 @@ void check_log_size( void )
 			}
 		}
 
-		unbecome_root_uid_only();
+		unbecome_root();
 	}
 
 	/*
