@@ -189,7 +189,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = c->hdr.reqid;
 	r->db_id         = c->db_id;
-	r->dmaster       = header->laccessor;
+	r->dmaster       = c->hdr.srcnode;
 	r->keylen        = key->dsize;
 	r->datalen       = data->dsize;
 	memcpy(&r->data[0], key->dptr, key->dsize);
@@ -239,7 +239,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_send_error(ctdb, hdr, ret, "Unknown database in request. db_id==0x%08x",c->db_id);
 		return;
 	}
-
+	
 	/* fetch the current record */
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, &data2);
 	if (ret != 0) {
@@ -422,7 +422,6 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 	ctdb_db = state->ctdb_db;
-
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -624,7 +623,18 @@ struct ctdb_record_handle {
 */
 int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
-	struct ctdb_record_handle *rec = state->fetch_private;
+	struct ctdb_record_handle *rec;
+
+	while (state->state < CTDB_CALL_DONE) {
+		event_loop_once(state->node->ctdb->ev);
+	}
+	if (state->state != CTDB_CALL_DONE) {
+		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
+		talloc_free(state);
+		return -1;
+	}
+
+	rec = state->fetch_private;
 
 	/* ugly hack to manage forced migration */
 	if (rec != NULL) {
@@ -635,14 +645,6 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 		return 0;
 	}
 
-	while (state->state < CTDB_CALL_DONE) {
-		event_loop_once(state->node->ctdb->ev);
-	}
-	if (state->state != CTDB_CALL_DONE) {
-		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
-		talloc_free(state);
-		return -1;
-	}
 	if (state->call.reply_data.dsize) {
 		call->reply_data.dptr = talloc_memdup(state->node->ctdb,
 						      state->call.reply_data.dptr,
@@ -691,6 +693,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	rec->ctdb_db = ctdb_db;
 	rec->key = key;
 	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
+	rec->data = data;
 
 	state = ctdb_call_send(ctdb_db, &call);
 	state->fetch_private = rec;

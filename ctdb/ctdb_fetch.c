@@ -1,5 +1,5 @@
 /* 
-   ctdb test harness
+   simple ctdb benchmark
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -23,43 +23,129 @@
 #include "system/filesys.h"
 #include "popt.h"
 
-enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
+#include <sys/time.h>
+#include <time.h>
 
-static int int_compare(int *i1, int *i2)
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
 {
-	return *i1 - *i2;
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
+
+
+static int timelimit = 10;
+static int num_records = 10;
+static int num_msgs = 1;
+
+static int msg_count;
+
+#define TESTKEY "testkey"
+
+/*
+  fetch a record
+  store a expanded record
+  send a message to next node to tell it to do the same
+*/
+static void bench_fetch_1node(struct ctdb_context *ctdb)
+{
+	TDB_DATA key, data, nulldata;
+	struct ctdb_record_handle *rec;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	int dest, ret;
+
+	key.dptr = discard_const("testkey");
+	key.dsize = strlen((const char *)key.dptr);
+
+	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
+
+	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (rec == NULL) {
+		printf("Failed to fetch record '%s' on node %d\n", 
+		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	if (data.dsize > 1000) {
+		data.dsize = 0;
+	}
+
+	if (data.dsize == 0) {
+		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
+	}
+	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
+						      "msg_count=%d on node %d\n",
+						      msg_count, ctdb_get_vnn(ctdb));
+	data.dsize = strlen((const char *)data.dptr)+1;
+
+	ret = ctdb_record_store(rec, data);
+	if (ret != 0) {
+		printf("Failed to store record\n");
+	}
+
+	talloc_free(tmp_ctx);
+
+	/* tell the next node to do the same */
+	nulldata.dptr = NULL;
+	nulldata.dsize = 0;
+
+	dest = (ctdb_get_vnn(ctdb) + 1) % ctdb_get_num_nodes(ctdb);
+	ctdb_send_message(ctdb, dest, 0, nulldata);
 }
 
 /*
-  add an integer into a record in sorted order
+  handler for messages in bench_ring()
 */
-static int sort_func(struct ctdb_call_info *call)
+static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			    TDB_DATA data, void *private)
 {
-	if (call->call_data == NULL ||
-	    call->call_data->dsize != sizeof(int)) {
-		return CTDB_ERR_INVALID;
-	}
-	call->new_data = talloc(call, TDB_DATA);
-	if (call->new_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	call->new_data->dptr = talloc_size(call, 
-					   call->record_data.dsize + 
-					   call->call_data->dsize);
-	if (call->new_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	call->new_data->dsize = call->record_data.dsize + call->call_data->dsize;
-	memcpy(call->new_data->dptr,
-	       call->record_data.dptr, call->record_data.dsize);
-	memcpy(call->new_data->dptr+call->record_data.dsize,
-	       call->call_data->dptr, call->call_data->dsize);
-
-	qsort(call->new_data->dptr, call->new_data->dsize / sizeof(int),
-	      sizeof(int), (comparison_fn_t)int_compare);
-
-	return 0;
+	msg_count++;
+	bench_fetch_1node(ctdb);
 }
+
+
+/*
+  benchmark the following:
+
+  fetch a record
+  store a expanded record
+  send a message to next node to tell it to do the same
+
+*/
+static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
+{
+	int vnn=ctdb_get_vnn(ctdb);
+
+	if (vnn == ctdb_get_num_nodes(ctdb)-1) {
+		bench_fetch_1node(ctdb);
+	}
+	
+	start_timer();
+
+	while (end_timer() < timelimit) {
+		if (vnn == 0 && msg_count % 100 == 0) {
+			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
+			fflush(stdout);
+		}
+		if (event_loop_once(ev) != 0) {
+			printf("Event loop failed!\n");
+			break;
+		}
+	}
+
+	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
+}
+
+enum my_functions {FUNC_FETCH=1};
 
 /*
   ctdb call function to fetch a record
@@ -88,12 +174,15 @@ int main(int argc, const char *argv[])
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
+		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
+		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
+		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int i, ret;
+	int ret;
 	poptContext pc;
 	struct event_context *ev;
 	struct ctdb_call call;
@@ -161,35 +250,22 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb_db, sort_func,  FUNC_SORT);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
+
+	ctdb_set_message_handler(ctdb, message_handler, &msg_count);
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
 	/* wait until all nodes are connected (should not be needed
-	   outide of test code) */
+	   outside of test code) */
 	ctdb_connect_wait(ctdb);
-       
+
+	bench_fetch(ctdb, ev);
+
 	ZERO_STRUCT(call);
-	call.key.dptr = discard_const("test");
-	call.key.dsize = strlen("test")+1;
-
-	/* add some random data */
-	for (i=0;i<10;i++) {
-		int v = random() % 1000;
-
-		call.call_id = FUNC_SORT;
-		call.call_data.dptr = (uint8_t *)&v;
-		call.call_data.dsize = sizeof(v);
-
-		ret = ctdb_call(ctdb_db, &call);
-		if (ret == -1) {
-			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
-			exit(1);
-		}
-	}
+	call.key.dptr = discard_const(TESTKEY);
+	call.key.dsize = strlen(TESTKEY);
 
 	/* fetch the record */
 	call.call_id = FUNC_FETCH;
@@ -202,13 +278,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	for (i=0;i<call.reply_data.dsize/sizeof(int);i++) {
-		printf("%3d\n", ((int *)call.reply_data.dptr)[i]);
-	}
-	talloc_free(call.reply_data.dptr);
-
-	/* go into a wait loop to allow other nodes to complete */
-	ctdb_wait_loop(ctdb);
+	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
 	/* shut it down */
 	talloc_free(ctdb);
