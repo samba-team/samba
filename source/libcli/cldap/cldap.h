@@ -28,7 +28,7 @@ struct ldap_message;
 enum cldap_request_state {CLDAP_REQUEST_SEND, 
 			  CLDAP_REQUEST_WAIT, 
 			  CLDAP_REQUEST_DONE,
-			  CLDAP_REQUEST_TIMEOUT};
+			  CLDAP_REQUEST_ERROR};
 
 /*
   a cldap request packet
@@ -39,6 +39,7 @@ struct cldap_request {
 	struct cldap_socket *cldap;
 
 	enum cldap_request_state state;
+	NTSTATUS status;
 
 	/* where to send the request */
 	struct socket_address *dest;
