@@ -361,6 +361,9 @@ static NTSTATUS ipv4_sendto(struct socket_context *sock,
 		srv_addr.sin_len         = sizeof(srv_addr);
 #endif
 		addr                     = interpret_addr2(dest_addr->addr);
+		if (addr.addr == 0) {
+			return NT_STATUS_HOST_UNREACHABLE;
+		}
 		srv_addr.sin_addr.s_addr = addr.addr;
 		srv_addr.sin_port        = htons(dest_addr->port);
 		srv_addr.sin_family      = PF_INET;
