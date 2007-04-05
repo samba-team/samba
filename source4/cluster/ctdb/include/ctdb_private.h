@@ -23,6 +23,8 @@
 
 #include "ctdb.h"
 
+
+#define CTDB_FETCH_FUNC 0xf0000001
 /*
   an installed ctdb remote call
 */
@@ -166,6 +168,7 @@ struct ctdb_req_header {
 
 struct ctdb_req_call {
 	struct ctdb_req_header hdr;
+	uint32_t flags;
 	uint32_t db_id;
 	uint32_t callid;
 	uint32_t keylen;
