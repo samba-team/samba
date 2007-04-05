@@ -348,7 +348,7 @@ int spnego_gen_negTokenTarg(const char *principal, int time_offset,
 {
 	int retval;
 	DATA_BLOB tkt, tkt_wrapped;
-	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
+	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
 
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(principal, time_offset,
