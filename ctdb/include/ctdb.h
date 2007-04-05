@@ -21,12 +21,14 @@
 #ifndef _CTDB_H
 #define _CTDB_H
 
+#define CTDB_IMMEDIATE_MIGRATION	0x00000001
 struct ctdb_call {
 	int call_id;
 	TDB_DATA key;
 	TDB_DATA call_data;
 	TDB_DATA reply_data;
 	uint32_t status;
+	uint32_t flags;
 };
 
 /*
@@ -147,5 +149,22 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handle
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data);
+
+
+/* 
+   fetch and lock a ctdb record. Underneath this will force the
+   dmaster for the record to be moved to the local node. 
+
+   The lock is released when is talloc_free() is called on the
+   returned ctdb_record_handle. 
+*/
+struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
+
+/*
+  change the data in a record held with a ctdb_record_handle
+  if the new data is zero length, this implies a delete of the record
+ */
+int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
+
 
 #endif
