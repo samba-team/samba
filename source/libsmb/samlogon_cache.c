@@ -59,7 +59,6 @@ BOOL netsamlogon_cache_shutdown(void)
 ***********************************************************************/
 void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 {
-	TDB_DATA key;
 	BOOL got_tdb = False;
 	DOM_SID sid;
 	fstring key_str, sid_string;
@@ -93,7 +92,7 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 
 	fstr_sprintf(key_str, "UG/%s", sid_to_string(sid_string, &sid));
 
-	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key.dptr));
+	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
 
 	tdb_delete(tdb, string_tdb_data(key_str));
 
