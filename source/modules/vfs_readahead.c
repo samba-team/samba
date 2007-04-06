@@ -28,6 +28,30 @@ static BOOL didmsg;
  * the buffer cache to be filled in advance.
  */
 
+static unsigned long get_offset_boundary(struct vfs_handle_struct *handle)
+{
+	SMB_OFF_T off_bound = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+						"readahead",
+						"offset",
+						NULL));
+	if (off_bound == 0) {
+		off_bound = 0x80000;
+	}
+	return (unsigned long)off_bound;
+}
+
+static unsigned long get_offset_length(struct vfs_handle_struct *handle, unsigned long def_val)
+{
+	SMB_OFF_T len = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+						"readahead",
+						"length",
+						NULL));
+	if (len == 0) {
+		len = def_val;
+	}
+	return (unsigned long)len;
+}
+
 static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					int tofd,
 					files_struct *fsp,
@@ -36,9 +60,9 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					SMB_OFF_T offset,
 					size_t count)
 {
-	unsigned long off_bound = lp_parm_ulong(SNUM(handle->conn), "readahead", "offset", 0x80000);
+	unsigned long off_bound = get_offset_boundary(handle);
 	if ( offset % off_bound == 0) {
-		unsigned long len = lp_parm_ulong(SNUM(handle->conn), "readahead", "length", off_bound);
+		unsigned long len = get_offset_length(handle, off_bound);
 #if defined(HAVE_LINUX_READAHEAD)
 		int err = readahead(fromfd, offset, (size_t)len);
 		DEBUG(10,("readahead_sendfile: readahead on fd %u, offset %llu, len %u returned %d\n",
@@ -76,9 +100,9 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 				size_t count,
 				SMB_OFF_T offset)
 {
-	unsigned long off_bound = lp_parm_ulong(SNUM(handle->conn), "readahead", "offset", 0x80000);
+	unsigned long off_bound = get_offset_boundary(handle);
 	if ( offset % off_bound == 0) {
-		unsigned long len = lp_parm_ulong(SNUM(handle->conn), "readahead", "length", off_bound);
+		unsigned long len = get_offset_length(handle, off_bound);
 #if defined(HAVE_LINUX_READAHEAD)
 		int err = readahead(fd, offset, (size_t)len);
 		DEBUG(10,("readahead_pread: readahead on fd %u, offset %llu, len %u returned %d\n",
