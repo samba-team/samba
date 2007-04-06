@@ -1383,7 +1383,7 @@ bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@$(CC) $(FLAGS) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
 
-@WINBIND_NSS@: proto_exists $(WINBIND_NSS_OBJ)
+@WINBIND_NSS@: $(WINBIND_NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_OBJ) \
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
@@ -1400,7 +1400,7 @@ bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		$(LDAP_LIBS) $(LIBS) -lcom_err \
 		@SONAMEFLAG@`basename $@`
 
-bin/pam_winbind.@SHLIBEXT@: proto_exists $(PAM_WINBIND_OBJ) bin/.dummy
+bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ $(GPLIBS) \
 		@SONAMEFLAG@`basename $@` 
@@ -1623,7 +1623,7 @@ bin/ntlm_auth@EXEEXT@: proto_exists $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_
 		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/pam_smbpass.@SHLIBEXT@: proto_exists $(PAM_SMBPASS_OBJ)
+bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
