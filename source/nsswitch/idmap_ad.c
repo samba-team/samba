@@ -194,11 +194,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 		}
 	}
 
-	if ( !dom->readonly ) {
-		DEBUG(1, ("WARNING: forcing to readonly, as idmap_ad can't write on AD.\n"));
-		dom->readonly = true;
-	}
-
 	dom->private_data = ctx;
 
 	talloc_free(config_option);
