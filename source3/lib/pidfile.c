@@ -93,6 +93,13 @@ void pidfile_create(const char *program_name)
 		strncpy( name, program_name, sizeof( name)-1);
 	} else {
 		short_configfile = strrchr( dyn_CONFIGFILE, '/');
+		if (short_configfile == NULL) {
+			/* conf file in current directory */
+			short_configfile = dyn_CONFIGFILE;
+		} else {
+			/* full/relative path provided */
+			short_configfile++;
+		}
 		slprintf( name, sizeof( name)-1, "%s-%s", program_name, short_configfile+1);
 	}
 
