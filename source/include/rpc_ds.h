@@ -44,6 +44,7 @@
 
 /* machine role */
 
+#define DSROLE_DOMAIN_MEMBER_WKS	1
 #define DSROLE_STANDALONE_SRV		2	
 #define DSROLE_DOMAIN_MEMBER_SRV	3
 #define DSROLE_BDC			4
@@ -60,18 +61,13 @@
 typedef struct
 {
 	uint16		machine_role;
-	uint16		unknown;		/* 0x6173 -- maybe just alignment? */
-	
-	uint32		flags;
-	
+	uint32		flags;	
 	uint32		netbios_ptr;
 	uint32		dnsname_ptr;
 	uint32		forestname_ptr;
 	
-	struct GUID	domain_guid;
-	
+	struct GUID	domain_guid;	
 	UNISTR2	netbios_domain;
-
 	UNISTR2	dns_domain;	/* our dns domain */
 	UNISTR2	forest_domain;	/* root domain of the forest to which we belong */
 } DSROLE_PRIMARY_DOMAIN_INFO_BASIC;
