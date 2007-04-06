@@ -172,7 +172,7 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
+SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -888,7 +888,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 # now the rules...
 ######################################################################
 all : SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(SHLIBS) $(MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+	$(SHLIBS) $(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
 nss_modules : $(NSS_MODULES)
 
