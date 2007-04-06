@@ -155,11 +155,16 @@ enum ctdb_operation {
 	CTDB_REQ_MESSAGE    = 6
 };
 
+#define CTDB_MAGIC 0x43544442 /* CTDB */
+#define CTDB_VERSION 1
+
 /*
   packet structures
 */
 struct ctdb_req_header {
 	uint32_t length;
+	uint32_t ctdb_magic;
+	uint32_t ctdb_version;
 	uint32_t operation;
 	uint32_t destnode;
 	uint32_t srcnode;

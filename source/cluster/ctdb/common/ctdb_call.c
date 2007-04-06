@@ -125,6 +125,8 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
 	r->hdr.length    = len + msglen;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -153,6 +155,8 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r));
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r);
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REPLY_REDIRECT;
 	r->hdr.destnode  = c->hdr.srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -184,6 +188,8 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REQ_DMASTER;
 	r->hdr.destnode  = ctdb_lmaster(ctdb, key);
 	r->hdr.srcnode   = ctdb->vnn;
@@ -264,6 +270,8 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = c->dmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -346,6 +354,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
@@ -576,6 +586,8 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 
 	state->c->hdr.length    = len;
+	state->c->hdr.ctdb_magic = CTDB_MAGIC;
+	state->c->hdr.ctdb_version = CTDB_VERSION;
 	state->c->hdr.operation = CTDB_REQ_CALL;
 	state->c->hdr.destnode  = header.dmaster;
 	state->c->hdr.srcnode   = ctdb->vnn;
