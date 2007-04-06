@@ -64,6 +64,8 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	CTDB_NO_MEMORY(ctdb, r);
 
 	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->hdr.destnode  = vnn;
 	r->hdr.srcnode   = ctdb->vnn;

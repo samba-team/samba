@@ -98,6 +98,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
+        struct sockaddr_in sock_in;
         struct sockaddr_in sock_out;
 
 	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -109,7 +110,21 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	}
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
-	
+
+
+	/* Bind our side of the socketpair to the same address we use to listen
+	 * on incoming CTDB traffic.
+	 * We must specify this address to make sure that the address we expose to
+	 * the remote side is actually routable in case CTDB traffic will run on
+	 * a dedicated non-routeable network.
+	 */
+	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in.sin_addr) != 0) {
+		return;
+	}
+	sock_in.sin_port = htons(0); /* INPORT_ANY is not always available */
+	sock_in.sin_family = PF_INET;
+	bind(tnode->fd, (struct sockaddr *)&sock_in, sizeof(sock_in));
+
 	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sizeof(sock_out)) != 0 &&
 	    errno != EINPROGRESS) {
 		/* try again once a second */
