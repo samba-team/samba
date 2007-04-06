@@ -5649,6 +5649,25 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
   AC_MSG_RESULT(yes)
 )
 
+############################################
+# See if we have the Linux readahead syscall.
+
+AC_CACHE_CHECK([for Linux readahead],
+                samba_cv_HAVE_LINUX_READAHEAD,[
+    AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <fcntl.h>],
+    [ssize_t err = readahead(0,0,0x80000);],
+    samba_cv_HAVE_LINUX_READAHEAD=yes,
+    samba_cv_HAVE_LINUX_READAHEAD=no)])
+
+if test x"$samba_cv_HAVE_LINUX_READAHEAD" = x"yes"; then
+  AC_DEFINE(HAVE_LINUX_READAHEAD,1,
+             [Whether Linux readahead is available])
+fi
+
 
 #################################################
 # Check whether winbind is supported on this platform.  If so we need to
