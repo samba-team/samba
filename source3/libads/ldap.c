@@ -2258,7 +2258,6 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
 {
 	struct berval **values;
-	prs_struct      ps;
 	BOOL ret = False;
 
 	values = ldap_get_values_len(ads->ld, msg, field);
@@ -2266,11 +2265,13 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	if (!values) return False;
 
 	if (values[0]) {
+		prs_struct ps;
 		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
 		prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
 		prs_set_offset(&ps,0);
 
 		ret = sec_io_desc("sd", sd, &ps, 1);
+		prs_mem_free(&ps);
 	}
 	
 	ldap_value_free_len(values);
