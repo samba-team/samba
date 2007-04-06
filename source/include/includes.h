@@ -178,8 +178,8 @@
  * HP LDAP-UX Integration products' LDAP libraries.
 */
 #ifndef ber_tag_t
-typedef unsigned int ber_tag_t;
-typedef unsigned int ber_int_t;
+typedef unsigned long ber_tag_t;
+typedef int ber_int_t;
 #endif
 #endif /* HPUX */
 #ifndef LBER_USE_DER
