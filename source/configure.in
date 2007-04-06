@@ -294,7 +294,6 @@ AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(UUID_LIBS)
 AC_SUBST(LDAP_LIBS)
-AC_SUBST(SHLIB_PROGS)
 AC_SUBST(PAM_MODULES)
 AC_SUBST(INSTALL_PAM_MODULES)
 AC_SUBST(UNINSTALL_PAM_MODULES)
@@ -5798,14 +5797,10 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
-        if test $BLDSHARED = true; then
-		SHLIB_PROGS="$SHLIB_PROGS $WINBIND_NSS $WINBIND_WINS_NSS"
-
-		if test x"$create_pam_modules" = x"yes"; then
-			PAM_MODULES="$PAM_MODULES pam_winbind"
-			INSTALL_PAM_MODULES="installpammodules"
-			UNINSTALL_PAM_MODULES="uninstallpammodules"
-		fi
+        if test $BLDSHARED = true -a x"$create_pam_modules" = x"yes"; then
+		PAM_MODULES="$PAM_MODULES pam_winbind"
+		INSTALL_PAM_MODULES="installpammodules"
+		UNINSTALL_PAM_MODULES="uninstallpammodules"
 	fi
 else
         AC_MSG_RESULT(no$winbind_no_reason)
