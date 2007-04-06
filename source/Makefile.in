@@ -429,7 +429,7 @@ VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
-VFS_LINUX_READAHEAD_OBJ = modules/vfs_readahead.o
+VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1499,9 +1499,9 @@ bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/readahead.@SHLIBEXT@: $(VFS_LINUX_READAHEAD_OBJ)
+bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_LINUX_READAHEAD_OBJ) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READAHEAD_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 #########################################################
