@@ -156,7 +156,7 @@ void dump_core_setup(const char *progname)
 	 * turned on in smb.conf and the relevant daemon is not restarted.
 	 */
 	if (!lp_enable_core_files()) {
-		DEBUG(0, ("Exiting on internal error (core file administratively disabled\n"));
+		DEBUG(0, ("Exiting on internal error (core file administratively disabled)\n"));
 		exit(1);
 	}
 
