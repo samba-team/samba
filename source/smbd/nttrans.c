@@ -848,7 +848,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
-		set_message(outbuf,42,0,True);
+		/* This is very strange. We
+ 		 * return 50 words, but only set
+ 		 * the wcnt to 42 ? It's definately
+ 		 * what happens on the wire....
+ 		 */
+		set_message(outbuf,50,0,True);
+		SCVAL(outbuf,smb_wct,42);
 	} else {
 		set_message(outbuf,34,0,True);
 	}
