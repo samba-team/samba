@@ -60,7 +60,7 @@ static WERROR dns_domain_from_principal(struct smb_krb5_context *smb_krb5_contex
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	}
-	
+
 	/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
 	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
 	
@@ -179,7 +179,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	WERROR wret;
 	krb5_error_code ret;
 	krb5_principal principal;
-	const char *service;
+	const char *service, *dns_name;
 	char *new_service;
 	char *new_princ;
 	enum drsuapi_DsNameStatus namestatus;
@@ -202,19 +202,24 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 		return WERR_OK;
 	}
 	service = principal->name.name_string.val[0];
+	dns_name = principal->name.name_string.val[1];
 	
 	/* MAP it */
 	namestatus = LDB_lookup_spn_alias(smb_krb5_context->krb5_context, 
 					  sam_ctx, mem_ctx, 
 					  service, &new_service);
 	
-	if (namestatus != DRSUAPI_DS_NAME_STATUS_OK) {
-		info1->status = namestatus;
+	if (namestatus == DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
+		info1->dns_domain_name	= talloc_strdup(mem_ctx, dns_name);
+		if (!info1->dns_domain_name) {
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
+			return WERR_NOMEM;
+		}
 		return WERR_OK;
-	}
-	
-	if (ret != 0) {
-		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+	} else if (namestatus != DRSUAPI_DS_NAME_STATUS_OK) {
+		info1->status = namestatus;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_OK;
 	}
 	
@@ -230,15 +235,22 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
 				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &new_princ);
 
-	krb5_free_principal(smb_krb5_context->krb5_context, principal);
-	
 	if (ret) {
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_NOMEM;
 	}
 	
 	wret = DsCrackNameOneName(sam_ctx, mem_ctx, format_flags, format_offered, format_desired,
 				  new_princ, info1);
 	free(new_princ);
+	if (W_ERROR_IS_OK(wret) && (info1->status == DRSUAPI_DS_NAME_STATUS_NOT_FOUND)) {
+		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
+		info1->dns_domain_name	= talloc_strdup(mem_ctx, dns_name);
+		if (!info1->dns_domain_name) {
+			wret = WERR_NOMEM;
+		}
+	}
+	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	return wret;
 }
 
@@ -287,7 +299,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case 1:
 		break;
 	case 0:
-		return dns_domain_from_principal(smb_krb5_context, name, info1);
+		return dns_domain_from_principal(smb_krb5_context, 
+						 name, info1);
 	case -1:
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s", ldb_errstring(sam_ctx)));
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
@@ -535,13 +548,19 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		char *service;
+		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
+		if (ret == 0 && principal->name.name_string.len < 2) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
+			return WERR_OK;
+		}
 		ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
 					    KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
 		if (ret) {
-			return dns_domain_from_principal(smb_krb5_context, name, info1);
-		} else if (principal->name.name_string.len < 2) {
-			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-			return WERR_OK;
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
+
+			return dns_domain_from_principal(smb_krb5_context,
+							 name, info1);
 		}
 
 		domain_filter = NULL;
@@ -671,6 +690,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
 
+	const char * const _domain_attrs_none[] = { "ncName", "dnsRoot" };
+	const char * const _result_attrs_none[] = { NULL};
+
 	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779:
@@ -695,7 +717,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		result_attrs = _result_attrs_display;
 		break;
 	default:
-		return WERR_OK;
+		domain_attrs = _domain_attrs_none;
+		result_attrs = _result_attrs_none;
+		break;
 	}
 
 	if (domain_filter) {
@@ -955,12 +979,19 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		}
 		return WERR_OK;
 	}
+	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL: {
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+		return WERR_OK;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
+	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
+		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_OK;
+	}
 	default:
 		info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 		return WERR_OK;
 	}
-	
-	return WERR_INVALID_PARAM;
 }
 
 /* Given a user Principal Name (such as foo@bar.com),

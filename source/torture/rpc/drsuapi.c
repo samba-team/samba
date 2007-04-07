@@ -686,8 +686,6 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
-	printf("Connected to DRAUAPI pipe\n");
-
 	ZERO_STRUCT(priv);
 
 	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
@@ -768,7 +766,8 @@ BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 	ret &= test_DsBind(p, mem_ctx, &priv);
 
 	if (ret) {
-		ret &= test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
+		/* We don't care if this fails, we just need some info from it */
+		test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
 		
 		ret &= test_DsCrackNames(p, mem_ctx, &priv);
 		
