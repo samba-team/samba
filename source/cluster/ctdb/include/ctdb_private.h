@@ -240,7 +240,8 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 
-		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);

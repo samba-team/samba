@@ -56,11 +56,13 @@ static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *ca
 	}
 	if (fn == NULL) {
 		ctdb_set_error(ctdb, "Unknown call id %u\n", call->call_id);
+		talloc_free(c);
 		return -1;
 	}
 
 	if (fn->fn(c) != 0) {
 		ctdb_set_error(ctdb, "ctdb_call %u failed\n", call->call_id);
+		talloc_free(c);
 		return -1;
 	}
 
@@ -79,6 +81,7 @@ static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *ca
 	if (c->new_data) {
 		if (ctdb_ltdb_store(ctdb_db, call->key, header, *c->new_data) != 0) {
 			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
+			talloc_free(c);
 			return -1;
 		}
 	}
@@ -123,6 +126,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	len = offsetof(struct ctdb_reply_error, msg);
 	r = ctdb->methods->allocate_pkt(ctdb, len + msglen);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	talloc_set_name_const(r, "send_error packet");
 
 	r->hdr.length    = len + msglen;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
@@ -154,6 +158,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 
 	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r));
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	talloc_set_name_const(r, "send_redirect packet");
 	r->hdr.length = sizeof(*r);
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -187,6 +192,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	talloc_set_name_const(r, "send_dmaster packet");
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -247,7 +253,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 	
 	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, &data2);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
@@ -269,6 +275,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	talloc_set_name_const(r, "reply_dmaster packet");
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -322,7 +329,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_fetch(ctdb_db, call.key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, call.key, &header, hdr, &data);
 	if (ret != 0) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
@@ -353,6 +360,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	len = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	talloc_set_name_const(r, "reply_call packet");
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -539,6 +547,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
+	talloc_steal(state, data->dptr);
+
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
 	state->call = *call;
@@ -571,7 +581,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	  locally. To find out if we are the dmaster we need to look
 	  in our ltdb
 	*/
-	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 	if (ret != 0) return NULL;
 
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
@@ -581,9 +591,13 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
+	talloc_steal(state, data.dptr);
+
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	state->c = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
+	talloc_set_name_const(state->c, "req_call packet");
+	talloc_steal(state, state->c);
 
 	state->c->hdr.length    = len;
 	state->c->hdr.ctdb_magic = CTDB_MAGIC;
@@ -650,8 +664,7 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 
 	/* ugly hack to manage forced migration */
 	if (rec != NULL) {
-		rec->data->dptr = talloc_memdup(rec, state->call.reply_data.dptr,
-						     state->call.reply_data.dsize);
+		rec->data->dptr = talloc_steal(rec, state->call.reply_data.dptr);
 		rec->data->dsize = state->call.reply_data.dsize;
 		talloc_free(state);
 		return 0;
@@ -726,7 +739,7 @@ int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data)
 	struct ctdb_ltdb_header header;
 
 	/* should be avoided if possible    hang header off rec ? */
-	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL);
+	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL, NULL);
 	if (ret) {
 		ctdb_set_error(rec->ctdb_db->ctdb, "Fetch of locally held record failed");
 		return ret;
