@@ -912,6 +912,241 @@ to show in the result.
 </refsect2>
 
 <refsect2>
+<title>SAM CREATEBUILTINGROUP &lt;NAME&gt;</title>
+
+<para>
+(Re)Create a BUILTIN group.
+Only a wellknown set of BUILTIN groups can be created with this command.
+This is the list of currently recognized group names: Administrators,
+Users, Guests, Power Users, Account Operators, Server Operators, Print
+Operators, Backup Operators, Replicator, RAS Servers, Pre-Windows 2000
+ompatible Access.
+
+This command requires a running Winbindd with idmap allocation properly
+configured. The group gid will be allocated out of the winbindd range.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM CREATELOCALGROUP &lt;NAME&gt;</title>
+
+<para>
+Create a LOCAL group (also known as Alias).
+
+This command requires a running Winbindd with idmap allocation properly
+configured. The group gid will be allocated out of the winbindd range.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM MAPUNIXGROUP &lt;NAME&gt;</title>
+
+<para>
+Map an existing Unix group and make it a Domain Group, the domain group
+will have the same name.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM ADDMEM &lt;GROUP&gt; &lt;MEMBER&gt;</title>
+
+<para>
+Add a member to a Local group. The group can be specified only by name,
+the member can be specified by name or SID.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM DELMEM  &lt;GROUP&gt; &lt;MEMBER&gt;</title>
+
+<para>
+Remove a member from a Local group. The group and the member must be
+specified by name.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM LISTMEM &lt;GROUP&gt;</title>
+
+<para>
+List Local group members. The group must be specified by name.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM LIST &lt;users|groups|localgroups|builtin|workstations&gt; [verbose]</title>
+
+<para>
+List the specified set of accounts by name. If verbose is specified,
+the rid and description is also provided for each account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SHOW &lt;NAME&gt;</title>
+
+<para>
+Show the full DOMAIN\\NAME the SID and the type for the corrisponding
+account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET HOMEDIR &lt;NAME&gt; &lt;DIRECTORY&gt;</title>
+
+<para>
+Set the home directory for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET PROFILEPATH &lt;NAME&gt; &lt;PATH&gt;</title>
+
+<para>
+Set the profile path for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET COMMENT &lt;NAME&gt; &lt;COMMENT&gt;</title>
+
+<para>
+Set the comment for a user or group account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET FULLNAME &lt;NAME&gt; &lt;FULL NAME&gt;</title>
+
+<para>
+Set the full name for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET LOGONSCRIPT &lt;NAME&gt; &lt;SCRIPT&gt;</title>
+
+<para>
+Set the logon script for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET HOMEDRIVE &lt;NAME&gt; &lt;DRIVE&gt;</title>
+
+<para>
+Set the home drive for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET WORKSTATIONS &lt;NAME&gt; &lt;WORKSTATIONS&gt;</title>
+
+<para>
+Set the workstations a user account is allowed to log in from.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET DISABLE &lt;NAME&gt;</title>
+
+<para>
+Set the "disabled" flag for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET PWNOTREQ &lt;NAME&gt;</title>
+
+<para>
+Set the "password not required" flag for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET AUTOLOCK &lt;NAME&gt;</title>
+
+<para>
+Set the "autolock" flag for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET PWNOEXP &lt;NAME&gt;</title>
+
+<para>
+Set the "password do not expire" flag for a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM SET PWMUSTCHANGENOW &lt;NAME&gt; [yes|no]</title>
+
+<para>
+Set or unset the "password must change" flag fro a user account.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM POLICY LIST</title>
+
+<para>
+List the avilable account policies.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM POLICY SHOW &lt;account policy&gt;</title>
+
+<para>
+Show the account policy value.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM POLICY SET &lt;account policy&gt; &lt;value&gt;</title>
+
+<para>
+Set a value for the account policy.
+Valid values can be: "forever", "never", "off", or a number.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM PROVISION</title>
+
+<para>
+Only available if ldapsam:editposix is set and winbindd is running.
+Properly populates the ldap tree with the basic accounts (Administrator)
+and groups (Domain Users, Domain Admins, Domain Guests) on the ldap tree.
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>USERSHARE</title>
 
 <para>Starting with version 3.0.23, a Samba server now supports the ability for
