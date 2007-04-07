@@ -49,17 +49,17 @@ showflags:
 dirs:
 	@mkdir -p $(DIRS)
 
-bin/ctdb_test: $(OBJS) ctdb_test.o
+bin/ctdb_test: $(OBJS) tests/ctdb_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ctdb_test.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_bench: $(OBJS) ctdb_bench.o
+bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ctdb_bench.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_fetch: $(OBJS) ctdb_fetch.o
+bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
 
 bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
 	@echo Linking $@
