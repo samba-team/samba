@@ -547,6 +547,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
+	talloc_steal(state, data->dptr);
+
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
 	state->call = *call;
@@ -579,7 +581,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	  locally. To find out if we are the dmaster we need to look
 	  in our ltdb
 	*/
-	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 	if (ret != 0) return NULL;
 
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
