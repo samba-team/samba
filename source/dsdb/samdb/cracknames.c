@@ -46,6 +46,33 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1);
 
+static WERROR dns_domain_from_principal(struct smb_krb5_context *smb_krb5_context, 
+					const char *name, 
+					struct drsuapi_DsNameInfo1 *info1) 
+{
+	krb5_error_code ret;
+	krb5_principal principal;
+	/* perhaps it's a principal with a realm, so return the right 'domain only' response */
+	char **realm;
+	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
+				    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
+	if (ret) {
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		return WERR_OK;
+	}
+	
+	/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
+	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
+	
+	info1->dns_domain_name	= talloc_strdup(info1, *realm);
+	krb5_free_principal(smb_krb5_context->krb5_context, principal);
+	
+	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
+	
+	info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
+	return WERR_OK;
+}		
+
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
 						      TALLOC_CTX *mem_ctx,
 						      const char *alias_from,
@@ -222,6 +249,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			     uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
 			     const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
+	int ldb_ret;
 	WERROR status;
 	const char *domain_filter = NULL;
 	const char *result_filter = NULL;
@@ -229,7 +257,9 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	krb5_principal principal;
 	char **realm;
 	char *unparsed_name_short;
-
+	const char *domain_attrs[] = { NULL };
+	struct ldb_message **domain_res = NULL;
+	
 	/* Prevent recursion */
 	if (!name) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -249,6 +279,24 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					"(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
 					ldb_binary_encode_string(mem_ctx, *realm), 
 					ldb_binary_encode_string(mem_ctx, *realm));
+
+	ldb_ret = gendb_search(sam_ctx, mem_ctx, samdb_partitions_dn(sam_ctx, mem_ctx), 
+			       &domain_res, domain_attrs,
+			       "%s", domain_filter);
+	switch (ldb_ret) {
+	case 1:
+		break;
+	case 0:
+		return dns_domain_from_principal(smb_krb5_context, name, info1);
+	case -1:
+		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s", ldb_errstring(sam_ctx)));
+		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_OK;
+	default:
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+		return WERR_OK;
+	}
+	
 	ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
 				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &unparsed_name_short);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -271,6 +319,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				      NULL, unparsed_name_short, domain_filter, result_filter, 
 				      info1);
 	free(unparsed_name_short);
+
 	return status;
 }
 
@@ -489,26 +538,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
 					    KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
 		if (ret) {
-			/* perhaps it's a principal with a realm, so return the right 'domain only' response */
-			char **realm;
-			ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
-						    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
-			if (ret) {
-				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-				return WERR_OK;
-			}
-				
-			/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
-			realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
-
-			info1->dns_domain_name	= talloc_strdup(info1, *realm);
-			krb5_free_principal(smb_krb5_context->krb5_context, principal);
-	
-			W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
-
-			info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
-			return WERR_OK;
-			
+			return dns_domain_from_principal(smb_krb5_context, name, info1);
 		} else if (principal->name.name_string.len < 2) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
@@ -793,7 +823,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
 		case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 		{
-			const char *canonical_name;
+			const char *canonical_name = NULL; /* Not required, but we get warnings... */
 			/* We may need to manually filter further */
 			for (i = 0; i < ldb_ret; i++) {
 				switch (format_offered) {
