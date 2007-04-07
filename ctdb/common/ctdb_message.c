@@ -41,13 +41,11 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (ctdb->message_handler == NULL) {
 		printf("no msg handler\n");
 		/* no registered message handler */
-		talloc_free(hdr);
 		return;
 	}
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 	ctdb->message_handler(ctdb, c->srvid, data, ctdb->message_private);
-	talloc_free(hdr);
 }
 
 
@@ -63,6 +61,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY(ctdb, r);
+	talloc_set_name_const(r, "req_message packet");
 
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;

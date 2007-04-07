@@ -246,9 +246,9 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 
 	default:
 		printf("Packet with unknown operation %d\n", hdr->operation);
-		talloc_free(hdr);
 		break;
 	}
+	talloc_free(hdr);
 }
 
 /*
