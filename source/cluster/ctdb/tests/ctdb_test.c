@@ -33,7 +33,7 @@ static int int_compare(int *i1, int *i2)
 /*
   add an integer into a record in sorted order
 */
-static int sort_func(struct ctdb_call *call)
+static int sort_func(struct ctdb_call_info *call)
 {
 	if (call->call_data == NULL ||
 	    call->call_data->dsize != sizeof(int)) {
@@ -64,7 +64,7 @@ static int sort_func(struct ctdb_call *call)
 /*
   ctdb call function to fetch a record
 */
-static int fetch_func(struct ctdb_call *call)
+static int fetch_func(struct ctdb_call_info *call)
 {
 	call->reply_data = &call->record_data;
 	return 0;
@@ -76,6 +76,7 @@ static int fetch_func(struct ctdb_call *call)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
@@ -93,9 +94,9 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	int i, ret;
-	TDB_DATA key, data;
 	poptContext pc;
 	struct event_context *ev;
+	struct ctdb_call call;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -153,16 +154,16 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb, sort_func,  FUNC_SORT);
-	ret = ctdb_set_call(ctdb, fetch_func, FUNC_FETCH);
-
 	/* attach to a specific database */
-	ret = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (ret == -1) {
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
+
+	/* setup a ctdb call function */
+	ret = ctdb_set_call(ctdb_db, sort_func,  FUNC_SORT);
+	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
@@ -171,15 +172,19 @@ int main(int argc, const char *argv[])
 	   outide of test code) */
 	ctdb_connect_wait(ctdb);
        
-	key.dptr = "test";
-	key.dsize = strlen("test")+1;
+	ZERO_STRUCT(call);
+	call.key.dptr = discard_const("test");
+	call.key.dsize = strlen("test")+1;
 
 	/* add some random data */
 	for (i=0;i<10;i++) {
 		int v = random() % 1000;
-		data.dptr = (uint8_t *)&v;
-		data.dsize = sizeof(v);
-		ret = ctdb_call(ctdb, key, FUNC_SORT, &data, NULL);
+
+		call.call_id = FUNC_SORT;
+		call.call_data.dptr = (uint8_t *)&v;
+		call.call_data.dsize = sizeof(v);
+
+		ret = ctdb_call(ctdb_db, &call);
 		if (ret == -1) {
 			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
@@ -187,16 +192,20 @@ int main(int argc, const char *argv[])
 	}
 
 	/* fetch the record */
-	ret = ctdb_call(ctdb, key, FUNC_FETCH, NULL, &data);
+	call.call_id = FUNC_FETCH;
+	call.call_data.dptr = NULL;
+	call.call_data.dsize = 0;
+
+	ret = ctdb_call(ctdb_db, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
-	for (i=0;i<data.dsize/sizeof(int);i++) {
-		printf("%3d\n", ((int *)data.dptr)[i]);
+	for (i=0;i<call.reply_data.dsize/sizeof(int);i++) {
+		printf("%3d\n", ((int *)call.reply_data.dptr)[i]);
 	}
-	talloc_free(data.dptr);
+	talloc_free(call.reply_data.dptr);
 
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_wait_loop(ctdb);
