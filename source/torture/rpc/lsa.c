@@ -1521,6 +1521,29 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 				return False;
 			}
 
+			for (j=0; j < ARRAY_SIZE(levels); j++) {
+				struct lsa_QueryTrustedDomainInfoBySid q;
+				union lsa_TrustedDomainInfo info;
+				
+				if (!domains->domains[i].sid) {
+					continue;
+				}
+				
+				q.in.handle  = handle;
+				q.in.dom_sid = domains->domains[i].sid;
+				q.in.level   = levels[j];
+				q.out.info   = &info;
+				status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
+				if (!NT_STATUS_IS_OK(status) && ok[j]) {
+					printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 
+					       levels[j], nt_errstr(status));
+					ret = False;
+				} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
+					printf("QueryTrustedDomainInfoBySid level %d unexpectedly succeeded - %s\n", 
+					       levels[j], nt_errstr(status));
+					ret = False;
+				}
+			}
 		}
 
 		trust_by_name.in.handle = handle;
@@ -1562,30 +1585,6 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			return False;
 		}
 
-		for (j=0; j < ARRAY_SIZE(levels); j++) {
-			struct lsa_QueryTrustedDomainInfoBySid q;
-			union lsa_TrustedDomainInfo info;
-
-			if (!domains->domains[i].sid) {
-				continue;
-			}
-
-			q.in.handle  = handle;
-			q.in.dom_sid = domains->domains[i].sid;
-			q.in.level   = levels[j];
-			q.out.info   = &info;
-			status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
-			if (!NT_STATUS_IS_OK(status) && ok[j]) {
-				printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 
-				       levels[j], nt_errstr(status));
-				ret = False;
-			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
-				printf("QueryTrustedDomainInfoBySid level %d unexpectedly succeeded - %s\n", 
-				       levels[j], nt_errstr(status));
-				ret = False;
-			}
-		}
-		
 		for (j=0; j < ARRAY_SIZE(levels); j++) {
 			struct lsa_QueryTrustedDomainInfoByName q;
 			union lsa_TrustedDomainInfo info;
