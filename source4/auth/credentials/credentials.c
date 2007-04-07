@@ -636,10 +636,6 @@ void cli_credentials_guess(struct cli_credentials *cred)
 		}
 	}
 
-	if (getenv("DOMAIN")) {
-		cli_credentials_set_domain(cred, getenv("DOMAIN"), CRED_GUESS_ENV);
-	}
-
 	if (getenv("PASSWD")) {
 		cli_credentials_set_password(cred, getenv("PASSWD"), CRED_GUESS_ENV);
 	}
