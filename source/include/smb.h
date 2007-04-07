@@ -1199,6 +1199,10 @@ struct bitmap {
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
 #define SMB_SHARE_IN_DFS               0x0002
 
+/* Share specific rights. */
+#define SHARE_ALL_ACCESS      0x001F01FF
+#define SHARE_READ_ONLY       0x001200A9
+
 /* Named pipe write mode flags. Used in writeX calls. */
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
@@ -1479,6 +1483,9 @@ char *strdup(char *s);
 #define FLAGS2_UNICODE_STRINGS         0x8000
 
 #define FLAGS2_WIN2K_SIGNATURE         0xC852 /* Hack alert ! For now... JRA. */
+
+/* TCONX Flag (smb_vwv2). */
+#define TCONX_FLAG_EXTENDED_RESPONSE	0x8
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
