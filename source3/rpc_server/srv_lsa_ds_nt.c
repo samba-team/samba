@@ -36,7 +36,7 @@
 static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **info) 
 {
 	DSROLE_PRIMARY_DOMAIN_INFO_BASIC *basic;
-	const char *netbios_domain;
+	const char *netbios_domain = "";
 	fstring dnsdomain;
 
 	DEBUG(10,("fill_dsrole_dominfo_basic: enter\n"));
