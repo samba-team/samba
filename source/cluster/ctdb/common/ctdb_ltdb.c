@@ -137,7 +137,8 @@ static void ltdb_initial_header(struct ctdb_db_context *ctdb_db,
   returned if the record is not present
 */
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 
-		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data)
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
 {
 	TDB_DATA rec;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -158,7 +159,8 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 	if (data) {
 		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
-		data->dptr = talloc_memdup(ctdb_db, sizeof(struct ctdb_ltdb_header)+rec.dptr,
+		data->dptr = talloc_memdup(mem_ctx, 
+					   sizeof(struct ctdb_ltdb_header)+rec.dptr,
 					   data->dsize);
 	}
 
