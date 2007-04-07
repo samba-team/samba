@@ -462,6 +462,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			enum drsuapi_DsNameStatus status;
 			enum drsuapi_DsNameStatus alternate_status;
 			enum drsuapi_DsNameFlags flags;
+			BOOL skip;
 		} crack[] = {
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
@@ -574,16 +575,15 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.expected_str = talloc_asprintf(mem_ctx, "%s\n", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
-#if 0 /* perhaps we don't really need to look for this one */
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_DISPLAY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = "CN=Microsoft Corporation,L=Redmond,S=Washington,C=US",
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
-				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
+				.skip = lp_parm_bool(-1, "torture", "samba4", False)
 			},
-#endif
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
@@ -637,7 +637,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = GUID_string2(mem_ctx, &priv->dcinfo.ntds_guid),
 				.comment = "NTDS GUID",
 				.expected_str = priv->dcinfo.ntds_dn,
-				.status = DRSUAPI_DS_NAME_STATUS_OK
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.skip = GUID_all_zero(&priv->dcinfo.ntds_guid)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_DISPLAY,
@@ -839,9 +840,17 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "invalid user principal name",
 				.str = "foo@bar",
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
 			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "invalid user principal name in valid domain",
+				.str = talloc_asprintf(mem_ctx, "invalidusername@%s", dns_domain),
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			}
 		};
 		int i;
 		
@@ -858,6 +867,10 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			} else {
 				comment = talloc_asprintf(mem_ctx, "'%s' desired format:%d\n",
 				       names[0].str, r.in.req.req1.format_desired);
+			}
+			if (crack[i].skip) {
+				printf("skipping: %s", comment);
+				continue;
 			}
 			status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
