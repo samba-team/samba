@@ -1199,10 +1199,6 @@ struct bitmap {
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
 #define SMB_SHARE_IN_DFS               0x0002
 
-/* Share specific rights. */
-#define SHARE_ALL_ACCESS      0x001F01FF
-#define SHARE_READ_ONLY       0x001200A9
-
 /* Named pipe write mode flags. Used in writeX calls. */
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
@@ -1246,16 +1242,23 @@ struct bitmap {
 
 /* Mapping of generic access rights for files to specific rights. */
 
+/* This maps to 0x1F01FF */
 #define FILE_GENERIC_ALL (STANDARD_RIGHTS_REQUIRED_ACCESS| SYNCHRONIZE_ACCESS|FILE_ALL_ACCESS)
 
+/* This maps to 0x120089 */
 #define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES|\
 							FILE_READ_EA|SYNCHRONIZE_ACCESS)
 
+/* This maps to 0x120116 */
 #define FILE_GENERIC_WRITE (STD_RIGHT_READ_CONTROL_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
 							FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
 
 #define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|\
 								FILE_EXECUTE|SYNCHRONIZE_ACCESS)
+
+/* Share specific rights. */
+#define SHARE_ALL_ACCESS      FILE_GENERIC_ALL
+#define SHARE_READ_ONLY       (FILE_GENERIC_READ|FILE_EXECUTE)
 
 /* Mapping of access rights to UNIX perms. */
 #define UNIX_ACCESS_RWX		FILE_GENERIC_ALL

@@ -847,13 +847,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		extended_oplock_granted = True;
 	}
 
-#if 0
-	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
-	set_message(outbuf,42,0,True);
-#else
-	set_message(outbuf,34,0,True);
-#endif
-	
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		set_message(outbuf,42,0,True);
+	} else {
+		set_message(outbuf,34,0,True);
+	}
+
 	p = outbuf + smb_vwv2;
 	
 	/*
@@ -913,6 +912,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
+
+	/* Fixme - we must do the same for NTTransCreate and pipe open. */
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		uint32 perms = 0;
+		p += 26;
+		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
+			perms = FILE_GENERIC_ALL;
+		} else {
+			perms = FILE_GENERIC_READ|FILE_EXECUTE;
+		}
+		SIVAL(p,0,perms);
+	}
 
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
