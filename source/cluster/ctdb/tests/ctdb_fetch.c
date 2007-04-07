@@ -44,29 +44,108 @@ static double end_timer(void)
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
-static int num_repeats = 100;
 
-enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
+static int msg_count;
+
+#define TESTKEY "testkey"
 
 /*
-  ctdb call function to increment an integer
+  fetch a record
+  store a expanded record
+  send a message to next node to tell it to do the same
 */
-static int incr_func(struct ctdb_call_info *call)
+static void bench_fetch_1node(struct ctdb_context *ctdb)
 {
-	if (call->record_data.dsize == 0) {
-		call->new_data = talloc(call, TDB_DATA);
-		if (call->new_data == NULL) {
-			return CTDB_ERR_NOMEM;
-		}
-		call->new_data->dptr = talloc_size(call, 4);
-		call->new_data->dsize = 4;
-		*(uint32_t *)call->new_data->dptr = 0;
-	} else {
-		call->new_data = &call->record_data;
+	TDB_DATA key, data, nulldata;
+	struct ctdb_record_handle *rec;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	int dest, ret;
+
+	key.dptr = discard_const("testkey");
+	key.dsize = strlen((const char *)key.dptr);
+
+	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
+
+	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (rec == NULL) {
+		printf("Failed to fetch record '%s' on node %d\n", 
+		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
+		talloc_free(tmp_ctx);
+		return;
 	}
-	(*(uint32_t *)call->new_data->dptr)++;
-	return 0;
+
+	if (data.dsize > 1000) {
+		data.dsize = 0;
+	}
+
+	if (data.dsize == 0) {
+		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
+	}
+	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
+						      "msg_count=%d on node %d\n",
+						      msg_count, ctdb_get_vnn(ctdb));
+	data.dsize = strlen((const char *)data.dptr)+1;
+
+	ret = ctdb_record_store(rec, data);
+	if (ret != 0) {
+		printf("Failed to store record\n");
+	}
+
+	talloc_free(tmp_ctx);
+
+	/* tell the next node to do the same */
+	nulldata.dptr = NULL;
+	nulldata.dsize = 0;
+
+	dest = (ctdb_get_vnn(ctdb) + 1) % ctdb_get_num_nodes(ctdb);
+	ctdb_send_message(ctdb, dest, 0, nulldata);
 }
+
+/*
+  handler for messages in bench_ring()
+*/
+static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			    TDB_DATA data, void *private)
+{
+	msg_count++;
+	bench_fetch_1node(ctdb);
+}
+
+
+/*
+  benchmark the following:
+
+  fetch a record
+  store a expanded record
+  send a message to next node to tell it to do the same
+
+*/
+static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
+{
+	int vnn=ctdb_get_vnn(ctdb);
+
+	if (vnn == ctdb_get_num_nodes(ctdb)-1) {
+		bench_fetch_1node(ctdb);
+	}
+	
+	start_timer();
+
+	while (end_timer() < timelimit) {
+		if (vnn == 0 && msg_count % 100 == 0) {
+			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
+			fflush(stdout);
+		}
+		if (event_loop_once(ev) != 0) {
+			printf("Event loop failed!\n");
+			break;
+		}
+	}
+
+	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
+}
+
+enum my_functions {FUNC_FETCH=1};
 
 /*
   ctdb call function to fetch a record
@@ -76,118 +155,6 @@ static int fetch_func(struct ctdb_call_info *call)
 	call->reply_data = &call->record_data;
 	return 0;
 }
-
-/*
-  benchmark incrementing an integer
-*/
-static void bench_incr(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
-{
-	int loops=0;
-	int ret, i;
-	struct ctdb_call call;
-
-	ZERO_STRUCT(call);
-
-	start_timer();
-
-	while (1) {
-		uint32_t v = loops % num_records;
-
-		call.call_id = FUNC_INCR;
-		call.key.dptr = (uint8_t *)&v;
-		call.key.dsize = 4;
-
-		for (i=0;i<num_repeats;i++) {
-			ret = ctdb_call(ctdb_db, &call);
-			if (ret != 0) {
-				printf("incr call failed - %s\n", ctdb_errstr(ctdb));
-				return;
-			}
-		}
-		if (num_repeats * (++loops) % 10000 == 0) {
-			if (end_timer() > timelimit) break;
-			printf("Incr: %.2f ops/sec\r", num_repeats*loops/end_timer());
-			fflush(stdout);
-		}
-	}
-
-	call.call_id = FUNC_FETCH;
-
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		return;
-	}
-
-	printf("Incr: %.2f ops/sec (loops=%d val=%d)\n", 
-	       num_repeats*loops/end_timer(), loops, *(uint32_t *)call.reply_data.dptr);
-}
-
-static int msg_count;
-static int msg_plus, msg_minus;
-
-/*
-  handler for messages in bench_ring()
-*/
-static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-				 TDB_DATA data, void *private)
-{
-	int incr = *(int *)data.dptr;
-	int *count = (int *)private;
-	int dest;
-	(*count)++;
-	dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-	ctdb_send_message(ctdb, dest, srvid, data);
-	if (incr == 1) {
-		msg_plus++;
-	} else {
-		msg_minus++;
-	}
-}
-
-/*
-  benchmark sending messages in a ring around the nodes
-*/
-static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
-{
-	int vnn=ctdb_get_vnn(ctdb);
-
-	if (vnn == 0) {
-		int i;
-		/* two messages are injected into the ring, moving
-		   in opposite directions */
-		int dest, incr;
-		TDB_DATA data;
-		
-		data.dptr = (uint8_t *)&incr;
-		data.dsize = sizeof(incr);
-
-		for (i=0;i<num_msgs;i++) {
-			incr = 1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-			ctdb_send_message(ctdb, dest, 0, data);
-
-			incr = -1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-			ctdb_send_message(ctdb, dest, 0, data);
-		}
-	}
-	
-	start_timer();
-
-	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 10000 == 0) {
-			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
-			       msg_count/end_timer(), msg_plus, msg_minus);
-			fflush(stdout);
-		}
-		event_loop_once(ev);
-	}
-
-	printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\n", 
-	       msg_count/end_timer(), msg_plus, msg_minus);
-}
-
 
 /*
   main program
@@ -218,6 +185,7 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
+	struct ctdb_call call;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -282,11 +250,9 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
+	ctdb_set_message_handler(ctdb, message_handler, &msg_count);
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
@@ -295,8 +261,25 @@ int main(int argc, const char *argv[])
 	   outside of test code) */
 	ctdb_connect_wait(ctdb);
 
-	bench_ring(ctdb, ev);
-       
+	bench_fetch(ctdb, ev);
+
+	ZERO_STRUCT(call);
+	call.key.dptr = discard_const(TESTKEY);
+	call.key.dsize = strlen(TESTKEY);
+
+	/* fetch the record */
+	call.call_id = FUNC_FETCH;
+	call.call_data.dptr = NULL;
+	call.call_data.dsize = 0;
+
+	ret = ctdb_call(ctdb_db, &call);
+	if (ret == -1) {
+		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
+
 	/* shut it down */
 	talloc_free(ctdb);
 	return 0;
