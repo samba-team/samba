@@ -280,8 +280,6 @@ int main(int argc, const char *argv[])
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
-	talloc_report_full(ctdb, stdout);
-
 	/* shut it down */
 	talloc_free(ctdb);
 	return 0;
