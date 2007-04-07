@@ -459,6 +459,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			const char *comment;
 			const char *str;
 			const char *expected_str;
+			const char *expected_dns;
 			enum drsuapi_DsNameStatus status;
 			enum drsuapi_DsNameStatus alternate_status;
 			enum drsuapi_DsNameFlags flags;
@@ -477,6 +478,12 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = user_principal_name_short,
 				.expected_str = FQDN_1779_name,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+				.str = FQDN_1779_name,
+				.status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
@@ -652,7 +659,24 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = talloc_asprintf(mem_ctx, "krbtgt/%s", dns_domain),
 				.comment = "Looking for KRBTGT as a serivce principal",
-				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = dns_domain
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "bogus/%s", dns_domain),
+				.comment = "Looking for bogus serivce principal",
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = dns_domain
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "bogus/%s.%s", test_dc, dns_domain),
+				.comment = "Looking for bogus serivce on test DC",
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = talloc_asprintf(mem_ctx, "%s.%s", test_dc, dns_domain)
 			},
 			{ 
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
@@ -683,7 +707,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
 						       test_dc, dns_domain,
 						       "BOGUS"),
-				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = "BOGUS"
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
@@ -691,7 +716,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
 						       test_dc, "REALLY",
 						       "BOGUS"),
-				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = "BOGUS"
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
@@ -842,7 +868,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "invalid user principal name",
 				.str = "foo@bar",
-				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
+				.expected_dns = "bar"
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
@@ -904,6 +931,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
 					      crack[i].expected_str) != 0)) {
 				printf("DsCrackNames failed - got %s, expected %s on %s\n", 
+				       r.out.ctr.ctr1->array[0].result_name, 
+				       crack[i].expected_str, comment);
+				ret = False;
+			} else if (crack[i].expected_dns
+				   && (strcmp(r.out.ctr.ctr1->array[0].dns_domain_name, 
+					      crack[i].expected_dns) != 0)) {
+				printf("DsCrackNames failed - got DNS name %s, expected %s on %s\n", 
 				       r.out.ctr.ctr1->array[0].result_name, 
 				       crack[i].expected_str, comment);
 				ret = False;
