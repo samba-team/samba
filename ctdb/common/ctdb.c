@@ -205,6 +205,16 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 		return;
 	}
 
+	if (hdr->ctdb_magic != CTDB_MAGIC) {
+		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
+		return;
+	}
+
+	if (hdr->ctdb_version != CTDB_VERSION) {
+		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		return;
+	}
+
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		ctdb_request_call(ctdb, hdr);
@@ -236,9 +246,9 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 
 	default:
 		printf("Packet with unknown operation %d\n", hdr->operation);
-		talloc_free(hdr);
 		break;
 	}
+	talloc_free(hdr);
 }
 
 /*

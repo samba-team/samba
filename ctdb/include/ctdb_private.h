@@ -155,11 +155,16 @@ enum ctdb_operation {
 	CTDB_REQ_MESSAGE    = 6
 };
 
+#define CTDB_MAGIC 0x43544442 /* CTDB */
+#define CTDB_VERSION 1
+
 /*
   packet structures
 */
 struct ctdb_req_header {
 	uint32_t length;
+	uint32_t ctdb_magic;
+	uint32_t ctdb_version;
 	uint32_t operation;
 	uint32_t destnode;
 	uint32_t srcnode;
@@ -235,7 +240,8 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 
-		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);

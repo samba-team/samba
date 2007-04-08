@@ -173,7 +173,7 @@ int main(int argc, const char *argv[])
 	ctdb_connect_wait(ctdb);
        
 	ZERO_STRUCT(call);
-	call.key.dptr = "test";
+	call.key.dptr = discard_const("test");
 	call.key.dsize = strlen("test")+1;
 
 	/* add some random data */
