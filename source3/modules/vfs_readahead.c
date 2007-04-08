@@ -22,35 +22,21 @@
 static BOOL didmsg;
 #endif
 
+struct readahead_data {
+	SMB_OFF_T off_bound;
+	SMB_OFF_T len;
+	BOOL didmsg;
+};
+
 /* 
  * This module copes with Vista AIO read requests on Linux
  * by detecting the initial 0x80000 boundary reads and causing
  * the buffer cache to be filled in advance.
  */
 
-static unsigned long get_offset_boundary(struct vfs_handle_struct *handle)
-{
-	SMB_OFF_T off_bound = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
-						"readahead",
-						"offset",
-						NULL));
-	if (off_bound == 0) {
-		off_bound = 0x80000;
-	}
-	return (unsigned long)off_bound;
-}
-
-static unsigned long get_offset_length(struct vfs_handle_struct *handle, unsigned long def_val)
-{
-	SMB_OFF_T len = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
-						"readahead",
-						"length",
-						NULL));
-	if (len == 0) {
-		len = def_val;
-	}
-	return (unsigned long)len;
-}
+/*******************************************************************
+ sendfile wrapper that does readahead/posix_fadvise.
+*******************************************************************/
 
 static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					int tofd,
@@ -60,27 +46,27 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					SMB_OFF_T offset,
 					size_t count)
 {
-	unsigned long off_bound = get_offset_boundary(handle);
-	if ( offset % off_bound == 0) {
-		unsigned long len = get_offset_length(handle, off_bound);
+	struct readahead_data *rhd = (struct readahead_data *)handle->data;
+
+	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fromfd, offset, (size_t)len);
+		int err = readahead(fromfd, offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_sendfile: readahead on fd %u, offset %llu, len %u returned %d\n",
 			(unsigned int)fromfd,
 			(unsigned long long)offset,
-			(unsigned int)len,
+			(unsigned int)rhd->len,
 		        err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fromfd, offset, (off_t)len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fromfd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_sendfile: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
 			(unsigned int)fromfd,
 			(unsigned long long)offset,
-			(unsigned int)len,
+			(unsigned int)rhd->len,
 			err ));
 #else
-		if (!didmsg) {
+		if (!rhd->didmsg) {
 			DEBUG(0,("readahead_sendfile: no readahead on this platform\n"));
-			didmsg = True;
+			rhd->didmsg = True;
 		}
 #endif
 	}
@@ -93,6 +79,10 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					count);
 }
 
+/*******************************************************************
+ pread wrapper that does readahead/posix_fadvise.
+*******************************************************************/
+
 static ssize_t readahead_pread(vfs_handle_struct *handle,
 				files_struct *fsp,
 				int fd,
@@ -100,39 +90,96 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 				size_t count,
 				SMB_OFF_T offset)
 {
-	unsigned long off_bound = get_offset_boundary(handle);
-	if ( offset % off_bound == 0) {
-		unsigned long len = get_offset_length(handle, off_bound);
+	struct readahead_data *rhd = (struct readahead_data *)handle->data;
+
+	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fd, offset, (size_t)len);
+		int err = readahead(fd, offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_pread: readahead on fd %u, offset %llu, len %u returned %d\n",
 			(unsigned int)fd,
 			(unsigned long long)offset,
-			(unsigned int)len,
+			(unsigned int)rhd->len,
 			err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fromfd, offset, (off_t)len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fromfd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_pread: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
 			(unsigned int)fd,
 			(unsigned long long)offset,
-			(unsigned int)len,
+			(unsigned int)rhd->len,
 			(err ));
 #else
-		if (!didmsg) {
+		if (!rhd->didmsg) {
 			DEBUG(0,("readahead_pread: no readahead on this platform\n"));
-			didmsg = True;
+			rhd->didmsg = True;
 		}
 #endif
         }
         return SMB_VFS_NEXT_PREAD(handle, fsp, fd, data, count, offset);
 }
 
+/*******************************************************************
+ Directly called from main smbd when freeing handle.
+*******************************************************************/
+
+static void free_readahead_data(void **pptr)
+{
+	SAFE_FREE(*pptr);
+}
+
+/*******************************************************************
+ Allocate the handle specific data so we don't call the expensive
+ conv_str_size function for each sendfile/pread.
+*******************************************************************/
+
+static int readahead_connect(struct vfs_handle_struct *handle,
+				const char *service,
+				const char *user)
+{
+	struct readahead_data *rhd = SMB_MALLOC_P(struct readahead_data);
+	if (!rhd) {
+		DEBUG(0,("readahead_connect: out of memory\n"));
+		return -1;
+	}
+	ZERO_STRUCTP(rhd);
+
+	rhd->didmsg = False;
+	rhd->off_bound = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+						"readahead",
+						"offset",
+						NULL));
+	if (rhd->off_bound == 0) {
+		rhd->off_bound = 0x80000;
+	}
+	rhd->len = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
+						"readahead",
+						"length",
+						NULL));
+	if (rhd->len == 0) {
+		rhd->len = rhd->off_bound;
+	}
+
+	handle->data = (void *)rhd;
+	handle->free_data = free_readahead_data;
+	return 0;
+}
+
+/*******************************************************************
+ Functions we're replacing.
+ We don't replace read as it isn't used from smbd to read file
+ data.
+*******************************************************************/
+
 static vfs_op_tuple readahead_ops [] =
 {
 	{SMB_VFS_OP(readahead_sendfile), SMB_VFS_OP_SENDFILE, SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(readahead_pread), SMB_VFS_OP_PREAD, SMB_VFS_LAYER_TRANSPARENT},
+        {SMB_VFS_OP(readahead_connect), SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
+
+/*******************************************************************
+ Module initialization boilerplate.
+*******************************************************************/
 
 NTSTATUS vfs_readahead_init(void);
 NTSTATUS vfs_readahead_init(void)
