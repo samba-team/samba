@@ -366,7 +366,6 @@ if ($ldap) {
 
 $prefix =~ s+//+/+;
 $ENV{PREFIX} = $prefix;
-
 $ENV{SRCDIR} = $srcdir;
 
 my $tls_enabled = not $opt_quick;
@@ -383,8 +382,6 @@ if (defined($ENV{LD_LIBRARY_PATH})) {
 }
 $ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
 $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
-
-my @torture_options = ();
 
 if ($opt_socket_wrapper_pcap) {
 	SocketWrapper::setup_pcap($opt_socket_wrapper_pcap);
@@ -435,7 +432,7 @@ my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
 SocketWrapper::set_default_iface(6);
 
 foreach ("PASSWORD", "DOMAIN", "SERVER", "CONFIGURATION", 
-	      "USERNAME", "PREFIX", "NETBIOSNAME", "KRB5_CONFIG", "PIDDIR") {
+	      "USERNAME", "NETBIOSNAME") {
 	$ENV{$_} = $testenv_vars->{$_};
 }
 
@@ -446,6 +443,7 @@ my $interfaces = join(',', ("127.0.0.6/8",
 						 "127.0.0.10/8",
 						 "127.0.0.11/8"));
 
+my @torture_options = ();
 push (@torture_options, "--option=interfaces=$interfaces");
 push (@torture_options, $testenv_vars->{CONFIGURATION});
 # ensure any one smbtorture call doesn't run too long
@@ -490,14 +488,16 @@ $| = 1;
 # The Kerberos tests fail if this variable is set.
 delete $ENV{DOMAIN};
 
+$ENV{KRB5_CONFIG} = $testenv_vars->{KRB5_CONFIG};
+
 if ($opt_testenv) {
+	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
 	my $term = ($ENV{TERM} or "xterm");
 	system("$term -e 'echo -e \"Welcome to the Samba4 Test environment
 This matches the client environment used in make test
 smbd is pid `cat \$PIDDIR/smbd.pid`
 
 Some useful environment variables:
-AUTH=\$AUTH
 TORTURE_OPTIONS=\$TORTURE_OPTIONS
 CONFIGURATION=\$CONFIGURATION
 SERVER=\$SERVER
