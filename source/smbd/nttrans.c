@@ -942,7 +942,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
-	/* Fixme - we must do the same for NTTransCreate and pipe open. */
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32 perms = 0;
 		p += 26;
@@ -976,6 +975,8 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	int pnum = -1;
 	char *p = NULL;
 	NTSTATUS status;
+	size_t param_len;
+	uint32 flags;
 
 	/*
 	 * Ensure minimum number of parameters sent.
@@ -985,6 +986,8 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)parameter_count));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
+
+	flags = IVAL(params,0);
 
 	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -996,7 +999,13 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	}
 	
 	/* Realloc the size of parameters and data we will return */
-	params = nttrans_realloc(ppparams, 69);
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		/* Extended response is 32 more byyes. */
+		param_len = 101;
+	} else {
+		param_len = 69;
+	}
+	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
@@ -1017,11 +1026,23 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
 	/* Device state. */
 	SSVAL(p,2, 0x5FF); /* ? */
+	p += 4;
 	
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		p += 26;
+		SIVAL(p,0,FILE_GENERIC_ALL);
+		/* 
+		 * For pipes W2K3 seems to return
+ 		 * 0x12019B next.
+ 		 * This is ((FILE_GENERIC_READ|FILE_GENERIC_WRITE) & ~FILE_APPEND_DATA)
+ 		 */
+		SIVAL(p,4,(FILE_GENERIC_READ|FILE_GENERIC_WRITE)&~FILE_APPEND_DATA);
+	}
+
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 	
 	/* Send the required number of replies */
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
 	
 	return -1;
 }
@@ -1166,6 +1187,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	TALLOC_CTX *ctx = NULL;
 	char *pdata = NULL;
 	NTSTATUS status;
+	size_t param_len;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1536,7 +1558,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	params = nttrans_realloc(ppparams, 69);
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		/* Extended response is 32 more byyes. */
+		param_len = 101;
+	} else {
+		param_len = 69;
+	}
+	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
@@ -1595,10 +1623,21 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		uint32 perms = 0;
+		p += 26;
+		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
+			perms = FILE_GENERIC_ALL;
+		} else {
+			perms = FILE_GENERIC_READ|FILE_EXECUTE;
+		}
+		SIVAL(p,0,perms);
+	}
+
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
 	return -1;
 }
