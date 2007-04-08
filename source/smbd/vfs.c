@@ -174,7 +174,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
 		if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
 			/* If this operation was already made opaque by different module, it
-			 * will be overridded here.
+			 * will be overridden here.
 			 */
 			DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
 			vfs_set_operation(&conn->vfs_opaque, ops[i].type, handle, ops[i].op);
