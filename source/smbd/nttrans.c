@@ -374,6 +374,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
+	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 
 	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
@@ -385,7 +386,17 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	 * Deal with pipe return.
 	 */  
 
-	set_message(outbuf,34,0,True);
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		/* This is very strange. We
+ 		 * return 50 words, but only set
+ 		 * the wcnt to 42 ? It's definately
+ 		 * what happens on the wire....
+ 		 */
+		set_message(outbuf,50,0,True);
+		SCVAL(outbuf,smb_wct,42);
+	} else {
+		set_message(outbuf,34,0,True);
+	}
 
 	p = outbuf + smb_vwv2;
 	p++;
@@ -400,6 +411,18 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
 	/* Device state. */
 	SSVAL(p,2, 0x5FF); /* ? */
+	p += 4;
+
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
+		p += 26;
+		SIVAL(p,0,FILE_GENERIC_ALL);
+		/* 
+		 * For pipes W2K3 seems to return
+ 		 * 0x12019B next.
+ 		 * This is ((FILE_GENERIC_READ|FILE_GENERIC_WRITE) & ~FILE_APPEND_DATA)
+ 		 */
+		SIVAL(p,4,(FILE_GENERIC_READ|FILE_GENERIC_WRITE)&~FILE_APPEND_DATA);
+	}
 
 	DEBUG(5,("do_ntcreate_pipe_open: open pipe = %s\n", fname));
 
