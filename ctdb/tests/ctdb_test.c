@@ -81,6 +81,7 @@ int main(int argc, const char *argv[])
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
 	int self_connect=0;
+	int daemon_mode=0;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -88,6 +89,7 @@ int main(int argc, const char *argv[])
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
+		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -166,7 +168,11 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	/* start the protocol running */
-	ret = ctdb_start(ctdb);
+	if (daemon_mode) {
+		ret = ctdbd_start(ctdb);
+	} else {
+		ret = ctdb_start(ctdb);
+	}
 
 	/* wait until all nodes are connected (should not be needed
 	   outide of test code) */
@@ -184,7 +190,11 @@ int main(int argc, const char *argv[])
 		call.call_data.dptr = (uint8_t *)&v;
 		call.call_data.dsize = sizeof(v);
 
-		ret = ctdb_call(ctdb_db, &call);
+		if (daemon_mode) {
+			ret = ctdbd_call(ctdb_db, &call);
+		} else {
+			ret = ctdb_call(ctdb_db, &call);
+		}
 		if (ret == -1) {
 			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
@@ -196,7 +206,11 @@ int main(int argc, const char *argv[])
 	call.call_data.dptr = NULL;
 	call.call_data.dsize = 0;
 
-	ret = ctdb_call(ctdb_db, &call);
+	if (daemon_mode) {
+		ret = ctdbd_call(ctdb_db, &call);
+	} else {
+		ret = ctdb_call(ctdb_db, &call);
+	}
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
@@ -209,6 +223,8 @@ int main(int argc, const char *argv[])
 
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_wait_loop(ctdb);
+
+	/*talloc_report_full(ctdb, stdout);*/
 
 	/* shut it down */
 	talloc_free(ctdb);

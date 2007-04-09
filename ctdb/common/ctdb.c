@@ -180,14 +180,6 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 
 
 /*
-  start the protocol going
-*/
-int ctdb_start(struct ctdb_context *ctdb)
-{
-	return ctdb->methods->start(ctdb);
-}
-
-/*
   called by the transport layer when a packet comes in
 */
 static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
@@ -338,3 +330,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	return ctdb;
 }
 
+int ctdb_start(struct ctdb_context *ctdb)
+{
+	return ctdb->methods->start(ctdb);
+}

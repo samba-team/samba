@@ -380,24 +380,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	talloc_free(r);
 }
 
-enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
-
-/*
-  state of a in-progress ctdb call
-*/
-struct ctdb_call_state {
-	enum call_state state;
-	struct ctdb_req_call *c;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_node *node;
-	const char *errmsg;
-	struct ctdb_call call;
-	int redirect_count;
-	struct ctdb_ltdb_header header;
-	void *fetch_private;
-};
-
-
 /*
   called when a CTDB_REPLY_CALL packet comes in
 
@@ -575,6 +557,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	TDB_DATA data;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+
 	/*
 	  if we are the dmaster for this key then we don't need to
 	  send it off at all, we can bypass the network and handle it
@@ -634,13 +617,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 }
 
 
-
-struct ctdb_record_handle {
-	struct ctdb_db_context *ctdb_db;
-	TDB_DATA key;
-	TDB_DATA *data;
-};
-
 /*
   make a remote ctdb call - async recv. 
 
@@ -693,9 +669,6 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 	state = ctdb_call_send(ctdb_db, call);
 	return ctdb_call_recv(state, call);
 }
-
-
-
 
 
 

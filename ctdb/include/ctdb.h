@@ -89,6 +89,10 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
+/*
+  start the ctdb protocol in daemon mode, spawning a ctdb daemon
+*/
+int ctdbd_start(struct ctdb_context *ctdb);
 
 /*
   attach to a ctdb database
@@ -146,6 +150,15 @@ typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid,
 int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
 			     void *private);
 
+
+int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+int ctdbd_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data);
@@ -166,5 +179,13 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
  */
 int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
 
+
+struct ctdb_partial {
+	uint8_t *data;
+	uint32_t length;
+};
+/* callback is called with data==NULL for fauilures.    the callback must test for this and do cleanup appropriately */
+typedef void (*partial_cb_fn_t)(uint8_t *data, int cnt, void *args);
+void ctdb_read_pdu(int fd, TALLOC_CTX *ctx, struct ctdb_partial *partial, partial_cb_fn_t func, void *args);
 
 #endif
