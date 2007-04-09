@@ -427,15 +427,6 @@ if (defined($opt_skip)) {
 	close(SKIP);
 }
 
-my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
-
-SocketWrapper::set_default_iface(6);
-
-foreach ("PASSWORD", "DOMAIN", "SERVER", "CONFIGURATION", 
-	      "USERNAME", "NETBIOSNAME") {
-	$ENV{$_} = $testenv_vars->{$_};
-}
-
 my $interfaces = join(',', ("127.0.0.6/8", 
 		                 "127.0.0.7/8",
 						 "127.0.0.8/8",
@@ -443,33 +434,36 @@ my $interfaces = join(',', ("127.0.0.6/8",
 						 "127.0.0.10/8",
 						 "127.0.0.11/8"));
 
-
+my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
 
 my $conffile = "$prefix/client.conf";
+my $abs_srcdir = cwd();
 open(CF, ">$conffile");
 print CF "[global]\n";
 if (defined($ENV{VALGRIND})) {
-	print CF "iconv:native = true\n";
+	print CF "\ticonv:native = true\n";
 } else {
-	print CF "iconv:native = false\n";
+	print CF "\ticonv:native = false\n";
 }
-print CF "
+print CF 
+"	netbios name = localtest
+	netbios aliases = localhost
 	workgroup = $testenv_vars->{DOMAIN}
 	realm = $testenv_vars->{REALM}
+	pid directory = $testenv_vars->{PIDDIR}
 	ncalrpc dir = $testenv_vars->{NCALRPCDIR}
-	js include = $srcdir/scripting/libjs
+	js include = $abs_srcdir/scripting/libjs
 	winbindd socket directory = $testenv_vars->{WINBINDD_SOCKET_DIR}
 	name resolve order = bcast
 	interfaces = 127.0.0.1/8
-	panic action = $srcdir/script/gdb_backtrace \%PID\% \%PROG\%
+	panic action = $abs_srcdir/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
 	ldb:nosync = true
 	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
-	torture:basedir = st
+	torture:basedir = ./st
 	gensec:require_pac = true
-	pid directory = $testenv_vars->{PIDDIR}
 ";
 close(CF);
 
@@ -486,9 +480,14 @@ push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
 $ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
 print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 
+foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME") {
+	$ENV{$_} = $testenv_vars->{$_};
+}
+
 my @todo = ();
 
 my $testsdir = "$srcdir/script/tests";
+$ENV{CONFIGURATION} = "--configfile=$conffile";
 
 if ($opt_quick) {
 	open(IN, "$testsdir/tests_quick.sh|");
@@ -519,6 +518,8 @@ $| = 1;
 delete $ENV{DOMAIN};
 
 $ENV{KRB5_CONFIG} = $testenv_vars->{KRB5_CONFIG};
+
+SocketWrapper::set_default_iface(6);
 
 if ($opt_testenv) {
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
