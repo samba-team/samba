@@ -1,15 +1,16 @@
-                   ==================================
-                   Release Notes for Samba 3.0.25pre2
-                              Mar 21, 2007
-                   ==================================
+                   =================================
+                   Release Notes for Samba 3.0.25rc1
+                               Apr 9, 2007
+                   =================================
 
-This is the second preview release of the Samba 3.0.25 code base 
-and is provided for testing only.  This release is *not* intended
-for production servers.  There has been a substantial amount
-of development since the 3.0.23/3.0.24 series of stable releases.
-We would like to ask the Samba community for help in testing
-these changes as we work towards the next significant production
-upgrade Samba 3.0 release.
+This is the first release candidate of the Samba 3.0.25 code base 
+and is provided for testing only.  An RC release means that we are 
+close to the final release but the code may still have a few 
+remaining minor bugs.  This release is *not* intended for production 
+servers.  There has been a substantial amount of development since 
+the 3.0.23/3.0.24 series of stable releases.  We would like to ask the 
+Samba community for help in testing these changes as we work towards 
+the next significant production upgrade Samba 3.0 release.
 
 Major features included in the 3.0.25 code base include:
 
@@ -25,7 +26,7 @@ Major features included in the 3.0.25 code base include:
     plug-in allowing for multiple Unix ACL implements to running side 
     by side on the Same server.
   o Improved compatibility with Windows Vista clients.
-  o Man pages for VFS plugins.
+  o Man pages for VFS plug-ins.
 
 
 Off-line Logons and AD Site Support
@@ -46,8 +47,8 @@ initial design document may be found at
 
 	http://www.samba.org/~idra/samba3_newidmap.pdf
 
-The final 3.0.25 release will include full documentation in the
-distributed manpages.
+Please refer to the "idmap domains" description in the smb.conf(5)
+man page for more details.
 
 
 Dynamic DNS Updates
@@ -67,6 +68,143 @@ Support for Additional ACL Modules
 Samba's POSIX ACL support has been moved inside of the VFS layer 
 which means it is now possible to support multiple ACL implementations
 on the same server including NFSv4 and GPFS ACLs.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25pre2
+------------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix connection problem between pre-3.0.25 smbclient and new DFS
+      server code.
+    * Fix valgrind errors in credentials.c.
+    * Fix logic error in CIFS POSIX extensions for open() and mkdir().
+    * Fix if logic error when checking for password resets of machine
+      trust accounts in Samba's passdb.
+    * Ensure we use the same technique to pull the share mode data out
+      that locking.c does.
+    * Fixes buffer parsing in the server side Lanman and RAP calls.
+    * Fix GetPrinter() info level 3 to fix displaying and setting
+      security descriptors on printers from WinXP x86_64 clients.
+    * Return correct error code to the trans2 GetDfsReferral() request
+      from Vista clients (fixes listing share contents in the Vista
+      explorer.exe).
+    * BUG 4486: Fix the exclude_dir parameter in the VFS recycle
+      plugin.
+    * Consolidate the become_root_uid_only() calls to only use
+      become_root().
+    * Add vfs_readahead module to deal with the pipe-lined reads 
+      from Vista clients.
+    * BUG 4404: Fix server SMB/CIFS protocol bugs that broke Vista
+      clients trying to utilize offline file support.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix unlocking screen savers via pam_winbind.
+    * Fixes for the Krb5 ticket refresh event handler in winbindd
+      when using "winbind refresh tickets = yes".
+    * Ensure that winbindd can resolve SIDs in the the "Unix User" and 
+      "Unix Group" domain. 
+    * BUG 4484: Add more checks to ensure that the %a variable is set
+      correctly for Vista clients.
+    * BUG 4439: Fix the object picker dialog when modifying ACLs
+      on a Samba member server in an AD domain by implementing
+      server support for the DsRoleGetPrimaryDomainInfo() RPC.
+    * Don't cache the S-1-22-{1,2} domain SID/uig/gid lookups in
+      idmap_cache.  
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Memory leak fixes.
+    * Fix core dump when config file in same directory.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix tdb keynames in netsamlogon_clear_cached_user().
+    * Add missing proto_exists dependency for the Winbind NSS target
+      in the Makefile.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * BUG 4447: Fix compile failure on AIX 5.2.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 4460: Fix compile error in winbind_nss_irix.c.
+    * Fix Coverity bug reports.
+    * Fixes buffer parsing in the server side Lanman and RAP calls.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Fix compile error in nmbd_incomingdgrams.c.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    * BUG 4115: Fix for using kerberos logins in libsmbclient.so.
+    * BUG 4309: Prevent netbios keepalive on port 445 which causes
+      Vista to disconnect Samba clients.
+    * Ensure that the libsmbclient example programs link with the
+      libsmbclient library that's part of the current tree.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Various compile warning fixes.
+
+
+o   Don McCall <don.mccall@hp.com>
+    * Fix compile bug in vfs_default on platforms without utimes().
+    * HP-UX compile fixes.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * POSIX ACL compile warning fixes.
+    * Fix --with-fhs, where confdir is set to \${sysconfdir} but
+      sysconfdir wasn't defined in the Makefile.
+    * Add localstatedir to configure.in for completeness.
+
+
+o   Heinrich Mislik <Heinrich.Mislik@univie.ac.at>
+    * AIX quota fixes.
+
+
+o   Lars Mueller <lmuelle@samba.org>
+    * Merge more proto_exists dependency fixes from SAMBA_3_0.
+    * Makefile cleanups.
+
+
+o   James Peach <jpeach@apple.com>
+    * Changing the FindFirst response for the UNIX_INFO2 level to
+      include a length field before the name.
+    * Add call to chflags(2) in the default VFS module.
+
+
+o   Jiri Sasek <jiri.sasek@sun.com>
+    * Fix incorrect Krb5 linking on Solaris.
+
+
+o   Karolin Seeger <ks@sernet.de> 
+    * Fix a compile problem in shadow_copy_test.c.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Remove redundant log messages from idmap_ad.c.
+    * BUG 3974: Fix ambiguity between the -N option and the -T
+      tar options.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==================================
+                   Release Notes for Samba 3.0.25pre2
+                              Mar 21, 2007
+                   ==================================
 
 
 ######################################################################
