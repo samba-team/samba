@@ -52,9 +52,9 @@ qx.Proto.buildGui = function(module)
   // Add our global database name (the only option, for now)
   var item = new qx.ui.form.ListItem(module.dbFile);
   o.add(item);
-  
+
   // We want to be notified if the selection changes
-  o.addEventListener("changeSelection", fsm.eventListener, fsm);
+  o.addEventListener("changeSelected", fsm.eventListener, fsm);
 
   // Save the database name object so we can react to changes
   fsm.addObject("dbName", o);

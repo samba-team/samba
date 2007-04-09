@@ -61,7 +61,7 @@ qx.Proto.buildFsm = function(module)
             {
               // Yup.  Re-open the database
               var dbName = fsm.getObject("dbName");
-              dbName.dispatchEvent(new qx.event.type.Event("changeSelection"),
+              dbName.dispatchEvent(new qx.event.type.Event("changeSelected"),
                                    true);
             }
             else
@@ -104,8 +104,14 @@ qx.Proto.buildFsm = function(module)
           "changeSelection":
           {
             "tree" :
-              "Transition_Idle_to_AwaitRpcResult_via_tree_selection_changed",
+              "Transition_Idle_to_AwaitRpcResult_via_tree_selection_changed"
 
+          },
+
+	  // If another database is selected, try to open it and refresh
+          // the tree
+          "changeSelected":
+          {
             "dbName":
               "Transition_Idle_to_AwaitRpcResult_via_db_changed"
           }
