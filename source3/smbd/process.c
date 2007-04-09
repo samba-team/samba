@@ -1161,8 +1161,8 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	char outbuf_saved[smb_wct];
 	int outsize = smb_len(outbuf) + 4;
 
-	/* maybe its not chained */
-	if (smb_com2 == 0xFF) {
+	/* Maybe its not chained, or it's an error packet. */
+	if (smb_com2 == 0xFF || SVAL(outbuf,smb_rcls) != 0) {
 		SCVAL(outbuf,smb_vwv0,0xFF);
 		return outsize;
 	}
