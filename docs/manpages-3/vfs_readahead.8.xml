@@ -89,7 +89,6 @@
 <programlisting>
 	<smbconfsection name="[hypothetical]"/>
 	<smbconfoption name="vfs objects">readahead</smbconfoption>
-	<smbconfoption name="readahead:length">1M</smbconfoption>
 </programlisting>
 
 </refsect1>
