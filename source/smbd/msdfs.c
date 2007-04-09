@@ -170,7 +170,7 @@ static NTSTATUS parse_dfs_path(const char *pathname,
  Note this CHANGES CWD !!!! JRA.
 *********************************************************/
 
-static BOOL create_conn_struct(connection_struct *conn, int snum, const char *path)
+static NTSTATUS create_conn_struct(connection_struct *conn, int snum, const char *path)
 {
 	pstring connpath;
 
@@ -183,12 +183,12 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, const char *pa
 
 	if ((conn->mem_ctx=talloc_init("connection_struct")) == NULL) {
 		DEBUG(0,("talloc_init(connection_struct) failed!\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!(conn->params = TALLOC_ZERO_P(conn->mem_ctx, struct share_params))) {
 		DEBUG(0, ("TALLOC failed\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	conn->params->service = snum;
@@ -196,9 +196,10 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, const char *pa
 	set_conn_connectpath(conn, connpath);
 
 	if (!smbd_vfs_init(conn)) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
 		conn_free_internal(conn);
-		return False;
+		return status;
 	}
 
 	/*
@@ -208,13 +209,14 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, const char *pa
 	 */
 
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
 					conn->connectpath, strerror(errno) ));
 		conn_free_internal(conn);
-		return False;
+		return status;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************
@@ -249,6 +251,10 @@ static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
 
 	pstrcpy(temp,target);
 	prot = strtok(temp,":");
+	if (!prot) {
+		DEBUG(0,("parse_msdfs_symlink: invalid path !\n"));
+		return False;
+	}
 
 	/* parse out the alternate paths */
 	while((count<MAX_REFERRAL_COUNT) &&
@@ -538,7 +544,7 @@ static NTSTATUS dfs_redirect( connection_struct *conn,
  Return a self referral.
 **********************************************************************/
 
-static BOOL self_ref(TALLOC_CTX *ctx,
+static NTSTATUS self_ref(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
@@ -551,7 +557,7 @@ static BOOL self_ref(TALLOC_CTX *ctx,
 	jucn->referral_count = 1;
 	if((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
 		DEBUG(0,("self_ref: talloc failed for referral\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	pstrcpy(ref->alternate_path,dfs_path);
@@ -559,7 +565,7 @@ static BOOL self_ref(TALLOC_CTX *ctx,
 	ref->ttl = REFERRAL_TTL;
 	jucn->referral_list = ref;
 	*consumedcntp = strlen(dfs_path);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************
@@ -567,7 +573,7 @@ static BOOL self_ref(TALLOC_CTX *ctx,
  junction_map structure.
 **********************************************************************/
 
-BOOL get_referred_path(TALLOC_CTX *ctx,
+NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
@@ -579,8 +585,7 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 	pstring conn_path;
 	pstring targetpath;
 	int snum;
-	NTSTATUS status;
-	BOOL ret = False;
+	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	BOOL dummy;
 
 	ZERO_STRUCT(conns);
@@ -589,14 +594,14 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 
 	status = parse_dfs_path(dfs_path, False, &dp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
 	/* Verify hostname in path */
 	if (!is_myname_or_ipaddr(dp.hostname)) {
 		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
 			dp.hostname, dfs_path));
-		return False;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	fstrcpy(jucn->service_name, dp.servicename);
@@ -606,14 +611,14 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
 		if ((snum = find_service(jucn->service_name)) < 0) {
-			return False;
+			return NT_STATUS_NOT_FOUND;
 		}
 	}
 
 	if (!lp_msdfs_root(snum)) {
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not a dfs root.\n",
 			 dp.servicename, dfs_path));
-		goto out;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	/*
@@ -642,7 +647,7 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 		jucn->referral_count = 1;
 		if ((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
 			DEBUG(0, ("malloc failed for referral\n"));
-			goto out;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
@@ -653,13 +658,13 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 		ref->ttl = REFERRAL_TTL;
 		jucn->referral_list = ref;
 		*consumedcntp = strlen(dfs_path);
-		ret = True;
-		goto out;
+		return NT_STATUS_OK;
 	}
 
 	pstrcpy(conn_path, lp_pathname(snum));
-	if (!create_conn_struct(conn, snum, conn_path)) {
-		return False;
+	status = create_conn_struct(conn, snum, conn_path);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* If this is a DFS path dfs_lookup should return
@@ -671,7 +676,8 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
 			dfs_path));
-		goto out;
+		conn_free_internal(conn);
+		return status;
 	}
 
 	/* We know this is a valid dfs link. Parse the targetpath. */
@@ -680,15 +686,12 @@ BOOL get_referred_path(TALLOC_CTX *ctx,
 				&jucn->referral_count)) {
 		DEBUG(3,("get_referred_path: failed to parse symlink "
 			"target %s\n", targetpath ));
-		goto out;
+		conn_free_internal(conn);
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	ret = True;
-
-out:
-
 	conn_free_internal(conn);
-	return ret;
+	return NT_STATUS_OK;
 }
 
 static int setup_ver2_dfs_referral(const char *pathname,
@@ -886,7 +889,7 @@ static int setup_ver3_dfs_referral(const char *pathname,
 int setup_dfs_referral(connection_struct *orig_conn,
 			const char *dfs_path,
 			int max_referral_level,
-			char **ppdata)
+			char **ppdata, NTSTATUS *pstatus)
 {
 	struct junction_map junction;
 	int consumedcnt = 0;
@@ -897,6 +900,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	TALLOC_CTX *ctx;
 
 	if (!(ctx=talloc_init("setup_dfs_referral"))) {
+		*pstatus = NT_STATUS_NO_MEMORY;
 		return -1;
 	}
 
@@ -905,6 +909,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	/* get the junction entry */
 	if (!dfs_path) {
 		talloc_destroy(ctx);
+		*pstatus = NT_STATUS_NOT_FOUND;
 		return -1;
 	}
 
@@ -920,7 +925,8 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	}
 
 	/* The following call can change cwd. */
-	if (!get_referred_path(ctx, pathnamep, &junction, &consumedcnt, &self_referral)) {
+	*pstatus = get_referred_path(ctx, pathnamep, &junction, &consumedcnt, &self_referral);
+	if (!NT_STATUS_IS_OK(*pstatus)) {
 		vfs_ChDir(orig_conn,orig_conn->connectpath);
 		talloc_destroy(ctx);
 		return -1;
@@ -961,6 +967,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	default:
 		DEBUG(0,("setup_dfs_referral: Invalid dfs referral version: %d\n", max_referral_level));
 		talloc_destroy(ctx);
+		*pstatus = NT_STATUS_INVALID_LEVEL;
 		return -1;
 	}
       
@@ -970,6 +977,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	}
 
 	talloc_destroy(ctx);
+	*pstatus = NT_STATUS_OK;
 	return reply_size;
 }
 
@@ -1037,7 +1045,7 @@ static BOOL junction_to_local_path(struct junction_map *jucn,
 	safe_strcat(path, jucn->volume_name, max_pathlen-1);
 
 	pstrcpy(conn_path, lp_pathname(snum));
-	if (!create_conn_struct(conn_out, snum, conn_path)) {
+	if (!NT_STATUS_IS_OK(create_conn_struct(conn_out, snum, conn_path))) {
 		return False;
 	}
 
@@ -1156,7 +1164,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	if (!create_conn_struct(&conn, snum, connect_path)) {
+	if (!NT_STATUS_IS_OK(create_conn_struct(&conn, snum, connect_path))) {
 		return 0;
 	}
 
@@ -1252,7 +1260,7 @@ NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring na
 {
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL dummy;
-	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn))) {
+	if (dfs_pathnames) {
 		status = dfs_redirect(conn, name, False, &dummy);
 	}
 	return status;
@@ -1268,7 +1276,7 @@ NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring na
 NTSTATUS resolve_dfspath_wcard(connection_struct *conn, BOOL dfs_pathnames, pstring name, BOOL *ppath_contains_wcard)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	if (dfs_pathnames && lp_host_msdfs() && lp_msdfs_root(SNUM(conn))) {
+	if (dfs_pathnames) {
 		status = dfs_redirect(conn, name, True, ppath_contains_wcard);
 	}
 	return status;

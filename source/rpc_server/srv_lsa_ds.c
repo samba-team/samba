@@ -25,9 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#if 0	/* disabled */
 /*******************************************************************
- api_reg_open_entry
  ********************************************************************/
 
 static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
@@ -41,18 +39,17 @@ static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the request */
-	if ( !ds_io_q_getprimdominfo("", data, 0, &q_u) )
+	if ( !ds_io_q_getprimdominfo("", &q_u, data, 0) )
 		return False;
 
 	/* construct reply. */
 	r_u.status = _dsrole_get_primary_dominfo( p, &q_u, &r_u );
 
-	if ( !ds_io_r_getprimdominfo("", rdata, 0, &r_u) )
+	if ( !ds_io_r_getprimdominfo("", &r_u, rdata, 0) )
 		return False;
 
 	return True;
 }
-#endif
 
 /*******************************************************************
  stub functions for unimplemented RPC
@@ -70,12 +67,8 @@ static BOOL api_dsrole_stub( pipes_struct *p )
  array of \PIPE\lsass (new windows 2000 UUID)  operations
 ********************************************************************/
 static struct api_struct api_lsa_ds_cmds[] = {
-	{ "DS_NOP", 			DS_NOP, 		api_dsrole_stub }
-
-#if 0	/* disabled due to breakage with viewing domain users and groups 
-	   on a Samba PDC from win2k clients  --jerry CIFS 2003 */
+	{ "DS_NOP", 			DS_NOP, 		api_dsrole_stub },
 	{ "DS_GETPRIMDOMINFO", 		DS_GETPRIMDOMINFO, 	api_dsrole_get_primary_dominfo	}
-#endif
 
 };
 

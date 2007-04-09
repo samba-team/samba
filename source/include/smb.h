@@ -1249,16 +1249,23 @@ struct bitmap {
 
 /* Mapping of generic access rights for files to specific rights. */
 
+/* This maps to 0x1F01FF */
 #define FILE_GENERIC_ALL (STANDARD_RIGHTS_REQUIRED_ACCESS| SYNCHRONIZE_ACCESS|FILE_ALL_ACCESS)
 
+/* This maps to 0x120089 */
 #define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES|\
 							FILE_READ_EA|SYNCHRONIZE_ACCESS)
 
+/* This maps to 0x120116 */
 #define FILE_GENERIC_WRITE (STD_RIGHT_READ_CONTROL_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
 							FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
 
 #define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|\
 								FILE_EXECUTE|SYNCHRONIZE_ACCESS)
+
+/* Share specific rights. */
+#define SHARE_ALL_ACCESS      FILE_GENERIC_ALL
+#define SHARE_READ_ONLY       (FILE_GENERIC_READ|FILE_EXECUTE)
 
 /* Mapping of access rights to UNIX perms. */
 #define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
@@ -1486,6 +1493,9 @@ char *strdup(char *s);
 #define FLAGS2_UNICODE_STRINGS         0x8000
 
 #define FLAGS2_WIN2K_SIGNATURE         0xC852 /* Hack alert ! For now... JRA. */
+
+/* TCONX Flag (smb_vwv2). */
+#define TCONX_FLAG_EXTENDED_RESPONSE	0x8
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 

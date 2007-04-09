@@ -91,7 +91,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	pstrcpy(my_name, global_myname());
 
-	code = SVAL(buf,0);
+	code = get_safe_SVAL(buf,len,buf,0,-1);
 	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
 	switch (code) {
@@ -100,21 +100,21 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				fstring mach_str, user_str, getdc_str;
 				char *q = buf + 2;
 				char *machine = q;
-				char *user = skip_string(machine,1);
+				char *user = skip_string(buf,len,machine);
 
-				if (PTR_DIFF(user, buf) >= len) {
+				if (!user || PTR_DIFF(user, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
-				getdc = skip_string(user,1);
+				getdc = skip_string(buf,len,user);
 
-				if (PTR_DIFF(getdc, buf) >= len) {
+				if (!getdc || PTR_DIFF(getdc, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
-				q = skip_string(getdc,1);
+				q = skip_string(buf,len,getdc);
 
-				if (PTR_DIFF(q + 5, buf) > len) {
+				if (!q || PTR_DIFF(q + 5, buf) > len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
@@ -136,7 +136,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				fstrcpy(reply_name, "\\\\");
 				fstrcat(reply_name, my_name);
 				push_ascii_fstring(q, reply_name);
-				q = skip_string(q, 1); /* PDC name */
+				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				SSVAL(q, 0, token);
 				q += 2;
@@ -164,15 +164,15 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 					return;
 				}
 
-				getdc = skip_string(machine,1);
+				getdc = skip_string(buf,len,machine);
 
-				if (PTR_DIFF(getdc, buf) >= len) {
+				if (!getdc || PTR_DIFF(getdc, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
-				q = skip_string(getdc,1);
+				q = skip_string(buf,len,getdc);
 
-				if (PTR_DIFF(q, buf) >= len) {
+				if (!q || PTR_DIFF(q, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
@@ -232,7 +232,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				fstrcpy(reply_name,my_name);
 				push_ascii_fstring(q, reply_name);
-				q = skip_string(q, 1); /* PDC name */
+				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				/* PDC and domain name */
 				if (!short_request) {
@@ -301,9 +301,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					return;
 				}
 
-				q = skip_string(getdc,1);
+				q = skip_string(buf,len,getdc);
 
-				if (PTR_DIFF(q + 8, buf) >= len) {
+				if (!q || PTR_DIFF(q + 8, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
@@ -540,16 +540,16 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
           
 				/* Domain info */
           
-				q = skip_string(q, 1);    /* PDC name */
+				q = skip_string(buf,len,q);    /* PDC name */
 
-				if (PTR_DIFF(q, buf) >= len) {
+				if (!q || PTR_DIFF(q, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}
 
-				q = skip_string(q, 1);    /* Domain name */
+				q = skip_string(buf,len,q);    /* Domain name */
 
-				if (PTR_DIFF(q, buf) >= len) {
+				if (!q || PTR_DIFF(q, buf) >= len) {
 					DEBUG(0,("process_logon_packet: bad packet\n"));
 					return;
 				}

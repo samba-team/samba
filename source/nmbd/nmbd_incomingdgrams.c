@@ -416,7 +416,7 @@ done:
   Process an incoming LanMan host announcement packet.
 *******************************************************************/
 
-void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	uint32 servertype = IVAL(buf,1);
@@ -429,10 +429,16 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	unstring work_name;
 	unstring source_name;
 	fstring comment;
-	char *s = buf+9;
+	char *s = get_safe_str_ptr(buf,len,buf,9);
 
 	START_PROFILE(lm_host_announce);
-	s = skip_string(s,1);
+	if (!s) {
+		goto done;
+	}
+	s = skip_string(buf,len,s);
+	if (!s) {
+		goto done;
+	}
 	pull_ascii(comment, s, sizeof(fstring), 43, STR_TERMINATE);
 
 	pull_ascii_nstring(announce_name,sizeof(announce_name),buf+9);
@@ -568,7 +574,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);
 
-	p = skip_string(p,1);
+	p = skip_string(outbuf,sizeof(outbuf),p);
 
 	/* Look for backup browsers in this workgroup. */
 
@@ -604,7 +610,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
     DEBUG(5,("send_backup_list_response: Adding server %s number %d\n",
               p, count));
 
-    p = skip_string(p,1);
+    p = skip_string(outbuf,sizeof(outbuf),p);
   }
 #endif
 
@@ -809,7 +815,7 @@ done:
   through the "lm announce" parameter in smb.conf)
 ******************************************************************/
 
-void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	unstring workgroup_name;

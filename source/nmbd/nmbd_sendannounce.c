@@ -566,7 +566,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);
 
-	p = skip_string(p,1);
+	p = skip_string(outbuf,sizeof(outbuf),p);
 
 	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
 		/* The entries are of the form a.b.c.d */

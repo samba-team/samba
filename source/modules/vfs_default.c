@@ -632,7 +632,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 	}
 #elif defined(HAVE_UTIME)
 	{
-		struct utimebuf times;
+		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ts[0]);
 		times.modtime = convert_timespec_to_time_t(ts[1]);
 		result = utime(path, times);
@@ -905,8 +905,12 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 
 static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flags)
 {
+#ifdef HAVE_CHFLAGS
+	return chflags(path, flags);
+#else
 	errno = ENOSYS;
 	return -1;
+#endif
 }
 
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)

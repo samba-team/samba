@@ -37,7 +37,7 @@ static BOOL ds_io_dominfobasic(const char *desc, DSROLE_PRIMARY_DOMAIN_INFO_BASI
 		
 	if ( !prs_uint16("machine_role", ps, depth, &p->machine_role) )
 		return False;
-	if ( !prs_uint16("unknown", ps, depth, &p->unknown) )
+	if ( !prs_align(ps) )
 		return False;
 
 	if ( !prs_uint32("flags", ps, depth, &p->flags) )

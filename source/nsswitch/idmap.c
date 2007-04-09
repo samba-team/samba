@@ -407,6 +407,7 @@ NTSTATUS idmap_init(void)
 
 		/* check the set_mapping function exists otherwise mark the module as readonly */
 		if ( ! dom->methods->set_mapping) {
+			DEBUG(5, ("Forcing to readonly, as ithis module can't store arbitrary mappings.\n"));
 			dom->readonly = True;
 		}
 
@@ -689,7 +690,9 @@ static struct idmap_domain* find_idmap_domain_from_sid( DOM_SID *account_sid )
 
 	if ( (pdb_dom_num != -1) && 
 	     (sid_check_is_in_builtin(account_sid) ||
-	      sid_check_is_in_wellknown_domain(account_sid)) ) 
+	      sid_check_is_in_wellknown_domain(account_sid) ||
+	      sid_check_is_in_unix_groups(account_sid) ||
+	      sid_check_is_in_unix_users(account_sid)) ) 
 	{
 		return idmap_domains[pdb_dom_num];
 	}

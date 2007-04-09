@@ -369,6 +369,8 @@ static BOOL rw_torture(struct cli_state *c)
 	char buf[1024];
 	BOOL correct = True;
 
+	memset(buf, '\0', sizeof(buf));
+
 	fnum2 = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
 	if (fnum2 == -1)
@@ -1048,6 +1050,8 @@ static BOOL run_tcon_test(int dummy)
 	uint16 vuid1, vuid2;
 	char buf[4];
 	BOOL ret = True;
+
+	memset(buf, '\0', sizeof(buf));
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;

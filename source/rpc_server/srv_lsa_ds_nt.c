@@ -36,7 +36,7 @@
 static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **info) 
 {
 	DSROLE_PRIMARY_DOMAIN_INFO_BASIC *basic;
-	const char *netbios_domain;
+	const char *netbios_domain = "";
 	fstring dnsdomain;
 
 	DEBUG(10,("fill_dsrole_dominfo_basic: enter\n"));
@@ -46,49 +46,54 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	get_mydnsdomname(dnsdomain);
-	strlower_m(dnsdomain);
-
 	switch ( lp_server_role() ) {
 		case ROLE_STANDALONE:
 			basic->machine_role = DSROLE_STANDALONE_SRV;
+			basic->netbios_ptr = 1;
+			netbios_domain = get_global_sam_name();
 			break;
 		case ROLE_DOMAIN_MEMBER:
+			basic->netbios_ptr = 1;
+			netbios_domain = lp_workgroup();
 			basic->machine_role = DSROLE_DOMAIN_MEMBER_SRV;
 			break;
 		case ROLE_DOMAIN_BDC:
+			basic->netbios_ptr = 1;
+			netbios_domain = get_global_sam_name();
 			basic->machine_role = DSROLE_BDC;
-			basic->flags = DSROLE_PRIMARY_DS_RUNNING|DSROLE_PRIMARY_DS_MIXED_MODE;
-			if ( secrets_fetch_domain_guid( lp_workgroup(), &basic->domain_guid ) )
-				basic->flags |= DSROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 			break;
 		case ROLE_DOMAIN_PDC:
+			basic->netbios_ptr = 1;
+			netbios_domain = get_global_sam_name();
 			basic->machine_role = DSROLE_PDC;
-			basic->flags = DSROLE_PRIMARY_DS_RUNNING|DSROLE_PRIMARY_DS_MIXED_MODE;
-			if ( secrets_fetch_domain_guid( lp_workgroup(), &basic->domain_guid ) )
-				basic->flags |= DSROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 			break;
 	}
 
-	basic->unknown = 0x6173;		/* seen on the wire; maybe padding */
-
 	/* always set netbios name */
 
-	basic->netbios_ptr = 1;
-	netbios_domain = get_global_sam_name();
-	init_unistr2( &basic->netbios_domain, netbios_domain, UNI_FLAGS_NONE);
+	init_unistr2( &basic->netbios_domain, netbios_domain, UNI_STR_TERMINATE);
 
-	basic->dnsname_ptr = 1;
-	init_unistr2( &basic->dns_domain, dnsdomain, UNI_FLAGS_NONE);
-	basic->forestname_ptr = 1;
-	init_unistr2( &basic->forest_domain, dnsdomain, UNI_FLAGS_NONE);
-	
+	if ( secrets_fetch_domain_guid( lp_workgroup(), &basic->domain_guid ) )
+		basic->flags |= DSROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 
 	/* fill in some additional fields if we are a member of an AD domain */
 
-	if ( lp_security() == SEC_ADS ) {	
-		/* TODO */
-		;;
+	if ( lp_security() == SEC_ADS ) {
+		fstrcpy( dnsdomain, lp_realm() );
+		strlower_m( dnsdomain );
+		
+		basic->dnsname_ptr = 1;
+		init_unistr2( &basic->dns_domain, dnsdomain, UNI_STR_TERMINATE);
+		basic->forestname_ptr = 1;
+		init_unistr2( &basic->forest_domain, dnsdomain, UNI_STR_TERMINATE);
+	} else {
+		get_mydnsdomname(dnsdomain);
+		strlower_m(dnsdomain);
+
+		basic->dnsname_ptr = 1;
+		init_unistr2( &basic->dns_domain, dnsdomain, UNI_FLAGS_NONE);
+		basic->forestname_ptr = 1;
+		init_unistr2( &basic->forest_domain, dnsdomain, UNI_FLAGS_NONE);
 	}
 
 	*info = basic;

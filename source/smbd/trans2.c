@@ -1601,13 +1601,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
 				p = store_file_unix_basic(conn, p,
 							NULL, &sbuf);
+				len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			} else {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 				p = store_file_unix_basic_info2(conn, p,
 							NULL, &sbuf);
+				nameptr = p;
+				p += 4;
+				len = srvstr_push(outbuf, p, fname, -1, 0);
+				SIVAL(nameptr, 0, len);
 			}
 
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
 
@@ -5295,17 +5299,20 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	SIVAL(pdata,4,info); /* Was directory created. */
 
 	switch (info_level_return) {
-	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,10,0); /* Padding. */
-		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
-	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,10,0); /* Padding. */
-		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
-	default:
-		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,10,0); /* Padding. */
+		case SMB_QUERY_FILE_UNIX_BASIC:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+			SSVAL(pdata,10,0); /* Padding. */
+			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			break;
+		case SMB_QUERY_FILE_UNIX_INFO2:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+			SSVAL(pdata,10,0); /* Padding. */
+			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			break;
+		default:
+			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+			SSVAL(pdata,10,0); /* Padding. */
+			break;
 	}
 
 	return status;
@@ -5479,17 +5486,20 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	SIVAL(pdata,4,info); /* Was file created etc. */
 
 	switch (info_level_return) {
-	case SMB_QUERY_FILE_UNIX_BASIC:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
-		SSVAL(pdata,10,0); /* padding. */
-		store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
-	case SMB_QUERY_FILE_UNIX_INFO2:
-		SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
-		SSVAL(pdata,10,0); /* padding. */
-		store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
-	default:
-		SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
-		SSVAL(pdata,10,0); /* padding. */
+		case SMB_QUERY_FILE_UNIX_BASIC:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
+			SSVAL(pdata,10,0); /* padding. */
+			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			break;
+		case SMB_QUERY_FILE_UNIX_INFO2:
+			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
+			SSVAL(pdata,10,0); /* padding. */
+			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			break;
+		default:
+			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
+			SSVAL(pdata,10,0); /* padding. */
+			break;
 	}
 	return NT_STATUS_OK;
 }
@@ -6153,6 +6163,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
   	pstring pathname;
 	int reply_size = 0;
 	int max_referral_level;
+	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
@@ -6166,8 +6177,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
 	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), total_params - 2, STR_TERMINATE);
-	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
-		return UNIXERROR(ERRDOS,ERRbadfile);
+	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata,&status)) < 0)
+		return ERROR_NT(status);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);

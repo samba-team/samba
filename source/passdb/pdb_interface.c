@@ -1287,6 +1287,27 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
+	/* check for "Unix User" */
+
+	if ( sid_peek_check_rid(&global_sid_Unix_Users, sid, &rid) ) {
+		id->uid = rid;
+		*type = SID_NAME_USER;
+		ret = True;		
+		goto done;		
+	}
+	
+	/* check for "Unix User" */
+
+	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
+		id->gid = rid;
+		*type = SID_NAME_ALIAS;
+		ret = True;		
+		goto done;		
+	}
+	
+
+	/* BUILTIN */
+
 	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
@@ -1309,7 +1330,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	DEBUG(5, ("Sid %s is neither ours nor builtin, don't know it\n",
+	DEBUG(5, ("Sid %s is neither ours, a Unix SID, nor builtin\n",
 		  sid_string_static(sid)));
 
  done:

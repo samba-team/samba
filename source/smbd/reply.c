@@ -451,6 +451,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
 	char *p, *q;
+	uint16 tcon_flags = SVAL(inbuf,smb_vwv2);
 	
 	START_PROFILE(SMBtconX);	
 
@@ -521,7 +522,27 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 		
-		set_message(outbuf,3,0,True);
+		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
+			/* Return permissions. */
+			uint32 perm1 = 0;
+			uint32 perm2 = 0;
+
+			set_message(outbuf,7,0,True);
+
+			if (IS_IPC(conn)) {
+				perm1 = FILE_ALL_ACCESS;
+				perm2 = FILE_ALL_ACCESS;
+			} else {
+				perm1 = CAN_WRITE(conn) ?
+						SHARE_ALL_ACCESS :
+						SHARE_READ_ONLY;
+			}
+
+			SIVAL(outbuf, smb_vwv3, perm1);
+			SIVAL(outbuf, smb_vwv5, perm2);
+		} else {
+			set_message(outbuf,3,0,True);
+		}
 
 		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, server_devicetype, -1, 

@@ -1065,6 +1065,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,TCONX_FLAG_EXTENDED_RESPONSE);
 	SSVAL(cli->outbuf,smb_vwv3,passlen);
 
 	p = smb_buf(cli->outbuf);

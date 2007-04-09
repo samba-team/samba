@@ -125,7 +125,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	/* The call below does CH_UNIX -> CH_DOS conversion. JRA */
 	push_pstring_base(p, myname, outbuf);
 
-	p = skip_string(p,1);
+	p = skip_string(outbuf,sizeof(outbuf),p);
 
 	if( DEBUGLVL( 4 ) ) {
 		dbgtext( "announce_local_master_browser_to_domain_master_browser:\n" );
