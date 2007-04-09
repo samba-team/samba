@@ -43,8 +43,6 @@ cd $PREFIX
 PREFIX_ABS=`pwd`
 cd $oldpwd
 
-TEST_DATA_PREFIX=$PREFIX_ABS
-
 TMPDIR=$PREFIX_ABS/tmp
 ETCDIR=$PREFIX_ABS/etc
 PIDDIR=$PREFIX_ABS/pid
@@ -61,15 +59,8 @@ LDAPDIR=$PREFIX_ABS/ldap
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $LDAPDIR/db $LDAPDIR/db/bdb-logs $LDAPDIR/db/tmp
 
-if [ -z "$VALGRIND" ]; then
-    nativeiconv="true"
-else
-    nativeiconv="false"
-fi
-
 cat >$CONFFILE<<EOF
 [global]
-	iconv:native = $nativeiconv
 	netbios name = $NETBIOSNAME
 	netbios aliases = $SERVER
 	workgroup = $DOMAIN
@@ -92,7 +83,6 @@ cat >$CONFFILE<<EOF
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
-	torture:basedir = $TEST_DATA_PREFIX
 
 	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
@@ -283,7 +273,6 @@ $srcdir/bin/ldbadd -H $PRIVATEDIR/wins_config.ldb < $PRIVATEDIR/wins_config.ldif
 
 echo "KRB5_CONFIG=$KRB5_CONFIG"
 echo "PREFIX_ABS=$PREFIX_ABS"
-echo "TEST_DATA_PREFIX=$TEST_DATA_PREFIX"
 echo "CONFIGURATION=$CONFIGURATION"
 echo "CONFFILE=$CONFFILE"
 echo "SLAPD_CONF=$SLAPD_CONF"
@@ -303,3 +292,5 @@ echo "PREFIX=$PREFIX"
 echo "LDAPDIR=$LDAPDIR"
 echo "PROVISION_OPTIONS=$PROVISION_OPTIONS"
 echo "PROVISION_ACI=$PROVISION_ACI"
+echo "WINBINDD_SOCKET_DIR=$WINBINDD_SOCKET_DIR"
+echo "NCALRPCDIR=$NCALRPCDIR"
