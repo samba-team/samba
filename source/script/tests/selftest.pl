@@ -443,9 +443,39 @@ my $interfaces = join(',', ("127.0.0.6/8",
 						 "127.0.0.10/8",
 						 "127.0.0.11/8"));
 
+
+
+my $conffile = "$prefix/client.conf";
+open(CF, ">$conffile");
+print CF "[global]\n";
+if (defined($ENV{VALGRIND})) {
+	print CF "iconv:native = true\n";
+} else {
+	print CF "iconv:native = false\n";
+}
+print CF "
+	workgroup = $testenv_vars->{DOMAIN}
+	realm = $testenv_vars->{REALM}
+	ncalrpc dir = $testenv_vars->{NCALRPCDIR}
+	js include = $srcdir/scripting/libjs
+	winbindd socket directory = $testenv_vars->{WINBINDD_SOCKET_DIR}
+	name resolve order = bcast
+	interfaces = 127.0.0.1/8
+	panic action = $srcdir/script/gdb_backtrace \%PID\% \%PROG\%
+	max xmit = 32K
+	notify:inotify = false
+	ldb:nosync = true
+	system:anonymous = true
+#We don't want to pass our self-tests if the PAC code is wrong
+	torture:basedir = st
+	gensec:require_pac = true
+	pid directory = $testenv_vars->{PIDDIR}
+";
+close(CF);
+
 my @torture_options = ();
 push (@torture_options, "--option=interfaces=$interfaces");
-push (@torture_options, $testenv_vars->{CONFIGURATION});
+push (@torture_options, "--configfile=$conffile");
 # ensure any one smbtorture call doesn't run too long
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
 push (@torture_options, "--target=$opt_target");
