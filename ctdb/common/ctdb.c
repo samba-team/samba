@@ -58,6 +58,14 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
+  clear some ctdb flags
+*/
+void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
+{
+	ctdb->flags &= ~flags;
+}
+
+/*
   set max acess count before a dmaster migration
 */
 void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
@@ -332,5 +340,9 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 
 int ctdb_start(struct ctdb_context *ctdb)
 {
+	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
+		return ctdbd_start(ctdb);
+	}
+
 	return ctdb->methods->start(ctdb);
 }

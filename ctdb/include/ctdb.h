@@ -50,6 +50,7 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
+#define CTDB_FLAG_DAEMON_MODE  (1<<1)
 
 
 struct event_context;
@@ -68,6 +69,11 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
+
+/*
+  clear some flags
+*/
+void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
   set max acess count before a dmaster migration
@@ -89,10 +95,6 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
-/*
-  start the ctdb protocol in daemon mode, spawning a ctdb daemon
-*/
-int ctdbd_start(struct ctdb_context *ctdb);
 
 /*
   attach to a ctdb database
@@ -154,10 +156,6 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handle
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
-
-int ctdbd_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,

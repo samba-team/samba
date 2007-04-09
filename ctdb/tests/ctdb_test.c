@@ -136,6 +136,10 @@ int main(int argc, const char *argv[])
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
 
+	if (daemon_mode) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
+	}
+
 	ret = ctdb_set_transport(ctdb, transport);
 	if (ret == -1) {
 		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
@@ -168,11 +172,7 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	/* start the protocol running */
-	if (daemon_mode) {
-		ret = ctdbd_start(ctdb);
-	} else {
-		ret = ctdb_start(ctdb);
-	}
+	ret = ctdb_start(ctdb);
 
 	/* wait until all nodes are connected (should not be needed
 	   outide of test code) */
@@ -190,11 +190,7 @@ int main(int argc, const char *argv[])
 		call.call_data.dptr = (uint8_t *)&v;
 		call.call_data.dsize = sizeof(v);
 
-		if (daemon_mode) {
-			ret = ctdbd_call(ctdb_db, &call);
-		} else {
-			ret = ctdb_call(ctdb_db, &call);
-		}
+		ret = ctdb_call(ctdb_db, &call);
 		if (ret == -1) {
 			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
@@ -206,11 +202,7 @@ int main(int argc, const char *argv[])
 	call.call_data.dptr = NULL;
 	call.call_data.dsize = 0;
 
-	if (daemon_mode) {
-		ret = ctdbd_call(ctdb_db, &call);
-	} else {
-		ret = ctdb_call(ctdb_db, &call);
-	}
+	ret = ctdb_call(ctdb_db, &call);
 	if (ret == -1) {
 		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);

@@ -557,6 +557,9 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	TDB_DATA data;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+	if (ctdb_db->ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
+		return ctdbd_call_send(ctdb_db, call);
+	}
 
 	/*
 	  if we are the dmaster for this key then we don't need to
@@ -627,6 +630,10 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	struct ctdb_record_handle *rec;
 
+	if (state->ctdb_db->ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
+		return ctdbd_call_recv(state, call);
+	}
+
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->node->ctdb->ev);
 	}
@@ -666,6 +673,7 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 {
 	struct ctdb_call_state *state;
+
 	state = ctdb_call_send(ctdb_db, call);
 	return ctdb_call_recv(state, call);
 }

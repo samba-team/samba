@@ -84,6 +84,14 @@ struct ctdb_upcalls {
 	void (*node_connected)(struct ctdb_node *);
 };
 
+/* additional data required for the daemon mode */
+struct ctdb_daemon_data {
+	int sd;
+	char *name;
+	struct ctdbd_queue_packet *queue;
+	struct fd_event *fde;
+	struct ctdb_partial partial;
+};
 
 /* main state of the ctdb daemon */
 struct ctdb_context {
@@ -104,12 +112,7 @@ struct ctdb_context {
 	ctdb_message_fn_t message_handler;
 	void *message_private;
 	struct ctdb_db_context *db_list;
-	/* add all these client stuff to sub contexts */
-	int daemon_sd;
-	char *sd_name;
-	struct ctdbd_queue_packet *sd_queue;
-	struct fd_event *daemon_fde;
-	struct ctdb_partial daemon_partial;
+	struct ctdb_daemon_data daemon;
 };
 
 struct ctdb_db_context {
@@ -280,5 +283,11 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 					     struct ctdb_call *call,
 					     struct ctdb_ltdb_header *header,
 					     TDB_DATA *data);
+
+
+int ctdbd_start(struct ctdb_context *ctdb);
+struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
 
 #endif
