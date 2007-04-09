@@ -25,7 +25,8 @@ Major features included in the 3.0.25 code base include:
   o Support for passing Windows security descriptors to a VFS 
     plug-in allowing for multiple Unix ACL implements to running side 
     by side on the Same server.
-  o Improved compatibility with Windows Vista clients.
+  o Improved compatibility with Windows Vista clients including 
+    improved read performance with Linux servers.
   o Man pages for VFS plug-ins.
 
 
@@ -68,6 +69,27 @@ Support for Additional ACL Modules
 Samba's POSIX ACL support has been moved inside of the VFS layer 
 which means it is now possible to support multiple ACL implementations
 on the same server including NFSv4 and GPFS ACLs.
+
+
+VFS ReadAhead Plugin
+====================
+
+Windows Vista introduces pipe-lined read support for improved 
+performance when transferring files.  The new vfs_readahead plugin
+allows Linux file servers to utilize additional Kernel buffers
+for caching files in order to avoid Disk I/O wait time when serving
+Vista clients.  If you experience poor read performance between 
+Linux servers and Vista clients, please test the vfs_readahead
+module by adding the following lines to the share definition
+in smb.conf:
+
+[file_share]
+	vfs objects = readahead
+	readahead:length = 1M
+
+Note that this plugin will result in additional RAM requirements
+due to the increased amount of kernel buffer caches used by smbd.
+Please refer to vfs_readahead(8) for more information.
 
 
 ######################################################################
