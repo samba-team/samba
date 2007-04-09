@@ -83,7 +83,6 @@ cat >$CONFFILE<<EOF
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
-
 	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
@@ -273,8 +272,6 @@ $srcdir/bin/ldbadd -H $PRIVATEDIR/wins_config.ldb < $PRIVATEDIR/wins_config.ldif
 
 echo "KRB5_CONFIG=$KRB5_CONFIG"
 echo "PREFIX_ABS=$PREFIX_ABS"
-echo "CONFIGURATION=$CONFIGURATION"
-echo "CONFFILE=$CONFFILE"
 echo "SLAPD_CONF=$SLAPD_CONF"
 echo "PIDDIR=$PIDDIR"
 echo "AUTH=$AUTH"
@@ -290,7 +287,9 @@ echo "PASSWORD=$PASSWORD"
 echo "SRCDIR=$SRCDIR"
 echo "PREFIX=$PREFIX"
 echo "LDAPDIR=$LDAPDIR"
+echo "CONFFILE=$CONFFILE"
 echo "PROVISION_OPTIONS=$PROVISION_OPTIONS"
 echo "PROVISION_ACI=$PROVISION_ACI"
 echo "WINBINDD_SOCKET_DIR=$WINBINDD_SOCKET_DIR"
 echo "NCALRPCDIR=$NCALRPCDIR"
+echo "CONFIGURATION=$CONFIGURATION"
