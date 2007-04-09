@@ -277,6 +277,14 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	return 0;
 }
 
+static char *domain_socket_name=NULL;
+static void unlink_domain_socket(void)
+{
+	if (domain_socket_name) {
+		unlink(domain_socket_name);
+	}
+}
+
 /*
   start the protocol going
 */
@@ -291,6 +299,9 @@ int ctdbd_start(struct ctdb_context *ctdb)
 	ctdb->daemon.name = talloc_asprintf(ctdb, "%s.%s", CTDB_PATH, ctdb->address.address);
 	/* get rid of any old sockets */
 	unlink(ctdb->daemon.name);
+
+	domain_socket_name = ctdb->daemon.name;
+	atexit(unlink_domain_socket);
 
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
