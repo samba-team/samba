@@ -85,7 +85,6 @@ in smb.conf:
 
 [file_share]
 	vfs objects = readahead
-	readahead:length = 1M
 
 Note that this plugin will result in additional RAM requirements
 due to the increased amount of kernel buffer caches used by smbd.
