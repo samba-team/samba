@@ -2706,8 +2706,10 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
-	if (nread != -1)
+	/* Only call chain_reply if not an error. */
+	if (nread != -1 && SVAL(outbuf,smb_rcls) == 0) {
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
+	}
 
 	END_PROFILE(SMBreadX);
 	return nread;
