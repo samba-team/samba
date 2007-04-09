@@ -159,85 +159,42 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 }
 
 
+static void ctdb_client_read_cb(uint8_t *data, int cnt, void *args)
+{
+	struct ctdb_client *client = talloc_get_type(args, struct ctdb_client);
+	struct ctdb_req_header *hdr;
+
+	if (cnt < sizeof(*hdr)) {
+		ctdb_set_error(client->ctdb, "Bad packet length %d\n", cnt);
+		return;
+	}
+	hdr = (struct ctdb_req_header *)data;
+	if (cnt != hdr->length) {
+		ctdb_set_error(client->ctdb, "Bad header length %d expected %d\n", 
+			       hdr->length, cnt);
+		return;
+	}
+
+	if (hdr->ctdb_magic != CTDB_MAGIC) {
+		ctdb_set_error(client->ctdb, "Non CTDB packet rejected\n");
+		return;
+	}
+
+	if (hdr->ctdb_version != CTDB_VERSION) {
+		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		return;
+	}
+
+	/* it is the responsibility of the incoming packet function to free 'data' */
+	client_incoming_packet(client, data, cnt);
+}
+
 static void ctdb_client_read(struct event_context *ev, struct fd_event *fde, 
 			 uint16_t flags, void *private)
 {
 	struct ctdb_client *client = talloc_get_type(private, struct ctdb_client);
-	int num_ready = 0;
-	ssize_t nread;
-	uint8_t *data, *data_base;
 
-/*XXX replace this and all other similar code (tcp) with ctdb_io.c/ctdb_read_pdu */
-	if (ioctl(client->fd, FIONREAD, &num_ready) != 0 ||
-	    num_ready == 0) {
-		/* we've lost the connection from a client client. */
-		talloc_free(client);
-		return;
-	}
-
-	client->partial.data = talloc_realloc_size(client, client->partial.data, 
-					       num_ready + client->partial.length);
-	if (client->partial.data == NULL) {
-		/* not much we can do except drop the socket */
-		talloc_free(client);
-		return;
-	}
-
-	nread = read(client->fd, client->partial.data+client->partial.length, num_ready);
-	if (nread <= 0) {
-		/* the connection must be dead */
-		talloc_free(client);
-		return;
-	}
-
-	data = client->partial.data;
-	nread += client->partial.length;
-
-	client->partial.data = NULL;
-	client->partial.length = 0;
-
-	if (nread >= 4 && *(uint32_t *)data == nread) {
-		/* it is the responsibility of the incoming packet function to free 'data' */
-		client_incoming_packet(client, data, nread);
-		return;
-	}
-
-	data_base = data;
-
-	while (nread >= 4 && *(uint32_t *)data <= nread) {
-		/* we have at least one packet */
-		uint8_t *d2;
-		uint32_t len;
-		len = *(uint32_t *)data;
-		d2 = talloc_memdup(client, data, len);
-		if (d2 == NULL) {
-			/* sigh */
-			talloc_free(client);
-			return;
-		}
-		client_incoming_packet(client, d2, len);
-		data += len;
-		nread -= len;		
-	}
-
-	if (nread > 0) {
-		/* we have only part of a packet */
-		if (data_base == data) {
-			client->partial.data = data;
-			client->partial.length = nread;
-		} else {
-			client->partial.data = talloc_memdup(client, data, nread);
-			if (client->partial.data == NULL) {
-				talloc_free(client);
-				return;
-			}
-			client->partial.length = nread;
-			talloc_free(data_base);
-		}
-		return;
-	}
-
-	talloc_free(data_base);
+	ctdb_read_pdu(client->fd, client, &client->partial, ctdb_client_read_cb, client);
 }
 
 
