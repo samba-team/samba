@@ -223,6 +223,13 @@ BOOL create_subnets(void)
 			return False;
 	}
 
+        /* We must have at least one subnet. */
+	if (subnetlist == NULL) {
+		DEBUG(0,("create_subnets: unable to create any subnet from "
+				"given interfaces. nmbd is terminating\n"));
+		return False;
+	}
+
 	if (lp_we_are_a_wins_server()) {
 		/* Pick the first interface ip address as the WINS server ip. */
 		struct in_addr *nip = iface_n_ip(0);
