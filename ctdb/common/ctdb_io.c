@@ -21,9 +21,6 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _CTDB_PARTIAL_H
-#define _CTDB_PARTIAL_H
-
 #include "includes.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/events/events.h"
@@ -116,4 +113,3 @@ void ctdb_read_pdu(int fd, TALLOC_CTX *ctx, struct ctdb_partial *partial, partia
 	talloc_free(data_base);
 }
 
-#endif
