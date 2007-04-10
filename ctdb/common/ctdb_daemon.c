@@ -417,16 +417,10 @@ static void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 }
 
 
-struct ctdbd_queue_packet {
-	struct ctdbd_queue_packet *next, *prev;
-	uint8_t *data;
-	uint32_t length;
-};
-
 /*
   queue a packet for sending
 */
-int ctdbd_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+static int ctdbd_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	return ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)hdr, hdr->length);
 }

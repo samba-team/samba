@@ -37,7 +37,7 @@ static void set_nonblocking(int fd)
 /*
   called when a complete packet has come in - should not happen on this socket
  */
-void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
+static void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 

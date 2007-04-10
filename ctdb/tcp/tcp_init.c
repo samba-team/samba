@@ -29,7 +29,7 @@
 /*
   start the protocol going
 */
-int ctdb_tcp_start(struct ctdb_context *ctdb)
+static int ctdb_tcp_start(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -59,7 +59,7 @@ int ctdb_tcp_start(struct ctdb_context *ctdb)
 /*
   initialise tcp portion of a ctdb node 
 */
-int ctdb_tcp_add_node(struct ctdb_node *node)
+static int ctdb_tcp_add_node(struct ctdb_node *node)
 {
 	struct ctdb_tcp_node *tnode;
 	tnode = talloc_zero(node, struct ctdb_tcp_node);
@@ -74,7 +74,7 @@ int ctdb_tcp_add_node(struct ctdb_node *node)
 /*
   transport packet allocator - allows transport to control memory for packets
 */
-void *ctdb_tcp_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+static void *ctdb_tcp_allocate_pkt(struct ctdb_context *ctdb, size_t size)
 {
 	/* tcp transport needs to round to 8 byte alignment to ensure
 	   that we can use a length header and 64 bit elements in
