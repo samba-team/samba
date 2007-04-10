@@ -164,13 +164,9 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;
-	const char *range;
+	const char *range = NULL;
+	const char *schema_mode = NULL;	
 	ADS_STRUCT *ads;
-
-	/* verify AD is reachable (not critical, we may just be offline at start) */
-	if ( (ads = ad_idmap_cached_connection()) == NULL ) {
-		DEBUG(1, ("WARNING: Could not init an AD connection! Mapping might not work.\n"));
-	}
 
 	if ( (ctx = talloc_zero(dom, struct idmap_ad_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -192,6 +188,20 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 			ctx->filter_low_id = 0;
 			ctx->filter_high_id = 0;
 		}
+	}
+
+	/* schema mode */
+	if ( ad_map_type == WB_POSIX_MAP_UNKNOWN )
+		ad_map_type = WB_POSIX_MAP_RFC2307;
+	schema_mode = lp_parm_const_string(-1, config_option, "schema_mode", NULL);
+	if ( schema_mode && schema_mode[0] ) {
+		if ( strequal(schema_mode, "sfu") )
+			ad_map_type = WB_POSIX_MAP_SFU;
+		else if ( strequal(schema_mode, "rfc2307" ) )
+			ad_map_type = WB_POSIX_MAP_RFC2307;
+		else
+			DEBUG(0,("idmap_ad_initialize: Unknown schema_mode (%s)\n",
+				 schema_mode));
 	}
 
 	dom->private_data = ctx;
