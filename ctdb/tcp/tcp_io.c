@@ -29,80 +29,18 @@
 
 
 /*
-  called when we fail to send a message to a node
-*/
-static void ctdb_tcp_node_dead(struct event_context *ev, struct timed_event *te, 
-			       struct timeval t, void *private)
-{
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
-						      struct ctdb_tcp_node);
-
-	/* start a new connect cycle to try to re-establish the
-	   link */
-	talloc_free(tnode->fde);
-	close(tnode->fd);
-	tnode->fd = -1;
-	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
-			ctdb_tcp_node_connect, node);
-}
-
-/*
-  called when socket becomes readable
-*/
-void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
-{
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
-						      struct ctdb_tcp_node);
-	if (flags & EVENT_FD_READ) {
-		/* getting a read event on this fd in the current tcp model is
-		   always an error, as we have separate read and write
-		   sockets. In future we may combine them, but for now it must
-		   mean that the socket is dead, so we try to reconnect */
-		node->ctdb->upcalls->node_dead(node);
-		talloc_free(tnode->fde);
-		close(tnode->fd);
-		tnode->fd = -1;
-		event_add_timed(node->ctdb->ev, node, timeval_zero(), 
-				ctdb_tcp_node_connect, node);
-		return;
-	}
-
-	while (tnode->queue) {
-		struct ctdb_tcp_packet *pkt = tnode->queue;
-		ssize_t n;
-
-		n = write(tnode->fd, pkt->data, pkt->length);
-
-		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-			event_add_timed(node->ctdb->ev, node, timeval_zero(), 
-					ctdb_tcp_node_dead, node);
-			EVENT_FD_NOT_WRITEABLE(tnode->fde);
-			return;
-		}
-		if (n <= 0) return;
-		
-		if (n != pkt->length) {
-			pkt->length -= n;
-			pkt->data += n;
-			return;
-		}
-
-		DLIST_REMOVE(tnode->queue, pkt);
-		talloc_free(pkt);
-	}
-
-	EVENT_FD_NOT_WRITEABLE(tnode->fde);
-}
-
-
-
-static void tcp_read_cb(uint8_t *data, int cnt, void *args)
+  called when a complete packet has come in
+ */
+void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_incoming *in = talloc_get_type(args, struct ctdb_incoming);
 	struct ctdb_req_header *hdr;
+
+	if (data == NULL) {
+		/* incoming socket has died */
+		talloc_free(in);
+		return;
+	}
 
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(in->ctdb, "Bad packet length %d\n", cnt);
@@ -131,65 +69,11 @@ static void tcp_read_cb(uint8_t *data, int cnt, void *args)
 }
 
 /*
-  called when an incoming connection is readable
-*/
-void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
-			    uint16_t flags, void *private)
-{
-	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
-
-	ctdb_read_pdu(in->fd, in, &in->partial, tcp_read_cb, in);
-}
-
-/*
   queue a packet for sending
 */
 int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private,
 						      struct ctdb_tcp_node);
-	struct ctdb_tcp_packet *pkt;
-	uint32_t length2;
-
-	/* enforce the length and alignment rules from the tcp packet allocator */
-	length2 = (length+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
-	*(uint32_t *)data = length2;
-
-	if (length2 != length) {
-		memset(data+length, 0, length2-length);
-	}
-	
-	/* if the queue is empty then try an immediate write, avoiding
-	   queue overhead. This relies on non-blocking sockets */
-	if (tnode->queue == NULL && tnode->fd != -1) {
-		ssize_t n = write(tnode->fd, data, length2);
-		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-			event_add_timed(node->ctdb->ev, node, timeval_zero(), 
-					ctdb_tcp_node_dead, node);
-			/* yes, we report success, as the dead node is 
-			   handled via a separate event */
-			return 0;
-		}
-		if (n > 0) {
-			data += n;
-			length2 -= n;
-		}
-		if (length2 == 0) return 0;
-	}
-
-	pkt = talloc(tnode, struct ctdb_tcp_packet);
-	CTDB_NO_MEMORY(node->ctdb, pkt);
-
-	pkt->data = talloc_memdup(pkt, data, length2);
-	CTDB_NO_MEMORY(node->ctdb, pkt->data);
-
-	pkt->length = length2;
-
-	if (tnode->queue == NULL && tnode->fd != -1) {
-		EVENT_FD_WRITEABLE(tnode->fde);
-	}
-
-	DLIST_ADD_END(tnode->queue, pkt, struct ctdb_tcp_packet *);
-
-	return 0;
+	return ctdb_queue_send(tnode->queue, data, length);
 }
