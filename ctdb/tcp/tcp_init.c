@@ -46,6 +46,12 @@ int ctdb_tcp_start(struct ctdb_context *ctdb)
 				ctdb_tcp_node_connect, node);
 	}
 
+	if (ctdb->flags&CTDB_FLAG_CONNECT_WAIT) {
+		/* wait until all nodes are connected (should not be needed
+		   outide of test code) */
+		ctdb_connect_wait(ctdb);
+	}
+
 	return 0;
 }
 

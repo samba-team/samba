@@ -346,13 +346,5 @@ int ctdb_start(struct ctdb_context *ctdb)
 		return ctdbd_start(ctdb);
 	}
 
-	res = ctdb->methods->start(ctdb);
-
-	if (ctdb->flags&CTDB_FLAG_CONNECT_WAIT) {
-		/* wait until all nodes are connected (should not be needed
-		   outide of test code) */
-		ctdb_connect_wait(ctdb);
-	}
-
-	return res;
+	return ctdb->methods->start(ctdb);
 }
