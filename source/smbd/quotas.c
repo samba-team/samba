@@ -662,7 +662,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 		BOOL retval;
 		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n", mnt.mnt_special));
 		retval = nfs_quotas(mnt.mnt_special, euser_id, bsize, dfree, dsize);
-		unbecome();
+		unbecome_root();
 		return retval;
 	}
 
