@@ -37,7 +37,7 @@ static void set_nonblocking(int fd)
 /*
   called when a complete packet has come in - should not happen on this socket
  */
-static void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
+void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
@@ -80,8 +80,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	
         setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
 
-	tnode->queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
-					ctdb_tcp_tnode_cb, node);
+	ctdb_queue_set_fd(tnode->queue, tnode->fd);
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
