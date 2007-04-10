@@ -28,6 +28,11 @@
 #include "includes.h"
 #include "smb_share_modes.h"
 
+/* Database context handle. */
+struct smbdb_ctx {
+	TDB_CONTEXT *smb_tdb;
+};
+
 /* Remove the paranoid malloc checker. */
 #ifdef malloc
 #undef malloc
