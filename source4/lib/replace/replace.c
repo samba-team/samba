@@ -154,33 +154,6 @@ time_t rep_mktime(struct tm *t)
 #endif /* !HAVE_MKTIME */
 
 
-#ifndef HAVE_INNETGR
-#if defined(HAVE_SETNETGRENT) && defined(HAVE_GETNETGRENT) && defined(HAVE_ENDNETGRENT)
-/*
- * Search for a match in a netgroup. This replaces it on broken systems.
- */
-int rep_innetgr(const char *group, const char *host, const char *user, 
-				const char *dom)
-{
-	char *hst, *usr, *dm;
-  
-	setnetgrent(group);
-	while (getnetgrent(&hst, &usr, &dm)) {
-		if (((host == 0) || (hst == 0) || !strcmp(host, hst)) &&
-		    ((user == 0) || (usr == 0) || !strcmp(user, usr)) &&
-		    ((dom == 0) || (dm == 0) || !strcmp(dom, dm))) {
-			endnetgrent();
-			return (1);
-		}
-	}
-	endnetgrent();
-	return (0);
-}
-#endif /* HAVE_SETNETGRENT HAVE_GETNETGRENT HAVE_ENDNETGRENT */
-#endif /* HAVE_INNETGR */
-
-
-
 #ifndef HAVE_INITGROUPS
 /****************************************************************************
  some systems don't have an initgroups call 
