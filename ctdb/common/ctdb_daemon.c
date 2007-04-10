@@ -58,6 +58,7 @@ static void set_non_blocking(int fd)
 struct ctdb_client {
 	struct ctdb_context *ctdb;
 	int fd;
+	uint32_t id;
 	struct ctdb_queue *queue;
 };
 
@@ -138,6 +139,16 @@ static void client_request_call(struct ctdb_client *client, struct ctdb_req_call
 }
 
 
+
+/*
+   we have received a register message from hte client
+ */
+static void client_register_message(struct ctdb_client *client, struct ctdb_register_call *r)
+{
+	client->id = *((uint32_t *)r->data);
+}
+
+
 /* data contains a packet from the client */
 static void client_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
 {
@@ -157,7 +168,9 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 	case CTDB_REQ_CALL:
 		client_request_call(client, (struct ctdb_req_call *)hdr);
 		break;
-
+	case CTDB_REGISTER_CALL:
+		client_register_message(client, (struct ctdb_register_call *)hdr);
+		break;
 	}
 
 	talloc_free(data);
@@ -576,5 +589,32 @@ struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct 
 	return state;
 }
 
+int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t id)
+{
+	int res;
+	struct ctdb_register_call rc;
+
+	if (!(ctdb->flags&CTDB_FLAG_DAEMON_MODE)) {
+		return 0;
+	}
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ux_socket_connect(ctdb);
+	}
+
+	ZERO_STRUCT(rc);
+	rc.hdr.ctdb_magic = CTDB_MAGIC;
+	rc.hdr.ctdb_version = CTDB_VERSION;
+	rc.hdr.operation = CTDB_REGISTER_CALL;
+	rc.datalen=4;
+	*((uint32_t *)rc.data) = id;
+	rc.hdr.length = offsetof(struct ctdb_register_call, data) + rc.datalen;
+
+/*XXX need to handle the case of partial writes    logic for partial writes in tcp/ctdb_tcp_node_write */
+	res = write(ctdb->daemon.sd, &rc, rc.hdr.length);
+
+	return 0;
+}
 
 
