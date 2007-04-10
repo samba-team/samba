@@ -58,6 +58,14 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
+  clear some ctdb flags
+*/
+void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
+{
+	ctdb->flags &= ~flags;
+}
+
+/*
   set max acess count before a dmaster migration
 */
 void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
@@ -178,14 +186,6 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 	return ctdb->num_nodes;
 }
 
-
-/*
-  start the protocol going
-*/
-int ctdb_start(struct ctdb_context *ctdb)
-{
-	return ctdb->methods->start(ctdb);
-}
 
 /*
   called by the transport layer when a packet comes in
@@ -338,3 +338,13 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	return ctdb;
 }
 
+int ctdb_start(struct ctdb_context *ctdb)
+{
+	int res;
+
+	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
+		return ctdbd_start(ctdb);
+	}
+
+	return ctdb->methods->start(ctdb);
+}

@@ -54,6 +54,12 @@ struct ctdb_node {
 	uint32_t vnn;
 };
 
+struct ctdb_record_handle {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key;
+	TDB_DATA *data;
+};
+
 /*
   transport specific methods
 */
@@ -78,6 +84,14 @@ struct ctdb_upcalls {
 	void (*node_connected)(struct ctdb_node *);
 };
 
+/* additional data required for the daemon mode */
+struct ctdb_daemon_data {
+	int sd;
+	char *name;
+	struct ctdbd_queue_packet *queue;
+	struct fd_event *fde;
+	struct ctdb_partial partial;
+};
 
 /* main state of the ctdb daemon */
 struct ctdb_context {
@@ -98,6 +112,7 @@ struct ctdb_context {
 	ctdb_message_fn_t message_handler;
 	void *message_private;
 	struct ctdb_db_context *db_list;
+	struct ctdb_daemon_data daemon;
 };
 
 struct ctdb_db_context {
@@ -108,6 +123,7 @@ struct ctdb_db_context {
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 };
+
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
@@ -139,6 +155,23 @@ struct ctdb_ltdb_header {
 	uint32_t dmaster;
 	uint32_t laccessor;
 	uint32_t lacount;
+};
+
+enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
+
+/*
+  state of a in-progress ctdb call
+*/
+struct ctdb_call_state {
+	enum call_state state;
+	struct ctdb_req_call *c;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_node *node;
+	const char *errmsg;
+	struct ctdb_call call;
+	int redirect_count;
+	struct ctdb_ltdb_header header;
+	void *fetch_private;
 };
 
 
@@ -245,6 +278,16 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
+					     struct ctdb_call *call,
+					     struct ctdb_ltdb_header *header,
+					     TDB_DATA *data);
+
+
+int ctdbd_start(struct ctdb_context *ctdb);
+struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 
 #endif
