@@ -125,12 +125,6 @@ static int test_mktime(void)
 	return true;
 }
 
-static int test_innetgr(void)
-{
-	/* FIXME */
-	return true;
-}
-
 static int test_initgroups(void)
 {
 	/* FIXME */
@@ -480,7 +474,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_strlcpy();
 	ret &= test_strlcat();
 	ret &= test_mktime();
-	ret &= test_innetgr();
 	ret &= test_initgroups();
 	ret &= test_memmove();
 	ret &= test_strdup();

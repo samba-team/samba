@@ -150,7 +150,7 @@ AC_TRY_COMPILE([
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
-AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
+AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -331,8 +331,7 @@ m4_include(win32.m4)
 m4_include(timegm.m4)
 m4_include(repdir.m4)
 
-AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
-			   [AC_MSG_ERROR([Required function not found])])
+AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
