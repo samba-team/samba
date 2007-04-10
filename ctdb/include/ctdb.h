@@ -50,7 +50,10 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
+/* fork off a separate ctdb daemon */
 #define CTDB_FLAG_DAEMON_MODE  (1<<1)
+/* for test code only: make ctdb_start() block until all nodes are connected */
+#define CTDB_FLAG_CONNECT_WAIT (1<<2)
 
 
 struct event_context;

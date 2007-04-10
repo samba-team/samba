@@ -35,6 +35,12 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
 	ctdb->methods->start(ctdb);
 
+	if (ctdb->flags&CTDB_FLAG_CONNECT_WAIT) {
+		/* wait until all nodes are connected (should not be needed
+		   outide of test code) */
+		ctdb_connect_wait(ctdb);
+	}
+
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 

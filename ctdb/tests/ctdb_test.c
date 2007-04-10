@@ -140,6 +140,13 @@ int main(int argc, const char *argv[])
 		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
 	}
 
+	/* this flag is only used by test code and it makes ctdb_start() block until all
+	   nodes have connected.
+	   until we do better recovery and cluster rebuild it is probably good to use this flag
+	   in applications.
+	 */
+	ctdb_set_flags(ctdb, CTDB_FLAG_CONNECT_WAIT);
+
 	ret = ctdb_set_transport(ctdb, transport);
 	if (ret == -1) {
 		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
@@ -174,10 +181,6 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	/* wait until all nodes are connected (should not be needed
-	   outide of test code) */
-	ctdb_connect_wait(ctdb);
-       
 	ZERO_STRUCT(call);
 	call.key.dptr = discard_const("test");
 	call.key.dsize = strlen("test")+1;
@@ -217,6 +220,9 @@ int main(int argc, const char *argv[])
 	ctdb_wait_loop(ctdb);
 
 	/*talloc_report_full(ctdb, stdout);*/
+
+/* sleep for a while so that our daemon will remaining alive for the other nodes in the cluster */
+sleep(10);
 
 	/* shut it down */
 	talloc_free(ctdb);

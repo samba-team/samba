@@ -340,9 +340,19 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 
 int ctdb_start(struct ctdb_context *ctdb)
 {
+	int res;
+
 	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
 		return ctdbd_start(ctdb);
 	}
 
-	return ctdb->methods->start(ctdb);
+	res = ctdb->methods->start(ctdb);
+
+	if (ctdb->flags&CTDB_FLAG_CONNECT_WAIT) {
+		/* wait until all nodes are connected (should not be needed
+		   outide of test code) */
+		ctdb_connect_wait(ctdb);
+	}
+
+	return res;
 }
