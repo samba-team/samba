@@ -418,6 +418,10 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	talloc_steal(state, c);
 
+	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
+	   from freeing the data */
+	(void)talloc_reference(state, c);
+
 	state->state = CTDB_CALL_DONE;
 }
 
