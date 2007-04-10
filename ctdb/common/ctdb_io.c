@@ -301,5 +301,3 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 
 	return queue;
 }
-
-
