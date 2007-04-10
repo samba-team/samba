@@ -43,6 +43,12 @@ struct ctdb_address {
 	int port;
 };
 
+
+/* called from the queue code when a packet comes in. Called with data==NULL
+   on error */
+typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length, void *private);
+
+
 /*
   state associated with one node
 */
@@ -88,9 +94,7 @@ struct ctdb_upcalls {
 struct ctdb_daemon_data {
 	int sd;
 	char *name;
-	struct ctdbd_queue_packet *queue;
-	struct fd_event *fde;
-	struct ctdb_partial partial;
+	struct ctdb_queue *queue;
 };
 
 /* main state of the ctdb daemon */
@@ -288,6 +292,26 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 int ctdbd_start(struct ctdb_context *ctdb);
 struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+/*
+  queue a packet for sending
+*/
+int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length);
+
+/*
+  setup the fd used by the queue
+ */
+int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd);
+
+/*
+  setup a packet queue on a socket
+ */
+struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
+				    TALLOC_CTX *mem_ctx, int fd, int alignment,
+				    
+				    ctdb_queue_cb_fn_t callback,
+				    void *private);
+
 
 
 #endif

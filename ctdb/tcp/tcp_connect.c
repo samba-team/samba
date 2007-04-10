@@ -35,6 +35,24 @@ static void set_nonblocking(int fd)
 
 
 /*
+  called when a complete packet has come in - should not happen on this socket
+ */
+static void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
+{
+	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+						      struct ctdb_tcp_node);
+
+	/* start a new connect cycle to try to re-establish the
+	   link */
+	close(tnode->fd);
+	ctdb_queue_set_fd(tnode->queue, -1);
+	tnode->fd = -1;
+	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
+			ctdb_tcp_node_connect, node);
+}
+
+/*
   called when socket becomes writeable on connect
 */
 static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *fde, 
@@ -59,17 +77,14 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	}
 
 	talloc_free(fde);
-	tnode->fde = event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
-				  ctdb_tcp_node_write, node);
+	
+        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
+
+	tnode->queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
+					ctdb_tcp_tnode_cb, node);
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
-
-        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
-
-	if (tnode->queue) {
-		EVENT_FD_WRITEABLE(tnode->fde);		
-	}
 }
 
 
@@ -177,8 +192,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	set_nonblocking(in->fd);
 
-	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
-		     ctdb_tcp_incoming_read, in);	
+	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
+				     ctdb_tcp_read_cb, in);
 
 	talloc_set_destructor(in, ctdb_incoming_destructor);
 }

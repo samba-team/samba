@@ -181,12 +181,4 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
 
 
-struct ctdb_partial {
-	uint8_t *data;
-	uint32_t length;
-};
-/* callback is called with data==NULL for fauilures.    the callback must test for this and do cleanup appropriately */
-typedef void (*partial_cb_fn_t)(uint8_t *data, int cnt, void *args);
-void ctdb_read_pdu(int fd, TALLOC_CTX *ctx, struct ctdb_partial *partial, partial_cb_fn_t func, void *args);
-
 #endif

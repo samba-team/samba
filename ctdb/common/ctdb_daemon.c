@@ -29,6 +29,7 @@
 #include "../include/ctdb_private.h"
 
 #define CTDB_PATH	"/tmp/ctdb.socket"
+#define CTDB_DS_ALIGNMENT 8
 
 
 static void ctdb_main_loop(struct ctdb_context *ctdb)
@@ -51,12 +52,13 @@ static void set_non_blocking(int fd)
 }
 
 
-
+/*
+  structure describing a connected client in the daemon
+ */
 struct ctdb_client {
 	struct ctdb_context *ctdb;
-	struct fd_event *fde;
 	int fd;
-	struct ctdb_partial partial;
+	struct ctdb_queue *queue;
 };
 
 
@@ -71,7 +73,10 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 }
 
 
-
+/*
+  this is called when the ctdb daemon received a ctdb request call
+  from a local client over the unix domain socket
+ */
 static void client_request_call(struct ctdb_client *client, struct ctdb_req_call *c)
 {
 	struct ctdb_call_state *state;
@@ -159,7 +164,7 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 }
 
 
-static void ctdb_client_read_cb(uint8_t *data, int cnt, void *args)
+static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_client *client = talloc_get_type(args, struct ctdb_client);
 	struct ctdb_req_header *hdr;
@@ -189,15 +194,6 @@ static void ctdb_client_read_cb(uint8_t *data, int cnt, void *args)
 	client_incoming_packet(client, data, cnt);
 }
 
-static void ctdb_client_read(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
-{
-	struct ctdb_client *client = talloc_get_type(private, struct ctdb_client);
-
-	ctdb_read_pdu(client->fd, client, &client->partial, ctdb_client_read_cb, client);
-}
-
-
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
 			 uint16_t flags, void *private)
 {
@@ -219,8 +215,8 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	client->ctdb = ctdb;
 	client->fd = fd;
 
-	event_add_fd(ctdb->ev, client, client->fd, EVENT_FD_READ, 
-		     ctdb_client_read, client);	
+	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
+					 ctdb_client_read_cb, client);
 
 	talloc_set_destructor(client, ctdb_client_destructor);
 }
@@ -340,7 +336,7 @@ int ctdbd_start(struct ctdb_context *ctdb)
 }
 
 
-static void ctdb_daemon_read_cb(uint8_t *data, int cnt, void *args)
+static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_context *ctdb = talloc_get_type(args, struct ctdb_context);
 	struct ctdb_req_header *hdr;
@@ -370,22 +366,6 @@ static void ctdb_daemon_read_cb(uint8_t *data, int cnt, void *args)
 }
 
 
-
-static void ctdb_daemon_io(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
-{
-	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
-
-
-	if (flags&EVENT_FD_READ) {
-		ctdb_read_pdu(ctdb->daemon.sd, ctdb, &ctdb->daemon.partial, ctdb_daemon_read_cb, ctdb);
-	}
-	if (flags&EVENT_FD_WRITE) {
-		printf("socket is filled.   fix this   see tcp_io/ctdb_tcp_node_write how to do this\n");
-/*		ctdb_daemon_write(ctdb);*/
-	}
-}
-
 /*
   connect to a unix domain socket
 */
@@ -408,8 +388,9 @@ static int ux_socket_connect(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	ctdb->daemon.fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, 
-		     ctdb_daemon_io, ctdb);	
+	ctdb->daemon.queue = ctdb_queue_setup(ctdb, ctdb, ctdb->daemon.sd, 
+					      CTDB_DS_ALIGNMENT, 
+					      ctdb_daemon_read_cb, ctdb);
 	return 0;
 }
 
@@ -427,7 +408,6 @@ static int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 }
 
 
-#define CTDB_DS_ALIGNMENT 8
 static void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 {
 	int size;
@@ -437,60 +417,12 @@ static void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 }
 
 
-struct ctdbd_queue_packet {
-	struct ctdbd_queue_packet *next, *prev;
-	uint8_t *data;
-	uint32_t length;
-};
-
 /*
   queue a packet for sending
 */
-int ctdbd_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+static int ctdbd_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	uint8_t *data = (uint8_t *)hdr;
-	uint32_t length = hdr->length;
-	struct ctdbd_queue_packet *pkt;
-	uint32_t length2;
-
-	/* enforce the length and alignment rules from the tcp packet allocator */
-	length2 = (length+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
-	*(uint32_t *)data = length2;
-
-	if (length2 != length) {
-		memset(data+length, 0, length2-length);
-	}
-	
-	/* if the queue is empty then try an immediate write, avoiding
-	   queue overhead. This relies on non-blocking sockets */
-	if (ctdb->daemon.queue == NULL) {
-		ssize_t n = write(ctdb->daemon.sd, data, length2);
-		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-			printf("socket to ctdb daemon has died\n");
-			return -1;
-		}
-		if (n > 0) {
-			data += n;
-			length2 -= n;
-		}
-		if (length2 == 0) return 0;
-	}
-
-	pkt = talloc(ctdb, struct ctdbd_queue_packet);
-	CTDB_NO_MEMORY(ctdb, pkt);
-
-	pkt->data = talloc_memdup(pkt, data, length2);
-	CTDB_NO_MEMORY(ctdb, pkt->data);
-
-	pkt->length = length2;
-
-	if (ctdb->daemon.queue == NULL) {
-		EVENT_FD_WRITEABLE(ctdb->daemon.fde);
-	}
-
-	DLIST_ADD_END(ctdb->daemon.queue, pkt, struct ctdbd_queue_packet *);
-
-	return 0;
+	return ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)hdr, hdr->length);
 }
 
 
