@@ -12,7 +12,6 @@ strlcpy
 strlcat
 mktime
 rename
-innetgr
 initgroups
 memmove
 strdup
@@ -89,5 +88,4 @@ stdbool.h
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
-setnetgrent, getnetgrent, endnetgrent (for innetgr)
 mktemp (for mkstemp and mkdtemp)
