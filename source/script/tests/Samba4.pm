@@ -16,10 +16,14 @@ sub new($$$$) {
 	return $self;
 }
 
-sub slapd_start($$$)
+sub slapd_start($$)
 {
     my $count = 0;
-	my ($self, $conf, $uri) = @_;
+	my ($self, $env_vars) = @_;
+
+	my $conf = $env_vars->{SLAPD_CONF};
+	my $uri = $env_vars->{LDAP_URI};
+
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
@@ -33,7 +37,7 @@ sub slapd_start($$$)
 	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
 	        $count++;
 		if ($count > 10) {
-		    $self->slapd_stop();
+		    $self->slapd_stop($env_vars);
 		    return 0;
 		}
 		sleep(1);
@@ -41,13 +45,13 @@ sub slapd_start($$$)
 	return 1;
 }
 
-sub slapd_stop($)
+sub slapd_stop($$)
 {
-	my ($self) = @_;
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
-		system("$ENV{LDAPDIR}/slapd-samba4/stop-slapd");
+	my ($self, $envvars) = @_;
+	if (defined($envvars->{FEDORA_DS_PREFIX})) {
+		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
 	} else {
-		open(IN, "<$ENV{PIDDIR}/slapd.pid") or 
+		open(IN, "<$envvars->{PIDDIR}/slapd.pid") or 
 			die("unable to open slapd pid file");
 		kill 9, <IN>;
 		close(IN);
@@ -61,7 +65,7 @@ sub check_or_start($$$$)
 
 	# Start slapd before smbd
 	if ($self->{ldap}) {
-		$self->slapd_start($ENV{SLAPD_CONF}, $ENV{LDAP_URI}) or 
+		$self->slapd_start($env_vars) or 
 			die("couldn't start slapd");
 
 		print "LDAP PROVISIONING...";
@@ -132,9 +136,9 @@ sub wait_for_start($$)
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 }
 
-sub provision($$$)
+sub provision($$)
 {
-	my ($self, $environment, $prefix) = @_;
+	my ($self, $prefix) = @_;
 	my %ret = ();
 	print "PROVISIONING...";
 	open(IN, "$RealBin/mktestdc.sh $prefix|") or die("Unable to setup");
@@ -156,9 +160,9 @@ sub provision_ldap($)
 		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}");
 }
 
-sub stop($)
+sub teardown_env($$)
 {
-	my ($self) = @_;
+	my ($self, $envvars) = @_;
 
 	close(DATA);
 
@@ -166,22 +170,33 @@ sub stop($)
 
 	my $failed = $? >> 8;
 
-	if (-f "$ENV{PIDDIR}/smbd.pid" ) {
-		open(IN, "<$ENV{PIDDIR}/smbd.pid") or die("unable to open smbd pid file");
+	if (-f "$envvars->{PIDDIR}/smbd.pid" ) {
+		open(IN, "<$envvars->{PIDDIR}/smbd.pid") or die("unable to open smbd pid file");
 		kill 9, <IN>;
 		close(IN);
 	}
 
-	$self->slapd_stop() if ($self->{ldap});
+	$self->slapd_stop($envvars) if ($self->{ldap});
 
 	return $failed;
 }
 
-sub setup_env($$$)
+sub setup_env($$$$)
 {
-	my ($self, $name, $path, $socket_wrapper_dir) = @_;
+	my ($self, $envname, $path, $socket_wrapper_dir) = @_;
+	
+	if ($envname eq "dc") {
+		return $self->setup_dc("$path/dc", $socket_wrapper_dir);
+	} else {
+		die("Samba4 can't provide environment $envname");
+	}
+}
 
-	my $env = $self->provision($name, $path);
+sub setup_dc($$$)
+{
+	my ($self, $path, $socket_wrapper_dir) = @_;
+
+	my $env = $self->provision($path);
 
 	$self->check_or_start($env, $socket_wrapper_dir, 
 		($ENV{SMBD_MAX_TIME} or 5400));
@@ -189,6 +204,11 @@ sub setup_env($$$)
 	$self->wait_for_start($env);
 
 	return $env;
+}
+
+sub stop($)
+{
+	my ($self) = @_;
 }
 
 1;

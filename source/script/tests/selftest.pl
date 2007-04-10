@@ -132,6 +132,7 @@ my $opt_verbose = 0;
 my $opt_testenv = 0;
 my $opt_ldap = undef;
 my $opt_analyse_cmd = undef;
+my $opt_resetup_env = undef;
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -233,7 +234,7 @@ sub run_test_plain($$$$)
 	my ($name, $cmd, $i, $totalsuites) = @_;
 	my $err = "";
 	if ($#$suitesfailed+1 > 0) { $err = ", ".($#$suitesfailed+1)." errors"; }
-	printf "[$i/$totalsuites in " . (time() - $start)."s$err] $name\n";
+	print "[$i/$totalsuites in " . (time() - $start)."s$err] $name\n";
 	open(RESULT, "$cmd 2>&1|");
 	my $expected_ret = 1;
 	my $open_tests = {};
@@ -335,6 +336,7 @@ my $result = GetOptions (
 		'testenv' => \$opt_testenv,
 		'ldap' => \$opt_ldap,
 		'analyse-cmd=s' => \$opt_analyse_cmd,
+		'resetup-environment' => \$opt_resetup_env,
 	    );
 
 exit(1) if (not $result);
@@ -434,28 +436,44 @@ my $interfaces = join(',', ("127.0.0.6/8",
 						 "127.0.0.10/8",
 						 "127.0.0.11/8"));
 
-my $testenv_vars = $target->setup_env("dc", "$prefix/dc", $socket_wrapper_dir);
-
 my $conffile = "$prefix/client.conf";
-my $abs_srcdir = cwd();
-open(CF, ">$conffile");
-print CF "[global]\n";
-if (defined($ENV{VALGRIND})) {
-	print CF "\ticonv:native = true\n";
-} else {
-	print CF "\ticonv:native = false\n";
-}
-print CF 
+
+sub write_clientconf($$)
+{
+	my ($conffile, $vars) = @_;
+
+	my $abs_srcdir = cwd();
+
+	open(CF, ">$conffile");
+	print CF "[global]\n";
+	if (defined($ENV{VALGRIND})) {
+		print CF "\ticonv:native = true\n";
+	} else {
+		print CF "\ticonv:native = false\n";
+	}
+	print CF 
 "	netbios name = localtest
 	netbios aliases = localhost
-	workgroup = $testenv_vars->{DOMAIN}
-	realm = $testenv_vars->{REALM}
-	pid directory = $testenv_vars->{PIDDIR}
-	ncalrpc dir = $testenv_vars->{NCALRPCDIR}
+";
+	if (defined($vars->{DOMAIN})) {
+		print CF "\tworkgroup = $vars->{DOMAIN}\n";
+	}
+	if (defined($vars->{REALM})) {
+		print CF "\trealm = $vars->{REALM}\n";
+	}
+	if (defined($vars->{PIDDIR})) {
+		print CF "\tpid directory = $vars->{PIDDIR}\n";
+	}
+	if (defined($vars->{NCALRPCDIR})) {
+		print CF "\tncalrpc dir = $vars->{NCALRPCDIR}\n";
+	}
+	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
+		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
+	}
+	print CF "
 	js include = $abs_srcdir/scripting/libjs
-	winbindd socket directory = $testenv_vars->{WINBINDD_SOCKET_DIR}
 	name resolve order = bcast
-	interfaces = 127.0.0.1/8
+	interfaces = $interfaces
 	panic action = $abs_srcdir/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
@@ -465,10 +483,11 @@ print CF
 	torture:basedir = ./st
 	gensec:require_pac = true
 ";
-close(CF);
+	close(CF);
+}
+
 
 my @torture_options = ();
-push (@torture_options, "--option=interfaces=$interfaces");
 push (@torture_options, "--configfile=$conffile");
 # ensure any one smbtorture call doesn't run too long
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
@@ -480,14 +499,11 @@ push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
 $ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
 print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 
-foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME") {
-	$ENV{$_} = $testenv_vars->{$_};
-}
-
 my @todo = ();
 
 my $testsdir = "$srcdir/script/tests";
 $ENV{CONFIGURATION} = "--configfile=$conffile";
+
 
 if ($opt_quick) {
 	open(IN, "$testsdir/tests_quick.sh|");
@@ -514,14 +530,44 @@ my $suitestotal = $#todo + 1;
 my $i = 0;
 $| = 1;
 
-# The Kerberos tests fail if this variable is set.
-delete $ENV{DOMAIN};
+my %running_envs = ();
 
-$ENV{KRB5_CONFIG} = $testenv_vars->{KRB5_CONFIG};
+sub setup_env($)
+{
+	my ($envname) = @_;
 
+	my $testenv_vars;
+	if (defined($running_envs{$envname})) {
+		$testenv_vars = $running_envs{$envname};
+	} elsif ($envname eq "none") {
+		$testenv_vars = {};
+	} else {
+		$testenv_vars = $target->setup_env($envname, $prefix, $socket_wrapper_dir);
+	}
+	write_clientconf($conffile, $testenv_vars);
+	foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME", 
+			 "KRB5_CONFIG") {
+		if (defined($testenv_vars->{$_})) {
+			$ENV{$_} = $testenv_vars->{$_};
+		} else {
+			delete $ENV{$_};
+		}
+	}
+
+	$running_envs{$envname} = $testenv_vars;
+	return $testenv_vars;
+}
+
+sub teardown_env($)
+{
+	my ($envname) = @_;
+	$target->teardown_env($running_envs{$envname});
+	delete $running_envs{$envname};
+}
 SocketWrapper::set_default_iface(6);
 
 if ($opt_testenv) {
+	my $testenv_vars = setup_env("dc");
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
 	my $term = ($ENV{TERM} or "xterm");
 	system("$term -e 'echo -e \"Welcome to the Samba4 Test environment
@@ -533,6 +579,7 @@ TORTURE_OPTIONS=\$TORTURE_OPTIONS
 CONFIGURATION=\$CONFIGURATION
 SERVER=\$SERVER
 NETBIOSNAME=\$NETBIOSNAME\" && bash'");
+	teardown_env("dc");
 } else {
 	foreach (@todo) {
 		$i++;
@@ -547,7 +594,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 			next;
 		}
 
-		# $target->setup_env($envname, "$prefix/$envname", $socket_wrapper_dir);
+		setup_env($envname);
 
 		if ($from_build_farm) {
 			run_test_buildfarm($name, $cmd, $i, $suitestotal);
@@ -558,12 +605,16 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
 		}
+
+		teardown_env($envname) if ($opt_resetup_env);
 	}
 }
 
 print "\n";
 
-my $failed = $target->stop();
+teardown_env($_) foreach (keys %running_envs);
+
+$target->stop();
 
 my $end = time();
 my $duration = ($end-$start);
@@ -586,6 +637,8 @@ if ($numfailed == 0) {
 	}
 }
 print "DURATION: $duration seconds\n";
+
+my $failed = 0;
 
 # if there were any valgrind failures, show them
 foreach (<$prefix/valgrind.log*>) {

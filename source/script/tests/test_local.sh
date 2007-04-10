@@ -8,13 +8,6 @@ if [ `uname` = "Linux" ]; then
     local_tests="$local_tests LOCAL-ICONV"
 fi
 
-if [ $# -lt 0 ]; then
-cat <<EOF
-Usage: test_local.sh
-EOF
-exit 1;
-fi
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 

@@ -6,19 +6,6 @@ ncacn_np_tests="NET-API-LOOKUP NET-API-LOOKUPHOST NET-API-LOOKUPPDC NET-API-RPCC
 ncalrpc_tests="NET-API-RPCCONN-SRV NET-API-RPCCONN-DC NET-API-RPCCONN-DCINFO NET-API-LISTSHARES NET-API-CREATEUSER NET-API-DELETEUSER NET-USERINFO NET-USERADD NET-USERDEL NET-USERMOD NET-API-LOOKUPNAME NET-API-USERINFO NET-API-USERLIST NET-API-DOMOPENLSA NET-API-DOMCLOSELSA NET-API-DOMOPENSAMR NET-API-DOMCLOSESAMR"
 ncacn_ip_tcp_tests="NET-API-LOOKUP NET-API-LOOKUPHOST NET-API-LOOKUPPDC NET-API-RPCCONN-SRV NET-API-RPCCONN-DC NET-API-RPCCONN-DCINFO NET-API-LISTSHARES NET-API-CREATEUSER NET-API-DELETEUSER NET-API-MODIFYUSER"
 
-if [ $# -lt 4 ]; then
-cat <<EOF
-Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
-EOF
-exit 1;
-fi
-
-server="$1"
-username="$2"
-password="$3"
-domain="$4"
-shift 4
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
@@ -31,7 +18,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
    done
  done
 done
