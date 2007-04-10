@@ -184,7 +184,7 @@ int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
    ctdb daemon what its local identifier is.
    when in non-daemon mode this is a noop.
  */
-int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t id);
+int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t messenger_id);
  
 
 #endif

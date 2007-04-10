@@ -58,7 +58,7 @@ static void set_non_blocking(int fd)
 struct ctdb_client {
 	struct ctdb_context *ctdb;
 	int fd;
-	uint32_t id;
+	uint32_t messenger_id;
 	struct ctdb_queue *queue;
 };
 
@@ -145,7 +145,7 @@ static void client_request_call(struct ctdb_client *client, struct ctdb_req_call
  */
 static void client_register_message(struct ctdb_client *client, struct ctdb_register_call *r)
 {
-	client->id = *((uint32_t *)r->data);
+	client->messenger_id = *((uint32_t *)r->data);
 }
 
 
@@ -589,7 +589,7 @@ struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct 
 	return state;
 }
 
-int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t id)
+int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t messenger_id)
 {
 	int res;
 	struct ctdb_register_call rc;
@@ -608,7 +608,7 @@ int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t id)
 	rc.hdr.ctdb_version = CTDB_VERSION;
 	rc.hdr.operation = CTDB_REGISTER_CALL;
 	rc.datalen=4;
-	*((uint32_t *)rc.data) = id;
+	*((uint32_t *)rc.data) = messenger_id;
 	rc.hdr.length = offsetof(struct ctdb_register_call, data) + rc.datalen;
 
 /*XXX need to handle the case of partial writes    logic for partial writes in tcp/ctdb_tcp_node_write */
