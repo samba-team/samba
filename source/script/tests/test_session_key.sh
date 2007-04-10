@@ -1,19 +1,5 @@
 #!/bin/sh
 
-if [ $# -lt 4 ]; then
-cat <<EOF
-Usage: test_session_key.sh SERVER USERNAME PASSWORD DOMAIN NETBIOSNAME
-EOF
-exit 1;
-fi
-
-server="$1"
-username="$2"
-password="$3"
-domain="$4"
-netbios_name="$5"
-shift 5
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
@@ -36,17 +22,17 @@ for bindoptions in bigendian seal; do
         "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
         "-k no --option=usespnego=no"; do
    name="RPC-SECRETS on $transport with $bindoptions with NTLM2:$ntlm2 KEYEX:$keyexchange LM_KEY:$lm_key $ntlmoptions"
-   plantest "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" --option=ntlmssp_client:keyexchange=$keyexchange --option=ntlmssp_client:ntlm2=$ntlm2 --option=ntlmssp_client:lm_key=$lm_key $ntlmoptions -U"$username"%"$password" -W $domain --option=gensec:target_hostname=$netbios_name RPC-SECRETS "$*"
+   plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" --option=ntlmssp_client:keyexchange=$keyexchange --option=ntlmssp_client:ntlm2=$ntlm2 --option=ntlmssp_client:lm_key=$lm_key $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-SECRETS "$*"
   done
  done
  done
  done
  name="RPC-SECRETS on $transport with $bindoptions with Kerberos"
- plantest "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -k yes -U"$username"%"$password" -W $domain "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*"
+ plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
  name="RPC-SECRETS on $transport with $bindoptions with Kerberos - use target principal"
- plantest "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -k yes -U"$username"%"$password" -W $domain "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*"
+ plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
 done
 name="RPC-SECRETS on $transport with Kerberos - use Samba3 style login"
- plantest "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server" -k yes -U"$username"%"$password" -W $domain "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*"
+ plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
 name="RPC-SECRETS on $transport with Kerberos - use Samba3 style login, use target principal"
- plantest "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server" -k yes -U"$username"%"$password" -W $domain "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*"
+ plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"

@@ -9,19 +9,6 @@ slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS RPC
 slow_ncalrpc_tests="RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS RPC-COUNTCALLS RPC-CRACKNAMES"
 slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS RPC-COUNTCALLS RPC-CRACKNAMES"
 
-if [ $# -lt 4 ]; then
-cat <<EOF
-Usage: test_rpc.sh SERVER USERNAME PASSWORD DOMAIN
-EOF
-exit 1;
-fi
-
-server="$1"
-username="$2"
-password="$3"
-domain="$4"
-shift 4
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
@@ -34,7 +21,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -48,7 +35,7 @@ for bindoptions in connect $VALIDATE ; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" rpc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done

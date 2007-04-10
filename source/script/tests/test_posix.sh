@@ -3,18 +3,6 @@
 # this runs the file serving tests that are expected to pass with the
 # current posix ntvfs backend
 
-if [ $# -lt 3 ]; then
-cat <<EOF
-Usage: test_posix.sh UNC USERNAME PASSWORD <first> <smbtorture args>
-EOF
-exit 1;
-fi
-
-unc="$1"
-username="$2"
-password="$3"
-start="$4"
-shift 4
 ADDARGS="$*"
 
 incdir=`dirname $0`
@@ -30,5 +18,5 @@ for t in $tests; do
 	continue;
     fi
     start=""
-    plantest "$t" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    plantest "$t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done

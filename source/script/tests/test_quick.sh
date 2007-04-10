@@ -1,18 +1,6 @@
 #!/bin/sh
 # run a quick set of filesystem tests
 
-if [ $# -lt 3 ]; then
-cat <<EOF
-Usage: test_quick.sh UNC USERNAME PASSWORD <first> <smbtorture args>
-EOF
-exit 1;
-fi
-
-unc="$1"
-username="$2"
-password="$3"
-start="$4"
-shift 4
 ADDARGS="$*"
 
 incdir=`dirname $0`
@@ -26,10 +14,6 @@ tests="$tests RAW-UNLINK RAW-READ RAW-CLOSE RAW-IOCTL RAW-RENAME"
 tests="$tests RAW-EAS RAW-STREAMS"
 
 for t in $tests; do
-    if [ ! -z "$start" -a "$start" != $t ]; then
-	continue;
-    fi
-    start=""
     name="$t"
-    plantest "$name" base $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    plantest "$name" base $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done

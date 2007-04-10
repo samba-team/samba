@@ -1,31 +1,18 @@
 #!/bin/sh
 
-if [ $# -lt 4 ]; then
-cat <<EOF
-Usage: test_binding_string.sh SERVER USERNAME PASSWORD DOMAIN
-EOF
-exit 1;
-fi
-
-server="$1"
-username="$2"
-password="$3"
-domain="$4"
-shift 4
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-for I in "ncacn_np:$server" \
-		 "ncacn_ip_tcp:$server" \
-		 "ncacn_np:$server[rpcecho]"  \
-		 "ncacn_np:$server[/pipe/rpcecho]" \
-		 "ncacn_np:$server[/pipe/rpcecho,sign,seal]" \
-		 "ncacn_np:$server[,sign]" \
-		 "ncacn_ip_tcp:$server[,sign]" \
+for I in "ncacn_np:\$SERVER" \
+		 "ncacn_ip_tcp:\$SERVER" \
+		 "ncacn_np:\$SERVER[rpcecho]"  \
+		 "ncacn_np:\$SERVER[/pipe/rpcecho]" \
+		 "ncacn_np:\$SERVER[/pipe/rpcecho,sign,seal]" \
+		 "ncacn_np:\$SERVER[,sign]" \
+		 "ncacn_ip_tcp:\$SERVER[,sign]" \
 		 "ncalrpc:" \
-		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$server" \
-		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$server" 
+		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:\$SERVER" \
+		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:\$SERVER" 
 do
-	plantest "$I" rpc bin/smbtorture $TORTURE_OPTIONS "$I" -U"$username"%"$password" -W $domain --option=torture:quick=yes RPC-ECHO "$*"
+	plantest "$I" dc bin/smbtorture $TORTURE_OPTIONS "$I" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" --option=torture:quick=yes RPC-ECHO "$*"
 done

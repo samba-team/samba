@@ -99,7 +99,7 @@ rm -f $MODCONF
 touch $MODCONF
 
 slaptest -u -f $SLAPD_CONF >&2 || {
-    echo "enabling slapd modules" >&2
+    # echo "enabling slapd modules" >&2
     cat > $MODCONF <<EOF 
 modulepath	/usr/lib/ldap
 moduleload	back_bdb

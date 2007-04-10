@@ -2,23 +2,19 @@
 
 # this runs tests that interact directly with the command-line tools rather than using the API
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 1 ]; then
 cat <<EOF
-Usage: test_blackbox.sh SERVER USERNAME PASSWORD DOMAIN PREFIX [...]
+Usage: test_blackbox.sh PREFIX [...]
 EOF
 exit 1;
 fi
 
-SERVER=$1
-USERNAME=$2
-PASSWORD=$3
-DOMAIN=$4
-PREFIX=$5
-shift 5
-ADDARGS="$@"
+PREFIX=$1
+shift 1
+ADDARGS="$*"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-plantest "blackbox.smbclient" smb $incdir/../../../testprogs/blackbox/test_smbclient.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$PREFIX" "$ADDARGS"
-plantest "blackbox.cifsdd" smb $incdir/../../../testprogs/blackbox/test_cifsdd.sh "$SERVER" "$USERNAME" "$PASSWORD" "$DOMAIN" "$ADDARGS"
+plantest "blackbox.smbclient" dc $incdir/../../../testprogs/blackbox/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
+plantest "blackbox.cifsdd" dc $incdir/../../../testprogs/blackbox/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"
