@@ -259,7 +259,7 @@ NTSTATUS idmap_init(void)
 	char *compat_backend = NULL;
 	char *compat_params = NULL;
 	const char **dom_list = NULL;
-	char *alloc_backend;
+	char *alloc_backend = NULL;
 	BOOL default_already_defined = False;
 	BOOL pri_dom_is_in_list = False;
 	int compat = 0;
@@ -561,11 +561,11 @@ NTSTATUS idmap_init(void)
 	}
 
 
-	/***************************
-	 * initialize alloc module
-	 */
-	DEBUG(1, ("Initializing idmap alloc module\n"));
+	/* Initialize alloc module */
 
+	DEBUG(3, ("Initializing idmap alloc module\n"));
+
+	alloc_backend = NULL;
 	if (compat) {
 		alloc_backend = talloc_strdup(idmap_ctx, compat_backend);
 	} else {
@@ -573,11 +573,10 @@ NTSTATUS idmap_init(void)
 		
 		if (ab && (ab[0] != '\0')) {
 			alloc_backend = talloc_strdup(idmap_ctx, lp_idmap_alloc_backend());
-		} else {
-			alloc_backend = talloc_strdup(idmap_ctx, "tdb");
 		}
 	}
-	IDMAP_CHECK_ALLOC(alloc_backend);
+
+	if ( alloc_backend ) {
 
 	alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
 	if ( ! alloc_methods) {
@@ -602,6 +601,7 @@ NTSTATUS idmap_init(void)
 			ret = NT_STATUS_OK;
 		else
 			ret = NT_STATUS_UNSUCCESSFUL;
+	}
 	}
 
 	/* cleanpu temporary strings */
