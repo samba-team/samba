@@ -25,22 +25,12 @@ struct ctdb_tcp {
 };
 
 /*
-  incoming packet structure - only used when we get a partial packet
-  on read
-*/
-struct ctdb_tcp_partial {
-	uint8_t *data;
-	uint32_t length;
-};
-
-
-/*
   state associated with an incoming connection
 */
 struct ctdb_incoming {
 	struct ctdb_context *ctdb;
 	int fd;
-	struct ctdb_tcp_partial partial;
+	struct ctdb_partial partial;
 };
 
 /*

@@ -340,8 +340,6 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 
 int ctdb_start(struct ctdb_context *ctdb)
 {
-	int res;
-
 	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
 		return ctdbd_start(ctdb);
 	}

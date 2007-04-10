@@ -98,6 +98,38 @@ void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde,
 }
 
 
+
+static void tcp_read_cb(uint8_t *data, int cnt, void *args)
+{
+	struct ctdb_incoming *in = talloc_get_type(args, struct ctdb_incoming);
+	struct ctdb_req_header *hdr;
+
+	if (cnt < sizeof(*hdr)) {
+		ctdb_set_error(in->ctdb, "Bad packet length %d\n", cnt);
+		return;
+	}
+	hdr = (struct ctdb_req_header *)data;
+	if (cnt != hdr->length) {
+		ctdb_set_error(in->ctdb, "Bad header length %d expected %d\n", 
+			       hdr->length, cnt);
+		return;
+	}
+
+	if (hdr->ctdb_magic != CTDB_MAGIC) {
+		ctdb_set_error(in->ctdb, "Non CTDB packet rejected\n");
+		return;
+	}
+
+	if (hdr->ctdb_version != CTDB_VERSION) {
+		ctdb_set_error(in->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		return;
+	}
+
+	/* most common case - we got a whole packet in one go
+	   tell the ctdb layer above that we have a packet */
+	in->ctdb->upcalls->recv_pkt(in->ctdb, data, cnt);
+}
+
 /*
   called when an incoming connection is readable
 */
@@ -105,85 +137,8 @@ void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde,
 			    uint16_t flags, void *private)
 {
 	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
-	int num_ready = 0;
-	ssize_t nread;
-	uint8_t *data, *data_base;
 
-	if (ioctl(in->fd, FIONREAD, &num_ready) != 0 ||
-	    num_ready == 0) {
-		/* we've lost the link from another node. We don't
-		   notify the upper layers, as we only want to trigger
-		   a full node reorganisation when a send fails - that
-		   allows nodes to restart without penalty as long as
-		   the network is idle */
-		talloc_free(in);
-		return;
-	}
-
-	in->partial.data = talloc_realloc_size(in, in->partial.data, 
-					       num_ready + in->partial.length);
-	if (in->partial.data == NULL) {
-		/* not much we can do except drop the socket */
-		talloc_free(in);
-		return;
-	}
-
-	nread = read(in->fd, in->partial.data+in->partial.length, num_ready);
-	if (nread <= 0) {
-		/* the connection must be dead */
-		talloc_free(in);
-		return;
-	}
-
-	data = in->partial.data;
-	nread += in->partial.length;
-
-	in->partial.data = NULL;
-	in->partial.length = 0;
-
-	if (nread >= 4 && *(uint32_t *)data == nread) {
-		/* most common case - we got a whole packet in one go
-		   tell the ctdb layer above that we have a packet */
-		in->ctdb->upcalls->recv_pkt(in->ctdb, data, nread);
-		return;
-	}
-
-	data_base = data;
-
-	while (nread >= 4 && *(uint32_t *)data <= nread) {
-		/* we have at least one packet */
-		uint8_t *d2;
-		uint32_t len;
-		len = *(uint32_t *)data;
-		d2 = talloc_memdup(in, data, len);
-		if (d2 == NULL) {
-			/* sigh */
-			talloc_free(in);
-			return;
-		}
-		in->ctdb->upcalls->recv_pkt(in->ctdb, d2, len);
-		data += len;
-		nread -= len;		
-	}
-
-	if (nread > 0) {
-		/* we have only part of a packet */
-		if (data_base == data) {
-			in->partial.data = data;
-			in->partial.length = nread;
-		} else {
-			in->partial.data = talloc_memdup(in, data, nread);
-			if (in->partial.data == NULL) {
-				talloc_free(in);
-				return;
-			}
-			in->partial.length = nread;
-			talloc_free(data_base);
-		}
-		return;
-	}
-
-	talloc_free(data_base);
+	ctdb_read_pdu(in->fd, in, &in->partial, tcp_read_cb, in);
 }
 
 /*
