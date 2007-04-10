@@ -597,8 +597,7 @@ int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    int fd, SMB_ACL_T theacl)
 {
-	errno = ENOTSUP;
-	return -1;
+	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name, SMB_ACL_TYPE_ACCESS, theacl);
 }
 
 int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
