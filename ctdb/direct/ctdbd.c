@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include <signal.h>
+#include "system/wait.h"
 
 static void block_signal(int signum)
 {
@@ -129,11 +129,9 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	while (1) {
-		event_loop_once(ev);
-	}
+	event_loop_wait(ev);
        
 	/* shut it down */
-	talloc_free(ctdb);
+	talloc_free(ev);
 	return 0;
 }
