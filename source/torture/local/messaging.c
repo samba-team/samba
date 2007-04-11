@@ -68,7 +68,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	uint32_t msg_ping, msg_exit;
 	TALLOC_CTX *mem_ctx = tctx;
 
-	lp_set_cmdline("lock dir", "lockdir.tmp");
+	lp_set_cmdline("pid directory", "piddir.tmp");
 
 	ev = event_context_init(mem_ctx);
 
