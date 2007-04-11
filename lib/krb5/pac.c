@@ -56,14 +56,15 @@ struct krb5_pac {
     struct PAC_INFO_BUFFER *logon_name;
 };
 
-#define PAC_ALIGNMENT		8
+#define PAC_ALIGNMENT			8
 
-#define PACTYPE_SIZE		8
-#define PAC_INFO_BUFFER_SIZE	16
+#define PACTYPE_SIZE			8
+#define PAC_INFO_BUFFER_SIZE		16
 
-#define PAC_SERVER_CHECKSUM	6
-#define PAC_PRIVSVR_CHECKSUM	7
-#define PAC_LOGON_NAME		10
+#define PAC_SERVER_CHECKSUM		6
+#define PAC_PRIVSVR_CHECKSUM		7
+#define PAC_LOGON_NAME			10
+#define PAC_CONSTRAINED_DELEGATION	11
 
 #define CHECK(r,f,l)						\
 	do {							\
