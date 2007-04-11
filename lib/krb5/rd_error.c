@@ -45,8 +45,10 @@ krb5_rd_error(krb5_context context,
     krb5_error_code ret;
 
     ret = decode_KRB_ERROR(msg->data, msg->length, result, &len);
-    if(ret)
+    if(ret) {
+	krb5_clear_error_string(context);
 	return ret;
+    }
     result->error_code += KRB5KDC_ERR_NONE;
     return 0;
 }

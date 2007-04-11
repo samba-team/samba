@@ -79,8 +79,10 @@ krb5_rd_cred(krb5_context context,
 
     ret = decode_KRB_CRED(in_data->data, in_data->length, 
 			  &cred, &len);
-    if(ret)
+    if(ret) {
+	krb5_clear_error_string(context);
 	return ret;
+    }
 
     if (cred.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
