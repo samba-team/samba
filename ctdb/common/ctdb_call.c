@@ -547,12 +547,13 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 
 
 /*
-  make a remote ctdb call - async send
+  make a remote ctdb call - async send. Called in daemon context.
 
   This constructs a ctdb_call request and queues it for processing. 
   This call never blocks.
 */
-struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
+static struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
+						     struct ctdb_call *call)
 {
 	uint32_t len;
 	struct ctdb_call_state *state;
@@ -560,10 +561,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	struct ctdb_ltdb_header header;
 	TDB_DATA data;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-
-	if (ctdb_db->ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
-		return ctdbd_call_send(ctdb_db, call);
-	}
 
 	/*
 	  if we are the dmaster for this key then we don't need to
@@ -623,20 +620,30 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 	return state;
 }
 
+/*
+  make a remote ctdb call - async send
+
+  This constructs a ctdb_call request and queues it for processing. 
+  This call never blocks.
+*/
+struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
+{
+	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_call_send(ctdb_db, call);
+	} else {
+		return ctdb_daemon_call_send(ctdb_db, call);
+	}
+}
 
 /*
-  make a remote ctdb call - async recv. 
+  make a remote ctdb call - async recv - called in daemon context
 
   This is called when the program wants to wait for a ctdb_call to complete and get the 
   results. This call will block unless the call has already completed.
 */
-int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
+static int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	struct ctdb_record_handle *rec;
-
-	if (state->ctdb_db->ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
-		return ctdbd_call_recv(state, call);
-	}
 
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->node->ctdb->ev);
@@ -669,6 +676,22 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 	call->status = state->call.status;
 	talloc_free(state);
 	return 0;
+}
+
+
+/*
+  make a remote ctdb call - async recv. 
+
+  This is called when the program wants to wait for a ctdb_call to complete and get the 
+  results. This call will block unless the call has already completed.
+*/
+int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
+{
+	if (state->ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_call_recv(state, call);
+	} else {
+		return ctdb_daemon_call_recv(state, call);
+	}
 }
 
 /*

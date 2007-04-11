@@ -291,10 +291,10 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
-
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
+
+	ctdb_set_message_handler(ctdb, ring_message_handler, 0, &msg_count);
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */

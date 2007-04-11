@@ -153,7 +153,7 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid, 
 				  TDB_DATA data, void *);
 int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     void *private);
+			     uint32_t srvid, void *private);
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
