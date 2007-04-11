@@ -45,6 +45,9 @@ mips-sgi-irix6.[[5-9]])  # maybe works for earlier versions too
 	native_pthread_support=yes
 	PTHREADS_LIBS="-lpthread"
 	;;
+*-*-darwin*)
+	native_pthread_support=yes
+	;;
 *)
 	native_pthread_support=no
 	;;
