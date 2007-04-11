@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include <signal.h>
+#include "system/wait.h"
 
 static void block_signal(int signum)
 {
