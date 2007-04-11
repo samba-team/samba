@@ -223,6 +223,7 @@ sub run_test_buildfarm($$$$)
 	if ($ret == $expected_ret) {
 		print "TEST PASSED: $name\n";
 	} else {
+		push(@$suitesfailed, $name);
 		print "TEST FAILED: $name (status $ret)\n";
 	}
 	print "==========================================\n";
