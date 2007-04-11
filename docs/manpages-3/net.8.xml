@@ -1147,6 +1147,35 @@ and groups (Domain Users, Domain Admins, Domain Guests) on the ldap tree.
 </refsect2>
 
 <refsect2>
+<title>IDMAP DUMP &lt;output file&gt;</title>
+
+<para>
+Dumps the mappings in the specified output file.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP RESTORE [input file]</title>
+
+<para>
+Restore the mappings from the specified file or stdin.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP SECRET &lt;DOMAIN&gt;|ALLOC &lt;secret&gt;</title>
+
+<para>
+Store a secret for the sepcified domain, used primarily for domains
+that use idmap_ldap as a backend. In this case the secret is used
+as the password for the user DN used to bind to the ldap server.
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>USERSHARE</title>
 
 <para>Starting with version 3.0.23, a Samba server now supports the ability for
