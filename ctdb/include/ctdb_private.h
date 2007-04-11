@@ -199,14 +199,16 @@ struct ctdb_call_state {
   operation IDs
 */
 enum ctdb_operation {
-	CTDB_REQ_CALL         = 0,
-	CTDB_REPLY_CALL       = 1,
-	CTDB_REPLY_REDIRECT   = 2,
-	CTDB_REQ_DMASTER      = 3,
-	CTDB_REPLY_DMASTER    = 4,
-	CTDB_REPLY_ERROR      = 5,
-	CTDB_REQ_REGISTER     = 6,
-	CTDB_REQ_MESSAGE      = 7
+	CTDB_REQ_CALL           = 0,
+	CTDB_REPLY_CALL         = 1,
+	CTDB_REPLY_REDIRECT     = 2,
+	CTDB_REQ_DMASTER        = 3,
+	CTDB_REPLY_DMASTER      = 4,
+	CTDB_REPLY_ERROR        = 5,
+	CTDB_REQ_REGISTER       = 6,
+	CTDB_REQ_MESSAGE        = 7,
+	CTDB_REQ_CONNECT_WAIT   = 8,
+	CTDB_REPLY_CONNECT_WAIT = 9
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -279,6 +281,15 @@ struct ctdb_req_message {
 	uint32_t srvid;
 	uint32_t datalen;
 	uint8_t data[1];
+};
+
+struct ctdb_req_connect_wait {
+	struct ctdb_req_header hdr;
+};
+
+struct ctdb_reply_connect_wait {
+	struct ctdb_req_header hdr;
+	uint32_t num_connected;
 };
 
 /* internal prototypes */
@@ -381,5 +392,10 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint32_t srvid, TDB_DATA data);
 
+
+/*
+  wait for all nodes to be connected
+*/
+void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
 
 #endif

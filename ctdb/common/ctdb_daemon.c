@@ -76,6 +76,8 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 /*XXX cant use this since it returns an int	CTDB_NO_MEMORY(ctdb, r);*/
 	talloc_set_name_const(r, "req_message packet");
 
+	ZERO_STRUCT(*r);
+
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -107,6 +109,34 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 	}
 }
 
+
+/*
+  called when the daemon gets a connect wait request from a client
+ */
+static void daemon_request_connect_wait(struct ctdb_client *client, 
+					struct ctdb_req_connect_wait *c)
+{
+	struct ctdb_reply_connect_wait r;
+	int res;
+
+	/* first wait - in the daemon */
+	ctdb_daemon_connect_wait(client->ctdb);
+
+	/* now send the reply */
+	ZERO_STRUCT(r);
+
+	r.hdr.length     = sizeof(r);
+	r.hdr.ctdb_magic = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation = CTDB_REPLY_CONNECT_WAIT;
+	r.num_connected = client->ctdb->num_connected;
+	
+	res = ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
+	if (res != 0) {
+		printf("Failed to queue a connect wait response\n");
+		return;
+	}
+}
 
 /*
   destroy a ctdb_client
@@ -235,6 +265,10 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 		break;
 	case CTDB_REQ_MESSAGE:
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
+		break;
+
+	case CTDB_REQ_CONNECT_WAIT:
+		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
 		break;
 	}
 
