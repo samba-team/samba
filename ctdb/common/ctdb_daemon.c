@@ -59,6 +59,56 @@ struct ctdb_client {
 
 
 /*
+  message handler for when we are in daemon mode. This redirects the message
+  to the right client
+ */
+static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+				    TDB_DATA data, void *private)
+{
+	struct ctdb_client *client = talloc_get_type(private, struct ctdb_client);
+	struct ctdb_req_message *r;
+	int len;
+
+	/* construct a message to send to the client containing the data */
+	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	r = ctdbd_allocate_pkt(ctdb, len);
+	CTDB_NO_MEMORY(ctdb, r);
+	talloc_set_name_const(r, "req_message packet");
+
+	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REQ_MESSAGE;
+	r->srvid         = srvid;
+	r->datalen       = data.dsize;
+	memcpy(&r->data[0], data.dptr, data.dsize);
+	
+	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
+
+	talloc_free(r);
+	return 0;
+}
+					   
+
+/*
+  this is called when the ctdb daemon received a ctdb request to 
+  set the srvid from the client
+ */
+static void daemon_request_register_message_handler(struct ctdb_client *client, 
+						    struct ctdb_req_register *c)
+{
+	int res;
+	printf("XXX registering messaging handler %u in daemon\n", c->srvid);
+	res = ctdb_register_message_handler(client->ctdb, client, 
+					    c->srvid, daemon_message_handler, 
+					    client);
+	if (res != 0) {
+		printf("Failed to register handler %u in daemon\n", c->srvid);
+	}
+}
+
+
+/*
   destroy a ctdb_client
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
@@ -152,6 +202,10 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
 		break;
 
+	case CTDB_REQ_REGISTER:
+		daemon_request_register_message_handler(client, 
+							(struct ctdb_req_register *)hdr);
+		break;
 	}
 
 	talloc_free(data);

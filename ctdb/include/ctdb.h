@@ -180,11 +180,4 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
  */
 int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
 
-/* when running in daemon mode this function is used by a client to tell 
-   ctdb daemon what its local identifier is.
-   when in non-daemon mode this is a noop.
- */
-int ctdb_register_message_local_id(struct ctdb_context *ctdb, uint32_t messenger_id);
- 
-
 #endif

@@ -81,13 +81,35 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 }
 
 /*
-  setup handler for receipt of ctdb messages from ctdb_send_message()
-*/
-int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     uint32_t srvid, void *private)
+  when a client goes away, we need to remove its srvid handler from the list
+ */
+static int message_handler_destructor(struct ctdb_message_list *m)
 {
-	ctdb->message_handler = handler;
-	ctdb->message_private = private;
-	return 0;
+	DLIST_REMOVE(m->ctdb->message_list, m);
 }
 
+/*
+  setup handler for receipt of ctdb messages from ctdb_send_message()
+*/
+int ctdb_register_message_handler(struct ctdb_context *ctdb, 
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t srvid,
+				  ctdb_message_fn_t handler,
+				  void *private)
+{
+	struct ctdb_message_list *m;
+
+	m = talloc(mem_ctx, struct ctdb_message_list);
+	CTDB_NO_MEMORY(ctdb, m);
+
+	m->ctdb            = ctdb;
+	m->srvid           = srvid;
+	m->message_handler = handler;
+	m->message_private = private;
+	
+	DLIST_ADD(ctdb->message_list, m);
+
+	talloc_set_destructor(m, message_handler_destructor);
+
+	return 0;
+}

@@ -67,7 +67,15 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 
-	ctdb_reply_call(ctdb, hdr);
+	switch (hdr->operation) {
+	case CTDB_REPLY_CALL:
+		ctdb_reply_call(ctdb, hdr);
+		break;
+
+	case CTDB_REQ_MESSAGE:
+		ctdb_request_message(ctdb, hdr);
+		break;
+	}
 }
 
 /*
@@ -255,3 +263,51 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
 	ctdb_ltdb_unlock(ctdb_db, call->key);
 	return state;
 }
+
+
+
+/*
+  tell the daemon what messaging srvid we will use, and register the message
+  handler function in the client
+*/
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+				    ctdb_message_fn_t handler,
+				    void *private)
+				    
+{
+	struct ctdb_register_call c;
+	int res;
+
+	ZERO_STRUCT(c);
+
+	c.hdr.length       = sizeof(c);
+	c.hdr.ctdb_magic   = CTDB_MAGIC;
+	c.hdr.ctdb_version = CTDB_VERSION;
+	c.hdr.operation    = CTDB_REQ_REGISTER;
+	c.srvid            = srvid;
+
+	res = ctdb_client_queue_pkt(ctdb, &c.hdr);
+	if (res != 0) {
+		return res;
+	}
+
+	/* also need to register the handler with our ctdb structure */
+	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private);
+}
+
+
+
+/*
+  setup handler for receipt of ctdb messages from ctdb_send_message()
+*/
+int ctdb_set_message_handler(struct ctdb_context *ctdb, 
+			     uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private)
+{
+	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_set_message_handler(ctdb, srvid, handler, private);
+	}
+	return ctdb_daemon_set_message_handler(ctdb, srvid, handler, private);
+}
+
