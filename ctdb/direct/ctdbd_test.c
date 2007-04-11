@@ -110,9 +110,34 @@ int wait_for_cluster(int fd)
 }
 
 
+int send_a_message(int fd, int ourvnn, int vnn, int pid, TDB_DATA data)
+{
+	struct ctdb_req_message r;
+	int len, cnt;
+
+	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	r.hdr.length     = len;
+	r.hdr.ctdb_magic = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation  = CTDB_REQ_MESSAGE;
+	r.hdr.destnode   = vnn;
+	r.hdr.srcnode    = ourvnn;
+	r.hdr.reqid      = 0;
+	r.srvid          = pid;
+	r.datalen        = data.dsize;
+	
+	/* write header */
+	cnt=write(fd, &r, offsetof(struct ctdb_req_message, data));
+	/* write data */
+	if(data.dsize){
+	    cnt=write(fd, data.dptr, data.dsize);
+	}
+}
+
 int main(int argc, const char *argv[])
 {
-	int fd, pid, vnn;
+	int fd, pid, vnn, dstvnn, dstpid;
+	TDB_DATA message;
 
 	/* open the socket to talk to the local ctdb daemon */
 	fd=ux_socket_connect(CTDB_SOCKET);
@@ -137,6 +162,18 @@ int main(int argc, const char *argv[])
 	 */
 	vnn=wait_for_cluster(fd);
 	printf("our address is vnn:%d pid:%d  if someone wants to send us a message!\n",vnn,pid);
+
+
+	/* send a message to ourself */
+	dstvnn=vnn;
+	dstpid=pid;
+	message.dptr="Test message";
+	message.dsize=strlen(message.dptr)+1;
+	send_a_message(fd, vnn, dstvnn, dstpid, message);
+
+
+	/* wait for the message to come back */
+
 
 	return 0;
 }
