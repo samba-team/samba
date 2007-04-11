@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -208,6 +208,8 @@ find_etypelist(krb5_context context,
 			   adIfRelevant.val[0].ad_data.length,
 			   etypes,
 			   NULL);
+    if (ret)
+	krb5_clear_error_string(context);
 
     free_AD_IF_RELEVANT(&adIfRelevant);
 
