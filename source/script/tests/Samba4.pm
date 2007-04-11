@@ -27,7 +27,7 @@ sub slapd_start($$)
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$env_vars->{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d$env_vars->{FEDORA_DS_LOGLEVEL} -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
+	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d$env_vars->{FEDORA_DS_LOGLEVEL} -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
 	} else {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
@@ -48,7 +48,7 @@ sub slapd_start($$)
 sub slapd_stop($$)
 {
 	my ($self, $envvars) = @_;
-	if (defined($envvars->{FEDORA_DS_PREFIX})) {
+	if (defined($ENV{FEDORA_DS_PREFIX})) {
 		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
 	} else {
 		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
