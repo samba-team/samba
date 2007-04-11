@@ -475,6 +475,9 @@ sub write_clientconf($$)
 	if (defined($vars->{NCALRPCDIR})) {
 		print CF "\tncalrpc dir = $vars->{NCALRPCDIR}\n";
 	}
+	if (defined($vars->{PIDDIR})) {
+		print CF "\tpid directory = $vars->{PIDDIR}\n";
+	}
 	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
