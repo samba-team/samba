@@ -55,7 +55,7 @@
 
 	<programlisting>
 	[global]
-	    idmap domain = MAIN TRUSTED1
+	    idmap domains = MAIN TRUSTED1
 
 	    idmap config MAIN:backend      = rid
 	    idmap config MAIN:base_rid     = 1000
