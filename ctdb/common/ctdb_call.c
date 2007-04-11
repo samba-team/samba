@@ -630,9 +630,8 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
 {
 	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
 		return ctdb_client_call_send(ctdb_db, call);
-	} else {
-		return ctdb_daemon_call_send(ctdb_db, call);
 	}
+	return ctdb_daemon_call_send(ctdb_db, call);
 }
 
 /*
@@ -689,9 +688,8 @@ int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	if (state->ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
 		return ctdb_client_call_recv(state, call);
-	} else {
-		return ctdb_daemon_call_recv(state, call);
 	}
+	return ctdb_daemon_call_recv(state, call);
 }
 
 /*

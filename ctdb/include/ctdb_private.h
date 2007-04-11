@@ -97,6 +97,16 @@ struct ctdb_upcalls {
 	void (*node_connected)(struct ctdb_node *);
 };
 
+/* list of message handlers - needs to be changed to a more efficient data
+   structure so we can find a message handler given a srvid quickly */
+struct ctdb_message_list {
+	struct ctdb_context *ctdb;
+	struct ctdb_message_list *next, *prev;
+	uint32_t srvid;
+	ctdb_message_fn_t message_handler;
+	void *message_private;
+};
+
 /* additional data required for the daemon mode */
 struct ctdb_daemon_data {
 	int sd;
@@ -120,9 +130,8 @@ struct ctdb_context {
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
 	unsigned max_lacount;
-	ctdb_message_fn_t message_handler;
-	void *message_private;
 	struct ctdb_db_context *db_list;
+	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
 };
 
@@ -196,7 +205,7 @@ enum ctdb_operation {
 	CTDB_REQ_DMASTER      = 3,
 	CTDB_REPLY_DMASTER    = 4,
 	CTDB_REPLY_ERROR      = 5,
-	CTDB_REGISTER_CALL    = 6,
+	CTDB_REQ_REGISTER     = 6,
 	CTDB_REQ_MESSAGE      = 7
 };
 
@@ -260,10 +269,9 @@ struct ctdb_reply_dmaster {
 	uint8_t  data[1];
 };
 
-struct ctdb_register_call {
+struct ctdb_req_register {
 	struct ctdb_req_header hdr;
-	uint32_t datalen;
-	uint8_t data[4];
+	uint32_t srvid;
 };
 
 struct ctdb_req_message {
@@ -359,5 +367,12 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
   results. This call will block unless the call has already completed.
 */
 int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private);
+
+int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+			     uint32_t srvid, TDB_DATA data);
 
 #endif

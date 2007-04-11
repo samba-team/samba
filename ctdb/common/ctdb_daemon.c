@@ -59,6 +59,56 @@ struct ctdb_client {
 
 
 /*
+  message handler for when we are in daemon mode. This redirects the message
+  to the right client
+ */
+static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+				    TDB_DATA data, void *private)
+{
+	struct ctdb_client *client = talloc_get_type(private, struct ctdb_client);
+	struct ctdb_req_message *r;
+	int len;
+
+	/* construct a message to send to the client containing the data */
+	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	r = ctdbd_allocate_pkt(ctdb, len);
+
+/*XXX cant use this since it returns an int	CTDB_NO_MEMORY(ctdb, r);*/
+	talloc_set_name_const(r, "req_message packet");
+
+	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REQ_MESSAGE;
+	r->srvid         = srvid;
+	r->datalen       = data.dsize;
+	memcpy(&r->data[0], data.dptr, data.dsize);
+	
+	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
+
+	talloc_free(r);
+	return;
+}
+					   
+
+/*
+  this is called when the ctdb daemon received a ctdb request to 
+  set the srvid from the client
+ */
+static void daemon_request_register_message_handler(struct ctdb_client *client, 
+						    struct ctdb_req_register *c)
+{
+	int res;
+	res = ctdb_register_message_handler(client->ctdb, client, 
+					    c->srvid, daemon_message_handler, 
+					    client);
+	if (res != 0) {
+		printf("Failed to register handler %u in daemon\n", c->srvid);
+	}
+}
+
+
+/*
   destroy a ctdb_client
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
@@ -68,6 +118,21 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 	return 0;
 }
 
+
+/*
+  this is called when the ctdb daemon received a ctdb request message
+  from a local client over the unix domain socket
+ */
+static void daemon_request_message_from_client(struct ctdb_client *client, 
+					    struct ctdb_req_message *c)
+{
+	if (ctdb_get_vnn(client->ctdb)==c->hdr.destnode) {
+		ctdb_request_message(client->ctdb, (struct ctdb_req_header *)c);
+	} else {
+		/* this is for a remote client */
+/*XXX*/
+	}
+}
 
 /*
   this is called when the ctdb daemon received a ctdb request call
@@ -152,6 +217,13 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
 		break;
 
+	case CTDB_REQ_REGISTER:
+		daemon_request_register_message_handler(client, 
+							(struct ctdb_req_register *)hdr);
+		break;
+	case CTDB_REQ_MESSAGE:
+		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
+		break;
 	}
 
 	talloc_free(data);
@@ -340,5 +412,12 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 
 	size = (len+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 	return talloc_size(ctdb, size);
+}
+
+int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private)
+{
+	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private);
 }
 

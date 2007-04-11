@@ -37,22 +37,38 @@
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
+	struct ctdb_message_list *fml, *ml;
 	TDB_DATA data;
-	if (ctdb->message_handler == NULL) {
+
+/* XXX need a much faster method to find the handler */
+	ml  = ctdb->message_list;
+	fml = ml;
+	while (ml) {
+		if (ml->srvid==c->srvid) {
+			break;
+		}
+		ml = ml->next;
+		if (ml==fml) {
+			ml = NULL;
+			break;
+		}
+	}
+
+	if (ml == NULL) {
 		printf("no msg handler\n");
 		/* no registered message handler */
 		return;
 	}
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
-	ctdb->message_handler(ctdb, c->srvid, data, ctdb->message_private);
+	ml->message_handler(ctdb, c->srvid, data, ml->message_private);
 }
 
 
 /*
   send a ctdb message
 */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
@@ -81,13 +97,49 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 }
 
 /*
-  setup handler for receipt of ctdb messages from ctdb_send_message()
+  send a ctdb message
 */
-int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     uint32_t srvid, void *private)
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+		      uint32_t srvid, TDB_DATA data)
 {
-	ctdb->message_handler = handler;
-	ctdb->message_private = private;
+	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_send_message(ctdb, vnn, srvid, data);
+	}
+	return ctdb_daemon_send_message(ctdb, vnn, srvid, data);
+}
+
+
+/*
+  when a client goes away, we need to remove its srvid handler from the list
+ */
+static int message_handler_destructor(struct ctdb_message_list *m)
+{
+	DLIST_REMOVE(m->ctdb->message_list, m);
 	return 0;
 }
 
+/*
+  setup handler for receipt of ctdb messages from ctdb_send_message()
+*/
+int ctdb_register_message_handler(struct ctdb_context *ctdb, 
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t srvid,
+				  ctdb_message_fn_t handler,
+				  void *private)
+{
+	struct ctdb_message_list *m;
+
+	m = talloc(mem_ctx, struct ctdb_message_list);
+	CTDB_NO_MEMORY(ctdb, m);
+
+	m->ctdb            = ctdb;
+	m->srvid           = srvid;
+	m->message_handler = handler;
+	m->message_private = private;
+	
+	DLIST_ADD(ctdb->message_list, m);
+
+	talloc_set_destructor(m, message_handler_destructor);
+
+	return 0;
+}
