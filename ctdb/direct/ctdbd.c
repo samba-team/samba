@@ -22,6 +22,19 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include <signal.h>
+
+static void block_signal(int signum)
+{
+	struct sigaction act;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, signum);
+	sigaction(signum, &act, NULL);
+}
 
 
 /*
@@ -74,6 +87,8 @@ int main(int argc, const char *argv[])
 		printf("You must provide a node list with --nlist and an address with --listen\n");
 		exit(1);
 	}
+
+	block_signal(SIGPIPE);
 
 	ev = event_context_init(NULL);
 
