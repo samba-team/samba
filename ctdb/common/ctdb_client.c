@@ -39,6 +39,16 @@ static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_head
 
 
 /*
+  handle a connect wait reply packet
+ */
+static void ctdb_reply_connect_wait(struct ctdb_context *ctdb, 
+				    struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_connect_wait *r = (struct ctdb_reply_connect_wait *)hdr;
+	ctdb->num_connected = r->num_connected;
+}
+
+/*
   this is called in the client, when data comes in from the daemon
  */
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -74,6 +84,10 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REQ_MESSAGE:
 		ctdb_request_message(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_CONNECT_WAIT:
+		ctdb_reply_connect_wait(ctdb, hdr);
 		break;
 	}
 }
@@ -317,6 +331,9 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb,
 }
 
 
+/*
+  send a message - from client context
+ */
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data)
 {
@@ -346,4 +363,43 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 
 	talloc_free(r);
 	return 0;
+}
+
+/*
+  wait for all nodes to be connected - from client
+ */
+static void ctdb_client_connect_wait(struct ctdb_context *ctdb)
+{
+	struct ctdb_req_connect_wait r;
+	int res;
+
+	ZERO_STRUCT(r);
+
+	r.hdr.length     = sizeof(r);
+	r.hdr.ctdb_magic = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
+	
+	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
+	if (res != 0) {
+		printf("Failed to queue a connect wait request\n");
+		return;
+	}
+
+	/* now we can go into the normal wait routine, as the reply packet
+	   will update the ctdb->num_connected variable */
+	ctdb_daemon_connect_wait(ctdb);
+}
+
+/*
+  wait for all nodes to be connected
+*/
+void ctdb_connect_wait(struct ctdb_context *ctdb)
+{
+	if (!(ctdb->flags & CTDB_FLAG_DAEMON_MODE)) {
+		ctdb_daemon_connect_wait(ctdb);
+		return;
+	}
+
+	ctdb_client_connect_wait(ctdb);
 }

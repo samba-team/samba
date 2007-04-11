@@ -274,7 +274,7 @@ static void ctdb_node_connected(struct ctdb_node *node)
 /*
   wait for all nodes to be connected
 */
-void ctdb_connect_wait(struct ctdb_context *ctdb)
+void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 {
 	int expected = ctdb->num_nodes - 1;
 	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {

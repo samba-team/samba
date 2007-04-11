@@ -27,6 +27,7 @@ static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
 static int num_repeats = 100;
+static int num_clients = 2;
 
 
 /*
@@ -35,7 +36,8 @@ static int num_repeats = 100;
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				 TDB_DATA data, void *private)
 {
-printf("client vnn:%d received a message to srvid:%d\n",ctdb_get_vnn(ctdb),srvid);
+	printf("client vnn:%d received a message to srvid:%d\n",ctdb_get_vnn(ctdb),srvid);
+	fflush(stdout);
 }
 
 /*
@@ -61,16 +63,17 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
+		{ "num-clients", 0, POPT_ARG_INT, &num_clients, 0, "num_clients", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
+	int ret, i, j;
 	poptContext pc;
 	struct event_context *ev;
 	pid_t pid;
-	uint32_t srvid;
+	int srvid;
 	TDB_DATA data;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
@@ -142,13 +145,16 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-/*XXX why does this block forever?	ctdb_connect_wait(ctdb);*/
-
-	pid=fork();
-	if (pid) {
-		srvid=0;
-	} else {
-		srvid=1;
+	srvid = -1;
+	for (i=0;i<num_clients-1;i++) {
+		pid=fork();
+		if (pid) {
+			srvid = i;
+			break;
+		}
+	}
+	if (srvid == -1) {
+		srvid = num_clients-1;
 	}
 
 	/* wait until all nodes are connected (should not be needed
@@ -157,11 +163,19 @@ int main(int argc, const char *argv[])
 	data.dsize=0;
 	ctdb_set_message_handler(ctdb, srvid, message_handler, NULL);
 
-sleep(3);
-printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
-	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), 1-srvid, data);
+	ctdb_connect_wait(ctdb);
 
-	while(1){
+	sleep(1);
+
+	printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
+	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
+		for (j=0;j<num_clients;j++) {
+			printf("sending message to %d:%d\n", i, j);
+			ctdb_send_message(ctdb, i, j, data);
+		}
+	}
+
+	while (1) {
 		event_loop_once(ev);
 	}
        

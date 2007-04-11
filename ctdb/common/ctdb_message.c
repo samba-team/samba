@@ -30,49 +30,100 @@
 
 
 /*
-  called when a CTDB_REQ_MESSAGE packet comes in
-
   this dispatches the messages to the registered ctdb message handler
+*/
+static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_DATA data)
+{
+	struct ctdb_message_list *ml;
+
+	/* XXX we need a must faster way of finding the matching srvid
+	   - maybe a tree? */
+	for (ml=ctdb->message_list;ml;ml=ml->next) {
+		if (ml->srvid == srvid) break;
+	}
+	if (ml == NULL) {
+		printf("no msg handler for srvid=%u\n", srvid);
+		/* no registered message handler */
+		return -1;
+	}
+
+	ml->message_handler(ctdb, srvid, data, ml->message_private);
+	return 0;
+}
+
+
+/*
+  called when a CTDB_REQ_MESSAGE packet comes in
 */
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
-	struct ctdb_message_list *fml, *ml;
 	TDB_DATA data;
 
-/* XXX need a much faster method to find the handler */
-	ml  = ctdb->message_list;
-	fml = ml;
-	while (ml) {
-		if (ml->srvid==c->srvid) {
-			break;
-		}
-		ml = ml->next;
-		if (ml==fml) {
-			ml = NULL;
-			break;
-		}
-	}
-
-	if (ml == NULL) {
-		printf("no msg handler\n");
-		/* no registered message handler */
-		return;
-	}
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
-	ml->message_handler(ctdb, c->srvid, data, ml->message_private);
+
+	ctdb_dispatch_message(ctdb, c->srvid, data);
 }
 
+/*
+  this local messaging handler is ugly, but is needed to prevent
+  recursion in ctdb_send_message() when the destination node is the
+  same as the source node
+ */
+struct ctdb_local_message {
+	struct ctdb_context *ctdb;
+	uint32_t srvid;
+	TDB_DATA data;
+};
+
+static void ctdb_local_message_trigger(struct event_context *ev, struct timed_event *te, 
+				       struct timeval t, void *private)
+{
+	struct ctdb_local_message *m = talloc_get_type(private, 
+						       struct ctdb_local_message);
+	int res;
+
+	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
+	if (res != 0) {
+		printf("Failed to dispatch message for srvid=%u\n", m->srvid);
+	}
+	talloc_free(m);
+}
+
+static int ctdb_local_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_DATA data)
+{
+	struct ctdb_local_message *m;
+	m = talloc(ctdb, struct ctdb_local_message);
+	CTDB_NO_MEMORY(ctdb, m);
+
+	m->ctdb = ctdb;
+	m->srvid = srvid;
+	m->data  = data;
+	m->data.dptr = talloc_memdup(m, m->data.dptr, m->data.dsize);
+	if (m->data.dptr == NULL) {
+		talloc_free(m);
+		return -1;
+	}
+
+	/* this needs to be done as an event to prevent recursion */
+	event_add_timed(ctdb->ev, m, timeval_zero(), ctdb_local_message_trigger, m);
+	return 0;
+}
 
 /*
   send a ctdb message
 */
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data)
+			     uint32_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
 	int len;
+
+	/* see if this is a message to ourselves */
+	if (vnn == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+		return ctdb_local_message(ctdb, srvid, data);
+	}
 
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
