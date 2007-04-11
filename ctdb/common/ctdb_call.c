@@ -248,7 +248,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		}
 	}
 	if (!ctdb_db) {
-		ctdb_send_error(ctdb, hdr, ret, "Unknown database in request. db_id==0x%08x",c->db_id);
+		ctdb_send_error(ctdb, hdr, -1,
+				"Unknown database in request. db_id==0x%08x",
+				c->db_id);
 		return;
 	}
 	
@@ -315,7 +317,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		}
 	}
 	if (!ctdb_db) {
-		ctdb_send_error(ctdb, hdr, ret, "Unknown database in request. db_id==0x%08x",c->db_id);
+		ctdb_send_error(ctdb, hdr, -1,
+				"Unknown database in request. db_id==0x%08x",
+				c->db_id);
 		return;
 	}
 
