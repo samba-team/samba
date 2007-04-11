@@ -578,32 +578,32 @@ NTSTATUS idmap_init(void)
 
 	if ( alloc_backend ) {
 
-	alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
-	if ( ! alloc_methods) {
-		ret = smb_probe_module("idmap", alloc_backend);
-		if (NT_STATUS_IS_OK(ret)) {
-			alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
+		alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
+		if ( ! alloc_methods) {
+			ret = smb_probe_module("idmap", alloc_backend);
+			if (NT_STATUS_IS_OK(ret)) {
+				alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
+			}
+		}
+		if ( alloc_methods) {
+			ret = alloc_methods->init(compat_params);
+			if ( ! NT_STATUS_IS_OK(ret)) {
+				DEBUG(0, ("idmap_init: Initialization failed for alloc "
+					  "backend %s\n", alloc_backend));
+				ret = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+		}
+		} else {
+			DEBUG(2, ("idmap_init: Unable to get methods for alloc backend %s\n", 
+				  alloc_backend));
+			/* certain compat backends are just readonly */
+			if ( compat )
+				ret = NT_STATUS_OK;
+			else
+				ret = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
-	if ( alloc_methods) {
-		ret = alloc_methods->init(compat_params);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			DEBUG(0, ("idmap_init: Initialization failed for alloc "
-				  "backend %s\n", alloc_backend));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-	} else {
-		DEBUG(2, ("idmap_init: Unable to get methods for alloc backend %s\n", 
-			  alloc_backend));
-		/* certain compat backends are just readonly */
-		if ( compat )
-			ret = NT_STATUS_OK;
-		else
-			ret = NT_STATUS_UNSUCCESSFUL;
-	}
-	}
-
+	
 	/* cleanpu temporary strings */
 	TALLOC_FREE( compat_backend );
 	
@@ -633,6 +633,9 @@ NTSTATUS idmap_allocate_uid(struct unixid *id)
 		return ret;
 	}
 
+	if ( !alloc_methods )
+		return NT_STATUS_NOT_SUPPORTED;	
+
 	id->type = ID_TYPE_UID;
 	return alloc_methods->allocate_id(id);
 }
@@ -644,6 +647,9 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
 		return ret;
 	}
+
+	if ( !alloc_methods )
+		return NT_STATUS_NOT_SUPPORTED;	
 
 	id->type = ID_TYPE_GID;
 	return alloc_methods->allocate_id(id);
@@ -657,6 +663,9 @@ NTSTATUS idmap_set_uid_hwm(struct unixid *id)
 		return ret;
 	}
 
+	if ( !alloc_methods )
+		return NT_STATUS_NOT_SUPPORTED;	
+
 	id->type = ID_TYPE_UID;
 	return alloc_methods->set_id_hwm(id);
 }
@@ -668,6 +677,9 @@ NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
 		return ret;
 	}
+
+	if ( !alloc_methods )
+		return NT_STATUS_NOT_SUPPORTED;	
 
 	id->type = ID_TYPE_GID;
 	return alloc_methods->set_id_hwm(id);
@@ -1321,16 +1333,18 @@ void idmap_dump_maps(char *logfile)
 		return;
 	}
 
-	allid.type = ID_TYPE_UID;
-	allid.id = 0;
-	alloc_methods->get_id_hwm(&allid);
-	fprintf(dump, "USER HWM %lu\n", (unsigned long)allid.id);
-
-	allid.type = ID_TYPE_GID;
-	allid.id = 0;
-	alloc_methods->get_id_hwm(&allid);
-	fprintf(dump, "GROUP HWM %lu\n", (unsigned long)allid.id);
-
+	if ( alloc_methods ) {		
+		allid.type = ID_TYPE_UID;
+		allid.id = 0;
+		alloc_methods->get_id_hwm(&allid);
+		fprintf(dump, "USER HWM %lu\n", (unsigned long)allid.id);
+		
+		allid.type = ID_TYPE_GID;
+		allid.id = 0;
+		alloc_methods->get_id_hwm(&allid);
+		fprintf(dump, "GROUP HWM %lu\n", (unsigned long)allid.id);
+	}
+	
 	maps = talloc(idmap_ctx, struct id_map);
 	num_maps = 0;
 
