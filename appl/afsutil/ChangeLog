@@ -1,3 +1,13 @@
+2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pagsh.1,afslog.1: - options must be lexicographically ordered;
+	  again, options without arguments must be placed before options
+	  with arguments.  - manual page cross references are done using
+	  the macro `.Xr', not the macro `.Nm' (used for command names
+	  instead).
+	
+	From Igor Sobrado.
+	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add man_MANS to EXTRA_DIST
