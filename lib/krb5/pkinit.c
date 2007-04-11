@@ -1122,8 +1122,11 @@ pk_rd_pa_reply_dh(krb5_context context,
 			      &kdc_dh_info,
 			      &size);
 
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "pkinit - "
+			      "failed to decode KDC DH Key Info");
 	goto out;
+    }
 
     if (kdc_dh_info.nonce != nonce) {
 	krb5_set_error_string(context, "PKINIT: DH nonce is wrong");
@@ -1264,8 +1267,10 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  pa->padata_value.length,
 				  &rep,
 				  &size);
-	if (ret)
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode pkinit AS rep");
 	    return ret;
+	}
 
 	switch (rep.element) {
 	case choice_PA_PK_AS_REP_dhInfo:
