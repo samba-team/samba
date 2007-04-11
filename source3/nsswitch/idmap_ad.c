@@ -166,7 +166,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 	char *config_option;
 	const char *range = NULL;
 	const char *schema_mode = NULL;	
-	ADS_STRUCT *ads;
 
 	if ( (ctx = talloc_zero(dom, struct idmap_ad_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -261,6 +260,7 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 				NULL, /* gidnumber */
 				NULL };
 	LDAPMessage *res = NULL;
+	LDAPMessage *entry = NULL;
 	char *filter = NULL;
 	int idx = 0;
 	int bidx = 0;
@@ -339,7 +339,7 @@ again:
 	}
 	filter = talloc_asprintf_append(filter, ")");
 	CHECK_ALLOC_DONE(filter);
-	DEBUG(10, ("Filter: [%s]\n", filter));
+
 	rc = ads_search_retry(ads, &res, filter, attrs);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1, ("ERROR: ads search returned: %s\n", ads_errstr(rc)));
@@ -351,8 +351,8 @@ again:
 		DEBUG(10, ("No IDs found\n"));
 	}
 
-	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
+	entry = res;
+	for (i = 0; (i < count) && entry; i++) {
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
@@ -360,13 +360,14 @@ again:
 		uint32_t atype;
 
 		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ads, res);
+			entry = ads_first_entry(ads, entry);
 		} else { /* following ones */
 			entry = ads_next_entry(ads, entry);
 		}
-		if ( ! entry) {
+
+		if ( !entry ) {
 			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			continue;
+			break;
 		}
 
 		/* first check if the SID is present */
@@ -467,6 +468,7 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 				NULL, /* attr_gidnumber */
 				NULL };
 	LDAPMessage *res = NULL;
+	LDAPMessage *entry = NULL;
 	char *filter = NULL;
 	int idx = 0;
 	int bidx = 0;
@@ -524,8 +526,8 @@ again:
 		DEBUG(10, ("No IDs found\n"));
 	}
 
-	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
+	entry = res;	
+	for (i = 0; (i < count) && entry; i++) {
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
@@ -533,13 +535,14 @@ again:
 		uint32_t atype;
 
 		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ads, res);
+			entry = ads_first_entry(ads, entry);
 		} else { /* following ones */
 			entry = ads_next_entry(ads, entry);
 		}
-		if ( ! entry) {
+
+		if ( !entry ) {
 			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			continue;
+			break;
 		}
 
 		/* first check if the SID is present */
