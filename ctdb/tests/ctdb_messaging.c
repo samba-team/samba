@@ -36,7 +36,7 @@ static int num_clients = 2;
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				 TDB_DATA data, void *private)
 {
-	printf("client vnn:%d received a message to srvid:%d\n",ctdb_get_vnn(ctdb),srvid);
+	printf("client vnn:%d received a message to srvid:%d [%s]\n",ctdb_get_vnn(ctdb),srvid,data.dptr);
 	fflush(stdout);
 }
 
@@ -52,6 +52,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
+	char buf[256];
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -159,18 +160,19 @@ int main(int argc, const char *argv[])
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
-	data.dptr=NULL;
-	data.dsize=0;
 	ctdb_set_message_handler(ctdb, srvid, message_handler, NULL);
 
 	ctdb_connect_wait(ctdb);
 
-	sleep(1);
+	sleep(3);
 
 	printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
 	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
 		for (j=0;j<num_clients;j++) {
 			printf("sending message to %d:%d\n", i, j);
+			sprintf(buf,"Message from %d to vnn:%d srvid:%d",ctdb_get_vnn(ctdb),i,j);
+			data.dptr=buf;
+			data.dsize=strlen(buf)+1;
 			ctdb_send_message(ctdb, i, j, data);
 		}
 	}
