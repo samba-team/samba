@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -107,7 +107,7 @@ krb5_recvauth_match_version(krb5_context context,
 	    return ret;
 	}
 	if (n == 0) {
-	    krb5_clear_error_string (context);
+	    krb5_set_error_string (context, "Failed to receive sendauth data");
 	    return KRB5_SENDAUTH_BADAUTHVERS;
 	}
 	len = ntohl(len);
