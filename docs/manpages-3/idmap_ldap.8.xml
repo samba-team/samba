@@ -107,7 +107,7 @@
 
 	<programlisting>
 	[global]
-	    idmap domain = ALLDOMAINS
+	    idmap domains = ALLDOMAINS
 	    idmap config ALLDOMAINS:default      = yes
 	    idmap config ALLDOMAINS:backend      = ldap
 	    idmap config ALLDOMAINS:ldap_base_dn = ou=idmap,dc=example,dc=com

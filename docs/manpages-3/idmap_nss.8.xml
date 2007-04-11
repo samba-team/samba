@@ -35,7 +35,7 @@
 
 	<programlisting>
 	[global]
-	    idmap domain = SAMBA TRUSTEDDOMAINS
+	    idmap domains = SAMBA TRUSTEDDOMAINS
 
 	    idmap config SAMBA:backend  = nss
 	    idmap config SAMBA:readonly = yes
