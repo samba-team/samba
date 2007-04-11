@@ -1012,15 +1012,15 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DatabaseSync2 test against Samba4\n");
-		return True;
-	}
-
 	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, 
 				    TEST_MACHINE_NAME, machine_password, 
 				    SEC_CHAN_BDC, &creds)) {
 		return False;
+	}
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DatabaseSync2 test against Samba4\n");
+		return True;
 	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
