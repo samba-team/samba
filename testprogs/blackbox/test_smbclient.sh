@@ -37,6 +37,8 @@ runcmd() {
 	return $?
 }
 
+testit "domain join" $VALGRIND bin/net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+
 # Generate random file
 cat >tmpfile<<EOF
 foo

@@ -448,6 +448,14 @@ sub write_clientconf($$)
 
 	my $abs_srcdir = cwd();
 
+	mkdir "$prefix/client" unless -d "$prefix/client";
+	
+	if ( -d "$prefix/client/private" ) {
+	        unlink <$prefix/client/private/*>;
+	} else {
+	        mkdir("$prefix/client/private");
+	}
+
 	open(CF, ">$conffile");
 	print CF "[global]\n";
 	if (defined($ENV{VALGRIND})) {
@@ -456,17 +464,13 @@ sub write_clientconf($$)
 		print CF "\ticonv:native = false\n";
 	}
 	print CF 
-"	netbios name = localtest
-	netbios aliases = localhost
+"	netbios name = client
 ";
 	if (defined($vars->{DOMAIN})) {
 		print CF "\tworkgroup = $vars->{DOMAIN}\n";
 	}
 	if (defined($vars->{REALM})) {
 		print CF "\trealm = $vars->{REALM}\n";
-	}
-	if (defined($vars->{PIDDIR})) {
-		print CF "\tpid directory = $vars->{PIDDIR}\n";
 	}
 	if (defined($vars->{NCALRPCDIR})) {
 		print CF "\tncalrpc dir = $vars->{NCALRPCDIR}\n";
@@ -475,6 +479,7 @@ sub write_clientconf($$)
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
 	print CF "
+        private dir = $abs_srcdir/$prefix/client/private
 	js include = $abs_srcdir/scripting/libjs
 	name resolve order = bcast
 	interfaces = $interfaces
@@ -483,8 +488,8 @@ sub write_clientconf($$)
 	notify:inotify = false
 	ldb:nosync = true
 	system:anonymous = true
-#We don't want to pass our self-tests if the PAC code is wrong
 	torture:basedir = ./st
+#We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 ";
 	close(CF);
