@@ -51,7 +51,7 @@ static int ux_socket_connect(const char *name)
 	return fd;
 }
 
-void register_svid_with_daemon(int fd, int pid)
+void register_pid_with_daemon(int fd, int pid)
 {
 	struct ctdb_req_register r;
 
@@ -66,9 +66,53 @@ void register_svid_with_daemon(int fd, int pid)
 	write(fd, &r, sizeof(r));
 }
 
+/* send a command to the cluster to wait until all nodes are connected
+   and the cluster is fully operational
+ */
+int wait_for_cluster(int fd)
+{
+	struct ctdb_req_connect_wait req;
+	struct ctdb_reply_connect_wait rep;
+	int cnt, tot;
+
+	/* send a connect wait command to the local node */
+	bzero(&req, sizeof(req));
+	req.hdr.length       = sizeof(req);
+	req.hdr.ctdb_magic   = CTDB_MAGIC;
+	req.hdr.ctdb_version = CTDB_VERSION;
+	req.hdr.operation    = CTDB_REQ_CONNECT_WAIT;
+
+	/* XXX must deal with partial writes here */
+	write(fd, &req, sizeof(req));
+
+
+	/* read the 4 bytes of length for the pdu */
+	cnt=0;
+	tot=4;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, ((char *)&rep)+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+	/* read the rest of the pdu */
+	tot=rep.hdr.length;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, ((char *)&rep)+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+
+	return rep.vnn;
+}
+
+
 int main(int argc, const char *argv[])
 {
-	int fd, pid;
+	int fd, pid, vnn;
 
 	/* open the socket to talk to the local ctdb daemon */
 	fd=ux_socket_connect(CTDB_SOCKET);
@@ -77,10 +121,22 @@ int main(int argc, const char *argv[])
 		exit(10);
 	}
 
-	/* register our local server id with the daemon */
-	pid=getpid();
-	register_svid_with_daemon(fd, pid);
 
+	/* register our local server id with the daemon so that it knows
+	   where to send messages addressed to our local pid.
+	 */
+	pid=getpid();
+	register_pid_with_daemon(fd, pid);
+
+
+	/* do a connect wait to ensure that all nodes in the cluster are up 
+	   and operational.
+	   this also tells us the vnn of the local cluster.
+	   If someone wants to send us a emssage they should send it to
+	   this vnn and our pid
+	 */
+	vnn=wait_for_cluster(fd);
+	printf("our address is vnn:%d pid:%d  if someone wants to send us a message!\n",vnn,pid);
 
 	return 0;
 }
