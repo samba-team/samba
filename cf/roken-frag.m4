@@ -409,13 +409,6 @@ dnl
 AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 #include <sys/socket.h>])
 
-if test "$ac_cv_func_getnameinfo" = "yes"; then
-  rk_BROKEN_GETNAMEINFO
-  if test "$ac_cv_func_getnameinfo_broken" = yes; then
-	AC_LIBOBJ(getnameinfo)
-  fi
-fi
-
 if test "$ac_cv_func_getaddrinfo" = "yes"; then
   rk_BROKEN_GETADDRINFO
   if test "$ac_cv_func_getaddrinfo_numserv" = no; then
