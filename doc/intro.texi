@@ -76,7 +76,7 @@ Kerberos V4 support in many of the applications.
 If you find bugs in this software, make sure it is a genuine bug and not
 just a part of the code that isn't implemented.
 
-Bug reports should be sent to @email{heimdal-bugs@@pdc.kth.se}. Please
+Bug reports should be sent to @email{heimdal-bugs@@h5l.se}. Please
 include information on what machine and operating system (including
 version) you are running, what you are trying to do, what happens, what
 you think should have happened, an example for us to repeat, the output
