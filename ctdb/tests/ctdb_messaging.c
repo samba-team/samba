@@ -35,7 +35,7 @@ static int num_repeats = 100;
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				 TDB_DATA data, void *private)
 {
-printf("client vnn:%d received a message to srvid:%d\n",ctdb_get_vnn(ctdb),srvid);
+	printf("client vnn:%d received a message to srvid:%d\n",ctdb_get_vnn(ctdb),srvid);
 }
 
 /*
@@ -142,8 +142,6 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-/*XXX why does this block forever?	ctdb_connect_wait(ctdb);*/
-
 	pid=fork();
 	if (pid) {
 		srvid=0;
@@ -157,8 +155,11 @@ int main(int argc, const char *argv[])
 	data.dsize=0;
 	ctdb_set_message_handler(ctdb, srvid, message_handler, NULL);
 
-sleep(3);
-printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
+	ctdb_connect_wait(ctdb);
+
+	sleep(2);
+
+	printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), 1-srvid, data);
 
 	while(1){
