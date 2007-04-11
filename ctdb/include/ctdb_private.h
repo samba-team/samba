@@ -381,4 +381,5 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint32_t srvid, TDB_DATA data);
 
+
 #endif
