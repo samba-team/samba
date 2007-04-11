@@ -41,9 +41,9 @@ creates a new credential cache sandbox
 .Sh SYNOPSIS
 .Nm
 .Op Fl c
-.Op Fl -cache-type= Ns Ar string
-.Op Fl -version
 .Op Fl h | Fl -help
+.Op Fl -version
+.Op Fl -cache-type= Ns Ar string
 .Ar command [args...]
 .Sh DESCRIPTION
 Supported options:
@@ -55,11 +55,11 @@ Supported options:
 .Fl -cache-type= Ns Ar string
 .Xc
 .It Xo
-.Fl -version
-.Xc
-.It Xo
 .Fl h ,
 .Fl -help
+.Xc
+.It Xo
+.Fl -version
 .Xc
 .El
 .Pp
@@ -89,4 +89,4 @@ $ klist
 klist: No ticket file: /tmp/krb5cc_03014a
 .Ed
 .Sh SEE ALSO
-.Nm afslog 1
+.Xr afslog 1
