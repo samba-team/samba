@@ -289,6 +289,7 @@ struct ctdb_req_connect_wait {
 
 struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
+	uint32_t vnn;
 	uint32_t num_connected;
 };
 
