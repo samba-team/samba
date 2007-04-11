@@ -1456,38 +1456,38 @@ BOOL prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32
 /* useful function to store a structure in rpc wire format */
 int tdb_prs_store(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps)
 {
-    TDB_DATA dbuf;
-    dbuf.dptr = (uint8 *)ps->data_p;
-    dbuf.dsize = prs_offset(ps);
-    return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	TDB_DATA dbuf;
+	dbuf.dptr = (uint8 *)ps->data_p;
+	dbuf.dsize = prs_offset(ps);
+	return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 int tdb_prs_store_bystring(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 {
-    TDB_DATA kbuf = string_term_tdb_data(keystr);
-    return tdb_prs_store(tdb, kbuf, ps);
+	TDB_DATA kbuf = string_term_tdb_data(keystr);
+	return tdb_prs_store(tdb, kbuf, ps);
 }
 
 /* useful function to fetch a structure into rpc wire format */
 int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *mem_ctx)
 {
-    TDB_DATA dbuf;
+	TDB_DATA dbuf;
 
-    prs_init(ps, 0, mem_ctx, UNMARSHALL);
+	prs_init(ps, 0, mem_ctx, UNMARSHALL);
 
-    dbuf = tdb_fetch(tdb, kbuf);
-    if (!dbuf.dptr)
-	    return -1;
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr)
+		return -1;
 
-    prs_give_memory(ps, (char *)dbuf.dptr, dbuf.dsize, True);
+	prs_give_memory(ps, (char *)dbuf.dptr, dbuf.dsize, True);
 
-    return 0;
+	return 0;
 } 
 
 int tdb_prs_fetch_bystring(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx)
 {
-    TDB_DATA kbuf = string_term_tdb_data(keystr);
-    return tdb_prs_fetch(tdb, kbuf, ps, mem_ctx);
+	TDB_DATA kbuf = string_term_tdb_data(keystr);
+	return tdb_prs_fetch(tdb, kbuf, ps, mem_ctx);
 }
 
 /*******************************************************************
