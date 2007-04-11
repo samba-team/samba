@@ -523,6 +523,8 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 				   F_UNLCK,F_SETLKW, 0, 1);
 		}
 		tdb->num_locks = 0;
+		tdb->num_lockrecs = 0;
+		SAFE_FREE(tdb->lockrecs);
 	}
 
 	/* restore the normal io methods */
