@@ -37,6 +37,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>ldap_user_dn = DN</term>
+		<listitem><para>
+			Defines the user DN to be used for authentication. If absent an
+			anonymous bind will be performed.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>ldap_url = ldap://server/</term>
 		<listitem><para>
 			Specifies the LDAP server to use when searching for existing 
@@ -69,6 +77,14 @@
 			Defines the directory base suffix under which new SID/uid/gid mapping
 			entries should be stored.  If not defined, idmap_ldap will default
 			to using the &quot;ldap idmap suffix&quot; option from smb.conf.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ldap_user_dn = DN</term>
+		<listitem><para>
+			Defines the user DN to be used for authentication. If absent an
+			anonymous bind will be performed.
 		</para></listitem>
 		</varlistentry>
 
@@ -120,6 +136,17 @@
 	    idmap alloc config:range        = 10000 - 50000
 	</programlisting>
 </refsect1>
+
+<refsynopsisdiv>
+	<title>NOTE</title>
+
+	<para>In order to use authentication against ldap servers you may
+	need to provide a DN and a password. To avoid exposing the password
+	in plain text in the configuration file we store it into a security
+	store. The &quot;net idmap &quot; command is used to store a secret
+	for the DN specified in a specific idmap domain.
+	</para>
+</refsynopsisdiv>
 
 <refsect1>
 	<title>AUTHOR</title>
