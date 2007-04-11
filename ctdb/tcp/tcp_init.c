@@ -66,7 +66,7 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	CTDB_NO_MEMORY(node->ctdb, tnode);
 
 	tnode->fd = -1;
-	node->private = tnode;
+	node->private_data = tnode;
 
 	tnode->queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
 					ctdb_tcp_tnode_cb, node);
@@ -105,7 +105,7 @@ int ctdb_tcp_init(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY(ctdb, ctcp);
 
 	ctcp->listen_fd = -1;
-	ctdb->private = ctcp;
+	ctdb->private_data = ctcp;
 	ctdb->methods = &ctdb_tcp_methods;
 	return 0;
 }
