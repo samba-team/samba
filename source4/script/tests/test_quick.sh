@@ -15,5 +15,5 @@ tests="$tests RAW-EAS RAW-STREAMS"
 
 for t in $tests; do
     name="$t"
-    plantest "$name" base $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done
