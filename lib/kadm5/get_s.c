@@ -258,7 +258,8 @@ kadm5_s_get_principal(void *server_handle,
 		goto out;
 	    }
 	    if (len != buf.length)
-		krb5_abortx(context, "internal ASN.1 encoder error");
+		krb5_abortx(context->context,
+			    "internal ASN.1 encoder error");
 	    ret = add_tl_data(out, KRB5_TL_ALIASES, buf.data, buf.length);
 	    free(buf.data);
 	    if (ret) {
