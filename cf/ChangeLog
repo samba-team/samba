@@ -1,3 +1,10 @@
+2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-frag.m4: drop broken-getnameinfo.m4
+	
+	* roken-frag.m4: drop test for broken getnameinfo, that old aix is
+	no longer relevant.
+	
 2007-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* install-catman.sh: Stop overwriting cmd.
