@@ -1,5 +1,12 @@
-2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_get.c: Allow trailing NULs. We allow this since MIT Kerberos
+	sends an strings in the NEED_PREAUTH case that includes a trailing
+	NUL.
+	
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	
 	* Makefile.am: Add PA-ClientCanonicalized and friends.
 
 	* k5.asn1: Add PA-ClientCanonicalized and friends.
