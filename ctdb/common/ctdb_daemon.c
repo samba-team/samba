@@ -129,6 +129,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.operation = CTDB_REPLY_CONNECT_WAIT;
+	r.vnn           = ctdb_get_vnn(client->ctdb);
 	r.num_connected = client->ctdb->num_connected;
 	
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
