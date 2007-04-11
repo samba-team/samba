@@ -22,6 +22,19 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "system/wait.h"
+
+static void block_signal(int signum)
+{
+	struct sigaction act;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, signum);
+	sigaction(signum, &act, NULL);
+}
 
 
 /*
@@ -75,6 +88,8 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	block_signal(SIGPIPE);
+
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
@@ -114,11 +129,9 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	while (1) {
-		event_loop_once(ev);
-	}
+	event_loop_wait(ev);
        
 	/* shut it down */
-	talloc_free(ctdb);
+	talloc_free(ev);
 	return 0;
 }

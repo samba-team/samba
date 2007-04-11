@@ -283,6 +283,11 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	struct ctdb_client *client = talloc_get_type(args, struct ctdb_client);
 	struct ctdb_req_header *hdr;
 
+	if (cnt == 0) {
+		talloc_free(client);
+		return;
+	}
+
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(client->ctdb, "Bad packet length %d\n", cnt);
 		return;
