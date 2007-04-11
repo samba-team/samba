@@ -52,6 +52,7 @@ function _resourcesCreate()
         /* Save the resource and its type */
         r.resource = resource;
         r.type = type;
+	r.id = this.resourceList.id;
 
         /* Add this resource to the list */
         this.resourceList[this.resourceList.id] = r;
@@ -110,7 +111,7 @@ function _resourcesCreate()
                 if (r.type == type)
                 {
                     /* Yup, this is the one they want. */
-                    return resourceId;
+		  return r.id;
                 }
             }
         }
