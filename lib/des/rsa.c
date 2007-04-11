@@ -234,7 +234,7 @@ RSA_verify(int type, const unsigned char *from, unsigned int flen,
 
 /*
  * A NULL RSA_METHOD that returns failure for all operations. This is
- * used as the default RSA method is we don't have any native
+ * used as the default RSA method if we don't have any native
  * support.
  */
 
