@@ -65,6 +65,10 @@
 #define HAVE_TIMEGM
 #endif
 
+#ifndef HAVE_INNETGR
+#define HAVE_INNETGR
+#endif
+
 #undef SOCKET_WRAPPER_REPLACE
 
 #include "heimdal/lib/roken/roken.h.in"
