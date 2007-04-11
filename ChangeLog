@@ -1,5 +1,23 @@
-2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kstash.8: Spelling, from raga <raga@comcast.net> via Bjorn
+	Sandell.
+
+	* lib/krb5/store_mem.c: indent.
+
+	* lib/krb5/recvauth.c: Set error string.
+
+	* lib/krb5/rd_req.c: clear error strings.
+
+	* lib/krb5/rd_cred.c: clear error string.
+
+	* lib/krb5/pkinit.c: Set error strings.
+
+	* lib/krb5/get_cred.c: Tell what principal we are not finding for
+	all KRB5_CC_NOTFOUND.
+	
+2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/kerberos5.c: Return the same error codes as a windows KDC.
 
 	* kuser/kinit.c: KRB5KDC_ERR_PREAUTH_FAILED is also a password
