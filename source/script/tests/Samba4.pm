@@ -58,9 +58,9 @@ sub slapd_stop($$)
 	}
 }
 
-sub check_or_start($$$$) 
+sub check_or_start($$$) 
 {
-	my ($self, $env_vars, $socket_wrapper_dir, $max_time) = @_;
+	my ($self, $env_vars, $max_time) = @_;
 	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
 
 	# Start slapd before smbd
@@ -99,7 +99,6 @@ sub check_or_start($$$$)
 			exit 1;
 		}
 		unlink($env_vars->{SMBD_TEST_FIFO});
-		unlink(<$socket_wrapper_dir/*>) if (defined($socket_wrapper_dir) and -d $socket_wrapper_dir);
 		my $exit = $? >> 8;
 		if ( $ret == 0 ) {
 			print "smbd exits with status $exit\n";
@@ -181,24 +180,24 @@ sub teardown_env($$)
 	return $failed;
 }
 
-sub setup_env($$$$)
+sub setup_env($$$)
 {
-	my ($self, $envname, $path, $socket_wrapper_dir) = @_;
+	my ($self, $envname, $path) = @_;
 	
 	if ($envname eq "dc") {
-		return $self->setup_dc("$path/dc", $socket_wrapper_dir);
+		return $self->setup_dc("$path/dc");
 	} else {
 		die("Samba4 can't provide environment $envname");
 	}
 }
 
-sub setup_dc($$$)
+sub setup_dc($$)
 {
-	my ($self, $path, $socket_wrapper_dir) = @_;
+	my ($self, $path) = @_;
 
 	my $env = $self->provision($path);
 
-	$self->check_or_start($env, $socket_wrapper_dir, 
+	$self->check_or_start($env, 
 		($ENV{SMBD_MAX_TIME} or 5400));
 
 	$self->wait_for_start($env);
