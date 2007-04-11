@@ -135,13 +135,24 @@ int
 der_get_general_string (const unsigned char *p, size_t len, 
 			heim_general_string *str, size_t *size)
 {
+    const unsigned char *p1;
     char *s;
 
+    p1 = memchr(p, 0, len);
+    if (p1 != NULL) {
+	/* 
+	 * Allow trailing NULs. We allow this since MIT Kerberos sends
+	 * an strings in the NEED_PREAUTH case that includes a
+	 * trailing NUL.
+	 */
+	len = p1 - p;
+	while (*p1 == '\0' && p1 - p < len)
+	    p1++;
+	if (p1 - p != len + 1)
+	    return ASN1_BAD_CHARACTER;
+    }
     if (len > len + 1)
 	return ASN1_BAD_LENGTH;
-
-    if (memchr(p, 0, len) != NULL)
-	return ASN1_BAD_CHARACTER;
 
     s = malloc (len + 1);
     if (s == NULL)
