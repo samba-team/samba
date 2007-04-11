@@ -371,6 +371,9 @@ $prefix =~ s+//+/+;
 $ENV{PREFIX} = $prefix;
 $ENV{SRCDIR} = $srcdir;
 
+#Ensure we have the test prefix around
+mkdir $prefix unless -d $prefix;
+
 my $tls_enabled = not $opt_quick;
 my $from_build_farm = (defined($ENV{RUN_FROM_BUILD_FARM}) and 
                       ($ENV{RUN_FROM_BUILD_FARM} eq "yes"));
@@ -543,7 +546,7 @@ sub setup_env($)
 	} elsif ($envname eq "none") {
 		$testenv_vars = {};
 	} else {
-		$testenv_vars = $target->setup_env($envname, $prefix, $socket_wrapper_dir);
+		$testenv_vars = $target->setup_env($envname, $prefix);
 	}
 	write_clientconf($conffile, $testenv_vars);
 	foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME", 

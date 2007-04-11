@@ -16,13 +16,10 @@ sub new($$$) {
 	return $self;
 }
 
-sub check_or_start($$$$) 
+sub check_or_start($$$) 
 {
-	my ($self, $env_vars, $socket_wrapper_dir, $max_time) = @_;
+	my ($self, $env_vars, $max_time) = @_;
 	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
-
-	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless
-		defined($socket_wrapper_dir) or $< == 0;
 
 	unlink($env_vars->{SMBD_TEST_FIFO});
 	POSIX::mkfifo($env_vars->{SMBD_TEST_FIFO}, 0700);
@@ -49,7 +46,6 @@ sub check_or_start($$$$)
 			exit 1;
 		}
 		unlink($env_vars->{SMBD_TEST_FIFO});
-		unlink(<$socket_wrapper_dir/*>) if (defined($socket_wrapper_dir) and -d $socket_wrapper_dir);
 		my $exit = $? >> 8;
 		if ( $ret == 0 ) {
 			print "smbd exits with status $exit\n";
@@ -121,9 +117,9 @@ sub stop($)
 	return $failed;
 }
 
-sub setup_env($$$)
+sub setup_env($$)
 {
-	my ($self, $name, $socket_wrapper_dir) = @_;
+	my ($self, $name) = @_;
 }
 
 1;
