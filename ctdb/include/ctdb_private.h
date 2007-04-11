@@ -269,7 +269,7 @@ struct ctdb_reply_dmaster {
 	uint8_t  data[1];
 };
 
-struct ctdb_register_call {
+struct ctdb_req_register {
 	struct ctdb_req_header hdr;
 	uint32_t srvid;
 };
@@ -367,5 +367,18 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
   results. This call will block unless the call has already completed.
 */
 int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private);
+
+int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+			     uint32_t srvid, TDB_DATA data);
+
+/*
+  send a ctdb message
+*/
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+			     uint32_t srvid, TDB_DATA data);
 
 #endif

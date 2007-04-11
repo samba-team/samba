@@ -37,22 +37,30 @@
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
+	struct ctdb_message_list *ml;
 	TDB_DATA data;
-	if (ctdb->message_handler == NULL) {
+
+	/* XXX we need a must faster way of finding the matching srvid
+	   - maybe a tree? */
+	for (ml=ctdb->message_list;ml;ml=ml->next) {
+		if (ml->srvid == c->srvid) break;
+	}
+	if (ml == NULL) {
 		printf("no msg handler\n");
 		/* no registered message handler */
 		return;
 	}
+
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
-	ctdb->message_handler(ctdb, c->srvid, data, ctdb->message_private);
+	ml->message_handler(ctdb, c->srvid, data, ml->message_private);
 }
 
 
 /*
   send a ctdb message
 */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
@@ -81,11 +89,25 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 }
 
 /*
+  send a ctdb message
+*/
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+		      uint32_t srvid, TDB_DATA data)
+{
+	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_send_message(ctdb, vnn, srvid, data);
+	}
+	return ctdb_daemon_send_message(ctdb, vnn, srvid, data);
+}
+
+
+/*
   when a client goes away, we need to remove its srvid handler from the list
  */
 static int message_handler_destructor(struct ctdb_message_list *m)
 {
 	DLIST_REMOVE(m->ctdb->message_list, m);
+	return 0;
 }
 
 /*

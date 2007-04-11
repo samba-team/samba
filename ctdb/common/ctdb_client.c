@@ -275,8 +275,13 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 				    void *private)
 				    
 {
-	struct ctdb_register_call c;
+	struct ctdb_req_register c;
 	int res;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ux_socket_connect(ctdb);
+	}
 
 	ZERO_STRUCT(c);
 
@@ -311,3 +316,34 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb,
 	return ctdb_daemon_set_message_handler(ctdb, srvid, handler, private);
 }
 
+
+int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+		      uint32_t srvid, TDB_DATA data)
+{
+	struct ctdb_req_message *r;
+	int len, res;
+
+	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	r = ctdb->methods->allocate_pkt(ctdb, len);
+	CTDB_NO_MEMORY(ctdb, r);
+	talloc_set_name_const(r, "req_message packet");
+
+	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REQ_MESSAGE;
+	r->hdr.destnode  = vnn;
+	r->hdr.srcnode   = ctdb->vnn;
+	r->hdr.reqid     = 0;
+	r->srvid         = srvid;
+	r->datalen       = data.dsize;
+	memcpy(&r->data[0], data.dptr, data.dsize);
+	
+	res = ctdb_client_queue_pkt(ctdb, &r->hdr);
+	if (res != 0) {
+		return res;
+	}
+
+	talloc_free(r);
+	return 0;
+}

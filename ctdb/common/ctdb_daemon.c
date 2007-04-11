@@ -72,7 +72,8 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
 	r = ctdbd_allocate_pkt(ctdb, len);
-	CTDB_NO_MEMORY(ctdb, r);
+
+/*XXX cant use this since it returns an int	CTDB_NO_MEMORY(ctdb, r);*/
 	talloc_set_name_const(r, "req_message packet");
 
 	r->hdr.length    = len;
@@ -86,7 +87,7 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
 
 	talloc_free(r);
-	return 0;
+	return;
 }
 					   
 
@@ -98,7 +99,6 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 						    struct ctdb_req_register *c)
 {
 	int res;
-	printf("XXX registering messaging handler %u in daemon\n", c->srvid);
 	res = ctdb_register_message_handler(client->ctdb, client, 
 					    c->srvid, daemon_message_handler, 
 					    client);
@@ -118,6 +118,33 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 	return 0;
 }
 
+
+/*
+  this is called when the ctdb daemon received a ctdb request message
+  from a local client over the unix domain socket
+ */
+static void daemon_request_message_from_client(struct ctdb_client *client, 
+					       struct ctdb_req_message *c)
+{
+	TDB_DATA data;
+	int res;
+
+	/* maybe the message is for another client on this node */
+	if (ctdb_get_vnn(client->ctdb)==c->hdr.destnode) {
+		ctdb_request_message(client->ctdb, (struct ctdb_req_header *)c);
+		return;
+	}
+	
+	/* its for a remote node */
+	data.dptr = &c->data[0];
+	data.dsize = c->datalen;
+	res = ctdb_daemon_send_message(client->ctdb, c->hdr.destnode,
+				       c->srvid, data);
+	if (res != 0) {
+		printf("Failed to send message to remote node %u\n",
+		       c->hdr.destnode);
+	}
+}
 
 /*
   this is called when the ctdb daemon received a ctdb request call
@@ -189,12 +216,12 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(client->ctdb, "Non CTDB packet rejected\n");
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
 		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		return;
+		goto done;
 	}
 
 	switch (hdr->operation) {
@@ -206,8 +233,12 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 		daemon_request_register_message_handler(client, 
 							(struct ctdb_req_register *)hdr);
 		break;
+	case CTDB_REQ_MESSAGE:
+		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
+		break;
 	}
 
+done:
 	talloc_free(data);
 }
 
@@ -394,5 +425,12 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 
 	size = (len+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 	return talloc_size(ctdb, size);
+}
+
+int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private)
+{
+	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private);
 }
 

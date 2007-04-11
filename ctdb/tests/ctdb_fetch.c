@@ -260,7 +260,7 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ctdb_set_message_handler(ctdb, message_handler, 0, &msg_count);
+	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */

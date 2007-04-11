@@ -152,8 +152,9 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 /* setup a handler for ctdb messages */
 typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid, 
 				  TDB_DATA data, void *);
-int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     uint32_t srvid, void *private);
+int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private);
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
@@ -179,5 +180,11 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
   if the new data is zero length, this implies a delete of the record
  */
 int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
+
+int ctdb_register_message_handler(struct ctdb_context *ctdb, 
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t srvid,
+				  ctdb_message_fn_t handler,
+				  void *private);
 
 #endif
