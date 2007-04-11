@@ -2,13 +2,15 @@ SLAPD_CONF=$LDAPDIR/slapd.conf
 export SLAPD_CONF
 
 echo "OPENLDAP_LOGLEVEL=0"
+OPENLDAP_PIDFILE=$PIDDIR/slapd.pid
+echo "OPENLDAP_PIDFILE=$OPENLDAP_PIDFILE"
 
 cat >$SLAPD_CONF <<EOF
 loglevel 0
 
 include $LDAPDIR/ad.schema
 
-pidfile		$PIDDIR/slapd.pid
+pidfile		$OPENLDAP_PIDFILE
 argsfile	$LDAPDIR/slapd.args
 sasl-realm $DNSNAME
 access to * by * write

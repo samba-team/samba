@@ -27,11 +27,11 @@ sub slapd_start($$)
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $ENV{FEDORA_DS_DIR} -d$ENV{FEDORA_DS_LOGLEVEL} -i $ENV{FEDORA_DS_PIDFILE}> $ENV{LDAPDIR}/logs 2>&1 &");
+	        system("$env_vars->{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d$env_vars->{FEDORA_DS_LOGLEVEL} -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
 	} else {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		system("slapd -d$ENV{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $ENV{LDAPDIR}/logs 2>&1 &");
+		system("slapd -d$env_vars->{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
 		$ENV{PATH} = $oldpath;
 	}
 	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
@@ -51,8 +51,8 @@ sub slapd_stop($$)
 	if (defined($envvars->{FEDORA_DS_PREFIX})) {
 		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
 	} else {
-		open(IN, "<$envvars->{PIDDIR}/slapd.pid") or 
-			die("unable to open slapd pid file");
+		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
+			die("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
 		kill 9, <IN>;
 		close(IN);
 	}
@@ -69,7 +69,7 @@ sub check_or_start($$$)
 			die("couldn't start slapd");
 
 		print "LDAP PROVISIONING...";
-		$self->provision_ldap();
+		$self->provision_ldap($env_vars);
 	}
 
 	SocketWrapper::set_default_iface(1);
@@ -152,11 +152,11 @@ sub provision($$)
 	return \%ret;
 }
 
-sub provision_ldap($)
+sub provision_ldap($$)
 {
-	my ($self) = @_;
-    system("$self->{bindir}/smbscript $self->{setupdir}/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}") and
-		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $ENV{PROVISION_OPTIONS} \"$ENV{PROVISION_ACI}\" --ldap-backend=$ENV{LDAP_URI}");
+	my ($self, $envvars) = @_;
+    system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}") and
+		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}");
 }
 
 sub teardown_env($$)
