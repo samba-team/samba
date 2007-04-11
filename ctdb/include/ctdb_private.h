@@ -190,13 +190,14 @@ struct ctdb_call_state {
   operation IDs
 */
 enum ctdb_operation {
-	CTDB_REQ_CALL       = 0,
-	CTDB_REPLY_CALL     = 1,
-	CTDB_REPLY_REDIRECT = 2,
-	CTDB_REQ_DMASTER    = 3,
-	CTDB_REPLY_DMASTER  = 4,
-	CTDB_REPLY_ERROR    = 5,
-	CTDB_REQ_MESSAGE    = 6
+	CTDB_REQ_CALL         = 0,
+	CTDB_REPLY_CALL       = 1,
+	CTDB_REPLY_REDIRECT   = 2,
+	CTDB_REQ_DMASTER      = 3,
+	CTDB_REPLY_DMASTER    = 4,
+	CTDB_REPLY_ERROR      = 5,
+	CTDB_REGISTER_CALL    = 6,
+	CTDB_REQ_MESSAGE      = 7
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -257,6 +258,12 @@ struct ctdb_reply_dmaster {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
 	uint8_t  data[1];
+};
+
+struct ctdb_register_call {
+	struct ctdb_req_header hdr;
+	uint32_t datalen;
+	uint8_t data[4];
 };
 
 struct ctdb_req_message {
