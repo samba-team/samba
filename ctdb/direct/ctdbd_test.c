@@ -132,12 +132,48 @@ int send_a_message(int fd, int ourvnn, int vnn, int pid, TDB_DATA data)
 	if(data.dsize){
 	    cnt=write(fd, data.dptr, data.dsize);
 	}
+	return 0;
+}
+
+int receive_a_message(int fd, struct ctdb_req_message **preply)
+{
+	int cnt,tot;
+	struct ctdb_req_message *rep;
+	uint32_t length;
+
+	/* read the 4 bytes of length for the pdu */
+	cnt=0;
+	tot=4;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, ((char *)&length)+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+	
+	/* read the rest of the pdu */
+	rep = malloc(length);
+	rep->hdr.length = length;
+	cnt = 0;
+	tot = length-4;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, ((char *)rep)+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+
+	*preply = rep;
+	return 0;
 }
 
 int main(int argc, const char *argv[])
 {
 	int fd, pid, vnn, dstvnn, dstpid;
 	TDB_DATA message;
+	struct ctdb_req_message *reply;
 
 	/* open the socket to talk to the local ctdb daemon */
 	fd=ux_socket_connect(CTDB_SOCKET);
@@ -171,6 +207,7 @@ int main(int argc, const char *argv[])
 	message.dsize=strlen(message.dptr)+1;
 	send_a_message(fd, vnn, dstvnn, dstpid, message);
 
+	receive_a_message(fd, &reply);
 
 	/* wait for the message to come back */
 
