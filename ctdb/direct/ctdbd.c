@@ -129,11 +129,9 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	while (1) {
-		event_loop_once(ev);
-	}
+	event_loop_wait(ev);
        
 	/* shut it down */
-	talloc_free(ctdb);
+	talloc_free(ev);
 	return 0;
 }
