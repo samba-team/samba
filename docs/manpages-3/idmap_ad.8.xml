@@ -56,7 +56,7 @@
 
 	<programlisting>
 	[global]
-	idmap domain = ALLDOMAINS
+	idmap domains = ALLDOMAINS
 	idmap config ALLDOMAINS:backend      = ad
 	idmap config ALLDOMAINS:default      = yes
 	idmap config ALLDOMAINS:range        = 10000 - 300000000
