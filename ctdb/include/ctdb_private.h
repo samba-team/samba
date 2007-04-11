@@ -23,6 +23,13 @@
 
 #include "ctdb.h"
 
+/* location of daemon socket */
+#define CTDB_PATH	"/tmp/ctdb.socket"
+
+/* we must align packets to ensure ctdb works on all architectures (eg. sparc) */
+#define CTDB_DS_ALIGNMENT 8
+
+
 
 #define CTDB_FETCH_FUNC 0xf0000001
 /*
@@ -319,6 +326,38 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 				    ctdb_queue_cb_fn_t callback,
 				    void *private);
 
+/*
+  allocate a packet for use in client<->daemon communication
+ */
+void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len);
 
+
+/*
+  lock a record in the ltdb, given a key
+ */
+int ctdb_ltdb_lock(struct ctdb_db_context *ctdb_db, TDB_DATA key);
+
+/*
+  unlock a record in the ltdb, given a key
+ */
+int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key);
+
+
+/*
+  make a ctdb call to the local daemon - async send. Called from client context.
+
+  This constructs a ctdb_call request and queues it for processing. 
+  This call never blocks.
+*/
+struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db, 
+					      struct ctdb_call *call);
+
+/*
+  make a recv call to the local ctdb daemon - called from client context
+
+  This is called when the program wants to wait for a ctdb_call to complete and get the 
+  results. This call will block unless the call has already completed.
+*/
+int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 #endif

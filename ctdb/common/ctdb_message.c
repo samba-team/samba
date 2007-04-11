@@ -84,7 +84,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
   setup handler for receipt of ctdb messages from ctdb_send_message()
 */
 int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     void *private)
+			     uint32_t srvid, void *private)
 {
 	ctdb->message_handler = handler;
 	ctdb->message_private = private;

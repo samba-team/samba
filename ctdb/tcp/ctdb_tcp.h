@@ -48,5 +48,6 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb);
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
 			   struct timeval t, void *private);
 void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args);
+void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private);
 
 #define CTDB_TCP_ALIGNMENT 8

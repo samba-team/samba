@@ -201,7 +201,6 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
-	int pid;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -213,7 +212,6 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
-		{ "pid", 0, POPT_ARG_INT, &pid, 0, "pid", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -293,17 +291,10 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
-
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	/* register our 'pid' so that ctdb knows who we are */
-	if (!pid) {
-		pid = getpid();
-		printf("no pid specified, using real pid:%d\n",pid);
-	}
-	ctdb_register_message_local_id(ctdb, pid);
+	ctdb_set_message_handler(ctdb, ring_message_handler, 0, &msg_count);
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
