@@ -1456,31 +1456,31 @@ BOOL prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32
 /* useful function to store a structure in rpc wire format */
 int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
 {
-    TDB_DATA kbuf, dbuf;
-    kbuf.dptr = keystr;
-    kbuf.dsize = strlen(keystr)+1;
-    dbuf.dptr = ps->data_p;
-    dbuf.dsize = prs_offset(ps);
-    return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
+	dbuf.dptr = ps->data_p;
+	dbuf.dsize = prs_offset(ps);
+	return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 /* useful function to fetch a structure into rpc wire format */
 int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx)
 {
-    TDB_DATA kbuf, dbuf;
-    kbuf.dptr = keystr;
-    kbuf.dsize = strlen(keystr)+1;
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
 
-    prs_init(ps, 0, mem_ctx, UNMARSHALL);
+	prs_init(ps, 0, mem_ctx, UNMARSHALL);
 
-    dbuf = tdb_fetch(tdb, kbuf);
-    if (!dbuf.dptr)
-	    return -1;
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr)
+		return -1;
 
-    prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
+	prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
-    return 0;
-} 
+	return 0;
+}
 
 /*******************************************************************
  hash a stream.
