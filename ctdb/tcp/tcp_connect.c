@@ -40,8 +40,8 @@ static void set_nonblocking(int fd)
 void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
-						      struct ctdb_tcp_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(
+		node->private_data, struct ctdb_tcp_node);
 
 	/* start a new connect cycle to try to re-establish the
 	   link */
@@ -56,10 +56,11 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
   called when socket becomes writeable on connect
 */
 static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *fde, 
-				    uint16_t flags, void *private)
+				    uint16_t flags, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+	struct ctdb_node *node = talloc_get_type(private_data,
+						 struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
 	int error = 0;
@@ -106,10 +107,11 @@ static int ctdb_tcp_get_address(struct ctdb_context *ctdb,
   called when we should try and establish a tcp connection to a node
 */
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *private)
+			   struct timeval t, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+	struct ctdb_node *node = talloc_get_type(private_data,
+						 struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
         struct sockaddr_in sock_in;
@@ -179,7 +181,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_incoming *in;
 
 	ctdb = talloc_get_type(private, struct ctdb_context);
-	ctcp = talloc_get_type(ctdb->private, struct ctdb_tcp);
+	ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
@@ -203,7 +205,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 */
 int ctdb_tcp_listen(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private, struct ctdb_tcp);
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+						struct ctdb_tcp);
         struct sockaddr_in sock;
 	int one = 1;
 

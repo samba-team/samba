@@ -154,7 +154,7 @@ typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid,
 				  TDB_DATA data, void *);
 int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			     ctdb_message_fn_t handler,
-			     void *private);
+			     void *private_data);
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
@@ -185,6 +185,6 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t srvid,
 				  ctdb_message_fn_t handler,
-				  void *private);
+				  void *private_data);
 
 #endif

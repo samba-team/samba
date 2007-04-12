@@ -53,7 +53,8 @@ struct ctdb_address {
 
 /* called from the queue code when a packet comes in. Called with data==NULL
    on error */
-typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length, void *private);
+typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
+				   void *private_data);
 
 
 /*
@@ -63,7 +64,7 @@ struct ctdb_node {
 	struct ctdb_context *ctdb;
 	struct ctdb_address address;
 	const char *name; /* for debug messages */
-	void *private; /* private to transport */
+	void *private_data; /* private to transport */
 	uint32_t vnn;
 };
 
@@ -128,7 +129,7 @@ struct ctdb_context {
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
-	void *private; /* private to transport */
+	void *private_data; /* private to transport */
 	unsigned max_lacount;
 	struct ctdb_db_context *db_list;
 	struct ctdb_message_list *message_list;
@@ -344,7 +345,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx, int fd, int alignment,
 				    
 				    ctdb_queue_cb_fn_t callback,
-				    void *private);
+				    void *private_data);
 
 /*
   allocate a packet for use in client<->daemon communication
@@ -382,7 +383,7 @@ int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 
 int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			     ctdb_message_fn_t handler,
-			     void *private);
+			     void *private_data);
 
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint32_t srvid, TDB_DATA data);

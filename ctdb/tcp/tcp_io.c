@@ -73,7 +73,7 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 */
 int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private,
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
 	return ctdb_queue_send(tnode->queue, data, length);
 }
