@@ -140,10 +140,15 @@ static struct ctdb_call_state *ctdb_fetch_lock_send(struct ctdb_db_context *ctdb
 	return state;
 }
 
+struct client_fetch_lock_data {
+	struct ctdb_client *client;
+	uint32_t reqid;
+};
 static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 {
 	struct ctdb_reply_fetch_lock *r;
-	struct ctdb_client *client = talloc_get_type(state->async.private, struct ctdb_client);
+	struct client_fetch_lock_data *data = talloc_get_type(state->async.private, struct client_fetch_lock_data);
+	struct ctdb_client *client = talloc_get_type(data->client, struct ctdb_client);
 	int length, res;
 
 	length = offsetof(struct ctdb_reply_fetch_lock, data) + state->call.reply_data.dsize;
@@ -157,7 +162,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation    = CTDB_REPLY_FETCH_LOCK;
-	r->hdr.reqid        = state->c->hdr.reqid;
+	r->hdr.reqid        = data->reqid;
 	r->state            = state->state;
 	r->datalen          = state->call.reply_data.dsize;
 	memcpy(&r->data[0], state->call.reply_data.dptr, r->datalen);
@@ -178,6 +183,7 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	struct ctdb_call_state *state;
 	TDB_DATA key, *data;
 	struct ctdb_db_context *ctdb_db;
+	struct client_fetch_lock_data *fl_data;
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
 
@@ -191,8 +197,11 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	state = ctdb_fetch_lock_send(ctdb_db, client, key, data);
 	talloc_steal(state, data);
 
+	fl_data = talloc(state, struct client_fetch_lock_data);
+	fl_data->client = client;
+	fl_data->reqid  = f->hdr.reqid;
 	state->async.fn = daemon_fetch_lock_complete;
-	state->async.private = client;
+	state->async.private = fl_data;
 }
 
 /*
