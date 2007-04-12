@@ -276,6 +276,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	struct smb_krb5_context *smb_krb5_context;
 
 	const char *principal_string;
+	char *broken_principal_string;
 	krb5_principal client_principal;
 	const char *authtime_string;
 	time_t authtime;
@@ -575,8 +576,11 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	/* Break the client principal */
 	krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
+	broken_principal_string = talloc_strdup(mem_ctx, principal_string);
+	broken_principal_string[0]++;
+
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,
-			      "not the right principal", &client_principal);
+			      broken_principal_string, &client_principal);
 	if (ret) {
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -584,7 +588,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		torture_fail(tctx, talloc_asprintf(tctx, 
-						   "(saved test) parsing of bogus client principal failed: %s", 
+						   "(saved test) parsing of broken client principal failed: %s", 
 						   smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 	}
 
