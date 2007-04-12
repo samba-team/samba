@@ -92,6 +92,7 @@ typedef struct {
   gss_OID_set mechanisms;
   struct krb5_ccache_data *ccache;
   HEIMDAL_MUTEX cred_id_mutex;
+  krb5_enctype *enctypes;
 } *gsskrb5_cred;
 
 typedef struct Principal *gsskrb5_name;
