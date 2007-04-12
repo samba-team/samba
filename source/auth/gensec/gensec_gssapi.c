@@ -106,7 +106,7 @@ static char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 }
 
 
-static int gensec_gssapi_destory(struct gensec_gssapi_state *gensec_gssapi_state)
+static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_state)
 {
 	OM_uint32 maj_stat, min_stat;
 	
@@ -178,7 +178,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 
-	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destory); 
+	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_gssapi_state->want_flags |= GSS_C_INTEG_FLAG;
