@@ -84,7 +84,7 @@ static BOOL check_unix_info2(struct torture_context *torture,
 	 */
 	if ((info2->flags_mask & info2->file_flags) == 0) {
 		torture_result(torture, TORTURE_FAIL,
-			__location__"%s: UNIX_INFO2 flags field 0x%08x, "
+			__location__": UNIX_INFO2 flags field 0x%08x, "
 			"does not match mask 0x%08x\n",
 			info2->file_flags, info2->flags_mask);
 	}
