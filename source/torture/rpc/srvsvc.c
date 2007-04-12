@@ -525,6 +525,11 @@ static BOOL test_NetShareAddSetDel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+		d_printf("NetShareAddSetDel disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	a.in.server_unc = r.in.server_unc = q.in.server_unc = d.in.server_unc =
 		talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = talloc_strdup(mem_ctx, "testshare");
@@ -1047,7 +1052,7 @@ again:
 			}
 		}
 
-		talloc_free(r.in.name);
+		talloc_free(name);
 
 		d_printf("Maximum length for type %2d, flags %08x: %d\n", i, r.in.flags, max);
 
@@ -1056,7 +1061,7 @@ again:
 		invalidc = talloc_strdup(mem_ctx, "");
 
 		for (n = 0x20; n < 0x7e; n++) {
-			r.in.name = talloc_asprintf(mem_ctx, "%c", (char)n);
+			r.in.name = name = talloc_asprintf(mem_ctx, "%c", (char)n);
 
 			status = dcerpc_srvsvc_NetNameValidate(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1069,7 +1074,7 @@ again:
 				invalidc = talloc_asprintf_append(invalidc, "%c", (char)n);
 			}
 
-			talloc_free(r.in.name);
+			talloc_free(name);
 		}
 
 		d_printf(" Invalid chars for type %2d, flags %08x: \"%s\"\n", i, r.in.flags, invalidc);
@@ -1115,7 +1120,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	ret &= test_NetRemoteTOD(p, mem_ctx);
 	ret &= test_NetShareEnum(p, mem_ctx, True);
 	ret &= test_NetShareGetInfo(p, mem_ctx, "ADMIN$", True);
-/*	ret &= test_NetShareAddSetDel(p, mem_ctx); */
+	ret &= test_NetShareAddSetDel(p, mem_ctx);
 	ret &= test_NetNameValidate(p, mem_ctx);
 	
 	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
