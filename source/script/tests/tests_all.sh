@@ -8,6 +8,7 @@
  $SRCDIR/script/tests/test_binding_string.sh
  $SRCDIR/script/tests/test_echo.sh
  $SRCDIR/script/tests/test_posix.sh
+ $SRCDIR/script/tests/test_cifs.sh
  $SRCDIR/script/tests/test_local.sh
  $SRCDIR/script/tests/test_pidl.sh
  $SRCDIR/script/tests/test_blackbox.sh $PREFIX/blackbox
