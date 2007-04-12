@@ -179,12 +179,14 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
   change the data in a record held with a ctdb_record_handle
   if the new data is zero length, this implies a delete of the record
  */
-int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data);
+int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t srvid,
 				  ctdb_message_fn_t handler,
 				  void *private_data);
+
+struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 #endif

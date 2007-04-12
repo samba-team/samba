@@ -29,6 +29,22 @@
 #include "../include/ctdb_private.h"
 
 /*
+  find the ctdb_db from a db index
+ */
+ struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
+		if (ctdb_db->db_id == id) {
+			break;
+		}
+	}
+	return ctdb_db;
+}
+
+
+/*
   local version of ctdb_call
 */
 static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
@@ -38,7 +54,7 @@ static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *ca
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-
+	
 	c = talloc(ctdb, struct ctdb_call_info);
 	CTDB_NO_MEMORY(ctdb, c);
 
@@ -242,11 +258,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dptr = c->data + c->keylen;
 	data.dsize = c->datalen;
 
-	for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
-		if (ctdb_db->db_id == c->db_id) {
-			break;
-		}
-	}
+	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
 		ctdb_send_error(ctdb, hdr, -1,
 				"Unknown database in request. db_id==0x%08x",
@@ -311,11 +323,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call call;
 	struct ctdb_db_context *ctdb_db;
 
-	for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
-		if (ctdb_db->db_id == c->db_id) {
-			break;
-		}
-	}
+	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
 		ctdb_send_error(ctdb, hdr, -1,
 				"Unknown database in request. db_id==0x%08x",
@@ -409,6 +417,9 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	(void)talloc_reference(state, c);
 
 	state->state = CTDB_CALL_DONE;
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 }
 
 /*
@@ -448,6 +459,9 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	ctdb_call_local(ctdb_db, &state->call, &state->header, &data, ctdb->vnn);
 
 	state->state = CTDB_CALL_DONE;
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 }
 
 
@@ -466,6 +480,9 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state->state  = CTDB_CALL_ERROR;
 	state->errmsg = (char *)c->msg;
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 }
 
 
@@ -517,7 +534,23 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 	state->state = CTDB_CALL_ERROR;
 	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
 		       state->c->hdr.reqid);
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 }
+
+/*
+  this allows the caller to setup a async.fn 
+*/
+static void call_local_trigger(struct event_context *ev, struct timed_event *te, 
+		       struct timeval t, void *private)
+{
+	struct ctdb_call_state *state = talloc_get_type(private, struct ctdb_call_state);
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
+}	
+
 
 /*
   construct an event driven local ctdb_call
@@ -545,6 +578,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state->ctdb_db = ctdb_db;
 
 	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
+
+	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 
 	return state;
 }
@@ -717,6 +752,10 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	struct ctdb_call_state *state;
 	int ret;
 
+	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
+		return ctdb_client_fetch_lock(ctdb_db, mem_ctx, key, data);
+	}
+
 	ZERO_STRUCT(call);
 	call.call_id = CTDB_FETCH_FUNC;
 	call.key = key;
@@ -743,7 +782,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 }
 
 
-int ctdb_record_store(struct ctdb_record_handle *rec, TDB_DATA data)
+int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
 {
 	int ret;
 	struct ctdb_ltdb_header header;

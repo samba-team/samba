@@ -49,6 +49,36 @@ static void ctdb_reply_connect_wait(struct ctdb_context *ctdb,
 }
 
 /*
+  called in the client when we receive a CTDB_REPLY_FETCH_LOCK from the daemon
+
+  This packet comes in response to a CTDB_REQ_FETCH_LOCK request packet. It
+  contains any reply data from the call
+*/
+void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_fetch_lock *c = (struct ctdb_reply_fetch_lock *)hdr;
+	struct ctdb_call_state *state;
+
+	state = idr_find(ctdb->idr, hdr->reqid);
+	if (state == NULL) return;
+
+	state->call.reply_data.dptr = c->data;
+	state->call.reply_data.dsize = c->datalen;
+	state->call.status = c->state;
+
+	talloc_steal(state, c);
+
+	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
+	   from freeing the data */
+	(void)talloc_reference(state, c);
+
+	state->state = CTDB_CALL_DONE;
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
+}
+
+/*
   this is called in the client, when data comes in from the daemon
  */
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -89,6 +119,13 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	case CTDB_REPLY_CONNECT_WAIT:
 		ctdb_reply_connect_wait(ctdb, hdr);
 		break;
+
+	case CTDB_REPLY_FETCH_LOCK:
+		ctdb_reply_fetch_lock(ctdb, hdr);
+		break;
+
+	default:
+		printf("bogus operation code:%d\n",hdr->operation);
 	}
 }
 
@@ -402,4 +439,102 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	}
 
 	ctdb_client_connect_wait(ctdb);
+}
+
+
+struct ctdb_call_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key)
+{
+	struct ctdb_call_state *state;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct ctdb_req_fetch_lock *req;
+	int len, res;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ux_socket_connect(ctdb);
+	}
+
+	state = talloc_zero(ctdb_db, struct ctdb_call_state);
+	if (state == NULL) {
+		printf("failed to allocate state\n");
+		return NULL;
+	}
+	state->state   = CTDB_CALL_WAIT;
+	state->ctdb_db = ctdb_db;
+	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
+	state->c = ctdbd_allocate_pkt(ctdb, len);
+	if (state->c == NULL) {
+		printf("failed to allocate packet\n");
+		return NULL;
+	}
+	ZERO_STRUCT(*state->c);
+	talloc_set_name_const(state->c, "ctdbd req_fetch_lock packet");
+	talloc_steal(state, state->c);
+
+	req = (struct ctdb_req_fetch_lock *)state->c;
+	req->hdr.length      = len;
+	req->hdr.ctdb_magic  = CTDB_MAGIC;
+	req->hdr.ctdb_version = CTDB_VERSION;
+	req->hdr.operation   = CTDB_REQ_FETCH_LOCK;
+	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
+	req->db_id           = ctdb_db->db_id;
+	req->keylen          = key.dsize;
+	memcpy(&req->key[0], key.dptr, key.dsize);
+	
+	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
+	if (res != 0) {
+		return NULL;
+	}
+
+	talloc_free(req);
+
+	return state;
+}
+
+
+/*
+  make a recv call to the local ctdb daemon - called from client context
+
+  This is called when the program wants to wait for a ctdb_fetch_lock to complete and get the 
+  results. This call will block unless the call has already completed.
+*/
+struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *state, TALLOC_CTX *mem_ctx, TDB_DATA key)
+{
+	struct ctdb_record_handle *rec;
+
+	while (state->state < CTDB_CALL_DONE) {
+		event_loop_once(state->ctdb_db->ctdb->ev);
+	}
+	if (state->state != CTDB_CALL_DONE) {
+		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
+		talloc_free(state);
+		return NULL;
+	}
+
+	rec = talloc(mem_ctx, struct ctdb_record_handle);
+	CTDB_NO_MEMORY_NULL(state->ctdb_db->ctdb, rec);
+
+	rec->ctdb_db     = state->ctdb_db;
+	rec->key         = key;
+	rec->key.dptr    = talloc_memdup(rec, key.dptr, key.dsize);
+	rec->data        = talloc(rec, TDB_DATA);
+	rec->data->dsize = state->call.reply_data.dsize;
+	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
+
+	return rec;
+}
+
+struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key, TDB_DATA *data)
+{
+	struct ctdb_call_state *state;
+	struct ctdb_record_handle *rec;
+
+	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
+	rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key);
+
+	return rec;
 }
