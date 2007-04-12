@@ -211,7 +211,7 @@ allocated_sid:
 		 dom_sid_string(tmp_ctx, sid)));
 
 	talloc_free(tmp_ctx);
-	return NT_STATUS_INVALID_SID;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 
@@ -344,7 +344,7 @@ allocated_sid:
 		 dom_sid_string(tmp_ctx, sid)));
 
 	talloc_free(tmp_ctx);
-	return NT_STATUS_INVALID_SID;
+	return NT_STATUS_NONE_MAPPED;
 }
 
 
@@ -426,7 +426,7 @@ _PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 	*/
 allocate_sid:
 	if (uid > SIDMAP_MAX_LOCAL_UID) {
-		return NT_STATUS_INVALID_SID;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	status = sidmap_primary_domain_sid(sidmap, tmp_ctx, &domain_sid);
@@ -524,7 +524,7 @@ _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 	*/
 allocate_sid:
 	if (gid > SIDMAP_MAX_LOCAL_GID) {
-		return NT_STATUS_INVALID_SID;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	status = sidmap_primary_domain_sid(sidmap, tmp_ctx, &domain_sid);
@@ -565,14 +565,14 @@ _PUBLIC_ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 
 	if (!dom_sid_in_domain(domain_sid, sid)) {
 		talloc_free(tmp_ctx);
-		return NT_STATUS_INVALID_SID;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	talloc_free(tmp_ctx);
 
 	rid = sid->sub_auths[sid->num_auths-1];
 	if (rid < SIDMAP_LOCAL_USER_BASE) {
-		return NT_STATUS_INVALID_SID;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (rid < SIDMAP_LOCAL_GROUP_BASE) {
