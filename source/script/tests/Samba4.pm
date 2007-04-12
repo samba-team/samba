@@ -11,7 +11,7 @@ use POSIX;
 
 sub new($$$$) {
 	my ($classname, $bindir, $ldap, $setupdir) = @_;
-	my $self = { ldap => $ldap, bindir => $bindir, setupdir => $setupdir };
+	my $self = { vars => {}, ldap => $ldap, bindir => $bindir, setupdir => $setupdir };
 	bless $self;
 	return $self;
 }
@@ -135,7 +135,24 @@ sub wait_for_start($$)
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 }
 
-sub provision($$)
+sub provision_member($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+	my %ret = ();
+	print "PROVISIONING...";
+	open(IN, "$RealBin/mktestmember.sh $prefix $dcvars->{DOMAIN} $dcvars->{USERNAME} $dcvars->{PASSWORD}|") or die("Unable to setup");
+	while (<IN>) {
+		die ("Error parsing `$_'") unless (/^([A-Z0-9a-z_]+)=(.*)$/);
+		$ret{$1} = $2;
+	}
+	close(IN);
+
+	$ret{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
+	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	return \%ret;
+}
+
+sub provision_dc($$)
 {
 	my ($self, $prefix) = @_;
 	my %ret = ();
@@ -186,21 +203,41 @@ sub setup_env($$$)
 	
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "member") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_member("$path/member", $self->{vars}->{dc});
 	} else {
-		die("Samba4 can't provide environment $envname");
+		die("Samba4 can't provide environment '$envname'");
 	}
+}
+
+sub setup_member($$$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_member($path, $dc_vars);
+
+	$self->check_or_start($env, ($ENV{SMBD_MAX_TIME} or 5400));
+
+	$self->wait_for_start($env);
+
+	return $env;
 }
 
 sub setup_dc($$)
 {
 	my ($self, $path) = @_;
 
-	my $env = $self->provision($path);
+	my $env = $self->provision_dc($path);
 
 	$self->check_or_start($env, 
 		($ENV{SMBD_MAX_TIME} or 5400));
 
 	$self->wait_for_start($env);
+
+	$self->{vars}->{dc} = $env;
 
 	return $env;
 }

@@ -1,5 +1,3 @@
 - warn about unexpected successes
-- support for environments
 - better way to detect that smbd has finished initialization
-- allow tests to specify what parameters they need
- - UNC / DCERPC binding strings
+- move ldap-specific code into mktestdc.sh
