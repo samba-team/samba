@@ -42,7 +42,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
-	TDB_DATA key, *data, store_data;
+	TDB_DATA key, *data, *data2, store_data;
 	struct ctdb_record_handle *rh;
 
 	struct poptOption popt_options[] = {
@@ -144,6 +144,14 @@ int main(int argc, const char *argv[])
 	store_data.dptr  = "data to store";
 	store_data.dsize = strlen(store_data.dptr)+1;
 	ret = ctdb_store_unlock(rh, store_data);
+	printf("ctdb_store_unlock ret:%d\n",ret);
+
+	data2     = NULL;
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, data2);
+/* hopefully   data2 will now contain the record written above */
+
+	/* just write it back to unlock it */
+	ret = ctdb_store_unlock(rh, data2);
 	printf("ctdb_store_unlock ret:%d\n",ret);
 
 	while (1) {
