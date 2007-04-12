@@ -210,6 +210,11 @@ cat >$KRB5_CONFIG<<EOF
   admin_server = 127.0.0.1:88
   default_domain = $DNSNAME
  }
+ $DNSNAME = {
+  kdc = 127.0.0.1:88
+  admin_server = 127.0.0.1:88
+  default_domain = $DNSNAME
+ }
  $DOMAIN = {
   kdc = 127.0.0.1:88
   admin_server = 127.0.0.1:88
