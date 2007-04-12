@@ -118,7 +118,7 @@ sub _prepare_suffix_rules($)
 # Dependencies command
 DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) $first_prereq-o \$@
+    \$(CFLAGS) $first_prereq -o \$@
 # Dependencies for host objects
 HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
