@@ -130,8 +130,38 @@ int send_a_message(int fd, int ourvnn, int vnn, int pid, TDB_DATA data)
 	cnt=write(fd, &r, offsetof(struct ctdb_req_message, data));
 	/* write data */
 	if(data.dsize){
-	    cnt=write(fd, data.dptr, data.dsize);
+	    cnt+=write(fd, data.dptr, data.dsize);
 	}
+}
+
+void wait_for_a_message(int fd)
+{
+	int cnt, tot;
+	uint32_t len;
+	struct ctdb_req_message *msg;
+	
+	/* read the 4 bytes of length for the pdu */
+	cnt=0;
+	tot=4;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, ((char *)&len)+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+	msg=malloc(len);
+	msg->hdr.length=len;
+	/* read the rest of the pdu */
+	tot=msg->hdr.length;
+	while(cnt!=tot){
+		int numread;
+		numread=read(fd, (char *)msg+cnt, tot-cnt);
+		if(numread>0){
+			cnt+=numread;
+		}
+	}
+	printf("got a message : %s\n",&msg->data[0]);
 }
 
 int main(int argc, const char *argv[])
@@ -172,8 +202,10 @@ int main(int argc, const char *argv[])
 	send_a_message(fd, vnn, dstvnn, dstpid, message);
 
 
-	/* wait for the message to come back */
-
+	/* wait for the message to come back.
+	   i.e. the one we just sent to ourself
+	 */
+	wait_for_a_message(fd);
 
 	return 0;
 }
