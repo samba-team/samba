@@ -527,7 +527,7 @@ struct multiple_result {
 /*
   callback function for multiple_search
 */
-static BOOL multiple_search_callback(void *private, union smb_search_data *file)
+static BOOL multiple_search_callback(void *private, const union smb_search_data *file)
 {
 	struct multiple_result *data = private;
 
