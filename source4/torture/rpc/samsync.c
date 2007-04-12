@@ -112,7 +112,7 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 struct samsync_state {
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
 	uint64_t seq_num[3];
-	char *domain_name[2];
+	const char *domain_name[2];
 	struct samsync_secret *secrets;
 	struct samsync_trusted_domain *trusted_domains;
 	struct creds_CredentialState *creds;
@@ -130,14 +130,14 @@ struct samsync_state {
 struct samsync_secret {
 	struct samsync_secret *prev, *next;
 	DATA_BLOB secret;
-	char *name;
+	const char *name;
 	NTTIME mtime;
 };
 
 struct samsync_trusted_domain {
 	struct samsync_trusted_domain *prev, *next;
         struct dom_sid *sid;
-	char *name;
+	const char *name;
 };
 
 static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx, 
@@ -324,7 +324,6 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	}
 	if (samsync_state->domain_handle[database_id]) {
 		samsync_state->sid[database_id] = talloc_reference(samsync_state, dom_sid);
-		talloc_reference(dom_sid, dom_sid->sub_auths);
 	}
 
 	printf("\tsequence_nums[%d/%s]=%llu\n",
