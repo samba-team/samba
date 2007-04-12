@@ -163,7 +163,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/krb5/accept_sec_context.o \
 	../heimdal/lib/gssapi/krb5/set_sec_context_option.o \
 	../heimdal/lib/gssapi/krb5/process_context_token.o
-PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1 HEIMDAL_GLUE HEIMDAL_SPNEGO_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1 HEIMDAL_SPNEGO_ASN1
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -171,7 +171,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1 HEIMD
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_HX509 HEIMDAL_PKINIT_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_HX509 HEIMDAL_PKINIT_ASN1 HEIMDAL_GLUE
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
@@ -189,6 +189,7 @@ OBJ_FILES = \
 	../heimdal/lib/krb5/config_file_netinfo.o \
 	../heimdal/lib/krb5/constants.o \
 	../heimdal/lib/krb5/context.o \
+	../heimdal/lib/krb5/convert_creds.o \
 	../heimdal/lib/krb5/copy_host_realm.o \
 	../heimdal/lib/krb5/crc.o \
 	../heimdal/lib/krb5/creds.o \
@@ -236,6 +237,7 @@ OBJ_FILES = \
 	../heimdal/lib/krb5/plugin.o \
 	../heimdal/lib/krb5/principal.o \
 	../heimdal/lib/krb5/pac.o \
+	../heimdal/lib/krb5/prompter_posix.o \
 	../heimdal/lib/krb5/rd_cred.o \
 	../heimdal/lib/krb5/rd_error.o \
 	../heimdal/lib/krb5/rd_priv.o \
@@ -577,6 +579,18 @@ PUBLIC_DEPENDENCIES = \
 #PUBLIC_DEPENDENCIES = EXT_KRB5
 PUBLIC_DEPENDENCIES = HEIMDAL
 # End SUBSYSTEM KERBEROS_LIB
+#######################
+
+#######################
+# Start BINARY compile_et
+[BINARY::samba4kinit]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+OBJ_FILES = ../heimdal/kuser/kinit.o \
+	../heimdal/lib/vers/print_version.o \
+	../heimdal/lib/roken/setprogname.o \
+	../heimdal/lib/roken/getarg.o 
+PRIVATE_DEPENDENCIES = HEIMDAL_KRB5
+# End BINARY compile_et
 #######################
 
 dist:: heimdal/lib/asn1/lex.c heimdal/lib/com_err/lex.c \
