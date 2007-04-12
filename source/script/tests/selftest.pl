@@ -321,7 +321,7 @@ Behaviour:
 }
 
 my $result = GetOptions (
-	    'help|h|?' => \$opt_help,
+		'help|h|?' => \$opt_help,
 		'target=s' => \$opt_target,
 		'prefix=s' => \$prefix,
 		'socket-wrapper' => \$opt_socket_wrapper,
@@ -349,7 +349,7 @@ my $tests = shift;
 # quick hack to disable rpc validation when using valgrind - its way too slow
 unless (defined($ENV{VALGRIND})) {
 	$ENV{VALIDATE} = "validate";
-    $ENV{MALLOC_CHECK_} = 2;
+	$ENV{MALLOC_CHECK_} = 2;
 }
 
 my $old_pwd = "$RealBin/../..";
@@ -434,11 +434,11 @@ if (defined($opt_skip)) {
 }
 
 my $interfaces = join(',', ("127.0.0.6/8", 
-		                 "127.0.0.7/8",
-						 "127.0.0.8/8",
-						 "127.0.0.9/8",
-						 "127.0.0.10/8",
-						 "127.0.0.11/8"));
+			    "127.0.0.7/8",
+			    "127.0.0.8/8",
+			    "127.0.0.9/8",
+			    "127.0.0.10/8",
+			    "127.0.0.11/8"));
 
 my $conffile = "$prefix/client.conf";
 
@@ -463,9 +463,7 @@ sub write_clientconf($$)
 	} else {
 		print CF "\ticonv:native = false\n";
 	}
-	print CF 
-"	netbios name = client
-";
+	print CF "\tnetbios name = client\n";
 	if (defined($vars->{DOMAIN})) {
 		print CF "\tworkgroup = $vars->{DOMAIN}\n";
 	}

@@ -18,7 +18,7 @@ sub new($$$$) {
 
 sub slapd_start($$)
 {
-    my $count = 0;
+	my $count = 0;
 	my ($self, $env_vars) = @_;
 
 	my $conf = $env_vars->{SLAPD_CONF};
@@ -172,7 +172,7 @@ sub provision_dc($$)
 sub provision_ldap($$)
 {
 	my ($self, $envvars) = @_;
-    system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}") and
+	system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}") and
 		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}");
 }
 
