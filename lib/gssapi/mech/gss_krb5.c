@@ -164,7 +164,12 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
 	goto out;
     }
 
-    krb5_storage_to_data(sp, &data);
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	*minor_status = ret;
+	major_status = GSS_S_FAILURE;
+	goto out;
+    }
 
     buffer.value = data.data;
     buffer.length = data.length;
@@ -421,37 +426,49 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
  */
 
 OM_uint32
-gss_krb5_set_allowable_enctypes(OM_uint32 *min_status, 
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
 				gss_cred_id_t cred,
 				OM_uint32 num_enctypes,
 				int32_t *enctypes)
 {
+    krb5_error_code ret;
     OM_uint32 maj_status;
     gss_buffer_desc buffer;
     krb5_storage *sp;
     krb5_data data;
+    int i;
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	*min_status = ENOMEM;
+	*minor_status = ENOMEM;
 	maj_status = GSS_S_FAILURE;
 	goto out;
     }
 
-    while(*enctypes) {
-	krb5_store_int32(sp, *enctypes);
-	enctypes++;
+    for (i = 0; i < num_enctypes; i++) {
+	ret = krb5_store_int32(sp, enctypes[i]);
+	if (ret) {
+	    *minor_status = ret;
+	    maj_status = GSS_S_FAILURE;
+	    goto out;
+	}
     }
 
-    krb5_storage_to_data(sp, &data);
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	*minor_status = ret;
+	maj_status = GSS_S_FAILURE;
+	goto out;
+    }
 
     buffer.value = data.data;
     buffer.length = data.length;
 
-    maj_status = gss_set_cred_option(min_status,
+    maj_status = gss_set_cred_option(minor_status,
 				     &cred,
 				     GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X,
 				     &buffer);
+    krb5_data_free(&data);
 out:
     if (sp)
 	krb5_storage_free(sp);
