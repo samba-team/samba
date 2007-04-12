@@ -84,6 +84,24 @@ static struct idmap_alloc_methods *get_alloc_methods(struct idmap_alloc_backend 
 	return NULL;
 }
 
+/* part of a quick hack to avoid loops, need to be sorted out correctly later on */
+static BOOL idmap_in_own_child;
+
+static BOOL idmap_is_in_own_child(void)
+{
+	return idmap_in_own_child;
+}
+
+void reset_idmap_in_own_child(void)
+{
+	idmap_in_own_child = False;
+}
+
+void set_idmap_in_own_child(void)
+{
+	idmap_in_own_child = True;
+}
+
 /**********************************************************************
  Allow a module to register itself as a method.
 **********************************************************************/
@@ -801,12 +819,17 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		return NT_STATUS_NONE_MAPPED;
 	}
-	
-	/* by default calls to winbindd are disabled
-	   the following call will not recurse so this is safe */
-	winbind_on();
-	wbret = winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
-	winbind_off();
+
+	/* quick hack to make things work, will need proper fix later on */	
+	if (idmap_is_in_own_child()) {
+		/* by default calls to winbindd are disabled
+		   the following call will not recurse so this is safe */
+		winbind_on();
+		wbret = winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
+		winbind_off();
+	} else {
+		wbret = winbindd_lookup_name_by_sid(ctx, map->sid, &domname, &name, &sid_type);
+	}
 
 	/* check if this is a valid SID and then map it */
 	if (wbret) {
@@ -1395,3 +1418,4 @@ char *idmap_fetch_secret(const char *backend, bool alloc,
 
 	return ret;
 }
+
