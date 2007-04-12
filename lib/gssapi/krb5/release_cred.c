@@ -68,6 +68,8 @@ OM_uint32 _gsskrb5_release_cred
 	    krb5_cc_close(context, cred->ccache);
     }
     _gsskrb5_release_oid_set(NULL, &cred->mechanisms);
+    if (cred->enctypes)
+	free(cred->enctypes);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     HEIMDAL_MUTEX_destroy(&cred->cred_id_mutex);
     memset(cred, 0, sizeof(*cred));
