@@ -25,7 +25,7 @@ Changes in release 0.8
 
  * KDC will return the "response too big" error to force TCP retries
    for large (default 1400 bytes) UDP replies.  This is common for
-   PK-INIT request.
+   PK-INIT requests.
 
  * Libkafs defaults to use 2b tokens.
 
