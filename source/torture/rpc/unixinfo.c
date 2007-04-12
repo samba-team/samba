@@ -33,9 +33,11 @@ static bool test_sidtouid(struct torture_context *tctx, struct dcerpc_pipe *p)
 	NTSTATUS status;
 	struct unixinfo_SidToUid r;
 	struct dom_sid *sid;
+	uint64_t uid;
 	
 	sid = dom_sid_parse_talloc(tctx, "S-1-5-32-1234-5432");
 	r.in.sid = *sid;
+	r.out.uid = &uid;
 
 	status = dcerpc_unixinfo_SidToUid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
@@ -94,9 +96,11 @@ static bool test_sidtogid(struct torture_context *tctx, struct dcerpc_pipe *p)
 	NTSTATUS status;
 	struct unixinfo_SidToGid r;
 	struct dom_sid *sid;
+	uint64_t gid;
 
 	sid = dom_sid_parse_talloc(tctx, "S-1-5-32-1234-5432");
 	r.in.sid = *sid;
+	r.out.gid = &gid;
 
 	status = dcerpc_unixinfo_SidToGid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
