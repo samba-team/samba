@@ -110,6 +110,91 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 }
 
 
+static struct ctdb_call_state *ctdb_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
+					 	    TALLOC_CTX *mem_ctx, 
+						    TDB_DATA key, TDB_DATA *data)
+{
+	struct ctdb_call *call;
+	struct ctdb_record_handle *rec;
+	struct ctdb_call_state *state;
+
+	rec = talloc(mem_ctx, struct ctdb_record_handle);
+	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
+
+	
+	call = talloc(rec, struct ctdb_call);
+	ZERO_STRUCT(*call);
+	call->call_id = CTDB_FETCH_FUNC;
+	call->key = key;
+	call->flags = CTDB_IMMEDIATE_MIGRATION;
+
+
+	rec->ctdb_db = ctdb_db;
+	rec->key = key;
+	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
+	rec->data = data;
+
+	state = ctdb_call_send(ctdb_db, call);
+	state->fetch_private = rec;
+
+	return state;
+}
+
+static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
+{
+	struct ctdb_reply_fetch_lock *r;
+	struct ctdb_client *client = talloc_get_type(state->async.private, struct ctdb_client);
+	int length, res;
+
+	length = offsetof(struct ctdb_reply_fetch_lock, data) + state->call.reply_data.dsize;
+	r = ctdbd_allocate_pkt(client->ctdb, length);
+	if (r == NULL) {
+		printf("Failed to allocate reply_call in ctdb daemon\n");
+		return;
+	}
+	ZERO_STRUCT(*r);
+	r->hdr.length       = length;
+	r->hdr.ctdb_magic   = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation    = CTDB_REPLY_FETCH_LOCK;
+	r->hdr.reqid        = state->c->hdr.reqid;
+	r->state            = state->state;
+	r->datalen          = state->call.reply_data.dsize;
+	memcpy(&r->data[0], state->call.reply_data.dptr, r->datalen);
+
+	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
+	if (res != 0) {
+		printf("Failed to queue packet from daemon to client\n");
+	}
+	talloc_free(r);
+}
+
+/*
+  called when the daemon gets a fetch lock request from a client
+ */
+static void daemon_request_fetch_lock(struct ctdb_client *client, 
+					struct ctdb_req_fetch_lock *f)
+{
+	struct ctdb_call_state *state;
+	TDB_DATA key, *data;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
+
+	key.dsize = f->keylen;
+	key.dptr = &f->key[0];
+
+	data        = talloc(client, TDB_DATA);
+	data->dptr  = NULL;
+	data->dsize = 0;
+
+	state = ctdb_fetch_lock_send(ctdb_db, client, key, data);
+	talloc_steal(state, data);
+
+	state->async.fn = daemon_fetch_lock_complete;
+	state->async.private = client;
+}
+
 /*
   called when the daemon gets a connect wait request from a client
  */
@@ -191,11 +276,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	int res;
 	uint32_t length;
 
-	for (ctdb_db=client->ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
-		if (ctdb_db->db_id == c->db_id) {
-			break;
-		}
-	}
+	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
 		printf("Unknown database in request. db_id==0x%08x",c->db_id);
 		return;
@@ -270,6 +351,9 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 
 	case CTDB_REQ_CONNECT_WAIT:
 		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
+		break;
+	case CTDB_REQ_FETCH_LOCK:
+		daemon_request_fetch_lock(client, (struct ctdb_req_fetch_lock *)hdr);
 		break;
 	}
 

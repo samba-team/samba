@@ -158,10 +158,10 @@ int main(int argc, const char *argv[])
 		srvid = num_clients-1;
 	}
 
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
 	ctdb_set_message_handler(ctdb, srvid, message_handler, NULL);
 
+	/* wait until all nodes are connected (should not be needed
+	   outside of test code) */
 	ctdb_connect_wait(ctdb);
 
 	sleep(3);

@@ -193,6 +193,10 @@ struct ctdb_call_state {
 	int redirect_count;
 	struct ctdb_ltdb_header header;
 	void *fetch_private;
+	struct {
+		void (*fn)(struct ctdb_call_state *);
+		void *private;
+	} async;
 };
 
 
@@ -206,10 +210,14 @@ enum ctdb_operation {
 	CTDB_REQ_DMASTER        = 3,
 	CTDB_REPLY_DMASTER      = 4,
 	CTDB_REPLY_ERROR        = 5,
-	CTDB_REQ_REGISTER       = 6,
-	CTDB_REQ_MESSAGE        = 7,
-	CTDB_REQ_CONNECT_WAIT   = 8,
-	CTDB_REPLY_CONNECT_WAIT = 9
+	CTDB_REQ_MESSAGE        = 6,
+	
+	/* only used on the domain socket */
+	CTDB_REQ_REGISTER       = 1000,     
+	CTDB_REQ_CONNECT_WAIT   = 1001,
+	CTDB_REPLY_CONNECT_WAIT = 1002,
+	CTDB_REQ_FETCH_LOCK     = 1003,
+	CTDB_REPLY_FETCH_LOCK   = 1004
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -292,6 +300,20 @@ struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
 	uint32_t vnn;
 	uint32_t num_connected;
+};
+
+struct ctdb_req_fetch_lock {
+	struct ctdb_req_header hdr;
+	uint32_t db_id;
+	uint32_t keylen;
+	uint8_t key[1]; /* key[] */
+};
+
+struct ctdb_reply_fetch_lock {
+	struct ctdb_req_header hdr;
+	uint32_t state;
+	uint32_t datalen;
+	uint8_t data[1]; /* data[] */
 };
 
 /* internal prototypes */
@@ -399,5 +421,13 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
   wait for all nodes to be connected
 */
 void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
+
+
+/*
+  do a fetch lock from a client to the local daemon
+*/
+struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key, TDB_DATA *data);
 
 #endif
