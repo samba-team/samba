@@ -77,7 +77,7 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 			dcerpc_eventlog_GetNumRecords(p, tctx, &r), 
 			"GetNumRecords failed");
 
-	torture_comment(tctx, talloc_asprintf(tctx, "%d records\n", *r.out.number));
+	torture_comment(tctx, "%d records\n", *r.out.number);
 
 	cr.in.handle = cr.out.handle = &handle;
 
@@ -186,11 +186,16 @@ static bool test_FlushEventLog(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *tctx)
+static bool test_ClearEventLog(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p)
 {
 	struct eventlog_ClearEventLogW r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+
+	if (!torture_setting_bool(tctx, "dangerous", false)) {
+		torture_skip(tctx, "ClearEventLog test disabled - enable dangerous tests to use");
+	}
 
 	if (!get_policy_handle(tctx, p, &handle))
 		return false;
@@ -236,15 +241,10 @@ struct torture_suite *torture_rpc_eventlog(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 
-											  &dcerpc_table_eventlog);
+						  &dcerpc_table_eventlog);
 
 	torture_rpc_tcase_add_test(tcase, "OpenEventLog", test_OpenEventLog);
-
-#if 0
-	/* Destructive test */
 	torture_rpc_tcase_add_test(tcase, "ClearEventLog", test_ClearEventLog);
-#endif
-	
 	torture_rpc_tcase_add_test(tcase, "GetNumRecords", test_GetNumRecords);
 	torture_rpc_tcase_add_test(tcase, "ReadEventLog", test_ReadEventLog);
 	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);
