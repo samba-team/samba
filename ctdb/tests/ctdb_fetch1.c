@@ -42,7 +42,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
-	TDB_DATA key, *data;
+	TDB_DATA key, *data, store_data;
 	struct ctdb_record_handle *rh;
 
 	struct poptOption popt_options[] = {
@@ -140,6 +140,11 @@ int main(int argc, const char *argv[])
 	key.dsize = strlen(key.dptr);
 	data      = NULL;
 	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, data);
+
+	store_data.dptr  = "data to store";
+	store_data.dsize = strlen(store_data.dptr)+1;
+	ret = ctdb_store_unlock(rh, store_data);
+	printf("ctdb_store_unlock ret:%d\n",ret);
 
 	while (1) {
 		event_loop_once(ev);
