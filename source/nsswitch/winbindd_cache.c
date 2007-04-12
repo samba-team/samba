@@ -2790,9 +2790,12 @@ int winbindd_validate_cache(void)
 			goto out;
 	}
 
+	/* Doh ! Volker is very smart :-). Use TDB_NOMMAP to prevent
+	 * any wild pointer references when reading a corrupt tdb file. */
+
 	tdb = tdb_open_log(cache_path,
 			WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-			lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST),
+			lp_winbind_offline_logon() ? TDB_NOMMAP : (TDB_NOMMAP | TDB_CLEAR_IF_FIRST),
 			O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		goto out;
