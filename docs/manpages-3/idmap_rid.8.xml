@@ -40,8 +40,8 @@
 		<term>base_rid = INTEGER</term>
 		<listitem><para>
 			Defines the base integer used to build SIDs out of an UID or a GID,
-			and to rebase the UID or GID to be obtained froma SID. User RIDs
-			by default starts at 1000 (512 hexadecimal), this means a good value
+			and to rebase the UID or GID to be obtained from a SID. User RIDs
+			by default start at 1000 (512 hexadecimal), this means a good value
 			for base_rid can be 1000 as the resulting ID is calculated this way:
 			ID = RID - BASE_RID + LOW RANGE ID.
 		</para></listitem>
