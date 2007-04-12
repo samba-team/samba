@@ -115,7 +115,27 @@ static int test_strlcpy(void)
 
 static int test_strlcat(void)
 {
-	/* FIXME */
+	char tmp[10];
+	printf("test: strlcat\n");
+	strcpy(tmp, "");
+	if (strlcat(tmp, "bla", 3) != 3) {
+		printf("failure: strlcat [\ninvalid return code\n]\n");
+		return false;
+	}
+	if (strcmp(tmp, "bl") != 0) {
+		printf("failure: strlcat [\nexpected \"bl\", got \"%s\"\n]\n", 
+			   tmp);
+		return false;
+	}
+
+	strcpy(tmp, "da");
+	if (strlcat(tmp, "me", 4) != 4) {
+		printf("failure: strlcat [\nexpected \"dam\", got \"%s\"\n]\n",
+			   tmp);
+		return false;
+	}
+
+	printf("success: strlcat\n");
 	return true;
 }
 
@@ -139,7 +159,16 @@ static int test_memmove(void)
 
 static int test_strdup(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: strdup\n");
+	x = strdup("bla");
+	if (strcmp("bla", x) != 0) {
+		printf("failure: strdup [\nfailed: expected \"bla\", got \"%s\"\n]\n",
+			   x);
+		return false;
+	}
+	free(x);
+	printf("success: strdup\n");
 	return true;
 }	
 
@@ -225,13 +254,49 @@ static int test_setenv(void)
 
 static int test_strndup(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: strndup\n");
+	x = strndup("bla", 0);
+	if (strcmp(x, "") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	x = strndup("bla", 2);
+	if (strcmp(x, "bl") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	x = strndup("bla", 10);
+	if (strcmp(x, "bla") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	printf("success: strndup\n");
 	return true;
 }
 
 static int test_strnlen(void)
 {
-	/* FIXME */
+	printf("test: strnlen\n");
+	if (strnlen("bla", 2) != 2) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	if (strnlen("some text\n", 0) != 0) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	if (strnlen("some text", 20) != 9) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	printf("success: strnlen\n");
 	return true;
 }
 
@@ -255,13 +320,43 @@ static int test_setegid(void)
 
 static int test_asprintf(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: asprintf\n");
+	if (asprintf(&x, "%d", 9) != 1) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (strcmp(x, "9") != 0) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (asprintf(&x, "dat%s", "a") != 4) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (strcmp(x, "data") != 0) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	printf("success: asprintf\n");
 	return true;
 }
 
 static int test_snprintf(void)
 {
-	/* FIXME */
+	char tmp[10];
+	printf("test: snprintf\n");
+	if (snprintf(tmp, 3, "foo%d", 9) != 4) {
+		printf("failure: snprintf [\nsnprintf return code failed\n]\n");
+		return false;
+	}
+
+	if (strcmp(tmp, "fo") != 0) {
+		printf("failure: snprintf [\nsnprintf failed\n]\n");
+		return false;
+	}
+
+	printf("success: snprintf\n");
 	return true;
 }
 
@@ -328,13 +423,22 @@ static int test_bzero(void)
 
 static int test_strerror(void)
 {
+	printf("test: strerror\n");
 	/* FIXME */
+	printf("failure: sterror\n");
 	return true;
 }
 
 static int test_errno(void)
 {
-	/* FIXME */
+	printf("test: errno\n");
+	errno = 3;
+	if (errno != 3) {
+		printf("failure: errno [\nerrno failed\n]\n");
+		return false;
+	}
+
+	printf("success: errno\n");
 	return true;
 }
 
@@ -376,7 +480,20 @@ static int test_inet_ntoa(void)
 
 static int test_strtoll(void)
 {
-	/* FIXME */
+	printf("test: strtoll\n");
+	if (strtoll("15", NULL, 10) != 15) {
+		printf("failure: strtoll [\nstrtoll failed\n]\n");
+		return false;
+	}
+	if (strtoll("10", NULL, 16) != 16) {
+		printf("failure: strtoll [\nstrtoll hex failed\n]\n");
+		return false;
+	}
+	if (strtoll("11", NULL, 2) != 3) {
+		printf("failure: strtoll [\nstrtoll binary failed\n]\n");
+		return false;
+	}
+	printf("success: strtoll\n");
 	return true;
 }
 
@@ -410,19 +527,42 @@ static int test_va_copy(void)
 
 static int test_FUNCTION(void)
 {
-	/* FIXME: test __FUNCTION__ macro */
+	printf("test: FUNCTION\n");
+	if (strcmp(__FUNCTION__, "test_FUNCTION") != 0) {
+		printf("failure: FAILURE [\nFAILURE invalid\n]\n");
+		return false;
+	}
+	printf("success: FUNCTION\n");
 	return true;
 }
 
 static int test_MIN(void)
 {
-	/* FIXME */
+	printf("test: MIN\n");
+	if (MIN(20, 1) != 1) {
+		printf("failure: MIN [\nMIN invalid\n]\n");
+		return false;
+	}
+	if (MIN(1, 20) != 1) {
+		printf("failure: MIN [\nMIN invalid\n]\n");
+		return false;
+	}
+	printf("success: MIN\n");
 	return true;
 }
 
 static int test_MAX(void)
 {
-	/* FIXME */
+	printf("test: MAX\n");
+	if (MAX(20, 1) != 20) {
+		printf("failure: MAX [\nMAX invalid\n]\n");
+		return false;
+	}
+	if (MAX(1, 20) != 20) {
+		printf("failure: MAX [\nMAX invalid\n]\n");
+		return false;
+	}
+	printf("success: MAX\n");
 	return true;
 }
 
