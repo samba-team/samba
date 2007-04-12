@@ -1,4 +1,13 @@
 This directory contains test scripts that are useful for running a
-bunch of tests all at once. I expect it will eventually be hooked into
-a "make test" framework.
+bunch of tests all at once. 
 
+The following environments are currently available:
+
+ - none: No server set up
+ - dc: Domain controller set up. The following environment variables will 
+   be set:
+     * USERNAME
+	 * PASSWORD
+	 * DOMAIN
+	 * REALM
+	 * SERVER
