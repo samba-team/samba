@@ -248,6 +248,10 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 {
 	krb5_error_code ret;
 	
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
 	if (cred->ccache_obtained >= (MAX(cred->principal_obtained, 
 					  cred->username_obtained))) {
 		*ccc = cred->ccache;
