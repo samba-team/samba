@@ -96,7 +96,9 @@ echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN1" -m LANMAN1 || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $failed + 1`
 
-echo ls | testit "Test login with --machine-pass" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass  || failed=`expr $failed + 1`
+echo ls | testit "Test login with --machine-pass without kerberos" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass -k no || failed=`expr $failed + 1`
+
+echo ls | testit "Test login with --machine-pass and kerberos" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass -k yes || failed=`expr $failed + 1`
 
 (
     echo "password=$PASSWORD"
