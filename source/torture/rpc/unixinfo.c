@@ -28,21 +28,18 @@
 /**
   test the SidToUid interface
 */
-static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_sidtouid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct unixinfo_SidToUid r;
 	struct dom_sid *sid;
 	
-	sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	sid = dom_sid_parse_talloc(tctx, "S-1-5-32-1234-5432");
 	r.in.sid = *sid;
 
-	status = dcerpc_unixinfo_SidToUid(p, mem_ctx, &r);
+	status = dcerpc_unixinfo_SidToUid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
-	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("SidToUid failed == %s\n", nt_errstr(status));
-		return False;
-	}
+	} else torture_assert_ntstatus_ok(tctx, status, "SidToUid failed");
 
 	return True;
 }
@@ -50,8 +47,7 @@ static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   test the UidToSid interface
 */
-static bool test_uidtosid(struct torture_context *tctx, 
-						  struct dcerpc_pipe *p)
+static bool test_uidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct unixinfo_UidToSid r;
 	struct dom_sid sid;
@@ -60,13 +56,13 @@ static bool test_uidtosid(struct torture_context *tctx,
 	r.out.sid = &sid;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_unixinfo_UidToSid(p, tctx, &r), 
-							   "UidToSid failed");
+				   "UidToSid failed");
 
 	return true;
 }
 
 static bool test_getpwuid(struct torture_context *tctx, 
-						  struct dcerpc_pipe *p)
+			  struct dcerpc_pipe *p)
 {
 	uint64_t uids[512];
 	uint32_t num_uids = ARRAY_SIZE(uids);
@@ -93,40 +89,35 @@ static bool test_getpwuid(struct torture_context *tctx,
 /*
   test the SidToGid interface
 */
-static BOOL test_sidtogid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_sidtogid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct unixinfo_SidToGid r;
 	struct dom_sid *sid;
-	
-	sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+
+	sid = dom_sid_parse_talloc(tctx, "S-1-5-32-1234-5432");
 	r.in.sid = *sid;
 
-	status = dcerpc_unixinfo_SidToGid(p, mem_ctx, &r);
+	status = dcerpc_unixinfo_SidToGid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
-	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("SidToGid failed == %s\n", nt_errstr(status));
-		return False;
-	}
+	} else torture_assert_ntstatus_ok(tctx, status, "SidToGid failed");
 
-	return True;
+	return true;
 }
 
 /*
   test the GidToSid interface
 */
-static BOOL test_gidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
+static bool test_gidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct unixinfo_GidToSid r;
 	struct dom_sid sid;
 
 	r.in.gid = 1000;
 	r.out.sid = &sid;
 
-	status = dcerpc_unixinfo_GidToSid(p, tctx, &r);
-	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_GROUP, status)) {
-	} else torture_assert_ntstatus_ok(tctx, status, "GidToSid failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_unixinfo_GidToSid(p, tctx, &r), 
+				   "GidToSid failed");
 
 	return true;
 }
@@ -138,10 +129,12 @@ struct torture_suite *torture_rpc_unixinfo(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "UNIXINFO");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "unixinfo", 
-											  &dcerpc_table_unixinfo);
+						  &dcerpc_table_unixinfo);
 
+	torture_rpc_tcase_add_test(tcase, "sidtouid", test_sidtouid);
 	torture_rpc_tcase_add_test(tcase, "uidtosid", test_uidtosid);
 	torture_rpc_tcase_add_test(tcase, "getpwuid", test_getpwuid);
+	torture_rpc_tcase_add_test(tcase, "sidtogid", test_sidtogid);
 	torture_rpc_tcase_add_test(tcase, "gidtosid", test_gidtosid);
 
 	return suite;
