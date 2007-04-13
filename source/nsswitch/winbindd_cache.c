@@ -52,6 +52,8 @@ struct cache_entry {
 	uint32 len, ofs;
 };
 
+void (*smb_panic_fn)(const char *const why) = smb_panic;
+
 #define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
 
 static struct winbind_cache *wcache;
@@ -160,16 +162,27 @@ static void centry_free(struct cache_entry *centry)
 	free(centry);
 }
 
+static BOOL centry_check_bytes(struct cache_entry *centry, size_t nbytes)
+{
+	if (centry->len - centry->ofs < nbytes) {
+		DEBUG(0,("centry corruption? needed %u bytes, have %d\n", 
+			 (unsigned int)nbytes,
+			 centry->len - centry->ofs));
+		return False;
+	}
+	return True;
+}
+
 /*
   pull a uint32 from a cache entry 
 */
 static uint32 centry_uint32(struct cache_entry *centry)
 {
 	uint32 ret;
-	if (centry->len - centry->ofs < 4) {
-		DEBUG(0,("centry corruption? needed 4 bytes, have %d\n", 
-			 centry->len - centry->ofs));
-		smb_panic("centry_uint32");
+
+	if (centry_check_bytes(centry, 4)) {
+		smb_panic_fn("centry_uint32");
+		return (uint32)-1;
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
@@ -182,10 +195,9 @@ static uint32 centry_uint32(struct cache_entry *centry)
 static uint16 centry_uint16(struct cache_entry *centry)
 {
 	uint16 ret;
-	if (centry->len - centry->ofs < 2) {
-		DEBUG(0,("centry corruption? needed 2 bytes, have %d\n", 
-			 centry->len - centry->ofs));
-		smb_panic("centry_uint16");
+	if (centry_check_bytes(centry, 2)) {
+		smb_panic_fn("centry_uint16");
+		return (uint16)-1;
 	}
 	ret = CVAL(centry->data, centry->ofs);
 	centry->ofs += 2;
@@ -198,10 +210,9 @@ static uint16 centry_uint16(struct cache_entry *centry)
 static uint8 centry_uint8(struct cache_entry *centry)
 {
 	uint8 ret;
-	if (centry->len - centry->ofs < 1) {
-		DEBUG(0,("centry corruption? needed 1 bytes, have %d\n", 
-			 centry->len - centry->ofs));
-		smb_panic("centry_uint32");
+	if (centry_check_bytes(centry, 1)) {
+		smb_panic_fn("centry_uint8");
+		return (uint8)-1;
 	}
 	ret = CVAL(centry->data, centry->ofs);
 	centry->ofs += 1;
@@ -214,10 +225,9 @@ static uint8 centry_uint8(struct cache_entry *centry)
 static NTTIME centry_nttime(struct cache_entry *centry)
 {
 	NTTIME ret;
-	if (centry->len - centry->ofs < 8) {
-		DEBUG(0,("centry corruption? needed 8 bytes, have %d\n", 
-			 centry->len - centry->ofs));
-		smb_panic("centry_nttime");
+	if (centry_check_bytes(centry, 8)) {
+		smb_panic_fn("centry_nttime");
+		return (NTTIME)-1;
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
@@ -232,10 +242,9 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 static time_t centry_time(struct cache_entry *centry)
 {
 	time_t ret;
-	if (centry->len - centry->ofs < sizeof(time_t)) {
-		DEBUG(0,("centry corruption? needed %u bytes, have %u\n", 
-			 (unsigned int)sizeof(time_t), (unsigned int)(centry->len - centry->ofs)));
-		smb_panic("centry_time");
+	if (centry_check_bytes(centry, sizeof(time_t))) {
+		smb_panic_fn("centry_time");
+		return (time_t)-1;
 	}
 	ret = IVAL(centry->data, centry->ofs); /* FIXME: correct ? */
 	centry->ofs += sizeof(time_t);
@@ -257,15 +266,15 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (centry->len - centry->ofs < len) {
-		DEBUG(0,("centry corruption? needed %d bytes, have %d\n", 
-			 len, centry->len - centry->ofs));
-		smb_panic("centry_string");
+	if (centry_check_bytes(centry, (size_t)len)) {
+		smb_panic_fn("centry_string");
+		return NULL;
 	}
 
 	ret = TALLOC_ARRAY(mem_ctx, char, len+1);
 	if (!ret) {
-		smb_panic("centry_string out of memory\n");
+		smb_panic_fn("centry_string out of memory\n");
+		return NULL;
 	}
 	memcpy(ret,centry->data + centry->ofs, len);
 	ret[len] = 0;
@@ -289,15 +298,14 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (centry->len - centry->ofs < 16) {
-		DEBUG(0,("centry corruption? needed 16 bytes, have %d\n", 
-			 centry->len - centry->ofs));
+	if (centry_check_bytes(centry, 16)) {
 		return NULL;
 	}
 
 	ret = TALLOC_ARRAY(mem_ctx, char, 16);
 	if (!ret) {
-		smb_panic("centry_hash out of memory\n");
+		smb_panic_fn("centry_hash out of memory\n");
+		return NULL;
 	}
 	memcpy(ret,centry->data + centry->ofs, 16);
 	centry->ofs += 16;
@@ -622,7 +630,7 @@ static void centry_expand(struct cache_entry *centry, uint32 len)
 					 centry->len);
 	if (!centry->data) {
 		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
-		smb_panic("out of memory in centry_expand");
+		smb_panic_fn("out of memory in centry_expand");
 	}
 }
 
@@ -1053,8 +1061,11 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto do_cached;
 
 	(*info) = TALLOC_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
-	if (! (*info))
-		smb_panic("query_user_list out of memory");
+	if (! (*info)) {
+		smb_panic_fn("query_user_list out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
 	for (i=0; i<(*num_entries); i++) {
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
@@ -1168,8 +1179,11 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto do_cached;
 
 	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
-	if (! (*info))
-		smb_panic("enum_dom_groups out of memory");
+	if (! (*info)) {
+		smb_panic_fn("enum_dom_groups out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
 	for (i=0; i<(*num_entries); i++) {
 		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
 		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
@@ -1241,8 +1255,11 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 		goto do_cached;
 
 	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
-	if (! (*info))
-		smb_panic("enum_dom_groups out of memory");
+	if (! (*info)) {
+		smb_panic_fn("enum_dom_groups out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
 	for (i=0; i<(*num_entries); i++) {
 		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
 		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
@@ -1657,8 +1674,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto do_cached;
 
 	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
-	if (! (*user_gids))
-		smb_panic("lookup_usergroups out of memory");
+	if (! (*user_gids)) {
+		smb_panic_fn("lookup_usergroups out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
 	for (i=0; i<(*num_groups); i++) {
 		centry_sid(centry, mem_ctx, &(*user_gids)[i]);
 	}
@@ -1817,7 +1837,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	(*name_types) = TALLOC_ARRAY(mem_ctx, uint32, *num_names);
 
 	if (! (*sid_mem) || ! (*names) || ! (*name_types)) {
-		smb_panic("lookup_groupmem out of memory");
+		smb_panic_fn("lookup_groupmem out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<(*num_names); i++) {
@@ -1911,7 +1933,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	(*dom_sids) 	= TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
  
 	if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
-		smb_panic("trusted_domains out of memory");
+		smb_panic_fn("trusted_domains out of memory");
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
  	}
  
 	for (i=0; i<(*num_domains); i++) {
@@ -2595,84 +2619,171 @@ BOOL get_global_winbindd_state_offline(void)
  Validate functions for all possible cache tdb keys.
 ***********************************************************************/
 
-static int bad_cache_entry;
+static BOOL bad_cache_entry;
 
-static int validate_seqnum(TDB_DATA kbuf, TDB_DATA dbuf)
+static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA data)
+{
+	struct cache_entry *centry;
+
+	centry = SMB_XMALLOC_P(struct cache_entry);
+	centry->data = (unsigned char *)memdup(data.dptr, data.dsize);
+	if (!centry->data) {
+		SAFE_FREE(centry);
+		return NULL;
+	}
+	centry->len = data.dsize;
+	centry->ofs = 0;
+
+	if (centry->len < 8) {
+		/* huh? corrupt cache? */
+		DEBUG(0,("validate_create_centry: Corrupt cache for key %s (len < 8) ?\n", kstr));
+		centry_free(centry);
+		bad_cache_entry = True;
+		return NULL;
+	}
+
+	centry->status = NT_STATUS(centry_uint32(centry));
+	centry->sequence_number = centry_uint32(centry);
+	return centry;
+}
+
+static int validate_seqnum(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+{
+	if (dbuf.dsize != 8) {
+		DEBUG(0,("validate_seqnum: Corrupt cache for key %s (len %u != 8) ?\n",
+				keystr, (unsigned int)dbuf.dsize ));
+		bad_cache_entry = True;
+		return 1;
+	}
+	return 0;
+}
+
+static int validate_ns(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+{
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	if (!centry) {
+		return 1;
+	}
+
+	(void)centry_uint32(centry);
+	if (NT_STATUS_IS_OK(centry->status)) {
+		DOM_SID sid;
+		(void)centry_sid(centry, mem_ctx, &sid);
+	}
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_ns: %s ok\n", keystr));
+	return 0;
+}
+
+static int validate_sn(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+{
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	if (!centry) {
+		return 1;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		(void)centry_uint32(centry);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+	}
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_sn: %s ok\n", keystr));
+	return 0;
+}
+
+static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+{
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	DOM_SID sid;
+
+	if (!centry) {
+		return 1;
+	}
+
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_uint32(centry);
+	(void)centry_sid(centry, mem_ctx, &sid);
+	(void)centry_sid(centry, mem_ctx, &sid);
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_u: %s ok\n", keystr));
+	return 0;
+}
+
+static int validate_loc_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_ns(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_sn(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_u(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_loc_pol(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_pwd_pol(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_cred(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_ul(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_gl(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_ug(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_ua(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
 
-static int validate_gm(TDB_DATA kbuf, TDB_DATA dbuf)
-{
-	return 0;
-}
-
-static int validate_dr(TDB_DATA kbuf, TDB_DATA dbuf)
-{
-	return 0;
-}
-
-static int validate_de(TDB_DATA kbuf, TDB_DATA dbuf)
-{
-	return 0;
-}
-
-static int validate_trustdoms(TDB_DATA kbuf, TDB_DATA dbuf)
-{
-	return 0;
-}
-
-static int validate_offline(TDB_DATA kbuf, TDB_DATA dbuf)
+static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	return 0;
 }
@@ -2684,7 +2795,7 @@ static int validate_offline(TDB_DATA kbuf, TDB_DATA dbuf)
 
 struct key_val_struct {
 	const char *keyname;
-	int (*validate_data_fn)(TDB_DATA kbuf, TDB_DATA dbuf);
+	int (*validate_data_fn)(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf);
 } key_val[] = {
 	{"SEQNUM/", validate_seqnum},
 	{"NS/", validate_ns},
@@ -2714,11 +2825,39 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 {
 	int i;
 
+	/* Paranoia check. */
+	if (kbuf.dsize > 1024) {
+		DEBUG(0,("cache_traverse_validate_fn: key length too large (%u) > 1024\n\n",
+				(unsigned int)kbuf.dsize ));
+		return 1;
+	}
+
 	for (i = 0; key_val[i].keyname; i++) {
 		size_t namelen = strlen(key_val[i].keyname);
 		if (kbuf.dsize >= namelen && (
 				strncmp(key_val[i].keyname, (const char *)kbuf.dptr, namelen)) == 0) {
-			return key_val[i].validate_data_fn(kbuf, dbuf);
+			TALLOC_CTX *mem_ctx;
+			char *keystr;
+			int ret;
+
+			keystr = SMB_MALLOC(kbuf.dsize+1);
+			if (!keystr) {
+				return 1;
+			}
+			memcpy(keystr, kbuf.dptr, kbuf.dsize);
+			keystr[kbuf.dsize] = '\0';
+
+			mem_ctx = talloc_init("validate_ctx");
+			if (!mem_ctx) {
+				SAFE_FREE(keystr);
+				return 1;
+			}
+
+			ret = key_val[i].validate_data_fn(mem_ctx, keystr, dbuf);
+
+			SAFE_FREE(keystr);
+			talloc_destroy(mem_ctx);
+			return ret;
 		}
 	}
 
@@ -2727,6 +2866,12 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 	DEBUG(0,("data :\n"));
 	dump_data(0, (uint8 *)dbuf.dptr, dbuf.dsize);
 	return 1; /* terminate. */
+}
+
+static void validate_panic(const char *const why)
+{
+	DEBUG(0,("validating cache: would panic %s\n", why ));
+	bad_cache_entry = True;
 }
 
 /* Handle any signals generated when validating a possibly
@@ -2813,6 +2958,8 @@ int winbindd_validate_cache(void)
 	DEBUG(10,("winbindd_validate_cache: cache %s freelist has %d entries\n",
 		cache_path, num_entries));
 
+	smb_panic_fn = validate_panic;
+
 	/* Now traverse the cache to validate it. */
 	num_entries = tdb_traverse(tdb, cache_traverse_validate_fn, NULL);
 	if (num_entries == -1 || bad_cache_entry) {
@@ -2826,6 +2973,9 @@ int winbindd_validate_cache(void)
 	ret = 0; /* Cache is good. */
 
   out:
+
+	bad_cache_entry = False;
+	smb_panic_fn = smb_panic;
 
 	/* Ensure if we segv on exit we use the original
 	   handlers to avoid a loop. */
