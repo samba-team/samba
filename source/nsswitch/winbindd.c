@@ -1065,6 +1065,11 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 	
+	/* Initialize cache (ensure version is correct). */
+	if (!initialize_winbindd_cache()) {
+		exit(1);
+	}
+
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services, NULL);
