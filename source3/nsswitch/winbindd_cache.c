@@ -2757,7 +2757,11 @@ static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA db
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	(void)centry_uint16(centry);
+	(void)centry_uint16(centry);
+	(void)centry_uint32(centry);
+	(void)centry_nttime(centry);
+	(void)centry_nttime(centry);
 
 	centry_free(centry);
 
@@ -2776,7 +2780,13 @@ static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	(void)centry_time(centry);
+	(void)centry_hash16(centry, mem_ctx);
+
+	/* We only have 17 bytes more data in the salted cred case. */
+	if (centry->len - centry->ofs == 17) {
+		(void)centry_hash16(centry, mem_ctx);
+	}
 
 	centry_free(centry);
 
@@ -2790,12 +2800,23 @@ static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_entries, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_entries = (int32)centry_uint32(centry);
+
+	for (i=0; i< num_entries; i++) {
+		DOM_SID sid;
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_sid(centry, mem_ctx, &sid);
+		(void)centry_sid(centry, mem_ctx, &sid);
+	}
 
 	centry_free(centry);
 
@@ -2809,12 +2830,19 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_entries, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_entries = centry_uint32(centry);
+	
+	for (i=0; i< num_entries; i++) {
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_uint32(centry);
+	}
 
 	centry_free(centry);
 
@@ -2828,12 +2856,18 @@ static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_groups, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_groups = centry_uint32(centry);
+
+	for (i=0; i< num_groups; i++) {
+		DOM_SID sid;
+		centry_sid(centry, mem_ctx, &sid);
+	}
 
 	centry_free(centry);
 
@@ -2847,12 +2881,17 @@ static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_aliases, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_aliases = centry_uint32(centry);
+
+	for (i=0; i < num_aliases; i++) {
+		(void)centry_uint32(centry);
+	}
 
 	centry_free(centry);
 
@@ -2866,12 +2905,20 @@ static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_names, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_names = centry_uint32(centry);
+
+	for (i=0; i< num_names; i++) {
+		DOM_SID sid;
+		centry_sid(centry, mem_ctx, &sid);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_uint32(centry);
+	}
 
 	centry_free(centry);
 
@@ -2884,38 +2931,28 @@ static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
-
-	if (!centry) {
+	/* Can't say anything about this other than must be nonzero. */
+	if (dbuf.dsize == 0) {
+		DEBUG(0,("validate_dr: Corrupt cache for key %s (len == 0) ?\n",
+				keystr));
+		bad_cache_entry = True;
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
-
-	centry_free(centry);
-
-	if (bad_cache_entry) {
-		return 1;
-	}
 	DEBUG(10,("validate_dr: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
-
-	if (!centry) {
+	/* Can't say anything about this other than must be nonzero. */
+	if (dbuf.dsize == 0) {
+		DEBUG(0,("validate_de: Corrupt cache for key %s (len == 0) ?\n",
+				keystr));
+		bad_cache_entry = True;
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
-
-	centry_free(centry);
-
-	if (bad_cache_entry) {
-		return 1;
-	}
 	DEBUG(10,("validate_de: %s ok\n", keystr));
 	return 0;
 }
@@ -2923,12 +2960,20 @@ static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	int32 num_domains, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	/* FIXME - fill in details here... */
+	num_domains = centry_uint32(centry);
+	
+	for (i=0; i< num_domains; i++) {
+		DOM_SID sid;
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_sid(centry, mem_ctx, &sid);
+	}
 
 	centry_free(centry);
 
