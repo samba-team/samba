@@ -2730,61 +2730,224 @@ static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 static int validate_loc_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	(void)centry_nttime(centry);
+	(void)centry_nttime(centry);
+	(void)centry_uint16(centry);
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_loc_pol: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_pwd_pol: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_cred: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_ul: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_gl: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_ug: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_ua: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_gm: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_dr: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_de: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+
+	if (!centry) {
+		return 1;
+	}
+
+	/* FIXME - fill in details here... */
+
+	centry_free(centry);
+
+	if (bad_cache_entry) {
+		return 1;
+	}
+	DEBUG(10,("validate_trustdoms: %s ok\n", keystr));
 	return 0;
 }
 
 static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 {
+	if (dbuf.dsize != 4) {
+		DEBUG(0,("validate_offline: Corrupt cache for key %s (len %u != 4) ?\n",
+				keystr, (unsigned int)dbuf.dsize ));
+		bad_cache_entry = True;
+		return 1;
+	}
+	DEBUG(10,("validate_offline: %s ok\n", keystr));
 	return 0;
 }
 
