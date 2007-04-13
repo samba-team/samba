@@ -320,20 +320,17 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
-		name_token.value  = discard_const_p(uint8_t, principal);
-		name_token.length = strlen(principal);
-
 		name_type = GSS_C_NULL_OID;
 	} else {
 		principal = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
 					    gensec_get_target_service(gensec_security), 
 					    hostname);
 
-		name_token.value  = discard_const_p(uint8_t, principal);
-		name_token.length = strlen(principal);
-
 		name_type = GSS_C_NT_HOSTBASED_SERVICE;
 	}		
+	name_token.value  = discard_const_p(uint8_t, principal);
+	name_token.length = strlen(principal);
+
 
 	maj_stat = gss_import_name (&min_stat,
 				    &name_token,
@@ -351,7 +348,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	case 0:
 		break;
 	case KRB5_KDC_UNREACH:
-		DEBUG(3, ("Cannot reach a KDC we require\n"));
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
 		DEBUG(1, ("Aquiring initiator credentails failed\n"));
