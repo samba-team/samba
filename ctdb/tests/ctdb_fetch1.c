@@ -25,7 +25,7 @@
 
 
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-			    TDB_DATA data, void *private)
+			    TDB_DATA data, void *private_data)
 {
 printf("received a message\n");
 }

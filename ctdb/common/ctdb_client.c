@@ -354,7 +354,7 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
 */
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				    ctdb_message_fn_t handler,
-				    void *private)
+				    void *private_data)
 				    
 {
 	struct ctdb_req_register c;
@@ -379,7 +379,7 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	}
 
 	/* also need to register the handler with our ctdb structure */
-	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private);
+	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
 }
 
 
@@ -390,12 +390,12 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 int ctdb_set_message_handler(struct ctdb_context *ctdb, 
 			     uint32_t srvid, 
 			     ctdb_message_fn_t handler,
-			     void *private)
+			     void *private_data)
 {
 	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_set_message_handler(ctdb, srvid, handler, private);
+		return ctdb_client_set_message_handler(ctdb, srvid, handler, private_data);
 	}
-	return ctdb_daemon_set_message_handler(ctdb, srvid, handler, private);
+	return ctdb_daemon_set_message_handler(ctdb, srvid, handler, private_data);
 }
 
 

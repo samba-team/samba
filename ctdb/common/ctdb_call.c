@@ -528,9 +528,9 @@ static int ctdb_call_destructor(struct ctdb_call_state *state)
   called when a ctdb_call times out
 */
 void ctdb_call_timeout(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private)
+		       struct timeval t, void *private_data)
 {
-	struct ctdb_call_state *state = talloc_get_type(private, struct ctdb_call_state);
+	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
 	state->state = CTDB_CALL_ERROR;
 	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
 		       state->c->hdr.reqid);
@@ -543,9 +543,9 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
   this allows the caller to setup a async.fn 
 */
 static void call_local_trigger(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private)
+		       struct timeval t, void *private_data)
 {
-	struct ctdb_call_state *state = talloc_get_type(private, struct ctdb_call_state);
+	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
 	if (state->async.fn) {
 		state->async.fn(state);
 	}

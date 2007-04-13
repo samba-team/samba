@@ -78,9 +78,9 @@ struct ctdb_local_message {
 };
 
 static void ctdb_local_message_trigger(struct event_context *ev, struct timed_event *te, 
-				       struct timeval t, void *private)
+				       struct timeval t, void *private_data)
 {
-	struct ctdb_local_message *m = talloc_get_type(private, 
+	struct ctdb_local_message *m = talloc_get_type(private_data, 
 						       struct ctdb_local_message);
 	int res;
 
@@ -176,7 +176,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t srvid,
 				  ctdb_message_fn_t handler,
-				  void *private)
+				  void *private_data)
 {
 	struct ctdb_message_list *m;
 
@@ -186,7 +186,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 	m->ctdb            = ctdb;
 	m->srvid           = srvid;
 	m->message_handler = handler;
-	m->message_private = private;
+	m->message_private = private_data;
 	
 	DLIST_ADD(ctdb->message_list, m);
 

@@ -37,9 +37,9 @@ static void set_nonblocking(int fd)
 /*
   called when a complete packet has come in - should not happen on this socket
  */
-void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private)
+void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
+	struct ctdb_node *node = talloc_get_type(private_data, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->private_data, struct ctdb_tcp_node);
 
@@ -171,7 +171,7 @@ static int ctdb_incoming_destructor(struct ctdb_incoming *in)
   node in our cluster
 */
 static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde, 
-			      uint16_t flags, void *private)
+			      uint16_t flags, void *private_data)
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_tcp *ctcp;
@@ -180,7 +180,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	int fd;
 	struct ctdb_incoming *in;
 
-	ctdb = talloc_get_type(private, struct ctdb_context);
+	ctdb = talloc_get_type(private_data, struct ctdb_context);
 	ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
