@@ -66,7 +66,7 @@ static BOOL is_non_centry_key(TDB_DATA kbuf)
 	}
 	for (i = 0; non_centry_keys[i] != NULL; i++) {
 		size_t namelen = strlen(non_centry_keys[i]);
-		if (kbuf.dsize <= namelen) {
+		if (kbuf.dsize < namelen) {
 			continue;
 		}
 		if (strncmp(non_centry_keys[i], (const char *)kbuf.dptr, namelen) == 0) {
