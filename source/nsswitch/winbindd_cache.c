@@ -752,7 +752,7 @@ static void centry_put_nttime(struct cache_entry *centry, NTTIME nt)
 static void centry_put_time(struct cache_entry *centry, time_t t)
 {
 	NTTIME nt = (NTTIME)t;
-	return centry_put_nttime(centry, nt);
+	centry_put_nttime(centry, nt);
 }
 
 /*
