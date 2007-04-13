@@ -63,9 +63,9 @@ struct ctdb_client {
   to the right client
  */
 static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-				    TDB_DATA data, void *private)
+				    TDB_DATA data, void *private_data)
 {
-	struct ctdb_client *client = talloc_get_type(private, struct ctdb_client);
+	struct ctdb_client *client = talloc_get_type(private_data, struct ctdb_client);
 	struct ctdb_req_message *r;
 	int len;
 
@@ -147,7 +147,7 @@ struct client_fetch_lock_data {
 static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 {
 	struct ctdb_reply_fetch_lock *r;
-	struct client_fetch_lock_data *data = talloc_get_type(state->async.private, struct client_fetch_lock_data);
+	struct client_fetch_lock_data *data = talloc_get_type(state->async.private_data, struct client_fetch_lock_data);
 	struct ctdb_client *client = talloc_get_type(data->client, struct ctdb_client);
 	int length, res;
 
@@ -201,7 +201,7 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	fl_data->client = client;
 	fl_data->reqid  = f->hdr.reqid;
 	state->async.fn = daemon_fetch_lock_complete;
-	state->async.private = fl_data;
+	state->async.private_data = fl_data;
 }
 
 /*
@@ -445,12 +445,12 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 }
 
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
+			 uint16_t flags, void *private_data)
 {
 	struct sockaddr_in addr;
 	socklen_t len;
 	int fd;
-	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_client *client;
 
 	memset(&addr, 0, sizeof(addr));
@@ -474,9 +474,9 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 
 
 static void ctdb_read_from_parent(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
+			 uint16_t flags, void *private_data)
 {
-	int *fd = private;
+	int *fd = private_data;
 	int cnt;
 	char buf;
 
@@ -600,8 +600,8 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 
 int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			     ctdb_message_fn_t handler,
-			     void *private)
+			     void *private_data)
 {
-	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private);
+	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
 }
 

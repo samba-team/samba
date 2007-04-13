@@ -31,7 +31,7 @@
 
 int ctdb_ibw_node_connect(struct ctdb_node *node)
 {
-	struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+	struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
 	int	rc;
 
 	assert(cn!=NULL);
@@ -56,9 +56,9 @@ int ctdb_ibw_node_connect(struct ctdb_node *node)
 }
 
 void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private)
+	struct timeval t, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
+	struct ctdb_node *node = talloc_get_type(private_data, struct ctdb_node);
 
 	ctdb_ibw_node_connect(node);
 }
@@ -98,7 +98,7 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		case IBWC_CONNECTED: { /* after ibw_accept or ibw_connect */
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
 			if (node!=NULL) { /* after ibw_connect */
-				struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+				struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
 
 				node->ctdb->upcalls->node_connected(node);
 				ctdb_flush_cn_queue(cn);
@@ -116,7 +116,7 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		case IBWC_ERROR: {
 			struct ctdb_node *node = talloc_get_type(conn->conn_userdata, struct ctdb_node);
 			if (node!=NULL) {
-				struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+				struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
 				struct ibw_ctx *ictx = cn->conn->ctx;
 
 				DEBUG(10, ("IBWC_ERROR, reconnecting...\n"));

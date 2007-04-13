@@ -195,7 +195,7 @@ struct ctdb_call_state {
 	void *fetch_private;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
-		void *private;
+		void *private_data;
 	} async;
 };
 

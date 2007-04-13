@@ -34,7 +34,7 @@ static int num_clients = 2;
   handler for messages in bench_ring()
 */
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-				 TDB_DATA data, void *private)
+				 TDB_DATA data, void *private_data)
 {
 	printf("client vnn:%d received a message to srvid:%d [%s]\n",ctdb_get_vnn(ctdb),srvid,data.dptr);
 	fflush(stdout);

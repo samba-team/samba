@@ -378,9 +378,9 @@ error:
 }
 
 void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private)
+	struct timeval t, void *private_data)
 {
-	struct ibwtest_ctx *tcx = talloc_get_type(private, struct ibwtest_ctx);
+	struct ibwtest_ctx *tcx = talloc_get_type(private_data, struct ibwtest_ctx);
 	int	rc;
 
 	if (!tcx->is_server) {
