@@ -214,12 +214,36 @@ static void daemon_request_store_unlock(struct ctdb_client *client,
 {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_reply_store_unlock r;
+	uint32_t caller = ctdb_get_vnn(client->ctdb);
+	struct ctdb_ltdb_header header;
+	TDB_DATA key, data;
 	int res;
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
-	/* write the data to ltdb */
-/*XXX*/
 
+	/* write the data to ltdb */
+	key.dsize = f->keylen;
+	key.dptr  = &f->data[0];
+	res = ctdb_ltdb_fetch(ctdb_db, key, &header, NULL, NULL);
+	if (res) {
+		ctdb_set_error(ctdb_db->ctdb, "Fetch of locally held record failed");
+		res = -1;
+		goto done;
+	}
+	if (header.laccessor != caller) {
+		header.lacount = 0;
+	}
+	header.laccessor = caller;
+	header.lacount++;
+	data.dsize = f->datalen;
+	data.dptr  = &f->data[f->keylen];
+	res = ctdb_ltdb_store(ctdb_db, key, &header, data);
+	if ( res != 0) {
+		ctdb_set_error(ctdb_db->ctdb, "ctdb_call tdb_store failed\n");
+	}
+
+
+done:
 	/* now send the reply */
 	ZERO_STRUCT(r);
 
@@ -228,7 +252,7 @@ static void daemon_request_store_unlock(struct ctdb_client *client,
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.operation  = CTDB_REPLY_STORE_UNLOCK;
 	r.hdr.reqid      = f->hdr.reqid;
-	r.state          = CTDB_CALL_DONE;
+	r.state          = res;
 	
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {
