@@ -586,7 +586,7 @@ struct ctdb_call_state *ctdb_client_store_unlock_send(
   This is called when the program wants to wait for a ctdb_fetch_lock to complete and get the 
   results. This call will block unless the call has already completed.
 */
-struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *state, TALLOC_CTX *mem_ctx, TDB_DATA key)
+struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *state, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data)
 {
 	struct ctdb_record_handle *rec;
 
@@ -609,6 +609,9 @@ struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *s
 	rec->data->dsize = state->call.reply_data.dsize;
 	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
 
+	if (data) {
+		*data = *rec->data;
+	}
 	return rec;
 }
 
@@ -633,13 +636,14 @@ int ctdb_client_store_unlock_recv(struct ctdb_call_state *state, struct ctdb_rec
 
 struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
 						  TALLOC_CTX *mem_ctx, 
-						  TDB_DATA key, TDB_DATA *data)
+						  TDB_DATA key,
+						  TDB_DATA *data)
 {
 	struct ctdb_call_state *state;
 	struct ctdb_record_handle *rec;
 
 	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
-	rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key);
+	rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
 
 	return rec;
 }
