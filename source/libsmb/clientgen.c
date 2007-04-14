@@ -139,6 +139,26 @@ BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 	}
 
 	if (!cli_check_sign_mac(cli)) {
+		/*
+		 * If we get a signature failure in sessionsetup, then
+		 * the server sometimes just reflects the sent signature
+		 * back to us. Detect this and allow the upper layer to
+		 * retrieve the correct Windows error message.
+		 */
+		if (CVAL(cli->outbuf,smb_com) == SMBsesssetupX &&
+			(smb_len(cli->inbuf) > (smb_ss_field + 8 - 4)) &&
+			(SVAL(cli->inbuf,smb_flg2) & FLAGS2_SMB_SECURITY_SIGNATURES) &&
+			memcmp(&cli->outbuf[smb_ss_field],&cli->inbuf[smb_ss_field],8) == 0 &&
+			cli_is_error(cli)) {
+
+			/*
+			 * Reflected signature on login error. 
+			 * Set bad sig but don't close fd.
+			 */
+			cli->smb_rw_error = READ_BAD_SIG;
+			return True;
+		}
+
 		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
 		cli->smb_rw_error = READ_BAD_SIG;
 		close(cli->fd);
