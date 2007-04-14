@@ -828,7 +828,11 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 		wbret = winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
 		winbind_off();
 	} else {
-		wbret = winbindd_lookup_name_by_sid(ctx, map->sid, &domname, &name, &sid_type);
+		char *tmp_dom, *tmp_name;
+		wbret = winbindd_lookup_name_by_sid(ctx, map->sid, &tmp_dom,
+						    &tmp_name, &sid_type);
+		domname = tmp_dom;
+		name = tmp_name;
 	}
 
 	/* check if this is a valid SID and then map it */
