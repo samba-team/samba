@@ -606,6 +606,115 @@ static int test_socketpair(void)
 	return true;
 }
 
+static int test_strptime(void)
+{
+	const char *s = "20070414101546Z";
+	char *ret;
+	struct tm t, t2;
+
+	printf("test: strptime\n");
+
+	ret = strptime(s, "%Y%m%d%H%M%S", &t);
+	if ( ret == NULL ) {
+		printf("failure: strptime [\n"
+		       "returned NULL\n"
+		       "]\n");
+		return false;
+	}
+
+	ret = strptime(s, "%Y%m%d%H%M%SZ", &t2);
+	if ( ret == NULL ) {
+		printf("failure: strptime [\n"
+		       "returned NULL with Z\n"
+		       "]\n");
+		return false;
+	}
+
+	if (memcmp(&t, &t2, sizeof(t)) == 0) {
+		printf("failure: strptime [\n"
+		       "result differs if the format string has a 'Z' at the end\n"
+		       "]\n");
+		return false;
+	}
+
+	if (t.tm_sec != 46) {
+		printf("failure: strptime [\n"
+		       "tm_sec: expected: 46, got: %d\n"
+		       "]\n",
+		       t.tm_sec);
+		return false;
+	}
+
+	if (t.tm_min != 15) {
+		printf("failure: strptime [\n"
+		       "tm_min: expected: 15, got: %d\n"
+		       "]\n",
+		       t.tm_min);
+		return false;
+	}
+
+	if (t.tm_hour != 10) {
+		printf("failure: strptime [\n"
+		       "tm_hour: expected: 10, got: %d\n"
+		       "]\n",
+		       t.tm_hour);
+		return false;
+	}
+
+	if (t.tm_mday != 14) {
+		printf("failure: strptime [\n"
+		       "tm_mday: expected: 14, got: %d\n"
+		       "]\n",
+		       t.tm_mday);
+		return false;
+	}
+
+	if (t.tm_mon != 3) {
+		printf("failure: strptime [\n"
+		       "tm_mon: expected: 3, got: %d\n"
+		       "]\n",
+		       t.tm_mon);
+		return false;
+	}
+
+	if (t.tm_year != 107) {
+		printf("failure: strptime [\n"
+		       "tm_year: expected: 107, got: %d\n"
+		       "]\n",
+		       t.tm_year);
+		return false;
+	}
+
+	if (t.tm_wday != 6) { /* saturday */
+		printf("failure: strptime [\n"
+		       "tm_wday: expected: 6, got: %d\n"
+		       "]\n",
+		       t.tm_wday);
+		return false;
+	}
+
+	if (t.tm_yday != 103) {
+		printf("failure: strptime [\n"
+		       "tm_yday: expected: 103, got: %d\n"
+		       "]\n",
+		       t.tm_yday);
+		return false;
+	}
+
+	/* we don't test this as it depends on the host configuration
+	if (t.tm_isdst != 0) {
+		printf("failure: strptime [\n"
+		       "tm_isdst: expected: 0, got: %d\n"
+		       "]\n",
+		       t.tm_isdst);
+		return false;
+	}*/
+
+	printf("success: strptime\n");
+
+	return true;
+}
+
 struct torture_context;
 bool torture_local_replace(struct torture_context *ctx)
 {
@@ -653,6 +762,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_MIN();
 	ret &= test_MAX();
 	ret &= test_socketpair();
+	ret &= test_strptime();
 
 	return ret;
 }

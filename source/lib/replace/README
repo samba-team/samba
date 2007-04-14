@@ -53,6 +53,7 @@ inet_ntoa
 strtoll
 strtoull
 socketpair
+strptime
 
 Types:
 bool
