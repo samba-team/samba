@@ -43,6 +43,7 @@ static void block_signal(int signum)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
@@ -123,6 +124,13 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_nlist(ctdb, nlist);
 	if (ret == -1) {
 		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	/* attach to a specific database */
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	if (!ctdb_db) {
+		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
