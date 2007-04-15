@@ -563,6 +563,32 @@ int rep_setenv(const char *name, const char *value, int overwrite)
 }
 #endif
 
+#ifndef HAVE_UNSETENV
+int rep_unsetenv(const char *name)
+{
+	extern char **environ;
+	size_t len = strlen(name);
+	size_t i; 
+	int found = 0;
+
+	for (i=0; (environ && environ[i]); i++) {
+		if (found) {
+			environ[i-1] = environ[i];
+			continue;
+		}
+
+		if (strncmp(environ[i], name, len) == 0 && environ[i][len] == '=') {
+			free(environ[i]);
+			environ[i] = NULL;
+			found = 1;
+			continue;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 #ifndef HAVE_SOCKETPAIR
 int rep_socketpair(int d, int type, int protocol, int sv[2])
 {

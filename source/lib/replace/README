@@ -20,6 +20,7 @@ setlinebuf
 vsyslog
 timegm
 setenv
+unsetenv
 strndup
 strnlen
 waitpid
@@ -52,6 +53,7 @@ inet_ntoa
 strtoll
 strtoull
 socketpair
+strptime
 
 Types:
 bool
