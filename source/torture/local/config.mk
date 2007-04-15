@@ -14,6 +14,7 @@ OBJ_FILES = \
 		../../lib/crypto/hmacsha1test.o \
 		../../lib/talloc/testsuite.o \
 		../../lib/replace/test/os2_delete.o \
+		../../lib/replace/test/strptime.o \
 		../../lib/replace/test/testsuite.o \
 		messaging.o \
 		../../librpc/tests/binding_string.o \
