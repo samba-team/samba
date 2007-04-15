@@ -16,11 +16,6 @@
 #define dyn_MODULESDIR dyn_LIBDIR
 #endif
 
-
-
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
