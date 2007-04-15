@@ -22,12 +22,76 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "ctdb.h"
+#include "ctdb_private.h"
 
+#define PARENT_SRVID	0
+#define CHILD1_SRVID	1
+#define CHILD2_SRVID	2
+
+int num_msg=0;
 
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			    TDB_DATA data, void *private_data)
 {
-printf("received a message\n");
+	num_msg++;
+}
+static void child_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			    TDB_DATA data, void *private_data)
+{
+	num_msg++;
+printf("child received a message\n");
+}
+
+void test1(struct ctdb_db_context *ctdb_db)
+{
+	struct ctdb_record_handle *rh;
+	TDB_DATA key, data, data2, store_data;
+	int ret;
+ 
+	/* 
+	   test 1 : write data and read it back.   should all be the same
+	 */
+	printf("Test1: write and verify we can read it back: ");
+	key.dptr  = discard_const("Record");
+	key.dsize = strlen((const char *)key.dptr)+1;
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
+
+	store_data.dptr  = discard_const("data to store");
+	store_data.dsize = strlen((const char *)store_data.dptr)+1;
+	ret = ctdb_store_unlock(rh, store_data);
+
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	/* hopefully   data2 will now contain the record written above */
+	if (!strcmp("data to store", (const char *)data2.dptr)) {
+		printf("SUCCESS\n");
+	} else {
+		printf("FAILURE\n");
+		exit(10);
+	}
+	
+	/* just write it back to unlock it */
+	ret = ctdb_store_unlock(rh, store_data);
+}
+
+void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
+{
+	TDB_DATA data;
+
+	data.dptr=discard_const("dummy message");
+	data.dsize=strlen((const char *)data.dptr)+1;
+
+printf("setting message handler for srvid:%d on child with vnn:%d\n",srvid,ctdb_get_vnn(ctdb));
+	ctdb_set_message_handler(ctdb, srvid, child_handler, NULL);
+
+	ctdb_send_message(ctdb, PARENT_SRVID, ctdb_get_vnn(ctdb), data);
+	while (1) {
+/*XXX why does the child never receive the messages sent to it from the parent? */
+printf("child:%d eventloop num_msg:%d  why dont i get the message from the parent?\n",srvid,num_msg);
+sleep(1);
+		event_loop_once(ev);
+	}
+
 }
 
 /*
@@ -42,8 +106,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
-	TDB_DATA key, data, data2, store_data;
-	struct ctdb_record_handle *rh;
+	TDB_DATA data;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -130,36 +193,60 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ctdb_set_message_handler(ctdb, 0, message_handler, NULL);
-
+#if 0
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
 	ctdb_connect_wait(ctdb);
+#endif
 
-	key.dptr  = "Record";
-	key.dsize = strlen(key.dptr)+1;
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
-
-	store_data.dptr  = "data to store";
-	store_data.dsize = strlen(store_data.dptr)+1;
-	ret = ctdb_store_unlock(rh, store_data);
-
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
-	/* hopefully   data2 will now contain the record written above */
-	if (!strcmp("data to store", data2.dptr)) {
-		printf("woohoo we read back the data we stored\n");
+	/*
+	   start two child processes
+	 */
+	if(fork()){
+		/* 
+		   set up a message handler so our child processes can talk to us
+		 */
+		ctdb_set_message_handler(ctdb, PARENT_SRVID, message_handler, NULL);
 	} else {
-		printf("ERROR: we read back different data than we stored\n");
+		sleep(3);
+		if(!fork()){
+			child(CHILD1_SRVID, ev, ctdb, ctdb_db);
+		} else {
+			child(CHILD2_SRVID, ev, ctdb, ctdb_db);
+		}
 	}
-	
-	/* just write it back to unlock it */
-	ret = ctdb_store_unlock(rh, store_data);
 
-#if 0
+	/* 
+	   test 1 : write data and read it back.
+	 */
+	test1(ctdb_db); 
+
+	/* 
+	   wait until both children have sent us a message they have started
+	 */
+	printf("Wait for both child processes to start: ");
+	while (num_msg!=2) {
+		event_loop_once(ev);
+	}
+	printf("STARTED\n");
+sleep(3);
+
+	/*
+	   send message to child 1 to cause it to fetch and lock the record 
+	 */
+	data.dptr=discard_const("dummy message");
+	data.dsize=strlen((const char *)data.dptr)+1;
+printf("sending messgae to child vnn:%d srvid:%d\n",ctdb_get_vnn(ctdb),CHILD1_SRVID);
+	ctdb_send_message(ctdb, CHILD1_SRVID, ctdb_get_vnn(ctdb), data);
+printf("sendt messgae to child %d\n",CHILD1_SRVID);
+
+
+
+
+
 	while (1) {
 		event_loop_once(ev);
 	}
-#endif
 
 	/* shut it down */
 	talloc_free(ctdb);
