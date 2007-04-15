@@ -100,6 +100,7 @@ libhcrypto_la_SOURCES =	\
 	pkcs12.c	\
 	rand.c		\
 	rand.h		\
+	randi.h		\
 	rand-fortuna.c	\
 	rand-egd.c	\
 	rand-unix.c	\
