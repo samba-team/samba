@@ -43,12 +43,13 @@ static void block_signal(int signum)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
+	const char *db_list = "test.tdb";
+	char *s, *tok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -57,6 +58,7 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
 		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
+		{ "dblist", 0, POPT_ARG_STRING, &db_list, 0, "list of databases", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -127,11 +129,18 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (!ctdb_db) {
-		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	/* attach to the list of databases */
+	s = talloc_strdup(ctdb, db_list);
+	for (tok=strtok(s, ", "); tok; tok=strtok(NULL, ", ")) {
+		struct ctdb_db_context *ctdb_db;
+		ctdb_db = ctdb_attach(ctdb, tok, TDB_DEFAULT, 
+				      O_RDWR|O_CREAT|O_TRUNC, 0666);
+		if (!ctdb_db) {
+			printf("ctdb_attach to '%s'failed - %s\n", tok, 
+			       ctdb_errstr(ctdb));
+			exit(1);
+		}
+		printf("Attached to database '%s'\n", tok);
 	}
 
 	/* start the protocol running */
