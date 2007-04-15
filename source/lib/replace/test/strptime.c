@@ -8,6 +8,10 @@
 #define true 1
 #define false 0
 
+#ifndef __STRING
+#define __STRING(x)    #x
+#endif
+
 /* make printf a no-op */
 #define printf if(0) printf
 
@@ -23,6 +27,9 @@ int libreplace_test_strptime(void)
 	const char *s = "20070414101546Z";
 	char *ret;
 	struct tm t, t2;
+
+	memset(&t, 0, sizeof(t));
+	memset(&t2, 0, sizeof(t2));
 
 	printf("test: strptime\n");
 
@@ -56,12 +63,25 @@ int libreplace_test_strptime(void)
 		return false;
 	}
 
-	if (memcmp(&t, &t2, sizeof(t)) == 0) {
-		printf("failure: strptime [\n"
-		       "result differs if the format string has a 'Z' at the end\n"
-		       "]\n");
-		return false;
+#define CMP_TM_ELEMENT(t1,t2,elem) \
+	if (t1.elem != t2.elem) { \
+		printf("failure: strptime [\n" \
+		       "result differs if the format string has a 'Z' at the end\n" \
+		       "element: %s %d != %d\n" \
+		       "]\n", \
+		       __STRING(elen), t1.elem, t2.elem); \
+		return false; \
 	}
+
+	CMP_TM_ELEMENT(t,t2,tm_sec);
+	CMP_TM_ELEMENT(t,t2,tm_min);
+	CMP_TM_ELEMENT(t,t2,tm_hour);
+	CMP_TM_ELEMENT(t,t2,tm_mday);
+	CMP_TM_ELEMENT(t,t2,tm_mon);
+	CMP_TM_ELEMENT(t,t2,tm_year);
+	CMP_TM_ELEMENT(t,t2,tm_wday);
+	CMP_TM_ELEMENT(t,t2,tm_yday);
+	CMP_TM_ELEMENT(t,t2,tm_isdst);
 
 	if (t.tm_sec != 46) {
 		printf("failure: strptime [\n"
