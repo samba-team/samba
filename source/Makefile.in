@@ -742,7 +742,9 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) 
 TALLOCTORT_OBJ = lib/talloc/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
                  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LIBSAMBA_OBJ) $(SECRETS_OBJ)
 
-REPLACETORT_OBJ = lib/replace/test/testsuite.o lib/replace/test/os2_delete.o \
+REPLACETORT_OBJ = lib/replace/test/testsuite.o \
+		lib/replace/test/os2_delete.o \
+		lib/replace/test/strptime.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \

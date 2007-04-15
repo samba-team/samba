@@ -140,6 +140,11 @@ size_t rep_strnlen(const char *s, size_t n);
 int rep_setenv(const char *name, const char *value, int overwrite); 
 #endif
 
+#ifndef HAVE_UNSETENV
+#define unsetenv rep_unsetenv
+int rep_unsetenv(const char *name); 
+#endif
+
 #ifndef HAVE_SETEUID
 #define seteuid rep_seteuid
 int rep_seteuid(uid_t);
@@ -181,7 +186,7 @@ int rep_ftruncate(int,off_t);
 #endif
 
 #ifndef HAVE_INITGROUPS
-#define ftruncate rep_ftruncate
+#define initgroups rep_initgroups
 int rep_initgroups(char *name, gid_t id);
 #endif
 
@@ -273,6 +278,12 @@ void rep_vsyslog (int facility_priority, const char *format, va_list arglist) PR
 
 #ifndef HAVE_COMPARISON_FN_T
 typedef int (*comparison_fn_t)(const void *, const void *);
+#endif
+
+#ifdef REPLACE_STRPTIME
+#define strptime rep_strptime
+struct tm;
+char *rep_strptime(const char *buf, const char *format, struct tm *tm);
 #endif
 
 /* Load header file for dynamic linking stuff */
