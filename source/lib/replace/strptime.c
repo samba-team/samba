@@ -974,7 +974,7 @@ strptime_internal (rp, fmt, tm, decided, era_cnt)
   if (want_xday && !have_yday)
     day_of_the_year (tm);
 
-  return (char *) rp;
+  return discard_const_p(char, rp);
 }
 
 
