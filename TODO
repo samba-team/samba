@@ -15,6 +15,8 @@ upgrade process (from Samba3):
 
 - testsuite for the 'net' tool
 
+- and a lot of other stuff
+
 Configuration options
 =====================
 
@@ -279,3 +281,4 @@ or will be removed:
 - winbind nested groups
 - winbind max idle children
 - winbind nss info
+
