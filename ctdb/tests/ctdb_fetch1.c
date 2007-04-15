@@ -40,7 +40,6 @@ static void child_handler(struct ctdb_context *ctdb, uint32_t srvid,
 			    TDB_DATA data, void *private_data)
 {
 	num_msg++;
-printf("child received a message\n");
 }
 
 void test1(struct ctdb_db_context *ctdb_db)
@@ -77,21 +76,30 @@ void test1(struct ctdb_db_context *ctdb_db)
 void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
 	TDB_DATA data;
+	struct ctdb_record_handle *rh;
+	TDB_DATA key, data2;
 
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
 
-printf("setting message handler for srvid:%d on child with vnn:%d\n",srvid,ctdb_get_vnn(ctdb));
 	ctdb_set_message_handler(ctdb, srvid, child_handler, NULL);
 
-	ctdb_send_message(ctdb, PARENT_SRVID, ctdb_get_vnn(ctdb), data);
-	while (1) {
-/*XXX why does the child never receive the messages sent to it from the parent? */
-printf("child:%d eventloop num_msg:%d  why dont i get the message from the parent?\n",srvid,num_msg);
-sleep(1);
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
+	while (num_msg==0) {
 		event_loop_once(ev);
 	}
 
+
+	/* fetch and lock the record */
+	key.dptr  = discard_const("Record");
+	key.dsize = strlen((const char *)key.dptr)+1;
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
+
+
+	while (1) {
+		event_loop_once(ev);
+	}
 }
 
 /*
@@ -229,19 +237,31 @@ int main(int argc, const char *argv[])
 		event_loop_once(ev);
 	}
 	printf("STARTED\n");
-sleep(3);
+
 
 	/*
-	   send message to child 1 to cause it to fetch and lock the record 
+	   send message to child 1 to make it to fetch and lock the record 
 	 */
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
-printf("sending messgae to child vnn:%d srvid:%d\n",ctdb_get_vnn(ctdb),CHILD1_SRVID);
-	ctdb_send_message(ctdb, CHILD1_SRVID, ctdb_get_vnn(ctdb), data);
-printf("sendt messgae to child %d\n",CHILD1_SRVID);
+	printf("Send message to child 1 to fetch_lock the record\n");
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD1_SRVID, data);
 
+	/* wait for child 1 to complete fetching and locking the record */
+	while (num_msg!=3) {
+		event_loop_once(ev);
+	}
+	printf("Child 1 has fetched and locked the record\n");
 
+	/* now tell child 2 to fetch and lock the same record */
+	printf("Send message to child 2 to fetch_lock the record\n");
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD2_SRVID, data);
 
+	/* wait for child 2 to complete fetching and locking the record */
+	while (num_msg!=4) {
+		event_loop_once(ev);
+	}
+	printf("Child 2 has fetched and locked the record\n");
 
 
 	while (1) {
