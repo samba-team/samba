@@ -4,8 +4,8 @@
 	
 2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* kdc/kstash.8: Spelling, from raga <raga@comcast.net> via Bjorn
-	Sandell.
+	* kdc/kstash.8: Spelling, from raga <raga@comcast.net>
+	via Bjorn Sandell.
 
 	* lib/krb5/store_mem.c: indent.
 
