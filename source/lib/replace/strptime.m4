@@ -1,16 +1,8 @@
 AC_CACHE_CHECK([whether strptime is available and works],libreplace_cv_STRPTIME_OK,[
 	AC_TRY_RUN([
-		#include <stdio.h>
-		#include <stdlib.h>
-		#include <time.h>
-		int main (void) {
-		const char *s = "20061004023546Z";
-		char *ret;
-		struct tm t;
-		ret = strptime(s, "%Y%m%d%H%M%S", &t);
-		if ( ret == NULL ) return 1;
-		return 0;
-		}],
+		#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
+		#include "$libreplacedir/test/strptime.c"
+		],
 		[libreplace_cv_STRPTIME_OK=yes],
 		[libreplace_cv_STRPTIME_OK=no],
 		[libreplace_cv_STRPTIME_OK="assuming not"])
