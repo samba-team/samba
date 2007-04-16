@@ -878,7 +878,7 @@ struct connections_data {
 	int cnum;
 	uid_t uid;
 	gid_t gid;
-	char name[24];
+	char servicename[FSTRING_LEN];
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;

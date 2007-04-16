@@ -108,13 +108,13 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-			procid_str_static(&crec.pid), crec.cnum, crec.name));
+			procid_str_static(&crec.pid), crec.cnum, crec.servicename));
 		if (tdb_delete(the_tdb, kbuf) != 0)
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
 	}
 
-	if (strequal(crec.name, cs->name))
+	if (strequal(crec.servicename, cs->name))
 		cs->curr_connections++;
 
 	return 0;
@@ -191,8 +191,8 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	if (conn) {
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
-		safe_strcpy(crec.name,
-			    lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
+		safe_strcpy(crec.servicename,
+			    lp_servicename(SNUM(conn)),sizeof(crec.servicename)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
