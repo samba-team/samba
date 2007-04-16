@@ -117,7 +117,7 @@ static int test_strlcat(void)
 {
 	char tmp[10];
 	printf("test: strlcat\n");
-	strcpy(tmp, "");
+	strlcpy(tmp, "", sizeof(tmp));
 	if (strlcat(tmp, "bla", 3) != 3) {
 		printf("failure: strlcat [\ninvalid return code\n]\n");
 		return false;
@@ -128,7 +128,7 @@ static int test_strlcat(void)
 		return false;
 	}
 
-	strcpy(tmp, "da");
+	strlcpy(tmp, "da", sizeof(tmp));
 	if (strlcat(tmp, "me", 4) != 4) {
 		printf("failure: strlcat [\nexpected \"dam\", got \"%s\"\n]\n",
 			   tmp);
