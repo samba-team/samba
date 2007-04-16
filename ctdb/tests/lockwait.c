@@ -41,7 +41,6 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 						     struct lockwait_handle);
 	void (*callback)(void *) = h->callback;
 	void *p = h->private_data;
-	printf("%s\n", __location__);
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
 	talloc_free(h);	
