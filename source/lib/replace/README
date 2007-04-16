@@ -79,8 +79,10 @@ va_copy
 __FUNCTION__
 __FILE__
 __LINE__
+__LINESTR__
 __location__
 __STRING
+__STRINGSTRING
 MIN
 MAX
 QSORT_CAST
