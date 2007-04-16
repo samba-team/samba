@@ -110,25 +110,6 @@ static void *ctdb_backend_handle(struct cluster_ops *ops)
 static void ctdb_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				 TDB_DATA data, void *private)
 {
-	struct cluster_state *state = talloc_get_type(private, struct cluster_state);
-	struct cluster_messaging_list *m;
-	for (m=state->list;m;m=m->next) {
-		if (srvid == m->server.id) {
-			DATA_BLOB bdata;
-			bdata.data   = data.dptr;
-			bdata.length = data.dsize;
-			m->handler(m->msg, bdata);
-		}
-	}
-}
-
-/*
-  destroy a element of messaging list (when messaging context goes away)
-*/
-static int cluster_messaging_destructor(struct cluster_messaging_list *m)
-{
-	DLIST_REMOVE(m->state->list, m);
-	return 0;
 }
 
 /*
@@ -139,30 +120,7 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 				  struct server_id server,
 				  cluster_message_fn_t handler)
 {
-	struct cluster_state *state = ops->private;
-	struct cluster_messaging_list *m;
-	int ret;
-
-	/* setup messaging handler */
-	ret = ctdb_set_message_handler(state->ctdb, CTDB_SRVID_ALL, 
-				       ctdb_message_handler, state);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
-			 ctdb_errstr(state->ctdb)));
-		exit(1);
-        }
-
-	m = talloc(msg, struct cluster_messaging_list);
-	NT_STATUS_HAVE_NO_MEMORY(m);
-	
-	m->state   = state;
-	m->msg     = msg;
-	m->server  = server;
-	m->handler = handler;
-	DLIST_ADD(state->list, m);
-
-	talloc_set_destructor(m, cluster_messaging_destructor);
-
+	/* nothing to do - we're now using the wildcard message handler */
 	return NT_STATUS_OK;
 }
 
@@ -198,7 +156,7 @@ static struct cluster_ops cluster_ctdb_ops = {
 };
 
 /* initialise ctdb */
-void cluster_ctdb_init(struct event_context *ev)
+void cluster_ctdb_init(struct event_context *ev, const char *model)
 {
 	const char *nlist;
 	const char *address;
@@ -240,6 +198,11 @@ void cluster_ctdb_init(struct event_context *ev)
 		ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
 
+	if (strcmp(model, "single") != 0) {
+		DEBUG(0,("Enabling ctdb daemon mode\n"));
+		ctdb_set_flags(state->ctdb, CTDB_FLAG_DAEMON_MODE);
+	}
+
 	lacount = lp_parm_int(-1, "ctdb", "maxlacount", -1);
 	if (lacount != -1) {
 		ctdb_set_max_lacount(state->ctdb, lacount);
@@ -267,6 +230,15 @@ void cluster_ctdb_init(struct event_context *ev)
 		if (ctdb_db == NULL) goto failed;
 	}
 
+	/* setup a global message handler */
+	ret = ctdb_set_message_handler(state->ctdb, CTDB_SRVID_ALL, 
+				       ctdb_message_handler, state);
+        if (ret == -1) {
+                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
+			 ctdb_errstr(state->ctdb)));
+		exit(1);
+        }
+
 	/* start the protocol running */
 	ret = ctdb_start(state->ctdb);
         if (ret == -1) {
@@ -275,7 +247,7 @@ void cluster_ctdb_init(struct event_context *ev)
         }
 
 	/* wait until all nodes are connected (should not be needed
-	   outide of test code) */
+	   outside of test code) */
 	ctdb_connect_wait(state->ctdb);
 
 	cluster_set_ops(&cluster_ctdb_ops);
@@ -286,3 +258,4 @@ failed:
 	DEBUG(0,("cluster_ctdb_init failed\n"));
 	talloc_free(state);
 }
+

@@ -20,4 +20,4 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-void cluster_ctdb_init(struct event_context *ev);
+void cluster_ctdb_init(struct event_context *ev, const char *model);
