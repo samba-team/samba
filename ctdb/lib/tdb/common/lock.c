@@ -105,7 +105,7 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 
 
 /* lock a list in the database. list -1 is the alloc list */
-int tdb_lock(struct tdb_context *tdb, int list, int ltype)
+static int _tdb_lock(struct tdb_context *tdb, int list, int ltype, int op)
 {
 	struct tdb_lock_type *new_lck;
 	int i;
@@ -158,10 +158,8 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
-	if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW,
+	if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype, op,
 				     0, 1)) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d "
-			 "ltype=%d (%s)\n",  list, ltype, strerror(errno)));
 		return -1;
 	}
 
@@ -174,6 +172,25 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 
 	return 0;
 }
+
+/* lock a list in the database. list -1 is the alloc list */
+int tdb_lock(struct tdb_context *tdb, int list, int ltype)
+{
+	int ret;
+	ret = _tdb_lock(tdb, list, ltype, F_SETLKW);
+	if (ret) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d "
+			 "ltype=%d (%s)\n",  list, ltype, strerror(errno)));
+	}
+	return ret;
+}
+
+/* lock a list in the database. list -1 is the alloc list. non-blocking lock */
+int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype)
+{
+	return _tdb_lock(tdb, list, ltype, F_SETLK);
+}
+
 
 /* unlock the database: returns void because it's too late for errors. */
 	/* changed to return int it may be interesting to know there
@@ -349,6 +366,14 @@ int tdb_unlockall_read(struct tdb_context *tdb)
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key)
 {
 	return tdb_lock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK);
+}
+
+/* lock/unlock one hash chain, non-blocking. This is meant to be used
+   to reduce contention - it cannot guarantee how many records will be
+   locked */
+int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key)
+{
+	return tdb_lock_nonblock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK);
 }
 
 int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key)
