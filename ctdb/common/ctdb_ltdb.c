@@ -229,6 +229,21 @@ static void lock_fetch_callback(void *p)
 /*
   do a non-blocking ltdb_fetch with a locked record, deferring this
   ctdb request until we have the chainlock
+
+  It does the following:
+
+   1) tries to get the chainlock. If it succeeds, then it fetches the record, and 
+      returns 0
+
+   2) if it fails to get a chainlock immediately then it sets up a
+   non-blocking chainlock via ctdb_lockwait, and when it gets the
+   chainlock it re-submits this ctdb request to the main packet
+   receive function
+
+   This effectively queues all ctdb requests that cannot be
+   immediately satisfied until it can get the lock. This means that
+   the main ctdb daemon will not block waiting for a chainlock held by
+   a client
  */
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
