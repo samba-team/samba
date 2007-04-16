@@ -423,9 +423,7 @@ static int test_bzero(void)
 
 static int test_strerror(void)
 {
-	printf("test: strerror\n");
 	/* FIXME */
-	printf("failure: sterror\n");
 	return true;
 }
 
