@@ -143,6 +143,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	out.pem out2.pem \
 	sd.data sd.data.out \
 	ev.data ev.data.out \
+	cert-null.pem cert-sub-ca2.pem \
 	cert-ee.pem cert-ca.pem \
 	cert-sub-ee.pem cert-sub-ca.pem \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
