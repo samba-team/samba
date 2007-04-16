@@ -140,15 +140,18 @@ sub provision_member($$$)
 	my ($self, $prefix, $dcvars) = @_;
 	my %ret = ();
 	print "PROVISIONING...";
-	open(IN, "$RealBin/mktestmember.sh $prefix $dcvars->{DOMAIN} $dcvars->{USERNAME} $dcvars->{PASSWORD}|") or die("Unable to setup");
+	open(IN, "SERVER_ROLE=\"member server\" $RealBin/mksamba4server.sh $prefix|") or die("Unable to setup");
 	while (<IN>) {
 		die ("Error parsing `$_'") unless (/^([A-Z0-9a-z_]+)=(.*)$/);
 		$ret{$1} = $2;
 	}
 	close(IN);
 
+	system("$self->{bindir}/net join $ret{CONFIGURATION} $dcvars->{DOMAIN} member -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}") or die("Join failed");
+
 	$ret{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	print "$ret{DOMAIN}\n";
 	return \%ret;
 }
 
@@ -157,7 +160,7 @@ sub provision_dc($$)
 	my ($self, $prefix) = @_;
 	my %ret = ();
 	print "PROVISIONING...";
-	open(IN, "$RealBin/mktestdc.sh $prefix|") or die("Unable to setup");
+	open(IN, "$RealBin/mksamba4server.sh $prefix|") or die("Unable to setup");
 	while (<IN>) {
 		die ("Error parsing `$_'") unless (/^([A-Z0-9a-z_]+)=(.*)$/);
 		$ret{$1} = $2;
