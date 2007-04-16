@@ -43,11 +43,12 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 						     struct lockwait_handle);
 	void (*callback)(void *) = h->callback;
 	void *p = h->private_data;
+	pid_t child = h->child;
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
 	talloc_free(h);	
 	callback(p);
-	waitpid(h->child, NULL, 0);
+	waitpid(child, NULL, 0);
 }
 
 static int lockwait_destructor(struct lockwait_handle *h)
