@@ -37,6 +37,13 @@ struct timeval timeval_current(void)
 	return tv;
 }
 
+double timeval_elapsed(struct timeval *tv)
+{
+	struct timeval tv2 = timeval_current();
+	return (tv2.tv_sec - tv->tv_sec) + 
+	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
+}
+
 /**
   return a timeval struct with the given elements
 */
