@@ -1,5 +1,5 @@
 /* 
-   simple ctdb benchmark
+   test of messaging
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -23,137 +23,21 @@
 #include "system/filesys.h"
 #include "popt.h"
 
-#include <sys/time.h>
-#include <time.h>
-
-static struct timeval tp1,tp2;
-
-static void start_timer(void)
-{
-	gettimeofday(&tp1,NULL);
-}
-
-static double end_timer(void)
-{
-	gettimeofday(&tp2,NULL);
-	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
-		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
-}
-
-
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
+static int num_repeats = 100;
+static int num_clients = 2;
 
-static int msg_count;
-
-#define TESTKEY "testkey"
-
-/*
-  fetch a record
-  store a expanded record
-  send a message to next node to tell it to do the same
-*/
-static void bench_fetch_1node(struct ctdb_context *ctdb)
-{
-	TDB_DATA key, data, nulldata;
-	struct ctdb_record_handle *rec;
-	struct ctdb_db_context *ctdb_db;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int dest, ret;
-
-	key.dptr = discard_const("testkey");
-	key.dsize = strlen((const char *)key.dptr);
-
-	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
-
-	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-	if (rec == NULL) {
-		printf("Failed to fetch record '%s' on node %d\n", 
-		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	if (data.dsize > 1000) {
-		data.dsize = 0;
-	}
-
-	if (data.dsize == 0) {
-		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
-	}
-	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
-						      "msg_count=%d on node %d\n",
-						      msg_count, ctdb_get_vnn(ctdb));
-	data.dsize = strlen((const char *)data.dptr)+1;
-
-	ret = ctdb_store_unlock(rec, data);
-	if (ret != 0) {
-		printf("Failed to store record\n");
-	}
-
-	talloc_free(tmp_ctx);
-
-	/* tell the next node to do the same */
-	nulldata.dptr = NULL;
-	nulldata.dsize = 0;
-
-	dest = (ctdb_get_vnn(ctdb) + 1) % ctdb_get_num_nodes(ctdb);
-	ctdb_send_message(ctdb, dest, 0, nulldata);
-}
 
 /*
   handler for messages in bench_ring()
 */
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-			    TDB_DATA data, void *private_data)
+				 TDB_DATA data, void *private_data)
 {
-	msg_count++;
-	bench_fetch_1node(ctdb);
-}
-
-
-/*
-  benchmark the following:
-
-  fetch a record
-  store a expanded record
-  send a message to next node to tell it to do the same
-
-*/
-static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
-{
-	int vnn=ctdb_get_vnn(ctdb);
-
-	if (vnn == ctdb_get_num_nodes(ctdb)-1) {
-		bench_fetch_1node(ctdb);
-	}
-	
-	start_timer();
-
-	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 100 == 0) {
-			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
-			fflush(stdout);
-		}
-		if (event_loop_once(ev) != 0) {
-			printf("Event loop failed!\n");
-			break;
-		}
-	}
-
-	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
-}
-
-enum my_functions {FUNC_FETCH=1};
-
-/*
-  ctdb call function to fetch a record
-*/
-static int fetch_func(struct ctdb_call_info *call)
-{
-	call->reply_data = &call->record_data;
-	return 0;
+	printf("client vnn:%d received a message to srvid:%d [%s]\n",ctdb_get_vnn(ctdb),srvid,data.dptr);
+	fflush(stdout);
 }
 
 /*
@@ -168,6 +52,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
+	char buf[256];
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -179,15 +64,18 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
+		{ "num-clients", 0, POPT_ARG_INT, &num_clients, 0, "num_clients", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
+	int ret, i, j;
 	poptContext pc;
 	struct event_context *ev;
-	struct ctdb_call call;
+	pid_t pid;
+	int srvid;
+	TDB_DATA data;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -255,36 +143,44 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
-
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
+	srvid = -1;
+	for (i=0;i<num_clients-1;i++) {
+		pid=fork();
+		if (pid) {
+			srvid = i;
+			break;
+		}
+	}
+	if (srvid == -1) {
+		srvid = num_clients-1;
+	}
+
+	ctdb_set_message_handler(ctdb, srvid, message_handler, NULL);
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
 	ctdb_connect_wait(ctdb);
 
-	bench_fetch(ctdb, ev);
+	sleep(3);
 
-	ZERO_STRUCT(call);
-	call.key.dptr = discard_const(TESTKEY);
-	call.key.dsize = strlen(TESTKEY);
-
-	/* fetch the record */
-	call.call_id = FUNC_FETCH;
-	call.call_data.dptr = NULL;
-	call.call_data.dsize = 0;
-
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	printf("sending message from vnn:%d to vnn:%d/srvid:%d\n",ctdb_get_vnn(ctdb),ctdb_get_vnn(ctdb), 1-srvid);
+	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
+		for (j=0;j<num_clients;j++) {
+			printf("sending message to %d:%d\n", i, j);
+			sprintf(buf,"Message from %d to vnn:%d srvid:%d",ctdb_get_vnn(ctdb),i,j);
+			data.dptr=buf;
+			data.dsize=strlen(buf)+1;
+			ctdb_send_message(ctdb, i, j, data);
+		}
 	}
 
-	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
-
+	while (1) {
+		event_loop_once(ev);
+	}
+       
 	/* shut it down */
 	talloc_free(ctdb);
 	return 0;
