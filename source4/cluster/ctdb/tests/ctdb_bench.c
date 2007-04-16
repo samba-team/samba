@@ -130,10 +130,10 @@ static int msg_plus, msg_minus;
   handler for messages in bench_ring()
 */
 static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-				 TDB_DATA data, void *private)
+				 TDB_DATA data, void *private_data)
 {
 	int incr = *(int *)data.dptr;
-	int *count = (int *)private;
+	int *count = (int *)private_data;
 	int dest;
 	(*count)++;
 	dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
@@ -200,6 +200,7 @@ int main(int argc, const char *argv[])
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
 	int self_connect=0;
+	int daemon_mode=0;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -207,6 +208,7 @@ int main(int argc, const char *argv[])
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
+		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
@@ -254,6 +256,9 @@ int main(int argc, const char *argv[])
 	if (self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
+	if (daemon_mode) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
+	}
 
 	ret = ctdb_set_transport(ctdb, transport);
 	if (ret == -1) {
@@ -286,10 +291,10 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	ctdb_set_message_handler(ctdb, ring_message_handler, &msg_count);
-
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
+
+	ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count);
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */

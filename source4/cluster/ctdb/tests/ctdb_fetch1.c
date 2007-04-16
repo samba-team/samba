@@ -1,5 +1,5 @@
 /* 
-   simple ctdb benchmark
+   simple ctdb fetch test
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -22,138 +22,84 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "ctdb.h"
+#include "ctdb_private.h"
 
-#include <sys/time.h>
-#include <time.h>
+#define PARENT_SRVID	0
+#define CHILD1_SRVID	1
+#define CHILD2_SRVID	2
 
-static struct timeval tp1,tp2;
+int num_msg=0;
 
-static void start_timer(void)
-{
-	gettimeofday(&tp1,NULL);
-}
-
-static double end_timer(void)
-{
-	gettimeofday(&tp2,NULL);
-	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
-		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
-}
-
-
-static int timelimit = 10;
-static int num_records = 10;
-static int num_msgs = 1;
-
-static int msg_count;
-
-#define TESTKEY "testkey"
-
-/*
-  fetch a record
-  store a expanded record
-  send a message to next node to tell it to do the same
-*/
-static void bench_fetch_1node(struct ctdb_context *ctdb)
-{
-	TDB_DATA key, data, nulldata;
-	struct ctdb_record_handle *rec;
-	struct ctdb_db_context *ctdb_db;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int dest, ret;
-
-	key.dptr = discard_const("testkey");
-	key.dsize = strlen((const char *)key.dptr);
-
-	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
-
-	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-	if (rec == NULL) {
-		printf("Failed to fetch record '%s' on node %d\n", 
-		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	if (data.dsize > 1000) {
-		data.dsize = 0;
-	}
-
-	if (data.dsize == 0) {
-		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
-	}
-	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
-						      "msg_count=%d on node %d\n",
-						      msg_count, ctdb_get_vnn(ctdb));
-	data.dsize = strlen((const char *)data.dptr)+1;
-
-	ret = ctdb_store_unlock(rec, data);
-	if (ret != 0) {
-		printf("Failed to store record\n");
-	}
-
-	talloc_free(tmp_ctx);
-
-	/* tell the next node to do the same */
-	nulldata.dptr = NULL;
-	nulldata.dsize = 0;
-
-	dest = (ctdb_get_vnn(ctdb) + 1) % ctdb_get_num_nodes(ctdb);
-	ctdb_send_message(ctdb, dest, 0, nulldata);
-}
-
-/*
-  handler for messages in bench_ring()
-*/
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			    TDB_DATA data, void *private_data)
 {
-	msg_count++;
-	bench_fetch_1node(ctdb);
+	num_msg++;
+}
+static void child_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			    TDB_DATA data, void *private_data)
+{
+	num_msg++;
 }
 
-
-/*
-  benchmark the following:
-
-  fetch a record
-  store a expanded record
-  send a message to next node to tell it to do the same
-
-*/
-static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
+void test1(struct ctdb_db_context *ctdb_db)
 {
-	int vnn=ctdb_get_vnn(ctdb);
+	struct ctdb_record_handle *rh;
+	TDB_DATA key, data, data2, store_data;
+	int ret;
+ 
+	/* 
+	   test 1 : write data and read it back.   should all be the same
+	 */
+	printf("Test1: write and verify we can read it back: ");
+	key.dptr  = discard_const("Record");
+	key.dsize = strlen((const char *)key.dptr)+1;
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
 
-	if (vnn == ctdb_get_num_nodes(ctdb)-1) {
-		bench_fetch_1node(ctdb);
+	store_data.dptr  = discard_const("data to store");
+	store_data.dsize = strlen((const char *)store_data.dptr)+1;
+	ret = ctdb_store_unlock(rh, store_data);
+
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	/* hopefully   data2 will now contain the record written above */
+	if (!strcmp("data to store", (const char *)data2.dptr)) {
+		printf("SUCCESS\n");
+	} else {
+		printf("FAILURE\n");
+		exit(10);
 	}
 	
-	start_timer();
-
-	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 100 == 0) {
-			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
-			fflush(stdout);
-		}
-		if (event_loop_once(ev) != 0) {
-			printf("Event loop failed!\n");
-			break;
-		}
-	}
-
-	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
+	/* just write it back to unlock it */
+	ret = ctdb_store_unlock(rh, store_data);
 }
 
-enum my_functions {FUNC_FETCH=1};
-
-/*
-  ctdb call function to fetch a record
-*/
-static int fetch_func(struct ctdb_call_info *call)
+void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
-	call->reply_data = &call->record_data;
-	return 0;
+	TDB_DATA data;
+	struct ctdb_record_handle *rh;
+	TDB_DATA key, data2;
+
+	data.dptr=discard_const("dummy message");
+	data.dsize=strlen((const char *)data.dptr)+1;
+
+	ctdb_set_message_handler(ctdb, srvid, child_handler, NULL);
+
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
+	while (num_msg==0) {
+		event_loop_once(ev);
+	}
+
+
+	/* fetch and lock the record */
+	key.dptr  = discard_const("Record");
+	key.dsize = strlen((const char *)key.dptr)+1;
+	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
+
+
+	while (1) {
+		event_loop_once(ev);
+	}
 }
 
 /*
@@ -168,6 +114,7 @@ int main(int argc, const char *argv[])
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
+	TDB_DATA data;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -176,9 +123,6 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
 		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
-		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
-		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -187,7 +131,6 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
-	struct ctdb_call call;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -255,35 +198,75 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
-
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
-
+#if 0
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
 	ctdb_connect_wait(ctdb);
+#endif
 
-	bench_fetch(ctdb, ev);
-
-	ZERO_STRUCT(call);
-	call.key.dptr = discard_const(TESTKEY);
-	call.key.dsize = strlen(TESTKEY);
-
-	/* fetch the record */
-	call.call_id = FUNC_FETCH;
-	call.call_data.dptr = NULL;
-	call.call_data.dsize = 0;
-
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	/*
+	   start two child processes
+	 */
+	if(fork()){
+		/* 
+		   set up a message handler so our child processes can talk to us
+		 */
+		ctdb_set_message_handler(ctdb, PARENT_SRVID, message_handler, NULL);
+	} else {
+		sleep(3);
+		if(!fork()){
+			child(CHILD1_SRVID, ev, ctdb, ctdb_db);
+		} else {
+			child(CHILD2_SRVID, ev, ctdb, ctdb_db);
+		}
 	}
 
-	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
+	/* 
+	   test 1 : write data and read it back.
+	 */
+	test1(ctdb_db); 
+
+	/* 
+	   wait until both children have sent us a message they have started
+	 */
+	printf("Wait for both child processes to start: ");
+	while (num_msg!=2) {
+		event_loop_once(ev);
+	}
+	printf("STARTED\n");
+
+
+	/*
+	   send message to child 1 to make it to fetch and lock the record 
+	 */
+	data.dptr=discard_const("dummy message");
+	data.dsize=strlen((const char *)data.dptr)+1;
+	printf("Send message to child 1 to fetch_lock the record\n");
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD1_SRVID, data);
+
+	/* wait for child 1 to complete fetching and locking the record */
+	while (num_msg!=3) {
+		event_loop_once(ev);
+	}
+	printf("Child 1 has fetched and locked the record\n");
+
+	/* now tell child 2 to fetch and lock the same record */
+	printf("Send message to child 2 to fetch_lock the record\n");
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD2_SRVID, data);
+
+	/* wait for child 2 to complete fetching and locking the record */
+	while (num_msg!=4) {
+		event_loop_once(ev);
+	}
+	printf("Child 2 has fetched and locked the record\n");
+
+
+	while (1) {
+		event_loop_once(ev);
+	}
 
 	/* shut it down */
 	talloc_free(ctdb);

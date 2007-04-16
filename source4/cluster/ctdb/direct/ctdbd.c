@@ -1,5 +1,5 @@
 /* 
-   ctdb test harness
+   standalone ctdb daemon
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -22,53 +22,20 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "system/wait.h"
 
-enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
-
-static int int_compare(int *i1, int *i2)
+static void block_signal(int signum)
 {
-	return *i1 - *i2;
+	struct sigaction act;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, signum);
+	sigaction(signum, &act, NULL);
 }
 
-/*
-  add an integer into a record in sorted order
-*/
-static int sort_func(struct ctdb_call_info *call)
-{
-	if (call->call_data == NULL ||
-	    call->call_data->dsize != sizeof(int)) {
-		return CTDB_ERR_INVALID;
-	}
-	call->new_data = talloc(call, TDB_DATA);
-	if (call->new_data == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	call->new_data->dptr = talloc_size(call, 
-					   call->record_data.dsize + 
-					   call->call_data->dsize);
-	if (call->new_data->dptr == NULL) {
-		return CTDB_ERR_NOMEM;
-	}
-	call->new_data->dsize = call->record_data.dsize + call->call_data->dsize;
-	memcpy(call->new_data->dptr,
-	       call->record_data.dptr, call->record_data.dsize);
-	memcpy(call->new_data->dptr+call->record_data.dsize,
-	       call->call_data->dptr, call->call_data->dsize);
-
-	qsort(call->new_data->dptr, call->new_data->dsize / sizeof(int),
-	      sizeof(int), (comparison_fn_t)int_compare);
-
-	return 0;
-}
-
-/*
-  ctdb call function to fetch a record
-*/
-static int fetch_func(struct ctdb_call_info *call)
-{
-	call->reply_data = &call->record_data;
-	return 0;
-}
 
 /*
   main program
@@ -76,12 +43,13 @@ static int fetch_func(struct ctdb_call_info *call)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_db_context *ctdb_db;
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
 	int self_connect=0;
 	int daemon_mode=0;
+	const char *db_list = "test.tdb";
+	char *s, *tok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -90,15 +58,15 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
 		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
+		{ "dblist", 0, POPT_ARG_STRING, &db_list, 0, "list of databases", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int i, ret;
+	int ret;
 	poptContext pc;
 	struct event_context *ev;
-	struct ctdb_call call;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -123,6 +91,8 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	block_signal(SIGPIPE);
+
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
@@ -135,17 +105,9 @@ int main(int argc, const char *argv[])
 	if (self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
-
 	if (daemon_mode) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
 	}
-
-	/* this flag is only used by test code and it makes ctdb_start() block until all
-	   nodes have connected.
-	   until we do better recovery and cluster rebuild it is probably good to use this flag
-	   in applications.
-	 */
-	ctdb_set_flags(ctdb, CTDB_FLAG_CONNECT_WAIT);
 
 	ret = ctdb_set_transport(ctdb, transport);
 	if (ret == -1) {
@@ -167,64 +129,29 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
-	if (!ctdb_db) {
-		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	/* attach to the list of databases */
+	s = talloc_strdup(ctdb, db_list);
+	for (tok=strtok(s, ", "); tok; tok=strtok(NULL, ", ")) {
+		struct ctdb_db_context *ctdb_db;
+		ctdb_db = ctdb_attach(ctdb, tok, TDB_DEFAULT, 
+				      O_RDWR|O_CREAT|O_TRUNC, 0666);
+		if (!ctdb_db) {
+			printf("ctdb_attach to '%s'failed - %s\n", tok, 
+			       ctdb_errstr(ctdb));
+			exit(1);
+		}
+		printf("Attached to database '%s'\n", tok);
 	}
-
-	/* setup a ctdb call function */
-	ret = ctdb_set_call(ctdb_db, sort_func,  FUNC_SORT);
-	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ZERO_STRUCT(call);
-	call.key.dptr = discard_const("test");
-	call.key.dsize = strlen("test")+1;
-
-	/* add some random data */
-	for (i=0;i<10;i++) {
-		int v = random() % 1000;
-
-		call.call_id = FUNC_SORT;
-		call.call_data.dptr = (uint8_t *)&v;
-		call.call_data.dsize = sizeof(v);
-
-		ret = ctdb_call(ctdb_db, &call);
-		if (ret == -1) {
-			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
-			exit(1);
-		}
+/*	event_loop_wait(ev);*/
+	while (1) {
+		event_loop_once(ev);
 	}
-
-	/* fetch the record */
-	call.call_id = FUNC_FETCH;
-	call.call_data.dptr = NULL;
-	call.call_data.dsize = 0;
-
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	for (i=0;i<call.reply_data.dsize/sizeof(int);i++) {
-		printf("%3d\n", ((int *)call.reply_data.dptr)[i]);
-	}
-	talloc_free(call.reply_data.dptr);
-
-	/* go into a wait loop to allow other nodes to complete */
-	ctdb_wait_loop(ctdb);
-
-	/*talloc_report_full(ctdb, stdout);*/
-
-/* sleep for a while so that our daemon will remaining alive for the other nodes in the cluster */
-sleep(10);
 
 	/* shut it down */
-	talloc_free(ctdb);
+	talloc_free(ev);
 	return 0;
 }
