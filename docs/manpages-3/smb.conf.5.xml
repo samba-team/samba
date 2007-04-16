@@ -18,8 +18,8 @@
 	<para>
 	The <filename moreinfo="none">smb.conf</filename> file is a configuration  file for the Samba suite. <filename
 	moreinfo="none">smb.conf</filename> contains  runtime configuration information for the Samba programs. The
-	<filename moreinfo="none">smb.conf</filename> file is designed to be configured and  administered by the
-	<citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> program. The
+	 <filename moreinfo="none">smb.conf</filename> file is designed to be configured and administered by the
+	 <citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> program. The
 	complete description of the file format and possible parameters held within are here for reference purposes.
 	</para> 
 </refsect1>
@@ -77,7 +77,7 @@
 
 	<para>
 	There are three special sections, [global], [homes] and [printers], which are described under
-	<emphasis>special sections</emphasis>. The following notes apply to ordinary section descriptions.
+	 <emphasis>special sections</emphasis>. The following notes apply to ordinary section descriptions.
 	</para>
 
 	<para>

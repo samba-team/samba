@@ -33,7 +33,7 @@
 	<para>
 	This tells Samba to return the above string, with substitutions made when a client requests the info, generally 
 	in a NetUserGetInfo request.  Win9X clients truncate the info to \\server\share when a user does 
-	<command moreinfo="none">net use /home</command> but use the whole string when dealing with profiles.
+  	 <command moreinfo="none">net use /home</command> but use the whole string when dealing with profiles.
 	</para>
 
 	<para>

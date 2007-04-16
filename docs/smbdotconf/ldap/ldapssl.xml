@@ -8,7 +8,7 @@
 	use SSL when connecting to the ldap server
 	This is <emphasis>NOT</emphasis> related to
 	Samba's previous SSL support which was enabled by specifying the 
-	<command moreinfo="none">--with-ssl</command> option to the <filename moreinfo="none">configure</filename> 
+	 <command moreinfo="none">--with-ssl</command> option to the <filename moreinfo="none">configure</filename> 
 	script.</para>
 		
 <para>The <smbconfoption name="ldap ssl"/> can be set to one of three values:</para>	
@@ -30,7 +30,7 @@
 			moreinfo="none">ldap server</parameter>. Only available when the 
 			backwards-compatiblity <command 
 			moreinfo="none">--with-ldapsam</command> option is specified
-		to configure. See <smbconfoption name="passdb backend"/></para>
+		to configure. See <smbconfoption name="passdb backend"/></para>.
 		</listitem>
 	</itemizedlist>		
 </description>

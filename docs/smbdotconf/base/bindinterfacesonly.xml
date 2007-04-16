@@ -16,13 +16,13 @@
 	also binds to the &quot;all addresses&quot; interface (0.0.0.0) on ports 137 and 138 for the purposes of
 	reading broadcast messages.  If this option is not set then <command moreinfo="none">nmbd</command> will
 	service name requests on all of these sockets. If <smbconfoption name="bind interfaces only"/> is set then
-	<command moreinfo="none">nmbd</command> will check the source address of any packets coming in on the
+	 <command moreinfo="none">nmbd</command> will check the source address of any packets coming in on the
 	broadcast sockets and discard any that don't match the broadcast addresses of the interfaces in the
 	<smbconfoption name="interfaces"/> parameter list.  As unicast packets are received on the other sockets it
 	allows <command moreinfo="none">nmbd</command> to refuse to serve names to machines that send packets that
 	arrive through any interfaces not listed in the <smbconfoption name="interfaces"/> list.  IP Source address
 	spoofing does defeat this simple check, however, so it must not be used seriously as a security feature for
-	<command moreinfo="none">nmbd</command>.
+	 <command moreinfo="none">nmbd</command>.
 	</para>
 
 	<para>
@@ -36,17 +36,17 @@
 
 	<para>
 	If <smbconfoption name="bind interfaces only"/> is set then unless the network address
-	<emphasis>127.0.0.1</emphasis> is added to the <smbconfoption name="interfaces"/> parameter list
-	<citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> and
-	<citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> may not work as
+	 <emphasis>127.0.0.1</emphasis> is added to the <smbconfoption name="interfaces"/> parameter list
+	 <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> and
+	 <citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> may not work as
 	expected due to the reasons covered below.
 	</para>
 
 	<para>
 	To change a users SMB password, the <command moreinfo="none">smbpasswd</command> by default connects to the
-	<emphasis>localhost - 127.0.0.1</emphasis> address as an SMB client to issue the password change request. If
+	 <emphasis>localhost - 127.0.0.1</emphasis> address as an SMB client to issue the password change request. If
 	<smbconfoption name="bind interfaces only"/> is set then unless the network address
-	<emphasis>127.0.0.1</emphasis> is added to the <smbconfoption name="interfaces"/> parameter list then <command
+	 <emphasis>127.0.0.1</emphasis> is added to the <smbconfoption name="interfaces"/> parameter list then <command
 	moreinfo="none"> smbpasswd</command> will fail to connect in it's default mode.  <command
 	moreinfo="none">smbpasswd</command> can be forced to use the primary IP interface of the local host by using
 	its <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry>	<parameter
