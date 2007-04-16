@@ -94,13 +94,18 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn);
+void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
-void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log);
+void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log_ctx);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
 TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
+int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+		     int (*parser)(TDB_DATA key, TDB_DATA data,
+				   void *private_data),
+		     void *private_data);
 int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
 int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
@@ -129,6 +134,7 @@ int tdb_get_flags(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);

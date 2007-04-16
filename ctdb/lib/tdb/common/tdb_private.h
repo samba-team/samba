@@ -123,6 +123,7 @@ struct tdb_header {
 };
 
 struct tdb_lock_type {
+	int list;
 	u32 count;
 	u32 ltype;
 };
@@ -152,7 +153,8 @@ struct tdb_context {
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
 	struct tdb_lock_type global_lock;
-	struct tdb_lock_type *locked; /* array of chain locks */
+	int num_lockrecs;
+	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
 	u32 flags; /* the flags passed to tdb_open */
@@ -167,6 +169,7 @@ struct tdb_context {
 	const struct tdb_methods *methods;
 	struct tdb_transaction *transaction;
 	int page_size;
+	int max_dead_records;
 };
 
 
@@ -194,9 +197,16 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct *rec);
 unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len);
+int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
+		   tdb_off_t offset, tdb_len_t len,
+		   int (*parser)(TDB_DATA key, TDB_DATA data,
+				 void *private_data),
+		   void *private_data);
 tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, int locktype,
 			   struct list_struct *rec);
 void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
+int rec_free_read(struct tdb_context *tdb, tdb_off_t off,
+		  struct list_struct *rec);
 
 

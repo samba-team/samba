@@ -5,6 +5,7 @@ includedir=${prefix}/include
 
 Name: tdb
 Description: Trivial Database Library
+Requires.private: 
 Version: 0.0.1
 Libs: -L${libdir} -ltdb
 Libs.private: -lreplace 

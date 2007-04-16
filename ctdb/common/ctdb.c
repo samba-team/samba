@@ -190,7 +190,7 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 /*
   called by the transport layer when a packet comes in
 */
-static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
+void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
 	struct ctdb_req_header *hdr;
 
