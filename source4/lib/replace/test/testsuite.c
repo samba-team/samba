@@ -478,26 +478,75 @@ static int test_inet_ntoa(void)
 
 static int test_strtoll(void)
 {
+	int64_t v;
+
 	printf("test: strtoll\n");
-	if (strtoll("15", NULL, 10) != 15) {
-		printf("failure: strtoll [\nstrtoll failed\n]\n");
+
+	v = strtoll("15", NULL, 10);
+	if (v != 15) {
+		printf("failure: strtoll [\n"
+		       "strtoll failed: %lld != 15\n"
+		       "]\n",
+		       v);
 		return false;
 	}
-	if (strtoll("10", NULL, 16) != 16) {
-		printf("failure: strtoll [\nstrtoll hex failed\n]\n");
+
+	v = strtoll("10", NULL, 16);
+	if (v != 16) {
+		printf("failure: strtoll [\n"
+		       "strtoll hex failed: %lld != 16\n"
+		       "]\n",
+		       v);
 		return false;
 	}
-	if (strtoll("11", NULL, 2) != 3) {
-		printf("failure: strtoll [\nstrtoll binary failed\n]\n");
+
+	v = strtoll("11", NULL, 2);
+	if (v != 3) {
+		printf("failure: strtoll [\n"
+		       "strtoll binary failed: %lld != 3\n"
+		       "]\n",
+		       v);
 		return false;
 	}
+
 	printf("success: strtoll\n");
 	return true;
 }
 
 static int test_strtoull(void)
 {
-	/* FIXME */
+	uint64_t v;
+
+	printf("test: strtoull\n");
+
+	v = strtoull("15", NULL, 10);
+	if (v != 15) {
+		printf("failure: strtoull [\n"
+		       "strtoull failed: %llu != 15\n"
+		       "]\n",
+		       v);
+		return false;
+	}
+
+	v = strtoull("10", NULL, 16);
+	if (v != 16) {
+		printf("failure: strtoull [\n"
+		       "strtoull hex failed: %llu != 16\n"
+		       "]\n",
+		       v);
+		return false;
+	}
+
+	v = strtoull("11", NULL, 2);
+	if (v != 3) {
+		printf("failure: strtoull [\n"
+		       "strtoull binary failed: %llu != 3\n"
+		       "]\n",
+		       v);
+		return false;
+	}
+
+	printf("success: strtuoll\n");
 	return true;
 }
 
