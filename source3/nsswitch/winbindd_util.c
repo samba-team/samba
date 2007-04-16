@@ -389,9 +389,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	/* save online flag */
 	request_domain = find_our_domain();
-	request_domain->online = domain->online;
 	
 	async_domain_request(mem_ctx, request_domain, request, response,
 			     init_child_getdc_recv, state);
