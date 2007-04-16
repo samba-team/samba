@@ -556,13 +556,15 @@ sub setup_env($)
 	}
 	write_clientconf($conffile, $testenv_vars);
 	foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME", 
-			 "KRB5_CONFIG") {
+			 "KRB5_CONFIG", "REALM") {
 		if (defined($testenv_vars->{$_})) {
 			$ENV{$_} = $testenv_vars->{$_};
 		} else {
 			delete $ENV{$_};
 		}
 	}
+
+	SocketWrapper::set_default_iface(6);
 
 	$running_envs{$envname} = $testenv_vars;
 	return $testenv_vars;
@@ -574,7 +576,7 @@ sub teardown_env($)
 	$target->teardown_env($running_envs{$envname});
 	delete $running_envs{$envname};
 }
-SocketWrapper::set_default_iface(6);
+
 
 if ($opt_testenv) {
 	my $testenv_vars = setup_env("dc");
