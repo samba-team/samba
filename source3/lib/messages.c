@@ -646,7 +646,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 		/* If the pid was not found delete the entry from connections.tdb */
 
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-			 procid_str_static(&crec.pid), crec.cnum, crec.name));
+			 procid_str_static(&crec.pid), crec.cnum, crec.servicename));
 		tdb_delete(the_tdb, kbuf);
 	}
 	msg_all->n_sent++;
