@@ -56,6 +56,11 @@ struct ctdb_call_info {
 #define CTDB_FLAG_CONNECT_WAIT (1<<2)
 
 
+/* 
+   a message handler ID meaning "give me all messages"
+ */
+#define CTDB_SRVID_ALL 0xFFFFFFFF
+
 struct event_context;
 
 /*

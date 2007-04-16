@@ -43,15 +43,16 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 	talloc_free(ctdb->err_msg);
 	va_start(ap, fmt);
 	ctdb->err_msg = talloc_vasprintf(ctdb, fmt, ap);
+	DEBUG(0,("ctdb error: %s\n", ctdb->err_msg));
 	va_end(ap);
 }
-
 
 /*
   a fatal internal error occurred - no hope for recovery
 */
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 {
+	DEBUG(0,("ctdb fatal error: %s\n", msg));
 	fprintf(stderr, "ctdb fatal error: '%s'\n", msg);
 	abort();
 }

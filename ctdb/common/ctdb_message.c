@@ -39,7 +39,7 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 	/* XXX we need a must faster way of finding the matching srvid
 	   - maybe a tree? */
 	for (ml=ctdb->message_list;ml;ml=ml->next) {
-		if (ml->srvid == srvid) break;
+		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) break;
 	}
 	if (ml == NULL) {
 		printf("daemon vnn:%d  no msg handler for srvid=%u\n", ctdb_get_vnn(ctdb), srvid);
