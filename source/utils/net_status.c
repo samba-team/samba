@@ -102,7 +102,7 @@ static int show_share(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	}
 
 	d_printf("%-10.10s   %s   %-12s  %s",
-	       crec.name,procid_str_static(&crec.pid),
+	       crec.servicename,procid_str_static(&crec.pid),
 	       crec.machine,
 	       time_to_asc(crec.start));
 
@@ -168,7 +168,7 @@ static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	}
 
 	d_printf("%s\\%s\\%s\\%s\\%s\\%s\\%s",
-		 crec.name,procid_str_static(&crec.pid),
+		 crec.servicename,procid_str_static(&crec.pid),
 		 guest ? "" : uidtoname(ids->entries[i].uid),
 		 guest ? "" : gidtoname(ids->entries[i].gid),
 		 crec.machine, 
