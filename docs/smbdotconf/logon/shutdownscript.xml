@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This a full path name to a script called by 
-	<citerefentry><refentrytitle>smbd</refentrytitle> 
+	 <citerefentry><refentrytitle>smbd</refentrytitle> 
         <manvolnum>8</manvolnum></citerefentry> that should 
 	start a shutdown procedure.</para>
 
