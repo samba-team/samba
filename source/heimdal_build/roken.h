@@ -61,6 +61,10 @@
 #define HAVE_SSIZE_T
 #endif
 
+#ifndef HAVE_STRPTIME
+#define HAVE_STRPTIME
+#endif
+
 #ifndef HAVE_TIMEGM
 #define HAVE_TIMEGM
 #endif
