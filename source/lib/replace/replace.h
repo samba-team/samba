@@ -439,6 +439,10 @@ typedef int bool;
 #define __STRING(x)    #x
 #endif
 
+#ifndef __location__
+#define __location__ __FILE__ ":" __STRING(__LINE__)
+#endif
+
 #if MMAP_BLACKLIST
 #undef HAVE_MMAP
 #endif
