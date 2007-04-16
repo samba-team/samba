@@ -59,7 +59,16 @@ static int lockwait_destructor(struct lockwait_handle *h)
 	return 0;
 }
 
+/*
+  setup a non-blocking chainlock on a tdb record. If this function
+  returns NULL then it could not get the chainlock. Otherwise it
+  returns a opaque handle, and will call callback() once it has
+  managed to get the chainlock. You can cancel it by using talloc_free
+  on the returned handle.
 
+  It is the callers responsibility to unlock the chainlock once
+  acquired
+ */
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      void (*callback)(void *), void *private_data)
