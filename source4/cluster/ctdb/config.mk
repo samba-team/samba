@@ -15,6 +15,7 @@ OBJ_FILES = \
 
 ##################
 [SUBSYSTEM::ctdb]
+INIT_FUNCTION = server_service_ctdbd_init
 OBJ_FILES = \
 		ctdb_cluster.o \
 		common/ctdb.o \

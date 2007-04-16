@@ -49,9 +49,9 @@ showflags:
 dirs:
 	@mkdir -p $(DIRS)
 
-bin/ctdb_test: $(OBJS) tests/ctdb_test.o
+bin/ctdb_test: $(OBJS) tests/ctdb_test.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
 bin/ctdbd: $(OBJS) direct/ctdbd.o
 	@echo Linking $@
@@ -61,21 +61,21 @@ bin/ctdbd_test: $(OBJS) direct/ctdbd_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ direct/ctdbd_test.o 
 
-bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o
+bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o
+bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_fetch1: $(OBJS) tests/ctdb_fetch1.o
+bin/ctdb_fetch1: $(OBJS) tests/ctdb_fetch1.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch1.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch1.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_messaging: $(OBJS) tests/ctdb_messaging.o
+bin/ctdb_messaging: $(OBJS) tests/ctdb_messaging.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_messaging.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_messaging.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
 bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
 	@echo Linking $@
