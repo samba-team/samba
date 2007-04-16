@@ -21,12 +21,14 @@
 #ifndef _CTDB_H
 #define _CTDB_H
 
+#define CTDB_IMMEDIATE_MIGRATION	0x00000001
 struct ctdb_call {
 	int call_id;
 	TDB_DATA key;
 	TDB_DATA call_data;
 	TDB_DATA reply_data;
 	uint32_t status;
+	uint32_t flags;
 };
 
 /*
@@ -48,7 +50,16 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
+/* fork off a separate ctdb daemon */
+#define CTDB_FLAG_DAEMON_MODE  (1<<1)
+/* for test code only: make ctdb_start() block until all nodes are connected */
+#define CTDB_FLAG_CONNECT_WAIT (1<<2)
 
+
+/* 
+   a message handler ID meaning "give me all messages"
+ */
+#define CTDB_SRVID_ALL 0xFFFFFFFF
 
 struct event_context;
 
@@ -66,6 +77,11 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
+
+/*
+  clear some flags
+*/
+void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
   set max acess count before a dmaster migration
@@ -89,6 +105,17 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
 int ctdb_start(struct ctdb_context *ctdb);
 
 /*
+  attach to a ctdb database
+*/
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
+				    int open_flags, mode_t mode);
+
+/*
+  find an attached ctdb_db handle given a name
+ */
+struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *name);
+
+/*
   error string for last ctdb error
 */
 const char *ctdb_errstr(struct ctdb_context *);
@@ -99,20 +126,15 @@ typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 /*
   setup a ctdb call function
 */
-int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id);
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id);
 
-/*
-  attach to a ctdb database
-*/
-int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-		int open_flags, mode_t mode);
 
 
 /*
   make a ctdb call. The associated ctdb call function will be called on the DMASTER
   for the given record
 */
-int ctdb_call(struct ctdb_context *ctdb, struct ctdb_call *call);
+int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
 /*
   wait for all nodes to be connected - useful for test code
@@ -135,11 +157,41 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 /* setup a handler for ctdb messages */
 typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid, 
 				  TDB_DATA data, void *);
-int ctdb_set_message_handler(struct ctdb_context *ctdb, ctdb_message_fn_t handler,
-			     void *private);
+int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+			     ctdb_message_fn_t handler,
+			     void *private_data);
+
+
+int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 		      uint32_t srvid, TDB_DATA data);
+
+
+/* 
+   fetch and lock a ctdb record. Underneath this will force the
+   dmaster for the record to be moved to the local node. 
+
+   The lock is released when is talloc_free() is called on the
+   returned ctdb_record_handle. 
+*/
+struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
+
+/*
+  change the data in a record held with a ctdb_record_handle
+  if the new data is zero length, this implies a delete of the record
+ */
+int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+
+int ctdb_register_message_handler(struct ctdb_context *ctdb, 
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t srvid,
+				  ctdb_message_fn_t handler,
+				  void *private_data);
+
+struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 #endif

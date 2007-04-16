@@ -58,6 +58,14 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
+  clear some ctdb flags
+*/
+void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
+{
+	ctdb->flags &= ~flags;
+}
+
+/*
   set max acess count before a dmaster migration
 */
 void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
@@ -150,15 +158,15 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 /*
   add a node to the list of active nodes
 */
-int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id)
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id)
 {
 	struct ctdb_registered_call *call;
 
-	call = talloc(ctdb, struct ctdb_registered_call);
+	call = talloc(ctdb_db, struct ctdb_registered_call);
 	call->fn = fn;
 	call->id = id;
 
-	DLIST_ADD(ctdb->calls, call);	
+	DLIST_ADD(ctdb_db->calls, call);	
 	return 0;
 }
 
@@ -180,14 +188,6 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 
 
 /*
-  start the protocol going
-*/
-int ctdb_start(struct ctdb_context *ctdb)
-{
-	return ctdb->methods->start(ctdb);
-}
-
-/*
   called by the transport layer when a packet comes in
 */
 static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
@@ -202,6 +202,16 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	if (length != hdr->length) {
 		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
 			       hdr->length, length);
+		return;
+	}
+
+	if (hdr->ctdb_magic != CTDB_MAGIC) {
+		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
+		return;
+	}
+
+	if (hdr->ctdb_version != CTDB_VERSION) {
+		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
 		return;
 	}
 
@@ -236,9 +246,9 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 
 	default:
 		printf("Packet with unknown operation %d\n", hdr->operation);
-		talloc_free(hdr);
 		break;
 	}
+	talloc_free(hdr);
 }
 
 /*
@@ -264,7 +274,7 @@ static void ctdb_node_connected(struct ctdb_node *node)
 /*
   wait for all nodes to be connected
 */
-void ctdb_connect_wait(struct ctdb_context *ctdb)
+void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 {
 	int expected = ctdb->num_nodes - 1;
 	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
@@ -328,3 +338,11 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	return ctdb;
 }
 
+int ctdb_start(struct ctdb_context *ctdb)
+{
+	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
+		return ctdbd_start(ctdb);
+	}
+
+	return ctdb->methods->start(ctdb);
+}

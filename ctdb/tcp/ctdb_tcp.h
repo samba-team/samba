@@ -25,32 +25,12 @@ struct ctdb_tcp {
 };
 
 /*
-  incoming packet structure - only used when we get a partial packet
-  on read
-*/
-struct ctdb_tcp_partial {
-	uint8_t *data;
-	uint32_t length;
-};
-
-
-/*
   state associated with an incoming connection
 */
 struct ctdb_incoming {
 	struct ctdb_context *ctdb;
 	int fd;
-	struct ctdb_tcp_partial partial;
-};
-
-/*
-  outgoing packet structure - only allocated when we can't write immediately
-  to the socket
-*/
-struct ctdb_tcp_packet {
-	struct ctdb_tcp_packet *next, *prev;
-	uint8_t *data;
-	uint32_t length;
+	struct ctdb_queue *queue;
 };
 
 /*
@@ -58,19 +38,16 @@ struct ctdb_tcp_packet {
 */
 struct ctdb_tcp_node {
 	int fd;
-	struct fd_event *fde;
-	struct ctdb_tcp_packet *queue;
+	struct ctdb_queue *queue;
 };
 
 
 /* prototypes internal to tcp transport */
-void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private);
-void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
-			    uint16_t flags, void *private);
 int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length);
 int ctdb_tcp_listen(struct ctdb_context *ctdb);
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *private);
+			   struct timeval t, void *private_data);
+void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args);
+void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data);
 
 #define CTDB_TCP_ALIGNMENT 8
