@@ -11,6 +11,6 @@
  $SRCDIR/script/tests/test_cifs.sh
  $SRCDIR/script/tests/test_local.sh
  $SRCDIR/script/tests/test_pidl.sh
- $SRCDIR/script/tests/test_blackbox.sh $PREFIX/blackbox
+ $SRCDIR/script/tests/test_blackbox.sh $PREFIX
  $SRCDIR/script/tests/test_simple.sh
  $SRCDIR/script/tests/test_s3upgrade.sh $PREFIX/upgrade
