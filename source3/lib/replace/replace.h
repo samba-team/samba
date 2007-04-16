@@ -162,7 +162,7 @@ size_t rep_strnlen(const char *s, size_t n);
 #define setenv rep_setenv
 int rep_setenv(const char *name, const char *value, int overwrite);
 #else
-#ifndef HAVE_DECL_SETENV
+#ifndef HAVE_SETENV_DECL
 int setenv(const char *name, const char *value, int overwrite);
 #endif
 #endif
