@@ -230,7 +230,7 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 		return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
-	       crec.name,uidtoname(crec.uid),
+	       crec.servicename,uidtoname(crec.uid),
 	       gidtoname(crec.gid),procid_str_static(&crec.pid),
 	       crec.machine,
 	       tstring(crec.start));
