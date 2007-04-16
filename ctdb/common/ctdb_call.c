@@ -796,10 +796,13 @@ int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
 	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL, NULL);
 	if (ret) {
 		ctdb_set_error(rec->ctdb_db->ctdb, "Fetch of locally held record failed");
+		talloc_free(rec);
 		return ret;
 	}
 
 	ret = ctdb_ltdb_store(rec->ctdb_db, rec->key, &header, data);
 		
+	talloc_free(rec);
+
 	return ret;
 }

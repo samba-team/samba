@@ -656,6 +656,7 @@ int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
 	state = ctdb_client_store_unlock_send(rec, rec, data);
 	res = ctdb_client_store_unlock_recv(state, rec);
 
-	return res;
+	talloc_free(rec);
 
+	return res;
 }
