@@ -194,11 +194,13 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 # object file lists
 ######################################################################
 
-TDBBASE_OBJ = tdb/common/tdb.o tdb/common/dump.o tdb/common/error.o \
-	tdb/common/freelist.o tdb/common/freelistcheck.o tdb/common/io.o tdb/common/lock.o \
-	tdb/common/open.o tdb/common/transaction.o tdb/common/traverse.o
+TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o \
+	lib/tdb/common/freelist.o lib/tdb/common/freelistcheck.o \
+	lib/tdb/common/io.o lib/tdb/common/lock.o \
+	lib/tdb/common/open.o lib/tdb/common/transaction.o \
+	lib/tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o tdb/common/tdbback.o
+TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o lib/tdb/common/tdbback.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
@@ -881,16 +883,16 @@ POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
 INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
 		iniparser/src/strlib.o
 
-TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o $(LIBREPLACE_OBJ) \
+TDBBACKUP_OBJ = lib/tdb/tools/tdbbackup.o lib/tdb/common/tdbback.o $(LIBREPLACE_OBJ) \
 	$(TDBBASE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+TDBTOOL_OBJ = lib/tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
-TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+TDBDUMP_OBJ = lib/tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
-TDBTORTURE_OBJ = tdb/tools/tdbtorture.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+TDBTORTURE_OBJ = lib/tdb/tools/tdbtorture.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
 
