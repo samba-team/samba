@@ -1,5 +1,9 @@
-2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: remove extra ^Q
+	
+2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* der_get.c: Allow trailing NULs. We allow this since MIT Kerberos
 	sends an strings in the NEED_PREAUTH case that includes a trailing
 	NUL.
