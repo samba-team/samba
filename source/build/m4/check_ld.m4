@@ -95,7 +95,8 @@ case "$host_os" in
 		PICFLAG="-fPIC"
 		;;
 	*irix*)
-		BLDSHARED="true"
+		# disabled because us4 fails to link libtorture.so
+		BLDSHARED="false"
 		SHLD_FLAGS="-set_version sgi1.0 -shared"
 		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
