@@ -146,8 +146,12 @@
 #define SOCKET_FORMAT "%c%02X%04X"
 #define SOCKET_TYPE_CHAR_TCP		'T'
 #define SOCKET_TYPE_CHAR_UDP		'U'
+#define SOCKET_TYPE_CHAR_TCP_V6		'X'
+#define SOCKET_TYPE_CHAR_UDP_V6		'Y'
 
 #define MAX_WRAPPED_INTERFACES 16
+
+#define SW_IPV6_ADDRESS 1
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -155,6 +159,35 @@ static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 	memcpy(ret, data, len);
 	return ret;
 }
+
+static void set_port(int family, int prt, struct sockaddr *addr)
+{
+	switch (family) {
+	case AF_INET:
+		((struct sockaddr_in *)addr)->sin_port = htons(prt);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		((struct sockaddr_in6 *)addr)->sin6_port = htons(prt);
+		break;
+#endif
+	}
+}
+
+static int socket_length(int family)
+{
+	switch (family) {
+	case AF_INET:
+		return sizeof(struct sockaddr_in);
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		return sizeof(struct sockaddr_in6);
+#endif
+	}
+	return -1;
+}
+
+
 
 struct socket_info
 {
@@ -204,35 +237,27 @@ unsigned int socket_wrapper_default_iface(void)
 	const char *s = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
 	if (s) {
 		unsigned int iface;
-		iface = atoi(s);
-		if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
-			return iface;
+		if (sscanf(s, "%u", &iface) == 1) {
+			if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
+				return iface;
+			}
 		}
 	}
 
 	return 1;/* 127.0.0.1 */
 }
 
-static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, socklen_t *len)
+static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, socklen_t *len)
 {
 	unsigned int iface;
 	unsigned int prt;
 	const char *p;
 	char type;
 
-	if ((*len) < sizeof(struct sockaddr_in)) {
-		return 0;
-	}
-
 	p = strrchr(un->sun_path, '/');
 	if (p) p++; else p = un->sun_path;
 
 	if (sscanf(p, SOCKET_FORMAT, &type, &iface, &prt) != 3) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (type != SOCKET_TYPE_CHAR_TCP && type != SOCKET_TYPE_CHAR_UDP) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -247,65 +272,135 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 		return -1;
 	}
 
-	in->sin_family = AF_INET;
-	in->sin_addr.s_addr = htonl((127<<24) | iface);
-	in->sin_port = htons(prt);
+	switch(type) {
+	case SOCKET_TYPE_CHAR_TCP:
+	case SOCKET_TYPE_CHAR_UDP: {
+		struct sockaddr_in *in2 = (struct sockaddr_in *)in;
+		
+		if ((*len) < sizeof(*in2)) {
+		    errno = EINVAL;
+		    return -1;
+		}
 
-	*len = sizeof(struct sockaddr_in);
+		memset(in2, 0, sizeof(*in2));
+		in2->sin_family = AF_INET;
+		in2->sin_addr.s_addr = htonl((127<<24) | iface);
+		in2->sin_port = htons(prt);
+
+		*len = sizeof(*in2);
+		break;
+	}
+#ifdef HAVE_IPV6
+	case SOCKET_TYPE_CHAR_TCP_V6:
+	case SOCKET_TYPE_CHAR_UDP_V6: {
+		struct sockaddr_in6 *in2 = (struct sockaddr_in6 *)in;
+		
+		if ((*len) < sizeof(*in2)) {
+			errno = EINVAL;
+			return -1;
+		}
+
+		memset(in2, 0, sizeof(*in2));
+		in2->sin6_family = AF_INET6;
+		in2->sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		in2->sin6_port = htons(prt);
+
+		*len = sizeof(*in2);
+		break;
+	}
+#endif
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
 	return 0;
 }
 
-static int convert_in_un_remote(struct socket_info *si, const struct sockaddr_in *in, struct sockaddr_un *un,
+static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *inaddr, struct sockaddr_un *un,
 				int *bcast)
 {
-	char u_type = '\0';
-	char b_type = '\0';
-	char a_type = '\0';
 	char type = '\0';
-	unsigned int addr= ntohl(in->sin_addr.s_addr);
-	unsigned int prt = ntohs(in->sin_port);
+	unsigned int prt;
 	unsigned int iface;
 	int is_bcast = 0;
 
 	if (bcast) *bcast = 0;
 
-	if (prt == 0) {
-		errno = EINVAL;
-		return -1;
-	}
+	switch (si->family) {
+	case AF_INET: {
+		const struct sockaddr_in *in = 
+		    (const struct sockaddr_in *)inaddr;
+		unsigned int addr = ntohl(in->sin_addr.s_addr);
+		char u_type = '\0';
+		char b_type = '\0';
+		char a_type = '\0';
 
-	switch (si->type) {
-	case SOCK_STREAM:
-		u_type = SOCKET_TYPE_CHAR_TCP;
-		break;
-	case SOCK_DGRAM:
-		u_type = SOCKET_TYPE_CHAR_UDP;
-		a_type = SOCKET_TYPE_CHAR_UDP;
-		b_type = SOCKET_TYPE_CHAR_UDP;
+		switch (si->type) {
+		case SOCK_STREAM:
+			u_type = SOCKET_TYPE_CHAR_TCP;
+			break;
+		case SOCK_DGRAM:
+			u_type = SOCKET_TYPE_CHAR_UDP;
+			a_type = SOCKET_TYPE_CHAR_UDP;
+			b_type = SOCKET_TYPE_CHAR_UDP;
+			break;
+		}
+
+		prt = ntohs(in->sin_port);
+		if (a_type && addr == 0xFFFFFFFF) {
+			/* 255.255.255.255 only udp */
+			is_bcast = 2;
+			type = a_type;
+			iface = socket_wrapper_default_iface();
+		} else if (b_type && addr == 0x7FFFFFFF) {
+			/* 127.255.255.255 only udp */
+			is_bcast = 1;
+			type = b_type;
+			iface = socket_wrapper_default_iface();
+		} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
+			/* 127.0.0.X */
+			is_bcast = 0;
+			type = u_type;
+			iface = (addr & 0x000000FF);
+		} else {
+			errno = ENETUNREACH;
+			return -1;
+		}
+		if (bcast) *bcast = is_bcast;
 		break;
 	}
+#ifdef HAVE_IPV6
+	case AF_INET6: {
+		const struct sockaddr_in6 *in = 
+		    (const struct sockaddr_in6 *)inaddr;
 
-	if (a_type && addr == 0xFFFFFFFF) {
-		/* 255.255.255.255 only udp */
-		is_bcast = 2;
-		type = a_type;
-		iface = socket_wrapper_default_iface();
-	} else if (b_type && addr == 0x7FFFFFFF) {
-		/* 127.255.255.255 only udp */
-		is_bcast = 1;
-		type = b_type;
-		iface = socket_wrapper_default_iface();
-	} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
-		/* 127.0.0.X */
-		is_bcast = 0;
-		type = u_type;
-		iface = (addr & 0x000000FF);
-	} else {
+		switch (si->type) {
+		case SOCK_STREAM:
+			type = SOCKET_TYPE_CHAR_TCP_V6;
+			break;
+		case SOCK_DGRAM:
+			type = SOCKET_TYPE_CHAR_UDP_V6;
+			break;
+		}
+
+		/* XXX no multicast/broadcast */
+
+		prt = ntohs(in->sin6_port);
+		iface = SW_IPV6_ADDRESS;
+		
+		break;
+	}
+#endif
+	default:
 		errno = ENETUNREACH;
 		return -1;
 	}
 
-	if (bcast) *bcast = is_bcast;
+	if (prt == 0) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (is_bcast) {
 		snprintf(un->sun_path, sizeof(un->sun_path), "%s/EINVAL", 
@@ -320,59 +415,95 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr_in
 	return 0;
 }
 
-static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr_in *in, struct sockaddr_un *un,
+static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *inaddr, struct sockaddr_un *un,
 			       int *bcast)
 {
-	char u_type = '\0';
-	char d_type = '\0';
-	char b_type = '\0';
-	char a_type = '\0';
 	char type = '\0';
-	unsigned int addr= ntohl(in->sin_addr.s_addr);
-	unsigned int prt = ntohs(in->sin_port);
+	unsigned int prt;
 	unsigned int iface;
 	struct stat st;
 	int is_bcast = 0;
 
 	if (bcast) *bcast = 0;
 
-	switch (si->type) {
-	case SOCK_STREAM:
-		u_type = SOCKET_TYPE_CHAR_TCP;
-		d_type = SOCKET_TYPE_CHAR_TCP;
-		break;
-	case SOCK_DGRAM:
-		u_type = SOCKET_TYPE_CHAR_UDP;
-		d_type = SOCKET_TYPE_CHAR_UDP;
-		a_type = SOCKET_TYPE_CHAR_UDP;
-		b_type = SOCKET_TYPE_CHAR_UDP;
+	switch (si->family) {
+	case AF_INET: {
+		const struct sockaddr_in *in = 
+		    (const struct sockaddr_in *)inaddr;
+		unsigned int addr = ntohl(in->sin_addr.s_addr);
+		char u_type = '\0';
+		char d_type = '\0';
+		char b_type = '\0';
+		char a_type = '\0';
+
+		prt = ntohs(in->sin_port);
+
+		switch (si->type) {
+		case SOCK_STREAM:
+			u_type = SOCKET_TYPE_CHAR_TCP;
+			d_type = SOCKET_TYPE_CHAR_TCP;
+			break;
+		case SOCK_DGRAM:
+			u_type = SOCKET_TYPE_CHAR_UDP;
+			d_type = SOCKET_TYPE_CHAR_UDP;
+			a_type = SOCKET_TYPE_CHAR_UDP;
+			b_type = SOCKET_TYPE_CHAR_UDP;
+			break;
+		}
+
+		if (addr == 0) {
+			/* 0.0.0.0 */
+		 	is_bcast = 0;
+			type = d_type;
+			iface = socket_wrapper_default_iface();
+		} else if (a_type && addr == 0xFFFFFFFF) {
+			/* 255.255.255.255 only udp */
+			is_bcast = 2;
+			type = a_type;
+			iface = socket_wrapper_default_iface();
+		} else if (b_type && addr == 0x7FFFFFFF) {
+			/* 127.255.255.255 only udp */
+			is_bcast = 1;
+			type = b_type;
+			iface = socket_wrapper_default_iface();
+		} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
+			/* 127.0.0.X */
+			is_bcast = 0;
+			type = u_type;
+			iface = (addr & 0x000000FF);
+		} else {
+			errno = EADDRNOTAVAIL;
+			return -1;
+		}
 		break;
 	}
+#ifdef HAVE_IPV6
+	case AF_INET6: {
+		const struct sockaddr_in6 *in = 
+		    (const struct sockaddr_in6 *)inaddr;
 
-	if (addr == 0) {
-		/* 0.0.0.0 */
-		is_bcast = 0;
-		type = d_type;
-		iface = socket_wrapper_default_iface();
-	} else if (a_type && addr == 0xFFFFFFFF) {
-		/* 255.255.255.255 only udp */
-		is_bcast = 2;
-		type = a_type;
-		iface = socket_wrapper_default_iface();
-	} else if (b_type && addr == 0x7FFFFFFF) {
-		/* 127.255.255.255 only udp */
-		is_bcast = 1;
-		type = b_type;
-		iface = socket_wrapper_default_iface();
-	} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
-		/* 127.0.0.X */
-		is_bcast = 0;
-		type = u_type;
-		iface = (addr & 0x000000FF);
-	} else {
-		errno = EADDRNOTAVAIL;
+		switch (si->type) {
+		case SOCK_STREAM:
+			type = SOCKET_TYPE_CHAR_TCP_V6;
+			break;
+		case SOCK_DGRAM:
+			type = SOCKET_TYPE_CHAR_UDP_V6;
+			break;
+		}
+
+		/* XXX no multicast/broadcast */
+
+		prt = ntohs(in->sin6_port);
+		iface = SW_IPV6_ADDRESS;
+		
+		break;
+	}
+#endif
+	default:
+		errno = ENETUNREACH;
 		return -1;
 	}
+
 
 	if (bcast) *bcast = is_bcast;
 
@@ -383,11 +514,13 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr_in 
 				 socket_wrapper_dir(), type, iface, prt);
 			if (stat(un->sun_path, &st) == 0) continue;
 
-			((struct sockaddr_in *)si->myname)->sin_port = htons(prt);
-			return 0;
+			set_port(si->family, prt, si->myname);
+			break;
 		}
-		errno = ENFILE;
-		return -1;
+		if (prt == 10000) {
+			errno = ENFILE;
+			return -1;
+		}
 	}
 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
@@ -416,6 +549,9 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 
 	switch (in_addr->sa_family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
+	case AF_INET6:
+#endif
 		switch (si->type) {
 		case SOCK_STREAM:
 		case SOCK_DGRAM:
@@ -425,9 +561,9 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 			return -1;
 		}
 		if (alloc_sock) {
-			return convert_in_un_alloc(si, (const struct sockaddr_in *)in_addr, out_addr, bcast);
+			return convert_in_un_alloc(si, in_addr, out_addr, bcast);
 		} else {
-			return convert_in_un_remote(si, (const struct sockaddr_in *)in_addr, out_addr, bcast);
+			return convert_in_un_remote(si, in_addr, out_addr, bcast);
 		}
 	default:
 		break;
@@ -442,25 +578,21 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 				    socklen_t un_addrlen,
 				    int family,
 				    struct sockaddr *out_addr,
-				    socklen_t *_out_addrlen)
+				    socklen_t *out_addrlen)
 {
-	socklen_t out_addrlen;
-
-	if (out_addr == NULL || _out_addrlen == NULL) 
+	if (out_addr == NULL || out_addrlen == NULL) 
 		return 0;
 
 	if (un_addrlen == 0) {
-		*_out_addrlen = 0;
+		*out_addrlen = 0;
 		return 0;
-	}
-
-	out_addrlen = *_out_addrlen;
-	if (out_addrlen > un_addrlen) {
-		out_addrlen = un_addrlen;
 	}
 
 	switch (family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
+	case AF_INET6:
+#endif
 		switch (si->type) {
 		case SOCK_STREAM:
 		case SOCK_DGRAM:
@@ -469,7 +601,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
-		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, _out_addrlen);
+		return convert_un_in(in_addr, out_addr, out_addrlen);
 	default:
 		break;
 	}
@@ -801,7 +933,13 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		return;
 	}
 
-	if (si->family != AF_INET) {
+	switch (si->family) {
+	case AF_INET:
+#ifdef HAVE_IPV6
+	case AF_INET6:
+#endif
+		break;
+	default:
 		return;
 	}
 
@@ -1065,6 +1203,9 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 
 	switch (family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
+	case AF_INET6:
+#endif
 		break;
 	case AF_UNIX:
 		return real_socket(family, type, protocol);
@@ -1086,6 +1227,14 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	switch (protocol) {
 	case 0:
 		break;
+	case 6:
+		if (type == SOCK_STREAM) {
+			break;
+		}
+	case 17:
+		if (type == SOCK_DGRAM) {
+			break;
+		}
 	default:
 		errno = EPROTONOSUPPORT;
 		return -1;
@@ -1115,8 +1264,8 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	socklen_t un_addrlen = sizeof(un_addr);
 	struct sockaddr_un un_my_addr;
 	socklen_t un_my_addrlen = sizeof(un_my_addr);
-	struct sockaddr my_addr;
-	socklen_t my_addrlen = sizeof(my_addr);
+	struct sockaddr *my_addr;
+	socklen_t my_addrlen, len;
 	int ret;
 
 	parent_si = find_socket_info(s);
@@ -1124,18 +1273,37 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return real_accept(s, addr, addrlen);
 	}
 
+	/* 
+	 * assume out sockaddr have the same size as the in parent
+	 * socket family
+	 */
+	my_addrlen = socket_length(parent_si->family);
+	if (my_addrlen < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	my_addr = malloc(my_addrlen);
+	if (my_addr == NULL) {
+		return -1;
+	}
+
 	memset(&un_addr, 0, sizeof(un_addr));
 	memset(&un_my_addr, 0, sizeof(un_my_addr));
-	memset(&my_addr, 0, sizeof(my_addr));
 
 	ret = real_accept(s, (struct sockaddr *)&un_addr, &un_addrlen);
-	if (ret == -1) return ret;
+	if (ret == -1) {
+		free(my_addr);
+		return ret;
+	}
 
 	fd = ret;
 
+	len = my_addrlen;
 	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
-				       parent_si->family, addr, addrlen);
+				       parent_si->family, my_addr, &len);
 	if (ret == -1) {
+		free(my_addr);
 		close(fd);
 		return ret;
 	}
@@ -1150,6 +1318,16 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->bound = 1;
 	child_si->is_server = 1;
 
+	child_si->peername_len = len;
+	child_si->peername = sockaddr_dup(my_addr, len);
+
+	if (addr != NULL && addrlen != NULL) {
+	    *addrlen = len;
+	    if (*addrlen >= len)
+		memcpy(addr, my_addr, len);
+	    *addrlen = 0;
+	}
+
 	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
 	if (ret == -1) {
 		free(child_si);
@@ -1157,19 +1335,19 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return ret;
 	}
 
+	len = my_addrlen;
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
-				       child_si->family, &my_addr, &my_addrlen);
+				       child_si->family, my_addr, &len);
 	if (ret == -1) {
 		free(child_si);
+		free(my_addr);
 		close(fd);
 		return ret;
 	}
 
-	child_si->myname_len = my_addrlen;
-	child_si->myname = sockaddr_dup(&my_addr, my_addrlen);
-
-	child_si->peername_len = *addrlen;
-	child_si->peername = sockaddr_dup(addr, *addrlen);
+	child_si->myname_len = len;
+	child_si->myname = sockaddr_dup(my_addr, len);
+	free(my_addr);
 
 	SWRAP_DLIST_ADD(sockets, child_si);
 
@@ -1190,7 +1368,6 @@ static int autobind_start;
 static int swrap_auto_bind(struct socket_info *si)
 {
 	struct sockaddr_un un_addr;
-	struct sockaddr_in in;
 	int i;
 	char type;
 	int ret;
@@ -1206,13 +1383,55 @@ static int swrap_auto_bind(struct socket_info *si)
 
 	un_addr.sun_family = AF_UNIX;
 
-	switch (si->type) {
-	case SOCK_STREAM:
-		type = SOCKET_TYPE_CHAR_TCP;
+	switch (si->family) {
+	case AF_INET: {
+		struct sockaddr_in in;
+
+		switch (si->type) {
+		case SOCK_STREAM:
+			type = SOCKET_TYPE_CHAR_TCP;
+			break;
+		case SOCK_DGRAM:
+		    	type = SOCKET_TYPE_CHAR_UDP;
+			break;
+		default:
+		    errno = ESOCKTNOSUPPORT;
+		    return -1;
+		}
+
+		memset(&in, 0, sizeof(in));
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = htonl(127<<24 | 
+					   socket_wrapper_default_iface());
+
+		si->myname_len = sizeof(in);
+		si->myname = sockaddr_dup(&in, si->myname_len);
 		break;
-	case SOCK_DGRAM:
-		type = SOCKET_TYPE_CHAR_UDP;
+	}
+#ifdef HAVE_IPV6
+	case AF_INET6: {
+		struct sockaddr_in6 in6;
+
+		switch (si->type) {
+		case SOCK_STREAM:
+			type = SOCKET_TYPE_CHAR_TCP_V6;
+			break;
+		case SOCK_DGRAM:
+		    	type = SOCKET_TYPE_CHAR_UDP_V6;
+			break;
+		default:
+		    errno = ESOCKTNOSUPPORT;
+		    return -1;
+		}
+
+		memset(&in6, 0, sizeof(in6));
+		in6.sin6_family = AF_INET6;
+		in6.sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		si->myname_len = sizeof(in6);
+		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
+	}
+#endif
 	default:
 		errno = ESOCKTNOSUPPORT;
 		return -1;
@@ -1242,13 +1461,8 @@ static int swrap_auto_bind(struct socket_info *si)
 		return -1;
 	}
 
-	memset(&in, 0, sizeof(in));
-	in.sin_family = AF_INET;
-	in.sin_port   = htons(port);
-	in.sin_addr.s_addr = htonl(127<<24 | socket_wrapper_default_iface());
-	
-	si->myname_len = sizeof(in);
-	si->myname = sockaddr_dup(&in, si->myname_len);
+	set_port(si->family, port, si->myname);
+
 	return 0;
 }
 
@@ -1266,6 +1480,11 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
+	}
+
+	if (si->family != serv_addr->sa_family) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
@@ -1446,38 +1665,49 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	if (si->bound == 0) {
-		ret = swrap_auto_bind(si);
-		if (ret == -1) return -1;
-	}
-
-	ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
-	if (ret == -1) return -1;
-
-	if (bcast) {
-		struct stat st;
-		unsigned int iface;
-		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
-		char type;
-
-		type = SOCKET_TYPE_CHAR_UDP;
-
-		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
-				 socket_wrapper_dir(), type, iface, prt);
-			if (stat(un_addr.sun_path, &st) != 0) continue;
-
-			/* ignore the any errors in broadcast sends */
-			real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+	switch (si->type) {
+	case SOCK_STREAM:
+		ret = real_send(s, buf, len, flags);
+		break;
+	case SOCK_DGRAM:
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(si);
+			if (ret == -1) return -1;
 		}
-
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-
-		return len;
+		
+		ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
+		if (ret == -1) return -1;
+		
+		if (bcast) {
+			struct stat st;
+			unsigned int iface;
+			unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+			char type;
+			
+			type = SOCKET_TYPE_CHAR_UDP;
+			
+			for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+				snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
+					 socket_wrapper_dir(), type, iface, prt);
+				if (stat(un_addr.sun_path, &st) != 0) continue;
+				
+				/* ignore the any errors in broadcast sends */
+				real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+			}
+			
+			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+			
+			return len;
+		}
+		
+		ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+		break;
+	default:
+		ret = -1;
+		errno = EHOSTUNREACH;
+		break;
 	}
-
-	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
-
+		
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
 		errno = EHOSTUNREACH;
