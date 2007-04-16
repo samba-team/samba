@@ -1,6 +1,10 @@
+2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: CLEANFILES += sdigest-init
+	
 2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* ldap/slapd-init.in: Add $Id$ tag.
+	* ldap/slapd-init.in: Add Id tag
 	
 2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
