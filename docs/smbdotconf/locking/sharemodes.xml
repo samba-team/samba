@@ -13,7 +13,7 @@
 	UNIX doesn't support shared memory (almost all do).</para>
 
 	<para>The share modes that are enabled by this option are 
-	<constant>DENY_DOS</constant>, <constant>DENY_ALL</constant>,
+	 <constant>DENY_DOS</constant>, <constant>DENY_ALL</constant>,
 	<constant>DENY_READ</constant>, <constant>DENY_WRITE</constant>,
 	<constant>DENY_NONE</constant> and <constant>DENY_FCB</constant>.
 	</para>

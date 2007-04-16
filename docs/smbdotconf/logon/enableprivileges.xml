@@ -6,7 +6,7 @@
 <description>
 	<para>
 	This parameter controls whether or not smbd will honor privileges assigned to specific SIDs via either
-	<command>net rpc rights</command> or one of the Windows user and group manager tools.  This parameter is
+	 <command>net rpc rights</command> or one of the Windows user and group manager tools.  This parameter is
 	enabled by default. It can be disabled to prevent members of the Domain Admins group from being able to
 	assign privileges to users or groups which can then result in certain smbd operations running as root that
 	would normally run under the context of the connected user.

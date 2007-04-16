@@ -8,9 +8,9 @@
 
 	<para>
 	The ldap suffix will be appended to the values specified for the <smbconfoption name="ldap user suffix"/>,
-	<smbconfoption name="ldap group suffix"/>, <smbconfoption name="ldap machine suffix"/>, and the
-	<smbconfoption name="ldap idmap suffix"/>. Each of these should be given only a DN relative to the
-	<smbconfoption name ="ldap suffix"/>.
+	 <smbconfoption name="ldap group suffix"/>, <smbconfoption name="ldap machine suffix"/>, and the
+	 <smbconfoption name="ldap idmap suffix"/>. Each of these should be given only a DN relative to the
+	 <smbconfoption name ="ldap suffix"/>.
 	</para>
 </description>
 <value type="default"></value>

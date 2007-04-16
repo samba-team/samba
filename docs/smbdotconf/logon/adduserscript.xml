@@ -15,7 +15,7 @@
 	files on this server. For sites that use Windows NT account databases as their primary 
 	user database creating these users and keeping the user list in sync with the Windows 
 	NT PDC is an onerous task. This option allows smbd to create the required UNIX users 
-	<emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.
+	 <emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.
 	</para>
 
 	<para>

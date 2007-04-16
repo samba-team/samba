@@ -6,7 +6,7 @@
 	<para>
 	In a POSIX filesystem, only the owner of a file or directory and the superuser can modify the permissions
 	and ACLs on a file. If this parameter is set, then Samba overrides this restriction, and also allows the
-	<emphasis>primary group owner</emphasis> of a file or directory to modify the permissions and ACLs
+ 	 <emphasis>primary group owner</emphasis> of a file or directory to modify the permissions and ACLs
 	on that file.
 	</para>
 	<para>
