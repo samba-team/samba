@@ -33,7 +33,7 @@ _PUBLIC_ NTSTATUS torture_temp_dir(TALLOC_CTX *mem_ctx, const char *prefix,
 {
 	const char *basedir = lp_parm_string(-1, "torture", "basedir");
 	if (basedir == NULL) basedir = ".";
-	*tempdir = talloc_asprintf(mem_ctx, "%s/torture.tmp-%s.XXXXXX", 
+	*tempdir = talloc_asprintf(mem_ctx, "%s/%s.XXXXXX", 
 							   basedir, prefix);
 
 	if (mkdtemp(*tempdir) == NULL)
