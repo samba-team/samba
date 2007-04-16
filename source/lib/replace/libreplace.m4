@@ -263,7 +263,7 @@ AC_CHECK_HEADERS([sys/param.h limits.h])
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
-AC_CHECK_DECLS([setenv, unsetenv])
+AC_HAVE_DECL(setenv, [#include <stdlib.h>])
 AC_CHECK_FUNCS(setenv unsetenv)
 
 AC_CHECK_FUNCS(strnlen)
