@@ -223,7 +223,8 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 	if (!file->num_entries) {
 		dbuf.dptr  = NULL;
 		dbuf.dsize = 0;
-		ctdb_record_store(lck->rec, dbuf);
+		ctdb_store_unlock(lck->rec, dbuf);
+		return NT_STATUS_OK;
 	}
 
 	status = ndr_push_struct_blob(&blob, lck, file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
@@ -232,7 +233,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 	dbuf.dptr = blob.data;
 	dbuf.dsize = blob.length;
 		
-	ret = ctdb_record_store(lck->rec, dbuf);
+	ret = ctdb_store_unlock(lck->rec, dbuf);
 	data_blob_free(&blob);
 	if (ret != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

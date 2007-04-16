@@ -141,6 +141,17 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 {
 	struct cluster_state *state = ops->private;
 	struct cluster_messaging_list *m;
+	int ret;
+
+	/* setup messaging handler */
+	ret = ctdb_set_message_handler(state->ctdb, ctdb_message_handler, 
+				       server.id, state);
+        if (ret == -1) {
+                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
+			 ctdb_errstr(state->ctdb)));
+		exit(1);
+        }
+
 	m = talloc(msg, struct cluster_messaging_list);
 	NT_STATUS_HAVE_NO_MEMORY(m);
 	
@@ -245,14 +256,6 @@ void cluster_ctdb_init(struct event_context *ev)
         ret = ctdb_set_nlist(state->ctdb, nlist);
         if (ret == -1) {
                 DEBUG(0,("ctdb_set_nlist failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
-        }
-
-	/* setup messaging handler */
-	ret = ctdb_set_message_handler(state->ctdb, ctdb_message_handler, state);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
-			 ctdb_errstr(state->ctdb)));
 		goto failed;
         }
 

@@ -197,3 +197,21 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 	return ret;
 }
+
+
+/*
+  lock a record in the ltdb, given a key
+ */
+int ctdb_ltdb_lock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	return tdb_chainlock(ctdb_db->ltdb->tdb, key);
+}
+
+/*
+  unlock a record in the ltdb, given a key
+ */
+int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	return tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+}
+

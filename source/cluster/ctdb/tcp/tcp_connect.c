@@ -35,13 +35,32 @@ static void set_nonblocking(int fd)
 
 
 /*
+  called when a complete packet has come in - should not happen on this socket
+ */
+void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
+{
+	struct ctdb_node *node = talloc_get_type(private_data, struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(
+		node->private_data, struct ctdb_tcp_node);
+
+	/* start a new connect cycle to try to re-establish the
+	   link */
+	close(tnode->fd);
+	ctdb_queue_set_fd(tnode->queue, -1);
+	tnode->fd = -1;
+	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
+			ctdb_tcp_node_connect, node);
+}
+
+/*
   called when socket becomes writeable on connect
 */
 static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *fde, 
-				    uint16_t flags, void *private)
+				    uint16_t flags, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+	struct ctdb_node *node = talloc_get_type(private_data,
+						 struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
 	int error = 0;
@@ -59,17 +78,13 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	}
 
 	talloc_free(fde);
-	tnode->fde = event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
-				  ctdb_tcp_node_write, node);
+	
+        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
+
+	ctdb_queue_set_fd(tnode->queue, tnode->fd);
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
-
-        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
-
-	if (tnode->queue) {
-		EVENT_FD_WRITEABLE(tnode->fde);		
-	}
 }
 
 
@@ -92,10 +107,11 @@ static int ctdb_tcp_get_address(struct ctdb_context *ctdb,
   called when we should try and establish a tcp connection to a node
 */
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *private)
+			   struct timeval t, void *private_data)
 {
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
+	struct ctdb_node *node = talloc_get_type(private_data,
+						 struct ctdb_node);
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
         struct sockaddr_in sock_in;
@@ -155,7 +171,7 @@ static int ctdb_incoming_destructor(struct ctdb_incoming *in)
   node in our cluster
 */
 static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde, 
-			      uint16_t flags, void *private)
+			      uint16_t flags, void *private_data)
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_tcp *ctcp;
@@ -164,8 +180,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	int fd;
 	struct ctdb_incoming *in;
 
-	ctdb = talloc_get_type(private, struct ctdb_context);
-	ctcp = talloc_get_type(ctdb->private, struct ctdb_tcp);
+	ctdb = talloc_get_type(private_data, struct ctdb_context);
+	ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
@@ -177,8 +193,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	set_nonblocking(in->fd);
 
-	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
-		     ctdb_tcp_incoming_read, in);	
+	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
+				     ctdb_tcp_read_cb, in);
 
 	talloc_set_destructor(in, ctdb_incoming_destructor);
 }
@@ -189,7 +205,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 */
 int ctdb_tcp_listen(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private, struct ctdb_tcp);
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+						struct ctdb_tcp);
         struct sockaddr_in sock;
 	int one = 1;
 
