@@ -350,11 +350,6 @@ copy an IP address from one buffer to another
 
 #else
 
-#define _STRING_LINE_(s)    #s
-#define _STRING_LINE2_(s)   _STRING_LINE_(s)
-#define __LINESTR__       _STRING_LINE2_(__LINE__)
-#define __location__ __FILE__ ":" __LINESTR__
-
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
 #define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)
 
