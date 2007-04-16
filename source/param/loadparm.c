@@ -2232,7 +2232,7 @@ static int lp_int(const char *s)
 		return (-1);
 	}
 
-	return atoi(s); 
+	return (int)strtol(s, NULL, 0);
 }
 
 /*******************************************************************
@@ -2246,7 +2246,7 @@ static unsigned long lp_ulong(const char *s)
 		return (0);
 	}
 
-	return strtoul(s, NULL, 10);
+	return strtoul(s, NULL, 0);
 }
 
 /*******************************************************************
