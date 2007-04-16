@@ -17,7 +17,10 @@ if test -z "$SMBD_LOGLEVEL"; then
 	SMBD_LOGLEVEL=1
 fi
 
-SERVER_ROLE="domain controller"
+if test -z "$SERVER_ROLE"; then
+	SERVER_ROLE="domain controller"
+fi
+
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=SAMBA.EXAMPLE.COM

@@ -14,3 +14,4 @@
  $SRCDIR/script/tests/test_blackbox.sh $PREFIX
  $SRCDIR/script/tests/test_simple.sh
  $SRCDIR/script/tests/test_s3upgrade.sh $PREFIX/upgrade
+ $SRCDIR/script/tests/test_member.sh
