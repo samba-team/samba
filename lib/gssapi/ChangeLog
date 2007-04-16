@@ -2,7 +2,6 @@
 
 	* Makefile.am: add test_common.h
 	
-
 2007-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: Add link for
