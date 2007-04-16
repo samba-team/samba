@@ -89,7 +89,7 @@ gen_files_k5 =						\
 	asn1_PA_SAM_TYPE.x				\
 	asn1_PA_ClientCanonicalized.x			\
 	asn1_PA_ClientCanonicalizedNames.x		\
-	asn1_PA_SvrReferralData.x			\
+	asn1_PA_SvrReferralData.x			\
 	asn1_PROV_SRV_LOCATION.x			\
 	asn1_Principal.x				\
 	asn1_PrincipalName.x				\
