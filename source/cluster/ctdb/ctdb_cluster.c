@@ -144,8 +144,8 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 	int ret;
 
 	/* setup messaging handler */
-	ret = ctdb_set_message_handler(state->ctdb, ctdb_message_handler, 
-				       server.id, state);
+	ret = ctdb_set_message_handler(state->ctdb, CTDB_SRVID_ALL, 
+				       ctdb_message_handler, state);
         if (ret == -1) {
                 DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
 			 ctdb_errstr(state->ctdb)));
