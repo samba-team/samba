@@ -214,7 +214,7 @@ static void merge_test(void)
 	key.dptr = keys[3];
 	tdb_delete(db, key);
 }
-	
+
  int main(int argc, const char *argv[])
 {
 	int i, seed=0;

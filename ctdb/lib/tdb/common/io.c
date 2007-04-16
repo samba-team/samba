@@ -124,8 +124,10 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 		if (ret != (ssize_t)len) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_read failed at %d len=%d ret=%d (%s) map_size=%d\n",
-				 off, len, ret, strerror(errno), (int)tdb->map_size));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_read failed at %d "
+				 "len=%d ret=%d (%s) map_size=%d\n",
+				 (int)off, (int)len, (int)ret, strerror(errno),
+				 (int)tdb->map_size));
 			return TDB_ERRCODE(TDB_ERR_IO, -1);
 		}
 	}
@@ -339,7 +341,7 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 		len = 1;
 	}
 
-	if (!(buf = malloc(len))) {
+	if (!(buf = (unsigned char *)malloc(len))) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_OOM;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_alloc_read malloc failed len=%d (%s)\n",
@@ -351,6 +353,40 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 		return NULL;
 	}
 	return buf;
+}
+
+/* Give a piece of tdb data to a parser */
+
+int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
+		   tdb_off_t offset, tdb_len_t len,
+		   int (*parser)(TDB_DATA key, TDB_DATA data,
+				 void *private_data),
+		   void *private_data)
+{
+	TDB_DATA data;
+	int result;
+
+	data.dsize = len;
+
+	if ((tdb->transaction == NULL) && (tdb->map_ptr != NULL)) {
+		/*
+		 * Optimize by avoiding the malloc/memcpy/free, point the
+		 * parser directly at the mmap area.
+		 */
+		if (tdb->methods->tdb_oob(tdb, offset+len, 0) != 0) {
+			return -1;
+		}
+		data.dptr = offset + (unsigned char *)tdb->map_ptr;
+		return parser(key, data, private_data);
+	}
+
+	if (!(data.dptr = tdb_alloc_read(tdb, offset, len))) {
+		return -1;
+	}
+
+	result = parser(key, data, private_data);
+	free(data.dptr);
+	return result;
 }
 
 /* read/write a record */
