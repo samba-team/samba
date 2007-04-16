@@ -205,7 +205,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	}
 
 	d_printf("%-10s   %s   %-12s  %s",
-	       crec.name,procid_str_static(&crec.pid),
+	       crec.servicename,procid_str_static(&crec.pid),
 	       crec.machine,
 	       time_to_asc(crec.start));
 
