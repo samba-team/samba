@@ -7,7 +7,7 @@
 	<para>
 	This boolean parameter is only available if Samba has been configured and compiled  
 	with the option <command moreinfo="none">--with-utmp</command>. If set to 
-	<constant>yes</constant> then Samba will attempt to add utmp or utmpx records 
+	 <constant>yes</constant> then Samba will attempt to add utmp or utmpx records 
 	(depending on the UNIX system) whenever a connection is made to a Samba server. 
 	Sites may use this to record the user connecting to a Samba share.
 	</para>

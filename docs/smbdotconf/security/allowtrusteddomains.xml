@@ -6,7 +6,7 @@
 <description>
     <para>
     This option only takes effect when the <smbconfoption name="security"/> option is set to 
-    <constant>server</constant>,<constant>domain</constant> or <constant>ads</constant>.  
+    <constant>server</constant>, <constant>domain</constant> or <constant>ads</constant>.  
     If it is set to no, then attempts to connect to a resource from 
     a domain or workgroup other than the one which smbd is running 
     in will fail, even if that domain is trusted by the remote server 

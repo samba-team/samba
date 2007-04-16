@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies whether the
-	<citerefentry><refentrytitle>winbindd</refentrytitle> 
+	 <citerefentry><refentrytitle>winbindd</refentrytitle> 
 	<manvolnum>8</manvolnum></citerefentry> daemon should operate on users  
 	without domain component in their username. Users without a domain
 	component are treated as is part of the winbindd server's own
