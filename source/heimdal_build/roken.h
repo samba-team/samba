@@ -69,7 +69,9 @@
 #define HAVE_INNETGR
 #endif
 
-#undef SOCKET_WRAPPER_REPLACE
+#ifdef SOCKET_WRAPPER
+#define SOCKET_WRAPPER_REPLACE SOCKET_WRAPPER
+#endif
 
 #include "heimdal/lib/roken/roken.h.in"
 #endif
