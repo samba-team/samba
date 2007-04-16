@@ -353,6 +353,10 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
+				 TDB_DATA key, struct ctdb_ltdb_header *header, 
+				 struct ctdb_req_header *hdr, TDB_DATA *data);
+void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
 					     struct ctdb_call *call,
@@ -448,5 +452,9 @@ struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_d
   do a store unlock from a client to the local daemon
 */
 int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+
+struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
+				      TDB_DATA key,
+				      void (*callback)(void *), void *private_data);
 
 #endif
