@@ -145,6 +145,7 @@ CLEANFILES = \
 	error \
 	hcrypto \
 	hcrypto-link \
+	test.file \
 	test_crypto \
 	test_crypto.tmp \
 	test_crypto.tmp
