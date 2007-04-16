@@ -651,7 +651,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_getpass();
 	ret &= test_inet_ntoa();
 	ret &= test_strtoll();
-	ret &= test_strtoll();
 	ret &= test_strtoull();
 	ret &= test_va_copy();
 	ret &= test_FUNCTION();
