@@ -45,4 +45,5 @@ CLEANFILES= \
 EXTRA_DIST = \
 	check-ldap.in \
 	init.ldif \
-	krb5.conf.in
+	krb5.conf.in \
+	slapd-init.in
