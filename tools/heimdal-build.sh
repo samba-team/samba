@@ -21,7 +21,7 @@ PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
 
 # no more user configurabled part below (hopefully)
 
-usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs|fetch|afs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime] [--distcheck] [--test-environment env] [--configure-flags flags]"
+usage="[--current] [--svn SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs|fetch|afs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime] [--distcheck] [--test-environment env] [--configure-flags flags]"
 
 date=`date +%Y%m%d`
 if [ "$?" != 0 ]; then
@@ -66,6 +66,10 @@ do
 		hversion="heimdal-${date}"
 		shift
 		;;
+	--release)
+		hversion="heimdal-$2"
+		shift 2
+		;;
 	--cputime)
 		cputimelimit="$2"
 		shift 2
@@ -74,28 +78,10 @@ do
 		ccachedir="$2"
 		shift 2
 		;;
-	--cvs)
-		hversion="heimdal-cvs-${date}"
-		cvsroot=$2
-		fetchmethod=cvs
-		shift 2
-		;;
-	--cvs-flags)
-		cvsflags="$2"
-		shift 2
-		;;
-	--cvs-branch)
-		if [ "X$cvsroot" == "X" ] ; then
-		    echo "option --cvs must be given before --cvs-branch"
-		    exit 1
-		fi
-		cvsbranch="-r $2"
-		branch="-$2"
-		hversion="$2-${date}"
-		shift 2
-		;;
-	--release)
-		hversion="heimdal-$2"
+	--svn)
+		hversion="heimdal-svn-${date}"
+		svnroot=$2
+		fetchmethod=svn
 		shift 2
 		;;
 	--distcheck)
@@ -197,9 +183,8 @@ afs)
 	cp ${afsfile} ${hfile}
 	res=$?
 	;;
-cvs)
-	cvs -Qq ${cvsflags} -d "${cvsroot}" \
-	    co -P ${cvsbranch} -d ${hversion} heimdal
+svn)
+	svn co $svnroot ${hversion}
 	res=$?
 	unpack=no
 	autotools=yes
@@ -214,13 +199,6 @@ if [ "X$res" != X0 ]; then
 	exit 1
 fi
 
-case "${hversion}" in
-    0.7*)
-	#true for Mac OS X, but how about the rest?
-	confflags="${confflags} --enable-shared --disable-static"
-	;;
-esac
-
 if [ X"$unpack" = Xyes ]; then
 	echo Unpacking source
 	(gzip -dc ${hfile} | tar xf -) || exit 1
@@ -228,7 +206,7 @@ fi
 
 if [ X"$autotools" = Xyes ]; then
 	echo "Autotooling (via fix-export)"
-	env DATEDVERSION="cvs${branch}-${date}" ${hversion}/fix-export ${hversion}
+	env DATEDVERSION="svn${branch}-${date}" ${hversion}/fix-export ${hversion}
 fi
 
 if [ X"$ccachedir" != X ]; then
