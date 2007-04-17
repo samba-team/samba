@@ -1,5 +1,4 @@
 #TLS and PKINIT crypto blobs
-TLSDIR=$PRIVATEDIR/tls
 DHFILE=$TLSDIR/dhparms.pem
 CAFILE=$TLSDIR/ca.pem
 CERTFILE=$TLSDIR/cert.pem
