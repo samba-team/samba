@@ -115,12 +115,14 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
  Convert the idmap database from an older version.
 *****************************************************************************/
 
-static BOOL idmap_tdb_convert(const char *idmap_name)
+static BOOL idmap_tdb_upgrade(const char *idmap_name)
 {
 	int32 vers;
 	BOOL bigendianheader;
 	BOOL failed = False;
 	TDB_CONTEXT *idmap_tdb;
+
+	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
 	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
 					TDB_DEFAULT, O_RDWR,
@@ -187,32 +189,6 @@ static BOOL idmap_tdb_convert(const char *idmap_name)
 
 	tdb_close(idmap_tdb);
 	return True;
-}
-
-/*****************************************************************************
- Convert the idmap database from an older version if necessary
-*****************************************************************************/
-
-BOOL idmap_tdb_upgrade(TALLOC_CTX *ctx, const char *tdbfile)
-{
-	char *backup_name;
-
-	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
-
-	backup_name = talloc_asprintf(ctx, "%s.bak", tdbfile);
-	if ( ! backup_name) {
-		DEBUG(0, ("Out of memory!\n"));
-		return False;
-	}
-
-	if (backup_tdb(tdbfile, backup_name, 0) != 0) {
-		DEBUG(0, ("Could not backup idmap database\n"));
-		talloc_free(backup_name);
-		return False;
-	}
-
-	talloc_free(backup_name);
-	return idmap_tdb_convert(tdbfile);
 }
 
 /* WARNING: We can't open a tdb twice inthe same process, for that reason
@@ -282,7 +258,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx, TDB_CONTEXT **tdbctx)
 		/* backup_tdb expects the tdb not to be open */
 		tdb_close(idmap_tdb_common_ctx);
 
-		if ( ! idmap_tdb_upgrade(ctx, tdbfile)) {
+		if ( ! idmap_tdb_upgrade(tdbfile)) {
 		
 			DEBUG(0, ("Unable to open idmap database, it's in an old formati, and upgrade failed!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
