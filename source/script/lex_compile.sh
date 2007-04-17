@@ -8,11 +8,23 @@ dir=`dirname $SRC`
 file=`basename $SRC`
 base=`basename $SRC .l`
 if [ -z "$LEX" ]; then
-	echo "lex not found - not regenerating $DEST"
-	exit;
+	# if $DEST is more recent than $SRC, we can just touch
+	# otherwise we touch but print out warnings
+	if [ -r $DEST ]; then
+		if [ x`find $SRC -newer $DEST -print` = x$SRC ]; then
+			echo "warning: lex not found - cannot generate $SRC => $DEST" >&2
+			echo "warning: lex not found - only updating the timestamp of $DEST" >&2
+		fi
+		touch $DEST;
+		exit;
+	fi
+	echo "error: lex not found - cannot generate $SRC => $DEST" >&2
+	exit 1;
 fi
+# if $DEST is more recent than $SRC, we can just touch
 if [ -r $DEST ]; then
 	if [ x`find $SRC -newer $DEST -print` != x$SRC ]; then
+		touch $DEST;
 		exit;
 	fi
 fi
