@@ -427,13 +427,6 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
 
 
-/*
-  do a fetch lock from a client to the local daemon
-*/
-struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
-						  TALLOC_CTX *mem_ctx, 
-						  TDB_DATA key, TDB_DATA *data);
-
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      void (*callback)(void *), void *private_data);

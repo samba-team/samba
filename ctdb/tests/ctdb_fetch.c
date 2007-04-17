@@ -58,7 +58,6 @@ static int msg_count;
 static void bench_fetch_1node(struct ctdb_context *ctdb)
 {
 	TDB_DATA key, data, nulldata;
-	struct ctdb_record_handle *rec;
 	struct ctdb_db_context *ctdb_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int dest, ret;
@@ -68,8 +67,8 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 
 	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
 
-	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-	if (rec == NULL) {
+	ret = ctdb_client_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (ret != 0) {
 		printf("Failed to fetch record '%s' on node %d\n", 
 		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
 		talloc_free(tmp_ctx);
@@ -88,7 +87,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 						      msg_count, ctdb_get_vnn(ctdb));
 	data.dsize = strlen((const char *)data.dptr)+1;
 
-	ret = ctdb_client_store_unlock(rec, data);
+	ret = ctdb_client_store_unlock(ctdb_db, key, data);
 	if (ret != 0) {
 		printf("Failed to store record\n");
 	}

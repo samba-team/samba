@@ -179,7 +179,15 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 */
 struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
 
-int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+/*
+  do a fetch lock from a client to the local daemon
+*/
+int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key, TDB_DATA *data);
+
+
+int ctdb_client_store_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key, TDB_DATA data);
 
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
