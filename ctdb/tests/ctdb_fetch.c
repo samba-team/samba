@@ -94,8 +94,6 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 		printf("Failed to store record\n");
 	}
 
-	printf("DATA IS NOW:%s\n", (const char *)data.dptr);
-
 	talloc_free(tmp_ctx);
 
 	/* tell the next node to do the same */

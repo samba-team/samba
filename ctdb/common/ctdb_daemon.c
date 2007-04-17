@@ -125,7 +125,8 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 
 static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 							   TALLOC_CTX *mem_ctx, 
-							   TDB_DATA key, TDB_DATA *data)
+							   TDB_DATA key, struct ctdb_ltdb_header *header,
+							   TDB_DATA *data)
 {
 	struct ctdb_call *call;
 	struct ctdb_record_handle *rec;
@@ -141,13 +142,12 @@ static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_contex
 	call->key = key;
 	call->flags = CTDB_IMMEDIATE_MIGRATION;
 
-
 	rec->ctdb_db = ctdb_db;
 	rec->key = key;
 	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
 	rec->data = data;
 
-	state = ctdb_daemon_call_send(ctdb_db, call);
+	state = ctdb_daemon_call_send_remote(ctdb_db, call, header);
 	state->fetch_private = rec;
 
 	return state;
@@ -192,7 +192,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
   called when the daemon gets a fetch lock request from a client
  */
 static void daemon_request_fetch_lock(struct ctdb_client *client, 
-					struct ctdb_req_fetch_lock *f)
+				      struct ctdb_req_fetch_lock *f)
 {
 	struct ctdb_call_state *state;
 	TDB_DATA key, *data;
@@ -226,7 +226,7 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	data->dptr  = NULL;
 	data->dsize = 0;
 
-	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, data);
+	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, &f->header, data);
 	talloc_steal(state, data);
 
 	fl_data = talloc(state, struct client_fetch_lock_data);

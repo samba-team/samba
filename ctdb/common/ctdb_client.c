@@ -245,22 +245,14 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		ux_socket_connect(ctdb);
 	}
 
-	ret = ctdb_ltdb_lock(ctdb_db, call->key);
-	if (ret != 0) {
-		printf("failed to lock ltdb record\n");
-		return NULL;
-	}
-
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 	if (ret != 0) {
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 
 #if 0
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return state;
 	}
 #endif
@@ -268,7 +260,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	if (state == NULL) {
 		printf("failed to allocate state\n");
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 
@@ -278,7 +269,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	state->c = ctdbd_allocate_pkt(ctdb, len);
 	if (state->c == NULL) {
 		printf("failed to allocate packet\n");
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 	talloc_set_name_const(state->c, "ctdbd req_call packet");
@@ -318,7 +308,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 			ctdb_call_timeout, state);
 */
 
-	ctdb_ltdb_unlock(ctdb_db, call->key);
 	return state;
 }
 
@@ -432,7 +421,8 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 
 static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 								 TALLOC_CTX *mem_ctx, 
-								 TDB_DATA key)
+								 TDB_DATA key, 
+								 struct ctdb_ltdb_header *header)
 {
 	struct ctdb_fetch_lock_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -468,6 +458,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
 	req->db_id           = ctdb_db->db_id;
 	req->keylen          = key.dsize;
+	req->header          = *header;
 	memcpy(&req->key[0], key.dptr, key.dsize);
 	
 	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
@@ -572,7 +563,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 
 	/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
-	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
+	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key, &h->header);
 	ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, &h->header, data);
 	if (ret != 0) {
 		talloc_free(h);

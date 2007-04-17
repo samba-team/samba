@@ -266,23 +266,27 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 	
-	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
-	if (ret != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
-		return;
-	}
+	/* if the new dmaster and the lmaster are the same node, then
+	   we don't need to update the record header now */
+	if (c->dmaster != ctdb->vnn) {
+		/* fetch the current record */
+		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
+		if (ret != 0) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+			return;
+		}
+		
+		/* its a protocol error if the sending node is not the current dmaster */
+		if (header.dmaster != hdr->srcnode) {
+			ctdb_fatal(ctdb, "dmaster request from non-master");
+			return;
+		}
 
-	/* its a protocol error if the sending node is not the current dmaster */
-	if (header.dmaster != hdr->srcnode) {
-		ctdb_fatal(ctdb, "dmaster request from non-master");
-		return;
-	}
-
-	header.dmaster = c->dmaster;
-	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
-		return;
+		header.dmaster = c->dmaster;
+		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+			return;
+		}
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
@@ -592,11 +596,66 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
   This constructs a ctdb_call request and queues it for processing. 
   This call never blocks.
 */
-struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
-					      struct ctdb_call *call)
+struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
+						     struct ctdb_call *call, 
+						     struct ctdb_ltdb_header *header)
 {
 	uint32_t len;
 	struct ctdb_call_state *state;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+
+	state = talloc_zero(ctdb_db, struct ctdb_call_state);
+	CTDB_NO_MEMORY_NULL(ctdb, state);
+
+	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
+	state->c = ctdb->methods->allocate_pkt(ctdb, len);
+	CTDB_NO_MEMORY_NULL(ctdb, state->c);
+	talloc_set_name_const(state->c, "req_call packet");
+	talloc_steal(state, state->c);
+
+	state->c->hdr.length    = len;
+	state->c->hdr.ctdb_magic = CTDB_MAGIC;
+	state->c->hdr.ctdb_version = CTDB_VERSION;
+	state->c->hdr.operation = CTDB_REQ_CALL;
+	state->c->hdr.destnode  = header->dmaster;
+	state->c->hdr.srcnode   = ctdb->vnn;
+	/* this limits us to 16k outstanding messages - not unreasonable */
+	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
+	state->c->flags         = call->flags;
+	state->c->db_id         = ctdb_db->db_id;
+	state->c->callid        = call->call_id;
+	state->c->keylen        = call->key.dsize;
+	state->c->calldatalen   = call->call_data.dsize;
+	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);
+	memcpy(&state->c->data[call->key.dsize], 
+	       call->call_data.dptr, call->call_data.dsize);
+	state->call                = *call;
+	state->call.call_data.dptr = &state->c->data[call->key.dsize];
+	state->call.key.dptr       = &state->c->data[0];
+
+	state->node   = ctdb->nodes[header->dmaster];
+	state->state  = CTDB_CALL_WAIT;
+	state->header = *header;
+	state->ctdb_db = ctdb_db;
+
+	talloc_set_destructor(state, ctdb_call_destructor);
+
+	ctdb_queue_packet(ctdb, &state->c->hdr);
+
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_REQ_TIMEOUT, 0), 
+			ctdb_call_timeout, state);
+	return state;
+}
+
+/*
+  make a remote ctdb call - async send. Called in daemon context.
+
+  This constructs a ctdb_call request and queues it for processing. 
+  This call never blocks.
+*/
+struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
+					      struct ctdb_call *call)
+{
 	int ret;
 	struct ctdb_ltdb_header header;
 	TDB_DATA data;
@@ -615,49 +674,9 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 		return ctdb_call_local_send(ctdb_db, call, &header, &data);
 	}
 
-	state = talloc_zero(ctdb_db, struct ctdb_call_state);
-	CTDB_NO_MEMORY_NULL(ctdb, state);
+	talloc_free(data.dptr);
 
-	talloc_steal(state, data.dptr);
-
-	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdb->methods->allocate_pkt(ctdb, len);
-	CTDB_NO_MEMORY_NULL(ctdb, state->c);
-	talloc_set_name_const(state->c, "req_call packet");
-	talloc_steal(state, state->c);
-
-	state->c->hdr.length    = len;
-	state->c->hdr.ctdb_magic = CTDB_MAGIC;
-	state->c->hdr.ctdb_version = CTDB_VERSION;
-	state->c->hdr.operation = CTDB_REQ_CALL;
-	state->c->hdr.destnode  = header.dmaster;
-	state->c->hdr.srcnode   = ctdb->vnn;
-	/* this limits us to 16k outstanding messages - not unreasonable */
-	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
-	state->c->flags         = call->flags;
-	state->c->db_id         = ctdb_db->db_id;
-	state->c->callid        = call->call_id;
-	state->c->keylen        = call->key.dsize;
-	state->c->calldatalen   = call->call_data.dsize;
-	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);
-	memcpy(&state->c->data[call->key.dsize], 
-	       call->call_data.dptr, call->call_data.dsize);
-	state->call                = *call;
-	state->call.call_data.dptr = &state->c->data[call->key.dsize];
-	state->call.key.dptr       = &state->c->data[0];
-
-	state->node   = ctdb->nodes[header.dmaster];
-	state->state  = CTDB_CALL_WAIT;
-	state->header = header;
-	state->ctdb_db = ctdb_db;
-
-	talloc_set_destructor(state, ctdb_call_destructor);
-
-	ctdb_queue_packet(ctdb, &state->c->hdr);
-
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_REQ_TIMEOUT, 0), 
-			ctdb_call_timeout, state);
-	return state;
+	return ctdb_daemon_call_send_remote(ctdb_db, call, &header);
 }
 
 
