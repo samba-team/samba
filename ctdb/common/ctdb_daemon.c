@@ -36,7 +36,7 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 
-	printf("event_loop_wait() returned. this should not happen\n");
+	DEBUG(0,("event_loop_wait() returned. this should not happen\n"));
 	exit(1);
 }
 
@@ -118,7 +118,8 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 					    c->srvid, daemon_message_handler, 
 					    client);
 	if (res != 0) {
-		printf("Failed to register handler %u in daemon\n", c->srvid);
+		DEBUG(0,(__location__ " Failed to register handler %u in daemon\n", 
+			 c->srvid));
 	}
 }
 
@@ -168,7 +169,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 	length = offsetof(struct ctdb_reply_fetch_lock, data) + state->call.reply_data.dsize;
 	r = ctdbd_allocate_pkt(client->ctdb, length);
 	if (r == NULL) {
-		printf("Failed to allocate reply_call in ctdb daemon\n");
+		DEBUG(0,(__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		return;
 	}
 	memset(r, 0, offsetof(struct ctdb_reply_fetch_lock, data));
@@ -183,7 +184,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
 	if (res != 0) {
-		printf("Failed to queue packet from daemon to client\n");
+		DEBUG(0,(__location__ " Failed to queue packet from daemon to client\n"));
 	}
 	talloc_free(r);
 }
@@ -260,7 +261,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 	
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {
-		printf("Failed to queue a connect wait response\n");
+		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
 		return;
 	}
 }
@@ -298,8 +299,8 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 	res = ctdb_daemon_send_message(client->ctdb, c->hdr.destnode,
 				       c->srvid, data);
 	if (res != 0) {
-		printf("Failed to send message to remote node %u\n",
-		       c->hdr.destnode);
+		DEBUG(0,(__location__ " Failed to send message to remote node %u\n",
+			 c->hdr.destnode));
 	}
 }
 
@@ -319,7 +320,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
-		printf("Unknown database in request. db_id==0x%08x",c->db_id);
+		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
+			  c->db_id));
 		return;
 	}
 
@@ -337,14 +339,14 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 /* XXX this must be converted to fully async */
 	res = ctdb_daemon_call_recv(state, &call);
 	if (res != 0) {
-		printf("ctdbd_call_recv() returned error\n");
+		DEBUG(0, (__location__ " ctdbd_call_recv() returned error\n"));
 		exit(1);
 	}
 
 	length = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
 	r = ctdbd_allocate_pkt(client->ctdb, length);
 	if (r == NULL) {
-		printf("Failed to allocate reply_call in ctdb daemon\n");
+		DEBUG(0, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		return;
 	}
 	memset(r, 0, offsetof(struct ctdb_reply_call, data));
@@ -358,7 +360,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
 	if (res != 0) {
-		printf("Failed to queue packet from daemon to client\n");
+		DEBUG(0, (__location__ "Failed to queue packet from daemon to client\n"));
 	}
 	talloc_free(r);
 }
@@ -399,7 +401,8 @@ static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_
 		daemon_request_fetch_lock(client, (struct ctdb_req_fetch_lock *)hdr);
 		break;
 	default:
-		printf("daemon: unrecognized operation:%d\n",hdr->operation);
+		DEBUG(0,(__location__ " daemon: unrecognized operation %d\n",
+			 hdr->operation));
 	}
 
 done:
@@ -481,10 +484,10 @@ static void ctdb_read_from_parent(struct event_context *ev, struct fd_event *fde
 	/* XXX this is a good place to try doing some cleaning up before exiting */
 	cnt = read(*fd, &buf, 1);
 	if (cnt==0) {
-		printf("parent process exited. filedescriptor dissappeared\n");
+		DEBUG(0,(__location__ " parent process exited. filedescriptor dissappeared\n"));
 		exit(1);
 	} else {
-		printf("ctdb: did not expect data from parent process\n");
+		DEBUG(0,(__location__ " ctdb: did not expect data from parent process\n"));
 		exit(1);
 	}
 }
@@ -549,18 +552,18 @@ int ctdb_start(struct ctdb_context *ctdb)
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
 	if (res!=0) {
-		printf("Failed to open CTDB unix domain socket\n");
+		DEBUG(0,(__location__ " Failed to open CTDB unix domain socket\n"));
 		exit(10);
 	}
 
 	res = pipe(&fd[0]);
 	if (res) {
-		printf("Failed to open pipe for CTDB\n");
+		DEBUG(0,(__location__ " Failed to open pipe for CTDB\n"));
 		exit(1);
 	}
 	pid = fork();
 	if (pid==-1) {
-		printf("Failed to fork CTDB daemon\n");
+		DEBUG(0,(__location__ " Failed to fork CTDB daemon\n"));
 		exit(1);
 	}
 

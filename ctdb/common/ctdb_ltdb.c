@@ -227,7 +227,7 @@ static void lock_fetch_callback(void *p)
 	struct ctdb_req_header *hdr = p;
 	struct ctdb_context *ctdb = talloc_find_parent_bytype(p, struct ctdb_context);
 	ctdb_recv_pkt(ctdb, (uint8_t *)hdr, hdr->length);
-	printf("PACKET REQUEUED\n");
+	DEBUG(0,(__location__ " PACKET REQUEUED\n"));
 }
 
 /*
