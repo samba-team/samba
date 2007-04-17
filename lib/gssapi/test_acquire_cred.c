@@ -57,6 +57,8 @@ print_time(OM_uint32 time_rec)
     }
 }
 
+#if 0
+
 static void
 test_add(gss_cred_id_t cred_handle)
 {
@@ -116,6 +118,7 @@ copy_cred(void)
     if (GSS_ERROR(major_status))
 	errx(1, "release_cred failed");
 }
+#endif
 
 static void
 acquire_cred_service(const char *service)
@@ -145,30 +148,20 @@ acquire_cred_service(const char *service)
 				    &cred_handle,
 				    NULL,
 				    &time_rec);
-    if (GSS_ERROR(major_status))
-	errx(1, "acquire_cred failed");
-	
-    print_time(time_rec);
+    if (GSS_ERROR(major_status)) {
+	warnx("acquire_cred failed");
+    } else {    
+	print_time(time_rec);
+	gss_release_cred(&minor_status, &cred_handle);
+    }
 
-    major_status = gss_release_cred(&minor_status,
-				    &cred_handle);
-    if (GSS_ERROR(major_status))
-	errx(1, "release_cred failed");
-
-
-    major_status = gss_release_name(&minor_status,
-				    &name);
-    if (GSS_ERROR(major_status))
-	errx(1, "release_name failed");
-
+    gss_release_name(&minor_status, &name);
 }
 
 int
 main(int argc, char **argv)
 {
-    copy_cred();
-
-    acquire_cred_service("host@xen2-heimdal-linux.lab.it.su.se");
+    acquire_cred_service(argv[1]);
 
     return 0;
 }
