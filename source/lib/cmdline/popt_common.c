@@ -149,7 +149,7 @@ static void popt_common_callback(poptContext con,
 }
 
 struct poptOption popt_common_connection[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
 	{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
@@ -161,7 +161,7 @@ struct poptOption popt_common_connection[] = {
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
 	{ "debuglevel",   'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "debug-stderr", 0, POPT_ARG_NONE, NULL, OPT_DEBUG_STDERR, "Send debug output to STDERR", NULL },
 	{ "configfile",   's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
@@ -173,7 +173,7 @@ struct poptOption popt_common_samba[] = {
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	{ NULL }
 };
