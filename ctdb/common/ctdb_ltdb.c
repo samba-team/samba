@@ -244,6 +244,12 @@ static void lock_fetch_callback(void *p)
    immediately satisfied until it can get the lock. This means that
    the main ctdb daemon will not block waiting for a chainlock held by
    a client
+
+   There are 3 possible return values:
+
+       0:    means that it got the lock immediately.
+      -1:    means that it failed to get the lock, and won't retry
+      -2:    means that it failed to get the lock immediately, but will retry
  */
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
@@ -254,6 +260,12 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 	struct lockwait_handle *h;
 	
 	ret = tdb_chainlock_nonblock(tdb, key);
+
+	if (ret != 0 &&
+	    !(errno == EACCES || errno == EAGAIN || errno == EDEADLK)) {
+		/* a hard failure - don't try again */
+		return -1;
+	}
 
 	/* first the non-contended path */
 	if (ret == 0) {
@@ -273,6 +285,11 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 
 	/* we get an extra reference to the packet here, to 
 	   stop it being freed in the top level packet handler */
-	(void)talloc_reference(ctdb_db, hdr);
-	return 0;
+	if (talloc_reference(ctdb_db, hdr) == NULL) {
+		talloc_free(h);
+		return -1;
+	}
+
+	/* now tell the caller than we will retry asynchronously */
+	return -2;
 }

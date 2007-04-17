@@ -545,19 +545,33 @@ struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_d
 		return NULL;
 	}
 
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, &data);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, data);
 	if (ret != 0) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return NULL;
 	}
 
 
-	if (header.dmaster != ctdb->vnn) {
+	if (header.dmaster != ctdb_db->ctdb->vnn) {
 		state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
 		rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
 		return rec;
 	}
 
+	rec = talloc(mem_ctx, struct ctdb_record_handle);
+	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
+
+	rec->ctdb_db     = state->ctdb_db;
+	rec->key         = key;
+	rec->key.dptr    = talloc_memdup(rec, key.dptr, key.dsize);
+	rec->data        = talloc(rec, TDB_DATA);
+	rec->data->dsize = state->call.reply_data.dsize;
+	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
+
+	if (data) {
+		*data = *rec->data;
+	}
+	return rec;
 }
 
 /*
