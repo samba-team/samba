@@ -59,7 +59,7 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	} else if (argc == 1 && mprVarIsString(argv[0]->type)) {
 		/* domain name can also be specified explicitly 
-		   (e.g. to connect remote domain) */
+		   (e.g. to connect BUILTIN domain) */
 		userman_domain = mprToString(argv[0]);
 
 	} else {
