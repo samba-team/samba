@@ -1339,6 +1339,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 
 		cli_credentials_set_conf(session_info->credentials);
+		/* Just so we don't segfault trying to get at a username */
+		cli_credentials_set_anonymous(session_info->credentials);
 		
 		ret = cli_credentials_set_client_gss_creds(session_info->credentials, 
 							   gensec_gssapi_state->delegated_cred_handle,
@@ -1347,6 +1349,10 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
+		
+		/* This credential handle isn't useful for password authentication, so ensure nobody tries to do that */
+		cli_credentials_set_kerberos_state(session_info->credentials, CRED_MUST_USE_KERBEROS);
+
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 	}
