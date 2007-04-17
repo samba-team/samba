@@ -469,13 +469,22 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
  
 	if (global_encrypted_passwords_negotiated) {
 		password = data_blob(smb_buf(inbuf),passlen);
+		if (lp_security() == SEC_SHARE) {
+			/*
+			 * Security = share always has a pad byte
+			 * after the password.
+			 */
+			p = smb_buf(inbuf) + passlen + 1;
+		} else {
+			p = smb_buf(inbuf) + passlen;
+		}
 	} else {
 		password = data_blob(smb_buf(inbuf),passlen+1);
 		/* Ensure correct termination */
-		password.data[passlen]=0;    
+		password.data[passlen]=0;
+		p = smb_buf(inbuf) + passlen + 1;
 	}
 
-	p = smb_buf(inbuf) + passlen;
 	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
 
 	/*
