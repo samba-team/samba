@@ -78,7 +78,7 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 	if (state == NULL) return;
 
 	if (!talloc_get_type(state, struct ctdb_fetch_lock_state)) {
-		printf("ctdb idr type error at %s\n", __location__);
+		DEBUG(0, ("ctdb idr type error at %s\n", __location__));
 		return;
 	}
 
@@ -139,7 +139,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		break;
 
 	default:
-		printf("bogus operation code:%d\n",hdr->operation);
+		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
 	}
 }
 
@@ -266,7 +266,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	if (state == NULL) {
-		printf("failed to allocate state\n");
+		DEBUG(0, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
 
@@ -275,7 +275,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	state->c = ctdbd_allocate_pkt(ctdb, len);
 	if (state->c == NULL) {
-		printf("failed to allocate packet\n");
+		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	talloc_set_name_const(state->c, "ctdbd req_call packet");
@@ -417,7 +417,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {
-		printf("Failed to queue a connect wait request\n");
+		DEBUG(0,(__location__ " Failed to queue a connect wait request\n"));
 		return;
 	}
 
@@ -449,7 +449,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 
 	state = talloc_zero(ctdb_db, struct ctdb_fetch_lock_state);
 	if (state == NULL) {
-		printf("failed to allocate state\n");
+		DEBUG(0, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
 	state->state   = CTDB_FETCH_LOCK_WAIT;
@@ -457,7 +457,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
 	state->req = req = ctdbd_allocate_pkt(ctdb, len);
 	if (req == NULL) {
-		printf("failed to allocate packet\n");
+		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	ZERO_STRUCT(*req);
@@ -559,7 +559,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	/* step 1 - get the chain lock */
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
-		printf("failed to lock ltdb record\n");
+		DEBUG(0, (__location__ " failed to lock ltdb record\n"));
 		talloc_free(h);
 		return NULL;
 	}
@@ -590,7 +590,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	h->header.dmaster = ctdb_db->ctdb->vnn;
 	ret = ctdb_ltdb_store(ctdb_db, key, &h->header, *data);
 	if (ret != 0) {
-		printf("bugger - we're in real trouble now! can't update record to mark us as dmasterx\n");
+		DEBUG(0, (__location__" can't update record to mark us as dmaster\n"));
 		talloc_free(h);
 		return NULL;
 	}

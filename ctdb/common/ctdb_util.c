@@ -25,6 +25,8 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 
+int LogLevel;
+
 /*
   return error string for last error
 */

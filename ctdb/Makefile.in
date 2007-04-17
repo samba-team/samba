@@ -53,9 +53,9 @@ bin/ctdb_test: $(OBJS) tests/ctdb_test.o tests/cmdline.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdbd: $(OBJS) direct/ctdbd.o
+bin/ctdbd: $(OBJS) direct/ctdbd.o tests/cmdline.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o tests/cmdline.o $(OBJS) $(LIB_FLAGS)
 
 bin/ctdbd_test: $(OBJS) direct/ctdbd_test.o
 	@echo Linking $@

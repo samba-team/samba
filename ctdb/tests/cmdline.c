@@ -44,6 +44,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
+	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
 	{ NULL }
 };
 

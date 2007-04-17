@@ -215,6 +215,9 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		return;
 	}
 
+	DEBUG(3,(__location__ " ctdb request of type %d length %d from node %d to %d\n",
+		 hdr->operation, hdr->length, hdr->srcnode, hdr->destnode));
+
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		ctdb_request_call(ctdb, hdr);
@@ -245,7 +248,8 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		break;
 
 	default:
-		printf("Packet with unknown operation %d\n", hdr->operation);
+		DEBUG(0,("%s: Packet with unknown operation %d\n", 
+			 __location__, hdr->operation));
 		break;
 	}
 	talloc_free(hdr);
@@ -257,8 +261,8 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 static void ctdb_node_dead(struct ctdb_node *node)
 {
 	node->ctdb->num_connected--;
-	printf("%s: node %s is dead: %d connected\n", 
-	       node->ctdb->name, node->name, node->ctdb->num_connected);
+	DEBUG(1,("%s: node %s is dead: %d connected\n", 
+		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
 /*
@@ -267,8 +271,8 @@ static void ctdb_node_dead(struct ctdb_node *node)
 static void ctdb_node_connected(struct ctdb_node *node)
 {
 	node->ctdb->num_connected++;
-	printf("%s: connected to %s - %d connected\n", 
-	       node->ctdb->name, node->name, node->ctdb->num_connected);
+	DEBUG(1,("%s: connected to %s - %d connected\n", 
+		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
 /*
