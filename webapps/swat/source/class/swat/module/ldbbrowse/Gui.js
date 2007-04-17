@@ -279,7 +279,7 @@ qx.Proto._buildPageSearch = function(module, page)
 
   hlayout.add(cbScope);
 
-  // Add a sapcer
+  // Add a spacer
   hlayout.add(new qx.ui.basic.HorizontalSpacer());
 
   // Create the 'Search' button
