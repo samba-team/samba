@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 static int timelimit = 10;
 static int num_records = 10;

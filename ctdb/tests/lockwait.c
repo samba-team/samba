@@ -23,7 +23,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 
 struct lockwait_handle {

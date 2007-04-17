@@ -24,7 +24,7 @@
 #include "popt.h"
 #include "ctdb.h"
 #include "ctdb_private.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 #define PARENT_SRVID	0
 #define CHILD1_SRVID	1

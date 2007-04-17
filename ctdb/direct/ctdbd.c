@@ -23,7 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "system/wait.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 static void block_signal(int signum)
 {
