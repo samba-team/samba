@@ -285,8 +285,11 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 		expected++;
 	}
 	while (ctdb->num_connected != expected) {
+		DEBUG(3,("ctdb_connect_wait: waiting for %d nodes (have %d)\n", 
+			 expected, ctdb->num_connected));
 		event_loop_once(ctdb->ev);
 	}
+	DEBUG(3,("ctdb_connect_wait: got all %d nodes\n", expected));
 }
 
 /*

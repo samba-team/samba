@@ -414,12 +414,16 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
+
+	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to queue a connect wait request\n"));
 		return;
 	}
+
+	DEBUG(3,("ctdb_connect_wait: waiting\n"));
 
 	/* now we can go into the normal wait routine, as the reply packet
 	   will update the ctdb->num_connected variable */
@@ -556,6 +560,9 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 	h->data    = data;
 
+	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", key.dsize, key.dsize, 
+		 (const char *)key.dptr));
+
 	/* step 1 - get the chain lock */
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
@@ -563,6 +570,8 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: got chain lock\n"));
 
 	talloc_set_destructor(h, fetch_lock_destructor);
 
@@ -572,18 +581,25 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 		return NULL;
 	}
 
+	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
+
 	/* step 2 - check if we are the dmaster */
 	if (h->header.dmaster == ctdb_db->ctdb->vnn) {
+		DEBUG(4,("ctdb_fetch_lock: we are dmaster - done\n"));
 		return h;
 	}
 
 	/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
 	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key, &h->header);
+	DEBUG(4,("ctdb_fetch_lock: done fetch_lock_send\n"));
 	ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, &h->header, data);
 	if (ret != 0) {
+		DEBUG(4,("ctdb_fetch_lock: fetch_lock_recv failed\n"));
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: record is now local\n"));
 
 	/* the record is now local, and locked. update the record on disk
 	   to mark us as the dmaster*/
@@ -594,6 +610,8 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: done\n"));
 
 	/* give the caller a handle to be used for ctdb_record_store() or a cancel via
 	   a talloc_free() */
