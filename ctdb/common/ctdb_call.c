@@ -744,7 +744,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 
 
 
-struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
 					   TDB_DATA key, TDB_DATA *data)
 {
 	struct ctdb_call call;
@@ -775,10 +775,10 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	ret = ctdb_call_recv(state, &call);
 	if (ret != 0) {
 		talloc_free(rec);
-		return NULL;
+		return -6;
 	}
 
-	return rec;
+	return 0;
 }
 
 

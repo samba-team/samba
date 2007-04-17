@@ -68,12 +68,6 @@ struct ctdb_node {
 	uint32_t vnn;
 };
 
-struct ctdb_record_handle {
-	struct ctdb_db_context *ctdb_db;
-	TDB_DATA key;
-	TDB_DATA *data;
-};
-
 /*
   transport specific methods
 */
@@ -197,6 +191,14 @@ struct ctdb_call_state {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
 	} async;
+};
+
+
+/* used for fetch_lock */
+struct ctdb_record_handle {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key;
+	TDB_DATA *data;
 };
 
 
