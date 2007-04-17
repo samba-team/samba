@@ -1,3 +1,7 @@
+2007-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.c: plug memory leak
+	
 2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: CLEANFILES += test.file
