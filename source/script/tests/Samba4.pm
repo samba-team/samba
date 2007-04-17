@@ -67,32 +67,35 @@ sub check_or_start($$$)
 	my ($self, $env_vars, $max_time) = @_;
 	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
 
-	# Start slapd before smbd
-	if (defined($self->{ldap})) {
-		$self->slapd_start($env_vars) or 
-			die("couldn't start slapd");
-
-		print "LDAP PROVISIONING...";
-		$self->provision_ldap($env_vars);
-	}
-
-	SocketWrapper::set_default_iface(1);
-
 	unlink($env_vars->{SMBD_TEST_FIFO});
 	POSIX::mkfifo($env_vars->{SMBD_TEST_FIFO}, 0700);
 	unlink($env_vars->{SMBD_TEST_LOG});
 	
-	my $valgrind = "";
-	if (defined($ENV{SMBD_VALGRIND})) {
-		$valgrind = $ENV{SMBD_VALGRIND};
-	} 
-
 	print "STARTING SMBD... ";
 	my $pid = fork();
 	if ($pid == 0) {
 		open STDIN, $env_vars->{SMBD_TEST_FIFO};
 		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
+		
+		SocketWrapper::set_default_iface(1);
+		
+		# Start slapd before smbd, but with the fifo on stdin
+		if (defined($self->{ldap})) {
+		    $self->slapd_start($env_vars) or 
+			die("couldn't start slapd");
+		    
+		    print "LDAP PROVISIONING...";
+		    $self->provision_ldap($env_vars);
+		}
+		
+		my $valgrind = "";
+		if (defined($ENV{SMBD_VALGRIND})) {
+		    $valgrind = $ENV{SMBD_VALGRIND};
+		} 
+
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
+
 		my $optarg = "";
 		if (defined($max_time)) {
 			$optarg = "--maximum-runtime=$max_time ";
