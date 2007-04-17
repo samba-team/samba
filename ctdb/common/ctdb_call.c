@@ -529,6 +529,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	/* send it off again */
 	state->node = ctdb->nodes[c->dmaster];
+	state->c->hdr.destnode = c->dmaster;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 }
