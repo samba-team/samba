@@ -45,7 +45,6 @@ static void child_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 void test1(struct ctdb_db_context *ctdb_db)
 {
-	struct ctdb_record_handle *rh;
 	TDB_DATA key, data, data2, store_data;
 	int ret;
  
@@ -55,13 +54,26 @@ void test1(struct ctdb_db_context *ctdb_db)
 	printf("Test1: write and verify we can read it back: ");
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
+	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data);
+	if (ret!=0) {
+		printf("test1: ctdb_client_fetch_lock() failed\n");
+		exit(1);
+	}
 
 	store_data.dptr  = discard_const("data to store");
 	store_data.dsize = strlen((const char *)store_data.dptr)+1;
-	ret = ctdb_client_store_unlock(rh, store_data);
+	ret = ctdb_client_store_unlock(ctdb_db, key, store_data);
+	if (ret!=0) {
+		printf("test1: ctdb_client_store_unlock() failed\n");
+		exit(1);
+	}
 
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	if (ret!=0) {
+		printf("test1: ctdb_client_fetch_lock() failed\n");
+		exit(1);
+	}
+
 	/* hopefully   data2 will now contain the record written above */
 	if (!strcmp("data to store", (const char *)data2.dptr)) {
 		printf("SUCCESS\n");
@@ -71,14 +83,18 @@ void test1(struct ctdb_db_context *ctdb_db)
 	}
 	
 	/* just write it back to unlock it */
-	ret = ctdb_client_store_unlock(rh, store_data);
+	ret = ctdb_client_store_unlock(ctdb_db, key, store_data);
+	if (ret!=0) {
+		printf("test1: ctdb_client_store_unlock() failed\n");
+		exit(1);
+	}
 }
 
 void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
 	TDB_DATA data;
-	struct ctdb_record_handle *rh;
 	TDB_DATA key, data2;
+	int ret;
 
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
@@ -94,7 +110,11 @@ void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struc
 	/* fetch and lock the record */
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	if (ret!=0) {
+		printf("client: ctdb_client_fetch_lock() failed\n");
+		exit(1);
+	}
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
 
 

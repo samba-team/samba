@@ -177,9 +177,22 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
    dmaster for the record to be moved to the local node. 
 
 */
-struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
+int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
 
-int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+/*
+  do a fetch lock from a client to the local daemon
+*/
+#define FETCH_LOCK_SUCCESS		0
+#define FETCH_LOCK_LOCKFAILED		1
+#define FETCH_LOCK_FETCHFAILED		2
+#define FETCH_LOCK_DMASTERFAILED	3
+
+int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key, TDB_DATA *data);
+
+
+int ctdb_client_store_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key, TDB_DATA data);
 
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 

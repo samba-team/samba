@@ -469,7 +469,7 @@ struct ctdb_call_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb
 		printf("failed to allocate packet\n");
 		return NULL;
 	}
-	ZERO_STRUCT(*state->c);
+	bzero(state->c, len);
 	talloc_set_name_const(state->c, "ctdbd req_fetch_lock packet");
 	talloc_steal(state, state->c);
 
@@ -500,103 +500,77 @@ struct ctdb_call_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb
   This is called when the program wants to wait for a ctdb_fetch_lock to complete and get the 
   results. This call will block unless the call has already completed.
 */
-struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *state, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data)
+int ctdb_client_fetch_lock_recv(struct ctdb_call_state *state, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data)
 {
-	struct ctdb_record_handle *rec;
-
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->ctdb_db->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
 		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
 		talloc_free(state);
-		return NULL;
+		return -1;
 	}
 
-	rec = talloc(mem_ctx, struct ctdb_record_handle);
-	CTDB_NO_MEMORY_NULL(state->ctdb_db->ctdb, rec);
+	data->dsize = state->call.reply_data.dsize;
+	data->dptr  = talloc_memdup(mem_ctx, state->call.reply_data.dptr, data->dsize);
 
-	rec->ctdb_db     = state->ctdb_db;
-	rec->key         = key;
-	rec->key.dptr    = talloc_memdup(rec, key.dptr, key.dsize);
-	rec->data        = talloc(rec, TDB_DATA);
-	rec->data->dsize = state->call.reply_data.dsize;
-	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
-
-	if (data) {
-		*data = *rec->data;
-	}
-	return rec;
+	return 0;
 }
 
-struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
-						  TALLOC_CTX *mem_ctx, 
-						  TDB_DATA key,
-						  TDB_DATA *data)
+int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+			   TALLOC_CTX *mem_ctx, 
+			   TDB_DATA key,
+			   TDB_DATA *data)
 {
-	struct ctdb_call_state *state;
-	struct ctdb_record_handle *rec;
 	struct ctdb_ltdb_header header;
 	int ret;
 
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
 		printf("failed to lock ltdb record\n");
-		return NULL;
+		return FETCH_LOCK_LOCKFAILED;
 	}
 
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, data);
 	if (ret != 0) {
 		ctdb_ltdb_unlock(ctdb_db, key);
-		return NULL;
+		return FETCH_LOCK_FETCHFAILED;
 	}
 
 
 	if (header.dmaster != ctdb_db->ctdb->vnn) {
+		struct ctdb_call_state *state;
+
 		state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
-		rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
-		return rec;
+		ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
+		if (ret != 0) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			return FETCH_LOCK_DMASTERFAILED;
+		}
 	}
 
-	rec = talloc(mem_ctx, struct ctdb_record_handle);
-	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
-
-	rec->ctdb_db     = state->ctdb_db;
-	rec->key         = key;
-	rec->key.dptr    = talloc_memdup(rec, key.dptr, key.dsize);
-	rec->data        = talloc(rec, TDB_DATA);
-	rec->data->dsize = state->call.reply_data.dsize;
-	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
-
-	if (data) {
-		*data = *rec->data;
-	}
-	return rec;
+	return 0;
 }
 
 /*
    a helper function for the client that will store the new data for the
    record and release the tdb chainlock
 */
-int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
+int ctdb_client_store_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key, TDB_DATA data)
 {
 	int ret;
 	struct ctdb_ltdb_header header;
-	struct ctdb_db_context *ctdb_db = talloc_get_type(rec->ctdb_db, struct ctdb_db_context);
 
 	/* should be avoided if possible    hang header off rec ? */
-	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL, NULL);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, NULL, NULL);
 	if (ret) {
-		ctdb_set_error(rec->ctdb_db->ctdb, "Fetch of locally held record failed");
-		talloc_free(rec);
+		ctdb_set_error(ctdb_db->ctdb, "Fetch of locally held record failed");
 		return ret;
 	}
 
-	ret = ctdb_ltdb_store(ctdb_db, rec->key, &header, data);
+	ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
 
-	ctdb_ltdb_unlock(ctdb_db, rec->key);
+	ctdb_ltdb_unlock(ctdb_db, key);
 	
-	talloc_free(rec);
-
 	return ret;
 }
