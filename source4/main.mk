@@ -289,25 +289,25 @@ SELFTEST = $(PERL) $(srcdir)/script/tests/selftest.pl --prefix=${selftest_prefix
     --skip=$(srcdir)/samba4-skip \
     $(TEST_OPTIONS) 
 
-test: all libraries
-	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) --immediate
+test: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
 
-testone: all libraries
-	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) --one
+testone: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --one $(TESTS)
 
-test-swrap: all libraries
-	$(SELFTEST) --socket-wrapper --immediate $(TESTS) 
+test-swrap: everything
+	$(SELFTEST) --socket-wrapper --immediate $(TESTS)
 
-test-noswrap: all libraries
+test-noswrap: everything
 	$(SELFTEST) --immediate $(TESTS)
-
-quicktestone: all
-	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
 
 quicktest: all
 	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
 
-testenv: all libraries
+quicktestone: all
+	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
+
+testenv: everything
 	$(SELFTEST) --socket-wrapper --testenv
 
 valgrindtest: valgrindtest-quick
@@ -317,12 +317,12 @@ valgrindtest-quick: all
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --quick --immediate --socket-wrapper
 
-valgrindtest-all: all libraries
+valgrindtest-all: everything
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --immediate --socket-wrapper
 
-valgrindtest-env: all libraries
+valgrindtest-env: everything
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --socket-wrapper --testenv
@@ -333,9 +333,13 @@ gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	$(SELFTEST) --immediate --quick --socket-wrapper
 
-gdbtest-all: all libraries
+gdbtest-all: everything
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	$(SELFTEST) --immediate --socket-wrapper
+
+gdbtest-env: everything
+	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
+	$(SELFTEST) --socket-wrapper --testenv
 
 wintest: all
 	$(SELFTEST) win
