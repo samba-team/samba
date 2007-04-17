@@ -245,22 +245,14 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		ux_socket_connect(ctdb);
 	}
 
-	ret = ctdb_ltdb_lock(ctdb_db, call->key);
-	if (ret != 0) {
-		printf("failed to lock ltdb record\n");
-		return NULL;
-	}
-
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 	if (ret != 0) {
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 
 #if 0
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return state;
 	}
 #endif
@@ -268,7 +260,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	if (state == NULL) {
 		printf("failed to allocate state\n");
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 
@@ -278,7 +269,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	state->c = ctdbd_allocate_pkt(ctdb, len);
 	if (state->c == NULL) {
 		printf("failed to allocate packet\n");
-		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return NULL;
 	}
 	talloc_set_name_const(state->c, "ctdbd req_call packet");
@@ -318,7 +308,6 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 			ctdb_call_timeout, state);
 */
 
-	ctdb_ltdb_unlock(ctdb_db, call->key);
 	return state;
 }
 
