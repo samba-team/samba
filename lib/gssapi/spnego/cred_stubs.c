@@ -97,6 +97,8 @@ OM_uint32 _gss_spnego_acquire_cred
  OM_uint32 * time_rec
     )
 {
+    const spnego_name dname = (const spnego_name)desired_name;
+    gss_name_t name = GSS_C_NO_NAME;
     OM_uint32 ret, tmp;
     gss_OID_set_desc actual_desired_mechs;
     gss_OID_set mechs;
@@ -106,9 +108,18 @@ OM_uint32 _gss_spnego_acquire_cred
 
     *output_cred_handle = GSS_C_NO_CREDENTIAL;
 
+    if (dname) {
+	ret = gss_import_name(minor_status, &dname->value, &dname->type, &name);
+	if (ret) {
+	    return ret;
+	}
+    }
+    
     ret = gss_indicate_mechs(minor_status, &mechs);
-    if (ret != GSS_S_COMPLETE)
+    if (ret != GSS_S_COMPLETE) {
+	gss_release_name(minor_status, &name);
 	return ret;
+    }
 
     /* Remove ourselves from this list */
     actual_desired_mechs.count = mechs->count;
@@ -135,7 +146,7 @@ OM_uint32 _gss_spnego_acquire_cred
 	goto out;
 
     cred = (gssspnego_cred)cred_handle;
-    ret = gss_acquire_cred(minor_status, desired_name,
+    ret = gss_acquire_cred(minor_status, name,
 			   time_req, &actual_desired_mechs,
 			   cred_usage,
 			   &cred->negotiated_cred_id,
@@ -146,6 +157,7 @@ OM_uint32 _gss_spnego_acquire_cred
     *output_cred_handle = cred_handle;
 
 out:
+    gss_release_name(minor_status, &name);
     gss_release_oid_set(&tmp, &mechs);
     if (actual_desired_mechs.elements != NULL) {
 	free(actual_desired_mechs.elements);
