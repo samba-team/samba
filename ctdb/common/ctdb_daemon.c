@@ -186,6 +186,24 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	struct client_fetch_lock_data *fl_data;
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
+	if (ctdb_db == NULL) {
+		struct ctdb_reply_fetch_lock r;
+
+		ZERO_STRUCT(r);
+		r.hdr.length       = sizeof(r);
+		r.hdr.ctdb_magic   = CTDB_MAGIC;
+		r.hdr.ctdb_version = CTDB_VERSION;
+		r.hdr.operation    = CTDB_REPLY_FETCH_LOCK;
+		r.hdr.reqid        = f->hdr.reqid;
+		r.state            = -1;
+
+		/*
+		 * Ignore the result, there's not much we can do anyway.
+		 */
+		ctdb_queue_send(client->queue, (uint8_t *)&r.hdr,
+				r.hdr.length);
+		return;
+	}
 
 	key.dsize = f->keylen;
 	key.dptr = &f->key[0];
@@ -220,6 +238,12 @@ static void daemon_request_store_unlock(struct ctdb_client *client,
 	int res;
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
+	if (ctdb_db == NULL) {
+		ctdb_set_error(client->ctdb, "Could not find database %i",
+			       f->db_id);
+		res = -1;
+		goto done;
+	}
 
 	/* write the data to ltdb */
 	key.dsize = f->keylen;

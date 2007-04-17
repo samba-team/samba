@@ -71,48 +71,54 @@ static int lockwait_destructor(struct lockwait_handle *h)
  */
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
-				      void (*callback)(void *), void *private_data)
+				      void (*callback)(void *private_data),
+				      void *private_data)
 {
-	struct lockwait_handle *h;
+	struct lockwait_handle *result;
 	int ret;
 
-	h = talloc_zero(ctdb_db, struct lockwait_handle);
-	if (h == NULL) {
+	if (!(result = talloc_zero(ctdb_db, struct lockwait_handle))) {
 		return NULL;
 	}
 
-	ret = pipe(h->fd);
+	ret = pipe(result->fd);
+
 	if (ret != 0) {
-		talloc_free(h);
+		talloc_free(result);
 		return NULL;
 	}
 
-	h->child = fork();
-	if (h->child == (pid_t)-1) {
-		close(h->fd[0]);
-		close(h->fd[1]);
-		talloc_free(h);
+	result->child = fork();
+
+	if (result->child == (pid_t)-1) {
+		close(result->fd[0]);
+		close(result->fd[1]);
+		talloc_free(result);
 		return NULL;
 	}
 
-	h->callback = callback;
-	h->private_data = private_data;
+	result->callback = callback;
+	result->private_data = private_data;
 
-	if (h->child == 0) {
-		struct tdb_context *tdb = ctdb_db->ltdb->tdb;
-		/* in child */
-		tdb_chainlock(tdb, key);
-		_exit(0);
+	if (result->child == 0) {
+		close(result->fd[0]);
+		/*
+		 * Do we need a tdb_reopen here?
+		 */
+		tdb_chainlock(ctdb_db->ltdb->tdb, key);
+		exit(0);
 	}
 
-	close(h->fd[1]);
-	talloc_set_destructor(h, lockwait_destructor);
+	close(result->fd[1]);
+	talloc_set_destructor(result, lockwait_destructor);
 
-	h->fde = event_add_fd(ctdb_db->ctdb->ev, h, h->fd[0], EVENT_FD_READ, lockwait_handler, h);
-	if (h->fde == NULL) {
-		talloc_free(h);
+	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
+				   EVENT_FD_READ, lockwait_handler,
+				   (void *)result);
+	if (result->fde == NULL) {
+		talloc_free(result);
 		return NULL;
 	}
 
-	return h;
+	return result;
 }
