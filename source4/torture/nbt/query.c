@@ -52,7 +52,7 @@ static bool bench_namequery(struct torture_context *tctx)
 	struct result_struct *result;
 	struct nbt_name_query io;
 	struct timeval tv = timeval_current();
-	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 5);
 
 	const char *address;
 	struct nbt_name name;
@@ -105,7 +105,7 @@ static bool bench_namequery(struct torture_context *tctx)
 struct torture_suite *torture_bench_nbt(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), 
-													   "BENCH");
+							   "BENCH");
 	torture_suite_add_simple_test(suite, "namequery", bench_namequery);
 
 	return suite;

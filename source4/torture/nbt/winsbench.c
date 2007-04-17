@@ -225,7 +225,7 @@ static bool bench_wins(struct torture_context *tctx)
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	bool ret = true;
-	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 5);
 	struct wins_state *state;
 	extern int torture_entries;
 	struct socket_address *my_ip;
