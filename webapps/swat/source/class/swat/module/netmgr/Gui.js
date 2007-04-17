@@ -5,20 +5,38 @@
 /**
  * Swat Net Manager class graphical user interface
  */
-qx.OO.defineClass("swat.module.netmgr.Gui", qx.core.Object,
+qx.OO.defineClass("swat.module.netmgr.Gui", qx.core.Target,
 function()
 {
-  qx.core.Object.call(this);
+  qx.core.Target.call(this);
 });
 
 
 //qx.OO.addProperty({ name : "_tree", type : "object" });
 //qx.OO.addProperty({ name : "_panel", type : "object" });
+//qx.OO.addProperty({ name : "_view", type : "object" });
+//qx.OO.addProperty({ name : "_txtDomain", type : "object" });
+//qx.OO.addProperty({ name : "_txtUsername", type : "object" });
+
+/* NetContex resource number assigned on the server side.
+   Necessary for every ejsnet call */
+qx.OO.addProperty({ name : "netCtx", type : "number" });
+
 
 qx.Proto.buildGui = function(module)
 {
   var fsm = module.fsm;
+  
+  // Main layout composing the whole form
+  var vlayout = new qx.ui.layout.VerticalBoxLayout();
+  vlayout.set({
+                top: 20,
+                left: 20,
+                width: "100%",
+                bottom: 20
+              });
 
+  // Horizontal layout holding TreeView and a "panel" for ListView
   var hlayout = new qx.ui.layout.HorizontalBoxLayout();
   hlayout.set({
                 top: 0,
@@ -55,38 +73,105 @@ qx.Proto.buildGui = function(module)
   
   panel.set({
               top: 0,
-              right: 20,
+              left: 10,
               width: "80%",
               height: "100%"
             });
+
+  // Setup some initial columns and (empty) item list - to be replaced soon
+  // with default view loading
+  var columns = { name : { label: "Name", width: 120, type: "text" }};
+  var items = [];
+
+  // Setup the list view
+  this._view = new qx.ui.listview.ListView(items, columns);
+  var view = this._view;
+  view.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
+  view.setBackgroundColor("white");
+  view.set({
+             top: 0,
+             left: 0,
+             width: "80%",
+             height: "100%"
+           });
+
+  // Give a list view name to handle
+  fsm.addObject("view", view);
+
+  // and the list view to the panel
+  panel.add(view);
   
   // Add the tree view and panel for list view to the layout
   hlayout.add(tree);
   hlayout.add(panel);
 
+  // Status layout containing informative labels and status information
   var statusLayout = new qx.ui.layout.HorizontalBoxLayout();
   statusLayout.set({
-                     top: 0,
+                     top: 10,
                      left: 0,
                      right: 0,
                      height: "100%"
                    });
 
-  var vlayout = new qx.ui.layout.VerticalBoxLayout();
-  vlayout.set({
-                top: 20,
-                left: 20,
-                width: "100%",
-                bottom: 20
-              });
+  // First "column" of status fields
+  var colALayout = new qx.ui.layout.VerticalBoxLayout();
+  colALayout.set({
+                  top: 0,
+                  left: 0,
+                  width: 150,
+                  height: "100%"
+                });
 
+  // Domain name (credentials) - label and text box
+  var statusDomain = new qx.ui.layout.HorizontalBoxLayout();
+  statusDomain.set({ top: 0, left: 0, width: "100%", height: 20,
+		       verticalChildrenAlign: "middle" });
+  
+  var lblDomain = new qx.ui.basic.Atom();
+  lblDomain.setLabel("Domain:");
+  lblDomain.set({ width: 70, right: 5, horizontalChildrenAlign: "right" });
+
+  var txtDomain = new qx.ui.form.TextField();
+  txtDomain.set({ width: 80, readOnly: true });
+  this._txtDomain = txtDomain;
+
+  statusDomain.add(lblDomain);
+  statusDomain.add(txtDomain);
+  
+  // Username (credentials) - label and text box
+  var statusUsername = new qx.ui.layout.HorizontalBoxLayout();
+  statusUsername.set({ top: 0, left: 0, width: "100%", height: 20,
+                       verticalChildrenAlign: "middle" });
+
+  var lblUsername = new qx.ui.basic.Atom();
+  lblUsername.setLabel("Username:");
+  lblUsername.set({ width: 70, right: 5, horizontalChildrenAlign: "right" });
+  
+  var txtUsername = new qx.ui.form.TextField();
+  txtUsername.set({ width: 80, readOnly: true });
+  this._txtUsername = txtUsername;
+  
+  statusUsername.add(lblUsername);
+  statusUsername.add(txtUsername);
+  
+  colALayout.add(statusDomain);
+  colALayout.add(statusUsername);
+
+  statusLayout.add(colALayout);
+  
   vlayout.add(hlayout);
   vlayout.add(statusLayout);
 
   vlayout.addEventListener("appear", fsm.eventListener, fsm);
   fsm.addObject("vlayout", vlayout);
 
+  // place everything on canvas
   module.canvas.add(vlayout);
+
+  // Add event handler to netCtx property change
+  this.addEventListener("changeNetCtx", fsm.eventListener, fsm);
+  fsm.addObject("swat.module.netmgr.Gui", this);
 };
 
 
@@ -107,13 +192,21 @@ qx.Proto.displayData = function(module, rpcRequest)
   switch (requestType)
   {
     case "hostname":
-      // Add local host node
-      this._addHostNode(module, rpcRequest, true);
-      break;
+    // Add local host node
+    this._addHostNode(module, rpcRequest, true);
+    break;
 
     case "NetContext":
-      this._initNetContext(module, rpcRequest);
-      break;
+    this._initNetContext(module, rpcRequest);
+    break;
+
+    case "NetContextCreds":
+    this._updateNetContextCreds(module, rpcRequest);
+    break;
+
+    case "UserMgr":
+    this._initUserManager(module, rpcRequest);
+    break;
   }
 
   qx.ui.core.Widget.flushGlobalQueues();
@@ -163,8 +256,8 @@ qx.Proto._addHostNode = function(module, rpcRequest, local)
   var hostNode = dataModel.getData()[hostNodeId];
 
   // Set host-specific properties
-  hostNode.credentials = undefined;
-  hostNode.local = local
+  hostNode.netCtx = undefined;
+  hostNode.local = local;
 };
 
 
@@ -172,7 +265,23 @@ qx.Proto._initNetContext = function(module, rpcRequest)
 {
   // Gather obtained NetContext handle
   var result = rpcRequest.getUserData("result").data;
-  module.netCtx = result;
+  this.setNetCtx(result);
+};
+
+
+qx.Proto._updateNetContextCreds = function(module, rpcRequest)
+{
+  // Get requested credentials from the current NetContext
+  var result = rpcRequest.getUserData("result").data;
+  this._txtUsername.setValue(result.username);
+  this._txtDomain.setValue(result.domain);
+};
+
+
+qx.Proto._initUserManager = function(module, rpcRequest)
+{
+  // Get obtained UsrCtx handle
+  var result = rpcRequest.getUserData("result").data;
 };
 
 
