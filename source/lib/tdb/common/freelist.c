@@ -29,7 +29,7 @@
 #include "tdb_private.h"
 
 /* read a freelist record and check for simple errors */
-int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
+int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
 {
 	if (tdb->methods->tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
@@ -37,7 +37,7 @@ int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *re
 	if (rec->magic == TDB_MAGIC) {
 		/* this happens when a app is showdown while deleting a record - we should
 		   not completely fail when this happens */
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
 		if (tdb->methods->tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
@@ -47,7 +47,7 @@ int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *re
 	if (rec->magic != TDB_FREE_MAGIC) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_CORRUPT;
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "rec_free_read bad magic 0x%x at offset=%d\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
@@ -286,7 +286,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 	   issues when faced with a slowly increasing record size.
 	 */
 	while (rec_ptr) {
-		if (rec_free_read(tdb, rec_ptr, rec) == -1) {
+		if (tdb_rec_free_read(tdb, rec_ptr, rec) == -1) {
 			goto fail;
 		}
 
@@ -311,7 +311,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 	}
 
 	if (bestfit.rec_ptr != 0) {
-		if (rec_free_read(tdb, bestfit.rec_ptr, rec) == -1) {
+		if (tdb_rec_free_read(tdb, bestfit.rec_ptr, rec) == -1) {
 			goto fail;
 		}
 

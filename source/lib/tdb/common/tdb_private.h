@@ -206,7 +206,7 @@ tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, in
 			   struct list_struct *rec);
 void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
-int rec_free_read(struct tdb_context *tdb, tdb_off_t off,
-		  struct list_struct *rec);
+int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off,
+		      struct list_struct *rec);
 
 
