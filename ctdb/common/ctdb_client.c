@@ -79,33 +79,6 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 }
 
 /*
-  called in the client when we receive a CTDB_REPLY_STORE_UNLOCK from the daemon
-
-  This packet comes in response to a CTDB_REQ_STORE_UNLOCK request packet. It
-  contains any reply data from the call
-*/
-void ctdb_reply_store_unlock(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_store_unlock *c = (struct ctdb_reply_store_unlock *)hdr;
-	struct ctdb_call_state *state;
-
-	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
-
-	state->call.status = c->state;
-
-	talloc_steal(state, c);
-
-	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
-	   from freeing the data */
-	(void)talloc_reference(state, c);
-
-	state->state = CTDB_CALL_DONE;
-	if (state->async.fn) {
-		state->async.fn(state);
-	}
-}
-/*
   this is called in the client, when data comes in from the daemon
  */
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -149,10 +122,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_FETCH_LOCK:
 		ctdb_reply_fetch_lock(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_STORE_UNLOCK:
-		ctdb_reply_store_unlock(ctdb, hdr);
 		break;
 
 	default:
@@ -525,61 +494,6 @@ struct ctdb_call_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb
 }
 
 
-struct ctdb_call_state *ctdb_client_store_unlock_send(
-					struct ctdb_record_handle *rh,
-					TALLOC_CTX *mem_ctx,
-					TDB_DATA data)
-{
-	struct ctdb_call_state *state;
-	struct ctdb_db_context *ctdb_db = talloc_get_type(rh->ctdb_db, struct ctdb_db_context);
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	struct ctdb_req_store_unlock *req;
-	int len, res;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
-	}
-
-	state = talloc_zero(ctdb_db, struct ctdb_call_state);
-	if (state == NULL) {
-		printf("failed to allocate state\n");
-		return NULL;
-	}
-	state->state   = CTDB_CALL_WAIT;
-	state->ctdb_db = ctdb_db;
-	len = offsetof(struct ctdb_req_store_unlock, data) + rh->key.dsize + data.dsize;
-	state->c = ctdbd_allocate_pkt(ctdb, len);
-	if (state->c == NULL) {
-		printf("failed to allocate packet\n");
-		return NULL;
-	}
-	ZERO_STRUCT(*state->c);
-	talloc_set_name_const(state->c, "ctdbd req_store_unlock packet");
-	talloc_steal(state, state->c);
-
-	req = (struct ctdb_req_store_unlock *)state->c;
-	req->hdr.length      = len;
-	req->hdr.ctdb_magic  = CTDB_MAGIC;
-	req->hdr.ctdb_version = CTDB_VERSION;
-	req->hdr.operation   = CTDB_REQ_STORE_UNLOCK;
-	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
-	req->db_id           = ctdb_db->db_id;
-	req->keylen          = rh->key.dsize;
-	req->datalen         = data.dsize;
-	memcpy(&req->data[0], rh->key.dptr, rh->key.dsize);
-	memcpy(&req->data[req->keylen], data.dptr, data.dsize);
-	
-	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
-	if (res != 0) {
-		return NULL;
-	}
-
-	talloc_free(req);
-
-	return state;
-}
-
 /*
   make a recv call to the local ctdb daemon - called from client context
 
@@ -615,25 +529,6 @@ struct ctdb_record_handle *ctdb_client_fetch_lock_recv(struct ctdb_call_state *s
 	return rec;
 }
 
-/*
-  make a recv call to the local ctdb daemon - called from client context
-
-  This is called when the program wants to wait for a ctdb_store_unlock to complete and get the 
-  results. This call will block unless the call has already completed.
-*/
-int ctdb_client_store_unlock_recv(struct ctdb_call_state *state, struct ctdb_record_handle *rec)
-{
-	while (state->state < CTDB_CALL_DONE) {
-		event_loop_once(state->ctdb_db->ctdb->ev);
-	}
-	if (state->state != CTDB_CALL_DONE) {
-		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
-	}
-
-	talloc_free(state);
-	return state->state;
-}
-
 struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
 						  TALLOC_CTX *mem_ctx, 
 						  TDB_DATA key,
@@ -641,22 +536,67 @@ struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_d
 {
 	struct ctdb_call_state *state;
 	struct ctdb_record_handle *rec;
+	struct ctdb_ltdb_header header;
+	int ret;
 
-	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
-	rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
+	ret = ctdb_ltdb_lock(ctdb_db, key);
+	if (ret != 0) {
+		printf("failed to lock ltdb record\n");
+		return NULL;
+	}
 
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, data);
+	if (ret != 0) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		return NULL;
+	}
+
+
+	if (header.dmaster != ctdb_db->ctdb->vnn) {
+		state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
+		rec = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
+		return rec;
+	}
+
+	rec = talloc(mem_ctx, struct ctdb_record_handle);
+	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
+
+	rec->ctdb_db     = state->ctdb_db;
+	rec->key         = key;
+	rec->key.dptr    = talloc_memdup(rec, key.dptr, key.dsize);
+	rec->data        = talloc(rec, TDB_DATA);
+	rec->data->dsize = state->call.reply_data.dsize;
+	rec->data->dptr  = talloc_memdup(rec, state->call.reply_data.dptr, rec->data->dsize);
+
+	if (data) {
+		*data = *rec->data;
+	}
 	return rec;
 }
 
+/*
+   a helper function for the client that will store the new data for the
+   record and release the tdb chainlock
+*/
 int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
 {
-	struct ctdb_call_state *state;
-	int res;
+	int ret;
+	struct ctdb_ltdb_header header;
+	struct ctdb_db_context *ctdb_db = talloc_get_type(rec->ctdb_db, struct ctdb_db_context);
 
-	state = ctdb_client_store_unlock_send(rec, rec, data);
-	res = ctdb_client_store_unlock_recv(state, rec);
+	/* should be avoided if possible    hang header off rec ? */
+	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL, NULL);
+	if (ret) {
+		ctdb_set_error(rec->ctdb_db->ctdb, "Fetch of locally held record failed");
+		talloc_free(rec);
+		return ret;
+	}
 
+	ret = ctdb_ltdb_store(ctdb_db, rec->key, &header, data);
+
+	ctdb_ltdb_unlock(ctdb_db, rec->key);
+	
 	talloc_free(rec);
 
-	return res;
+	return ret;
 }
