@@ -85,7 +85,7 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
-	
+
 	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
 
 	talloc_free(r);
@@ -417,12 +417,12 @@ static void client_incoming_packet(struct ctdb_client *client, void *data, size_
 	struct ctdb_req_header *hdr = data;
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		ctdb_set_error(client->ctdb, "Non CTDB packet rejected\n");
+		ctdb_set_error(client->ctdb, "Non CTDB packet rejected in daemon\n");
 		goto done;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
 		goto done;
 	}
 
@@ -468,12 +468,12 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(client->ctdb, "Bad packet length %d\n", cnt);
+		ctdb_set_error(client->ctdb, "Bad packet length %d in daemon\n", cnt);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
-		ctdb_set_error(client->ctdb, "Bad header length %d expected %d\n", 
+		ctdb_set_error(client->ctdb, "Bad header length %d expected %d\n in daemon", 
 			       hdr->length, cnt);
 		return;
 	}
@@ -484,7 +484,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
 		return;
 	}
 

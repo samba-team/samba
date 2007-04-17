@@ -114,23 +114,23 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	struct ctdb_req_header *hdr;
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(ctdb, "Bad packet length %d\n", cnt);
+		ctdb_set_error(ctdb, "Bad packet length %d in client\n", cnt);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
-		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
+		ctdb_set_error(ctdb, "Bad header length %d expected %d in client\n", 
 			       hdr->length, cnt);
 		return;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
+		ctdb_set_error(ctdb, "Non CTDB packet rejected in client\n");
 		return;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected in client\n", hdr->ctdb_version);
 		return;
 	}
 
