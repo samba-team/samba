@@ -147,18 +147,6 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	return 0;
 }
 
-/*
-  send a ctdb message
-*/
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data)
-{
-	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_send_message(ctdb, vnn, srvid, data);
-	}
-	return ctdb_daemon_send_message(ctdb, vnn, srvid, data);
-}
-
 
 /*
   when a client goes away, we need to remove its srvid handler from the list

@@ -50,8 +50,6 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
-/* fork off a separate ctdb daemon */
-#define CTDB_FLAG_DAEMON_MODE  (1<<1)
 /* for test code only: make ctdb_start() block until all nodes are connected */
 #define CTDB_FLAG_CONNECT_WAIT (1<<2)
 
@@ -177,7 +175,9 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
    dmaster for the record to be moved to the local node. 
 
 */
-int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
+struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+					   TDB_DATA key, TDB_DATA *data);
+
 
 /*
   do a fetch lock from a client to the local daemon
@@ -192,8 +192,7 @@ int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db,
 						  TDB_DATA key, TDB_DATA *data);
 
 
-int ctdb_client_store_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key, TDB_DATA data);
-
+int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,

@@ -31,13 +31,11 @@ static struct {
 	const char *transport;
 	const char *myaddress;
 	int self_connect;
-	int daemon_mode;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
 	.self_connect = 0,
-	.daemon_mode = 0
 };
 
 
@@ -46,7 +44,6 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
-	{ "daemon", 0, POPT_ARG_NONE, &ctdb_cmdline.daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
 	{ NULL }
 };
 
@@ -73,9 +70,6 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 
 	if (ctdb_cmdline.self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
-	}
-	if (ctdb_cmdline.daemon_mode) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
 	}
 
 	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);
