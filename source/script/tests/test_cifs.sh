@@ -17,5 +17,5 @@ for t in $tests; do
 	continue;
     fi
     start=""
-    plantest "ntvfs/cifs $t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs/cifs $t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done
