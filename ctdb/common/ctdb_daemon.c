@@ -25,6 +25,7 @@
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/wait.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
@@ -45,6 +46,18 @@ static void set_non_blocking(int fd)
 	unsigned v;
 	v = fcntl(fd, F_GETFL, 0);
         fcntl(fd, F_SETFL, v | O_NONBLOCK);
+}
+
+static void block_signal(int signum)
+{
+	struct sigaction act;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, signum);
+	sigaction(signum, &act, NULL);
 }
 
 
@@ -557,6 +570,8 @@ int ctdb_start(struct ctdb_context *ctdb)
 		ctdb->daemon.sd = -1;
 		return 0;
 	}
+
+	block_signal(SIGPIPE);
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
