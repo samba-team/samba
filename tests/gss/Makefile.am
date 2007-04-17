@@ -36,6 +36,10 @@ check-spnego: check-spnego.in Makefile
 	chmod +x check-spnego.tmp
 	mv check-spnego.tmp check-spnego
 
+check-basic: check-basic.in Makefile
+	$(do_subst) < $(srcdir)/check-basic.in > check-basic.tmp
+	chmod +x check-basic.tmp
+	mv check-basic.tmp check-basic
 
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
@@ -51,12 +55,14 @@ CLEANFILES= \
 	krb5.conf \
 	current-db* \
 	*.log \
+	check-basic.tmp \
 	check-gss.tmp \
 	check-gssmask.tmp \
 	check-spnego.tmp \
 	check-context.tmp
 
 EXTRA_DIST = \
+	check-basic.in \
 	check-gss.in \
 	check-gssmask.in \
 	check-spnego.in \
