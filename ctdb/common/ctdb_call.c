@@ -775,10 +775,10 @@ int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 	ret = ctdb_call_recv(state, &call);
 	if (ret != 0) {
 		talloc_free(rec);
-		return -6;
+		return FETCH_LOCK_DMASTERFAILED;
 	}
 
-	return 0;
+	return FETCH_LOCK_SUCCESS;
 }
 
 

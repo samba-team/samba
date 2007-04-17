@@ -528,13 +528,13 @@ int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db,
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
 		printf("failed to lock ltdb record\n");
-		return -1;
+		return FETCH_LOCK_LOCKFAILED;
 	}
 
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, data);
 	if (ret != 0) {
 		ctdb_ltdb_unlock(ctdb_db, key);
-		return -2;
+		return FETCH_LOCK_FETCHFAILED;
 	}
 
 
@@ -545,7 +545,7 @@ int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db,
 		ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, data);
 		if (ret != 0) {
 			ctdb_ltdb_unlock(ctdb_db, key);
-			return -3;
+			return FETCH_LOCK_DMASTERFAILED;
 		}
 	}
 

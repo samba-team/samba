@@ -182,6 +182,11 @@ int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DA
 /*
   do a fetch lock from a client to the local daemon
 */
+#define FETCH_LOCK_SUCCESS		0
+#define FETCH_LOCK_LOCKFAILED		1
+#define FETCH_LOCK_FETCHFAILED		2
+#define FETCH_LOCK_DMASTERFAILED	3
+
 int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
 						  TALLOC_CTX *mem_ctx, 
 						  TDB_DATA key, TDB_DATA *data);
