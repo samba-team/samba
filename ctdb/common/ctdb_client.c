@@ -432,7 +432,8 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 
 static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 								 TALLOC_CTX *mem_ctx, 
-								 TDB_DATA key)
+								 TDB_DATA key, 
+								 struct ctdb_ltdb_header *header)
 {
 	struct ctdb_fetch_lock_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -468,6 +469,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
 	req->db_id           = ctdb_db->db_id;
 	req->keylen          = key.dsize;
+	req->header          = *header;
 	memcpy(&req->key[0], key.dptr, key.dsize);
 	
 	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
@@ -572,7 +574,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 
 	/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
-	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
+	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key, &h->header);
 	ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, &h->header, data);
 	if (ret != 0) {
 		talloc_free(h);

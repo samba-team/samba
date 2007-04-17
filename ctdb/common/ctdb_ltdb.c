@@ -82,6 +82,10 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 		}
 	}
 
+	/* add the node id to the database name, so when we run on loopback
+	   we don't conflict in the local filesystem */
+	name = talloc_asprintf(ctdb_db, "%s.%u", name, ctdb_get_vnn(ctdb));
+
 	/* when we have a separate daemon this will need to be a real
 	   file, not a TDB_INTERNAL, so the parent can access it to
 	   for ltdb bypass */

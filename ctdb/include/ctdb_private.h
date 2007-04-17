@@ -306,6 +306,7 @@ struct ctdb_reply_connect_wait {
 
 struct ctdb_req_fetch_lock {
 	struct ctdb_req_header hdr;
+	struct ctdb_ltdb_header header;
 	uint32_t db_id;
 	uint32_t keylen;
 	uint8_t key[1]; /* key[] */
@@ -438,5 +439,9 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 					      struct ctdb_call *call);
 
 int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
+						     struct ctdb_call *call, 
+						     struct ctdb_ltdb_header *header);
 
 #endif
