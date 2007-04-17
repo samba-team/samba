@@ -1,3 +1,14 @@
+2007-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/cred_stubs.c: Need to import spnego name before we can
+	use it as a gss_name_t.
+
+	* test_acquire_cred.c: use this test as part of the regression
+	suite.
+
+	* mech/gss_acquire_cred.c (gss_acquire_cred): dont init
+	cred->gc_mc every time in the loop.
+	
 2007-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add test_common.h
