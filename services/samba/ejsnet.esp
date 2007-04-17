@@ -11,57 +11,67 @@ jsonrpc_include("resources.esp");
 
 function _NetContext(params, error)
 {
-  var credParams, credentials;
-  var resName;
+  var hostName, credParams, credentials;
+  var resName = "netCtx";
 
-  if (params.length < 1)
-  {
-    /* create default NetContext based on already provided credentials */
-    credentials = session.authinfo.credentials;
-    resName = "netCtx";
-  }
-  else
-  {
-    /* create user specified credentials object */
-    credParams = params[0];
-    if (typeof(credParams) != "object")
-    {
-      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		     "credentials parameter is expected to be an object");
-      return error;
-    }
-  
-    if (typeof(credParams.domain) != "string")
-    {
-      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		     "a valid string is expected in credentials.domain");
-      return error;
-    }
-  
-    if (typeof(credParams.username) != "string")
-    {
-      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		     "a valid string is expected in credentials.username");
-      return error;
-    }
-  
-    if (typeof(credParams.username) != "string")
-    {
-      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
-		     "a valid string is expected in credentials.password");
-      return error;
-    }
-  
-    credentials = credentials_init();
-    credentials.set_domain(credParams.domain);
-    credentials.set_username(credParams.username);
-    credentials.set_password(credParams.password);
+  credentials = session.authinfo.credentials;
 
-    resName = "netCtx[" + credParams.domain + "/" + credParams.username + "]";
+  if (params.length > 0)
+  {
+    /* first expected argument is host name that this context is going
+       to be attached to */
+    hostName = params[0];
+    if (typeof(hostName) != "string" || hostName == "")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "hostName parameter is expected to be a valid non zero-length string");
+      return error;
+    }
+
+    resName = "netCtx[" + hostName + "]";
+    
+    /* check whether credentials are supplied as well */
+    if (params.length > 1)
+    {
+      /* create user specified credentials object */
+      credParams = params[1];
+      if (typeof(credParams) != "object")
+      {
+        error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		       "credentials parameter is expected to be an object");
+	return error;
+      }
+
+      if (typeof(credParams.domain) != "string")
+      {
+	error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		       "a valid string is expected in credentials.domain");
+	return error;
+      }
+      
+      if (typeof(credParams.username) != "string")
+      {
+	error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		       "a valid string is expected in credentials.username");
+	return error;
+      }
+    
+      if (typeof(credParams.username) != "string")
+      {
+	error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		       "a valid string is expected in credentials.password");
+	return error;
+      }
+  
+      credentials = credentials_init();
+      credentials.set_domain(credParams.domain);
+      credentials.set_username(credParams.username);
+      credentials.set_password(credParams.password);
+    }
   }
 
   /* was this NetContext created yet ? */
-  var resId = session.resources.find(key, error);
+  var resId = session.resources.find(resName, error);
   if (resId != undefined)
   {
     /* yes, return its resource id */
@@ -76,10 +86,93 @@ function _NetContext(params, error)
 jsonrpc.method.NetContext = _NetContext;
 
 
-/*
- * Local Variables:
- * mode: c
- * End:
- */
+function _NetContextCreds(params, error)
+{
+  if (params.length != 1)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+                   "missing resource id parameter");
+    return error;
+  }
+
+  var resId = params[0];
+  if (typeof(resId) != "number")
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "an integer parameter is required");
+    return error;
+  }
+  
+  var netCtx = session.resources.get(resId, error);
+  if (typeof(netCtx) != "object")
+  {
+    return null;
+  }
+
+  var creds = netCtx.credentials;
+  var result = new Object();
+  result.username = creds.get_username();
+  result.domain   = creds.get_domain();
+
+  return result;
+}
+jsonrpc.method.NetContextCreds = _NetContextCreds;
+
+
+function _UserMgr(params, error)
+{
+  var domainName = null, netCtxId;
+  var resId = -1;
+  var resName = "usrCtx";
+  var netCtx = undefined;
+  var usrCtx = undefined;
+
+  if (params.length == 0)
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "NetContext parameter missing");
+    return error;
+  }
+
+  /* checking NetContext parameter */
+  netCtxId = params[0];
+  if (netCtxId == undefined || typeof(netCtxId) != "number")
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "NetContext parameter is expected to be a number");
+  }
+  
+  netCtx = session.resources.get(netCtxId, error);
+  if (netCtx == undefined || typeof(netCtx) != "object")
+  {
+    error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		   "Incorrect NetContext passed");
+    return error;
+  }
+
+  if (params.length > 1)
+  {
+    domainName = params[1];
+    if (domainName == undefined || typeof(domainName) != "string")
+    {
+      error.setError(jsonrpc.Constant.ServerError.ParameterMismatch,
+		     "domainName parameter is expected to be a valid non zero-length string");
+      return error;
+    }
+  }
+  
+  if (domainName == "")
+  {
+    usrCtx = netCtx.UserMgr();
+  }
+  else
+  {
+    usrCtx = netCtx.UserMgr(domainName);
+  }
+
+  resId = session.resources.set(usrCtx, resName, error);
+  return resId;
+}
+jsonrpc.method.UserMgr = _UserMgr;
 
 %>
