@@ -113,7 +113,7 @@ use FindBin qw($RealBin $Script);
 use File::Spec;
 use Getopt::Long;
 use POSIX;
-use Cwd;
+use Cwd qw(abs_path);
 use lib "$RealBin";
 use Samba3;
 use Samba4;
@@ -136,7 +136,7 @@ my $opt_resetup_env = undef;
 
 my $srcdir = ".";
 my $builddir = ".";
-my $prefix = "st";
+my $prefix = "./st";
 
 my $suitesfailed = [];
 my $start = time();
@@ -370,6 +370,16 @@ if ($ldap) {
 }
 
 $prefix =~ s+//+/+;
+$prefix =~ s+/./+/+;
+$prefix =~ s+/$++;
+
+my $prefix_abs = abs_path($prefix);
+my $srcdir_abs = abs_path($srcdir);
+
+die("using an empty prefix isn't allowed") unless $prefix ne "";
+die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
+die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
+
 $ENV{PREFIX} = $prefix;
 $ENV{SRCDIR} = $srcdir;
 
@@ -442,13 +452,11 @@ my $interfaces = join(',', ("127.0.0.6/8",
 			    "127.0.0.10/8",
 			    "127.0.0.11/8"));
 
-my $conffile = "$prefix/client.conf";
+my $conffile = "$prefix_abs/client/client.conf";
 
 sub write_clientconf($$)
 {
 	my ($conffile, $vars) = @_;
-
-	my $abs_srcdir = cwd();
 
 	mkdir "$prefix/client" unless -d "$prefix/client";
 	
@@ -482,16 +490,16 @@ sub write_clientconf($$)
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
 	print CF "
-        private dir = $abs_srcdir/$prefix/client/private
-	js include = $abs_srcdir/scripting/libjs
+	private dir = $srcdir_abs/$prefix/client/private
+	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
 	interfaces = $interfaces
-	panic action = $abs_srcdir/script/gdb_backtrace \%PID\% \%PROG\%
+	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
 	ldb:nosync = true
 	system:anonymous = true
-	torture:basedir = ./st
+	torture:basedir = $prefix_abs
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 ";
