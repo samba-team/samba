@@ -199,8 +199,8 @@ struct ctdb_record_handle {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key;
 	TDB_DATA *data;
+	struct ctdb_ltdb_header header;
 };
-
 
 /*
   operation IDs
@@ -314,6 +314,7 @@ struct ctdb_req_fetch_lock {
 struct ctdb_reply_fetch_lock {
 	struct ctdb_req_header hdr;
 	uint32_t state;
+	struct ctdb_ltdb_header header;
 	uint32_t datalen;
 	uint8_t data[1]; /* data[] */
 };
@@ -432,5 +433,10 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      void (*callback)(void *), void *private_data);
+
+struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
+					      struct ctdb_call *call);
+
+int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 #endif

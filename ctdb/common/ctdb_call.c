@@ -451,7 +451,8 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   and data */
 	state->header.dmaster = ctdb->vnn;
 
-	if (ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
+	if (!state->fetch_private &&
+	    ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 		return;
 	}
@@ -591,8 +592,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
   This constructs a ctdb_call request and queues it for processing. 
   This call never blocks.
 */
-static struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
-						     struct ctdb_call *call)
+struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
+					      struct ctdb_call *call)
 {
 	uint32_t len;
 	struct ctdb_call_state *state;
@@ -659,19 +660,6 @@ static struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctd
 	return state;
 }
 
-/*
-  make a remote ctdb call - async send
-
-  This constructs a ctdb_call request and queues it for processing. 
-  This call never blocks.
-*/
-struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
-{
-	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_call_send(ctdb_db, call);
-	}
-	return ctdb_daemon_call_send(ctdb_db, call);
-}
 
 /*
   make a remote ctdb call - async recv - called in daemon context
@@ -679,7 +667,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct c
   This is called when the program wants to wait for a ctdb_call to complete and get the 
   results. This call will block unless the call has already completed.
 */
-static int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
+int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	struct ctdb_record_handle *rec;
 
@@ -696,6 +684,7 @@ static int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call
 
 	/* ugly hack to manage forced migration */
 	if (rec != NULL) {
+		rec->header = state->header;
 		rec->data->dptr = talloc_steal(rec, state->call.reply_data.dptr);
 		rec->data->dsize = state->call.reply_data.dsize;
 		talloc_free(state);
@@ -714,71 +703,6 @@ static int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call
 	call->status = state->call.status;
 	talloc_free(state);
 	return 0;
-}
-
-
-/*
-  make a remote ctdb call - async recv. 
-
-  This is called when the program wants to wait for a ctdb_call to complete and get the 
-  results. This call will block unless the call has already completed.
-*/
-int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
-{
-	if (state->ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_call_recv(state, call);
-	}
-	return ctdb_daemon_call_recv(state, call);
-}
-
-/*
-  full ctdb_call. Equivalent to a ctdb_call_send() followed by a ctdb_call_recv()
-*/
-int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
-{
-	struct ctdb_call_state *state;
-
-	state = ctdb_call_send(ctdb_db, call);
-	return ctdb_call_recv(state, call);
-}
-
-
-
-int ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
-					   TDB_DATA key, TDB_DATA *data)
-{
-	struct ctdb_call call;
-	struct ctdb_record_handle *rec;
-	struct ctdb_call_state *state;
-	int ret;
-
-	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_fetch_lock(ctdb_db, mem_ctx, key, data);
-	}
-
-	ZERO_STRUCT(call);
-	call.call_id = CTDB_FETCH_FUNC;
-	call.key = key;
-	call.flags = CTDB_IMMEDIATE_MIGRATION;
-
-	rec = talloc(mem_ctx, struct ctdb_record_handle);
-	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
-
-	rec->ctdb_db = ctdb_db;
-	rec->key = key;
-	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
-	rec->data = data;
-
-	state = ctdb_call_send(ctdb_db, &call);
-	state->fetch_private = rec;
-
-	ret = ctdb_call_recv(state, &call);
-	if (ret != 0) {
-		talloc_free(rec);
-		return FETCH_LOCK_DMASTERFAILED;
-	}
-
-	return FETCH_LOCK_SUCCESS;
 }
 
 

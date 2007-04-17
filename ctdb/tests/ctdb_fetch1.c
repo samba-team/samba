@@ -47,6 +47,7 @@ void test1(struct ctdb_db_context *ctdb_db)
 {
 	TDB_DATA key, data, data2, store_data;
 	int ret;
+	struct ctdb_record_handle *h;
  
 	/* 
 	   test 1 : write data and read it back.   should all be the same
@@ -54,23 +55,24 @@ void test1(struct ctdb_db_context *ctdb_db)
 	printf("Test1: write and verify we can read it back: ");
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data);
-	if (ret!=0) {
-		printf("test1: ctdb_client_fetch_lock() failed\n");
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
+	if (h == NULL) {
+		printf("test1: ctdb_fetch_lock() failed\n");
 		exit(1);
 	}
 
 	store_data.dptr  = discard_const("data to store");
 	store_data.dsize = strlen((const char *)store_data.dptr)+1;
-	ret = ctdb_client_store_unlock(ctdb_db, key, store_data);
+	ret = ctdb_record_store(h, store_data);
+	talloc_free(h);
 	if (ret!=0) {
-		printf("test1: ctdb_client_store_unlock() failed\n");
+		printf("test1: ctdb_record_store() failed\n");
 		exit(1);
 	}
 
-	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data2);
-	if (ret!=0) {
-		printf("test1: ctdb_client_fetch_lock() failed\n");
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	if (h == NULL) {
+		printf("test1: ctdb_fetch_lock() failed\n");
 		exit(1);
 	}
 
@@ -83,9 +85,10 @@ void test1(struct ctdb_db_context *ctdb_db)
 	}
 	
 	/* just write it back to unlock it */
-	ret = ctdb_client_store_unlock(ctdb_db, key, store_data);
+	ret = ctdb_record_store(h, store_data);
+	talloc_free(h);
 	if (ret!=0) {
-		printf("test1: ctdb_client_store_unlock() failed\n");
+		printf("test1: ctdb_record_store() failed\n");
 		exit(1);
 	}
 }
@@ -94,7 +97,7 @@ void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struc
 {
 	TDB_DATA data;
 	TDB_DATA key, data2;
-	int ret;
+	struct ctdb_record_handle *h;
 
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
@@ -110,13 +113,13 @@ void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struc
 	/* fetch and lock the record */
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	ret = ctdb_client_fetch_lock(ctdb_db, ctdb_db, key, &data2);
-	if (ret!=0) {
-		printf("client: ctdb_client_fetch_lock() failed\n");
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	if (h == NULL) {
+		printf("client: ctdb_fetch_lock() failed\n");
 		exit(1);
 	}
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
-
+	talloc_free(h);
 
 	while (1) {
 		event_loop_once(ev);

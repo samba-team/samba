@@ -110,9 +110,9 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 }
 
 
-static struct ctdb_call_state *ctdb_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
-					 	    TALLOC_CTX *mem_ctx, 
-						    TDB_DATA key, TDB_DATA *data)
+static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
+							   TALLOC_CTX *mem_ctx, 
+							   TDB_DATA key, TDB_DATA *data)
 {
 	struct ctdb_call *call;
 	struct ctdb_record_handle *rec;
@@ -134,7 +134,7 @@ static struct ctdb_call_state *ctdb_fetch_lock_send(struct ctdb_db_context *ctdb
 	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
 	rec->data = data;
 
-	state = ctdb_call_send(ctdb_db, call);
+	state = ctdb_daemon_call_send(ctdb_db, call);
 	state->fetch_private = rec;
 
 	return state;
@@ -144,6 +144,7 @@ struct client_fetch_lock_data {
 	struct ctdb_client *client;
 	uint32_t reqid;
 };
+
 static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 {
 	struct ctdb_reply_fetch_lock *r;
@@ -212,7 +213,7 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	data->dptr  = NULL;
 	data->dsize = 0;
 
-	state = ctdb_fetch_lock_send(ctdb_db, client, key, data);
+	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, data);
 	talloc_steal(state, data);
 
 	fl_data = talloc(state, struct client_fetch_lock_data);
@@ -316,10 +317,12 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	call.call_data.dptr = c->data + c->keylen;
 	call.call_data.dsize = c->calldatalen;
 
-	state = ctdb_call_send(ctdb_db, &call);
+	state = ctdb_daemon_call_send(ctdb_db, &call);
+//	state->async.fn = daemon_call_from_client_callback;
+//	state->async.private_data = state;
 
 /* XXX this must be converted to fully async */
-	res = ctdb_call_recv(state, &call);
+	res = ctdb_daemon_call_recv(state, &call);
 	if (res != 0) {
 		printf("ctdbd_call_recv() returned error\n");
 		exit(1);
@@ -340,7 +343,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	r->datalen          = call.reply_data.dsize;
 	memcpy(&r->data[0], call.reply_data.dptr, r->datalen);
 
-	res = ctdb_queue_send(client->queue, (uint8_t *)&r, r->hdr.length);
+	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
 	if (res != 0) {
 		printf("Failed to queue packet from daemon to client\n");
 	}
@@ -349,7 +352,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 
 /* data contains a packet from the client */
-static void client_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
+static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
 {
 	struct ctdb_req_header *hdr = data;
 
@@ -391,7 +394,7 @@ done:
 }
 
 
-static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
+static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_client *client = talloc_get_type(args, struct ctdb_client);
 	struct ctdb_req_header *hdr;
@@ -423,7 +426,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	/* it is the responsibility of the incoming packet function to free 'data' */
-	client_incoming_packet(client, data, cnt);
+	daemon_incoming_packet(client, data, cnt);
 }
 
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
@@ -448,7 +451,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	client->fd = fd;
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
-					 ctdb_client_read_cb, client);
+					 ctdb_daemon_read_cb, client);
 
 	talloc_set_destructor(client, ctdb_client_destructor);
 }
@@ -517,7 +520,7 @@ static int unlink_destructor(const char *name)
 /*
   start the protocol going
 */
-int ctdbd_start(struct ctdb_context *ctdb)
+int ctdb_start(struct ctdb_context *ctdb)
 {
 	pid_t pid;
 	static int fd[2];
@@ -560,7 +563,7 @@ int ctdbd_start(struct ctdb_context *ctdb)
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 	
 	close(fd[1]);
-	ctdb_clear_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
+
 	ctdb->ev = event_context_init(NULL);
 	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ, ctdb_read_from_parent, &fd[0]);
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, ctdb_accept_client, ctdb);
@@ -578,12 +581,5 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 
 	size = (len+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 	return talloc_size(ctdb, size);
-}
-
-int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-			     ctdb_message_fn_t handler,
-			     void *private_data)
-{
-	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
 }
 

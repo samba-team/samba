@@ -105,9 +105,6 @@ int main(int argc, const char *argv[])
 	if (self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
-	if (daemon_mode) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
-	}
 
 	ret = ctdb_set_transport(ctdb, transport);
 	if (ret == -1) {
