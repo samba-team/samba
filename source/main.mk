@@ -330,15 +330,15 @@ valgrindtest-env: everything
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
-	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
 	$(SELFTEST) --immediate --quick --socket-wrapper
 
 gdbtest-all: everything
-	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
 	$(SELFTEST) --immediate --socket-wrapper
 
 gdbtest-env: everything
-	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
 	$(SELFTEST) --socket-wrapper --testenv
 
 wintest: all
