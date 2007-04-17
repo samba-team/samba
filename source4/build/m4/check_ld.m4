@@ -89,7 +89,8 @@ case "$host_os" in
 		PICFLAG="-fPIC -DPIC"
 		;;
 	*openbsd*)
-		BLDSHARED="true"
+		# disabled because us4 fails to link libtorture.so
+		BLDSHARED="false"
 		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC"
@@ -107,7 +108,8 @@ case "$host_os" in
 		fi
 		;;
 	*aix*)
-		BLDSHARED="true"
+		# disabled because us4 fails to link libtorture.so
+		BLDSHARED="false"
 		SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
 		# as AIX code is always position independent...
