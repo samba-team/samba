@@ -11,7 +11,12 @@ use POSIX;
 
 sub new($$$$) {
 	my ($classname, $bindir, $ldap, $setupdir) = @_;
-	my $self = { vars => {}, ldap => $ldap, bindir => $bindir, setupdir => $setupdir };
+	my $self = { 
+		vars => {}, 
+		ldap => $ldap, 
+		bindir => $bindir, 
+		setupdir => $setupdir 
+	};
 	bless $self;
 	return $self;
 }
@@ -21,17 +26,16 @@ sub slapd_start($$)
 	my $count = 0;
 	my ($self, $env_vars) = @_;
 
-	my $conf = $env_vars->{SLAPD_CONF};
 	my $uri = $env_vars->{LDAP_URI};
 
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d$env_vars->{FEDORA_DS_LOGLEVEL} -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
-	} else {
+	if ($self->{ldap} eq "fedora") {
+	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
+	} elsif ($self->{ldap} eq "openldap") {
 		my $oldpath = $ENV{PATH};
 		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		system("slapd -d$env_vars->{OPENLDAP_LOGLEVEL} -f $conf -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
+		system("slapd -d0 -f $env_vars->{SLAPD_CONF} -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
 		$ENV{PATH} = $oldpath;
 	}
 	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
@@ -48,9 +52,9 @@ sub slapd_start($$)
 sub slapd_stop($$)
 {
 	my ($self, $envvars) = @_;
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
+	if ($self->{ldap} eq "fedora") {
 		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
-	} else {
+	} elsif ($self->{ldap} eq "openldap") {
 		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
 			die("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
 		kill 9, <IN>;
@@ -64,7 +68,7 @@ sub check_or_start($$$)
 	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
 
 	# Start slapd before smbd
-	if ($self->{ldap}) {
+	if (defined($self->{ldap})) {
 		$self->slapd_start($env_vars) or 
 			die("couldn't start slapd");
 
@@ -93,7 +97,7 @@ sub check_or_start($$$)
 		if (defined($max_time)) {
 			$optarg = "--maximum-runtime=$max_time ";
 		}
-		my $ret = system("$valgrind $self->{bindir}/smbd $optarg -s $env_vars->{CONFFILE} -M single -i --leak-report-full");
+		my $ret = system("$valgrind $self->{bindir}/smbd $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
 		if ($? == -1) {
 			print "Unable to start smbd: $ret: $!\n";
 			exit 1;
@@ -135,48 +139,488 @@ sub wait_for_start($$)
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 }
 
+sub write_ldb_file($$$)
+{
+	my ($self, $file, $ldif) = @_;
+
+	open(LDIF, "|$self->{bindir}/ldbadd -H $file >/dev/null");
+	print LDIF $ldif;
+	return close(LDIF);
+}
+
+sub add_wins_config($$)
+{
+	my ($self, $privatedir) = @_;
+
+	return $self->write_ldb_file("$privatedir/wins_config.ldb", "
+dn: name=TORTURE_6,CN=PARTNERS
+objectClass: wreplPartner
+name: TORTURE_6
+address: 127.0.0.6
+pullInterval: 0
+pushChangeCount: 0
+type: 0x3
+");
+}
+
+sub mk_fedora($$$$$$)
+{
+	my ($self, $ldapdir, $basedn, $root, $password, $privatedir, $configuration) = @_;
+
+	my $fedora_ds_inf = "$ldapdir/fedorads.inf";
+	my $fedora_ds_initial_ldif = "$ldapdir/fedorads-initial.ldif";
+
+	#Make the subdirectory be as fedora DS would expect
+	my $fedora_ds_dir = "$ldapdir/slapd-samba4";
+
+	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
+
+	open(CONF, ">$fedora_ds_inf");
+	print CONF "
+[General]
+SuiteSpotUserID = $root
+fullMachineName=   localhost
+ServerRoot=   $ldapdir
+
+[slapd]
+ldapifilepath=$ldapdir/ldapi
+Suffix= $basedn
+rootDN= cn=Manager,$basedn
+rootDNPwd= $password
+serverIdentifier= samba4
+InstallLdifFile=$fedora_ds_initial_ldif
+
+inst_dir= $fedora_ds_dir
+config_dir= $fedora_ds_dir
+schema_dir= $fedora_ds_dir/schema
+lock_dir= $fedora_ds_dir/lock
+log_dir= $fedora_ds_dir/logs
+run_dir= $fedora_ds_dir/logs
+db_dir= $fedora_ds_dir/db
+bak_dir= $fedora_ds_dir/bak
+tmp_dir= $fedora_ds_dir/tmp
+ldif_dir= $fedora_ds_dir/ldif
+cert_dir= $fedora_ds_dir
+
+start_server= 0
+";
+	close(CONF);
+
+	open(CONF, ">$fedora_ds_initial_ldif");
+	print "
+# These entries need to be added to get the container for the 
+# provision to be aimed at.
+
+dn: cn=\"dc=$basedn\",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: userData
+cn: $basedn
+
+dn: cn=userData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: $basedn
+";
+	close(CONF);
+
+	system("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf >&2") == 0 or return 0;
+
+	foreach(<$fedora_ds_dir/schema/*>) {
+		unlink unless (/00core.*/);
+	}
+
+	open(LDIF, ">$fedora_ds_dir/dse.ldif");
+	print LDIF "
+dn: cn=bitwise,cn=plugins,cn=config
+objectClass: top
+objectClass: nsSlapdPlugin
+objectClass: extensibleObject
+cn: bitwise
+nsslapd-pluginPath: $ENV{FEDORA_DS_PREFIX}/lib/fedora-ds/plugins/libbitwise-plugin.so
+nsslapd-pluginInitfunc: bitwise_init
+nsslapd-pluginType: matchingRule
+nsslapd-pluginEnabled: on
+nsslapd-pluginId: bitwise
+nsslapd-pluginVersion: 1.1.0a3
+nsslapd-pluginVendor: Fedora Project
+nsslapd-pluginDescription: Allow bitwise matching rules
+";
+	close(CONF);
+
+	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2");
+
+	return ($fedora_ds_dir, $pidfile);
+}
+
+sub mk_openldap($$$$$$$$)
+{
+	my ($self, $ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, $provision_options) = @_;
+
+	my $slapd_conf = "$ldapdir/slapd.conf";
+	my $pidfile = "$ldapdir/slapd.pid";
+	my $modconf = "$ldapdir/modules.conf";
+
+	mkdir($_) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/bdb-logs", 
+		"$ldapdir/db/tmp");
+
+	open(CONF, ">$slapd_conf");
+	print CONF "
+loglevel 0
+
+include $ldapdir/ad.schema
+
+pidfile		$pidfile
+argsfile	$ldapdir/slapd.args
+sasl-realm $dnsname
+access to * by * write
+
+allow update_anon
+
+authz-regexp
+          uid=([^,]*),cn=$dnsname,cn=digest-md5,cn=auth
+          ldap:///$basedn??sub?(samAccountName=\$1)
+
+authz-regexp
+          uid=([^,]*),cn=([^,]*),cn=digest-md5,cn=auth
+          ldap:///$basedn??sub?(samAccountName=\$1)
+
+include $modconf
+
+defaultsearchbase \"$basedn\"
+
+backend		bdb
+database        bdb
+suffix		\"$basedn\"
+rootdn          \"cn=Manager,$basedn\"
+rootpw          $password
+directory	$ldapdir/db
+index           objectClass eq
+index           samAccountName eq
+index name eq
+index objectSid eq
+index objectCategory eq
+index member eq
+index uidNumber eq
+index gidNumber eq
+index unixName eq
+index privilege eq
+index nCName eq pres
+index lDAPDisplayName eq
+index subClassOf eq
+index dnsRoot eq
+index nETBIOSName eq pres
+
+#syncprov is stable in OpenLDAP 2.3, and available in 2.2.  
+#We only need this for the contextCSN attribute anyway....
+overlay syncprov
+syncprov-checkpoint 100 10
+syncprov-sessionlog 100
+";
+
+	close(CONF);
+
+	open(CONF, ">$ldapdir/db/DB_CONFIG");
+	print CONF "
+#
+	# Set the database in memory cache size.
+	#
+	set_cachesize   0       524288        0
+	
+	
+	#
+	# Set database flags (this is a test environment, we don't need to fsync()).
+	#		
+	set_flags       DB_TXN_NOSYNC
+	
+	#
+	# Set log values.
+	#
+	set_lg_regionmax        104857
+	set_lg_max              1048576
+	set_lg_bsize            209715
+	set_lg_dir              $ldapdir/db/bdb-logs
+	
+	
+	#
+	# Set temporary file creation directory.
+	#			
+	set_tmp_dir             $ldapdir/db/tmp
+	";
+	close(CONF);
+
+	#This uses the provision we just did, to read out the schema
+	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2");
+
+	#Now create an LDAP baseDN
+	system("$self->{bindir}/smbscript $self->{setupdir}/provision $provision_options --ldap-base >&2");
+
+	my $oldpath = $ENV{PATH};
+	$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
+
+	unlink($modconf);
+	open(CONF, ">$modconf"); close(CONF);
+
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules
+		print CONF "
+modulepath	/usr/lib/ldap
+moduleload	back_bdb
+moduleload	syncprov
+";
+		close(CONF);
+	}
+
+	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
+	system("slapadd -f $slapd_conf < $privatedir/$dnsname.ldif >/dev/null") == 0 or die("slapadd failed");
+
+    system("slaptest -f $slapd_conf >/dev/null") == 0 or 
+		die ("slaptest after database load failed");
+    
+	$ENV{PATH} = $oldpath;
+
+	return ($slapd_conf, $pidfile);
+}
+
+sub provision($$$$$)
+{
+	my ($self, $prefix, $server_role, $domain, $netbiosname) = @_;
+
+	my $smbd_loglevel = 1;
+	my $username = "administrator";
+	my $realm = "SAMBA.EXAMPLE.COM";
+	my $dnsname = "samba.example.com";
+	my $basedn = "dc=samba,dc=example,dc=com";
+	my $password = "penguin";
+	my $root = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
+	my $server = "localhost";
+	my $srcdir="$RealBin/../..";
+	-d $prefix or mkdir($prefix) or die("Unable to create $prefix");
+	my $prefix_abs = getcwd()."/".$prefix;
+
+	my $tmpdir = "$prefix_abs/tmp";
+	my $etcdir = "$prefix_abs/etc";
+	my $piddir = "$prefix_abs/pid";
+	my $conffile = "$etcdir/smb.conf";
+	my $krb5_config = "$etcdir/krb5.conf";
+	my $privatedir = "$prefix_abs/private";
+	my $ncalrpcdir = "$prefix_abs/ncalrpc";
+	my $lockdir= "$prefix_abs/lockdir";
+
+	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
+	my $configuration = "--configfile=$conffile";
+	my $ldapdir = "$prefix_abs/ldap";
+
+	my $tlsdir = "$privatedir/tls";
+
+	(system("rm -rf $prefix/*") == 0) or die("Unable to clean up");
+	mkdir($_) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
+		$tmpdir);
+
+	open(CONFFILE, ">$conffile");
+	print CONFFILE "
+[global]
+	netbios name = $netbiosname
+	netbios aliases = $server
+	workgroup = $domain
+	realm = $realm
+	private dir = $privatedir
+	pid directory = $piddir
+	ncalrpc dir = $ncalrpcdir
+	lock dir = $lockdir
+	setup directory = $self->{setupdir}
+	js include = $srcdir/scripting/libjs
+	winbindd socket directory = $winbindd_socket_dir
+	name resolve order = bcast
+	interfaces = 127.0.0.1/8
+	tls dh params file = $tlsdir/dhparms.pem
+	panic action = $srcdir/script/gdb_backtrace \%PID% \%PROG%
+	wins support = yes
+	server role = $server_role
+	max xmit = 32K
+	server max protocol = SMB2
+	notify:inotify = false
+	ldb:nosync = true
+	system:anonymous = true
+#We don't want to pass our self-tests if the PAC code is wrong
+	gensec:require_pac = true
+	log level = $smbd_loglevel
+
+[tmp]
+	path = $tmpdir
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $lockdir/eadb.tdb
+
+[cifs]
+	read only = no
+	ntvfs handler = cifs
+	cifs:server = $server
+	cifs:user = $username
+	cifs:password = $password
+	cifs:domain = $domain
+	cifs:share = tmp
+
+[simple]
+	path = $tmpdir
+	read only = no
+	ntvfs handler = simple
+
+[cifsposixtestshare]
+	copy = simple
+	ntvfs handler = cifsposix   
+";
+	close(CONFFILE);
+
+	die ("Unable to create key blobs") if
+		(system("TLSDIR=$tlsdir $RealBin/mk-keyblobs.sh") != 0);
+
+	open(KRB5CONF, ">$krb5_config");
+	print KRB5CONF "
+#Generated krb5.conf for $realm
+
+[libdefaults]
+ default_realm = $realm
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ forwardable = yes
+
+[realms]
+ $realm = {
+  kdc = 127.0.0.1:88
+  admin_server = 127.0.0.1:88
+  default_domain = $dnsname
+ }
+ $dnsname = {
+  kdc = 127.0.0.1:88
+  admin_server = 127.0.0.1:88
+  default_domain = $dnsname
+ }
+ $domain = {
+  kdc = 127.0.0.1:88
+  admin_server = 127.0.0.1:88
+  default_domain = $dnsname
+ }
+
+[appdefaults]
+	pkinit_anchors = FILE:$tlsdir/ca.pem
+
+[kdc]
+	enable-pkinit = true
+	pkinit_identity = FILE:$tlsdir/kdc.pem,$tlsdir/key.pem
+	pkinit_anchors = FILE:$tlsdir/ca.pem
+
+[domain_realm]
+ .$dnsname = $realm
+";
+	close(KRB5CONF);
+
+#Ensure the config file is valid before we start
+	if (system("$self->{bindir}/testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
+		system("$self->{bindir}/testparm $configuration >&2");
+		die("Failed to create configuration!");
+	}
+
+	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i ^$netbiosname ) >/dev/null 2>&1") == 0) or die("Failed to create configuration!");
+
+	my @provision_options = ($configuration);
+	push (@provision_options, "--host-name=$netbiosname");
+	push (@provision_options, "--host-ip=127.0.0.1");
+	push (@provision_options, "--quiet");
+	push (@provision_options, "--domain $domain");
+	push (@provision_options, "--realm $realm");
+	push (@provision_options, "--adminpass $password");
+	push (@provision_options, "--root=$root");
+	push (@provision_options, "--simple-bind-dn=cn=Manager,$basedn");
+	push (@provision_options, "--password=$password");
+	push (@provision_options, "--root=$root");
+
+	(system("$self->{bindir}/smbscript $self->{setupdir}/provision " .  join(' ', @provision_options) . ">&2") == 0) or die("Unable to provision");
+
+	my $ldap_uri= "$ldapdir/ldapi";
+	$ldap_uri =~ s|/|%2F|g;
+	$ldap_uri = "ldapi://$ldap_uri";
+
+	my $ret = {
+		KRB5_CONFIG => $krb5_config,
+		PIDDIR => $piddir,
+		SERVER => $server,
+		NETBIOSNAME => $netbiosname,
+		LDAP_URI => $ldap_uri,
+		DOMAIN => $domain,
+		USERNAME => $username,
+		REALM => $realm,
+		PASSWORD => $password,
+		LDAPDIR => $ldapdir,
+		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
+		NCALRPCDIR => $ncalrpcdir,
+		CONFIGURATION => $configuration
+	};
+
+	if (not defined($self->{ldap})) {
+	} elsif ($self->{ldap} eq "openldap") {
+		($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, join(' ', @provision_options)) or die("Unable to create openldap directories");
+	} elsif ($self->{ldap} eq "fedora") {
+		($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora($ldapdir, $basedn, $root, $password, $privatedir, $configuration) or die("Unable to create fedora ds directories");
+		push (@provision_options, "--ldap-module=nsuniqueid");
+	}
+
+	$ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
+
+	return $ret; 
+}
+
 sub provision_member($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	my %ret = ();
-	print "PROVISIONING...";
-	open(IN, "SERVER_ROLE=\"member server\" $RealBin/mksamba4server.sh $prefix|") or die("Unable to setup");
-	while (<IN>) {
-		die ("Error parsing `$_'") unless (/^([A-Z0-9a-z_]+)=(.*)$/);
-		$ret{$1} = $2;
-	}
-	close(IN);
+	print "PROVISIONING MEMBER...";
 
-	system("$self->{bindir}/net join $ret{CONFIGURATION} $dcvars->{DOMAIN} member -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}") or die("Join failed");
+	my $ret = $self->provision($prefix, "member server", "SAMBADOMAIN", 
+		"localmember");
 
-	$ret{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
-	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
-	print "$ret{DOMAIN}\n";
-	return \%ret;
+	$ret or die("Unable to provision");
+
+	system("$self->{bindir}/net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}") == 0 or die("Join failed");
+
+	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
+	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	return $ret;
 }
 
 sub provision_dc($$)
 {
 	my ($self, $prefix) = @_;
-	my %ret = ();
-	print "PROVISIONING...";
-	open(IN, "$RealBin/mksamba4server.sh $prefix|") or die("Unable to setup");
-	while (<IN>) {
-		die ("Error parsing `$_'") unless (/^([A-Z0-9a-z_]+)=(.*)$/);
-		$ret{$1} = $2;
-	}
-	close(IN);
 
-	$ret{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
-	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
-	return \%ret;
+	print "PROVISIONING DC...";
+	my $ret = $self->provision($prefix, "domain controller", "SAMBADOMAIN", 
+		"localtest");
+
+	$self->add_wins_config("$prefix/private") or 
+		die("Unable to add wins configuration");
+
+	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
+	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	return $ret;
 }
 
 sub provision_ldap($$)
 {
 	my ($self, $envvars) = @_;
-	system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}") and
-		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$envvars->{PROVISION_ACI}\" --ldap-backend=$envvars->{LDAP_URI}");
+	my $provision_aci = "";
+	
+	if ($self->{ldap} eq "fedora") {
+		#it is easier to base64 encode this than correctly escape it:
+		# (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
+		$provision_aci = "--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK";
+	}
+
+	system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$provision_aci\" --ldap-backend=$envvars->{LDAP_URI}") and
+		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$provision_aci\" --ldap-backend=$envvars->{LDAP_URI}");
 }
 
 sub teardown_env($$)
