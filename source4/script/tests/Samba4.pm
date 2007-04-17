@@ -235,8 +235,7 @@ nsslapd-suffix: $basedn
 	}
 
 	open(LDIF, ">>$fedora_ds_dir/dse.ldif");
-	print LDIF "
-dn: cn=bitwise,cn=plugins,cn=config
+	print LDIF "dn: cn=bitwise,cn=plugins,cn=config
 objectClass: top
 objectClass: nsSlapdPlugin
 objectClass: extensibleObject
