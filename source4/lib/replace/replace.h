@@ -451,6 +451,35 @@ typedef int bool;
 #define __location__ __FILE__ ":" __LINESTR__
 #endif
 
+/** 
+ * zero a structure 
+ */
+#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+
+/** 
+ * zero a structure given a pointer to the structure 
+ */
+#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
+
+/** 
+ * zero a structure given a pointer to the structure - no zero check 
+ */
+#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
+
+/* zero an array - note that sizeof(array) must work - ie. it must not be a
+   pointer */
+#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
+
+/**
+ * work out how many elements there are in a static array 
+ */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
+/** 
+ * pointer difference macro 
+ */
+#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
+
 #if MMAP_BLACKLIST
 #undef HAVE_MMAP
 #endif
