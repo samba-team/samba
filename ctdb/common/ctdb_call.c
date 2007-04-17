@@ -424,6 +424,11 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
 
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		printf("ctdb idr type error at %s\n", __location__);
+		return;
+	}
+
 	state->call.reply_data.dptr = c->data;
 	state->call.reply_data.dsize = c->datalen;
 	state->call.status = c->status;
@@ -458,6 +463,12 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (state == NULL) {
 		return;
 	}
+
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		printf("ctdb idr type error at %s\n", __location__);
+		return;
+	}
+
 	ctdb_db = state->ctdb_db;
 
 	data.dptr = c->data;
@@ -495,6 +506,11 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
 
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		printf("ctdb idr type error at %s\n", __location__);
+		return;
+	}
+
 	talloc_steal(state, c);
 
 	state->state  = CTDB_CALL_ERROR;
@@ -519,6 +535,11 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
+
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		printf("ctdb idr type error at %s\n", __location__);
+		return;
+	}
 
 	talloc_steal(state, c);
 	

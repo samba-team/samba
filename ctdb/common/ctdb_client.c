@@ -57,6 +57,7 @@ struct ctdb_fetch_lock_state {
 	enum fetch_lock_state state;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_reply_fetch_lock *r;
+	struct ctdb_req_fetch_lock *req;
 	struct ctdb_ltdb_header header;
 };
 
@@ -75,6 +76,11 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
+
+	if (!talloc_get_type(state, struct ctdb_fetch_lock_state)) {
+		printf("ctdb idr type error at %s\n", __location__);
+		return;
+	}
 
 	state->r = talloc_steal(state, r);
 
@@ -420,6 +426,12 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	ctdb_daemon_connect_wait(ctdb);
 }
 
+static int ctdb_fetch_lock_destructor(struct ctdb_fetch_lock_state *state)
+{
+	idr_remove(state->ctdb_db->ctdb->idr, state->req->hdr.reqid);
+	return 0;
+}
+
 static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 								 TALLOC_CTX *mem_ctx, 
 								 TDB_DATA key, 
@@ -443,7 +455,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	state->state   = CTDB_FETCH_LOCK_WAIT;
 	state->ctdb_db = ctdb_db;
 	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
-	req = ctdbd_allocate_pkt(ctdb, len);
+	state->req = req = ctdbd_allocate_pkt(ctdb, len);
 	if (req == NULL) {
 		printf("failed to allocate packet\n");
 		return NULL;
@@ -461,6 +473,8 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	req->keylen          = key.dsize;
 	req->header          = *header;
 	memcpy(&req->key[0], key.dptr, key.dsize);
+
+	talloc_set_destructor(state, ctdb_fetch_lock_destructor);
 	
 	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
 	if (res != 0) {
