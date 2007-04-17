@@ -463,11 +463,10 @@ sub provision($$$$$)
 [cifs]
 	read only = no
 	ntvfs handler = cifs
-	cifs:server = $server
-	cifs:user = $username
-	cifs:password = $password
-	cifs:domain = $domain
+	cifs:server = $netbiosname
 	cifs:share = tmp
+#There is no username specified here, instead the client is expected
+#to log in with kerberos, and smbd will used delegated credentials.
 
 [simple]
 	path = $tmpdir
