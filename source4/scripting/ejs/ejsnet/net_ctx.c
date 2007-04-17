@@ -43,7 +43,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	TALLOC_CTX *event_mem_ctx = talloc_new(mprMemCtx());
 	struct cli_credentials *creds;
 	struct libnet_context *ctx;
-	struct MprVar obj;
+	struct MprVar obj, mprCreds;
 	struct event_context *ev;
 
 	if (!event_mem_ctx) {
@@ -59,6 +59,9 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	talloc_steal(ctx, event_mem_ctx);
 
 	if (argc == 0 || (argc == 1 && argv[0]->type == MPR_TYPE_NULL)) {
+		/* 
+		   create the default credentials
+		*/
 		creds = cli_credentials_init(ctx);
 		if (creds == NULL) {
 			ejsSetErrorMsg(eid, "cli_credential_init() failed");
@@ -68,11 +71,16 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 		cli_credentials_set_conf(creds);
 		cli_credentials_set_anonymous(creds);
 
+		mprCreds = mprCredentials(creds);
+
 	} else if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
-		/* get credential values from credentials object */
-		creds = mprGetPtr(argv[0], "creds");
+		/*
+		  get credential values from credentials object
+		*/
+		mprCreds = *(argv[0]);
+		creds = mprGetPtr(&mprCreds, "creds");
 		if (creds == NULL) {
-			ejsSetErrorMsg(eid, "userAuth requires a 'creds' first parameter");
+			ejsSetErrorMsg(eid, "invalid credentials parameter");
 			talloc_free(ctx);
 			return -1;
 		}
@@ -82,15 +90,25 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 		talloc_free(ctx);
 		return -1;
 	}
-
+	
+	/* setup libnet_context credentials */
 	ctx->cred = creds;
 
-	obj = mprObject("NetCtx");
+	/* create the NetContext object */
+	obj = mprObject("NetContext");
+
+	/* add internal libnet_context pointer to the NetContext object */
 	mprSetPtrChild(&obj, "ctx", ctx);
+
+	/* add properties publicly available from js code */
+	mprCreateProperty(&obj, "credentials", &mprCreds);
 	
+	/* add methods to the object */
 	mprSetCFunction(&obj, "UserMgr", ejs_net_userman);
 	mprSetCFunction(&obj, "JoinDomain", ejs_net_join_domain);
 	mprSetCFunction(&obj, "SamSyncLdb", ejs_net_samsync_ldb);
+
+	/* return the object */
 	mpr_Return(eid, obj);
 
 	return 0;
