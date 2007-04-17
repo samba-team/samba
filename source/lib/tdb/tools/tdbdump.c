@@ -19,9 +19,10 @@
 */
 
 #include "replace.h"
-#include "tdb.h"
 #include "system/locale.h"
+#include "system/time.h"
 #include "system/filesys.h"
+#include "tdb.h"
 
 static void print_data(TDB_DATA d)
 {
@@ -37,22 +38,23 @@ static void print_data(TDB_DATA d)
 	}
 }
 
-static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("{\n");
-	printf("key = \"");
+	printf("key(%d) = \"", (int)key.dsize);
 	print_data(key);
 	printf("\"\n");
-	printf("data = \"");
+	printf("data(%d) = \"", (int)dbuf.dsize);
 	print_data(dbuf);
 	printf("\"\n");
 	printf("}\n");
 	return 0;
 }
 
-static int dump_tdb(const char *fname)
+static int dump_tdb(const char *fname, const char *keyname)
 {
-	struct tdb_context *tdb;
+	TDB_CONTEXT *tdb;
+	TDB_DATA key, value;
 	
 	tdb = tdb_open(fname, 0, 0, O_RDONLY, 0);
 	if (!tdb) {
@@ -60,20 +62,55 @@ static int dump_tdb(const char *fname)
 		return 1;
 	}
 
-	tdb_traverse(tdb, traverse_fn, NULL);
+	if (!keyname) {
+		tdb_traverse(tdb, traverse_fn, NULL);
+	} else {
+		key.dptr = discard_const_p(uint8_t,keyname);
+		key.dsize = strlen( keyname);
+		value = tdb_fetch(tdb, key);
+		if (!value.dptr) {
+			return 1;
+		} else {
+			print_data(value);
+			free(value.dptr);
+		}
+	}
+
 	return 0;
+}
+
+static void usage( void)
+{
+	printf( "Usage: tdbdump [options] <filename>\n\n");
+	printf( "   -h          this help message\n");
+	printf( "   -k keyname  dumps value of keyname\n");
 }
 
  int main(int argc, char *argv[])
 {
-	char *fname;
+	char *fname, *keyname=NULL;
+	int c;
 
 	if (argc < 2) {
 		printf("Usage: tdbdump <fname>\n");
 		exit(1);
 	}
 
-	fname = argv[1];
+	while ((c = getopt( argc, argv, "hk:")) != -1) {
+		switch (c) {
+		case 'h':
+			usage();
+			exit( 0);
+		case 'k':
+			keyname = optarg;
+			break;
+		default:
+			usage();
+			exit( 1);
+		}
+	}
 
-	return dump_tdb(fname);
+	fname = argv[optind];
+
+	return dump_tdb(fname, keyname);
 }

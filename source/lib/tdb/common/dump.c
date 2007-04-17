@@ -28,7 +28,8 @@
 
 #include "tdb_private.h"
 
-static tdb_off_t tdb_dump_record(struct tdb_context *tdb, tdb_off_t offset)
+static tdb_off_t tdb_dump_record(struct tdb_context *tdb, int hash,
+				 tdb_off_t offset)
 {
 	struct list_struct rec;
 	tdb_off_t tailer_ofs, tailer;
@@ -39,8 +40,10 @@ static tdb_off_t tdb_dump_record(struct tdb_context *tdb, tdb_off_t offset)
 		return 0;
 	}
 
-	printf(" rec: offset=0x%08x next=0x%08x rec_len=%d key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
-	       offset, rec.next, rec.rec_len, rec.key_len, rec.data_len, rec.full_hash, rec.magic);
+	printf(" rec: hash=%d offset=0x%08x next=0x%08x rec_len=%d "
+	       "key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
+	       hash, offset, rec.next, rec.rec_len, rec.key_len, rec.data_len,
+	       rec.full_hash, rec.magic);
 
 	tailer_ofs = offset + sizeof(rec) + rec.rec_len - sizeof(tdb_off_t);
 
@@ -72,7 +75,7 @@ static int tdb_dump_chain(struct tdb_context *tdb, int i)
 		printf("hash=%d\n", i);
 
 	while (rec_ptr) {
-		rec_ptr = tdb_dump_record(tdb, rec_ptr);
+		rec_ptr = tdb_dump_record(tdb, i, rec_ptr);
 	}
 
 	return tdb_unlock(tdb, i, F_WRLCK);
