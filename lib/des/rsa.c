@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -110,6 +110,7 @@ RSA_free(RSA *rsa)
     free_if(rsa->q);
     free_if(rsa->dmp1);
     free_if(rsa->dmq1);
+    free_if(rsa->iqmp);
 #undef free_if
 
     memset(rsa, 0, sizeof(*rsa));
