@@ -73,9 +73,12 @@
 #define HAVE_INNETGR
 #endif
 
-#ifdef SOCKET_WRAPPER
-#define SOCKET_WRAPPER_REPLACE SOCKET_WRAPPER
-#endif
-
+/*
+ * we don't want that roken.h.in includes socket_wrapper
+ * we include socket_wrapper via "system/network.h"
+ */
+#undef SOCKET_WRAPPER_REPLACE
 #include "heimdal/lib/roken/roken.h.in"
+#include "system/network.h"
+
 #endif
