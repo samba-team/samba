@@ -89,7 +89,7 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 /*XXX cant use this since it returns an int	CTDB_NO_MEMORY(ctdb, r);*/
 	talloc_set_name_const(r, "req_message packet");
 
-	ZERO_STRUCT(*r);
+	memset(r, 0, offsetof(struct ctdb_req_message, data));
 
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
@@ -171,7 +171,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 		printf("Failed to allocate reply_call in ctdb daemon\n");
 		return;
 	}
-	ZERO_STRUCT(*r);
+	memset(r, 0, offsetof(struct ctdb_reply_fetch_lock, data));
 	r->hdr.length       = length;
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
@@ -347,7 +347,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		printf("Failed to allocate reply_call in ctdb daemon\n");
 		return;
 	}
-	ZERO_STRUCT(*r);
+	memset(r, 0, offsetof(struct ctdb_reply_call, data));
 	r->hdr.length       = length;
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
