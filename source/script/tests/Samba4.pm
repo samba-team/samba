@@ -79,8 +79,8 @@ sub check_or_start($$$)
 		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
 		
-		SocketWrapper::set_default_iface(1);
-		
+		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+
 		# Start slapd before smbd, but with the fifo on stdin
 		if (defined($self->{ldap})) {
 		    $self->slapd_start($env_vars) or 
@@ -392,7 +392,7 @@ moduleload	syncprov
 
 sub provision($$$$$)
 {
-	my ($self, $prefix, $server_role, $domain, $netbiosname) = @_;
+	my ($self, $prefix, $server_role, $domain, $netbiosname, $swiface) = @_;
 
 	my $smbd_loglevel = 1;
 	my $username = "administrator";
@@ -412,13 +412,16 @@ sub provision($$$$$)
 	my $krb5_config = "$etcdir/krb5.conf";
 	my $privatedir = "$prefix_abs/private";
 	my $ncalrpcdir = "$prefix_abs/ncalrpc";
-	my $lockdir= "$prefix_abs/lockdir";
-
+	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
+
 	my $configuration = "--configfile=$conffile";
 	my $ldapdir = "$prefix_abs/ldap";
 
 	my $tlsdir = "$privatedir/tls";
+
+	my $ifaceipv4 = "127.0.0.$swiface";
+	my $interfaces = "$ifaceipv4/8";
 
 	(system("rm -rf $prefix/*") == 0) or die("Unable to clean up");
 	mkdir($_) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
@@ -439,7 +442,7 @@ sub provision($$$$$)
 	js include = $srcdir/scripting/libjs
 	winbindd socket directory = $winbindd_socket_dir
 	name resolve order = bcast
-	interfaces = 127.0.0.1/8
+	interfaces = $interfaces
 	tls dh params file = $tlsdir/dhparms.pem
 	panic action = $srcdir/script/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
@@ -533,7 +536,7 @@ sub provision($$$$$)
 
 	my @provision_options = ($configuration);
 	push (@provision_options, "--host-name=$netbiosname");
-	push (@provision_options, "--host-ip=127.0.0.1");
+	push (@provision_options, "--host-ip=$ifaceipv4");
 	push (@provision_options, "--quiet");
 	push (@provision_options, "--domain $domain");
 	push (@provision_options, "--realm $realm");
@@ -562,7 +565,8 @@ sub provision($$$$$)
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
 		NCALRPCDIR => $ncalrpcdir,
-		CONFIGURATION => $configuration
+		CONFIGURATION => $configuration,
+		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface
 	};
 
 	if (not defined($self->{ldap})) {
@@ -584,7 +588,7 @@ sub provision_member($$$)
 	print "PROVISIONING MEMBER...";
 
 	my $ret = $self->provision($prefix, "member server", "SAMBADOMAIN", 
-		"localmember");
+		"localmember", 3);
 
 	$ret or die("Unable to provision");
 
@@ -601,7 +605,7 @@ sub provision_dc($$)
 
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix, "domain controller", "SAMBADOMAIN", 
-		"localtest");
+		"localtest", 1);
 
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
