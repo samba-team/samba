@@ -266,23 +266,27 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 	
-	/* fetch the current record */
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
-	if (ret != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
-		return;
-	}
+	/* if the new dmaster and the lmaster are the same node, then
+	   we don't need to update the record header now */
+	if (c->dmaster != ctdb->vnn) {
+		/* fetch the current record */
+		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
+		if (ret != 0) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+			return;
+		}
+		
+		/* its a protocol error if the sending node is not the current dmaster */
+		if (header.dmaster != hdr->srcnode) {
+			ctdb_fatal(ctdb, "dmaster request from non-master");
+			return;
+		}
 
-	/* its a protocol error if the sending node is not the current dmaster */
-	if (header.dmaster != hdr->srcnode) {
-		ctdb_fatal(ctdb, "dmaster request from non-master");
-		return;
-	}
-
-	header.dmaster = c->dmaster;
-	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
-		return;
+		header.dmaster = c->dmaster;
+		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+			return;
+		}
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
