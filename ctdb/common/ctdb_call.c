@@ -436,7 +436,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state->call.reply_data.dsize = c->datalen;
 	state->call.status = c->status;
 
-	talloc_steal(state, c);
+	talloc_steal(c, state);
 
 	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
 	   from freeing the data */
@@ -477,7 +477,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dptr = c->data;
 	data.dsize = c->datalen;
 
-	talloc_steal(state, c);
+	talloc_steal(c, state);
 
 	/* we're now the dmaster - update our local ltdb with new header
 	   and data */
@@ -514,7 +514,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	talloc_steal(state, c);
+	talloc_steal(c, state);
 
 	state->state  = CTDB_CALL_ERROR;
 	state->errmsg = (char *)c->msg;
@@ -544,7 +544,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	talloc_steal(state, c);
+	talloc_steal(c, state);
 	
 	/* don't allow for too many redirects */
 	if (state->redirect_count++ == CTDB_MAX_REDIRECT) {
