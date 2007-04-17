@@ -763,6 +763,8 @@ check_trailing_nul(void)
 	{ 1, (const unsigned char *)"foo\x00o", 5, NULL, 0 },
 	{ 1, (const unsigned char *)"\x00o", 2, NULL, 0 },
 	{ 0, (const unsigned char *)"\x00\x00\x00\x00\x00", 5, "", 5 },
+	{ 0, (const unsigned char *)"\x00", 1, "", 1 },
+	{ 0, (const unsigned char *)"", 0, "", 0 },
 	{ 0, (const unsigned char *)"foo\x00\x00", 5, "foo", 5 },
 	{ 0, (const unsigned char *)"foo\0", 4, "foo", 4 },
 	{ 0, (const unsigned char *)"foo", 3, "foo", 3 }
