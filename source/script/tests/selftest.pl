@@ -130,7 +130,7 @@ my $opt_expected_failures = undef;
 my $opt_skip = undef;
 my $opt_verbose = 0;
 my $opt_testenv = 0;
-my $opt_ldap = undef;
+my $ldap = undef;
 my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 
@@ -308,7 +308,7 @@ Target Specific:
  --socket-wrapper-pcap=FILE save traffic to pcap file
  --socket-wrapper           enable socket wrapper
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
- --ldap                     run against ldap
+ --ldap=openldap|fedora     back smbd onto specified ldap server
 
 Behaviour:
  --quick                    run quick overall test
@@ -335,7 +335,7 @@ my $result = GetOptions (
 		'builddir=s' => \$builddir,
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
-		'ldap' => \$opt_ldap,
+		'ldap:s' => \$ldap,
 		'analyse-cmd=s' => \$opt_analyse_cmd,
 		'resetup-environment' => \$opt_resetup_env,
 	    );
@@ -353,12 +353,14 @@ unless (defined($ENV{VALGRIND})) {
 }
 
 my $old_pwd = "$RealBin/../..";
-my $ldap = 0;
-if (defined($ENV{TEST_LDAP})) {
-	$ldap = ($ENV{TEST_LDAP} eq "yes");
-}
-if (defined($opt_ldap)) {
-	$ldap = $opt_ldap;
+
+# Backwards compatibility:
+if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
+	if (defined($ENV{FEDORA_DS_PREFIX})) {
+		$ldap = "fedora";
+	} else {
+		$ldap = "openldap";
+	}
 }
 
 my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
@@ -573,6 +575,7 @@ sub setup_env($)
 sub teardown_env($)
 {
 	my ($envname) = @_;
+	return if ($envname eq "none");
 	$target->teardown_env($running_envs{$envname});
 	delete $running_envs{$envname};
 }
