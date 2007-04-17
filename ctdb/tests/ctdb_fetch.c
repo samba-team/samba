@@ -63,8 +63,8 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	int dest, ret;
 	struct ctdb_record_handle *h;
 
-	key.dptr = discard_const("testkey");
-	key.dsize = strlen((const char *)key.dptr);
+	key.dptr = discard_const(TESTKEY);
+	key.dsize = strlen(TESTKEY);
 
 	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
 
