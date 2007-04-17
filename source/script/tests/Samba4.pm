@@ -167,6 +167,8 @@ sub mk_fedora($$$$$$)
 {
 	my ($self, $ldapdir, $basedn, $root, $password, $privatedir, $configuration) = @_;
 
+	mkdir($ldapdir);
+
 	my $fedora_ds_inf = "$ldapdir/fedorads.inf";
 	my $fedora_ds_initial_ldif = "$ldapdir/fedorads-initial.ldif";
 
@@ -206,8 +208,8 @@ start_server= 0
 ";
 	close(CONF);
 
-	open(CONF, ">$fedora_ds_initial_ldif");
-	print "
+	open(LDIF, ">$fedora_ds_initial_ldif");
+	print LDIF "
 # These entries need to be added to get the container for the 
 # provision to be aimed at.
 
@@ -224,7 +226,7 @@ objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: $basedn
 ";
-	close(CONF);
+	close(LDIF);
 
 	system("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf >&2") == 0 or return 0;
 
@@ -248,7 +250,7 @@ nsslapd-pluginVersion: 1.1.0a3
 nsslapd-pluginVendor: Fedora Project
 nsslapd-pluginDescription: Allow bitwise matching rules
 ";
-	close(CONF);
+	close(LDIF);
 
 	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2");
 
