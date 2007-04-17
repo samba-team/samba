@@ -137,7 +137,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 
 struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_credentials_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_credentials_callback },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN\\]USERNAME[%PASSWORD]" },
 	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, True, "Don't ask for a password" },
 	{ "password", 0, POPT_ARG_STRING, NULL, OPT_PASSWORD, "Password" },
