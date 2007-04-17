@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
 

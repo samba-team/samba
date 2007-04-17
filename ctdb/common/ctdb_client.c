@@ -57,6 +57,7 @@ struct ctdb_fetch_lock_state {
 	enum fetch_lock_state state;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_reply_fetch_lock *r;
+	struct ctdb_req_fetch_lock *req;
 	struct ctdb_ltdb_header header;
 };
 
@@ -75,6 +76,11 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
+
+	if (!talloc_get_type(state, struct ctdb_fetch_lock_state)) {
+		DEBUG(0, ("ctdb idr type error at %s\n", __location__));
+		return;
+	}
 
 	state->r = talloc_steal(state, r);
 
@@ -133,7 +139,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		break;
 
 	default:
-		printf("bogus operation code:%d\n",hdr->operation);
+		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
 	}
 }
 
@@ -260,7 +266,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	if (state == NULL) {
-		printf("failed to allocate state\n");
+		DEBUG(0, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
 
@@ -269,7 +275,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	state->c = ctdbd_allocate_pkt(ctdb, len);
 	if (state->c == NULL) {
-		printf("failed to allocate packet\n");
+		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	talloc_set_name_const(state->c, "ctdbd req_call packet");
@@ -408,16 +414,26 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
+
+	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {
-		printf("Failed to queue a connect wait request\n");
+		DEBUG(0,(__location__ " Failed to queue a connect wait request\n"));
 		return;
 	}
+
+	DEBUG(3,("ctdb_connect_wait: waiting\n"));
 
 	/* now we can go into the normal wait routine, as the reply packet
 	   will update the ctdb->num_connected variable */
 	ctdb_daemon_connect_wait(ctdb);
+}
+
+static int ctdb_fetch_lock_destructor(struct ctdb_fetch_lock_state *state)
+{
+	idr_remove(state->ctdb_db->ctdb->idr, state->req->hdr.reqid);
+	return 0;
 }
 
 static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
@@ -437,15 +453,15 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 
 	state = talloc_zero(ctdb_db, struct ctdb_fetch_lock_state);
 	if (state == NULL) {
-		printf("failed to allocate state\n");
+		DEBUG(0, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
 	state->state   = CTDB_FETCH_LOCK_WAIT;
 	state->ctdb_db = ctdb_db;
 	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
-	req = ctdbd_allocate_pkt(ctdb, len);
+	state->req = req = ctdbd_allocate_pkt(ctdb, len);
 	if (req == NULL) {
-		printf("failed to allocate packet\n");
+		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	ZERO_STRUCT(*req);
@@ -461,6 +477,8 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	req->keylen          = key.dsize;
 	req->header          = *header;
 	memcpy(&req->key[0], key.dptr, key.dsize);
+
+	talloc_set_destructor(state, ctdb_fetch_lock_destructor);
 	
 	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
 	if (res != 0) {
@@ -542,13 +560,18 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 	h->data    = data;
 
+	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", key.dsize, key.dsize, 
+		 (const char *)key.dptr));
+
 	/* step 1 - get the chain lock */
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
-		printf("failed to lock ltdb record\n");
+		DEBUG(0, (__location__ " failed to lock ltdb record\n"));
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: got chain lock\n"));
 
 	talloc_set_destructor(h, fetch_lock_destructor);
 
@@ -558,28 +581,37 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 		return NULL;
 	}
 
+	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
+
 	/* step 2 - check if we are the dmaster */
 	if (h->header.dmaster == ctdb_db->ctdb->vnn) {
+		DEBUG(4,("ctdb_fetch_lock: we are dmaster - done\n"));
 		return h;
 	}
 
 	/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
 	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key, &h->header);
+	DEBUG(4,("ctdb_fetch_lock: done fetch_lock_send\n"));
 	ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, &h->header, data);
 	if (ret != 0) {
+		DEBUG(4,("ctdb_fetch_lock: fetch_lock_recv failed\n"));
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: record is now local\n"));
 
 	/* the record is now local, and locked. update the record on disk
 	   to mark us as the dmaster*/
 	h->header.dmaster = ctdb_db->ctdb->vnn;
 	ret = ctdb_ltdb_store(ctdb_db, key, &h->header, *data);
 	if (ret != 0) {
-		printf("bugger - we're in real trouble now! can't update record to mark us as dmasterx\n");
+		DEBUG(0, (__location__" can't update record to mark us as dmaster\n"));
 		talloc_free(h);
 		return NULL;
 	}
+
+	DEBUG(4,("ctdb_fetch_lock: done\n"));
 
 	/* give the caller a handle to be used for ctdb_record_store() or a cancel via
 	   a talloc_free() */

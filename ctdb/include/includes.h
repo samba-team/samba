@@ -12,7 +12,7 @@ typedef bool BOOL;
 #define True 1
 #define False 0
 
-#define LogLevel 0
+extern int LogLevel;
 
 #define DEBUG(lvl, x) if ((lvl) <= LogLevel) (printf x)
 

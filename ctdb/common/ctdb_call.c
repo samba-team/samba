@@ -276,7 +276,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 			return;
 		}
 		if (ret == -2) {
-			printf("deferring ctdb_request_dmaster\n");
+			DEBUG(2,(__location__ " deferring ctdb_request_dmaster\n"));
 			return;
 		}
 		
@@ -357,7 +357,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 	if (ret == -2) {
-		printf("deferred ctdb_request_call\n");
+		DEBUG(2,(__location__ " deferred ctdb_request_call\n"));
 		return;
 	}
 
@@ -424,6 +424,11 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
 
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		DEBUG(0,("ctdb idr type error at %s\n", __location__));
+		return;
+	}
+
 	state->call.reply_data.dptr = c->data;
 	state->call.reply_data.dsize = c->datalen;
 	state->call.status = c->status;
@@ -458,6 +463,12 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (state == NULL) {
 		return;
 	}
+
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		DEBUG(0,("ctdb idr type error at %s\n", __location__));
+		return;
+	}
+
 	ctdb_db = state->ctdb_db;
 
 	data.dptr = c->data;
@@ -495,6 +506,11 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
 
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		DEBUG(0,("ctdb idr type error at %s\n", __location__));
+		return;
+	}
+
 	talloc_steal(state, c);
 
 	state->state  = CTDB_CALL_ERROR;
@@ -519,6 +535,11 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = idr_find(ctdb->idr, hdr->reqid);
 	if (state == NULL) return;
+
+	if (!talloc_get_type(state, struct ctdb_call_state)) {
+		DEBUG(0,("ctdb idr type error at %s\n", __location__));
+		return;
+	}
 
 	talloc_steal(state, c);
 	

@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 #include <sys/time.h>
 #include <time.h>
