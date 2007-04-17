@@ -426,7 +426,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
 					
-					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse: %s\n", 
+					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse contents: %s\n", 
 						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 					talloc_free(spnego_state->sub_sec_security);
 					spnego_state->sub_sec_security = NULL;
