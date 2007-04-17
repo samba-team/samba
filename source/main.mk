@@ -1,5 +1,4 @@
-all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules
-everything: all libraries
+default: all
 
 include dynconfig.mk
 include heimdal_build/config.mk
@@ -42,7 +41,8 @@ libraries: $(STATIC_LIBS) $(SHARED_LIBS)
 modules: $(SHARED_MODULES)
 headers: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages: $(MANPAGES)
-everything: all
+all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules
+everything: all libraries
 
 showlayout: 
 	@echo 'Samba will be installed into:'
