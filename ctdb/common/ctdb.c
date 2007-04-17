@@ -215,8 +215,9 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		return;
 	}
 
-	DEBUG(3,(__location__ " ctdb request of type %d length %d from node %d to %d\n",
-		 hdr->operation, hdr->length, hdr->srcnode, hdr->destnode));
+	DEBUG(3,(__location__ " ctdb request %d of type %d length %d from "
+		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+		 hdr->srcnode, hdr->destnode));
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
