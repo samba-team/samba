@@ -238,50 +238,8 @@ void fetch_lock(int fd, uint32_t db_id, TDB_DATA key)
 
 void store_unlock(int fd, uint32_t db_id, TDB_DATA key, TDB_DATA data)
 {
-	struct ctdb_req_store_unlock *req;
-	struct ctdb_reply_store_unlock *rep;
-	uint32_t length;
-	int len, cnt, tot;
-
-	len = offsetof(struct ctdb_req_store_unlock, data) + key.dsize + data.dsize;
-	req = malloc(len);
-
-	req->hdr.length      = len;
-	req->hdr.ctdb_magic  = CTDB_MAGIC;
-	req->hdr.ctdb_version = CTDB_VERSION;
-	req->hdr.operation   = CTDB_REQ_STORE_UNLOCK;
-	req->hdr.reqid       = 1;
-	req->db_id           = db_id;
-	req->keylen          = key.dsize;
-	req->datalen         = data.dsize;
-	memcpy(&req->data[0], key.dptr, key.dsize);
-	memcpy(&req->data[key.dsize], data.dptr, data.dsize);
-
-	cnt=write(fd, req, len);
-
-
-	/* wait fot the reply */
-	/* read the 4 bytes of length for the pdu */
-	cnt=0;
-	tot=4;
-	while(cnt!=tot){
-		int numread;
-		numread=read(fd, ((char *)&length)+cnt, tot-cnt);
-		if(numread>0){
-			cnt+=numread;
-		}
-	}
-	/* read the rest of the pdu */
-	rep = malloc(length);
-	tot=length;
-	while(cnt!=tot){
-		int numread;
-		numread=read(fd, ((char *)rep)+cnt, tot-cnt);
-		if(numread>0){
-			cnt+=numread;
-		}
-	}
-	printf("store unlock reply: state:%d\n",rep->state);
+/*XXX write the tdb record and drop the chainlock*/
+	printf("store_unlock example not implemented\n");
 }
 
 int main(int argc, const char *argv[])

@@ -88,7 +88,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 						      msg_count, ctdb_get_vnn(ctdb));
 	data.dsize = strlen((const char *)data.dptr)+1;
 
-	ret = ctdb_store_unlock(rec, data);
+	ret = ctdb_client_store_unlock(rec, data);
 	if (ret != 0) {
 		printf("Failed to store record\n");
 	}

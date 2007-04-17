@@ -59,7 +59,7 @@ void test1(struct ctdb_db_context *ctdb_db)
 
 	store_data.dptr  = discard_const("data to store");
 	store_data.dsize = strlen((const char *)store_data.dptr)+1;
-	ret = ctdb_store_unlock(rh, store_data);
+	ret = ctdb_client_store_unlock(rh, store_data);
 
 	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
 	/* hopefully   data2 will now contain the record written above */
@@ -71,7 +71,7 @@ void test1(struct ctdb_db_context *ctdb_db)
 	}
 	
 	/* just write it back to unlock it */
-	ret = ctdb_store_unlock(rh, store_data);
+	ret = ctdb_client_store_unlock(rh, store_data);
 }
 
 void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)

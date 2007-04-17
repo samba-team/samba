@@ -218,8 +218,6 @@ enum ctdb_operation {
 	CTDB_REPLY_CONNECT_WAIT = 1002,
 	CTDB_REQ_FETCH_LOCK     = 1003,
 	CTDB_REPLY_FETCH_LOCK   = 1004,
-	CTDB_REQ_STORE_UNLOCK   = 1005,
-	CTDB_REPLY_STORE_UNLOCK = 1006
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -316,18 +314,6 @@ struct ctdb_reply_fetch_lock {
 	uint32_t state;
 	uint32_t datalen;
 	uint8_t data[1]; /* data[] */
-};
-struct ctdb_req_store_unlock {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-	uint32_t keylen;	
-	uint32_t datalen;
-	uint8_t data[1]; /* key[] and data[] */
-};
-
-struct ctdb_reply_store_unlock {
-	struct ctdb_req_header hdr;
-	uint32_t state;
 };
 
 /* internal prototypes */
@@ -447,11 +433,6 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
 struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
 						  TALLOC_CTX *mem_ctx, 
 						  TDB_DATA key, TDB_DATA *data);
-
-/*
-  do a store unlock from a client to the local daemon
-*/
-int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
 
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,

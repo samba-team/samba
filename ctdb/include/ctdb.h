@@ -172,19 +172,15 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 
 
 /* 
-   fetch and lock a ctdb record. Underneath this will force the
+   Fetch a ctdb record from a remote node
+ . Underneath this will force the
    dmaster for the record to be moved to the local node. 
 
-   The lock is released when is talloc_free() is called on the
-   returned ctdb_record_handle. 
 */
 struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
 
-/*
-  change the data in a record held with a ctdb_record_handle
-  if the new data is zero length, this implies a delete of the record
- */
-int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
@@ -193,5 +189,6 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  void *private_data);
 
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
+
 
 #endif

@@ -782,27 +782,3 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 }
 
 
-int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data)
-{
-	int ret;
-	struct ctdb_ltdb_header header;
-	struct ctdb_db_context *ctdb_db = talloc_get_type(rec->ctdb_db, struct ctdb_db_context);
-
-	if (ctdb_db->ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_store_unlock(rec, data);
-	}
-
-	/* should be avoided if possible    hang header off rec ? */
-	ret = ctdb_ltdb_fetch(rec->ctdb_db, rec->key, &header, NULL, NULL);
-	if (ret) {
-		ctdb_set_error(rec->ctdb_db->ctdb, "Fetch of locally held record failed");
-		talloc_free(rec);
-		return ret;
-	}
-
-	ret = ctdb_ltdb_store(rec->ctdb_db, rec->key, &header, data);
-		
-	talloc_free(rec);
-
-	return ret;
-}
