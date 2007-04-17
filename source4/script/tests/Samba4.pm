@@ -181,15 +181,15 @@ sub mk_fedora($$$$$$)
 	print CONF "
 [General]
 SuiteSpotUserID = $root
-fullMachineName=   localhost
+FullMachineName=   localhost
 ServerRoot=   $ldapdir
 
 [slapd]
 ldapifilepath=$ldapdir/ldapi
 Suffix= $basedn
-rootDN= cn=Manager,$basedn
-rootDNPwd= $password
-serverIdentifier= samba4
+RootDN= cn=Manager,$basedn
+RootDNPwd= $password
+ServerIdentifier= samba4
 InstallLdifFile=$fedora_ds_initial_ldif
 
 inst_dir= $fedora_ds_dir
