@@ -635,7 +635,6 @@ typedef int BOOL;
 #include "dlinklist.h"
 #include "tdb.h"
 #include "util_tdb.h"
-#include "tdbback.h"
 
 #include "lib/talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
