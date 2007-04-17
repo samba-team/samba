@@ -95,6 +95,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(ctdb, "Bad packet length %d in client\n", cnt);
+		exit(1);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;

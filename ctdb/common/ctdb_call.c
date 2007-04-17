@@ -270,9 +270,13 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	   we don't need to update the record header now */
 	if (c->dmaster != ctdb->vnn) {
 		/* fetch the current record */
-		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, hdr, &data2);
-		if (ret != 0) {
+		ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2);
+		if (ret == -1) {
 			ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+			return;
+		}
+		if (ret == -2) {
+			printf("deferring ctdb_request_dmaster\n");
 			return;
 		}
 		
@@ -283,7 +287,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		}
 
 		header.dmaster = c->dmaster;
-		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
+		ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+		ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
 			ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
 			return;
 		}
@@ -345,9 +351,13 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_fetch(ctdb_db, call.key, &header, hdr, &data);
-	if (ret != 0) {
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data);
+	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
+		return;
+	}
+	if (ret == -2) {
+		printf("deferred ctdb_request_call\n");
 		return;
 	}
 
@@ -356,6 +366,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (header.dmaster != ctdb->vnn) {
 		ctdb_call_send_redirect(ctdb, c, &header);
 		talloc_free(data.dptr);
+		ctdb_ltdb_unlock(ctdb_db, call.key);
 		return;
 	}
 
@@ -368,10 +379,13 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   || c->flags&CTDB_IMMEDIATE_MIGRATION ) {
 		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
 		talloc_free(data.dptr);
+		ctdb_ltdb_unlock(ctdb_db, call.key);
 		return;
 	}
 
 	ctdb_call_local(ctdb_db, &call, &header, &data, c->hdr.srcnode);
+
+	ctdb_ltdb_unlock(ctdb_db, call.key);
 
 	len = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
@@ -515,6 +529,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	/* send it off again */
 	state->node = ctdb->nodes[c->dmaster];
+	state->c->hdr.destnode = c->dmaster;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 }
