@@ -89,6 +89,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	data.dsize = strlen((const char *)data.dptr)+1;
 
 	ret = ctdb_record_store(h, data);
+	talloc_free(h);
 	if (ret != 0) {
 		printf("Failed to store record\n");
 	}
