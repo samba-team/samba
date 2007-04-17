@@ -234,7 +234,7 @@ nsslapd-suffix: $basedn
 		unlink unless (/00core.*/);
 	}
 
-	open(LDIF, ">$fedora_ds_dir/dse.ldif");
+	open(LDIF, ">>$fedora_ds_dir/dse.ldif");
 	print LDIF "
 dn: cn=bitwise,cn=plugins,cn=config
 objectClass: top
