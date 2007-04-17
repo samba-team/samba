@@ -75,10 +75,15 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 	struct ctdb_fetch_lock_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
+	if (state == NULL) {
+		DEBUG(0, ("reqid %d not found at %s\n", hdr->reqid,
+			  __location__));
+		return;
+	}
 
 	if (!talloc_get_type(state, struct ctdb_fetch_lock_state)) {
-		DEBUG(0, ("ctdb idr type error at %s\n", __location__));
+		DEBUG(0, ("ctdb idr type error at %s, it's a %s\n",
+			  __location__, talloc_get_name(state)));
 		return;
 	}
 
@@ -575,7 +580,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 
 	talloc_set_destructor(h, fetch_lock_destructor);
 
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, ctdb_db, data);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, h, data);
 	if (ret != 0) {
 		talloc_free(h);
 		return NULL;

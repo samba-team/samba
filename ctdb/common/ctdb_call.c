@@ -422,7 +422,10 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
+	if (state == NULL) {
+		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		return;
+	}
 
 	if (!talloc_get_type(state, struct ctdb_call_state)) {
 		DEBUG(0,("ctdb idr type error at %s\n", __location__));
@@ -707,7 +710,10 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 	if (ret != 0) return NULL;
 
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		return ctdb_call_local_send(ctdb_db, call, &header, &data);
+		struct ctdb_call_state *result;
+		result = ctdb_call_local_send(ctdb_db, call, &header, &data);
+		talloc_free(data.dptr);
+		return result;
 	}
 
 	talloc_free(data.dptr);
