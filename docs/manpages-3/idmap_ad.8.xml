@@ -42,8 +42,8 @@
 		<varlistentry>
 		<term>schema_mode = &lt;rfc2307 | sfu &gt;</term>
 		<listitem><para>
-			Defines the schema the idmap_ad should use when querying 
-			Active Directory regharding user and group information.
+			Defines the schema that idmap_ad should use when querying 
+			Active Directory regarding user and group information.
 			This can either the RFC2307 schema support included
 			in Windows 2003 R2 or the Service for Unix (SFU) schema.
 		</para></listitem>
