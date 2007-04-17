@@ -6,6 +6,7 @@
 package Samba4;
 
 use strict;
+use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 
@@ -403,8 +404,7 @@ sub provision($$$$$)
 	my $server = "localhost";
 	my $srcdir="$RealBin/../..";
 	-d $prefix or mkdir($prefix) or die("Unable to create $prefix");
-	my $prefix_abs = getcwd()."/".$prefix;
-
+	my $prefix_abs = abs_path($prefix);
 	my $tmpdir = "$prefix_abs/tmp";
 	my $etcdir = "$prefix_abs/etc";
 	my $piddir = "$prefix_abs/pid";
