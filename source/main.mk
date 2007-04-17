@@ -42,7 +42,7 @@ modules: $(SHARED_MODULES)
 headers: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages: $(MANPAGES)
 all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules
-everything: all libraries
+everything: all libraries headers
 
 showlayout: 
 	@echo 'Samba will be installed into:'
@@ -87,7 +87,7 @@ showflags:
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install: showlayout installbin installdat installwebapps installmisc installlib \
+install: showlayout everything installbin installdat installwebapps installmisc installlib \
 	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
