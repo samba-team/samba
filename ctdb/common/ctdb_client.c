@@ -93,19 +93,6 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 }
 
 /*
-  called in the client when we receive a CTDB_REPLY_SHUTDOWN from the daemon
-
-  This packet comes in response to a CTDB_REQ_SHUTDOWN request packet. It
-  contains any reply data from the call
-*/
-void ctdb_reply_shutdown(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	talloc_free(ctdb);
-
-	exit(10);
-}
-
-/*
   this is called in the client, when data comes in from the daemon
  */
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -121,9 +108,13 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	tmp_ctx = talloc_new(ctdb);
 	talloc_steal(tmp_ctx, hdr);
 
+	if (cnt == 0) {
+		DEBUG(2,("Daemon has exited - shutting down client\n"));
+		exit(0);
+	}
+
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(ctdb, "Bad packet length %d in client\n", cnt);
-		exit(1); /* XXX - temporary for debugging */
+		DEBUG(0,("Bad packet length %d in client\n", cnt));
 		goto done;
 	}
 	if (cnt != hdr->length) {
@@ -157,10 +148,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_FETCH_LOCK:
 		ctdb_reply_fetch_lock(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_SHUTDOWN:
-		ctdb_reply_shutdown(ctdb, hdr);
 		break;
 
 	default:
