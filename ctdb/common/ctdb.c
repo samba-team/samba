@@ -192,31 +192,39 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 */
 void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+	TALLOC_CTX *tmp_ctx;
+
+	/* place the packet as a child of the tmp_ctx. We then use
+	   talloc_free() below to free it. If any of the calls want
+	   to keep it, then they will steal it somewhere else, and the
+	   talloc_free() will only free the tmp_ctx */
+	tmp_ctx = talloc_new(ctdb);
+	talloc_steal(tmp_ctx, hdr);
 
 	if (length < sizeof(*hdr)) {
 		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
-		return;
+		goto done;
 	}
-	hdr = (struct ctdb_req_header *)data;
 	if (length != hdr->length) {
 		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
 			       hdr->length, length);
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
 		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		return;
+		goto done;
 	}
 
-	DEBUG(3,(__location__ " ctdb request of type %d length %d from node %d to %d\n",
-		 hdr->operation, hdr->length, hdr->srcnode, hdr->destnode));
+	DEBUG(3,(__location__ " ctdb request %d of type %d length %d from "
+		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+		 hdr->srcnode, hdr->destnode));
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
@@ -252,7 +260,9 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 			 __location__, hdr->operation));
 		break;
 	}
-	talloc_free(hdr);
+
+done:
+	talloc_free(tmp_ctx);
 }
 
 /*

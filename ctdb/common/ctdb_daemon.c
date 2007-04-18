@@ -130,10 +130,10 @@ static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_contex
 							   TDB_DATA *data)
 {
 	struct ctdb_call *call;
-	struct ctdb_record_handle *rec;
+	struct ctdb_fetch_handle *rec;
 	struct ctdb_call_state *state;
 
-	rec = talloc(mem_ctx, struct ctdb_record_handle);
+	rec = talloc(mem_ctx, struct ctdb_fetch_handle);
 	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
 
 	
@@ -150,6 +150,7 @@ static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_contex
 
 	state = ctdb_daemon_call_send_remote(ctdb_db, call, header);
 	state->fetch_private = rec;
+	talloc_steal(state, rec);
 
 	return state;
 }
@@ -187,6 +188,7 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 		DEBUG(0,(__location__ " Failed to queue packet from daemon to client\n"));
 	}
 	talloc_free(r);
+	talloc_free(state);
 }
 
 /*
@@ -370,6 +372,14 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
 {
 	struct ctdb_req_header *hdr = data;
+	TALLOC_CTX *tmp_ctx;
+
+	/* place the packet as a child of a tmp_ctx. We then use
+	   talloc_free() below to free it. If any of the calls want
+	   to keep it, then they will steal it somewhere else, and the
+	   talloc_free() will be a no-op */
+	tmp_ctx = talloc_new(client);
+	talloc_steal(tmp_ctx, hdr);
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(client->ctdb, "Non CTDB packet rejected in daemon\n");
@@ -406,7 +416,7 @@ static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_
 	}
 
 done:
-	talloc_free(data);
+	talloc_free(tmp_ctx);
 }
 
 
