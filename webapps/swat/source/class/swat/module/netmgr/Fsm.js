@@ -120,7 +120,7 @@ qx.Proto.buildFsm = function(module)
   var trans = new qx.util.fsm.Transition(
     "Transition_Idle_to_Idle_via_tree_selection_changed",
     {
-      "nextState" : "State_Idle",
+      "nextState" : "State_AwaitRpcResult",
 
       "ontransition" : function(fsm, event)
       {
