@@ -37,7 +37,7 @@ static struct {
 	.transport = "tcp",
 	.myaddress = NULL,
 	.self_connect = 0,
-	.db_dir = "."
+	.db_dir = NULL
 };
 
 

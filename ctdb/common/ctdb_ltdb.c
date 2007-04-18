@@ -82,6 +82,13 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 		}
 	}
 
+	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
+		DEBUG(0,(__location__ " Unable to create ctdb directory '%s'\n", 
+			 ctdb->db_directory));
+		talloc_free(ctdb_db);
+		return NULL;
+	}
+
 	/* add the node id to the database name, so when we run on loopback
 	   we don't conflict in the local filesystem */
 	name = talloc_asprintf(ctdb_db, "%s/%s", ctdb->db_directory, name);
@@ -89,7 +96,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	/* when we have a separate daemon this will need to be a real
 	   file, not a TDB_INTERNAL, so the parent can access it to
 	   for ltdb bypass */
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, name, 0, TDB_DEFAULT, open_flags, mode);
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, name, 0, TDB_CLEAR_IF_FIRST, open_flags, mode);
 	if (ctdb_db->ltdb == NULL) {
 		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
 		talloc_free(ctdb_db);
