@@ -124,6 +124,7 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
 
     EVP_CIPHER_CTX_cleanup(&ectx);
     EVP_CIPHER_CTX_cleanup(&dctx);
+    free(d);
 
     return 0;
 }
