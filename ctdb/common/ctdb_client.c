@@ -100,7 +100,6 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 */
 void ctdb_reply_shutdown(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	printf("daemon:%d has completed shutdown. client will now terminate\n",ctdb_get_vnn(ctdb));
 	talloc_free(ctdb);
 
 	exit(10);
@@ -689,7 +688,7 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 	r.hdr.operation    = CTDB_REQ_SHUTDOWN;
 	r.hdr.reqid        = 0;
 
-	ctdb_client_queue_pkt(ctdb, &(req.hdr));
+	ctdb_client_queue_pkt(ctdb, &(r.hdr));
 
 	/* this event loop will terminate once we receive the reply */
 	while (1) {
