@@ -162,7 +162,7 @@ mem_getkeys(hx509_context context,
 
     for (i = 0; mem->keys && mem->keys[i]; i++)
 	;
-    *keys = calloc(i, sizeof(**keys));
+    *keys = calloc(i + 1, sizeof(**keys));
     for (i = 0; mem->keys && mem->keys[i]; i++) {
 	(*keys)[i] = _hx509_private_key_ref(mem->keys[i]);
 	if ((*keys)[i] == NULL) {
