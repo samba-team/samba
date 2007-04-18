@@ -234,19 +234,64 @@ sub run_test_buildfarm($$$$)
 }
 
 my $test_output = {};
-sub run_test_plain($$$$)
+
+sub plain_start_msg($)
 {
-	my ($name, $cmd, $i, $totalsuites) = @_;
-	my $err = "";
-	if ($#$suitesfailed+1 > 0) { $err = ", ".($#$suitesfailed+1)." errors"; }
-	print "[$i/$totalsuites in " . (time() - $start)."s$err] $name\n";
+	my ($state) = @_;
+	my $out = "";
+
+	$out .= "[$state->{INDEX}/$state->{TOTAL} in " . ($state->{START} - $start) . "s";
+	$out .= ", ".($#$suitesfailed+1)." errors" if ($#$suitesfailed+1 > 0);
+	$out .= "] $state->{NAME}\n";
+
+	$test_output->{$state->{NAME}} = "" unless $opt_verbose;
+
+	print $out;
+}
+
+sub plain_output_msg($$)
+{
+	my ($state, $output) = @_;
+
+	if ($opt_verbose) {
+		print $output;
+	} else {
+		$test_output->{$state->{NAME}} .= $output;
+	}
+}
+
+sub plain_end_msg($$$)
+{
+	my ($state, $expected_ret, $ret) = @_;
+
+	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
+		print $test_output->{$state->{NAME}}."\n";
+	}
+}
+
+my $plain_msg_ops = {
+	start_msg	=> \&plain_start_msg,
+	output_msg	=> \&plain_output_msg,
+	end_msg		=> \&plain_end_msg
+};
+
+sub run_test($$$$$)
+{
+	my ($name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my $msg_state = {
+		NAME	=> $name,
+		CMD	=> $cmd,
+		INDEX	=> $i,
+		TOTAL	=> $totalsuites,
+		START	=> time()
+	};
+	$msg_ops->{start_msg}($msg_state);
+	$msg_ops->{output_msg}($msg_state, "COMMAND: $cmd\n");
 	open(RESULT, "$cmd 2>&1|");
 	my $expected_ret = 1;
 	my $open_tests = {};
-	$test_output->{$name} = "";
-	while (<RESULT>) { 
-		$test_output->{$name}.=$_;
-		print if ($opt_verbose);
+	while (<RESULT>) {
+		$msg_ops->{output_msg}($msg_state, $_);
 		if (/^test: (.+)\n/) {
 			$open_tests->{$1} = 1;
 		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
@@ -274,15 +319,12 @@ sub run_test_plain($$$$)
 			}
 		}
 	}
-	$test_output->{$name}.="COMMAND: $cmd\n";
 	foreach (keys %$open_tests) {
-		$test_output->{$name}.="$_ was started but never finished!\n";		
+		$msg_ops->{output_msg}($msg_state, "$_ was started but never finished!\n");
 		$statistics->{TESTS_ERROR}++;
 	}
 	my $ret = close(RESULT);
-	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
-		print "$test_output->{$name}\n";
-	}
+	$msg_ops->{end_msg}($msg_state, $expected_ret, $ret);
 	if ($ret != $expected_ret) {
 		push(@$suitesfailed, $name);
 		$statistics->{SUITES_FAIL}++;
@@ -647,7 +689,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 		if ($from_build_farm) {
 			$result = run_test_buildfarm($name, $cmd, $i, $suitestotal);
 		} else {
-			$result = run_test_plain($name, $cmd, $i, $suitestotal);
+			$result = run_test($name, $cmd, $i, $suitestotal, $plain_msg_ops);
 		}
 
 		if ($opt_socket_wrapper_pcap and $result and 
