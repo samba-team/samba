@@ -659,7 +659,9 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 
 		setup_env($envname);
 
-		my $pcap_file = "$pcap_dir/$name.cap";
+		my $shname = $name;
+		$shname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
+		my $pcap_file = "$pcap_dir/$shname.cap";
 
 		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
 		my $result;
