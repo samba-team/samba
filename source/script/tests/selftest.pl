@@ -124,6 +124,7 @@ my $opt_target = "samba4";
 my $opt_quick = 0;
 my $opt_socket_wrapper = 0;
 my $opt_socket_wrapper_pcap = undef;
+my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
 my $opt_immediate = 0;
 my $opt_expected_failures = undef;
@@ -133,6 +134,7 @@ my $opt_testenv = 0;
 my $ldap = undef;
 my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
+my $opt_bindir = undef;
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -227,6 +229,8 @@ sub run_test_buildfarm($$$$)
 		print "TEST FAILED: $name (status $ret)\n";
 	}
 	print "==========================================\n";
+
+	return ($ret == $expected_ret);
 }
 
 my $test_output = {};
@@ -286,6 +290,8 @@ sub run_test_plain($$$$)
 	} else {
 		$statistics->{SUITES_OK}++;
 	}
+
+	return ($ret == $expected_ret);
 }
 
 sub ShowHelp()
@@ -297,6 +303,7 @@ Usage: $Script [OPTIONS] PREFIX
 
 Generic options:
  --help                     this help page
+ --target=samba4|samba3|win Samba version to target
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -304,11 +311,17 @@ Paths:
  --builddir=DIR             output directory [.]
 
 Target Specific:
- --target=samba4|samba3|win Samba version to target
- --socket-wrapper-pcap=FILE save traffic to pcap file
+ --socket-wrapper-pcap=DIR	save traffic to pcap directories
+ --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
+                            failed
  --socket-wrapper           enable socket wrapper
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
+
+Samba4 Specific:
  --ldap=openldap|fedora     back smbd onto specified ldap server
+
+Samba3 Specific:
+ --bindir=PATH              path to binaries
 
 Behaviour:
  --quick                    run quick overall test
@@ -325,7 +338,8 @@ my $result = GetOptions (
 		'target=s' => \$opt_target,
 		'prefix=s' => \$prefix,
 		'socket-wrapper' => \$opt_socket_wrapper,
-		'socket-wrapper-pcap=s' => \$opt_socket_wrapper_pcap,
+		'socket-wrapper-pcap' => \$opt_socket_wrapper_pcap,
+		'socket-wrapper-keep-pcap' => \$opt_socket_wrapper_keep_pcap,
 		'quick' => \$opt_quick,
 		'one' => \$opt_one,
 		'immediate' => \$opt_immediate,
@@ -338,6 +352,7 @@ my $result = GetOptions (
 		'ldap:s' => \$ldap,
 		'analyse-cmd=s' => \$opt_analyse_cmd,
 		'resetup-environment' => \$opt_resetup_env,
+		'bindir:s' => \$opt_bindir,
 	    );
 
 exit(1) if (not $result);
@@ -401,8 +416,10 @@ if (defined($ENV{LD_LIBRARY_PATH})) {
 $ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
 $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 
+my $pcap_dir = "$prefix/pcap";
+
 if ($opt_socket_wrapper_pcap) {
-	SocketWrapper::setup_pcap($opt_socket_wrapper_pcap);
+	mkdir($pcap_dir);
 	# Socket wrapper pcap implies socket wrapper
 	$opt_socket_wrapper = 1;
 }
@@ -420,7 +437,11 @@ my $target;
 if ($opt_target eq "samba4") {
 	$target = new Samba4("$srcdir/bin", $ldap, "$srcdir/setup");
 } elsif ($opt_target eq "samba3") {
-	$target = new Samba3("$srcdir/bin", "$srcdir/setup");
+	if ($opt_socket_wrapper and `smbd -b | grep SOCKET_WRAPPER` eq "") {
+		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
+	}
+
+	$target = new Samba3($opt_bindir);
 } elsif ($opt_target eq "win") {
 	die("Windows tests will not run with socket wrapper enabled.") 
 		if ($opt_socket_wrapper);
@@ -619,10 +640,19 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 
 		setup_env($envname);
 
+		my $pcap_file = "$pcap_dir/$name.cap";
+
+		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
+		my $result;
 		if ($from_build_farm) {
-			run_test_buildfarm($name, $cmd, $i, $suitestotal);
+			$result = run_test_buildfarm($name, $cmd, $i, $suitestotal);
 		} else {
-			run_test_plain($name, $cmd, $i, $suitestotal);
+			$result = run_test_plain($name, $cmd, $i, $suitestotal);
+		}
+
+		if ($opt_socket_wrapper_pcap and $result and 
+			not $opt_socket_wrapper_keep_pcap) {
+			unlink($pcap_file);
 		}
 
 		if (defined($opt_analyse_cmd)) {
