@@ -161,7 +161,9 @@ sub expecting_failure($)
 {
 	my $fullname = shift;
 
-	return 1 if (grep(/^$fullname$/, @expected_failures));
+	foreach (@expected_failures) {
+		return 1 if ($fullname =~ /$_/);
+	}
 
 	return 0;
 }
@@ -317,6 +319,7 @@ sub run_test($$$$$$)
 					$statistics->{TESTS_EXPECTED_FAIL}++;
 					$expected_ret = 0;
 				} else {
+					print "n:$name/$2l\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
 				}
 			} elsif ($1 eq "skip") {
