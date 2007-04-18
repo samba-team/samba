@@ -25,10 +25,10 @@
 #include "torture/torture.h"
 
 static bool test_list_empty(struct torture_context *tctx, 
-							void *tcase_data, 
-							void *test_data)
+							const void *tcase_data, 
+							const void *test_data)
 {
-	struct share_context *ctx = tcase_data;
+	struct share_context *ctx = discard_const(tcase_data);
 	int count;
 	const char **names;
 
@@ -38,19 +38,157 @@ static bool test_list_empty(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_create(struct torture_context *tctx, 
+							const void *tcase_data, 
+							const void *test_data)
+{
+	struct share_context *ctx = discard_const(tcase_data);
+	int count;
+	const char **names;
+	int i;
+	bool found = false;
+	struct share_info inf[] = { 
+		{ SHARE_INFO_STRING, SHARE_TYPE, discard_const_p(void *, "IPC$") },
+		{ SHARE_INFO_STRING, SHARE_PATH, discard_const_p(void *, "/tmp/bla") }
+	};
+	NTSTATUS status;
+
+	status = share_create(ctx, "bloe", inf, 2);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
+		torture_skip(tctx, "Not supported by backend");
+
+	torture_assert_ntstatus_ok(tctx, status, "create_share failed");
+
+	torture_assert_ntstatus_ok(tctx, share_list_all(tctx, ctx, &count, &names),
+							   "share_list_all failed");
+
+	torture_assert(tctx, count >= 1, "creating share failed");
+
+
+	for (i = 0; i < count; i++) {
+		found |= strcmp(names[i], "bloe") == 0;
+	}
+
+	torture_assert(tctx, found, "created share found");
+
+	return true;
+}
+
+
+static bool test_create_invalid(struct torture_context *tctx, 
+							const void *tcase_data, 
+							const void *test_data)
+{
+	struct share_context *ctx = discard_const(tcase_data);
+	NTSTATUS status;
+
+	status = share_create(ctx, "bla", NULL, 0);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
+		torture_skip(tctx, "Not supported by backend");
+
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
+								  status,
+							   "create_share failed");
+
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
+								  share_create(ctx, NULL, NULL, 0),
+							   "create_share failed");
+
+	return true;
+}
+
+static bool test_share_remove_invalid(struct torture_context *tctx, 
+							const void *tcase_data, 
+							const void *test_data)
+{
+	struct share_context *ctx = discard_const(tcase_data);
+	NTSTATUS status;
+
+	status = share_remove(ctx, "nonexistant");
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
+		torture_skip(tctx, "Not supported by backend");
+
+	torture_assert_ntstatus_equal(ctx, status, NT_STATUS_UNSUCCESSFUL, 
+								  "remove fails");
+
+	return true;
+}
+
+
+
+static bool test_share_remove(struct torture_context *tctx, 
+							const void *tcase_data, 
+							const void *test_data)
+{
+	struct share_context *ctx = discard_const(tcase_data);
+	struct share_info inf[] = { 
+		{ SHARE_INFO_STRING, SHARE_TYPE, discard_const_p(void *, "IPC$") },
+		{ SHARE_INFO_STRING, SHARE_PATH, discard_const_p(void *, "/tmp/bla") }
+	};
+	NTSTATUS status;
+
+	status = share_create(ctx, "blie", inf, 2);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
+		torture_skip(tctx, "Not supported by backend");
+
+	torture_assert_ntstatus_ok(tctx, status,
+							   "create_share failed");
+
+	torture_assert_ntstatus_ok(tctx, share_remove(ctx, "blie"), 
+							   "remove failed");
+
+	return true;
+}
+
+static bool test_double_create(struct torture_context *tctx, 
+							const void *tcase_data, 
+							const void *test_data)
+{
+	struct share_context *ctx = discard_const(tcase_data);
+	struct share_info inf[] = { 
+		{ SHARE_INFO_STRING, SHARE_TYPE, discard_const_p(void *, "IPC$") },
+		{ SHARE_INFO_STRING, SHARE_PATH, discard_const_p(void *, "/tmp/bla") }
+	};
+	NTSTATUS status;
+
+	status = share_create(ctx, "bla", inf, 2);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
+		torture_skip(tctx, "Not supported by backend");
+
+	torture_assert_ntstatus_ok(tctx, status,
+							   "create_share failed");
+
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_UNSUCCESSFUL, 
+								  share_create(ctx, "bla", inf, 2),
+							   "create_share failed");
+
+	return true;
+}
+
 static void tcase_add_share_tests(struct torture_tcase *tcase)
 {
 	torture_tcase_add_test(tcase, "list_empty", test_list_empty, NULL);
+	torture_tcase_add_test(tcase, "share_create", test_create, NULL);
+	torture_tcase_add_test(tcase, "share_remove", test_share_remove, NULL);
+	torture_tcase_add_test(tcase, "share_remove_invalid", test_share_remove_invalid, NULL);
+	torture_tcase_add_test(tcase, "share_create_invalid", test_create_invalid, 
+						   NULL);
+	torture_tcase_add_test(tcase, "share_double_create", test_double_create, NULL);
 }
 
 static BOOL setup_ldb(struct torture_context *tctx, void **data)
 {
-	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "ldb", data));
+	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "ldb", (struct share_context **)data));
 }
 
 static BOOL setup_classic(struct torture_context *tctx, void **data)
 {
-	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "classic", data));
+	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "classic", (struct share_context **)data));
 }
 
 static BOOL teardown(struct torture_context *tctx, void *data)

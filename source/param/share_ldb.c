@@ -289,7 +289,7 @@ NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_i
 	NTSTATUS ret;
 	int err, i, j;
 
-	for (i = 0, j = 0; i < count || j != 0x03; i++) {
+	for (i = 0, j = 0; i < count && j != 0x03; i++) {
 		if (strcasecmp(info[i].name, SHARE_TYPE) == 0) j |= 0x02;
 		if (strcasecmp(info[i].name, SHARE_PATH) == 0) j |= 0x01;
 		if (strcasecmp(info[i].name, SHARE_NAME) == 0) {
