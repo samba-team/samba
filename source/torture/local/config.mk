@@ -32,6 +32,7 @@ OBJ_FILES = \
 		sddl.o \
 		../../lib/tdr/testsuite.o \
 		event.o \
+		share.o \
 		local.o \
 		dbspeed.o \
 		torture.o
@@ -46,7 +47,8 @@ PUBLIC_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		TORTURE_AUTH \
 		TORTURE_UTIL
-PRIVATE_DEPENDENCIES = TORTURE_NDR
+PRIVATE_DEPENDENCIES = TORTURE_NDR \
+					   share
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
