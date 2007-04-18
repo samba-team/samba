@@ -45,6 +45,7 @@
 	torture_local_sddl,
 	torture_local_ndr, 
 	torture_local_tdr, 
+	torture_local_share,
 	torture_local_charset,
 	torture_local_compression,
 	torture_local_event, 

@@ -131,17 +131,24 @@ NTSTATUS share_register(const struct share_ops *ops)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS share_get_context(TALLOC_CTX *mem_ctx, struct share_context **ctx)
+NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, 
+								   const char *backend_name,
+								   struct share_context **ctx)
 {
 	const struct share_ops *ops;
 
-	ops = share_backend_by_name(lp_share_backend());
+	ops = share_backend_by_name(backend_name);
 	if (!ops) {
 		DEBUG(0, ("share_init_connection: share backend [%s] not found!\n", lp_share_backend()));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	return ops->init(mem_ctx, ops, ctx);
+}
+
+NTSTATUS share_get_context(TALLOC_CTX *mem_ctx, struct share_context **ctx)
+{
+	return share_get_context_by_name(mem_ctx, lp_share_backend(), ctx);
 }
 
 /*
