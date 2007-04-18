@@ -174,66 +174,43 @@ sub skip($)
 	return 0;
 }
 
-sub run_test_buildfarm($$$$)
+my $test_output = {};
+
+sub buildfarm_start_msg($)
 {
-	my ($name, $cmd, $i, $suitestotal) = @_;
+	my ($state) = @_;
+
 	print "--==--==--==--==--==--==--==--==--==--==--\n";
-	print "Running test $name (level 0 stdout)\n";
+	print "Running test $state->{NAME} (level 0 stdout)\n";
 	print "--==--==--==--==--==--==--==--==--==--==--\n";
 	system("date");
+}
 
-	my $expected_ret = 1;
-	my $open_tests = {};
-	open(RESULT, "$cmd 2>&1|");
-	while (<RESULT>) { 
-		print;
-		if (/^test: (.+)\n/) {
-			$open_tests->{$1} = 1;
-		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
-			my $result = $1;
-			if ($1 eq "success") {
-				delete $open_tests->{$2};
-				if (expecting_failure("$name/$2")) {
-					$statistics->{TESTS_UNEXPECTED_OK}++;
-				} else {
-					$statistics->{TESTS_EXPECTED_OK}++;
-				}
-			} elsif ($1 eq "failure") {
-				delete $open_tests->{$2};
-				if (expecting_failure("$name/$2")) {
-					$statistics->{TESTS_EXPECTED_FAIL}++;
-					$expected_ret = 0;
-				} else {
-					$statistics->{TESTS_UNEXPECTED_FAIL}++;
-				}
-			} elsif ($1 eq "skip") {
-				delete $open_tests->{$2};
-			} elsif ($1 eq "error") {
-				$statistics->{TESTS_ERROR}++;
-				delete $open_tests->{$2};
-			}
-		}
-	}
-	print "COMMAND: $cmd\n";
-	foreach (keys %$open_tests) {
-		print "$_ was started but never finished!\n";		
-		$statistics->{TESTS_ERROR}++;
-	}
-	my $ret = close(RESULT);
+sub buildfarm_output_msg($$)
+{
+	my ($state, $output) = @_;
+
+	print $output;
+}
+
+sub buildfarm_end_msg($$$)
+{
+	my ($state, $expected_ret, $ret) = @_;
 
 	print "==========================================\n";
 	if ($ret == $expected_ret) {
-		print "TEST PASSED: $name\n";
+		print "TEST PASSED: $state->{NAME}\n";
 	} else {
-		push(@$suitesfailed, $name);
-		print "TEST FAILED: $name (status $ret)\n";
+		print "TEST FAILED: $state->{NAME} (status $ret)\n";
 	}
 	print "==========================================\n";
-
-	return ($ret == $expected_ret);
 }
 
-my $test_output = {};
+my $buildfarm_msg_ops = {
+	start_msg	=> \&buildfarm_start_msg,
+	output_msg	=> \&buildfarm_output_msg,
+	end_msg		=> \&buildfarm_end_msg
+};
 
 sub plain_start_msg($)
 {
@@ -687,7 +664,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
 		my $result;
 		if ($from_build_farm) {
-			$result = run_test_buildfarm($name, $cmd, $i, $suitestotal);
+			$result = run_test($name, $cmd, $i, $suitestotal, $buildfarm_msg_ops);
 		} else {
 			$result = run_test($name, $cmd, $i, $suitestotal, $plain_msg_ops);
 		}
