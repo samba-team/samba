@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,8 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+
+#include "test_common.h"
 
 RCSID("$Id$");
 
@@ -121,7 +123,9 @@ copy_cred(void)
 #endif
 
 static void
-acquire_cred_service(const char *service)
+acquire_cred_service(const char *service,
+		     gss_OID nametype,
+		     int flags)
 {
     OM_uint32 major_status, minor_status;
     gss_cred_id_t cred_handle;
@@ -134,7 +138,7 @@ acquire_cred_service(const char *service)
 
     major_status = gss_import_name(&minor_status,
 				   &name_buffer,
-				   GSS_C_NT_HOSTBASED_SERVICE,
+				   nametype,
 				   &name);
     if (GSS_ERROR(major_status))
 	errx(1, "import_name failed");
@@ -144,24 +148,105 @@ acquire_cred_service(const char *service)
 				    name,
 				    0,
 				    NULL,
-				    GSS_C_ACCEPT,
+				    flags,
 				    &cred_handle,
 				    NULL,
 				    &time_rec);
     if (GSS_ERROR(major_status)) {
-	warnx("acquire_cred failed");
+	warnx("acquire_cred failed: %s", 
+	     gssapi_err(major_status, minor_status, GSS_C_NO_OID));
     } else {    
 	print_time(time_rec);
 	gss_release_cred(&minor_status, &cred_handle);
     }
 
     gss_release_name(&minor_status, &name);
+
+    if (GSS_ERROR(major_status))
+	exit(1);
+}
+
+static int version_flag = 0;
+static int help_flag	= 0;
+static char *acquire_name;
+static char *acquire_type;
+static char *name_type;
+static char *ccache;
+
+static struct getargs args[] = {
+    {"acquire-name", 0,	arg_string,	&acquire_name, "name", NULL },
+    {"acquire-type", 0,	arg_string,	&acquire_type, "type", NULL },
+    {"ccache", 0,	arg_string,	&ccache, "name", NULL },
+    {"name-type", 0,	arg_string,	&name_type, "type", NULL },
+    {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args, sizeof(args)/sizeof(*args), NULL, "");
+    exit (ret);
 }
 
 int
 main(int argc, char **argv)
 {
-    acquire_cred_service(argv[1]);
+    int optidx = 0;
+    OM_uint32 flag;
+    gss_OID type;
+
+    setprogname(argv[0]);
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optidx;
+    argv += optidx;
+
+    if (argc != 0)
+	usage(1);
+
+    if (acquire_type) {
+	if (strcasecmp(acquire_type, "both") == 0)
+	    flag = GSS_C_BOTH;
+	else if (strcasecmp(acquire_type, "accept") == 0)
+	    flag = GSS_C_ACCEPT;
+	else if (strcasecmp(acquire_type, "initiate") == 0)
+	    flag = GSS_C_INITIATE;
+	else
+	    errx(1, "unknown type %s", acquire_type);
+    } else
+	flag = GSS_C_ACCEPT;
+	
+    if (name_type) {
+	if (strcasecmp("hostbased-service", name_type) == 0)
+	    type = GSS_C_NT_HOSTBASED_SERVICE;
+	else if (strcasecmp("user-name", name_type) == 0)
+	    type = GSS_C_NT_USER_NAME;
+	else
+	    errx(1, "unknown name type %s", name_type);
+    } else
+	type = GSS_C_NT_HOSTBASED_SERVICE;
+
+    if (ccache) {
+	OM_uint32 major_status, minor_status;
+	major_status = gss_krb5_ccache_name(&minor_status,
+					    ccache, NULL);
+	if (GSS_ERROR(major_status))
+	    errx(1, "gss_krb5_ccache_name %s", 
+		 gssapi_err(major_status, minor_status, GSS_C_NO_OID));
+    }
+
+    if (acquire_name)
+	acquire_cred_service(acquire_name, type, flag);
 
     return 0;
 }
