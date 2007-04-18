@@ -1,5 +1,9 @@
 2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_mem.c (mem_free): free key array too
+
+	* hxtool.c: free private key and tbs
+
 	* hxtool.c (hxtool_ca): free signer
 
 	* hxtool.c (crypto_available): free peer too.
