@@ -267,6 +267,7 @@ noinst_PROGRAMS = test_cred test_kcred test_context test_ntlm
 
 test_context_SOURCES = test_context.c test_common.c test_common.h
 test_ntlm_SOURCES = test_ntlm.c test_common.c test_common.h
+test_acquire_cred_SOURCES = test_acquire_cred.c test_common.c test_common.h
 
 test_ntlm_LDADD = \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
