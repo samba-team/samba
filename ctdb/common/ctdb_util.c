@@ -102,3 +102,4 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 
 	return (1103515243 * value + 12345);  
 }
+

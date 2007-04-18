@@ -50,6 +50,11 @@ struct ctdb_address {
 	int port;
 };
 
+/*
+  check a vnn is valid
+ */
+#define ctdb_validate_vnn(ctdb, vnn) (((uint32_t)(vnn)) < (ctdb)->num_nodes)
+
 
 /* called from the queue code when a packet comes in. Called with data==NULL
    on error */
