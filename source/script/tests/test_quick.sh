@@ -15,5 +15,8 @@ tests="$tests RAW-EAS RAW-STREAMS"
 
 for t in $tests; do
     name="$t"
-    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done
+
+name=BASE-OPEN
+plantest "ntvfs/cifs $name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $name
