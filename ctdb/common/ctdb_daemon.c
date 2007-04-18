@@ -244,6 +244,30 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 	_exit(0);
 }
 
+
+/*
+  send a fetch lock error reply to the client
+ */
+static void daemon_fetch_lock_error(struct ctdb_client *client,
+				    struct ctdb_req_fetch_lock *f)
+{
+	struct ctdb_reply_fetch_lock r;
+
+	ZERO_STRUCT(r);
+	r.hdr.length       = sizeof(r);
+	r.hdr.ctdb_magic   = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation    = CTDB_REPLY_FETCH_LOCK;
+	r.hdr.reqid        = f->hdr.reqid;
+	r.state            = -1;
+	
+	/*
+	 * Ignore the result, there's not much we can do anyway.
+	 */
+	ctdb_queue_send(client->queue, (uint8_t *)&r.hdr,
+			r.hdr.length);
+}
+
 /*
   called when the daemon gets a fetch lock request from a client
  */
@@ -257,21 +281,13 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
 	if (ctdb_db == NULL) {
-		struct ctdb_reply_fetch_lock r;
+		daemon_fetch_lock_error(client, f);
+		return;
+	}
 
-		ZERO_STRUCT(r);
-		r.hdr.length       = sizeof(r);
-		r.hdr.ctdb_magic   = CTDB_MAGIC;
-		r.hdr.ctdb_version = CTDB_VERSION;
-		r.hdr.operation    = CTDB_REPLY_FETCH_LOCK;
-		r.hdr.reqid        = f->hdr.reqid;
-		r.state            = -1;
-
-		/*
-		 * Ignore the result, there's not much we can do anyway.
-		 */
-		ctdb_queue_send(client->queue, (uint8_t *)&r.hdr,
-				r.hdr.length);
+	if (!ctdb_validate_vnn(client->ctdb, f->header.dmaster)) {
+		DEBUG(0,(__location__ " Invalid dmaster %u\n", f->header.dmaster));
+		daemon_fetch_lock_error(client, f);
 		return;
 	}
 
