@@ -1,5 +1,20 @@
-2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c (hxtool_ca): free signer
+
+	* hxtool.c (crypto_available): free peer too.
+
+	* ca.c (get_AuthorityKeyIdentifier): leak less memory
+
+	* hxtool.c (hxtool_ca): free SPKI
+
+	* hxtool.c (hxtool_ca): free cert
+
+	* ks_mem.c (mem_getkeys): allocate one more the we have elements
+	so its possible to store the NULL pointer at the end.
+	
+2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: CLEANFILES += cert-null.pem cert-sub-ca2.pem
 	
 2007-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
