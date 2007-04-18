@@ -259,6 +259,7 @@ int main(int argc, const char *argv[])
 	bench_ring(ctdb, ev);
        
 	/* shut it down */
-	talloc_free(ctdb);
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }
