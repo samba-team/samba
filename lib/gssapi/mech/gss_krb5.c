@@ -511,6 +511,38 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
  */
 
 OM_uint32
+gss_krb5_ccache_name(OM_uint32 *minor_status, 
+		     const char *name,
+		     const char **out_name)
+{
+    struct _gss_mech_switch *m;
+    gss_buffer_desc buffer;
+    OM_uint32 junk;
+
+    _gss_load_mech();
+
+    if (out_name)
+	*out_name = NULL;
+
+    buffer.value = rk_UNCONST(name);
+    buffer.length = strlen(name);
+
+    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	if (m->gm_mech.gm_set_sec_context_option == NULL)
+	    continue;
+	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+	    GSS_KRB5_CCACHE_NAME_X, &buffer);
+    }
+
+    return (GSS_S_COMPLETE);
+}
+
+
+/*
+ *
+ */
+
+OM_uint32
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 					  gss_ctx_id_t context_handle,
 					  time_t *authtime)
