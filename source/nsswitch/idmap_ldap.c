@@ -151,6 +151,7 @@ static NTSTATUS verify_idpool(void)
 				&result);
 
 	if (rc != LDAP_SUCCESS) {
+		DEBUG(1, ("Unable to verify the idpool, cannot continue initialization!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -208,6 +209,11 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
+
+	/* Only do init if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	idmap_alloc_ldap = talloc_zero(NULL, struct idmap_ldap_alloc_context);
         CHECK_ALLOC_DONE( idmap_alloc_ldap );
@@ -343,6 +349,11 @@ static NTSTATUS idmap_ldap_allocate_id(struct unixid *xid)
 	const char *dn = NULL;
 	const char **attr_list;
 	const char *type;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	if ( ! idmap_alloc_ldap) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -490,6 +501,11 @@ static NTSTATUS idmap_ldap_get_hwm(struct unixid *xid)
 	const char **attr_list;
 	const char *type;
 
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
 	if ( ! idmap_alloc_ldap) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -579,6 +595,11 @@ static NTSTATUS idmap_ldap_set_hwm(struct unixid *xid)
 	const char *dn = NULL;
 	const char **attr_list;
 	const char *type;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	if ( ! idmap_alloc_ldap) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -700,14 +721,19 @@ static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
  Initialise idmap database. 
 ********************************/
 
-static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom, const char *params)
+static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_ldap_context *ctx = NULL;
 	char *config_option = NULL;
 	const char *range = NULL;
 	const char *tmp = NULL;
-	
+
+	/* Only do init if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
 	ctx = talloc_zero(dom, struct idmap_ldap_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -732,9 +758,9 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom, const char *params)
 		}
 	}
 
-	if (params && *params) {
+	if (dom->params && *(dom->params)) {
 		/* assume location is the only parameter */
-		ctx->url = talloc_strdup(ctx, params);
+		ctx->url = talloc_strdup(ctx, dom->params);
 	} else {
 		tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
 
@@ -836,6 +862,19 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom, struct id_m
 	int count;
 	int rc;
 	int i;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ldap_db_init(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);	
 
@@ -991,10 +1030,10 @@ again:
 
 	ret = NT_STATUS_OK;
 
-
-	/* mark all unknwon ones as unmapped */
+	/* mark all unknwon/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+		if (ids[i]->status != ID_MAPPED)
+			ids[i]->status = ID_UNMAPPED;
 	}
 
 done:
@@ -1040,6 +1079,19 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	int count;
 	int rc;
 	int i;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ldap_db_init(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);	
 
@@ -1192,9 +1244,10 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknwon ones as unmapped */
+	/* mark all unknwon/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) ids[i]->status = ID_UNMAPPED;
+		if (ids[i]->status != ID_MAPPED)
+			ids[i]->status = ID_UNMAPPED;
 	}
 
 done:
@@ -1220,6 +1273,19 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom, const struct id
 	char *sid;
 	char *dn;
 	int rc = -1;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ldap_db_init(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);	
 
@@ -1301,15 +1367,6 @@ done:
 }
 
 /**********************************
- remove a mapping. 
-**********************************/
-
-static NTSTATUS idmap_ldap_remove_mapping(struct idmap_domain *dom, const struct id_map *map)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/**********************************
  Close the idmap ldap instance 
 **********************************/
 
@@ -1333,8 +1390,6 @@ static struct idmap_methods idmap_ldap_methods = {
 	.unixids_to_sids = idmap_ldap_unixids_to_sids,
 	.sids_to_unixids = idmap_ldap_sids_to_unixids,
 	.set_mapping = idmap_ldap_set_mapping,
-	.remove_mapping = idmap_ldap_remove_mapping,
-	/* .dump_data = TODO */
 	.close_fn = idmap_ldap_close
 };
 
