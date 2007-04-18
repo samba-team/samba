@@ -1,5 +1,15 @@
-2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-basic.in: more gss_acquire_cred tests
+	
+2007-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/Makefile.am: add check-basic
+
+	* gss/check-basic.in: basic tests that might require a KDC.
+	
+2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/Makefile.am: CLEANFILES += sdigest-init
 	
 2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
