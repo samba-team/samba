@@ -192,6 +192,35 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 }
 
 /*
+  called when the daemon gets a shutdown request from a client
+ */
+static void daemon_request_shutdown(struct ctdb_client *client, 
+				      struct ctdb_req_shutdown *f)
+{
+	struct ctdb_req_finished r;
+	int len;
+	uint32_t node;
+
+	len = sizeof(struct ctdb_req_finished);
+	ZERO_STRUCT(r);
+	r.hdr.length       = len;
+	r.hdr.ctdb_magic   = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation    = CTDB_REQ_FINISHED;
+	r.hdr.srcnode      = ctdb->vnn;
+	r.hdr.reqid        = 0;
+
+	/* loop over all nodes of the cluster */
+	for (node=0; node<ctdb_num_nodes;node++) {
+		r.hdr.destnode = node;
+		ctdb_queue_packet(ctdb, &r->hdr);
+	}
+
+	/* send a shutdown reply back to the client */
+
+}
+
+/*
   called when the daemon gets a fetch lock request from a client
  */
 static void daemon_request_fetch_lock(struct ctdb_client *client, 
@@ -410,6 +439,9 @@ static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_
 	case CTDB_REQ_FETCH_LOCK:
 		daemon_request_fetch_lock(client, (struct ctdb_req_fetch_lock *)hdr);
 		break;
+	case CTDB_REQ_SHUTDOWN:
+		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
+		break;
 	default:
 		DEBUG(0,(__location__ " daemon: unrecognized operation %d\n",
 			 hdr->operation));
@@ -494,7 +526,7 @@ static void ctdb_read_from_parent(struct event_context *ev, struct fd_event *fde
 	/* XXX this is a good place to try doing some cleaning up before exiting */
 	cnt = read(*fd, &buf, 1);
 	if (cnt==0) {
-		DEBUG(0,(__location__ " parent process exited. filedescriptor dissappeared\n"));
+		DEBUG(2,(__location__ " parent process exited. filedescriptor dissappeared\n"));
 		exit(1);
 	} else {
 		DEBUG(0,(__location__ " ctdb: did not expect data from parent process\n"));
@@ -611,3 +643,15 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 	return talloc_size(ctdb, size);
 }
 
+/*
+  called when a CTDB_REQ_FINISHED packet comes in
+*/
+void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	ctdb->num_finished++;
+	if (ctdb->num_finished == ctdb->num_nodes) {
+		/* all daemons have requested to finish - we now exit */
+		DEBUG(1,("All daemons finished - exiting\n"));
+		_exit(0);
+	}
+}

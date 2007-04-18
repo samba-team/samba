@@ -255,6 +255,10 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		ctdb_request_message(ctdb, hdr);
 		break;
 
+	case CTDB_REQ_FINISHED:
+		ctdb_request_finished(ctdb, hdr);
+		break;
+
 	default:
 		DEBUG(0,("%s: Packet with unknown operation %d\n", 
 			 __location__, hdr->operation));
@@ -301,21 +305,6 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 	}
 	DEBUG(3,("ctdb_connect_wait: got all %d nodes\n", expected));
 }
-
-/*
-  wait until we're the only node left
-*/
-void ctdb_wait_loop(struct ctdb_context *ctdb)
-{
-	int expected = 0;
-	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
-		expected++;
-	}
-	while (ctdb->num_connected > expected) {
-		event_loop_once(ctdb->ev);
-	}
-}
-
 
 /*
   queue a packet or die
