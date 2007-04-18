@@ -262,6 +262,10 @@ sub plain_end_msg($$$)
 {
 	my ($state, $expected_ret, $ret) = @_;
 
+	if ($ret != $expected_ret) {
+		plain_output_msg($state, "ERROR: $ret\n");
+	}
+
 	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
 		print $test_output->{$state->{NAME}}."\n";
 	}
