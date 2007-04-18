@@ -117,6 +117,7 @@ struct ctdb_context {
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
+	uint32_t num_finished;
 	unsigned flags;
 	struct idr_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
@@ -213,6 +214,7 @@ enum ctdb_operation {
 	CTDB_REPLY_DMASTER      = 4,
 	CTDB_REPLY_ERROR        = 5,
 	CTDB_REQ_MESSAGE        = 6,
+	CTDB_REQ_FINISHED       = 7,
 	
 	/* only used on the domain socket */
 	CTDB_REQ_REGISTER       = 1000,     
@@ -292,6 +294,10 @@ struct ctdb_req_message {
 	uint32_t srvid;
 	uint32_t datalen;
 	uint8_t data[1];
+};
+
+struct ctdb_req_finished {
+	struct ctdb_req_header hdr;
 };
 
 struct ctdb_req_connect_wait {

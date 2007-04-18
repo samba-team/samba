@@ -434,6 +434,11 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
 
 	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ux_socket_connect(ctdb);
+	}
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
 	if (res != 0) {

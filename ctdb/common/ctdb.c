@@ -255,6 +255,10 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		ctdb_request_message(ctdb, hdr);
 		break;
 
+	case CTDB_REQ_FINISHED:
+		ctdb_request_finished(ctdb, hdr);
+		break;
+
 	default:
 		DEBUG(0,("%s: Packet with unknown operation %d\n", 
 			 __location__, hdr->operation));

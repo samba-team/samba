@@ -611,3 +611,15 @@ void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
 	return talloc_size(ctdb, size);
 }
 
+/*
+  called when a CTDB_REQ_FINISHED packet comes in
+*/
+void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	ctdb->num_finished++;
+	if (ctdb->num_finished == ctdb->num_nodes) {
+		/* all daemons have requested to finish - we now exit */
+		DEBUG(1,("All daemons finished - exiting\n"));
+		_exit(0);
+	}
+}
