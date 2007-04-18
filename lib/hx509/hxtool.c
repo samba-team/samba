@@ -1506,6 +1506,8 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = hx509_ca_tbs_set_template(context, tbs, flags, template);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_template");
+
+	hx509_cert_free(template);
     }
 
     if (opt->serial_number_string) {
