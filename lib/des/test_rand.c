@@ -79,7 +79,7 @@ static void
 usage (int ret)
 {
     arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
+		    sizeof(args)/sizeof(args[0]),
 		    NULL,
 		    "out-random-file");
     exit (ret);
