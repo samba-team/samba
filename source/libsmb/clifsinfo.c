@@ -470,7 +470,7 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 				DATA_BLOB spnego_blob_in,
 				DATA_BLOB *p_blob_out)
 {
-	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, NULL};
+	const char *krb_mechs[] = {OID_KERBEROS5, NULL};
 	OM_uint32 ret;
 	OM_uint32 min;
 	gss_name_t srv_name;
