@@ -160,7 +160,7 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 /************************************************************************
  ***********************************************************************/
 
-static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params)
+static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;
@@ -204,6 +204,7 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 	}
 
 	dom->private_data = ctx;
+	dom->initialized = True;
 
 	talloc_free(config_option);
 
@@ -269,6 +270,19 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 	char *u_filter = NULL;
 	char *g_filter = NULL;
 
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ad_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
 
 	if ( (memctx = talloc_new(ctx)) == NULL ) {
@@ -320,7 +334,7 @@ again:
 			break;
 
 		default:
-			DEBUG(3, ("Unknown ID type\n"));
+			DEBUG(3, ("Error: mapping requested but Unknown ID type\n"));
 			ids[idx]->status = ID_UNKNOWN;
 			continue;
 		}
@@ -441,9 +455,9 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknown ones as unmapped */
+	/* mark all unknown/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) 
+		if (ids[i]->status != ID_MAPPED) 
 			ids[i]->status = ID_UNMAPPED;
 	}
 
@@ -475,6 +489,19 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 	int count;
 	int i;
 	char *sidstr;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ad_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);	
 
@@ -615,9 +642,9 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknwon ones as unmapped */
+	/* mark all unknwoni/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) 
+		if (ids[i]->status != ID_MAPPED) 
 			ids[i]->status = ID_UNMAPPED;
 	}
 
@@ -669,7 +696,7 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 	ad_map_type =  WB_POSIX_MAP_SFU;	
 
 	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize( NULL, NULL );	
+		return idmap_ad_initialize(NULL);
 
 	return NT_STATUS_OK;
 }
@@ -690,7 +717,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 	ad_map_type =  WB_POSIX_MAP_RFC2307;
 
 	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize( NULL, NULL );	
+		return idmap_ad_initialize(NULL);	
 
 	return NT_STATUS_OK;
 }

@@ -278,7 +278,8 @@ typedef struct dom_sid {
 enum id_mapping {
 	ID_UNKNOWN,
 	ID_MAPPED,
-	ID_UNMAPPED
+	ID_UNMAPPED,
+	ID_EXPIRED
 };
 
 enum id_type {

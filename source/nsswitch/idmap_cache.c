@@ -348,7 +348,7 @@ BOOL idmap_cache_is_negative(const char *val)
 
 /* search the cahce for the SID an return a mapping if found *
  *
- * 3 cases are possible
+ * 4 cases are possible
  *
  * 1 map found
  * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
@@ -356,17 +356,16 @@ BOOL idmap_cache_is_negative(const char *val)
  * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
  * 3 negative cache found
  * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
- *
- * As a special case if the cache is expired NT_STATUS_SYNCHRONIZATION_REQUIRED
- * is returned instead of NT_STATUS_OK. In this case revalidation of the cache
- * is needed.
+ * 4 map found but timer expired
+ *      in this case id->status = ID_EXPIRED and NT_STATUS_SYNCHRONIZATION_REQUIRED
+ *      is returned. In this case revalidation of the cache is needed.
  */
 
 NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
 	TDB_DATA databuf;
-	time_t t;
+	time_t t, now;
 	char *sidkey;
 	char *endptr;
 
@@ -393,11 +392,13 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		goto done;
 	}
 
+	now = time(NULL);
+
 	/* check it is not negative */
 	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
-		
+
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-			   "timeout = %s", t > time(NULL) ? "valid" :
+			   "timeout = %s", t > now ? "valid" :
 			   "expired", sidkey, endptr+1, ctime(&t)));
 
 		/* this call if successful will also mark the entry as mapped */
@@ -411,35 +412,21 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 
 		/* here ret == NT_STATUS_OK and id->status = ID_MAPPED */
 
-		if (t <= time(NULL)) {
-			/* If we've been told to be offline - stay in 
-			   that state... */
-			if (lp_winbind_offline_logon() && 
-			    get_global_winbindd_state_offline()) 
-			{
-				DEBUG(10,("idmap_cache_map_sid: winbindd is "
-					  "globally offline.\n"));
-			} else {
-				/* We're expired, set an error code
-				   for upper layer */
-				ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
-			}			
+		if (t <= now) {
+	
+			/* we have it, but it is expired */
+			id->status = ID_EXPIRED;
+				
+			/* We're expired, set an error code
+			   for upper layer */
+			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
 	} else {
-		if (t <= time(NULL)) {
-			/* If we've been told to be offline - stay in 
-			   that state... */
-			if (lp_winbind_offline_logon() && 
-			    get_global_winbindd_state_offline()) 
-			{
-				DEBUG(10,("idmap_cache_map_sid: winbindd is "
-					  "globally offline.\n"));
-			} else {				
-				/* We're expired, delete the entry and return
-				   not mapped */
-				tdb_delete_bystring(cache->tdb, sidkey);
-				ret = NT_STATUS_NONE_MAPPED;
-			}			
+		if (t <= now) {
+			/* We're expired, delete the NEGATIVE entry and return
+			   not mapped */
+			tdb_delete_bystring(cache->tdb, sidkey);
+			ret = NT_STATUS_NONE_MAPPED;
 		} else {
 			/* this is not mapped as it was a negative cache hit */
 			id->status = ID_UNMAPPED;
@@ -455,7 +442,7 @@ done:
 
 /* search the cahce for the ID an return a mapping if found *
  *
- * 3 cases are possible
+ * 4 cases are possible
  *
  * 1 map found
  * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
@@ -463,21 +450,20 @@ done:
  * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
  * 3 negative cache found
  * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
- *
- * As a special case if the cache is expired NT_STATUS_SYNCHRONIZATION_REQUIRED
- * is returned instead of NT_STATUS_OK. In this case revalidation of the cache
- * is needed.
+ * 4 map found but timer expired
+ *      in this case id->status = ID_EXPIRED and NT_STATUS_SYNCHRONIZATION_REQUIRED
+ *      is returned. In this case revalidation of the cache is needed.
  */
 
 NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
 	TDB_DATA databuf;
-	time_t t;
+	time_t t, now;
 	char *idkey;
 	char *endptr;
 
-	/* make sure it is marked as not mapped by default */
+	/* make sure it is marked as unknown by default */
 	id->status = ID_UNKNOWN;
 	
 	ret = idmap_cache_build_idkey(cache, &idkey, id);
@@ -500,11 +486,13 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		goto done;
 	}
 
+	now = time(NULL);
+
 	/* check it is not negative */
 	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
 		
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-			   "timeout = %s", t > time(NULL) ? "valid" :
+			   "timeout = %s", t > now ? "valid" :
 			   "expired", idkey, endptr+1, ctime(&t)));
 
 		/* this call if successful will also mark the entry as mapped */
@@ -516,39 +504,25 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 			goto done;
 		}
 
-		/* here ret == NT_STATUS_OK and id->mapped = True */
+		/* here ret == NT_STATUS_OK and id->mapped = ID_MAPPED */
 
-		if (t <= time(NULL)) {
-			/* If we've been told to be offline - stay in
-			   that state... */
-			if (lp_winbind_offline_logon() && 
-			    get_global_winbindd_state_offline()) 
-			{
-				DEBUG(10,("idmap_cache_map_sid: winbindd is "
-					  "globally offline.\n"));
-			} else {
-				/* We're expired, set an error code
-				   for upper layer */
-				ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
-			}			
+		if (t <= now) {
+
+			/* we have it, but it is expired */
+			id->status = ID_EXPIRED;
+
+			/* We're expired, set an error code
+			   for upper layer */
+			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
 	} else {
-		if (t <= time(NULL)) {
-			/* If we've been told to be offline - stay in
-			   that state... */
-			if (lp_winbind_offline_logon() && 
-			    get_global_winbindd_state_offline()) 
-			{
-				DEBUG(10,("idmap_cache_map_sid: winbindd is "
-					  "globally offline.\n"));
-			} else {
-				/* We're expired, delete the entry and
-				   return not mapped */
-				tdb_delete_bystring(cache->tdb, idkey);
-				ret = NT_STATUS_NONE_MAPPED;
-			}			
+		if (t <= now) {
+			/* We're expired, delete the NEGATIVE entry and return
+			   not mapped */
+			tdb_delete_bystring(cache->tdb, idkey);
+			ret = NT_STATUS_NONE_MAPPED;
 		} else {
-			/* this is not mapped is it was a negative cache hit */
+			/* this is not mapped as it was a negative cache hit */
 			id->status = ID_UNMAPPED;
 			ret = NT_STATUS_OK;
 		}
