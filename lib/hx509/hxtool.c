@@ -1601,6 +1601,12 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     hx509_cert_free(cert);
     free_SubjectPublicKeyInfo(&spki);
 
+    if (private_key != cert_key)
+	_hx509_private_key_free(&private_key);
+    _hx509_private_key_free(&cert_key);
+
+    hx509_ca_tbs_free(&tbs);
+
     return 0;
 }
 
