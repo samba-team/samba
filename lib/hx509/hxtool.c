@@ -1593,6 +1593,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     hx509_cert_free(cert);
+    free_SubjectPublicKeyInfo(&spki);
 
     return 0;
 }
