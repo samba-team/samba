@@ -179,31 +179,48 @@ my $test_output = {};
 sub buildfarm_start_msg($)
 {
 	my ($state) = @_;
+	my $out = "";
 
-	print "--==--==--==--==--==--==--==--==--==--==--\n";
-	print "Running test $state->{NAME} (level 0 stdout)\n";
-	print "--==--==--==--==--==--==--==--==--==--==--\n";
-	system("date");
+	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
+	$out .= "Running test $state->{NAME} (level 0 stdout)\n";
+	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
+	$out .= scalar(localtime())."\n";
+	$out .= "NAME: $state->{NAME}\n";
+	$out .= "CMD: $state->{CMD}\n";
+
+	$test_output->{$state->{NAME}} = "";
+
+	print $out;
 }
 
 sub buildfarm_output_msg($$)
 {
 	my ($state, $output) = @_;
 
-	print $output;
+	$test_output->{$state->{NAME}} .= $output;
 }
 
 sub buildfarm_end_msg($$$)
 {
 	my ($state, $expected_ret, $ret) = @_;
+	my $out = "";
 
-	print "==========================================\n";
 	if ($ret == $expected_ret) {
-		print "TEST PASSED: $state->{NAME}\n";
+		$out .= "ALL OK\n";
 	} else {
-		print "TEST FAILED: $state->{NAME} (status $ret)\n";
+		$out .= "ERROR: $ret";
+		$out .= $test_output->{$state->{NAME}};
 	}
-	print "==========================================\n";
+
+	$out .= "==========================================\n";
+	if ($ret == $expected_ret) {
+		$out .= "TEST PASSED: $state->{NAME}\n";
+	} else {
+		$out .= "TEST FAILED: $state->{NAME} (status $ret)\n";
+	}
+	$out .= "==========================================\n";
+
+	print $out;
 }
 
 my $buildfarm_msg_ops = {
@@ -211,6 +228,8 @@ my $buildfarm_msg_ops = {
 	output_msg	=> \&buildfarm_output_msg,
 	end_msg		=> \&buildfarm_end_msg
 };
+
+sub plain_output_msg($$);
 
 sub plain_start_msg($)
 {
@@ -222,6 +241,8 @@ sub plain_start_msg($)
 	$out .= "] $state->{NAME}\n";
 
 	$test_output->{$state->{NAME}} = "" unless $opt_verbose;
+
+	plain_output_msg($state, "CMD: $state->{CMD}\n");
 
 	print $out;
 }
@@ -263,7 +284,6 @@ sub run_test($$$$$)
 		START	=> time()
 	};
 	$msg_ops->{start_msg}($msg_state);
-	$msg_ops->{output_msg}($msg_state, "COMMAND: $cmd\n");
 	open(RESULT, "$cmd 2>&1|");
 	my $expected_ret = 1;
 	my $open_tests = {};
