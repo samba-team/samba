@@ -105,6 +105,7 @@ static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *ca
 	if (c->reply_data) {
 		call->reply_data = *c->reply_data;
 		talloc_steal(ctdb, call->reply_data.dptr);
+		talloc_set_name_const(call->reply_data.dptr, __location__);
 	} else {
 		call->reply_data.dptr = NULL;
 		call->reply_data.dsize = 0;
@@ -252,6 +253,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_ltdb_header header;
 	struct ctdb_db_context *ctdb_db;
 	int ret, len;
+	TALLOC_CTX *tmp_ctx;
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
@@ -299,6 +301,12 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
+
+	/* put the packet on a temporary context, allowing us to safely free
+	   it below even if ctdb_reply_dmaster() has freed it already */
+	tmp_ctx = talloc_new(ctdb);
+	talloc_steal(tmp_ctx, r);
+
 	talloc_set_name_const(r, "reply_dmaster packet");
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
@@ -316,7 +324,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_queue_packet(ctdb, &r->hdr);
 	}
 
-	talloc_free(r);
+	talloc_free(tmp_ctx);
 }
 
 
@@ -414,7 +422,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
   called when a CTDB_REPLY_CALL packet comes in
 
   This packet comes in response to a CTDB_REQ_CALL request packet. It
-  contains any reply data freom the call
+  contains any reply data from the call
 */
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
@@ -422,7 +430,10 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
+	if (state == NULL) {
+		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		return;
+	}
 
 	if (!talloc_get_type(state, struct ctdb_call_state)) {
 		DEBUG(0,("ctdb idr type error at %s\n", __location__));
@@ -434,10 +445,6 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state->call.status = c->status;
 
 	talloc_steal(state, c);
-
-	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
-	   from freeing the data */
-	(void)talloc_reference(state, c);
 
 	state->state = CTDB_CALL_DONE;
 	if (state->async.fn) {
@@ -487,6 +494,8 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 
 	ctdb_call_local(ctdb_db, &state->call, &state->header, &data, ctdb->vnn);
+
+	talloc_steal(state, state->call.reply_data.dptr);
 
 	state->state = CTDB_CALL_DONE;
 	if (state->async.fn) {
@@ -619,6 +628,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state->ctdb_db = ctdb_db;
 
 	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
+	talloc_steal(state, state->call.reply_data.dptr);
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 
@@ -707,7 +717,10 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 	if (ret != 0) return NULL;
 
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		return ctdb_call_local_send(ctdb_db, call, &header, &data);
+		struct ctdb_call_state *state;
+		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
+		talloc_free(data.dptr);
+		return state;
 	}
 
 	talloc_free(data.dptr);
@@ -724,7 +737,7 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 */
 int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
-	struct ctdb_record_handle *rec;
+	struct ctdb_fetch_handle *rec;
 
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->node->ctdb->ev);
@@ -742,6 +755,7 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 		rec->header = state->header;
 		rec->data->dptr = talloc_steal(rec, state->call.reply_data.dptr);
 		rec->data->dsize = state->call.reply_data.dsize;
+		talloc_set_name_const(rec->data->dptr, __location__);
 		talloc_free(state);
 		return 0;
 	}

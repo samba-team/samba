@@ -287,13 +287,6 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 		return -1;
 	}
 
-	/* we get an extra reference to the packet here, to 
-	   stop it being freed in the top level packet handler */
-	if (talloc_reference(ctdb_db, hdr) == NULL) {
-		talloc_free(h);
-		return -1;
-	}
-
 	/* now tell the caller than we will retry asynchronously */
 	return -2;
 }

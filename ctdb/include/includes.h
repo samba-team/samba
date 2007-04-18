@@ -6,6 +6,7 @@
 #include "idtree.h"
 #include "ctdb.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
 
 typedef bool BOOL;
 
@@ -14,7 +15,7 @@ typedef bool BOOL;
 
 extern int LogLevel;
 
-#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (printf x)
+#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (do_debug x)
 
 #define _PUBLIC_
 

@@ -75,18 +75,19 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 	struct ctdb_fetch_lock_state *state;
 
 	state = idr_find(ctdb->idr, hdr->reqid);
-	if (state == NULL) return;
+	if (state == NULL) {
+		DEBUG(0, ("reqid %d not found at %s\n", hdr->reqid,
+			  __location__));
+		return;
+	}
 
 	if (!talloc_get_type(state, struct ctdb_fetch_lock_state)) {
-		DEBUG(0, ("ctdb idr type error at %s\n", __location__));
+		DEBUG(0, ("ctdb idr type error at %s, it's a %s\n",
+			  __location__, talloc_get_name(state)));
 		return;
 	}
 
 	state->r = talloc_steal(state, r);
-
-	/* get an extra reference here - this prevents the free in ctdb_recv_pkt()
-	   from freeing the data */
-	(void)talloc_reference(state, r);
 
 	state->state = CTDB_FETCH_LOCK_DONE;
 }
@@ -97,28 +98,35 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_context *ctdb = talloc_get_type(args, struct ctdb_context);
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+	TALLOC_CTX *tmp_ctx;
+
+	/* place the packet as a child of a tmp_ctx. We then use
+	   talloc_free() below to free it. If any of the calls want
+	   to keep it, then they will steal it somewhere else, and the
+	   talloc_free() will be a no-op */
+	tmp_ctx = talloc_new(ctdb);
+	talloc_steal(tmp_ctx, hdr);
 
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(ctdb, "Bad packet length %d in client\n", cnt);
-		exit(1);
-		return;
+		exit(1); /* XXX - temporary for debugging */
+		goto done;
 	}
-	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
 		ctdb_set_error(ctdb, "Bad header length %d expected %d in client\n", 
 			       hdr->length, cnt);
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(ctdb, "Non CTDB packet rejected in client\n");
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
 		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected in client\n", hdr->ctdb_version);
-		return;
+		goto done;
 	}
 
 	switch (hdr->operation) {
@@ -141,6 +149,9 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	default:
 		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
 	}
+
+done:
+	talloc_free(tmp_ctx);
 }
 
 /*
@@ -172,6 +183,12 @@ static int ux_socket_connect(struct ctdb_context *ctdb)
 }
 
 
+struct ctdb_record_handle {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key;
+	TDB_DATA *data;
+	struct ctdb_ltdb_header header;
+};
 
 /*
   make a recv call to the local ctdb daemon - called from client context
@@ -260,6 +277,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 #if 0
 	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
+		talloc_free(data.dptr);
 		return state;
 	}
 #endif
@@ -575,7 +593,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 
 	talloc_set_destructor(h, fetch_lock_destructor);
 
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, ctdb_db, data);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, h, data);
 	if (ret != 0) {
 		talloc_free(h);
 		return NULL;

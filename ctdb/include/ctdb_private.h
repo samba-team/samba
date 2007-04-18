@@ -195,7 +195,7 @@ struct ctdb_call_state {
 
 
 /* used for fetch_lock */
-struct ctdb_record_handle {
+struct ctdb_fetch_handle {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key;
 	TDB_DATA *data;
