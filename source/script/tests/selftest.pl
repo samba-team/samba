@@ -172,7 +172,10 @@ sub skip($)
 {
 	my $fullname = shift;
 
-	return 1 if (grep(/^$fullname$/, @skips));
+	foreach (@skips) {
+		return 1 if ($fullname =~ /$_/);
+	}
+
 	return 0;
 }
 
