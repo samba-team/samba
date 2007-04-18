@@ -174,6 +174,8 @@ sub skip($)
 	return 0;
 }
 
+sub getlog_env($);
+
 my $test_output = {};
 
 sub buildfarm_start_msg($)
@@ -211,6 +213,8 @@ sub buildfarm_end_msg($$$)
 		$out .= "ERROR: $ret";
 		$out .= $test_output->{$state->{NAME}};
 	}
+
+	$out .= getlog_env($state->{ENVNAME});
 
 	$out .= "==========================================\n";
 	if ($ret == $expected_ret) {
@@ -269,6 +273,8 @@ sub plain_end_msg($$$)
 	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
 		print $test_output->{$state->{NAME}}."\n";
 	}
+
+	print getlog_env($state->{ENVNAME});
 }
 
 my $plain_msg_ops = {
@@ -277,10 +283,11 @@ my $plain_msg_ops = {
 	end_msg		=> \&plain_end_msg
 };
 
-sub run_test($$$$$)
+sub run_test($$$$$$)
 {
-	my ($name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
 	my $msg_state = {
+		ENVNAME	=> $envname,
 		NAME	=> $name,
 		CMD	=> $cmd,
 		INDEX	=> $i,
@@ -644,6 +651,13 @@ sub setup_env($)
 	return $testenv_vars;
 }
 
+sub getlog_env($)
+{
+	my ($envname) = @_;
+	return "" if ($envname eq "none");
+	return $target->getlog_env($running_envs{$envname});
+}
+
 sub teardown_env($)
 {
 	my ($envname) = @_;
@@ -690,9 +704,9 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
 		my $result;
 		if ($from_build_farm) {
-			$result = run_test($name, $cmd, $i, $suitestotal, $buildfarm_msg_ops);
+			$result = run_test($envname, $name, $cmd, $i, $suitestotal, $buildfarm_msg_ops);
 		} else {
-			$result = run_test($name, $cmd, $i, $suitestotal, $plain_msg_ops);
+			$result = run_test($envname, $name, $cmd, $i, $suitestotal, $plain_msg_ops);
 		}
 
 		if ($opt_socket_wrapper_pcap and $result and 

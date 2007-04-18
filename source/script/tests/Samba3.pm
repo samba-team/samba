@@ -39,6 +39,14 @@ sub teardown_env($$)
 	return 0;
 }
 
+sub getlog_env($$)
+{
+	my ($self, $envvars) = @_;
+
+	# TODO...
+	return "";
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
@@ -292,6 +300,8 @@ sub wait_for_start($$)
 	print "wait for smbd\n";
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
+
+	print $self->getlog_env($envvars);
 }
 
 1;

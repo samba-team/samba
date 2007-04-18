@@ -141,6 +141,8 @@ sub wait_for_start($$)
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
+
+	print $self->getlog_env($testenv_vars);
 }
 
 sub write_ldb_file($$$)
@@ -596,6 +598,7 @@ sub provision_member($$$)
 
 	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
 	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
 }
 
@@ -612,6 +615,7 @@ sub provision_dc($$)
 
 	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
 	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
 }
 
@@ -651,10 +655,30 @@ sub teardown_env($$)
 	return $failed;
 }
 
+sub getlog_env($$)
+{
+	my ($self, $envvars) = @_;
+	my $title = "SMBD LOG of: $envvars->{NETBIOSNAME}\n";
+	my $out = $title;
+
+	open(LOG, "<$envvars->{SMBD_TEST_LOG}");
+
+	seek(LOG, $envvars->{SMBD_TEST_LOG_POS}, SEEK_SET);
+	while (<LOG>) {
+		$out .= $_;
+	}
+	$envvars->{SMBD_TEST_LOG_POS} = tell(LOG);
+	close(LOG);
+
+	return "" if $out eq $title;
+ 
+	return $out;
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
-	
+
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
 	} elsif ($envname eq "member") {
