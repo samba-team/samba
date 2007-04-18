@@ -247,7 +247,8 @@ int main(int argc, const char *argv[])
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
-	/* shut it down */
-	talloc_free(ctdb);
+	/* go into a wait loop to allow other nodes to complete */
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }

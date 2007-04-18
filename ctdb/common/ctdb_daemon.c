@@ -197,7 +197,6 @@ static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
 static void daemon_request_shutdown(struct ctdb_client *client, 
 				      struct ctdb_req_shutdown *f)
 {
-	struct ctdb_reply_shutdown rs;
 	struct ctdb_context *ctdb = talloc_get_type(client->ctdb, struct ctdb_context);
 	int len;
 	uint32_t node;
@@ -239,16 +238,6 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 	while (ctdb->num_finished != ctdb->num_nodes) {
 		event_loop_once(ctdb->ev);
 	}
-
-	/* send a shutdown reply back to the client */
-	len = sizeof(struct ctdb_reply_shutdown);
-	ZERO_STRUCT(rs);
-	rs.hdr.length       = len;
-	rs.hdr.ctdb_magic   = CTDB_MAGIC;
-	rs.hdr.ctdb_version = CTDB_VERSION;
-	rs.hdr.operation    = CTDB_REPLY_SHUTDOWN;
-	ctdb_queue_send(client->queue, (uint8_t *)&(rs.hdr), rs.hdr.length);
-	/* XXX we should wait here until the packet has been sent to the client */
 
 	/* all daemons have requested to finish - we now exit */
 	DEBUG(1,("All daemons finished - exiting\n"));
