@@ -49,7 +49,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	}
 }
 
-static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -65,18 +65,18 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetVersion failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("GetVersion failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_NotifyChangeKeyValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 									  struct policy_handle *handle)
 {
 	struct winreg_NotifyChangeKeyValue r;
@@ -95,18 +95,18 @@ static BOOL test_NotifyChangeKeyValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("NotifyChangeKeyValue failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("NotifyChangeKeyValue failed - %s - not considering\n", win_errstr(r.out.result));
-		return True;
+		return true;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle, const char *name, 
 			   const char *class)
 {
@@ -130,22 +130,22 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("CreateKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
 /*
   createkey testing with a SD
 */
-static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle, const char *name, 
 			      const char *class, struct policy_handle *newhandle)
 {
@@ -168,7 +168,7 @@ static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to push security_descriptor ?!\n");
-		return False;
+		return false;
 	}
 
 	secbuf.sd.data = sdblob.data;
@@ -192,18 +192,18 @@ static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateKey with sd failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("CreateKey with sd failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -224,12 +224,12 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetKeySecurity failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("GetKeySecurity failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 	sdblob.data = r.out.sd->data;
@@ -239,16 +239,16 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("pull_security_descriptor failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
 		NDR_PRINT_DEBUG(security_descriptor, &sd);
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -262,18 +262,18 @@ static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CloseKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("CloseKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -287,18 +287,18 @@ static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("FlushKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("FlushKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			 struct policy_handle *hive_handle,
 			 const char *keyname, struct policy_handle *key_handle)
 {
@@ -317,19 +317,19 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("OpenKey failed - %s\n", win_errstr(r.out.result));
 
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_Cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_Cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			 struct policy_handle *handle, const char *key)
 {
 	struct winreg_DeleteKey r;
@@ -339,11 +339,11 @@ static BOOL test_Cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_winreg_String(&r.in.key, key);
 	dcerpc_winreg_DeleteKey(p, mem_ctx, &r);
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, const char *key)
 {
 	NTSTATUS status;
@@ -358,18 +358,18 @@ static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DeleteKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle, char *class)
 {
 	NTSTATUS status;
@@ -391,6 +391,8 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.max_valbufsize = &max_valbufsize;
 	r.out.secdescsize = &secdescsize;
 	r.out.last_changed_time = &last_changed_time;
+
+	r.out.classname = talloc(mem_ctx, struct winreg_String);
 	
 	r.in.classname = talloc(mem_ctx, struct winreg_String);
 	init_winreg_String(r.in.classname, class);
@@ -399,21 +401,21 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("QueryInfoKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("QueryInfoKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		     struct policy_handle *handle, int depth);
 
-static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			 struct policy_handle *handle, int depth)
 {
 	struct winreg_EnumKey r;
@@ -458,20 +460,20 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumKey failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result) && !W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
 		printf("EnumKey failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 
 
-	return True;
+	return true;
 }
 
-static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
+static bool test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
 {
 	struct winreg_QueryMultipleValues r;
 	NTSTATUS status;
@@ -499,7 +501,7 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 		if(NT_STATUS_IS_ERR(status)) {
 			printf("QueryMultipleValues failed - %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 		talloc_free(r.in.buffer);
 		bufsize += 0x20;
@@ -507,13 +509,13 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("QueryMultipleValues failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
+static bool test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
@@ -533,24 +535,24 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 	status = dcerpc_winreg_QueryValue(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		printf("QueryValue failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("QueryValue failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
 	enum winreg_Type type = 0;
 	uint32_t size = max_valbufsize, zero = 0;
-	BOOL ret = True;
+	bool ret = true;
 	uint8_t buf8;
 	struct winreg_StringBuf name;
 
@@ -572,7 +574,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		NTSTATUS status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
 		if(NT_STATUS_IS_ERR(status)) {
 			printf("EnumValue failed - %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 
 		if (W_ERROR_IS_OK(r.out.result)) {
@@ -585,13 +587,13 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if(!W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
 		printf("EnumValue failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 	return ret;
 }
 
-static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			const char *msg, uint32_t timeout)
 {
 	struct winreg_InitiateSystemShutdown r;
@@ -609,18 +611,18 @@ static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("InitiateSystemShutdown failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("InitiateSystemShutdown failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			const char *msg, uint32_t timeout)
 {
 	struct winreg_InitiateSystemShutdownEx r;
@@ -639,18 +641,18 @@ static BOOL test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("InitiateSystemShutdownEx failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("InitiateSystemShutdownEx failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct winreg_AbortSystemShutdown r;
 	NTSTATUS status;
@@ -662,28 +664,27 @@ static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AbortSystemShutdown failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("AbortSystemShutdown failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 #define MAX_DEPTH 2		/* Only go this far down the tree */
 
-static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		     struct policy_handle *handle, int depth)
 {
 	if (depth == MAX_DEPTH)
-		return True;
+		return true;
 
 	if (!test_QueryInfoKey(p, mem_ctx, handle, NULL)) {
 	}
-
 
 	if (!test_NotifyChangeKeyValue(p, mem_ctx, handle)) {
 	}
@@ -697,19 +698,18 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_EnumValue(p, mem_ctx, handle, 0xFF, 0xFFFF)) {
 	}
 
-
 	test_CloseKey(p, mem_ctx, handle);
 
-	return True;
+	return true;
 }
 
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
-static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		      const char *name, winreg_open_fn open_fn)
 {
 	struct policy_handle handle, newhandle;
-	BOOL ret = True, created = False, created2 = False, deleted = False;
+	bool ret = true, created = false, created2 = false, deleted = false;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
 
@@ -721,7 +721,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	status = open_fn(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY1);
@@ -731,72 +731,72 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_CreateKey(p, mem_ctx, &handle, TEST_KEY1, NULL)) {
 		printf("CreateKey failed - not considering a failure\n");
 	} else {
-		created = True;
+		created = true;
 	}
 
 	if (created && !test_FlushKey(p, mem_ctx, &handle)) {
 		printf("FlushKey failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created && !test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
 		printf("CreateKey failed (OpenKey after Create didn't work)\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created && !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY1)) {
 		printf("DeleteKey failed\n");
-		ret = False;
+		ret = false;
 	} else {
-		deleted = True;
+		deleted = true;
 	}
 
 	if (created && !test_FlushKey(p, mem_ctx, &handle)) {
 		printf("FlushKey failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created && deleted && 
 	    test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
 		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_GetVersion(p, mem_ctx, &handle)) {
 		printf("GetVersion failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created && test_CreateKey_sd(p, mem_ctx, &handle, TEST_KEY2, 
 					  NULL, &newhandle)) {
-		created2 = True;
+		created2 = true;
 	}
 
 	if (created2 && !test_GetKeySecurity(p, mem_ctx, &newhandle)) {
 		printf("GetKeySecurity failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created2 && !test_CloseKey(p, mem_ctx, &newhandle)) {
 		printf("CloseKey failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (created && !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY2)) {
 		printf("DeleteKey failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	/* The HKCR hive has a very large fanout */
 
 	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
 		if(!test_key(p, mem_ctx, &handle, MAX_DEPTH - 1)) {
-			ret = False;
+			ret = false;
 		}
 	}
 
 	if(!test_key(p, mem_ctx, &handle, 0)) {
-		ret = False;
+		ret = false;
 	}
 
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY_BASE);
@@ -804,12 +804,12 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-BOOL torture_rpc_winreg(struct torture_context *torture)
+bool torture_rpc_winreg(struct torture_context *torture)
 {
         NTSTATUS status;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct {
 		const char *name;
 		winreg_open_fn fn;
@@ -824,10 +824,10 @@ BOOL torture_rpc_winreg(struct torture_context *torture)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
-	if (!torture_setting_bool(torture, "dangerous", False)) {
+	if (!torture_setting_bool(torture, "dangerous", false)) {
 		printf("winreg_InitiateShutdown disabled - enable dangerous tests to use\n");
 	} else {
 		ret &= test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30);

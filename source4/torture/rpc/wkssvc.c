@@ -78,8 +78,6 @@ static bool test_NetWkstaTransportEnum(struct torture_context *tctx,
 	return true;
 }
 
-
-
 struct torture_suite *torture_rpc_wkssvc(void)
 {
 	struct torture_suite *suite;

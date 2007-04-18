@@ -115,7 +115,7 @@ sub check_or_start($$$$) {
 
 	unlink($env_vars->{SMBD_TEST_LOG});
 	print "STARTING SMBD...";
-	my $pid = fork();
+	$pid = fork();
 	if ($pid == 0) {
 		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';

@@ -3,3 +3,6 @@ LOCAL-RESOLVE/async
 LOCAL-ICONV/next_codepoint()
 BASE-DELAYWRITE/finfo update on close
 RAW-OPLOCK/OPLOCK
+RPC-WINREG
+RPC-WKSSVC.*NetWkstaGetInfo
+RPC-WKSSVC.*NetWkstaTransportEnum
