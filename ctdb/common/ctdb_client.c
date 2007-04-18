@@ -93,6 +93,19 @@ void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 }
 
 /*
+  called in the client when we receive a CTDB_REPLY_SHUTDOWN from the daemon
+
+  This packet comes in response to a CTDB_REQ_SHUTDOWN request packet. It
+  contains any reply data from the call
+*/
+void ctdb_reply_shutdown(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	talloc_free(ctdb);
+
+	exit(10);
+}
+
+/*
   this is called in the client, when data comes in from the daemon
  */
 static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -144,6 +157,10 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_FETCH_LOCK:
 		ctdb_reply_fetch_lock(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_SHUTDOWN:
+		ctdb_reply_shutdown(ctdb, hdr);
 		break;
 
 	default:
@@ -648,3 +665,35 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 {
 	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
 }
+
+/*
+  wait until we're the only node left.
+  this function never returns
+*/
+void ctdb_shutdown(struct ctdb_context *ctdb)
+{
+	struct ctdb_req_shutdown r;
+	int len;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ux_socket_connect(ctdb);
+	}
+
+	len = sizeof(struct ctdb_req_shutdown);
+	ZERO_STRUCT(r);
+	r.hdr.length       = len;
+	r.hdr.ctdb_magic   = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation    = CTDB_REQ_SHUTDOWN;
+	r.hdr.reqid        = 0;
+
+	ctdb_client_queue_pkt(ctdb, &(r.hdr));
+
+	/* this event loop will terminate once we receive the reply */
+	while (1) {
+		event_loop_once(ctdb->ev);
+	}
+}
+
+

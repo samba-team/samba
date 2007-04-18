@@ -140,9 +140,10 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 void ctdb_connect_wait(struct ctdb_context *ctdb);
 
 /*
-  wait until we're the only node left
+  initiate an ordered ctdb cluster shutdown
+  this function will never return
 */
-void ctdb_wait_loop(struct ctdb_context *ctdb);
+void ctdb_shutdown(struct ctdb_context *ctdb);
 
 /* return vnn of this node */
 uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);

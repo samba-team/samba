@@ -307,21 +307,6 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 }
 
 /*
-  wait until we're the only node left
-*/
-void ctdb_wait_loop(struct ctdb_context *ctdb)
-{
-	int expected = 0;
-	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
-		expected++;
-	}
-	while (ctdb->num_connected > expected) {
-		event_loop_once(ctdb->ev);
-	}
-}
-
-
-/*
   queue a packet or die
 */
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)

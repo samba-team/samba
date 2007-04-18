@@ -171,9 +171,7 @@ int main(int argc, const char *argv[])
 	talloc_free(call.reply_data.dptr);
 
 	/* go into a wait loop to allow other nodes to complete */
-	ctdb_wait_loop(ctdb);
+	ctdb_shutdown(ctdb);
 
-	/* shut it down */
-	talloc_free(ctdb);
 	return 0;
 }

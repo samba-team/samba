@@ -222,6 +222,8 @@ enum ctdb_operation {
 	CTDB_REPLY_CONNECT_WAIT = 1002,
 	CTDB_REQ_FETCH_LOCK     = 1003,
 	CTDB_REPLY_FETCH_LOCK   = 1004,
+	CTDB_REQ_SHUTDOWN       = 1005,
+	CTDB_REPLY_SHUTDOWN     = 1006,
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -297,6 +299,14 @@ struct ctdb_req_message {
 };
 
 struct ctdb_req_finished {
+	struct ctdb_req_header hdr;
+};
+
+struct ctdb_req_shutdown {
+	struct ctdb_req_header hdr;
+};
+
+struct ctdb_reply_shutdown {
 	struct ctdb_req_header hdr;
 };
 
