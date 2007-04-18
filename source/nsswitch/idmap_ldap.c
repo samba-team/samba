@@ -1028,6 +1028,7 @@ static struct id_map *find_map_by_sid(struct id_map **maps, DOM_SID *sid)
 
 static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
+       	LDAPMessage *entry = NULL;
 	NTSTATUS ret;
 	TALLOC_CTX *memctx;
 	struct idmap_ldap_context *ctx;
@@ -1108,7 +1109,6 @@ again:
 	}
 
 	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
 		char *sidstr = NULL;
 		char *tmp = NULL;
 		enum id_type type;
