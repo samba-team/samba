@@ -333,9 +333,12 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	OM_uint32 flags = 0;
 	gss_buffer_desc in_buf, out_buf;
 	struct smb_tran_enc_state_gss *gss_state;
+	DATA_BLOB auth_reply = data_blob(NULL,0);
+	DATA_BLOB response = data_blob(NULL,0);
+	NTSTATUS status;
 
 	if (!partial_srv_trans_enc_ctx) {
-		NTSTATUS status = make_srv_encryption_context(SMB_TRANS_ENC_GSS, &partial_srv_trans_enc_ctx);
+		status = make_srv_encryption_context(SMB_TRANS_ENC_GSS, &partial_srv_trans_enc_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -361,8 +364,9 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 				NULL,		/* Ingore time. */
 				NULL);		/* Ignore delegated creds. */
 
+	status = gss_err_to_ntstatus(ret, min);
 	if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
-		return gss_err_to_ntstatus(ret, min);
+		return status;
 	}
 
 	/* Ensure we've got sign+seal available. */
@@ -376,20 +380,18 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 		}
 	}
 
-	SAFE_FREE(*ppdata);
-	*ppdata = memdup(out_buf.value, out_buf.length);
-	if (!*ppdata) {
-		gss_release_buffer(&min, &out_buf);
-		return NT_STATUS_NO_MEMORY;
-	}
-	*p_data_size = out_buf.length;
+	auth_reply = data_blob(out_buf.value, out_buf.length);
 	gss_release_buffer(&min, &out_buf);
 
-	if (ret != GSS_S_CONTINUE_NEEDED) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	} else {
-		return NT_STATUS_OK;
-	}
+	/* Wrap in SPNEGO. */
+	response = spnego_gen_auth_response(&auth_reply, status, OID_KERBEROS5);
+	data_blob_free(&auth_reply);
+
+	SAFE_FREE(*ppdata);
+	*ppdata = response.data;
+	*p_data_size = response.length;
+
+	return status;
 }
 #endif
 
