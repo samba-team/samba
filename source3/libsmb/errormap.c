@@ -1652,6 +1652,10 @@ NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor)
 		return NT_STATUS_OK;
 	}
 
+	if (gss_maj == GSS_S_CONTINUE_NEEDED) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
 	if (gss_maj == GSS_S_FAILURE) {
 		return map_nt_error_from_unix((int)minor);
 	}

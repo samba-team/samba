@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    FS info functions
    Copyright (C) Stefan (metze) Metzmacher	2003
+   Copyright (C) Jeremy Allison 2007.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -355,6 +356,22 @@ static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA
 }
 
 /******************************************************************************
+ Make a client state struct.
+******************************************************************************/
+
+static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type smb_enc_type)
+{
+	struct smb_trans_enc_state *es = NULL;
+	es = SMB_MALLOC_P(struct smb_trans_enc_state);
+	if (!es) {
+		return NULL;
+	}
+	ZERO_STRUCTP(es);
+	es->smb_enc_type = smb_enc_type;
+	return es;
+}
+
+/******************************************************************************
  Start a raw ntlmssp encryption.
 ******************************************************************************/
 
@@ -367,14 +384,11 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB blob_out = data_blob(NULL, 0);
 	DATA_BLOB param_out = data_blob(NULL, 0);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct smb_trans_enc_state *es = NULL;
+	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
 
-	es = SMB_MALLOC_P(struct smb_trans_enc_state);
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(es);
-	es->smb_enc_type = SMB_TRANS_ENC_NTLM;
 	status = ntlmssp_client_start(&es->s.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -423,3 +437,166 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	common_free_encryption_state(&es);
 	return status;
 }
+
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+
+#ifndef SMB_GSS_REQUIRED_FLAGS
+#define SMB_GSS_REQUIRED_FLAGS (GSS_C_CONF_FLAG|GSS_C_INTEG_FLAG|GSS_C_MUTUAL_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)
+#endif
+
+/******************************************************************************
+ Get client gss blob to send to a server.
+******************************************************************************/
+
+static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
+				const char *service,
+				const char *host,
+				NTSTATUS status_in,
+				DATA_BLOB spnego_blob_in,
+				DATA_BLOB *p_blob_out)
+{
+	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, NULL};
+	OM_uint32 ret;
+	OM_uint32 min;
+	gss_name_t srv_name;
+	gss_buffer_desc input_name;
+	gss_buffer_desc *p_tok_in;
+	gss_buffer_desc tok_out, tok_in;
+	DATA_BLOB blob_out = data_blob(NULL, 0);
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	char *host_princ_s = NULL;
+	OM_uint32 ret_flags = 0;
+	NTSTATUS status = NT_STATUS_OK;
+
+	memset(&tok_out, '\0', sizeof(tok_out));
+
+	/* Get a ticket for the service@host */
+	asprintf(&host_princ_s, "%s@%s", service, host);
+	if (host_princ_s == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	input_name.value = host_princ_s;
+	input_name.length = strlen(host_princ_s) + 1;
+
+	ret = gss_import_name(&min,
+				&input_name,
+				GSS_C_NT_HOSTBASED_SERVICE,
+				&srv_name);
+
+	if (ret != GSS_S_COMPLETE) {
+		SAFE_FREE(host_princ_s);
+		return map_nt_error_from_gss(ret, min);
+	}
+
+	if (spnego_blob_in.length == 0) {
+		p_tok_in = GSS_C_NO_BUFFER;
+	} else {
+		/* Remove the SPNEGO wrapper */
+		if (!spnego_parse_auth_response(spnego_blob_in, status_in, OID_KERBEROS5, &blob_in)) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto fail;
+		}
+		tok_in.value = blob_in.data;
+		tok_in.length = blob_in.length;
+		p_tok_in = &tok_in;
+	}
+
+	ret = gss_init_sec_context(&min,
+				GSS_C_NO_CREDENTIAL, /* Use our default cred. */
+				&es->s.gss_state->gss_ctx,
+				srv_name,
+				GSS_C_NO_OID, /* default OID. */
+				GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG,
+				GSS_C_INDEFINITE,	/* requested ticket lifetime. */
+				NULL,   /* no channel bindings */
+				p_tok_in,
+				NULL,   /* ignore mech type */
+				&tok_out,
+				&ret_flags,
+				NULL);  /* ignore time_rec */
+
+	status = map_nt_error_from_gss(ret, min);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto fail;
+	}
+
+	if ((ret_flags & SMB_GSS_REQUIRED_FLAGS) != SMB_GSS_REQUIRED_FLAGS) {
+		status = NT_STATUS_ACCESS_DENIED;
+	}
+
+	blob_out = data_blob(tok_out.value, tok_out.length);
+
+	/* Wrap in an SPNEGO wrapper */
+	*p_blob_out = gen_negTokenTarg(krb_mechs, blob_out);
+
+  fail:
+
+	data_blob_free(&blob_out);
+	data_blob_free(&blob_in);
+	SAFE_FREE(host_princ_s);
+	gss_release_name(&min, &srv_name);
+	if (tok_out.value) {
+		gss_release_buffer(&min, &tok_out);
+	}
+	return status;
+}
+
+/******************************************************************************
+ Start a SPNEGO gssapi encryption context.
+******************************************************************************/
+
+NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
+{
+	DATA_BLOB blob_recv = data_blob(NULL, 0);
+	DATA_BLOB blob_send = data_blob(NULL, 0);
+	DATA_BLOB param_out = data_blob(NULL, 0);
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	fstring fqdn;
+	const char *servicename;
+	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_GSS);
+
+	if (!es) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	name_to_fqdn(fqdn, cli->desthost);
+	strlower_m(fqdn);
+
+	servicename = "cifs";
+	status = make_cli_gss_blob(es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
+	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		servicename = "host";
+		status = make_cli_gss_blob(es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			goto fail;
+		}
+	}
+
+	do {
+		data_blob_free(&blob_recv);
+		status = enc_blob_send_receive(cli, &blob_send, &blob_recv, &param_out);
+		if (param_out.length == 2) {
+			es->enc_ctx_num = SVAL(param_out.data, 0);
+		}
+		data_blob_free(&blob_send);
+		status = make_cli_gss_blob(es, servicename, fqdn, status, blob_recv, &blob_send);
+	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+	data_blob_free(&blob_recv);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/* Replace the old state, if any. */
+		if (cli->trans_enc_state) {
+			common_free_encryption_state(&cli->trans_enc_state);
+		}
+		cli->trans_enc_state = es;
+		cli->trans_enc_state->enc_on = True;
+		es = NULL;
+	}
+
+  fail:
+
+	common_free_encryption_state(&es);
+	return status;
+}
+#endif
