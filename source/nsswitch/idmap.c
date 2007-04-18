@@ -43,6 +43,12 @@ struct idmap_alloc_backend {
 
 struct idmap_cache_ctx;
 
+struct idmap_alloc_context {
+	const char *params;
+	struct idmap_alloc_methods *methods;
+	BOOL initialized;
+};
+
 static TALLOC_CTX *idmap_ctx = NULL;
 static struct idmap_cache_ctx *idmap_cache;
 
@@ -53,9 +59,10 @@ static int pdb_dom_num = -1;
 static int def_dom_num = -1;
 
 static struct idmap_alloc_backend *alloc_backends = NULL;
-static struct idmap_alloc_methods *alloc_methods = NULL;
+static struct idmap_alloc_context *idmap_alloc_ctx = NULL;
 
 #define IDMAP_CHECK_RET(ret) do { if ( ! NT_STATUS_IS_OK(ret)) { DEBUG(2, ("ERROR: NTSTATUS = 0x%08x\n", NT_STATUS_V(ret))); goto done; } } while(0)
+#define IDMAP_REPORT_RET(ret) do { if ( ! NT_STATUS_IS_OK(ret)) { DEBUG(2, ("ERROR: NTSTATUS = 0x%08x\n", NT_STATUS_V(ret))); } } while(0)
 #define IDMAP_CHECK_ALLOC(mem) do { if (!mem) { DEBUG(0, ("Out of memory!\n")); ret = NT_STATUS_NO_MEMORY; goto done; } } while(0)
 
 static struct idmap_methods *get_methods(struct idmap_backend *be, const char *name)
@@ -100,6 +107,12 @@ void reset_idmap_in_own_child(void)
 void set_idmap_in_own_child(void)
 {
 	idmap_in_own_child = True;
+}
+
+BOOL idmap_is_offline(void)
+{
+	return ( lp_winbind_offline_logon() &&
+	     get_global_winbindd_state_offline() );
 }
 
 /**********************************************************************
@@ -221,9 +234,9 @@ static int close_domain_destructor(struct idmap_domain *dom)
 NTSTATUS idmap_close(void)
 {
 	/* close the alloc backend first before freeing idmap_ctx */
-	if (alloc_methods) {
-		alloc_methods->close_fn();
-		alloc_methods = NULL;
+	if (idmap_alloc_ctx) {
+		idmap_alloc_ctx->methods->close_fn();
+		idmap_alloc_ctx->methods = NULL;
 	}
 	alloc_backends = NULL;
 
@@ -272,7 +285,7 @@ NTSTATUS idmap_init_cache(void)
 NTSTATUS idmap_init(void)
 {	
 	NTSTATUS ret;
-	static NTSTATUS backend_init_status = NT_STATUS_UNSUCCESSFUL;	
+	static NTSTATUS idmap_init_status = NT_STATUS_UNSUCCESSFUL;
 	struct idmap_domain *dom;
 	char *compat_backend = NULL;
 	char *compat_params = NULL;
@@ -283,24 +296,12 @@ NTSTATUS idmap_init(void)
 	int compat = 0;
 	int i;
 
-	/* Always initialize the cache.  We'll have to delay initialization
-	   of backends if we are offline */
-
 	ret = idmap_init_cache();
 	if ( !NT_STATUS_IS_OK(ret) )
 		return ret;
 
-	if ( NT_STATUS_IS_OK(backend_init_status) ) {
+	if (NT_STATUS_IS_OK(idmap_init_status))
 		return NT_STATUS_OK;
-	}
-	
-	/* We can't reliably call intialization code here unless 
-	   we are online */
-
-	if ( get_global_winbindd_state_offline() ) {
-		backend_init_status = NT_STATUS_FILE_IS_OFFLINE;
-		return backend_init_status;		
-	}
 
 	static_init_idmap;
 
@@ -432,13 +433,18 @@ NTSTATUS idmap_init(void)
 		/* now that we have methods, set the destructor for this domain */
 		talloc_set_destructor(dom, close_domain_destructor);
 
+		if (compat_params) {
+			dom->params = talloc_strdup(dom, compat_params);
+			IDMAP_CHECK_ALLOC(dom->params);
+		} else {
+			dom->params = NULL;
+		}
+
 		/* Finally instance a backend copy for this domain */
-		ret = dom->methods->init(dom, compat_params);
+		ret = dom->methods->init(dom);
 		if ( ! NT_STATUS_IS_OK(ret)) {
-			DEBUG(0, ("ERROR: Initialization failed for backend %s (domain %s)\n",
+			DEBUG(0, ("ERROR: Initialization failed for backend %s (domain %s), deferred!\n",
 						parm_backend, dom->name));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
 		}
 		idmap_domains = talloc_realloc(idmap_ctx, idmap_domains, struct idmap_domain *, i+1);
 		if ( ! idmap_domains) {
@@ -489,8 +495,15 @@ NTSTATUS idmap_init(void)
 		/* now that we have methods, set the destructor for this domain */
 		talloc_set_destructor(dom, close_domain_destructor);
 
+		if (compat_params) {
+			dom->params = talloc_strdup(dom, compat_params);
+			IDMAP_CHECK_ALLOC(dom->params);
+		} else {
+			dom->params = NULL;
+		}
+
 		/* Finally instance a backend copy for this domain */
-		ret = dom->methods->init(dom, compat_params);
+		ret = dom->methods->init(dom);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 			DEBUG(0, ("ERROR: Initialization failed for idmap_nss ?!\n"));
 			ret = NT_STATUS_UNSUCCESSFUL;
@@ -533,8 +546,15 @@ NTSTATUS idmap_init(void)
 	/* now that we have methods, set the destructor for this domain */
 	talloc_set_destructor(dom, close_domain_destructor);
 
+	if (compat_params) {
+		dom->params = talloc_strdup(dom, compat_params);
+		IDMAP_CHECK_ALLOC(dom->params);
+	} else {
+		dom->params = NULL;
+	}
+
 	/* Finally instance a backend copy for this domain */
-	ret = dom->methods->init(dom, compat_params);
+	ret = dom->methods->init(dom);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("ERROR: Initialization failed for idmap_passdb ?!\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -595,37 +615,50 @@ NTSTATUS idmap_init(void)
 	}
 
 	if ( alloc_backend ) {
+		
+		idmap_alloc_ctx = talloc_zero(idmap_ctx, struct idmap_alloc_context);
+		IDMAP_CHECK_ALLOC(idmap_alloc_ctx);
 
-		alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
-		if ( ! alloc_methods) {
+		idmap_alloc_ctx->methods = get_alloc_methods(alloc_backends, alloc_backend);
+		if ( ! idmap_alloc_ctx->methods) {
 			ret = smb_probe_module("idmap", alloc_backend);
 			if (NT_STATUS_IS_OK(ret)) {
-				alloc_methods = get_alloc_methods(alloc_backends, alloc_backend);
+				idmap_alloc_ctx->methods = get_alloc_methods(alloc_backends, alloc_backend);
 			}
 		}
-		if ( alloc_methods) {
-			ret = alloc_methods->init(compat_params);
+		if (idmap_alloc_ctx->methods) {
+
+			if (compat_params) {
+				idmap_alloc_ctx->params = talloc_strdup(idmap_alloc_ctx, compat_params);
+				IDMAP_CHECK_ALLOC(idmap_alloc_ctx->params);
+			} else {
+				idmap_alloc_ctx->params = NULL;
+			}
+
+			ret = idmap_alloc_ctx->methods->init(idmap_alloc_ctx->params);
 			if ( ! NT_STATUS_IS_OK(ret)) {
-				DEBUG(0, ("idmap_init: Initialization failed for alloc "
-					  "backend %s\n", alloc_backend));
-				ret = NT_STATUS_UNSUCCESSFUL;
-				goto done;
-		}
+				DEBUG(0, ("ERROR: Initialization failed for alloc "
+					  "backend %s, deferred!\n", alloc_backend));
+			} else {
+				idmap_alloc_ctx->initialized = True;
+			}
 		} else {
 			DEBUG(2, ("idmap_init: Unable to get methods for alloc backend %s\n", 
 				  alloc_backend));
 			/* certain compat backends are just readonly */
-			if ( compat )
+			if ( compat ) {
+				TALLOC_FREE(idmap_alloc_ctx);
 				ret = NT_STATUS_OK;
-			else
+			} else {
 				ret = NT_STATUS_UNSUCCESSFUL;
+			}
 		}
 	}
 	
 	/* cleanpu temporary strings */
 	TALLOC_FREE( compat_backend );
-	
-	backend_init_status = NT_STATUS_OK;
+
+	idmap_init_status = NT_STATUS_OK;
 	
 	return ret;
 
@@ -633,10 +666,33 @@ done:
 	DEBUG(0, ("Aborting IDMAP Initialization ...\n"));
 	idmap_close();
 
-	/* save the init status for later checks */
-	backend_init_status = ret;
-	
 	return ret;
+}
+
+static NTSTATUS idmap_alloc_init(void)
+{
+	NTSTATUS ret;
+
+	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
+		return ret;
+	}
+
+	if ( ! idmap_alloc_ctx) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if ( ! idmap_alloc_ctx->initialized) {
+		ret = idmap_alloc_ctx->methods->init(idmap_alloc_ctx->params);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			DEBUG(0, ("ERROR: Initialization failed for alloc "
+				  "backend, deferred!\n"));
+			return ret;
+		} else {
+			idmap_alloc_ctx->initialized = True;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 /**************************************************************************
@@ -647,60 +703,48 @@ NTSTATUS idmap_allocate_uid(struct unixid *id)
 {
 	NTSTATUS ret;
 
-	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
+	if (! NT_STATUS_IS_OK(ret = idmap_alloc_init())) {
 		return ret;
 	}
 
-	if ( !alloc_methods )
-		return NT_STATUS_NOT_SUPPORTED;	
-
 	id->type = ID_TYPE_UID;
-	return alloc_methods->allocate_id(id);
+	return idmap_alloc_ctx->methods->allocate_id(id);
 }
 
 NTSTATUS idmap_allocate_gid(struct unixid *id)
 {
 	NTSTATUS ret;
 
-	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
+	if (! NT_STATUS_IS_OK(ret = idmap_alloc_init())) {
 		return ret;
 	}
 
-	if ( !alloc_methods )
-		return NT_STATUS_NOT_SUPPORTED;	
-
 	id->type = ID_TYPE_GID;
-	return alloc_methods->allocate_id(id);
+	return idmap_alloc_ctx->methods->allocate_id(id);
 }
 
 NTSTATUS idmap_set_uid_hwm(struct unixid *id)
 {
 	NTSTATUS ret;
 
-	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
+	if (! NT_STATUS_IS_OK(ret = idmap_alloc_init())) {
 		return ret;
 	}
 
-	if ( !alloc_methods )
-		return NT_STATUS_NOT_SUPPORTED;	
-
 	id->type = ID_TYPE_UID;
-	return alloc_methods->set_id_hwm(id);
+	return idmap_alloc_ctx->methods->set_id_hwm(id);
 }
 
 NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 {
 	NTSTATUS ret;
 
-	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
+	if (! NT_STATUS_IS_OK(ret = idmap_alloc_init())) {
 		return ret;
 	}
 
-	if ( !alloc_methods )
-		return NT_STATUS_NOT_SUPPORTED;	
-
 	id->type = ID_TYPE_GID;
-	return alloc_methods->set_id_hwm(id);
+	return idmap_alloc_ctx->methods->set_id_hwm(id);
 }
 
 /******************************************************************************
@@ -814,6 +858,11 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 	char *domname, *name;
 	enum lsa_SidType sid_type;
 	BOOL wbret;
+
+	/* If we are offline we cannot lookup SIDs, deny mapping */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	ret = idmap_can_map(map, &dom);
 	if ( ! NT_STATUS_IS_OK(ret)) {
@@ -937,11 +986,6 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 
 	_ids = ids;
 
-	/* make sure all maps are marked as in UNKNOWN status */
-	for (i = 0; _ids[i]; i++) {
-		_ids[i]->status = ID_UNKNOWN;
-	}
-
 	unmapped = NULL;
 	for (n = num_domains-1; n >= 0; n--) { /* cycle backwards */
 
@@ -950,12 +994,12 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 		DEBUG(10, ("Query sids from domain %s\n", dom->name));
 		
 		ret = dom->methods->unixids_to_sids(dom, _ids);
-		IDMAP_CHECK_RET(ret);
+		IDMAP_REPORT_RET(ret);
 
 		unmapped = NULL;
 
 		for (i = 0, u = 0; _ids[i]; i++) {
-			if (_ids[i]->status == ID_UNKNOWN || _ids[i]->status == ID_UNMAPPED) {
+			if (_ids[i]->status != ID_MAPPED) {
 				unmapped = talloc_realloc(ctx, unmapped, struct id_map *, u + 2);
 				IDMAP_CHECK_ALLOC(unmapped);
 				unmapped[u] = _ids[i];
@@ -975,7 +1019,9 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 
 	if (unmapped) {
 		/* there are still unmapped ids, map them to the unix users/groups domains */
+		/* except for expired entries, these will be returned as valid (offline mode) */
 		for (i = 0; unmapped[i]; i++) {
+			if (unmapped[i]->status == ID_EXPIRED) continue;
 			switch (unmapped[i]->xid.type) {
 			case ID_TYPE_UID:
 				uid_to_unix_users_sid((uid_t)unmapped[i]->xid.id, unmapped[i]->sid);
@@ -1025,11 +1071,8 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	for (i = 0; ids[i]; i++) {
 		uint32 idx;		
 
-		/* make sure they are unknown to start off */
-		ids[i]->status = ID_UNKNOWN;
-
 		if ( (dom = find_idmap_domain_from_sid( ids[i]->sid )) == NULL ) {
-			/* no vailable idmap_domain.  Move on */
+			/* no available idmap_domain.  Move on */
 			continue;
 		}
 
@@ -1057,7 +1100,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 			dom = idmap_domains[i];
 			DEBUG(10, ("Query ids from domain %s\n", dom->name));
 			ret = dom->methods->sids_to_unixids(dom, dom_ids[i]);
-			IDMAP_CHECK_RET(ret);
+			IDMAP_REPORT_RET(ret);
 		}
 	}
 
@@ -1065,6 +1108,8 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	/* let's see if we have any unmapped SID left and act accordingly */
 
 	for (i = 0; ids[i]; i++) {
+		/* NOTE: this will NOT touch ID_EXPIRED entries that the backend
+		 * was not able to confirm/deny (offline mode) */
 		if (ids[i]->status == ID_UNKNOWN || ids[i]->status == ID_UNMAPPED) {
 			/* ok this is an unmapped one, see if we can map it */
 			ret = idmap_new_mapping(ctx, ids[i]);
@@ -1075,7 +1120,8 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 				/* could not map it */
 				ids[i]->status = ID_UNMAPPED;
 			} else {
-				/* Something very bad happened down there */
+				/* Something very bad happened down there
+				 * OR we are offline */
 				ids[i]->status = ID_UNKNOWN;
 			}
 		}
@@ -1164,13 +1210,6 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bi) {
-		/* Only do query if we are online */
-		if ( lp_winbind_offline_logon() &&
-		     get_global_winbindd_state_offline() )
-		{
-			ret = NT_STATUS_FILE_IS_OFFLINE;
-			goto done;
-		}
 
 		ret = idmap_backends_unixids_to_sids(bids);
 		IDMAP_CHECK_RET(ret);
@@ -1179,11 +1218,17 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 		for (i = 0; i < bi; i++) {
 			if (bids[i]->status == ID_MAPPED) {
 				ret = idmap_cache_set(idmap_cache, bids[i]);
+			} else if (bids[i]->status == ID_EXPIRED) {
+				/* the cache returned an expired entry and the backend was
+				 * was not able to clear the situation (offline).
+				 * This handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
+				 * for disconnected mode, */
+				bids[i]->status = ID_MAPPED;
 			} else if (bids[i]->status == ID_UNKNOWN) {
-				/* return an expired entry in the cache or an unknown */
-				/* this handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
-				 * for disconnected mode */
-				idmap_cache_map_id(idmap_cache, ids[i]);
+				/* something bad here. We were not able to handle this for some
+				 * reason, mark it as unmapped and hope next time things will
+				 * settle down. */
+				bids[i]->status = ID_UNMAPPED;
 			} else { /* unmapped */
 				ret = idmap_cache_set_negative_id(idmap_cache, bids[i]);
 			}
@@ -1270,13 +1315,6 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bids) {
-		/* Only do query if we are online */
-		if ( lp_winbind_offline_logon() &&
-		     get_global_winbindd_state_offline() )
-		{
-			ret = NT_STATUS_FILE_IS_OFFLINE;
-			goto done;
-		}
 		
 		ret = idmap_backends_sids_to_unixids(bids);
 		IDMAP_CHECK_RET(ret);
@@ -1285,12 +1323,18 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 		for (i = 0; bids[i]; i++) {
 			if (bids[i]->status == ID_MAPPED) {
 				ret = idmap_cache_set(idmap_cache, bids[i]);
+			} else if (bids[i]->status == ID_EXPIRED) {
+				/* the cache returned an expired entry and the backend was
+				 * was not able to clear the situation (offline).
+				 * This handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
+				 * for disconnected mode, */
+				bids[i]->status = ID_MAPPED;
 			} else if (bids[i]->status == ID_UNKNOWN) {
-				/* return an expired entry in the cache or an unknown */
-				/* this handles a previous NT_STATUS_SYNCHRONIZATION_REQUIRED
-				 * for disconnected mode */
-				idmap_cache_map_id(idmap_cache, ids[i]);
-			} else {
+				/* something bad here. We were not able to handle this for some
+				 * reason, mark it as unmapped and hope next time things will
+				 * settle down. */
+				bids[i]->status = ID_UNMAPPED;
+			} else { /* unmapped */
 				ret = idmap_cache_set_negative_sid(idmap_cache, bids[i]);
 			}
 			IDMAP_CHECK_RET(ret);
@@ -1362,15 +1406,15 @@ void idmap_dump_maps(char *logfile)
 		return;
 	}
 
-	if ( alloc_methods ) {		
+	if (NT_STATUS_IS_OK(ret = idmap_alloc_init())) {		
 		allid.type = ID_TYPE_UID;
 		allid.id = 0;
-		alloc_methods->get_id_hwm(&allid);
+		idmap_alloc_ctx->methods->get_id_hwm(&allid);
 		fprintf(dump, "USER HWM %lu\n", (unsigned long)allid.id);
 		
 		allid.type = ID_TYPE_GID;
 		allid.id = 0;
-		alloc_methods->get_id_hwm(&allid);
+		idmap_alloc_ctx->methods->get_id_hwm(&allid);
 		fprintf(dump, "GROUP HWM %lu\n", (unsigned long)allid.id);
 	}
 	

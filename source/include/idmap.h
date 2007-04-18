@@ -42,13 +42,15 @@ struct idmap_domain {
 	BOOL readonly;
 	void *private_data;
 	struct idmap_methods *methods;
+	BOOL initialized;
+	const char *params;
 };
 
 /* Filled out by IDMAP backends */
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)(struct idmap_domain *dom, const char *compat_params);
+	NTSTATUS (*init)(struct idmap_domain *dom);
 
 	NTSTATUS (*unixids_to_sids)(struct idmap_domain *dom, struct id_map **ids);
 	NTSTATUS (*sids_to_unixids)(struct idmap_domain *dom, struct id_map **ids);
