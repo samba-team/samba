@@ -310,10 +310,6 @@ struct ctdb_req_shutdown {
 	struct ctdb_req_header hdr;
 };
 
-struct ctdb_reply_shutdown {
-	struct ctdb_req_header hdr;
-};
-
 struct ctdb_req_connect_wait {
 	struct ctdb_req_header hdr;
 };
