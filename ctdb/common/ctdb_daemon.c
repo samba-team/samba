@@ -151,6 +151,7 @@ static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_contex
 	state = ctdb_daemon_call_send_remote(ctdb_db, call, header);
 	state->fetch_private = rec;
 	talloc_steal(state, rec);
+	talloc_steal(mem_ctx, state);
 
 	return state;
 }
