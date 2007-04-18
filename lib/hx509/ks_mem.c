@@ -80,6 +80,7 @@ mem_free(hx509_certs certs, void *data)
     free(mem->certs.val);
     for (i = 0; mem->keys && mem->keys[i]; i++)
 	_hx509_private_key_free(&mem->keys[i]);
+    free(mem->keys);
     free(mem->name);
     free(mem);
 
