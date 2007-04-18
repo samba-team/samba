@@ -494,7 +494,7 @@ static void ctdb_read_from_parent(struct event_context *ev, struct fd_event *fde
 	/* XXX this is a good place to try doing some cleaning up before exiting */
 	cnt = read(*fd, &buf, 1);
 	if (cnt==0) {
-		DEBUG(0,(__location__ " parent process exited. filedescriptor dissappeared\n"));
+		DEBUG(2,(__location__ " parent process exited. filedescriptor dissappeared\n"));
 		exit(1);
 	} else {
 		DEBUG(0,(__location__ " ctdb: did not expect data from parent process\n"));
