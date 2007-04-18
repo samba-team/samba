@@ -1,5 +1,7 @@
 2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: free template
+
 	* ks_mem.c (mem_free): free key array too
 
 	* hxtool.c: free private key and tbs
