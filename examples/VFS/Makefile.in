@@ -12,7 +12,7 @@ FLAGS		=  $(CFLAGS) $(CPPFLAGS) -fPIC \
 		-I$(SAMBA_SOURCE)/popt  \
 		-I$(SAMBA_SOURCE)/lib/replace  \
 		-I$(SAMBA_SOURCE)/lib/talloc  \
-		-I$(SAMBA_SOURCE)/tdb/include  \
+		-I$(SAMBA_SOURCE)/lib/tdb/include  \
 		-I$(SAMBA_SOURCE)/smbwrapper \
 		-I$(SAMBA_SOURCE)/librpc \
 		-I$(SAMBA_SOURCE) -I.
