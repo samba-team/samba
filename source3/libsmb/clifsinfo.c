@@ -378,7 +378,7 @@ static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type sm
 		}
 		ZERO_STRUCTP(es->s.gss_state);
 #else
-		DEBUG(0,("make_cli_enc_state: no krb5 compiled.\n");
+		DEBUG(0,("make_cli_enc_state: no krb5 compiled.\n"));
 		SAFE_FREE(es);
 		return NULL;
 #endif
