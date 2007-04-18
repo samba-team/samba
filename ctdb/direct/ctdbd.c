@@ -45,12 +45,14 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	const char *db_list = "test.tdb";
+	const char *db_dir = ".";
 	char *s, *tok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "dblist", 0, POPT_ARG_STRING, &db_list, 0, "list of databases", NULL },
+		{ "dbdir", 0, POPT_ARG_STRING, &db_dir, 0, "directory for the tdb files", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -83,6 +85,8 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	ctdb_set_tdb_dir(ctdb, db_dir);
 
 	/* attach to the list of databases */
 	s = talloc_strdup(ctdb, db_list);

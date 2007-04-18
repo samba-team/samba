@@ -72,6 +72,11 @@ struct ctdb_context *ctdb_init(struct event_context *ev);
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 
 /*
+  set the directory for the local databases
+*/
+void ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
+
+/*
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);

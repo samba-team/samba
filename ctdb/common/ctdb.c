@@ -74,6 +74,14 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
 }
 
 /*
+  set the directory for the local databases
+*/
+void ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
+{
+	ctdb->db_directory = talloc_strdup(ctdb, dir);
+}
+
+/*
   add a node to the list of active nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)

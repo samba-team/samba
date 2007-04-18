@@ -119,6 +119,7 @@ struct ctdb_context {
 	struct event_context *ev;
 	struct ctdb_address address;
 	const char *name;
+	const char *db_directory;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
