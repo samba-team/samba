@@ -47,6 +47,7 @@ port=@port@
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 cache="FILE:krb5ccfile"
+nocache="FILE:no-such-cache"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
@@ -74,6 +75,10 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
+echo upw > ${objdir}/foopassword
+
+${kadmin} add -p upw --use-defaults user@${R} || exit 1
+${kadmin} add -p upw --use-defaults another@${R} || exit 1
 ${kadmin} add -p p1 --use-defaults host/host.test.h5l.se@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/host.test.h5l.se@${R} || exit 1
 
@@ -94,7 +99,37 @@ trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 exitcode=0
 
-${acquire_cred} host@host.test.h5l.se || exit 1
+echo "initial ticket"
+${kinit} --password-file=${objdir}/foopassword user@${R} || exitcode=1
+
+echo "keytab"
+${acquire_cred} \
+    --acquire-type=accept \
+    --acquire-name=host@host.test.h5l.se || exit 1
+echo "init using keytab"
+${acquire_cred} \
+    --acquire-type=initiate \
+    --acquire-name=host@host.test.h5l.se || exit 1
+echo "init using existing cc"
+${acquire_cred} \
+    --name-type=user-name \
+    --acquire-type=initiate \
+    --acquire-name=user || exit 1
+
+KRB5CCNAME=${nocache}
+
+echo "fail init using existing cc"
+${acquire_cred} \
+    --name-type=user-name \
+    --acquire-type=initiate \
+    --acquire-name=user 2>/dev/null && exit 1
+
+echo "use gss_krb5_ccache_name"
+${acquire_cred} \
+    --name-type=user-name \
+    --ccache=${cache} \
+    --acquire-type=initiate \
+    --acquire-name=user 2>/dev/null || exit 1
 
 trap "" EXIT
 
