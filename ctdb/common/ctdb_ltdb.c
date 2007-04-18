@@ -287,6 +287,10 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 		return -1;
 	}
 
+	/* we need to move the packet off the temporary context in ctdb_recv_pkt(),
+	   so it won't be freed yet */
+	talloc_steal(ctdb_db, hdr);
+
 	/* now tell the caller than we will retry asynchronously */
 	return -2;
 }
