@@ -1017,11 +1017,13 @@ get_AuthorityKeyIdentifier(hx509_context context,
     if (ret == 0) {
 	ai->keyIdentifier = calloc(1, sizeof(*ai->keyIdentifier));
 	if (ai->keyIdentifier == NULL) {
+	    free_SubjectKeyIdentifier(&si);
 	    ret = ENOMEM;
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
 	}
 	ret = der_copy_octet_string(&si, ai->keyIdentifier);
+	free_SubjectKeyIdentifier(&si);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
