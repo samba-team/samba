@@ -314,7 +314,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
 	if (r->hdr.destnode == r->hdr.srcnode) {
-		ctdb_reply_dmaster(ctdb, &r->hdr);
+		/* inject the packet back into the input queue */
+		talloc_steal(ctdb, r);
+		ctdb_recv_pkt(ctdb, (uint8_t *)&r->hdr, r->hdr.length);
 	} else {
 		ctdb_queue_packet(ctdb, &r->hdr);
 	}
@@ -456,6 +458,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
+	int ret;
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
@@ -463,6 +466,16 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 
 	ctdb_db = state->ctdb_db;
+
+	ret = ctdb_ltdb_lock_requeue(ctdb_db, state->call.key, hdr,
+				     ctdb_recv_raw_pkt, ctdb);
+	if (ret == -2) {
+		return;
+	}
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to get lock in ctdb_reply_dmaster\n"));
+		return;
+	}
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -474,11 +487,14 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state->header.dmaster = ctdb->vnn;
 
 	if (ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
+		ctdb_ltdb_unlock(ctdb_db, state->call.key);
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 		return;
 	}
 
 	ctdb_call_local(ctdb_db, &state->call, &state->header, &data, ctdb->vnn);
+
+	ctdb_ltdb_unlock(ctdb_db, state->call.key);
 
 	talloc_steal(state, state->call.reply_data.dptr);
 
