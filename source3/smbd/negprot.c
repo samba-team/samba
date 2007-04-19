@@ -56,7 +56,7 @@ static void get_challenge(char buff[8])
 
 static int reply_corep(char *inbuf, char *outbuf)
 {
-	int outsize = set_message(outbuf,1,0,True);
+	int outsize = set_message(inbuf,outbuf,1,0,True);
 
 	Protocol = PROTOCOL_CORE;
 	
@@ -70,7 +70,7 @@ static int reply_corep(char *inbuf, char *outbuf)
 static int reply_coreplus(char *inbuf, char *outbuf)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-	int outsize = set_message(outbuf,13,0,True);
+	int outsize = set_message(inbuf,outbuf,13,0,True);
 	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
 			readbraw and writebraw (possibly) */
 	/* Reply, SMBlockread, SMBwritelock supported. */
@@ -99,7 +99,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
+	set_message(inbuf,outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
 	SSVAL(outbuf,smb_vwv1,secword); 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
@@ -141,7 +141,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
+	set_message(inbuf,outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
 	SSVAL(outbuf,smb_vwv1,secword); 
 	SIVAL(outbuf,smb_vwv6,sys_getpid());
 
@@ -325,7 +325,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		}
 	}
 
-	set_message(outbuf,17,0,True);
+	set_message(inbuf,outbuf,17,0,True);
 	
 	SCVAL(outbuf,smb_vwv1,secword);
 	
@@ -369,7 +369,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	}
 	
 	SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
-	set_message_end(outbuf, p);
+	set_message_end(inbuf,outbuf, p);
 	
 	return (smb_len(outbuf)+4);
 }
@@ -485,7 +485,7 @@ int reply_negprot(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize)
 {
-	int outsize = set_message(outbuf,1,0,True);
+	int outsize = set_message(inbuf,outbuf,1,0,True);
 	int Index=0;
 	int choice= -1;
 	int protocol;

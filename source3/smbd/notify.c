@@ -107,6 +107,7 @@ static BOOL notify_marshall_changes(int num_changes,
 static void change_notify_reply_packet(const char *request_buf,
 				       NTSTATUS error_code)
 {
+	const char *inbuf = request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -118,7 +119,7 @@ static void change_notify_reply_packet(const char *request_buf,
 	 * Seems NT needs a transact command with an error code
 	 * in it. This is a longer packet than a simple error.
 	 */
-	set_message(outbuf,18,0,False);
+	set_message(inbuf,outbuf,18,0,False);
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
@@ -161,7 +162,7 @@ void change_notify_reply(const char *request_buf, uint32 max_param_count,
 
 	construct_reply_common(request_buf, outbuf);
 
-	if (send_nt_replies(outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
+	if (send_nt_replies(request_buf, outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
 			    prs_offset(&ps), NULL, 0) == -1) {
 		exit_server("change_notify_reply_packet: send_smb failed.");
 	}
