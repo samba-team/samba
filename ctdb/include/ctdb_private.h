@@ -323,7 +323,6 @@ struct ctdb_reply_connect_wait {
 
 struct ctdb_req_fetch_lock {
 	struct ctdb_req_header hdr;
-	struct ctdb_ltdb_header header;
 	uint32_t db_id;
 	uint32_t keylen;
 	uint8_t key[1]; /* key[] */
@@ -332,9 +331,6 @@ struct ctdb_req_fetch_lock {
 struct ctdb_reply_fetch_lock {
 	struct ctdb_req_header hdr;
 	uint32_t state;
-	struct ctdb_ltdb_header header;
-	uint32_t datalen;
-	uint8_t data[1]; /* data[] */
 };
 
 /* internal prototypes */

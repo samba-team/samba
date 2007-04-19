@@ -78,7 +78,11 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
 {
-	ctdb->db_directory = talloc_strdup(ctdb, dir);
+	if (dir == NULL) {
+		ctdb->db_directory = talloc_asprintf(ctdb, "ctdb-%u", ctdb_get_vnn(ctdb));
+	} else {
+		ctdb->db_directory = talloc_strdup(ctdb, dir);
+	}
 	if (ctdb->db_directory == NULL) {
 		return -1;
 	}

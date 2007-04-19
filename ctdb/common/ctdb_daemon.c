@@ -124,6 +124,9 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 }
 
 
+/*
+  send a fetch lock request (actually a ctdb_call()) to a remote node
+ */
 static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 							   TALLOC_CTX *mem_ctx, 
 							   TDB_DATA key, struct ctdb_ltdb_header *header,
@@ -154,42 +157,6 @@ static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_contex
 	talloc_steal(mem_ctx, state);
 
 	return state;
-}
-
-struct client_fetch_lock_data {
-	struct ctdb_client *client;
-	uint32_t reqid;
-};
-
-static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
-{
-	struct ctdb_reply_fetch_lock *r;
-	struct client_fetch_lock_data *data = talloc_get_type(state->async.private_data, struct client_fetch_lock_data);
-	struct ctdb_client *client = talloc_get_type(data->client, struct ctdb_client);
-	int length, res;
-
-	length = offsetof(struct ctdb_reply_fetch_lock, data) + state->call.reply_data.dsize;
-	r = ctdbd_allocate_pkt(client->ctdb, length);
-	if (r == NULL) {
-		DEBUG(0,(__location__ " Failed to allocate reply_call in ctdb daemon\n"));
-		return;
-	}
-	memset(r, 0, offsetof(struct ctdb_reply_fetch_lock, data));
-	r->hdr.length       = length;
-	r->hdr.ctdb_magic   = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.operation    = CTDB_REPLY_FETCH_LOCK;
-	r->hdr.reqid        = data->reqid;
-	r->state            = state->state;
-	r->datalen          = state->call.reply_data.dsize;
-	memcpy(&r->data[0], state->call.reply_data.dptr, r->datalen);
-
-	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
-	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to queue packet from daemon to client\n"));
-	}
-	talloc_free(r);
-	talloc_free(state);
 }
 
 /*
@@ -246,11 +213,17 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 }
 
 
+struct client_fetch_lock_data {
+	struct ctdb_client *client;
+	struct ctdb_req_fetch_lock *f;
+};
+
 /*
   send a fetch lock error reply to the client
  */
-static void daemon_fetch_lock_error(struct ctdb_client *client,
-				    struct ctdb_req_fetch_lock *f)
+static void daemon_fetch_lock_reply(struct ctdb_client *client,
+				    struct ctdb_req_fetch_lock *f, 
+				    int state)
 {
 	struct ctdb_reply_fetch_lock r;
 
@@ -260,14 +233,25 @@ static void daemon_fetch_lock_error(struct ctdb_client *client,
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.operation    = CTDB_REPLY_FETCH_LOCK;
 	r.hdr.reqid        = f->hdr.reqid;
-	r.state            = -1;
+	r.state            = state;
 	
-	/*
-	 * Ignore the result, there's not much we can do anyway.
-	 */
-	ctdb_queue_send(client->queue, (uint8_t *)&r.hdr,
-			r.hdr.length);
+	ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
 }
+
+/*
+  called when a remote fetch lock finishes
+ */
+static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
+{
+	struct client_fetch_lock_data *data = talloc_get_type(state->async.private_data, 
+							      struct client_fetch_lock_data);
+	struct ctdb_client *client = talloc_get_type(data->client, struct ctdb_client);
+
+	daemon_fetch_lock_reply(client, data->f, 0);
+	talloc_free(state);
+}
+
+
 
 /*
   called when the daemon gets a fetch lock request from a client
@@ -279,32 +263,43 @@ static void daemon_request_fetch_lock(struct ctdb_client *client,
 	TDB_DATA key, *data;
 	struct ctdb_db_context *ctdb_db;
 	struct client_fetch_lock_data *fl_data;
+	struct ctdb_ltdb_header header;
+	int ret;
 
 	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
 	if (ctdb_db == NULL) {
-		daemon_fetch_lock_error(client, f);
-		return;
-	}
-
-	if (!ctdb_validate_vnn(client->ctdb, f->header.dmaster)) {
-		DEBUG(0,(__location__ " Invalid dmaster %u\n", f->header.dmaster));
-		daemon_fetch_lock_error(client, f);
+		daemon_fetch_lock_reply(client, f, -1);
 		return;
 	}
 
 	key.dsize = f->keylen;
 	key.dptr = &f->key[0];
 
+	/* XXX - needs non-blocking lock here */
+
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, NULL);
+	if (ret != 0) {
+		daemon_fetch_lock_reply(client, f, -1);
+		return;
+	}
+
+	if (header.dmaster == ctdb_db->ctdb->vnn) {
+		/* we already are the dmaster */
+		daemon_fetch_lock_reply(client, f, 0);
+		return;
+	}
+
 	data        = talloc(client, TDB_DATA);
 	data->dptr  = NULL;
 	data->dsize = 0;
 
-	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, &f->header, data);
+	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, &header, data);
 	talloc_steal(state, data);
 
 	fl_data = talloc(state, struct client_fetch_lock_data);
 	fl_data->client = client;
-	fl_data->reqid  = f->hdr.reqid;
+	fl_data->f = talloc_steal(fl_data, f);
+
 	state->async.fn = daemon_fetch_lock_complete;
 	state->async.private_data = fl_data;
 }
@@ -477,12 +472,15 @@ static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_
 	case CTDB_REQ_CONNECT_WAIT:
 		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
 		break;
+
 	case CTDB_REQ_FETCH_LOCK:
 		daemon_request_fetch_lock(client, (struct ctdb_req_fetch_lock *)hdr);
 		break;
+
 	case CTDB_REQ_SHUTDOWN:
 		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
 		break;
+
 	default:
 		DEBUG(0,(__location__ " daemon: unrecognized operation %d\n",
 			 hdr->operation));
