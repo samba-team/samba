@@ -119,13 +119,16 @@ static NTSTATUS get_srv_gss_creds(const char *service,
 				&nt_hostbased_service,
 				&srv_name);
 
+	DEBUG(10,("get_srv_gss_creds: imported name %s\n",
+		host_princ_s ));
+
 	if (ret != GSS_S_COMPLETE) {
 		SAFE_FREE(host_princ_s);
 		return map_nt_error_from_gss(ret, min);
 	}
 
 	ret = gss_acquire_cred(&min,
-				&srv_name,
+				srv_name,
 				GSS_C_INDEFINITE,
 				GSS_C_NULL_OID_SET,
 				cred_type,
@@ -134,6 +137,9 @@ static NTSTATUS get_srv_gss_creds(const char *service,
 				NULL);
 
 	if (ret != GSS_S_COMPLETE) {
+		ADS_STATUS adss = ADS_ERROR_GSS(ret, min);
+		DEBUG(10,("get_srv_gss_creds: gss_acquire_cred failed with %s\n",
+			ads_errstr(adss)));
 		status = map_nt_error_from_gss(ret, min);
 	}
 
