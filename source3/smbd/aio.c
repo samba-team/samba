@@ -49,8 +49,10 @@ static struct aio_extra *aio_list_head;
  of the aio_read call.
 *****************************************************************************/
 
-static struct aio_extra *create_aio_ex_read(files_struct *fsp, size_t buflen,
-					    uint16 mid)
+static struct aio_extra *create_aio_ex_read(files_struct *fsp,
+						size_t buflen,
+						uint16 mid,
+						const char *inbuf)
 {
 	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
 
@@ -66,6 +68,14 @@ static struct aio_extra *create_aio_ex_read(files_struct *fsp, size_t buflen,
 		SAFE_FREE(aio_ex);
 		return NULL;
 	}
+	/* Save the first 8 bytes of inbuf for possible enc data. */
+	aio_ex->inbuf = SMB_MALLOC_ARRAY(char, 8);
+	if (!aio_ex->inbuf) {
+		SAFE_FREE(aio_ex->outbuf);
+		SAFE_FREE(aio_ex);
+		return NULL;
+	}
+	memcpy(aio_ex->inbuf, inbuf, 8);
 	DLIST_ADD(aio_list_head, aio_ex);
 	aio_ex->fsp = fsp;
 	aio_ex->read_req = True;
@@ -408,7 +418,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			    aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
-	smb_setlen(outbuf,outsize - 4);
+	smb_setlen(outbuf,outsize - 4,aio_ex->inbuf);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server_cleanly("handle_aio_read_complete: send_smb "
