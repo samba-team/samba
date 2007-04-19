@@ -28,7 +28,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
-#include "ctdb.h"
+#include "../include/ctdb.h"
 
 /* structures for packet queueing - see common/ctdb_io.c */
 struct ctdb_partial {
@@ -49,7 +49,7 @@ struct ctdb_queue {
 	struct fd_event *fde;
 	int fd;
 	size_t alignment;
-	void *private;
+	void *private_data;
 	ctdb_queue_cb_fn_t callback;
 };
 
@@ -93,7 +93,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 	if (nread >= 4 && *(uint32_t *)data == nread) {
 		/* it is the responsibility of the incoming packet
 		 function to free 'data' */
-		queue->callback(data, nread, queue->private);
+		queue->callback(data, nread, queue->private_data);
 		return;
 	}
 
@@ -109,7 +109,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 			/* sigh */
 			goto failed;
 		}
-		queue->callback(d2, len, queue->private);
+		queue->callback(d2, len, queue->private_data);
 		data += len;
 		nread -= len;		
 	}
@@ -134,16 +134,16 @@ static void queue_io_read(struct ctdb_queue *queue)
 	return;
 
 failed:
-	queue->callback(NULL, 0, queue->private);
+	queue->callback(NULL, 0, queue->private_data);
 }
 
 
 /* used when an event triggers a dead queue */
 static void queue_dead(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private)
+		       struct timeval t, void *private_data)
 {
-	struct ctdb_queue *queue = talloc_get_type(private, struct ctdb_queue);
-	queue->callback(NULL, 0, queue->private);
+	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
+	queue->callback(NULL, 0, queue->private_data);
 }
 
 
@@ -183,9 +183,9 @@ static void queue_io_write(struct ctdb_queue *queue)
   called when an incoming connection is readable or writeable
 */
 static void queue_io_handler(struct event_context *ev, struct fd_event *fde, 
-			     uint16_t flags, void *private)
+			     uint16_t flags, void *private_data)
 {
-	struct ctdb_queue *queue = talloc_get_type(private, struct ctdb_queue);
+	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
 
 	if (flags & EVENT_FD_READ) {
 		queue_io_read(queue);
@@ -280,7 +280,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx, int fd, int alignment,
 				    
 				    ctdb_queue_cb_fn_t callback,
-				    void *private)
+				    void *private_data)
 {
 	struct ctdb_queue *queue;
 
@@ -290,7 +290,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 	queue->ctdb = ctdb;
 	queue->fd = fd;
 	queue->alignment = alignment;
-	queue->private = private;
+	queue->private_data = private_data;
 	queue->callback = callback;
 	if (fd != -1) {
 		if (ctdb_queue_set_fd(queue, fd) != 0) {

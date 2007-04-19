@@ -74,6 +74,22 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
 }
 
 /*
+  set the directory for the local databases
+*/
+int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
+{
+	if (dir == NULL) {
+		ctdb->db_directory = talloc_asprintf(ctdb, "ctdb-%u", ctdb_get_vnn(ctdb));
+	} else {
+		ctdb->db_directory = talloc_strdup(ctdb, dir);
+	}
+	if (ctdb->db_directory == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+/*
   add a node to the list of active nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
@@ -190,30 +206,41 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 /*
   called by the transport layer when a packet comes in
 */
-static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
+void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+	TALLOC_CTX *tmp_ctx;
+
+	/* place the packet as a child of the tmp_ctx. We then use
+	   talloc_free() below to free it. If any of the calls want
+	   to keep it, then they will steal it somewhere else, and the
+	   talloc_free() will only free the tmp_ctx */
+	tmp_ctx = talloc_new(ctdb);
+	talloc_steal(tmp_ctx, hdr);
 
 	if (length < sizeof(*hdr)) {
 		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
-		return;
+		goto done;
 	}
-	hdr = (struct ctdb_req_header *)data;
 	if (length != hdr->length) {
 		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
 			       hdr->length, length);
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
 		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
-		return;
+		goto done;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
 		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		return;
+		goto done;
 	}
+
+	DEBUG(3,(__location__ " ctdb request %d of type %d length %d from "
+		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+		 hdr->srcnode, hdr->destnode));
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
@@ -244,11 +271,18 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 		ctdb_request_message(ctdb, hdr);
 		break;
 
+	case CTDB_REQ_FINISHED:
+		ctdb_request_finished(ctdb, hdr);
+		break;
+
 	default:
-		printf("Packet with unknown operation %d\n", hdr->operation);
+		DEBUG(0,("%s: Packet with unknown operation %d\n", 
+			 __location__, hdr->operation));
 		break;
 	}
-	talloc_free(hdr);
+
+done:
+	talloc_free(tmp_ctx);
 }
 
 /*
@@ -257,8 +291,8 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 static void ctdb_node_dead(struct ctdb_node *node)
 {
 	node->ctdb->num_connected--;
-	printf("%s: node %s is dead: %d connected\n", 
-	       node->ctdb->name, node->name, node->ctdb->num_connected);
+	DEBUG(1,("%s: node %s is dead: %d connected\n", 
+		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
 /*
@@ -267,8 +301,8 @@ static void ctdb_node_dead(struct ctdb_node *node)
 static void ctdb_node_connected(struct ctdb_node *node)
 {
 	node->ctdb->num_connected++;
-	printf("%s: connected to %s - %d connected\n", 
-	       node->ctdb->name, node->name, node->ctdb->num_connected);
+	DEBUG(1,("%s: connected to %s - %d connected\n", 
+		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
 /*
@@ -281,24 +315,12 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 		expected++;
 	}
 	while (ctdb->num_connected != expected) {
+		DEBUG(3,("ctdb_connect_wait: waiting for %d nodes (have %d)\n", 
+			 expected, ctdb->num_connected));
 		event_loop_once(ctdb->ev);
 	}
+	DEBUG(3,("ctdb_connect_wait: got all %d nodes\n", expected));
 }
-
-/*
-  wait until we're the only node left
-*/
-void ctdb_wait_loop(struct ctdb_context *ctdb)
-{
-	int expected = 0;
-	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
-		expected++;
-	}
-	while (ctdb->num_connected > expected) {
-		event_loop_once(ctdb->ev);
-	}
-}
-
 
 /*
   queue a packet or die
@@ -338,11 +360,3 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	return ctdb;
 }
 
-int ctdb_start(struct ctdb_context *ctdb)
-{
-	if (ctdb->flags&CTDB_FLAG_DAEMON_MODE) {
-		return ctdbd_start(ctdb);
-	}
-
-	return ctdb->methods->start(ctdb);
-}

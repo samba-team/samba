@@ -27,7 +27,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
-
+#include "lib/util/dlinklist.h"
 
 /*
   this dispatches the messages to the registered ctdb message handler
@@ -39,10 +39,11 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 	/* XXX we need a must faster way of finding the matching srvid
 	   - maybe a tree? */
 	for (ml=ctdb->message_list;ml;ml=ml->next) {
-		if (ml->srvid == srvid) break;
+		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) break;
 	}
 	if (ml == NULL) {
-		printf("daemon vnn:%d  no msg handler for srvid=%u\n", ctdb_get_vnn(ctdb), srvid);
+		DEBUG(0,(__location__ " daemon vnn:%d  no msg handler for srvid=%u\n", 
+			 ctdb_get_vnn(ctdb), srvid));
 		/* no registered message handler */
 		return -1;
 	}
@@ -78,15 +79,15 @@ struct ctdb_local_message {
 };
 
 static void ctdb_local_message_trigger(struct event_context *ev, struct timed_event *te, 
-				       struct timeval t, void *private)
+				       struct timeval t, void *private_data)
 {
-	struct ctdb_local_message *m = talloc_get_type(private, 
+	struct ctdb_local_message *m = talloc_get_type(private_data, 
 						       struct ctdb_local_message);
 	int res;
 
 	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
 	if (res != 0) {
-		printf("Failed to dispatch message for srvid=%u\n", m->srvid);
+		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%u\n", m->srvid));
 	}
 	talloc_free(m);
 }
@@ -147,18 +148,6 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	return 0;
 }
 
-/*
-  send a ctdb message
-*/
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data)
-{
-	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_send_message(ctdb, vnn, srvid, data);
-	}
-	return ctdb_daemon_send_message(ctdb, vnn, srvid, data);
-}
-
 
 /*
   when a client goes away, we need to remove its srvid handler from the list
@@ -176,7 +165,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t srvid,
 				  ctdb_message_fn_t handler,
-				  void *private)
+				  void *private_data)
 {
 	struct ctdb_message_list *m;
 
@@ -186,7 +175,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 	m->ctdb            = ctdb;
 	m->srvid           = srvid;
 	m->message_handler = handler;
-	m->message_private = private;
+	m->message_private = private_data;
 	
 	DLIST_ADD(ctdb->message_list, m);
 

@@ -22,11 +22,11 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "cmdline.h"
 
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
-static int num_repeats = 100;
 static int num_clients = 2;
 
 
@@ -34,7 +34,7 @@ static int num_clients = 2;
   handler for messages in bench_ring()
 */
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
-				 TDB_DATA data, void *private)
+				 TDB_DATA data, void *private_data)
 {
 	printf("client vnn:%d received a message to srvid:%d [%s]\n",ctdb_get_vnn(ctdb),srvid,data.dptr);
 	fflush(stdout);
@@ -47,20 +47,11 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
-	const char *nlist = NULL;
-	const char *transport = "tcp";
-	const char *myaddress = NULL;
-	int self_connect=0;
-	int daemon_mode=0;
 	char buf[256];
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		{ "nlist", 0, POPT_ARG_STRING, &nlist, 0, "node list file", "filename" },
-		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
-		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
-		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
-		{ "daemon", 0, POPT_ARG_NONE, &daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
+		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
@@ -95,44 +86,12 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	if (nlist == NULL || myaddress == NULL) {
-		printf("You must provide a node list with --nlist and an address with --listen\n");
-		exit(1);
-	}
-
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
-	ctdb = ctdb_init(ev);
+	ctdb = ctdb_cmdline_init(ev);
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
-		exit(1);
-	}
-
-	if (self_connect) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
-	}
-	if (daemon_mode) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
-	}
-
-	ret = ctdb_set_transport(ctdb, transport);
-	if (ret == -1) {
-		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	/* tell ctdb what address to listen on */
-	ret = ctdb_set_address(ctdb, myaddress);
-	if (ret == -1) {
-		printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	/* tell ctdb what nodes are available */
-	ret = ctdb_set_nlist(ctdb, nlist);
-	if (ret == -1) {
-		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
@@ -171,7 +130,7 @@ int main(int argc, const char *argv[])
 		for (j=0;j<num_clients;j++) {
 			printf("sending message to %d:%d\n", i, j);
 			sprintf(buf,"Message from %d to vnn:%d srvid:%d",ctdb_get_vnn(ctdb),i,j);
-			data.dptr=buf;
+			data.dptr = (unsigned char *)buf;
 			data.dsize=strlen(buf)+1;
 			ctdb_send_message(ctdb, i, j, data);
 		}
@@ -182,6 +141,7 @@ int main(int argc, const char *argv[])
 	}
        
 	/* shut it down */
-	talloc_free(ctdb);
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }

@@ -20,9 +20,12 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "ctdb_private.h"
+#include "../include/ctdb_private.h"
+
+int LogLevel;
 
 /*
   return error string for last error
@@ -42,15 +45,16 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 	talloc_free(ctdb->err_msg);
 	va_start(ap, fmt);
 	ctdb->err_msg = talloc_vasprintf(ctdb, fmt, ap);
+	DEBUG(0,("ctdb error: %s\n", ctdb->err_msg));
 	va_end(ap);
 }
-
 
 /*
   a fatal internal error occurred - no hope for recovery
 */
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 {
+	DEBUG(0,("ctdb fatal error: %s\n", msg));
 	fprintf(stderr, "ctdb fatal error: '%s'\n", msg);
 	abort();
 }
@@ -98,3 +102,18 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 
 	return (1103515243 * value + 12345);  
 }
+
+/*
+  a type checking varient of idr_find
+ */
+void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
+{
+	void *p = idr_find(idp, id);
+	if (p && talloc_check_name(p, type) == NULL) {
+		DEBUG(0,("%s idr_find_type expected type %s  but got %s\n",
+			 location, type, talloc_get_name(p)));
+		return NULL;
+	}
+	return p;
+}
+

@@ -31,7 +31,7 @@
 
 static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 {
-	struct ibw_ctx *ictx = talloc_get_type(ctdb->private, struct ibw_ctx);
+	struct ibw_ctx *ictx = talloc_get_type(ctdb->private_data, struct ibw_ctx);
 	struct sockaddr_in my_addr;
 
 	assert(ictx!=NULL);
@@ -81,12 +81,12 @@ static int ctdb_ibw_start(struct ctdb_context *ctdb)
  */
 static int ctdb_ibw_add_node(struct ctdb_node *node)
 {
-	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private, struct ibw_ctx);
+	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private_data, struct ibw_ctx);
 	struct ctdb_ibw_node *cn = talloc_zero(node, struct ctdb_ibw_node);
 
 	assert(cn!=NULL);
 	cn->conn = ibw_conn_new(ictx, node);
-	node->private = (void *)cn;
+	node->private_data = (void *)cn;
 
 	return (cn->conn!=NULL ? 0 : -1);
 }
@@ -127,7 +127,7 @@ int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn)
 
 static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
-	struct ctdb_ibw_node *cn = talloc_get_type(node->private, struct ctdb_ibw_node);
+	struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
 	int	rc;
 
 	assert(length>=sizeof(uint32_t));
@@ -158,17 +158,17 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
-static void *ctdb_ibw_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+static void *ctdb_ibw_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 {
 	/* TODO: use ibw_alloc_send_buf instead... */
-	return talloc_size(ctdb, size);
+	return talloc_size(mem_ctx, size);
 }
 
 #ifdef __NOTDEF__
 
 static int ctdb_ibw_stop(struct ctdb_context *cctx)
 {
-	struct ibw_ctx *ictx = talloc_get_type(cctx->private, struct ibw_ctx);
+	struct ibw_ctx *ictx = talloc_get_type(cctx->private_data, struct ibw_ctx);
 
 	assert(ictx!=NULL);
 	return ibw_stop(ictx);
@@ -207,7 +207,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 	}
 
 	ctdb->methods = &ctdb_ibw_methods;
-	ctdb->private = ictx;
+	ctdb->private_data = ictx;
 	
 	DEBUG(10, ("ctdb_ibw_init succeeded.\n"));
 	return 0;
