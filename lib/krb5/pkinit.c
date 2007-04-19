@@ -1231,6 +1231,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	_krb5_pk_cert_free(host);
     if (content.data)
 	krb5_data_free(&content);
+    der_free_oid(&contentType);
     free_KDCDHKeyInfo(&kdc_dh_info);
 
     return ret;
