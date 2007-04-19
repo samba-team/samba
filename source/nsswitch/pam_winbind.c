@@ -923,7 +923,7 @@ static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *usern
 		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
 			"Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
-			"User %s logged on using cached account\n", username);
+			"User %s logged on using cached credentials\n", username);
 	}
 }
 
