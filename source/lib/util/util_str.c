@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "libcli/raw/smb.h"
 #include "pstring.h"
-#include "lib/ldb/include/ldb.h"
 #include "system/locale.h"
 
 /**
@@ -244,29 +243,6 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
 
 	for (i = 0; i < len; i++)
 		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-}
-
-/**
- Check if a string is part of a list.
-**/
-_PUBLIC_ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
-{
-	pstring tok;
-	const char *p=list;
-
-	if (!list)
-		return(False);
-
-	while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
-		if (casesensitive) {
-			if (strcmp(tok,s) == 0)
-				return(True);
-		} else {
-			if (strcasecmp_m(tok,s) == 0)
-				return(True);
-		}
-	}
-	return(False);
 }
 
 /**
