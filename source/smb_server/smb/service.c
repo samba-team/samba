@@ -174,7 +174,7 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 
 	if (con->generic.level == RAW_TCON_TCON) {
 		DATA_BLOB password;
-		password = data_blob(con->tcon.in.password, strlen(con->tcon.in.password) + 1);
+		password = data_blob_string_const(con->tcon.in.password);
 
 		status = make_connection(req, con->tcon.in.service, password, con->tcon.in.dev);
 		
