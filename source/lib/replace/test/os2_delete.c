@@ -111,5 +111,7 @@ int test_readdir_os2_delete(void)
 
 	rmdir(TESTDIR) == 0 || FAILED("rmdir");
 
+	system("rm -rf " TESTDIR);
+
 	return test_readdir_os2_delete_ret;
 }
