@@ -141,42 +141,6 @@ _PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid,
 }       
 
 
-/*******************************************************************
- Close the low 3 fd's and open dev/null in their place.
-********************************************************************/
-static void close_low_fds(BOOL stderr_too)
-{
-#ifndef VALGRIND
-	int fd;
-	int i;
-
-	close(0);
-	close(1); 
-
-	if (stderr_too)
-		close(2);
-
-	/* try and use up these file descriptors, so silly
-		library routines writing to stdout etc won't cause havoc */
-	for (i=0;i<3;i++) {
-		if (i == 2 && !stderr_too)
-			continue;
-
-		fd = open("/dev/null",O_RDWR,0);
-		if (fd < 0)
-			fd = open("/dev/null",O_WRONLY,0);
-		if (fd < 0) {
-			DEBUG(0,("Can't open /dev/null\n"));
-			return;
-		}
-		if (fd != i) {
-			DEBUG(0,("Didn't get file descriptor %d\n",i));
-			return;
-		}
-	}
-#endif
-}
-
 /**
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
  else
@@ -221,36 +185,6 @@ _PUBLIC_ void msleep(unsigned int t)
 	/* this should be the real select - do NOT replace
 	   with sys_select() */
 	select(0,NULL,NULL,NULL,&tval);
-}
-
-/**
- Become a daemon, discarding the controlling terminal.
-**/
-
-_PUBLIC_ void become_daemon(BOOL Fork)
-{
-	if (Fork) {
-		if (fork()) {
-			_exit(0);
-		}
-	}
-
-  /* detach from the terminal */
-#ifdef HAVE_SETSID
-	setsid();
-#elif defined(TIOCNOTTY)
-	{
-		int i = open("/dev/tty", O_RDWR, 0);
-		if (i != -1) {
-			ioctl(i, (int) TIOCNOTTY, (char *)0);      
-			close(i);
-		}
-	}
-#endif /* HAVE_SETSID */
-
-	/* Close fd's 0,1,2. Needed if started by rsh */
-	close_low_fds(False);  /* Don't close stderr, let the debug system
-				  attach it to the logfile */
 }
 
 /**
