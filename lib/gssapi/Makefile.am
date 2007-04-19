@@ -193,6 +193,7 @@ libgssapi_la_LDFLAGS = -version-info 1:0:0
 
 if versionscript
 libgssapi_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+$(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 endif
 
 libgssapi_la_LIBADD = \
