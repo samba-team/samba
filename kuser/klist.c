@@ -353,145 +353,6 @@ check_for_tgt (krb5_context context,
     return expired;
 }
 
-#ifdef KRB4
-/* prints the approximate kdc time differential as something human
-   readable */
-
-static void
-print_time_diff(int do_verbose)
-{
-    int d = abs(krb_get_kdc_time_diff());
-    char buf[80];
-
-    if ((do_verbose && d > 0) || d > 60) {
-	unparse_time_approx (d, buf, sizeof(buf));
-	printf ("Time diff:\t%s\n", buf);
-    }
-}
-
-/*
- * return a short representation of `dp' in string form.
- */
-
-static char *
-short_date(int32_t dp)
-{
-    char *cp;
-    time_t t = (time_t)dp;
-
-    if (t == (time_t)(-1L)) return "***  Never  *** ";
-    cp = ctime(&t) + 4;
-    cp[15] = '\0';
-    return (cp);
-}
-
-/*
- * Print a list of all the v4 tickets
- */
-
-static int
-display_v4_tickets (int do_verbose)
-{
-    char *file;
-    int ret;
-    krb_principal princ;
-    CREDENTIALS cred;
-    int found = 0;
-
-    rtbl_t ct;
-
-    file = getenv ("KRBTKFILE");
-    if (file == NULL)
-	file = TKT_FILE;
-
-    printf("%17s: %s\n", "V4-ticket file", file);
-
-    ret = krb_get_tf_realm (file, princ.realm);
-    if (ret) {
-	warnx ("%s", krb_get_err_text(ret));
-	return 1;
-    }
-
-    ret = tf_init (file, R_TKT_FIL);
-    if (ret) {
-	warnx ("tf_init: %s", krb_get_err_text(ret));
-	return 1;
-    }
-    ret = tf_get_pname (princ.name);
-    if (ret) {
-	tf_close ();
-	warnx ("tf_get_pname: %s", krb_get_err_text(ret));
-	return 1;
-    }
-    ret = tf_get_pinst (princ.instance);
-    if (ret) {
-	tf_close ();
-	warnx ("tf_get_pname: %s", krb_get_err_text(ret));
-	return 1;
-    }
-
-    printf ("%17s: %s\n", "Principal", krb_unparse_name(&princ));
-    print_time_diff(do_verbose);
-    printf("\n");
-
-    ct = rtbl_create();
-    rtbl_add_column(ct, COL_ISSUED, 0);
-    rtbl_add_column(ct, COL_EXPIRES, 0);
-    if (do_verbose)
-	rtbl_add_column(ct, COL_PRINCIPAL_KVNO, 0);
-    else
-	rtbl_add_column(ct, COL_PRINCIPAL, 0);
-    rtbl_set_prefix(ct, "  ");
-    rtbl_set_column_prefix(ct, COL_ISSUED, "");
-
-    while ((ret = tf_get_cred(&cred)) == KSUCCESS) {
-	struct timeval tv;
-	char buf1[20], buf2[20];
-	const char *pp;
-
-	found++;
-
-	strlcpy(buf1,
-		short_date(cred.issue_date),
-		sizeof(buf1));
-	cred.issue_date = krb_life_to_time(cred.issue_date, cred.lifetime);
-	krb_kdctimeofday(&tv);
-	if (do_verbose || tv.tv_sec < (unsigned long) cred.issue_date)
-	    strlcpy(buf2,
-		    short_date(cred.issue_date),
-		    sizeof(buf2));
-	else
-	    strlcpy(buf2,
-		    ">>> Expired <<<",
-		    sizeof(buf2));
-	rtbl_add_column_entry(ct, COL_ISSUED, buf1);
-	rtbl_add_column_entry(ct, COL_EXPIRES, buf2);
-	pp = krb_unparse_name_long(cred.service,
-				   cred.instance,
-				   cred.realm);
-	if (do_verbose) {
-	    char *tmp;
-
-	    asprintf(&tmp, "%s (%d)", pp, cred.kvno);
-	    rtbl_add_column_entry(ct, COL_PRINCIPAL_KVNO, tmp);
-	    free(tmp);
-	} else {
-	    rtbl_add_column_entry(ct, COL_PRINCIPAL, pp);
-	}
-    }
-    rtbl_format(ct, stdout);
-    rtbl_destroy(ct);
-    if (!found && ret == EOF)
-	printf("No tickets in file.\n");
-    tf_close();
-    
-    /*
-     * should do NAT stuff here
-     */
-    return 0;
-}
-#endif /* KRB4 */
-
 /*
  * Print a list of all AFS tokens
  */
@@ -685,9 +546,6 @@ static int help_flag		= 0;
 static int do_verbose		= 0;
 static int do_list_caches	= 0;
 static int do_test		= 0;
-#ifdef KRB4
-static int do_v4		= 1;
-#endif
 static int do_tokens		= 0;
 static int do_v5		= 1;
 static char *cred_cache;
@@ -700,10 +558,6 @@ static struct getargs args[] = {
     { "test",			't', arg_flag, &do_test,
       "test for having tickets", NULL },
     { NULL,			's', arg_flag, &do_test },
-#ifdef KRB4
-    { "v4",			'4',	arg_flag, &do_v4,
-      "display v4 tickets", NULL },
-#endif
     { "tokens",			'T',   arg_flag, &do_tokens,
       "display AFS tokens", NULL },
     { "v5",			'5',	arg_flag, &do_v5,
@@ -765,20 +619,9 @@ main (int argc, char **argv)
 					 do_verbose, do_flags);
 
     if (!do_test) {
-#ifdef KRB4
-	if (do_v4) {
-	    if (do_v5)
-		printf ("\n");
-	    display_v4_tickets (do_verbose);
-	}
-#endif
 	if (do_tokens && k_hasafs ()) {
 	    if (do_v5)
 		printf ("\n");
-#ifdef KRB4
-	    else if (do_v4)
-		printf ("\n");
-#endif
 	    display_tokens (do_verbose);
 	}
     }

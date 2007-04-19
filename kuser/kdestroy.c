@@ -141,10 +141,6 @@ main (int argc, char **argv)
 
     krb5_free_context (context);
 
-#if KRB4
-    if(dest_tkt_flag && dest_tkt ())
-	exit_val = 1;
-#endif
     if (unlog_flag && k_hasafs ()) {
 	if (k_unlog ())
 	    exit_val = 1;

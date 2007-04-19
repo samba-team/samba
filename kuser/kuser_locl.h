@@ -75,9 +75,6 @@
 #include <err.h>
 #include <krb5.h>
 
-#ifdef KRB4
-#include <krb.h>
-#endif
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
