@@ -156,13 +156,15 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
 	if (rec.dsize < sizeof(*header)) {
+		TDB_DATA d2;
 		/* return an initial header */
-		free(rec.dptr);
+		if (rec.dptr) free(rec.dptr);
 		ltdb_initial_header(ctdb_db, key, header);
+		ZERO_STRUCT(d2);
 		if (data) {
-			data->dptr = NULL;
-			data->dsize = 0;
+			*data = d2;
 		}
+		ctdb_ltdb_store(ctdb_db, key, header, d2);
 		return 0;
 	}
 
