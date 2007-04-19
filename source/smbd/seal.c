@@ -365,6 +365,8 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	out_buf.value = NULL;
 	out_buf.length = 0;
 
+	become_root();
+
 	ret = gss_accept_sec_context(&min,
 				&gss_state->gss_ctx,
 				gss_state->creds,
@@ -376,6 +378,7 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 				&flags,
 				NULL,		/* Ingore time. */
 				NULL);		/* Ignore delegated creds. */
+	unbecome_root();
 
 	status = gss_err_to_ntstatus(ret, min);
 	if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
