@@ -123,41 +123,6 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 
 
 /*
-  send a fetch lock request (actually a ctdb_call()) to a remote node
- */
-static struct ctdb_call_state *ctdb_daemon_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
-							   TALLOC_CTX *mem_ctx, 
-							   TDB_DATA key, struct ctdb_ltdb_header *header,
-							   TDB_DATA *data)
-{
-	struct ctdb_call *call;
-	struct ctdb_fetch_handle *rec;
-	struct ctdb_call_state *state;
-
-	rec = talloc(mem_ctx, struct ctdb_fetch_handle);
-	CTDB_NO_MEMORY_NULL(ctdb_db->ctdb, rec);
-
-	
-	call = talloc(rec, struct ctdb_call);
-	ZERO_STRUCT(*call);
-	call->call_id = CTDB_FETCH_FUNC;
-	call->key = key;
-	call->flags = CTDB_IMMEDIATE_MIGRATION;
-
-	rec->ctdb_db = ctdb_db;
-	rec->key = key;
-	rec->key.dptr = talloc_memdup(rec, key.dptr, key.dsize);
-	rec->data = data;
-
-	state = ctdb_daemon_call_send_remote(ctdb_db, call, header);
-	state->fetch_private = rec;
-	talloc_steal(state, rec);
-	talloc_steal(mem_ctx, state);
-
-	return state;
-}
-
-/*
   called when the daemon gets a shutdown request from a client
  */
 static void daemon_request_shutdown(struct ctdb_client *client, 
@@ -211,96 +176,6 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 }
 
 
-struct client_fetch_lock_data {
-	struct ctdb_client *client;
-	struct ctdb_req_fetch_lock *f;
-};
-
-/*
-  send a fetch lock error reply to the client
- */
-static void daemon_fetch_lock_reply(struct ctdb_client *client,
-				    struct ctdb_req_fetch_lock *f, 
-				    int state)
-{
-	struct ctdb_reply_fetch_lock r;
-
-	ZERO_STRUCT(r);
-	r.hdr.length       = sizeof(r);
-	r.hdr.ctdb_magic   = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation    = CTDB_REPLY_FETCH_LOCK;
-	r.hdr.reqid        = f->hdr.reqid;
-	r.state            = state;
-	
-	ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
-}
-
-/*
-  called when a remote fetch lock finishes
- */
-static void daemon_fetch_lock_complete(struct ctdb_call_state *state)
-{
-	struct client_fetch_lock_data *data = talloc_get_type(state->async.private_data, 
-							      struct client_fetch_lock_data);
-	struct ctdb_client *client = talloc_get_type(data->client, struct ctdb_client);
-
-	daemon_fetch_lock_reply(client, data->f, 0);
-	talloc_free(state);
-}
-
-
-
-/*
-  called when the daemon gets a fetch lock request from a client
- */
-static void daemon_request_fetch_lock(struct ctdb_client *client, 
-				      struct ctdb_req_fetch_lock *f)
-{
-	struct ctdb_call_state *state;
-	TDB_DATA key, *data;
-	struct ctdb_db_context *ctdb_db;
-	struct client_fetch_lock_data *fl_data;
-	struct ctdb_ltdb_header header;
-	int ret;
-
-	ctdb_db = find_ctdb_db(client->ctdb, f->db_id);
-	if (ctdb_db == NULL) {
-		daemon_fetch_lock_reply(client, f, -1);
-		return;
-	}
-
-	key.dsize = f->keylen;
-	key.dptr = &f->key[0];
-
-	/* XXX - needs non-blocking lock here */
-
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, ctdb_db, NULL);
-	if (ret != 0) {
-		daemon_fetch_lock_reply(client, f, -1);
-		return;
-	}
-
-	if (header.dmaster == ctdb_db->ctdb->vnn) {
-		/* we already are the dmaster */
-		daemon_fetch_lock_reply(client, f, 0);
-		return;
-	}
-
-	data        = talloc(client, TDB_DATA);
-	data->dptr  = NULL;
-	data->dsize = 0;
-
-	state = ctdb_daemon_fetch_lock_send(ctdb_db, client, key, &header, data);
-	talloc_steal(state, data);
-
-	fl_data = talloc(state, struct client_fetch_lock_data);
-	fl_data->client = client;
-	fl_data->f = talloc_steal(fl_data, f);
-
-	state->async.fn = daemon_fetch_lock_complete;
-	state->async.private_data = fl_data;
-}
 
 /*
   called when the daemon gets a connect wait request from a client
@@ -508,10 +383,6 @@ static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_
 
 	case CTDB_REQ_CONNECT_WAIT:
 		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
-		break;
-
-	case CTDB_REQ_FETCH_LOCK:
-		daemon_request_fetch_lock(client, (struct ctdb_req_fetch_lock *)hdr);
 		break;
 
 	case CTDB_REQ_SHUTDOWN:
