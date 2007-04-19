@@ -219,6 +219,8 @@ sub buildfarm_end_msg($$$)
 		$out .= $test_output->{$state->{NAME}};
 	}
 
+	$out .= "PCAP FILE: $state->{PCAP_FILE}\n" if defined($state->{PCAP_FILE});
+
 	$out .= getlog_env($state->{ENVNAME});
 
 	$out .= "==========================================\n";
@@ -270,16 +272,23 @@ sub plain_output_msg($$)
 sub plain_end_msg($$$)
 {
 	my ($state, $expected_ret, $ret) = @_;
+	my $out = "";
 
 	if ($ret != $expected_ret) {
 		plain_output_msg($state, "ERROR: $ret\n");
 	}
 
 	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
-		print $test_output->{$state->{NAME}}."\n";
+		$out .= $test_output->{$state->{NAME}};
 	}
 
-	print getlog_env($state->{ENVNAME});
+	if (not $opt_socket_wrapper_keep_pcap and defined($state->{PCAP_FILE})) {
+		$out .= "PCAP FILE: $state->{PCAP_FILE}\n";
+	}
+
+	$out .= getlog_env($state->{ENVNAME});
+
+	print $out;
 }
 
 my $plain_msg_ops = {
@@ -288,9 +297,39 @@ my $plain_msg_ops = {
 	end_msg		=> \&plain_end_msg
 };
 
+sub setup_pcap($)
+{
+	my ($state) = @_;
+
+	return unless ($opt_socket_wrapper_pcap);
+	return unless defined($ENV{SOCKET_WRAPPER_PCAP_DIR});
+
+	my $fname = sprintf("t%03u_%s", $state->{INDEX}, $state->{NAME});
+	$fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
+
+	$state->{PCAP_FILE} = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
+
+	SocketWrapper::setup_pcap($state->{PCAP_FILE});
+}
+
+sub cleanup_pcap($$$)
+{
+	my ($state, $expected_ret, $ret) = @_;
+
+	return unless ($opt_socket_wrapper_pcap);
+	return if ($opt_socket_wrapper_keep_pcap);
+	return unless ($expected_ret == $ret);
+	return unless defined($state->{PCAP_FILE});
+
+	unlink($state->{PCAP_FILE});
+	$state->{PCAP_FILE} = undef;
+}
+
 sub run_test($$$$$$)
 {
 	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my $expected_ret = 1;
+	my $open_tests = {};
 	my $msg_state = {
 		ENVNAME	=> $envname,
 		NAME	=> $name,
@@ -299,10 +338,12 @@ sub run_test($$$$$$)
 		TOTAL	=> $totalsuites,
 		START	=> time()
 	};
+
+	setup_pcap($msg_state);
+
 	$msg_ops->{start_msg}($msg_state);
+
 	open(RESULT, "$cmd 2>&1|");
-	my $expected_ret = 1;
-	my $open_tests = {};
 	while (<RESULT>) {
 		$msg_ops->{output_msg}($msg_state, $_);
 		if (/^test: (.+)\n/) {
@@ -338,7 +379,11 @@ sub run_test($$$$$$)
 		$statistics->{TESTS_ERROR}++;
 	}
 	my $ret = close(RESULT);
+
+	cleanup_pcap($msg_state,  $expected_ret, $ret);
+
 	$msg_ops->{end_msg}($msg_state, $expected_ret, $ret);
+
 	if ($ret != $expected_ret) {
 		push(@$suitesfailed, $name);
 		$statistics->{SUITES_FAIL}++;
@@ -473,17 +518,15 @@ if (defined($ENV{LD_LIBRARY_PATH})) {
 $ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
 $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 
-my $pcap_dir = "$prefix/pcap";
 
 if ($opt_socket_wrapper_pcap) {
-	mkdir($pcap_dir);
 	# Socket wrapper pcap implies socket wrapper
 	$opt_socket_wrapper = 1;
 }
 
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
-	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w");
+	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } else {
 	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless $< == 0;
@@ -710,18 +753,7 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 
 		setup_env($envname);
 
-		my $shname = $name;
-		$shname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
-		my $pcap_file = "$pcap_dir/$shname.cap";
-
-		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
-		my $result = run_test($envname, $name, $cmd, $i, $suitestotal, 
-							  $msg_ops);
-
-		if ($opt_socket_wrapper_pcap and $result and 
-			not $opt_socket_wrapper_keep_pcap) {
-			unlink($pcap_file);
-		}
+		run_test($envname, $name, $cmd, $i, $suitestotal, $msg_ops);
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
