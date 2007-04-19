@@ -3564,6 +3564,26 @@ if test x"$with_ads_support" != x"no"; then
 	    [Whether the krb5_ticket structure contains the kvno and enctype])
   fi
 
+  AC_CACHE_CHECK(whether krb5_get_init_creds_opt_free takes a context argument,
+	  smb_krb5_creds_opt_free_context,
+	  [
+		AC_TRY_COMPILE([
+		    #include <krb5.h>],
+		    [
+			krb5_context ctx;
+			krb5_get_init_creds_opt *opt = NULL;
+			krb5_get_init_creds_opt_free(ctx, opt);
+		    ],
+		    [smb_krb5_creds_opt_free_context=yes],
+		    [smb_krb5_creds_opt_free_context=no]
+		)
+	  ])
+
+  if test x"$smb_krb5_creds_opt_free_context" = x"yes" ; then
+	AC_DEFINE(KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT, 1,
+	    [Whether krb5_get_init_creds_opt_free takes a context argument])
+  fi
+
   AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
     AC_TRY_COMPILE([
 	#include <krb5.h>],

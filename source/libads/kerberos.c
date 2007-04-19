@@ -101,7 +101,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 
-	code = krb5_get_init_creds_opt_alloc(ctx, &opt);
+	code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt);
 	if (code) {
 		krb5_cc_close(ctx, cc);
 		krb5_free_context(ctx);	
@@ -140,7 +140,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
 						 kerb_prompter, NULL, 0, NULL, opt)))
 	{
-		krb5_get_init_creds_opt_free(opt);
+		smb_krb5_get_init_creds_opt_free(ctx, opt);
 		smb_krb5_free_addresses(ctx, addr);
 		krb5_cc_close(ctx, cc);
 		krb5_free_principal(ctx, me);
@@ -148,7 +148,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 
-	krb5_get_init_creds_opt_free(opt);
+	smb_krb5_get_init_creds_opt_free(ctx, opt);
 
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
 		smb_krb5_free_addresses(ctx, addr);
