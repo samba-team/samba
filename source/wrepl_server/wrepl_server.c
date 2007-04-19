@@ -127,7 +127,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	struct wreplsrv_partner *partner;
 	struct ldb_result *res = NULL;
 	int ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	TALLOC_CTX *tmp_ctx;
 	int i;
 	uint64_t new_seqnumber;
 
@@ -137,6 +137,9 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	if (service->config.seqnumber != 0 && service->config.seqnumber == new_seqnumber) {
 		return NT_STATUS_OK;
 	}
+
+	tmp_ctx = talloc_new(service);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	service->config.seqnumber = new_seqnumber;
 
