@@ -23,7 +23,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/cmdline/credentials.h"
 #include "auth/credentials/credentials.h"
-#include "auth/credentials/credentials_krb5.h"
 #include "auth/gensec/gensec.h"
 
 /* Handle command line options:
