@@ -533,6 +533,9 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 
 	status = map_nt_error_from_gss(ret, min);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		ADS_STATUS adss = ADS_ERROR_GSS(ret, min);
+		DEBUG(10,("make_cli_gss_blob: gss_init_sec_context failed with %s\n",
+			ads_errstr(adss)));
 		goto fail;
 	}
 
