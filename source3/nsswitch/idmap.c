@@ -91,24 +91,6 @@ static struct idmap_alloc_methods *get_alloc_methods(struct idmap_alloc_backend 
 	return NULL;
 }
 
-/* part of a quick hack to avoid loops, need to be sorted out correctly later on */
-static BOOL idmap_in_own_child;
-
-static BOOL idmap_is_in_own_child(void)
-{
-	return idmap_in_own_child;
-}
-
-void reset_idmap_in_own_child(void)
-{
-	idmap_in_own_child = False;
-}
-
-void set_idmap_in_own_child(void)
-{
-	idmap_in_own_child = True;
-}
-
 BOOL idmap_is_offline(void)
 {
 	return ( lp_winbind_offline_logon() &&
@@ -855,9 +837,6 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 {
 	NTSTATUS ret;
 	struct idmap_domain *dom;
-	char *domname, *name;
-	enum lsa_SidType sid_type;
-	BOOL wbret;
 
 	/* If we are offline we cannot lookup SIDs, deny mapping */
 	if (idmap_is_offline())	{
@@ -869,70 +848,46 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	/* quick hack to make things work, will need proper fix later on */	
-	if (idmap_is_in_own_child()) {
-		/* by default calls to winbindd are disabled
-		   the following call will not recurse so this is safe */
-		winbind_on();
-		wbret = winbind_lookup_sid(ctx, map->sid,
-						(const char **)&domname,
-						(const char **)&name,
-						&sid_type);
-		winbind_off();
-	} else {
-		wbret = winbindd_lookup_name_by_sid(ctx, map->sid,
-							&domname,
-							&name,
-							&sid_type);
+	/* check if this is a valid SID and then map it */
+	switch (map->xid.type) {
+	case ID_TYPE_UID:
+		ret = idmap_allocate_uid(&map->xid);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			/* can't allocate id, let's just leave it unmapped */
+			DEBUG(2, ("uid allocation failed! Can't create mapping\n"));
+			return NT_STATUS_NONE_MAPPED;
+		}
+		break;
+	case ID_TYPE_GID:
+		ret = idmap_allocate_gid(&map->xid);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			/* can't allocate id, let's just leave it unmapped */
+			DEBUG(2, ("gid allocation failed! Can't create mapping\n"));
+			return NT_STATUS_NONE_MAPPED;
+		}
+		break;
+	default:
+		/* invalid sid, let's just leave it unmapped */
+		DEBUG(3,("idmap_new_mapping: Refusing to create a "
+			 "mapping for an unspecified ID type.\n"));		
+		return NT_STATUS_NONE_MAPPED;
 	}
 
-	/* check if this is a valid SID and then map it */
-	if (wbret) {
-		switch (sid_type) {
-		case SID_NAME_USER:
-			ret = idmap_allocate_uid(&map->xid);
-			if ( ! NT_STATUS_IS_OK(ret)) {
-				/* can't allocate id, let's just leave it unmapped */
-				DEBUG(2, ("uid allocation failed! Can't create mapping\n"));
-				return NT_STATUS_NONE_MAPPED;
-			}
-			break;
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_ALIAS:
-		case SID_NAME_WKN_GRP:
-			ret = idmap_allocate_gid(&map->xid);
-			if ( ! NT_STATUS_IS_OK(ret)) {
-				/* can't allocate id, let's just leave it unmapped */
-				DEBUG(2, ("gid allocation failed! Can't create mapping\n"));
-				return NT_STATUS_NONE_MAPPED;
-			}
-			break;
-		default:
-			/* invalid sid, let's just leave it unmapped */
-			DEBUG(10, ("SID %s is UNKNOWN, skip mapping\n", sid_string_static(map->sid)));
-			return NT_STATUS_NONE_MAPPED;
-		}
+	/* ok, got a new id, let's set a mapping */
+	map->status = ID_MAPPED;
 
-		/* ok, got a new id, let's set a mapping */
-		map->status = ID_MAPPED;
+	DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
+		   sid_string_static(map->sid),
+		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
+		   (unsigned long)map->xid.id));
+	ret = dom->methods->set_mapping(dom, map);
 
-		DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
-			   sid_string_static(map->sid),
-			   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
-			   (unsigned long)map->xid.id));
-		ret = dom->methods->set_mapping(dom, map);
+	if ( ! NT_STATUS_IS_OK(ret)) {
+		/* something wrong here :-( */
+		DEBUG(2, ("Failed to commit mapping\n!"));
 
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			/* something wrong here :-( */
-			DEBUG(2, ("Failed to commit mapping\n!"));
+		/* TODO: would it make sense to have an "unalloc_id function?" */
 
-			/* TODO: would it make sense to have an "unalloc_id function?" */
-
-			return NT_STATUS_NONE_MAPPED;
-		}
-	} else {
-		DEBUG(2,("Invalid SID, not mapping %s (type %d)\n",
-				sid_string_static(map->sid), sid_type));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -1438,6 +1393,8 @@ void idmap_dump_maps(char *logfile)
 			fprintf(dump, "GID %lu %s\n",
 				(unsigned long)maps[i].xid.id,
 				sid_string_static(maps[i].sid));
+			break;
+		case ID_TYPE_NOT_SPECIFIED:
 			break;
 		}
 	}

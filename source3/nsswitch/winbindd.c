@@ -248,7 +248,9 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+#if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
 	{ WINBINDD_SIDS_TO_XIDS, winbindd_sids_to_unixids, "SIDS_TO_XIDS" },
+#endif  /* end DISABLED */
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
@@ -1009,9 +1011,6 @@ int main(int argc, char **argv, char **envp)
 	/* Enable netbios namecache */
 
 	namecache_enable();
-
-	/* quick hack to avoid a loop in idmap, proper fix later */
-	reset_idmap_in_own_child();
 
 	/* Winbind daemon initialisation */
 
