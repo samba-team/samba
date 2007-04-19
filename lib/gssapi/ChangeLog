@@ -1,5 +1,11 @@
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Unconfuse newer versions of automake that doesn't
+	know the diffrence between depenences and setting variables. foo:
+	vs foo=.
+
+	* test_ntlm.c: delete sec context when done.
+
 	* version-script.map: export more symbols.
 	
 	* Makefile.am: add version script if ld supports it
