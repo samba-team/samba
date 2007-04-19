@@ -672,6 +672,12 @@ sub teardown_env($)
 	delete $running_envs{$envname};
 }
 
+my $msg_ops;
+if ($from_build_farm) {
+	$msg_ops = $buildfarm_msg_ops;
+} else {
+	$msg_ops = $plain_msg_ops;
+}
 
 if ($opt_testenv) {
 	my $testenv_vars = setup_env("dc");
@@ -708,12 +714,8 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 		my $pcap_file = "$pcap_dir/$shname.cap";
 
 		SocketWrapper::setup_pcap($pcap_file) if ($opt_socket_wrapper_pcap);
-		my $result;
-		if ($from_build_farm) {
-			$result = run_test($envname, $name, $cmd, $i, $suitestotal, $buildfarm_msg_ops);
-		} else {
-			$result = run_test($envname, $name, $cmd, $i, $suitestotal, $plain_msg_ops);
-		}
+		my $result = run_test($envname, $name, $cmd, $i, $suitestotal, 
+							  $msg_ops);
 
 		if ($opt_socket_wrapper_pcap and $result and 
 			not $opt_socket_wrapper_keep_pcap) {
@@ -738,7 +740,8 @@ my $end = time();
 my $duration = ($end-$start);
 my $numfailed = $#$suitesfailed+1;
 if ($numfailed == 0) {
-	my $ok = $statistics->{TESTS_EXPECTED_OK} + $statistics->{TESTS_EXPECTED_FAIL};
+	my $ok = $statistics->{TESTS_EXPECTED_OK} + 
+	         $statistics->{TESTS_EXPECTED_FAIL};
 	print "ALL OK ($ok tests in $statistics->{SUITES_OK} testsuites)\n";
 } else {
 	unless ($from_build_farm) {
