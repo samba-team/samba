@@ -8,6 +8,7 @@ package Samba3;
 use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
+use POSIX;
 
 sub binpath($$)
 {
