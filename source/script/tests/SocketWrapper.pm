@@ -12,17 +12,30 @@ use Exporter;
 use strict;
 use FindBin qw($RealBin);
 
-sub setup_dir($)
+sub setup_dir($$)
 {
-	my ($dir) = @_;
+	my ($dir, $pcap) = @_;
+	my $pcap_dir = undef;
+
 	if (defined($dir)) {
 		if ( -d $dir ) {
 			unlink <$dir/*>;
 		} else {
 			mkdir($dir);
 		}
+
+		if ($pcap) {
+			$pcap_dir = $dir."/pcap";
+
+			if ( -d $pcap_dir ) {
+				unlink <$pcap_dir/*>;
+			} else {
+				mkdir($pcap_dir);
+			}
+		}
 	}
 
+	$ENV{SOCKET_WRAPPER_PCAP_DIR} = $pcap_dir;
 	$ENV{SOCKET_WRAPPER_DIR} = $dir;
 	return $dir;
 }
