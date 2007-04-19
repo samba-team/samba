@@ -652,6 +652,8 @@ sub teardown_env($$)
 
 	$self->slapd_stop($envvars) if ($self->{ldap});
 
+	print $self->getlog_env($envvars);
+
 	return $failed;
 }
 
@@ -680,6 +682,8 @@ sub check_env($$)
 	my ($self, $envvars) = @_;
 
 	return 1 if (-p $envvars->{SMBD_TEST_FIFO});
+
+	print $self->getlog_env($envvars);
 
 	return 0;
 }
