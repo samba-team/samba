@@ -1012,7 +1012,7 @@ static bool test_talloc_ptrtype(void)
 
 static bool test_autofree(void)
 {
-#ifndef _SAMBA_BUILD_
+#if _SAMBA_BUILD_ < 4
 	/* autofree test would kill smbtorture */
 	void *p;
 	printf("test: autofree [\nTALLOC AUTOFREE CONTEXT\n]\n");
@@ -1064,7 +1064,7 @@ bool torture_local_talloc(struct torture_context *tctx)
 	return ret;
 }
 
-#ifndef _SAMBA_BUILD_
+#if _SAMBA_BUILD_ < 4
 int main(void)
 {
 	bool ret = torture_local_talloc(NULL);
