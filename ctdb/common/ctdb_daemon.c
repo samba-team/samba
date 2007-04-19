@@ -306,18 +306,6 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct daemon_call_state *dstate;
 	struct ctdb_call *call;
 
-	/* check that the client filled in the correct vnn for the local node */
-	if (ctdb_get_vnn(client->ctdb) != c->hdr.srcnode) {
-		DEBUG(0, (__location__ "Wrong srcnode in CTDB_REQ_CALL from client  was:%d should be :%d\n", c->hdr.srcnode, ctdb_get_vnn(client->ctdb)));
-		return;
-	}
-
-	/* verify that the destnode makes sense */
-	if (c->hdr.destnode >= client->ctdb->num_nodes) {
-		DEBUG(0, (__location__ "Wrong dstnode in CTDB_REQ_CALL from client  was:%d but there are only %d nodes in the cluster\n", c->hdr.destnode, client->ctdb->num_nodes));
-		return;
-	}
-
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
 		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
