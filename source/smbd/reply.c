@@ -303,7 +303,7 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	memset(outbuf,'\0',smb_size);
 
-	smb_setlen(outbuf,0);
+	smb_setlen(outbuf,0,inbuf);
 	
 	switch (msg_type) {
 	case 0x81: /* session request */
@@ -1182,7 +1182,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	SSVAL(outbuf,smb_flg2, (SVAL(outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
 	  
 	outsize += DIR_STRUCT_SIZE*numentries;
-	smb_setlen(outbuf,outsize - 4);
+	smb_setlen(outbuf,outsize - 4,inbuf);
   
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -3538,7 +3538,7 @@ int reply_echo(connection_struct *conn,
 	for (seq_num =1 ; seq_num <= smb_reverb ; seq_num++) {
 		SSVAL(outbuf,smb_vwv0,seq_num);
 
-		smb_setlen(outbuf,outsize - 4);
+		smb_setlen(outbuf,outsize - 4,inbuf);
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
@@ -5846,7 +5846,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	if (write_through && tcount==nwritten) {
 		/* We need to send both a primary and a secondary response */
-		smb_setlen(outbuf,outsize - 4);
+		smb_setlen(outbuf,outsize - 4,inbuf);
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server_cleanly("reply_writebmpx: send_smb failed.");
