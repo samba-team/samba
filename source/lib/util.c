@@ -533,14 +533,20 @@ void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
  Set the length and marker of an smb packet.
 ********************************************************************/
 
-void smb_setlen(char *buf,int len)
+void smb_setlen(char *buf,int len,const char *frombuf)
 {
 	_smb_setlen(buf,len);
 
-	SCVAL(buf,4,0xFF);
-	SCVAL(buf,5,'S');
-	SCVAL(buf,6,'M');
-	SCVAL(buf,7,'B');
+	if (frombuf) {
+		if (buf != frombuf) {
+			memcpy(buf+4, frombuf+4, 4);
+		}
+	} else {
+		SCVAL(buf,4,0xFF);
+		SCVAL(buf,5,'S');
+		SCVAL(buf,6,'M');
+		SCVAL(buf,7,'B');
+	}
 }
 
 /*******************************************************************
@@ -554,7 +560,7 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 	}
 	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4, NULL);
 	return (smb_size + num_words*2 + num_bytes);
 }
 
@@ -566,7 +572,7 @@ int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4, NULL);
 	return (smb_size + num_words*2 + num_bytes);
 }
 

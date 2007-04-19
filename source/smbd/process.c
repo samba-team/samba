@@ -1039,8 +1039,9 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
 	outsize += chain_size;
 
-	if(outsize > 4)
-		smb_setlen(outbuf,outsize - 4);
+	if(outsize > 4) {
+		smb_setlen(outbuf,outsize - 4, inbuf);
+	}
 	return(outsize);
 }
 
@@ -1219,7 +1220,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	}
 
 	/* And set it in the header. */
-	smb_setlen(inbuf2, new_size);
+	smb_setlen(inbuf2, new_size, inbuf);
 
 	/* create the out buffer */
 	construct_reply_common(inbuf2, outbuf2);

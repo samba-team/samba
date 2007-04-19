@@ -237,13 +237,15 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
  Return a smd with a given size.
 *****************************************************************************/
 
-static void send_blocking_reply(char *outbuf, int outsize)
+static void send_blocking_reply(char *outbuf, int outsize, const char *inbuf)
 {
-	if(outsize > 4)
-		smb_setlen(outbuf,outsize - 4);
+	if(outsize > 4) {
+		smb_setlen(outbuf,outsize - 4, inbuf);
+	}
 
-	if (!send_smb(smbd_server_fd(),outbuf))
+	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server_cleanly("send_blocking_reply: send_smb failed.");
+	}
 }
 
 /****************************************************************************
@@ -272,7 +274,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 
 	outsize += chain_size;
 
-	send_blocking_reply(outbuf,outsize);
+	send_blocking_reply(outbuf,outsize,inbuf);
 }
 
 /****************************************************************************
