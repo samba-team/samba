@@ -1,5 +1,10 @@
-2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c (test_heim_oid_format_same): avoid leaking memory in
+	the non failure case too
+	
+2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: remove extra ^Q
 	
 2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
