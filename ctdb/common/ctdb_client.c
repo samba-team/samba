@@ -463,10 +463,13 @@ static int ctdb_fetch_lock_destructor(struct ctdb_fetch_lock_state *state)
 	return 0;
 }
 
+/*
+  send a fetch lock request from the client to the daemon. This just asks for
+  a record migration to the current node
+ */
 static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
 								 TALLOC_CTX *mem_ctx, 
-								 TDB_DATA key, 
-								 struct ctdb_ltdb_header *header)
+								 TDB_DATA key)
 {
 	struct ctdb_fetch_lock_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -502,7 +505,6 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
 	req->db_id           = ctdb_db->db_id;
 	req->keylen          = key.dsize;
-	req->header          = *header;
 	memcpy(&req->key[0], key.dptr, key.dsize);
 
 	talloc_set_destructor(state, ctdb_fetch_lock_destructor);
@@ -522,8 +524,7 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
   This is called when the program wants to wait for a ctdb_fetch_lock to complete and get the 
   results. This call will block unless the call has already completed.
 */
-int ctdb_client_fetch_lock_recv(struct ctdb_fetch_lock_state *state, TALLOC_CTX *mem_ctx, 
-				TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data)
+int ctdb_client_fetch_lock_recv(struct ctdb_fetch_lock_state *state)
 {
 	while (state->state < CTDB_FETCH_LOCK_DONE) {
 		event_loop_once(state->ctdb_db->ctdb->ev);
@@ -532,13 +533,7 @@ int ctdb_client_fetch_lock_recv(struct ctdb_fetch_lock_state *state, TALLOC_CTX 
 		talloc_free(state);
 		return -1;
 	}
-
-	*header = state->r->header;
-	data->dsize = state->r->datalen;
-	data->dptr  = talloc_memdup(mem_ctx, state->r->data, data->dsize);
-
 	talloc_free(state);
-
 	return 0;
 }
 
@@ -569,8 +564,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	  3) if we are the dmaster then return handle 
 	  4) if not dmaster then ask ctdb daemon to make us dmaster, and wait for
 	     reply from ctdbd
-	  5) when we get the reply, we are now dmaster, update vnn in header
-	  6) return handle
+	  5) when we get the reply, goto (1)
 	 */
 
 	h = talloc_zero(mem_ctx, struct ctdb_record_handle);
@@ -590,6 +584,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", key.dsize, key.dsize, 
 		 (const char *)key.dptr));
 
+again:
 	/* step 1 - get the chain lock */
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
@@ -604,44 +599,28 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, h, data);
 	if (ret != 0) {
+		ctdb_ltdb_unlock(ctdb_db, key);
 		talloc_free(h);
 		return NULL;
 	}
 
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
-	/* step 2 - check if we are the dmaster */
-	if (h->header.dmaster == ctdb_db->ctdb->vnn) {
-		DEBUG(4,("ctdb_fetch_lock: we are dmaster - done\n"));
-		return h;
+	if (h->header.dmaster != ctdb_db->ctdb->vnn) {
+		/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
+		state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
+		ctdb_ltdb_unlock(ctdb_db, key);
+		DEBUG(4,("ctdb_fetch_lock: done fetch_lock_send\n"));
+		ret = ctdb_client_fetch_lock_recv(state);
+		if (ret != 0) {
+			DEBUG(4,("ctdb_fetch_lock: fetch_lock_recv failed\n"));
+			talloc_free(h);
+			return NULL;
+		}
+		goto again;
 	}
 
-	/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
-	state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key, &h->header);
-	DEBUG(4,("ctdb_fetch_lock: done fetch_lock_send\n"));
-	ret = ctdb_client_fetch_lock_recv(state, mem_ctx, key, &h->header, data);
-	if (ret != 0) {
-		DEBUG(4,("ctdb_fetch_lock: fetch_lock_recv failed\n"));
-		talloc_free(h);
-		return NULL;
-	}
-
-	DEBUG(4,("ctdb_fetch_lock: record is now local\n"));
-
-	/* the record is now local, and locked. update the record on disk
-	   to mark us as the dmaster*/
-	h->header.dmaster = ctdb_db->ctdb->vnn;
-	ret = ctdb_ltdb_store(ctdb_db, key, &h->header, *data);
-	if (ret != 0) {
-		DEBUG(0, (__location__" can't update record to mark us as dmaster\n"));
-		talloc_free(h);
-		return NULL;
-	}
-
-	DEBUG(4,("ctdb_fetch_lock: done\n"));
-
-	/* give the caller a handle to be used for ctdb_record_store() or a cancel via
-	   a talloc_free() */
+	DEBUG(4,("ctdb_fetch_lock: we are dmaster - done\n"));
 	return h;
 }
 

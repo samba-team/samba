@@ -31,11 +31,13 @@ static struct {
 	const char *transport;
 	const char *myaddress;
 	int self_connect;
+	const char *db_dir;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
 	.self_connect = 0,
+	.db_dir = NULL
 };
 
 
@@ -45,6 +47,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
+	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ NULL }
 };
 
@@ -90,6 +93,12 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	ret = ctdb_set_nlist(ctdb, ctdb_cmdline.nlist);
 	if (ret == -1) {
 		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
+	if (ret == -1) {
+		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 

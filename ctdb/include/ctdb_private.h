@@ -119,6 +119,7 @@ struct ctdb_context {
 	struct event_context *ev;
 	struct ctdb_address address;
 	const char *name;
+	const char *db_directory;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
@@ -322,7 +323,6 @@ struct ctdb_reply_connect_wait {
 
 struct ctdb_req_fetch_lock {
 	struct ctdb_req_header hdr;
-	struct ctdb_ltdb_header header;
 	uint32_t db_id;
 	uint32_t keylen;
 	uint8_t key[1]; /* key[] */
@@ -331,9 +331,6 @@ struct ctdb_req_fetch_lock {
 struct ctdb_reply_fetch_lock {
 	struct ctdb_req_header hdr;
 	uint32_t state;
-	struct ctdb_ltdb_header header;
-	uint32_t datalen;
-	uint8_t data[1]; /* data[] */
 };
 
 /* internal prototypes */
@@ -459,5 +456,7 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
 						     struct ctdb_call *call, 
 						     struct ctdb_ltdb_header *header);
+
+void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 #endif

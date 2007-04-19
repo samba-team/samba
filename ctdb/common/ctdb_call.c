@@ -487,8 +487,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   and data */
 	state->header.dmaster = ctdb->vnn;
 
-	if (!state->fetch_private &&
-	    ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
+	if (ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 		return;
 	}
