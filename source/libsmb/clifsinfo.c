@@ -483,6 +483,9 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 	OM_uint32 ret_flags = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
+	gss_OID_desc nt_hostbased_service =
+	{10, CONST_DISCARD(char *,"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
+
 	memset(&tok_out, '\0', sizeof(tok_out));
 
 	/* Get a ticket for the service@host */
@@ -496,7 +499,7 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 
 	ret = gss_import_name(&min,
 				&input_name,
-				GSS_C_NT_HOSTBASED_SERVICE,
+				&nt_hostbased_service,
 				&srv_name);
 
 	if (ret != GSS_S_COMPLETE) {
