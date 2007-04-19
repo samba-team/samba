@@ -188,7 +188,7 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 
    when the daemon has responded   this node should be the dmaster (unless it has migrated off again)
  */
-void fetch_record(int fd, uint32_t db_id, TDB_DATA key, int thisnode, int destnode)
+void fetch_record(int fd, uint32_t db_id, TDB_DATA key)
 {
 	struct ctdb_req_call *req;
 	struct ctdb_reply_call *rep;
@@ -202,8 +202,6 @@ void fetch_record(int fd, uint32_t db_id, TDB_DATA key, int thisnode, int destno
 	req->hdr.ctdb_magic  = CTDB_MAGIC;
 	req->hdr.ctdb_version = CTDB_VERSION;
 	req->hdr.operation   = CTDB_REQ_CALL;
-	req->hdr.destnode    = destnode;
-	req->hdr.srcnode     = thisnode;
 	req->hdr.reqid       = 1;
 
 	req->flags           = CTDB_IMMEDIATE_MIGRATION;
@@ -298,7 +296,7 @@ int main(int argc, const char *argv[])
 	key.dsize=strlen((const char *)(key.dptr));
 	printf("fetch the test key:[%s]\n",key.dptr);
 
-	fetch_record(fd, db_id, key, 0, 1);
+	fetch_record(fd, db_id, key);
 	printf("\n");
 
 
