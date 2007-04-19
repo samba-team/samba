@@ -127,6 +127,12 @@ static NTSTATUS get_srv_gss_creds(const char *service,
 		return map_nt_error_from_gss(ret, min);
 	}
 
+	/*
+	 * We're accessing the krb5.keytab file here.
+ 	 * ensure we have permissions to do so.
+ 	 */
+	become_root();
+
 	ret = gss_acquire_cred(&min,
 				srv_name,
 				GSS_C_INDEFINITE,
@@ -135,6 +141,7 @@ static NTSTATUS get_srv_gss_creds(const char *service,
 				p_srv_cred,
 				NULL,
 				NULL);
+	unbecome_root();
 
 	if (ret != GSS_S_COMPLETE) {
 		ADS_STATUS adss = ADS_ERROR_GSS(ret, min);
