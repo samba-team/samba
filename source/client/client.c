@@ -1789,34 +1789,39 @@ static int cmd_open(void)
 
 static int cmd_posix_encrypt(void)
 {
-	fstring buf;
-	fstring domain;
-	fstring user;
-	fstring password;
 	NTSTATUS status;
 
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("posix_encrypt domain user password\n");
-		return 1;
-	}
-	fstrcpy(domain,buf);
+	if (cli->use_kerberos) {
+		status = cli_gss_smb_encryption_start(cli);
+	} else {	
+		fstring buf;
+		fstring domain;
+		fstring user;
+		fstring password;
 
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("posix_encrypt domain user password\n");
-		return 1;
-	}
-	fstrcpy(user,buf);
+		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+		fstrcpy(domain,buf);
 
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("posix_encrypt domain user password\n");
-		return 1;
-	}
-	fstrcpy(password,buf);
+		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+		fstrcpy(user,buf);
 
-	status = cli_raw_ntlm_smb_encryption_start(cli,
-						user,
-						password,
-						domain);
+		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+		fstrcpy(password,buf);
+
+		status = cli_raw_ntlm_smb_encryption_start(cli,
+							user,
+							password,
+							domain);
+	}
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
