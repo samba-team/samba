@@ -35,8 +35,18 @@ sub setup_dir($$)
 		}
 	}
 
-	$ENV{SOCKET_WRAPPER_PCAP_DIR} = $pcap_dir;
-	$ENV{SOCKET_WRAPPER_DIR} = $dir;
+	if (defined($pcap_dir)) {
+		$ENV{SOCKET_WRAPPER_PCAP_DIR} = $pcap_dir;
+	} else {
+		delete $ENV{SOCKET_WRAPPER_PCAP_DIR};
+	}
+
+	if (defined($dir)) {
+		$ENV{SOCKET_WRAPPER_DIR} = $dir;
+	} else {
+		delete $ENV{SOCKET_WRAPPER_DIR};
+	}
+
 	return $dir;
 }
 
