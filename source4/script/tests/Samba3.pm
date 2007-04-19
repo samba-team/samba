@@ -47,6 +47,14 @@ sub getlog_env($$)
 	return "";
 }
 
+sub check_env($$)
+{
+	my ($self, $envvars) = @_;
+
+	# TODO ...
+	return 1;
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
