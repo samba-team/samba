@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
+#include "system/locale.h"
 
 /**
  * @file
@@ -297,4 +299,27 @@ _PUBLIC_ BOOL str_list_check_ci(const char **list, const char *s)
 		if (strcasecmp(list[i], s) == 0) return True;
 	}
 	return False;
+}
+
+/**
+ Check if a string is part of a list.
+**/
+_PUBLIC_ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
+{
+	pstring tok;
+	const char *p=list;
+
+	if (!list)
+		return(False);
+
+	while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
+		if (casesensitive) {
+			if (strcmp(tok,s) == 0)
+				return(True);
+		} else {
+			if (strcasecmp_m(tok,s) == 0)
+				return(True);
+		}
+	}
+	return(False);
 }
