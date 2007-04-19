@@ -623,16 +623,9 @@ configure(krb5_context context, int argc, char **argv)
 
 #endif
 
-    if(config->v4_realm == NULL && (config->enable_kaserver || config->enable_v4)){
-#ifdef KRB4
-	config->v4_realm = malloc(40); /* REALM_SZ */
-	if (config->v4_realm == NULL)
-	    krb5_errx(context, 1, "out of memory");
-	krb_get_lrealm(config->v4_realm, 1);
-#else
-	krb5_errx(context, 1, "No Kerberos 4 realm configured");
-#endif
-    }
+    if(config->v4_realm == NULL && (config->enable_kaserver || config->enable_v4))
+	krb5_errx(context, 1, "Kerberos 4 enabled but no realm configured");
+
     if(disable_des == -1)
 	disable_des = krb5_config_get_bool_default(context, NULL, 
 						   FALSE,

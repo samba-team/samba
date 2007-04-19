@@ -33,13 +33,6 @@
 
 #include "hprop.h"
 
-#ifdef KRB4
-#include <krb.h>
-#include <prot.h>
-#define Principal Principal4
-#include <krb_db.h>
-#endif
-
 RCSID("$Id$");
 
 static int version_flag;
@@ -135,42 +128,6 @@ v5_prop(krb5_context context, HDB *db, hdb_entry_ex *entry, void *appdata)
     krb5_data_free(&data);
     return ret;
 }
-
-#ifdef KRB4
-
-static char realm_buf[REALM_SZ];
-
-static int
-kdb_prop(void *arg, Principal *p)
-{
-    int ret;
-    struct v4_principal pr;
-
-    memset(&pr, 0, sizeof(pr));
-
-    if(p->attributes != 0) {
-	warnx("%s.%s has non-zero attributes - skipping", 
-	      p->name, p->instance);
-	    return 0;
-    }
-    strlcpy(pr.name, p->name, sizeof(pr.name));
-    strlcpy(pr.instance, p->instance, sizeof(pr.instance));
-
-    copy_to_key(&p->key_low, &p->key_high, pr.key);
-    pr.exp_date = p->exp_date;
-    pr.mod_date = p->mod_date;
-    strlcpy(pr.mod_name, p->mod_name, sizeof(pr.mod_name));
-    strlcpy(pr.mod_instance, p->mod_instance, sizeof(pr.mod_instance));
-    pr.max_life = p->max_life;
-    pr.mkvno = p->kdc_key_ver;
-    pr.kvno = p->key_version;
-    
-    ret = v4_prop(arg, &pr);
-    memset(&pr, 0, sizeof(pr));
-    return ret;
-}
-
-#endif /* KRB4 */
 
 int
 v4_prop(void *arg, struct v4_principal *p)
@@ -444,9 +401,6 @@ struct getargs args[] = {
       "heimdal"
       "|mit-dump"
       "|krb4-dump"
-#ifdef KRB4
-      "|krb4-db"
-#endif
       "|kaserver"
     },
       
@@ -520,13 +474,12 @@ get_creds(krb5_context context, krb5_ccache *cache)
 
 enum hprop_source {
     HPROP_HEIMDAL = 1,
-    HPROP_KRB4_DB,
     HPROP_KRB4_DUMP,
     HPROP_KASERVER,
     HPROP_MIT_DUMP
 };
 
-#define IS_TYPE_V4(X) ((X) == HPROP_KRB4_DB || (X) == HPROP_KRB4_DUMP || (X) == HPROP_KASERVER)
+#define IS_TYPE_V4(X) ((X) == HPROP_KRB4_DUMP || (X) == HPROP_KASERVER)
 
 struct {
     int type;
@@ -534,9 +487,6 @@ struct {
 } types[] = {
     { HPROP_HEIMDAL,	"heimdal" },
     { HPROP_KRB4_DUMP,	"krb4-dump" },
-#ifdef KRB4
-    { HPROP_KRB4_DB,	"krb4-db" },
-#endif
     { HPROP_KASERVER, 	"kaserver" },
     { HPROP_MIT_DUMP,	"mit-dump" }
 };
@@ -568,14 +518,6 @@ iterate (krb5_context context,
 	    krb5_warnx(context, "v4_prop_dump: %s", 
 		       krb5_get_err_text(context, ret));
 	break;
-#ifdef KRB4
-    case HPROP_KRB4_DB:
-	ret = kerb_db_iterate ((k_iter_proc_t)kdb_prop, pd);
-	if(ret)
-	    krb5_warnx(context, "kerb_db_iterate: %s", 
-		      krb_get_err_text(ret));
-	break;
-#endif /* KRB4 */
     case HPROP_KASERVER:
 	ret = ka_dump(pd, database_name);
 	if(ret)
@@ -800,27 +742,11 @@ main(int argc, char **argv)
 	    krb5_errx(context, 1, "No master key file found");
     }
     
-#ifdef KRB4
-    if (IS_TYPE_V4(type)) {
-	int e;
-
-	if (v4_realm == NULL) {
-	    e = krb_get_lrealm(realm_buf, 1);
-	    if(e)
-		krb5_errx(context, 1, "krb_get_lrealm: %s",
-			  krb_get_err_text(e));
-	    v4_realm = realm_buf;
-	}
-    }
-#endif
+    if (IS_TYPE_V4(type) && v4_realm == NULL)
+	krb5_errx(context, 1, "Its a Kerberos 4 database "
+		  "but no realm configured");
 
     switch(type) {
-#ifdef KRB4
-    case HPROP_KRB4_DB:
-	if (database == NULL)
-	    krb5_errx(context, 1, "no database specified");
-	break;
-#endif
     case HPROP_KASERVER:
 	if (database == NULL)
 	    database = DEFAULT_DATABASE;
