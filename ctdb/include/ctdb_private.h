@@ -318,18 +318,6 @@ struct ctdb_reply_connect_wait {
 	uint32_t num_connected;
 };
 
-struct ctdb_req_fetch_lock {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-	uint32_t keylen;
-	uint8_t key[1]; /* key[] */
-};
-
-struct ctdb_reply_fetch_lock {
-	struct ctdb_req_header hdr;
-	uint32_t state;
-};
-
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
