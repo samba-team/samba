@@ -32,13 +32,13 @@ use File::Basename;
 use vars qw($VERSION);
 $VERSION = '0.01';
 
-our @ett;
+my @ett;
 
-our %hf_used = ();
+my %hf_used = ();
 my %return_types = ();
 my %dissector_used = ();
 
-our $conformance = undef;
+my $conformance = undef;
 
 my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
@@ -70,7 +70,7 @@ sub field2name($)
     return $field;
 }
 
-our %res = ();
+my %res = ();
 my $tabs = "";
 my $cur_fn = undef;
 sub pidl_fn_start($)
