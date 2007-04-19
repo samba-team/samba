@@ -21,8 +21,8 @@ use Parse::Pidl::Samba4::NDR::Parser qw(GenerateStructEnv GenerateFunctionInEnv
 use vars qw($VERSION);
 $VERSION = '0.01';
 
-our $res;
-our $res_hdr;
+my $res;
+my $res_hdr;
 
 my %constants;
 
