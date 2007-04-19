@@ -1869,6 +1869,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	free(ctx->id);
 	ctx->id = NULL;
     }
+    free(opt->opt_private->pk_init_ctx);
     opt->opt_private->pk_init_ctx = NULL;
 #endif
 }
