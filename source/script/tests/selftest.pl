@@ -679,11 +679,17 @@ sub setup_env($)
 	my $testenv_vars;
 	if (defined($running_envs{$envname})) {
 		$testenv_vars = $running_envs{$envname};
+		if (not $target->check_env($testenv_vars)) {
+			$testenv_vars = undef;
+		}
 	} elsif ($envname eq "none") {
 		$testenv_vars = {};
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
 	}
+
+	return undef unless defined($testenv_vars);
+
 	write_clientconf($conffile, $testenv_vars);
 	foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME", 
 			 "KRB5_CONFIG", "REALM") {
@@ -705,6 +711,13 @@ sub getlog_env($)
 	my ($envname) = @_;
 	return "" if ($envname eq "none");
 	return $target->getlog_env($running_envs{$envname});
+}
+
+sub check_env($)
+{
+	my ($envname) = @_;
+	return 1 if ($envname eq "none");
+	return $target->check_env($running_envs{$envname});
 }
 
 sub teardown_env($)
@@ -750,7 +763,14 @@ NETBIOSNAME=\$NETBIOSNAME\" && bash'");
 			next;
 		}
 
-		setup_env($envname);
+		my $envvars = setup_env($envname);
+		if (not defined($envvars)) {
+			push(@$suitesfailed, $name);
+			$statistics->{SUITES_FAIL}++;
+			$statistics->{TESTS_ERROR}++;
+			print "FAIL: $name (ENV[$envname] not available!)\n";
+			next;
+		}
 
 		run_test($envname, $name, $cmd, $i, $suitestotal, $msg_ops);
 
