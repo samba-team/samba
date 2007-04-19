@@ -1,5 +1,17 @@
-2007-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_imath.c: fix warnings, make test into function.
+
+	* test_imath.c: shortest program causing the problem.
+
+	* test_imath.c: basic imath test
+	
+2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* test_cipher.c (test_cipher): avoid leaking memory
+	
+2007-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rsa.c: plug memory leak
 	
 2007-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
