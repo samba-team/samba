@@ -334,6 +334,7 @@ hash_test (struct hash_foo *hash, struct test *tests)
 	    return 1;
 	}
     }
+    free(ctx);
     printf ("success\n");
     return 0;
 }
