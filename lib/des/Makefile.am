@@ -54,6 +54,7 @@ PROGRAM_TESTS = \
 	test_cipher \
 	test_engine_dso \
 	test_hmac \
+	test_imath \
 	test_pkcs5 \
 	test_pkcs12
 
