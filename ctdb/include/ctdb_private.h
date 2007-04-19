@@ -30,8 +30,8 @@
 #define CTDB_DS_ALIGNMENT 8
 
 
+#define CTDB_NULL_FUNC 0xf0000001
 
-#define CTDB_FETCH_FUNC 0xf0000001
 /*
   an installed ctdb remote call
 */
@@ -193,7 +193,6 @@ struct ctdb_call_state {
 	struct ctdb_call call;
 	int redirect_count;
 	struct ctdb_ltdb_header header;
-	void *fetch_private;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -226,9 +225,7 @@ enum ctdb_operation {
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_FETCH_LOCK     = 1003,
-	CTDB_REPLY_FETCH_LOCK   = 1004,
-	CTDB_REQ_SHUTDOWN       = 1005
+	CTDB_REQ_SHUTDOWN       = 1003
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */

@@ -712,8 +712,6 @@ struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db,
 */
 int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
-	struct ctdb_fetch_handle *rec;
-
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->node->ctdb->ev);
 	}
@@ -721,18 +719,6 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
 		talloc_free(state);
 		return -1;
-	}
-
-	rec = state->fetch_private;
-
-	/* ugly hack to manage forced migration */
-	if (rec != NULL) {
-		rec->header = state->header;
-		rec->data->dptr = talloc_steal(rec, state->call.reply_data.dptr);
-		rec->data->dsize = state->call.reply_data.dsize;
-		talloc_set_name_const(rec->data->dptr, __location__);
-		talloc_free(state);
-		return 0;
 	}
 
 	if (state->call.reply_data.dsize) {

@@ -48,44 +48,6 @@ static void ctdb_reply_connect_wait(struct ctdb_context *ctdb,
 	ctdb->num_connected = r->num_connected;
 }
 
-enum fetch_lock_state { CTDB_FETCH_LOCK_WAIT, CTDB_FETCH_LOCK_DONE, CTDB_FETCH_LOCK_ERROR };
-
-/*
-  state of a in-progress ctdb call
-*/
-struct ctdb_fetch_lock_state {
-	enum fetch_lock_state state;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_reply_fetch_lock *r;
-	struct ctdb_req_fetch_lock *req;
-	struct ctdb_ltdb_header header;
-};
-
-
-
-/*
-  called in the client when we receive a CTDB_REPLY_FETCH_LOCK from the daemon
-
-  This packet comes in response to a CTDB_REQ_FETCH_LOCK request packet. It
-  contains any reply data from the call
-*/
-void ctdb_reply_fetch_lock(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_fetch_lock *r = (struct ctdb_reply_fetch_lock *)hdr;
-	struct ctdb_fetch_lock_state *state;
-
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_fetch_lock_state);
-	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found at %s\n", hdr->reqid,
-			  __location__));
-		return;
-	}
-
-	state->r = talloc_steal(state, r);
-
-	state->state = CTDB_FETCH_LOCK_DONE;
-}
-
 /*
   state of a in-progress ctdb call in client
 */
@@ -174,10 +136,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_CONNECT_WAIT:
 		ctdb_reply_connect_wait(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_FETCH_LOCK:
-		ctdb_reply_fetch_lock(ctdb, hdr);
 		break;
 
 	default:
@@ -505,85 +463,6 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	ctdb_daemon_connect_wait(ctdb);
 }
 
-static int ctdb_fetch_lock_destructor(struct ctdb_fetch_lock_state *state)
-{
-	idr_remove(state->ctdb_db->ctdb->idr, state->req->hdr.reqid);
-	return 0;
-}
-
-/*
-  send a fetch lock request from the client to the daemon. This just asks for
-  a record migration to the current node
- */
-static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_context *ctdb_db, 
-								 TALLOC_CTX *mem_ctx, 
-								 TDB_DATA key)
-{
-	struct ctdb_fetch_lock_state *state;
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	struct ctdb_req_fetch_lock *req;
-	int len, res;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
-	}
-
-	state = talloc_zero(ctdb_db, struct ctdb_fetch_lock_state);
-	if (state == NULL) {
-		DEBUG(0, (__location__ " failed to allocate state\n"));
-		return NULL;
-	}
-	state->state   = CTDB_FETCH_LOCK_WAIT;
-	state->ctdb_db = ctdb_db;
-	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
-	state->req = req = ctdbd_allocate_pkt(state, len);
-	if (req == NULL) {
-		DEBUG(0, (__location__ " failed to allocate packet\n"));
-		return NULL;
-	}
-	ZERO_STRUCT(*req);
-	talloc_set_name_const(req, "ctdbd req_fetch_lock packet");
-
-	req->hdr.length      = len;
-	req->hdr.ctdb_magic  = CTDB_MAGIC;
-	req->hdr.ctdb_version = CTDB_VERSION;
-	req->hdr.operation   = CTDB_REQ_FETCH_LOCK;
-	req->hdr.reqid       = idr_get_new(ctdb->idr, state, 0xFFFF);
-	req->db_id           = ctdb_db->db_id;
-	req->keylen          = key.dsize;
-	memcpy(&req->key[0], key.dptr, key.dsize);
-
-	talloc_set_destructor(state, ctdb_fetch_lock_destructor);
-	
-	res = ctdb_client_queue_pkt(ctdb, &req->hdr);
-	if (res != 0) {
-		return NULL;
-	}
-
-	return state;
-}
-
-
-/*
-  make a recv call to the local ctdb daemon - called from client context
-
-  This is called when the program wants to wait for a ctdb_fetch_lock to complete and get the 
-  results. This call will block unless the call has already completed.
-*/
-int ctdb_client_fetch_lock_recv(struct ctdb_fetch_lock_state *state)
-{
-	while (state->state < CTDB_FETCH_LOCK_DONE) {
-		event_loop_once(state->ctdb_db->ctdb->ev);
-	}
-	if (state->state != CTDB_FETCH_LOCK_DONE) {
-		talloc_free(state);
-		return -1;
-	}
-	talloc_free(state);
-	return 0;
-}
-
 /*
   cancel a ctdb_fetch_lock operation, releasing the lock
  */
@@ -594,6 +473,19 @@ static int fetch_lock_destructor(struct ctdb_record_handle *h)
 }
 
 /*
+  force the migration of a record to this node
+ */
+static int ctdb_client_force_migration(struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	struct ctdb_call call;
+	ZERO_STRUCT(call);
+	call.call_id = CTDB_NULL_FUNC;
+	call.key = key;
+	call.flags = CTDB_IMMEDIATE_MIGRATION;
+	return ctdb_call(ctdb_db, &call);
+}
+
+/*
   get a lock on a record, and return the records data. Blocks until it gets the lock
  */
 struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
@@ -601,7 +493,6 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 {
 	int ret;
 	struct ctdb_record_handle *h;
-	struct ctdb_fetch_lock_state *state;
 
 	/*
 	  procedure is as follows:
@@ -654,13 +545,10 @@ again:
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
 	if (h->header.dmaster != ctdb_db->ctdb->vnn) {
-		/* we're not the dmaster - ask the ctdb daemon to make us dmaster */
-		state = ctdb_client_fetch_lock_send(ctdb_db, mem_ctx, key);
 		ctdb_ltdb_unlock(ctdb_db, key);
-		DEBUG(4,("ctdb_fetch_lock: done fetch_lock_send\n"));
-		ret = ctdb_client_fetch_lock_recv(state);
+		ret = ctdb_client_force_migration(ctdb_db, key);
 		if (ret != 0) {
-			DEBUG(4,("ctdb_fetch_lock: fetch_lock_recv failed\n"));
+			DEBUG(4,("ctdb_fetch_lock: force_migration failed\n"));
 			talloc_free(h);
 			return NULL;
 		}

@@ -45,9 +45,8 @@ struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *na
 /*
   this is the dummy null procedure that all databases support
 */
-static int ctdb_fetch_func(struct ctdb_call_info *call)
+static int ctdb_null_func(struct ctdb_call_info *call)
 {
-	call->reply_data = &call->record_data;
 	return 0;
 }
 
@@ -105,9 +104,10 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 
 
 	/* 
-	  all databases support the "fetch" function. we need this in order to do forced migration of records
+	   all databases support the "null" function. we need this in
+	   order to do forced migration of records
 	 */
-	ret = ctdb_set_call(ctdb_db, ctdb_fetch_func, CTDB_FETCH_FUNC);
+	ret = ctdb_set_call(ctdb_db, ctdb_null_func, CTDB_NULL_FUNC);
 	if (ret != 0) {
 		talloc_free(ctdb_db);
 		return NULL;
