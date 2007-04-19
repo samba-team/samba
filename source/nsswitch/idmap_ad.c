@@ -695,9 +695,6 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 	
 	ad_map_type =  WB_POSIX_MAP_SFU;	
 
-	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize(NULL);
-
 	return NT_STATUS_OK;
 }
 
@@ -716,9 +713,6 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 	
 	ad_map_type =  WB_POSIX_MAP_RFC2307;
 
-	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize(NULL);	
-
 	return NT_STATUS_OK;
 }
 
@@ -736,6 +730,11 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  uint32 *gid )
 {
 	ADS_STRUCT *ads_internal = NULL;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	/* We are assuming that the internal ADS_STRUCT is for the 
 	   same forest as the incoming *ads pointer */
