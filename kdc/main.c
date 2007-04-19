@@ -40,6 +40,8 @@ RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
 
+int detach_from_console = -1;
+
 static RETSIGTYPE
 sigterm(int sig)
 {
