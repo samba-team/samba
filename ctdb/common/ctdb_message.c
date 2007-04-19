@@ -42,7 +42,7 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) break;
 	}
 	if (ml == NULL) {
-		DEBUG(0,(__location__ " daemon vnn:%d  no msg handler for srvid=%u\n", 
+		DEBUG(1,(__location__ " daemon vnn:%d  no msg handler for srvid=%u\n", 
 			 ctdb_get_vnn(ctdb), srvid));
 		/* no registered message handler */
 		return -1;

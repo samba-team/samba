@@ -121,6 +121,9 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to register handler %u in daemon\n", 
 			 c->srvid));
+	} else {
+		DEBUG(2,(__location__ " Registered message handler for srvid=%u\n", 
+			 c->srvid));
 	}
 }
 
