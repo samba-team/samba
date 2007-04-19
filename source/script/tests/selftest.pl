@@ -107,7 +107,6 @@ Jelmer Vernooij
 =cut
 
 use strict;
-use warnings;
 
 use FindBin qw($RealBin $Script);
 use File::Spec;
