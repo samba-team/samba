@@ -256,12 +256,8 @@ __attribute__ ((format (printf, 3, 4)))
 #endif
 ;
 
-#ifndef KRB4
+int
+kx_get_int(void *f, uint32_t *to, int size, int lsb);
 
 int
-krb_get_int(void *f, uint32_t *to, int size, int lsb);
-
-int
-krb_put_int(uint32_t from, void *to, size_t rem, int size);
-
-#endif
+kx_put_int(uint32_t from, void *to, size_t rem, int size);

@@ -227,7 +227,7 @@ doit_passive (kx_context *kc)
      p = msg;
      *p++ = INIT;
      len = strlen(kc->user);
-     p += KRB_PUT_INT (len, p, sizeof(msg) - 1, 4);
+     p += kx_put_int (len, p, sizeof(msg) - 1, 4);
      memcpy(p, kc->user, len);
      p += len;
      *p++ = PASSIVE | (kc->keepalive_flag ? KEEP_ALIVE : 0);
@@ -242,18 +242,18 @@ doit_passive (kx_context *kc)
      p = (u_char *)msg;
      if (*p == ERROR) {
 	 p++;
-	 p += krb_get_int (p, &tmp, 4, 0);
+	 p += kx_get_int (p, &tmp, 4, 0);
 	 errx (1, "%s: %.*s", host, (int)tmp, p);
      } else if (*p != ACK) {
 	 errx (1, "%s: strange msg %d", host, *p);
      } else
 	 p++;
-     p += krb_get_int (p, &tmp, 4, 0);
+     p += kx_get_int (p, &tmp, 4, 0);
      memcpy(display, p, tmp);
      display[tmp] = '\0';
      p += tmp;
 
-     p += krb_get_int (p, &tmp, 4, 0);
+     p += kx_get_int (p, &tmp, 4, 0);
      memcpy(xauthfile, p, tmp);
      xauthfile[tmp] = '\0';
      p += tmp;
@@ -271,13 +271,13 @@ doit_passive (kx_context *kc)
 	 p = (u_char *)msg;
 	 if (*p == ERROR) {
 	     p++;
-	     p += krb_get_int (p, &tmp, 4, 0);
+	     p += kx_get_int (p, &tmp, 4, 0);
 	     errx (1, "%s: %.*s", host, (int)tmp, p);
 	 } else if(*p != NEW_CONN) {
 	     errx (1, "%s: strange msg %d", host, *p);
 	 } else {
 	     p++;
-	     p += krb_get_int (p, &tmp, 4, 0);
+	     p += kx_get_int (p, &tmp, 4, 0);
 	 }
 	 
 	 ++nchild;
@@ -372,7 +372,7 @@ doit_active (kx_context *kc)
     *p++ = INIT;
     --rem;
     len = strlen(kc->user);
-    tmp = KRB_PUT_INT (len, p, rem, 4);
+    tmp = kx_put_int (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     p += tmp;
@@ -387,7 +387,7 @@ doit_active (kx_context *kc)
     if (str == NULL || (str = strchr(str, ':')) == NULL) 
 	str = ":0";
     len = strlen (str);
-    tmp = KRB_PUT_INT (len, p, rem, 4);
+    tmp = kx_put_int (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     rem -= tmp;
@@ -400,7 +400,7 @@ doit_active (kx_context *kc)
     if (str == NULL)
 	str = "";
     len = strlen (str);
-    tmp = KRB_PUT_INT (len, p, rem, 4);
+    tmp = kx_put_int (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     p += len;
@@ -420,7 +420,7 @@ doit_active (kx_context *kc)
 	uint32_t u32;
 
 	p++;
-	p += krb_get_int (p, &u32, 4, 0);
+	p += kx_get_int (p, &u32, 4, 0);
 	errx (1, "%s: %.*s", host, (int)u32, p);
     } else if (*p != ACK) {
 	errx (1, "%s: strange msg %d", host, *p);
@@ -481,13 +481,13 @@ doit_active (kx_context *kc)
 	    uint32_t val;
 
 	    p++;
-	    p += krb_get_int (p, &val, 4, 0);
+	    p += kx_get_int (p, &val, 4, 0);
 	    errx (1, "%s: %.*s", host, (int)val, p);
 	} else if (*p != NEW_CONN) {
 	    errx (1, "%s: strange msg %d", host, *p);
 	} else {
 	    p++;
-	    p += krb_get_int (p, &other_port, 4, 0);
+	    p += kx_get_int (p, &other_port, 4, 0);
 	}
 
 	++nchild;

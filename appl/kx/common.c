@@ -779,10 +779,8 @@ suspicious_address (int sock, struct sockaddr *addr)
  * libkrb5 either.
  */
 
-#ifndef KRB4
-
 int
-krb_get_int(void *f, uint32_t *to, int size, int lsb)
+kx_get_int(void *f, uint32_t *to, int size, int lsb)
 {
     int i;
     unsigned char *from = (unsigned char *)f;
@@ -799,7 +797,7 @@ krb_get_int(void *f, uint32_t *to, int size, int lsb)
 }
 
 int
-krb_put_int(uint32_t from, void *to, size_t rem, int size)
+kx_put_int(uint32_t from, void *to, size_t rem, int size)
 {
     int i;
     unsigned char *p = (unsigned char *)to;
@@ -813,5 +811,3 @@ krb_put_int(uint32_t from, void *to, size_t rem, int size)
     }
     return size;
 }
-
-#endif /* !KRB4 */

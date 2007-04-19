@@ -75,7 +75,7 @@ fatal (kx_context *kc, int fd, char *format, ...)
     vsnprintf ((char *)p + 4, sizeof(msg) - 5, format, args);
     syslog (LOG_ERR, "%s", (char *)p + 4);
     len = strlen ((char *)p + 4);
-    p += KRB_PUT_INT (len, p, 4, 4);
+    p += kx_put_int (len, p, 4, 4);
     p += len;
     kx_write (kc, fd, msg, p - msg);
     va_end(args);
@@ -174,7 +174,7 @@ recv_conn (int sock, kx_context *kc,
      if (*p != INIT)
 	 fatal(kc, sock, "Bad message");
      p++;
-     p += krb_get_int (p, &tmp32, 4, 0);
+     p += kx_get_int (p, &tmp32, 4, 0);
      len = min(sizeof(user), tmp32);
      memcpy (user, p, len);
      p += tmp32;
@@ -242,12 +242,12 @@ recv_conn (int sock, kx_context *kc,
 	     kc->user, user);
      umask(077);
      if (!(flags & PASSIVE)) {
-	 p += krb_get_int (p, &tmp32, 4, 0);
+	 p += kx_get_int (p, &tmp32, 4, 0);
 	 len = min(tmp32, display_size);
 	 memcpy (display, p, len);
 	 display[len] = '\0';
 	 p += tmp32;
-	 p += krb_get_int (p, &tmp32, 4, 0);
+	 p += kx_get_int (p, &tmp32, 4, 0);
 	 len = min(tmp32, xauthfile_size);
 	 memcpy (xauthfile, p, len);
 	 xauthfile[len] = '\0';
@@ -350,7 +350,7 @@ doit_conn (kx_context *kc,
 
     p = msg;
     *p++ = NEW_CONN;
-    p += KRB_PUT_INT (ntohs(port), p, 4, 4);
+    p += kx_put_int (ntohs(port), p, 4, 4);
 
     if (kx_write (kc, meta_sock, msg, p - msg) < 0) {
 	syslog (LOG_ERR, "write: %m");
@@ -468,7 +468,7 @@ doit_passive (kx_context *kc,
     --rem;
 
     len = strlen (display);
-    tmp = KRB_PUT_INT (len, p, rem, 4);
+    tmp = kx_put_int (len, p, rem, 4);
     if (tmp < 0 || rem < len + 4) {
 	syslog (LOG_ERR, "doit: buffer too small");
 	cleanup(nsockets, sockets);
@@ -482,7 +482,7 @@ doit_passive (kx_context *kc,
     rem -= len;
 
     len = strlen (xauthfile);
-    tmp = KRB_PUT_INT (len, p, rem, 4);
+    tmp = kx_put_int (len, p, rem, 4);
     if (tmp < 0 || rem < len + 4) {
 	syslog (LOG_ERR, "doit: buffer too small");
 	cleanup(nsockets, sockets);
