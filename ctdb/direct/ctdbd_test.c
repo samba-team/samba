@@ -298,7 +298,6 @@ int main(int argc, const char *argv[])
 	key.dsize=strlen((const char *)(key.dptr));
 	printf("fetch the test key:[%s]\n",key.dptr);
 
-	/* say that we are vnn:55   and we want to send to vnn:57 */
 	fetch_record(fd, db_id, key, 0, 1);
 	printf("\n");
 
