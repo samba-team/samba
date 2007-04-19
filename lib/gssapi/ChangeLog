@@ -1,5 +1,13 @@
-2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: export more symbols.
+	
+	* Makefile.am: add version script if ld supports it
+	
+	* version-script.map: add version script if ld supports it
+	
+2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: test_acquire_cred need test_common.[ch]
 
 	* test_acquire_cred.c: add more test options.
