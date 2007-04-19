@@ -1,5 +1,9 @@
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc: remove code that depend on kerberos 4 library
+	
+	* configure.in: Drop kerberos 4 support.
+
 	* kdc/hpropd.c (main): free the message when done with it.
 
 	* lib/krb5/pkinit.c (_krb5_get_init_creds_opt_free_pkinit):
