@@ -614,4 +614,9 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	common_free_encryption_state(&es);
 	return status;
 }
+#else
+NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
 #endif
