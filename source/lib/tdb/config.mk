@@ -7,7 +7,7 @@ DESCRIPTION = Trivial Database Library
 OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o \
-	common/error.o common/transaction.o common/tdbutil.o
+	common/error.o common/transaction.o
 CFLAGS = -Ilib/tdb/include
 PUBLIC_HEADERS = include/tdb.h
 #
@@ -18,7 +18,6 @@ PUBLIC_HEADERS = include/tdb.h
 # Start BINARY tdbtool
 [BINARY::tdbtool]
 INSTALLDIR = BINDIR
-ENABLE = NO
 OBJ_FILES= \
 		tools/tdbtool.o
 PRIVATE_DEPENDENCIES = \
@@ -52,7 +51,6 @@ PRIVATE_DEPENDENCIES = \
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
 INSTALLDIR = BINDIR
-ENABLE = NO
 OBJ_FILES= \
 		tools/tdbbackup.o
 PRIVATE_DEPENDENCIES = \
