@@ -1207,7 +1207,8 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
     free(s);
     free_AlgorithmIdentifier(&selected);
 
-    hx509_peer_info_free(peer);
+    if (peer)
+	hx509_peer_info_free(peer);
 
     return 0;
 }
