@@ -295,13 +295,12 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	talloc_steal(state, data.dptr);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdbd_allocate_pkt(ctdb, len);
+	state->c = ctdbd_allocate_pkt(state, len);
 	if (state->c == NULL) {
 		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	talloc_set_name_const(state->c, "ctdbd req_call packet");
-	talloc_steal(state, state->c);
 
 	state->c->hdr.length    = len;
 	state->c->hdr.ctdb_magic = CTDB_MAGIC;
@@ -489,14 +488,13 @@ static struct ctdb_fetch_lock_state *ctdb_client_fetch_lock_send(struct ctdb_db_
 	state->state   = CTDB_FETCH_LOCK_WAIT;
 	state->ctdb_db = ctdb_db;
 	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
-	state->req = req = ctdbd_allocate_pkt(ctdb, len);
+	state->req = req = ctdbd_allocate_pkt(state, len);
 	if (req == NULL) {
 		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 	ZERO_STRUCT(*req);
 	talloc_set_name_const(req, "ctdbd req_fetch_lock packet");
-	talloc_steal(state, req);
 
 	req->hdr.length      = len;
 	req->hdr.ctdb_magic  = CTDB_MAGIC;

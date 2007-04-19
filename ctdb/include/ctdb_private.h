@@ -80,7 +80,7 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
-	void *(*allocate_pkt)(struct ctdb_context *, size_t );
+	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
 };
 
 /*
@@ -393,7 +393,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len);
+void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len);
 
 
 /*

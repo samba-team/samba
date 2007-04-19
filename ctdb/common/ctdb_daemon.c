@@ -86,7 +86,6 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
 	r = ctdbd_allocate_pkt(ctdb, len);
 
-/*XXX cant use this since it returns an int	CTDB_NO_MEMORY(ctdb, r);*/
 	talloc_set_name_const(r, "req_message packet");
 
 	memset(r, 0, offsetof(struct ctdb_req_message, data));
@@ -102,7 +101,6 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
 
 	talloc_free(r);
-	return;
 }
 					   
 
@@ -371,47 +369,36 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 	}
 }
 
-/*
-  this is called when the ctdb daemon received a ctdb request call
-  from a local client over the unix domain socket
- */
-static void daemon_request_call_from_client(struct ctdb_client *client, 
-					    struct ctdb_req_call *c)
+
+struct daemon_call_state {
+	struct ctdb_client *client;
+	uint32_t reqid;
+	struct ctdb_call *call;
+};
+
+/* 
+   complete a call from a client 
+*/
+static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 {
-	struct ctdb_call_state *state;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_call call;
+	struct daemon_call_state *dstate = talloc_get_type(state->async.private_data, 
+							   struct daemon_call_state);
 	struct ctdb_reply_call *r;
 	int res;
 	uint32_t length;
+	struct ctdb_client *client = dstate->client;
 
-	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
-	if (!ctdb_db) {
-		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
-			  c->db_id));
+	talloc_steal(client, dstate);
+	talloc_steal(dstate, dstate->call);
+
+	res = ctdb_daemon_call_recv(state, dstate->call);
+	if (res != 0) {
+		DEBUG(0, (__location__ " ctdbd_call_recv() returned error\n"));
 		return;
 	}
 
-	ZERO_STRUCT(call);
-	call.call_id = c->callid;
-	call.key.dptr = c->data;
-	call.key.dsize = c->keylen;
-	call.call_data.dptr = c->data + c->keylen;
-	call.call_data.dsize = c->calldatalen;
-
-	state = ctdb_daemon_call_send(ctdb_db, &call);
-//	state->async.fn = daemon_call_from_client_callback;
-//	state->async.private_data = state;
-
-/* XXX this must be converted to fully async */
-	res = ctdb_daemon_call_recv(state, &call);
-	if (res != 0) {
-		DEBUG(0, (__location__ " ctdbd_call_recv() returned error\n"));
-		exit(1);
-	}
-
-	length = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
-	r = ctdbd_allocate_pkt(client->ctdb, length);
+	length = offsetof(struct ctdb_reply_call, data) + dstate->call->reply_data.dsize;
+	r = ctdbd_allocate_pkt(dstate, length);
 	if (r == NULL) {
 		DEBUG(0, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		return;
@@ -421,17 +408,67 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation    = CTDB_REPLY_CALL;
-	r->hdr.reqid        = c->hdr.reqid;
-	r->datalen          = call.reply_data.dsize;
-	memcpy(&r->data[0], call.reply_data.dptr, r->datalen);
+	r->hdr.reqid        = dstate->reqid;
+	r->datalen          = dstate->call->reply_data.dsize;
+	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
 
 	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
 	if (res != 0) {
 		DEBUG(0, (__location__ "Failed to queue packet from daemon to client\n"));
 	}
-	talloc_free(r);
+	talloc_free(dstate);
 }
 
+/*
+  this is called when the ctdb daemon received a ctdb request call
+  from a local client over the unix domain socket
+ */
+static void daemon_request_call_from_client(struct ctdb_client *client, 
+					    struct ctdb_req_call *c)
+{
+	struct ctdb_call_state *state;
+	struct ctdb_db_context *ctdb_db;
+	struct daemon_call_state *dstate;
+	struct ctdb_call *call;
+
+	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
+	if (!ctdb_db) {
+		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
+			  c->db_id));
+		return;
+	}
+
+	dstate = talloc(client, struct daemon_call_state);
+	if (dstate == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate dstate\n"));
+		return;
+	}
+	dstate->client = client;
+	dstate->reqid  = c->hdr.reqid;
+
+	call = dstate->call = talloc_zero(dstate, struct ctdb_call);
+	if (call == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate call\n"));
+		return;
+	}
+
+	call->call_id = c->callid;
+	call->key.dptr = c->data;
+	call->key.dsize = c->keylen;
+	call->call_data.dptr = c->data + c->keylen;
+	call->call_data.dsize = c->calldatalen;
+
+	state = ctdb_daemon_call_send(ctdb_db, call);
+	if (state == NULL) {
+		DEBUG(0,(__location__ " Unable to setup call send\n"));
+		return;
+	}
+	talloc_steal(state, dstate);
+	talloc_steal(client, state);
+
+	state->async.fn = daemon_call_from_client_callback;
+	state->async.private_data = dstate;
+}
 
 /* data contains a packet from the client */
 static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
@@ -674,12 +711,12 @@ int ctdb_start(struct ctdb_context *ctdb)
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len)
+void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len)
 {
 	int size;
 
 	size = (len+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
-	return talloc_size(ctdb, size);
+	return talloc_size(mem_ctx, size);
 }
 
 /*

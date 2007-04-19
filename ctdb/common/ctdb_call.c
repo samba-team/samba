@@ -141,7 +141,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 
 	msglen = strlen(msg)+1;
 	len = offsetof(struct ctdb_reply_error, msg);
-	r = ctdb->methods->allocate_pkt(ctdb, len + msglen);
+	r = ctdb->methods->allocate_pkt(msg, len + msglen);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	talloc_set_name_const(r, "send_error packet");
 
@@ -156,11 +156,9 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	r->msglen        = msglen;
 	memcpy(&r->msg[0], msg, msglen);
 
-	talloc_free(msg);
-
 	ctdb_queue_packet(ctdb, &r->hdr);
 
-	talloc_free(r);
+	talloc_free(msg);
 }
 
 
@@ -297,15 +295,14 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		}
 	}
 
-	/* send the CTDB_REPLY_DMASTER */
-	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
-	CTDB_NO_MEMORY_FATAL(ctdb, r);
-
 	/* put the packet on a temporary context, allowing us to safely free
 	   it below even if ctdb_reply_dmaster() has freed it already */
 	tmp_ctx = talloc_new(ctdb);
-	talloc_steal(tmp_ctx, r);
+
+	/* send the CTDB_REPLY_DMASTER */
+	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
+	r = ctdb->methods->allocate_pkt(tmp_ctx, len);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
 	talloc_set_name_const(r, "reply_dmaster packet");
 	r->hdr.length    = len;
@@ -653,10 +650,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdb->methods->allocate_pkt(ctdb, len);
+	state->c = ctdb->methods->allocate_pkt(state, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 	talloc_set_name_const(state->c, "req_call packet");
-	talloc_steal(state, state->c);
 
 	state->c->hdr.length    = len;
 	state->c->hdr.ctdb_magic = CTDB_MAGIC;
