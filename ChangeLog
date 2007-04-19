@@ -1,5 +1,10 @@
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/hpropd.c (main): free the message when done with it.
+
+	* lib/krb5/pkinit.c (_krb5_get_init_creds_opt_free_pkinit):
+	remember to free memory too.
+
 	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): free content-type when
 	done.
 
