@@ -194,7 +194,7 @@ int cli_spl_open(struct cli_state *cli, const char *fname, int flags, int share_
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,15,0,True);
+	set_message(NULL,cli->outbuf,15,0,True);
 
 	SCVAL(cli->outbuf,smb_com,SMBsplopen);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -241,7 +241,7 @@ BOOL cli_spl_close(struct cli_state *cli, int fnum)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,3,0,True);
+	set_message(NULL,cli->outbuf,3,0,True);
 
 	SCVAL(cli->outbuf,smb_com,SMBsplclose);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);

@@ -95,7 +95,7 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 	memcpy(buf + 8, inbuf + 8 + NTLMSSP_SIG_SIZE, data_len);
 
 	/* Reset the length. */
-	smb_setlen(buf, data_len + 4, inbuf);
+	smb_setlen(inbuf, buf, data_len + 4);
 
 	SAFE_FREE(inbuf);
 	return NT_STATUS_OK;
@@ -204,7 +204,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	}
 
 	memcpy(buf + 8, out_buf.value, out_buf.length);
-	smb_setlen(buf, out_buf.length + 4, out_buf.value);
+	smb_setlen(out_buf.value, buf, out_buf.length + 4);
 
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;

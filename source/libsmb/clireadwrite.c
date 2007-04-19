@@ -35,7 +35,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	if ((SMB_BIG_UINT)offset >> 32) 
 		bigoffset = True;
 
-	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
+	set_message(NULL,cli->outbuf,bigoffset ? 12 : 10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -176,7 +176,7 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,10,0,True);
+	set_message(NULL,cli->outbuf,10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -285,9 +285,9 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	}
 
 	if (large_writex)
-		set_message(cli->outbuf,14,0,True);
+		set_message(NULL,cli->outbuf,14,0,True);
 	else
-		set_message(cli->outbuf,12,0,True);
+		set_message(NULL,cli->outbuf,12,0,True);
 	
 	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -399,7 +399,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,5, 0,True);
+		set_message(NULL,cli->outbuf,5, 0,True);
 
 		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
