@@ -1,0 +1,6 @@
+# $Id$
+
+HEIMDAL_GSS_1.0 {
+	global:
+		gss_*;
+};
