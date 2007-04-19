@@ -4360,11 +4360,19 @@ static const struct {
 
 
 /****************************************************************************
- Handle remote api calls
- ****************************************************************************/
+ Handle remote api calls.
+****************************************************************************/
 
-int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
-		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
+int api_reply(connection_struct *conn,
+		uint16 vuid,
+		const char *inbuf,
+		char *outbuf,
+		char *data,
+		char *params,
+		int tdscnt,
+		int tpscnt,
+		int mdrcnt,
+		int mprcnt)
 {
 	int api_command;
 	char *rdata = NULL;
@@ -4457,7 +4465,13 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 	/* If api_Unsupported returns false we can't return anything. */
 	if (reply) {
-		send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
+		send_trans_reply(inbuf,
+				outbuf,
+				rparam,
+				rparam_len,
+				rdata,
+				rdata_len,
+				False);
 	}
 
 	SAFE_FREE(rdata);

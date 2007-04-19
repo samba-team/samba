@@ -72,10 +72,13 @@ static void copy_trans_params_and_data(char *outbuf, int align,
  Send a trans reply.
  ****************************************************************************/
 
-void send_trans_reply(char *outbuf,
-				char *rparam, int rparam_len,
-				char *rdata, int rdata_len,
-				BOOL buffer_too_large)
+void send_trans_reply(const char *inbuf,
+			char *outbuf,
+			char *rparam,
+			int rparam_len,
+			char *rdata,
+			int rdata_len,
+			BOOL buffer_too_large)
 {
 	int this_ldata,this_lparam;
 	int tot_data_sent = 0;
@@ -97,11 +100,11 @@ void send_trans_reply(char *outbuf,
 		ERROR_BOTH(STATUS_BUFFER_OVERFLOW,ERRDOS,ERRmoredata);
 	}
 
-	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
+	set_message(inbuf,outbuf,10,1+align+this_ldata+this_lparam,True);
 
 	copy_trans_params_and_data(outbuf, align,
-								rparam, tot_param_sent, this_lparam,
-								rdata, tot_data_sent, this_ldata);
+				rparam, tot_param_sent, this_lparam,
+				rdata, tot_data_sent, this_ldata);
 
 	SSVAL(outbuf,smb_vwv0,lparam);
 	SSVAL(outbuf,smb_vwv1,ldata);
@@ -133,7 +136,7 @@ void send_trans_reply(char *outbuf,
 
 		align = (this_lparam%4);
 
-		set_message(outbuf,10,1+this_ldata+this_lparam+align,False);
+		set_message(inbuf,outbuf,10,1+this_ldata+this_lparam+align,False);
 
 		copy_trans_params_and_data(outbuf, align,
 					   rparam, tot_param_sent, this_lparam,
@@ -160,7 +163,9 @@ void send_trans_reply(char *outbuf,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static BOOL api_rpc_trans_reply(char *outbuf, smb_np_struct *p)
+static BOOL api_rpc_trans_reply(const char *inbuf,
+				char *outbuf,
+				smb_np_struct *p)
 {
 	BOOL is_data_outstanding;
 	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
@@ -177,7 +182,7 @@ static BOOL api_rpc_trans_reply(char *outbuf, smb_np_struct *p)
 		return False;
 	}
 
-	send_trans_reply(outbuf, NULL, 0, rdata, data_len, is_data_outstanding);
+	send_trans_reply(inbuf, outbuf, NULL, 0, rdata, data_len, is_data_outstanding);
 
 	SAFE_FREE(rdata);
 	return True;
@@ -187,7 +192,11 @@ static BOOL api_rpc_trans_reply(char *outbuf, smb_np_struct *p)
  WaitNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_WNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len)
+static BOOL api_WNPHS(const char *inbuf,
+			char *outbuf,
+			smb_np_struct *p,
+			char *param,
+			int param_len)
 {
 	uint16 priority;
 
@@ -199,7 +208,7 @@ static BOOL api_WNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len
 
 	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
+		send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -210,7 +219,11 @@ static BOOL api_WNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len
  SetNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_SNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len)
+static BOOL api_SNPHS(const char *inbuf,
+			char *outbuf,
+			smb_np_struct *p,
+			char *param,
+			int param_len)
 {
 	uint16 id;
 
@@ -222,7 +235,7 @@ static BOOL api_SNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len
 
 	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
+		send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -233,7 +246,7 @@ static BOOL api_SNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len
  When no reply is generated, indicate unsupported.
  ****************************************************************************/
 
-static BOOL api_no_reply(char *outbuf, int max_rdata_len)
+static BOOL api_no_reply(const char *inbuf, char *outbuf, int max_rdata_len)
 {
 	char rparam[4];
 
@@ -244,7 +257,7 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(outbuf, rparam, 4, NULL, 0, False);
+	send_trans_reply(inbuf, outbuf, rparam, 4, NULL, 0, False);
 
 	return -1;
 }
@@ -253,9 +266,18 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
  Handle remote api calls delivered to a named pipe already opened.
  ****************************************************************************/
 
-static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
-		 	uint16 *setup,char *data,char *params,
-		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
+static int api_fd_reply(connection_struct *conn,
+			uint16 vuid,
+			const char *inbuf,
+			char *outbuf,
+			uint16 *setup,
+			char *data,
+			char *params,
+		 	int suwcnt,
+			int tdscnt,
+			int tpscnt,
+			int mdrcnt,
+			int mprcnt)
 {
 	BOOL reply = False;
 	smb_np_struct *p = NULL;
@@ -283,7 +305,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
+			send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
 			return -1;
 		}
 
@@ -309,51 +331,94 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		/* dce/rpc command */
 		reply = write_to_pipe(p, data, tdscnt);
 		if (reply)
-			reply = api_rpc_trans_reply(outbuf, p);
+			reply = api_rpc_trans_reply(inbuf, outbuf, p);
 		break;
 	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
-		reply = api_WNPHS(outbuf, p, params, tpscnt);
+		reply = api_WNPHS(inbuf, outbuf, p, params, tpscnt);
 		break;
 	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
 		/* Set Named Pipe Handle state */
-		reply = api_SNPHS(outbuf, p, params, tpscnt);
+		reply = api_SNPHS(inbuf, outbuf, p, params, tpscnt);
 		break;
 	default:
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (!reply)
-		return api_no_reply(outbuf, mdrcnt);
+		return api_no_reply(inbuf, outbuf, mdrcnt);
 
 	return -1;
 }
 
 /****************************************************************************
-  handle named pipe commands
-  ****************************************************************************/
-static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *name,
-		      uint16 *setup,char *data,char *params,
-		      int suwcnt,int tdscnt,int tpscnt,
-		      int msrcnt,int mdrcnt,int mprcnt)
+ Handle named pipe commands.
+****************************************************************************/
+
+static int named_pipe(connection_struct *conn,
+			uint16 vuid,
+			const char *inbuf,
+			char *outbuf,
+			char *name,
+			uint16 *setup,
+			char *data,
+			char *params,
+			int suwcnt,
+			int tdscnt,
+			int tpscnt,
+			int msrcnt,
+			int mdrcnt,
+			int mprcnt)
 {
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
-	if (strequal(name,"LANMAN"))
-		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
+	if (strequal(name,"LANMAN")) {
+		return api_reply(conn,
+				vuid,
+				inbuf,
+				outbuf,
+				data,
+				params,
+				tdscnt,
+				tpscnt,
+				mdrcnt,
+				mprcnt);
+	}
 
 	if (strequal(name,"WKSSVC") ||
 	    strequal(name,"SRVSVC") ||
 	    strequal(name,"WINREG") ||
 	    strequal(name,"SAMR") ||
-	    strequal(name,"LSARPC"))
-	{
+	    strequal(name,"LSARPC")) {
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
-		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
+		return api_fd_reply(conn,
+					vuid,
+					inbuf,
+					outbuf,
+					setup,
+					data,
+					params,
+					suwcnt,
+					tdscnt,
+					tpscnt,
+					mdrcnt,
+					mprcnt);
 	}
 
-	if (strlen(name) < 1)
-		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
+	if (strlen(name) < 1) {
+		return api_fd_reply(conn,
+					vuid,
+					inbuf,
+					outbuf,
+					setup,
+					data,
+					params,
+					suwcnt,
+					tdscnt,
+					tpscnt,
+					mdrcnt,
+					mprcnt);
+	}
 
 	if (setup)
 		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
@@ -362,8 +427,10 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 }
 
 static NTSTATUS handle_trans(connection_struct *conn,
-			     struct trans_state *state,
-			     char *outbuf, int *outsize)
+				struct trans_state *state,
+				const char *inbuf,
+				char *outbuf,
+				int *outsize)
 {
 	char *local_machine_name;
 	int name_offset = 0;
@@ -402,15 +469,18 @@ static NTSTATUS handle_trans(connection_struct *conn,
 		name_offset++;
 
 	DEBUG(5,("calling named_pipe\n"));
-	*outsize = named_pipe(conn, state->vuid, outbuf,
-			      state->name+name_offset,
-			      state->setup,state->data,
-			      state->param,
-			      state->setup_count,state->total_data,
-			      state->total_param,
-			      state->max_setup_return,
-			      state->max_data_return,
-			      state->max_param_return);
+	*outsize = named_pipe(conn,
+				state->vuid,
+				inbuf,
+				outbuf,
+				state->name+name_offset,
+				state->setup,state->data,
+				state->param,
+				state->setup_count,state->total_data,
+				state->total_param,
+				state->max_setup_return,
+				state->max_data_return,
+				state->max_param_return);
 
 	if (*outsize == 0) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -426,8 +496,11 @@ static NTSTATUS handle_trans(connection_struct *conn,
  Reply to a SMBtrans.
  ****************************************************************************/
 
-int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
-		int size, int bufsize)
+int reply_trans(connection_struct *conn,
+		char *inbuf,
+		char *outbuf,
+		int size,
+		int bufsize)
 {
 	int outsize = 0;
 	unsigned int dsoff = SVAL(inbuf, smb_dsoff);
@@ -552,7 +625,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	if ((state->received_param == state->total_param) &&
 	    (state->received_data == state->total_data)) {
 
-		result = handle_trans(conn, state, outbuf, &outsize);
+		result = handle_trans(conn, state, inbuf, outbuf, &outsize);
 
 		SAFE_FREE(state->data);
 		SAFE_FREE(state->param);
@@ -576,7 +649,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(inbuf,outbuf,0,0,True);
 	show_msg(outbuf);
 	END_PROFILE(SMBtrans);
 	return outsize;
@@ -687,7 +760,7 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	 */
 	SCVAL(outbuf,smb_com,SMBtrans);
 
-	result = handle_trans(conn, state, outbuf, &outsize);
+	result = handle_trans(conn, state, inbuf, outbuf, &outsize);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);

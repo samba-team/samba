@@ -99,7 +99,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,10, 0, True);
+	set_message(NULL,cli->outbuf,10, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 	
@@ -169,7 +169,7 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(cli->outbuf,13,0,True);
+	set_message(NULL,cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -229,7 +229,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(cli->outbuf,13,0,True);
+	set_message(NULL,cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -378,7 +378,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,13,0,True);
+	set_message(NULL,cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -458,7 +458,7 @@ static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,12,0,True);
+	set_message(NULL,cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 
 	cli_setup_packet(cli);
@@ -982,7 +982,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 BOOL cli_ulogoff(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,2,0,True);
+	set_message(NULL,cli->outbuf,2,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
 	cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -1059,7 +1059,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
 
-	set_message(cli->outbuf,4, 0, True);
+	set_message(NULL,cli->outbuf,4, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtconX);
 	cli_setup_packet(cli);
 
@@ -1110,7 +1110,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,0,0,True);
+	set_message(NULL,cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -1142,7 +1142,7 @@ void cli_negprot_send(struct cli_state *cli)
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
-	set_message(cli->outbuf,0,0,True);
+	set_message(NULL,cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1182,7 +1182,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
     
-	set_message(cli->outbuf,0,plength,True);
+	set_message(NULL,cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1716,7 +1716,7 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf, 0, 0, True);
+	set_message(NULL,cli->outbuf, 0, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtcon);
 	cli_setup_packet(cli);
 

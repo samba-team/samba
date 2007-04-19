@@ -240,7 +240,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 static void send_blocking_reply(char *outbuf, int outsize, const char *inbuf)
 {
 	if(outsize > 4) {
-		smb_setlen(outbuf,outsize - 4, inbuf);
+		smb_setlen(inbuf, outbuf,outsize - 4);
 	}
 
 	if (!send_smb(smbd_server_fd(),outbuf)) {
@@ -260,7 +260,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	int outsize = 0;
 
 	construct_reply_common(inbuf, outbuf);
-	set_message(outbuf,2,0,True);
+	set_message(inbuf,outbuf,2,0,True);
 
 	/*
 	 * As this message is a lockingX call we must handle
@@ -525,7 +525,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	SCVAL(outbuf,smb_com,SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
-	send_trans2_replies(outbuf, max_send, params, 2, NULL, 0, 0xffff);
+	send_trans2_replies(inbuf, outbuf, max_send, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 

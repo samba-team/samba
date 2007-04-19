@@ -577,7 +577,8 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-int send_trans2_replies(char *outbuf,
+int send_trans2_replies(const char *inbuf,
+			char *outbuf,
 			int bufsize,
 			const char *params, 
 			int paramsize,
@@ -602,7 +603,7 @@ int send_trans2_replies(char *outbuf,
 
 	/* Initially set the wcnt area to be 10 - this is true for all trans2 replies */
 	
-	set_message(outbuf,10,0,True);
+	set_message(inbuf,outbuf,10,0,True);
 
 	/* Modify the data_to_send and datasize and set the error if
 	   we're trying to send more than max_data_bytes. We still send
@@ -657,7 +658,7 @@ int send_trans2_replies(char *outbuf,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space+ alignment_offset + data_alignment_offset);
 
-		set_message(outbuf, 10, total_sent_thistime, True);
+		set_message(inbuf, outbuf, 10, total_sent_thistime, True);
 
 		/* Set total params and data to be sent */
 		SSVAL(outbuf,smb_tprcnt,paramsize);
@@ -950,7 +951,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies(outbuf, bufsize, params, 30, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 30, *ppdata, 0, max_data_bytes);
 
 	return -1;
 }
@@ -1929,7 +1930,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata), max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata), max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2222,7 +2223,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata), max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata), max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2703,7 +2704,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	}
 
 
-	send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n", smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
 
@@ -2804,7 +2805,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return ERROR_NT(status);
 				}
 
-				send_trans2_replies(outbuf, bufsize, *pparams, param_len, *ppdata, data_len, max_data_bytes);
+				send_trans2_replies(inbuf, outbuf, bufsize, *pparams, param_len, *ppdata, data_len, max_data_bytes);
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
@@ -2899,7 +2900,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 	 * like windows do...
 	 * --metze
 	 */ 
-	outsize = set_message(outbuf,10,0,True);
+	outsize = set_message(inbuf, outbuf,10,0,True);
 
 	return outsize;
 }
@@ -4018,7 +4019,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
 
 	return(-1);
 }
@@ -5692,7 +5693,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
 				SSVAL(params,0,0);
-				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
+				send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 				return(-1);
 			} else
 				return (UNIXERROR(ERRDOS,ERRbadpath));
@@ -6023,7 +6024,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, data_return_size, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, data_return_size, max_data_bytes);
   
 	return -1;
 }
@@ -6122,7 +6123,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -6171,7 +6172,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies(outbuf, bufsize, params, 6, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 6, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -6199,7 +6200,7 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, 4, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -6234,7 +6235,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 		return ERROR_NT(status);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);
 
 	return(-1);
 }
@@ -6272,7 +6273,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
 		srvstr_push( outbuf, pdata + 2, global_myname(), 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32, max_data_bytes);
+		send_trans2_replies(inbuf, outbuf,bufsize,*pparams,0,*ppdata,32, max_data_bytes);
 		return(-1);
 	} else {
 		DEBUG(2,("Unknown TRANS2_IOCTL\n"));
@@ -6295,7 +6296,7 @@ int reply_findclose(connection_struct *conn,
 
 	dptr_close(&dptr_num);
 
-	outsize = set_message(outbuf,0,0,False);
+	outsize = set_message(inbuf, outbuf,0,0,False);
 
 	DEBUG(3,("SMBfindclose dptr_num = %d\n", dptr_num));
 
@@ -6322,7 +6323,7 @@ int reply_findnclose(connection_struct *conn,
 	   findnotifyfirst - so any dptr_num is ok here. 
 	   Just ignore it. */
 
-	outsize = set_message(outbuf,0,0,False);
+	outsize = set_message(inbuf, outbuf,0,0,False);
 
 	DEBUG(3,("SMB_findnclose dptr_num = %d\n", dptr_num));
 
@@ -6640,7 +6641,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(outbuf,0,0,False);
+	outsize = set_message(inbuf, outbuf,0,0,False);
 	show_msg(outbuf);
 	END_PROFILE(SMBtrans2);
 	return outsize;

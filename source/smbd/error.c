@@ -29,7 +29,7 @@ extern uint32 global_client_caps;
  Create an error packet from a cached error.
 ****************************************************************************/
  
-int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file)
+int cached_error_packet(const char *inbuf,char *outbuf,files_struct *fsp,int line,const char *file)
 {
 	write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
 	int32 eclass = wbmpx->wr_errclass;
@@ -38,14 +38,14 @@ int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file
  
 	/* We can now delete the auxiliary struct */
 	SAFE_FREE(fsp->wbmpx_ptr);
-	return error_packet(outbuf,eclass,err,ntstatus,line,file);
+	return error_packet(inbuf,outbuf,eclass,err,ntstatus,line,file);
 }
 
 /****************************************************************************
  Create an error packet from errno.
 ****************************************************************************/
 
-int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_status, int line, const char *file)
+int unix_error_packet(const char *inbuf,char *outbuf,int def_class,uint32 def_code, NTSTATUS def_status, int line, const char *file)
 {
 	int eclass=def_class;
 	int ecode=def_code;
@@ -66,7 +66,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_s
 		}
 	}
 
-	return error_packet(outbuf,eclass,ecode,ntstatus,line,file);
+	return error_packet(inbuf,outbuf,eclass,ecode,ntstatus,line,file);
 }
 
 BOOL use_nt_status(void)
@@ -126,9 +126,9 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 	}
 }
 
-int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+int error_packet(const char *inbuf, char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(inbuf,outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }

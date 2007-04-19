@@ -418,7 +418,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			    aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
-	smb_setlen(outbuf,outsize - 4,aio_ex->inbuf);
+	smb_setlen(aio_ex->inbuf,outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server_cleanly("handle_aio_read_complete: send_smb "

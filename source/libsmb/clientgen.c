@@ -298,7 +298,7 @@ void cli_setup_packet(struct cli_state *cli)
 
 void cli_setup_bcc(struct cli_state *cli, void *p)
 {
-	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
+	set_message_bcc(NULL,cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
 }
 
 /****************************************************************************
@@ -584,7 +584,7 @@ BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
 	SMB_ASSERT(length < 1024);
 
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,1,length,True);
+	set_message(NULL,cli->outbuf,1,length,True);
 	SCVAL(cli->outbuf,smb_com,SMBecho);
 	SSVAL(cli->outbuf,smb_tid,65535);
 	SSVAL(cli->outbuf,smb_vwv0,1);

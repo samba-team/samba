@@ -68,8 +68,14 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
-		    char *params, int paramsize, char *pdata, int datasize)
+int send_nt_replies(const char *inbuf,
+			char *outbuf,
+			int bufsize,
+			NTSTATUS nt_error,
+			char *params,
+			int paramsize,
+			char *pdata,
+			int datasize)
 {
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
@@ -85,7 +91,7 @@ int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
 	 * transNT replies.
 	 */
 
-	set_message(outbuf,18,0,True);
+	set_message(inbuf,outbuf,18,0,True);
 
 	if (NT_STATUS_V(nt_error)) {
 		ERROR_NT(nt_error);
@@ -149,7 +155,7 @@ int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		set_message(outbuf, 18, total_sent_thistime, True);
+		set_message(inbuf,outbuf, 18, total_sent_thistime, True);
 
 		/*
 		 * Set total params and data to be sent.
@@ -392,10 +398,10 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
  		 * the wcnt to 42 ? It's definately
  		 * what happens on the wire....
  		 */
-		set_message(outbuf,50,0,True);
+		set_message(inbuf,outbuf,50,0,True);
 		SCVAL(outbuf,smb_wct,42);
 	} else {
-		set_message(outbuf,34,0,True);
+		set_message(inbuf,outbuf,34,0,True);
 	}
 
 	p = outbuf + smb_vwv2;
@@ -454,7 +460,7 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	set_message(outbuf,34,0,True);
+	set_message(inbuf,outbuf,34,0,True);
 	
 	p = outbuf + smb_vwv2;
 	
@@ -876,10 +882,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
  		 * the wcnt to 42 ? It's definately
  		 * what happens on the wire....
  		 */
-		set_message(outbuf,50,0,True);
+		set_message(inbuf,outbuf,50,0,True);
 		SCVAL(outbuf,smb_wct,42);
 	} else {
-		set_message(outbuf,34,0,True);
+		set_message(inbuf,outbuf,34,0,True);
 	}
 
 	p = outbuf + smb_vwv2;
@@ -1042,7 +1048,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 	
 	/* Send the required number of replies */
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
 	
 	return -1;
 }
@@ -1637,7 +1643,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
 	return -1;
 }
@@ -1898,7 +1904,7 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	outsize = set_message(outbuf,0,0,False);
+	outsize = set_message(inbuf,outbuf,0,0,False);
   
 	END_PROFILE(SMBntrename);
 	return(outsize);
@@ -2045,7 +2051,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	/*
 	 * Rename was successful.
 	 */
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 	
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
@@ -2133,7 +2139,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	if(max_data_count < sd_size) {
 
-		send_nt_replies(outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
 				params, 4, *ppdata, 0);
 		talloc_destroy(mem_ctx);
 		return -1;
@@ -2182,7 +2188,7 @@ security descriptor.\n"));
 
 	talloc_destroy(mem_ctx);
 
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 4, data,
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 4, data,
 			(int)sd_size);
 	return -1;
 }
@@ -2229,7 +2235,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 
   done:
 
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 	return -1;
 }
    
@@ -2275,7 +2281,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		   so we can know if we need to pre-allocate or not */
 
 		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
-		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
 				0);
 		return -1;
 	
@@ -2285,7 +2291,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_0x000900C0: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
 				0);
 		return -1;
 
@@ -2295,7 +2301,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
 				NULL, 0, NULL, 0);
 		return -1;
 
@@ -2305,7 +2311,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
 				NULL, 0, NULL, 0);
 		return -1;
 			
@@ -2419,7 +2425,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		talloc_destroy(shadow_data->mem_ctx);
 
-		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0,
 				pdata, data_count);
 
 		return -1;
@@ -2472,7 +2478,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 		
 		/* this works for now... */
-		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0,
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0,
 				NULL, 0);
 		return -1;	
 	}	
@@ -2739,7 +2745,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			break;
 	}
 
-	send_nt_replies(outbuf, bufsize, nt_status, params, param_len,
+	send_nt_replies(inbuf, outbuf, bufsize, nt_status, params, param_len,
 			pdata, data_len);
 
 	return -1;
@@ -2857,7 +2863,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRSRV,ERRerror);	
 	}
 
-	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len,
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len,
 			pdata, data_len);
 
 	return -1;
@@ -3141,7 +3147,7 @@ int reply_nttrans(connection_struct *conn,
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(outbuf,0,0,False);
+	outsize = set_message(inbuf,outbuf,0,0,False);
 	show_msg(outbuf);
 	END_PROFILE(SMBnttrans);
 	return outsize;

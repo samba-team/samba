@@ -162,15 +162,15 @@
 #define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
                 (fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
+#define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__,__FILE__)
 
-#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(inbuf,outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(inbuf,outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(inbuf,outbuf,class,code,status,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10

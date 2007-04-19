@@ -32,7 +32,7 @@ BOOL cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 	cli->outbuf = buf;
 
         memset(buf,'\0',smb_size);
-        set_message(buf,8,0,True);
+        set_message(NULL,buf,8,0,True);
 
         SCVAL(buf,smb_com,SMBlockingX);
 	SSVAL(buf,smb_tid, cli->cnum);

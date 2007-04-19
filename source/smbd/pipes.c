@@ -108,7 +108,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	}
 
 	/* Prepare the reply */
-	set_message(outbuf,15,0,True);
+	set_message(inbuf,outbuf,15,0,True);
 
 	/* Mark the opened file as an existing named pipe in message mode. */
 	SSVAL(outbuf,smb_vwv9,2);
@@ -162,7 +162,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
 	}
   
-	outsize = set_message(outbuf,1,0,True);
+	outsize = set_message(inbuf,outbuf,1,0,True);
 
 	SSVAL(outbuf,smb_vwv0,nwritten);
   
@@ -224,7 +224,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
 	}
   
-	set_message(outbuf,6,0,True);
+	set_message(inbuf,outbuf,6,0,True);
 
 	nwritten = (pipe_start_message_raw ? nwritten + 2 : nwritten);
 	SSVAL(outbuf,smb_vwv2,nwritten);
@@ -260,7 +260,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		return(ERROR_DOS(ERRDOS,ERRbadfid));
 	}
 
-	set_message(outbuf,12,0,True);
+	set_message(inbuf,outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
 	nread = read_from_pipe(p, data, smb_maxcnt, &unused);
@@ -277,7 +277,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
 	/* Ensure we set up the message length to include the data length read. */
-	set_message_bcc(outbuf,nread);
+	set_message_bcc(inbuf,outbuf,nread);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -288,7 +288,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 {
 	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(inbuf,outbuf,0,0,True);
 
 	if (!p) {
 		return(ERROR_DOS(ERRDOS,ERRbadfid));

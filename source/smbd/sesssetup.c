@@ -96,15 +96,18 @@ static void sessionsetup_start_signing_engine(const auth_serversupplied_info *se
  Send a security blob via a session setup reply.
 ****************************************************************************/
 
-static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob, NTSTATUS nt_status)
+static BOOL reply_sesssetup_blob(connection_struct *conn,
+				const char *inbuf,
+				char *outbuf,
+				DATA_BLOB blob,
+				NTSTATUS nt_status)
 {
 	char *p;
 
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		ERROR_NT(nt_status_squash(nt_status));
 	} else {
-		set_message(outbuf,4,0,True);
+		set_message(inbuf,outbuf,4,0,True);
 
 		nt_status = nt_status_squash(nt_status);
 		SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
@@ -118,7 +121,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 
 		p += add_signature( outbuf, p );
 
-		set_message_end(outbuf,p);
+		set_message_end(inbuf,outbuf,p);
 	}
 
 	show_msg(outbuf);
@@ -292,7 +295,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			}
 			ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_ERROR);
 			response = spnego_gen_auth_response(&ap_rep_wrapped, ret, OID_KERBEROS5_OLD);
-			reply_sesssetup_blob(conn, outbuf, response, NT_STATUS_MORE_PROCESSING_REQUIRED);
+			reply_sesssetup_blob(conn, inbuf, outbuf, response, NT_STATUS_MORE_PROCESSING_REQUIRED);
 
 			/*
 			 * In this one case we don't invalidate the intermediate vuid.
@@ -520,7 +523,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		/* current_user_info is changed on new vuid */
 		reload_services( True );
 
-		set_message(outbuf,4,0,True);
+		set_message(inbuf,outbuf,4,0,True);
 		SSVAL(outbuf, smb_vwv3, 0);
 			
 		if (server_info->guest) {
@@ -539,7 +542,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		ap_rep_wrapped = data_blob(NULL, 0);
 	}
 	response = spnego_gen_auth_response(&ap_rep_wrapped, ret, OID_KERBEROS5_OLD);
-	reply_sesssetup_blob(conn, outbuf, response, ret);
+	reply_sesssetup_blob(conn, inbuf, outbuf, response, ret);
 
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
@@ -593,7 +596,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 			/* current_user_info is changed on new vuid */
 			reload_services( True );
 
-			set_message(outbuf,4,0,True);
+			set_message(inbuf,outbuf,4,0,True);
 			SSVAL(outbuf, smb_vwv3, 0);
 			
 			if (server_info->guest) {
@@ -612,7 +615,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 		response = *ntlmssp_blob;
 	}
 
-	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
+	ret = reply_sesssetup_blob(conn, inbuf, outbuf, response, nt_status);
 	if (wrap) {
 		data_blob_free(&response);
 	}
@@ -1513,11 +1516,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	data_blob_clear_free(&plaintext_password);
 	
 	/* it's ok - setup a reply */
-	set_message(outbuf,3,0,True);
+	set_message(inbuf,outbuf,3,0,True);
 	if (Protocol >= PROTOCOL_NT1) {
 		char *p = smb_buf( outbuf );
 		p += add_signature( outbuf, p );
-		set_message_end( outbuf, p );
+		set_message_end(inbuf, outbuf, p );
 		/* perhaps grab OS version here?? */
 	}
 	

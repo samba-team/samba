@@ -533,7 +533,7 @@ void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
  Set the length and marker of an smb packet.
 ********************************************************************/
 
-void smb_setlen(char *buf,int len,const char *frombuf)
+void smb_setlen(const char *frombuf, char *buf, int len)
 {
 	_smb_setlen(buf,len);
 
@@ -553,14 +553,14 @@ void smb_setlen(char *buf,int len,const char *frombuf)
  Setup the word count and byte count for a smb message.
 ********************************************************************/
 
-int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
+int set_message(const char *frombuf, char *buf,int num_words,int num_bytes,BOOL zero)
 {
 	if (zero && (num_words || num_bytes)) {
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
 	}
 	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4, NULL);
+	smb_setlen(frombuf, buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
 }
 
@@ -568,11 +568,11 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
  Setup only the byte count for a smb message.
 ********************************************************************/
 
-int set_message_bcc(char *buf,int num_bytes)
+int set_message_bcc(const char *frombuf, char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4, NULL);
+	smb_setlen(frombuf, buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
 }
 
@@ -581,9 +581,11 @@ int set_message_bcc(char *buf,int num_bytes)
  message as a marker.
 ********************************************************************/
 
-int set_message_end(void *outbuf,void *end_ptr)
+int set_message_end(const char *frombuf, void *outbuf,void *end_ptr)
 {
-	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
+	return set_message_bcc(frombuf,
+			(char *)outbuf,
+			PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
