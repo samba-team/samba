@@ -184,6 +184,10 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 	return (1103515243 * value + 12345);  
 }
 
+/* ask the daemon to migrate a record over so that the local node is the dmaster   the client must not have the record locked when performing this call.
+
+   see ctdb_client.c/ctdb_fetch_lock() for the full procedure 
+ */
 void fetch_lock(int fd, uint32_t db_id, TDB_DATA key)
 {
 	struct ctdb_req_fetch_lock *req;
@@ -227,19 +231,7 @@ void fetch_lock(int fd, uint32_t db_id, TDB_DATA key)
 			cnt+=numread;
 		}
 	}
-	printf("fetch lock reply: state:%d datalen:%d\n",rep->state,rep->datalen);
-	if(!rep->datalen){
-		printf("no data\n");
-	} else {
-		printf("data:[%s]\n",rep->data);
-	}
-
-}
-
-void store_unlock(int fd, uint32_t db_id, TDB_DATA key, TDB_DATA data)
-{
-/*XXX write the tdb record and drop the chainlock*/
-	printf("store_unlock example not implemented\n");
+	printf("fetch lock reply: state:%d\n",rep->state);
 }
 
 int main(int argc, const char *argv[])
@@ -249,8 +241,7 @@ int main(int argc, const char *argv[])
 	struct ctdb_req_message *reply;
 	TDB_DATA dbname;
 	uint32_t db_id;
-	TDB_DATA key, data;
-	char str[256];
+	TDB_DATA key;
 
 	/* open the socket to talk to the local ctdb daemon */
 	fd=ux_socket_connect(CTDB_SOCKET);
@@ -303,14 +294,6 @@ int main(int argc, const char *argv[])
 	fetch_lock(fd, db_id, key);
 	printf("\n");
 
-
-	/* send a store unlock */
-	sprintf(str,"TestData_%d",getpid());
-	data.dptr=discard_const(str);
-	data.dsize=strlen((const char *)(data.dptr));
-	printf("store new data==[%s] for this record\n",data.dptr);
-	store_unlock(fd, db_id, key, data);
-	printf("\n");
 
 	/* send a fetch lock */
 	printf("fetch the test key:[%s]\n",key.dptr);
