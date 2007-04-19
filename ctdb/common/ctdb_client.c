@@ -542,6 +542,13 @@ again:
 		return NULL;
 	}
 
+	/* when torturing, ensure we test the remote path */
+	if ((ctdb_db->ctdb->flags & CTDB_FLAG_TORTURE) &&
+	    random() % 5 == 0) {
+		h->header.dmaster = (uint32_t)-1;
+	}
+
+
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
 	if (h->header.dmaster != ctdb_db->ctdb->vnn) {

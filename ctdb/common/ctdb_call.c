@@ -224,7 +224,8 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 
 	if (r->hdr.destnode == ctdb->vnn) {
 		/* we are the lmaster - don't send to ourselves */
-		ctdb_request_dmaster(ctdb, &r->hdr);
+		ctdb_recv_pkt(ctdb, (uint8_t *)&r->hdr, r->hdr.length);
+		return;
 	} else {
 		ctdb_queue_packet(ctdb, &r->hdr);
 
@@ -266,33 +267,30 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 	
-	/* if the new dmaster and the lmaster are the same node, then
-	   we don't need to update the record header now */
-	if (c->dmaster != ctdb->vnn) {
-		/* fetch the current record */
-		ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2);
-		if (ret == -1) {
-			ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
-			return;
-		}
-		if (ret == -2) {
-			DEBUG(2,(__location__ " deferring ctdb_request_dmaster\n"));
-			return;
-		}
-		
-		/* its a protocol error if the sending node is not the current dmaster */
-		if (header.dmaster != hdr->srcnode) {
-			ctdb_fatal(ctdb, "dmaster request from non-master");
-			return;
-		}
-
-		header.dmaster = c->dmaster;
-		ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
-		ctdb_ltdb_unlock(ctdb_db, key);
-		if (ret != 0) {
-			ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
-			return;
-		}
+	/* fetch the current record */
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2,
+					   ctdb_recv_raw_pkt, ctdb);
+	if (ret == -1) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+		return;
+	}
+	if (ret == -2) {
+		DEBUG(2,(__location__ " deferring ctdb_request_dmaster\n"));
+		return;
+	}
+	
+	/* its a protocol error if the sending node is not the current dmaster */
+	if (header.dmaster != hdr->srcnode) {
+		ctdb_fatal(ctdb, "dmaster request from non-master");
+		return;
+	}
+	
+	header.dmaster = c->dmaster;
+	ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+	ctdb_ltdb_unlock(ctdb_db, key);
+	if (ret != 0) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+		return;
 	}
 
 	/* put the packet on a temporary context, allowing us to safely free
@@ -356,7 +354,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data);
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data,
+					   ctdb_recv_raw_pkt, ctdb);
 	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
@@ -667,42 +666,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 			ctdb_call_timeout, state);
 	return state;
 }
-
-/*
-  make a remote ctdb call - async send. Called in daemon context.
-
-  This constructs a ctdb_call request and queues it for processing. 
-  This call never blocks.
-*/
-struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
-					      struct ctdb_call *call)
-{
-	int ret;
-	struct ctdb_ltdb_header header;
-	TDB_DATA data;
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-
-	/*
-	  if we are the dmaster for this key then we don't need to
-	  send it off at all, we can bypass the network and handle it
-	  locally. To find out if we are the dmaster we need to look
-	  in our ltdb
-	*/
-	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
-	if (ret != 0) return NULL;
-
-	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		struct ctdb_call_state *state;
-		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
-		talloc_free(data.dptr);
-		return state;
-	}
-
-	talloc_free(data.dptr);
-
-	return ctdb_daemon_call_send_remote(ctdb_db, call, &header);
-}
-
 
 /*
   make a remote ctdb call - async recv - called in daemon context

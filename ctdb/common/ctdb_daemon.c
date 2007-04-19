@@ -29,6 +29,19 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
+/*
+  structure describing a connected client in the daemon
+ */
+struct ctdb_client {
+	struct ctdb_context *ctdb;
+	int fd;
+	struct ctdb_queue *queue;
+};
+
+
+
+static void daemon_incoming_packet(void *, uint8_t *, uint32_t );
+
 static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
 	ctdb->methods->start(ctdb);
@@ -59,16 +72,6 @@ static void block_signal(int signum)
 	sigaddset(&act.sa_mask, signum);
 	sigaction(signum, &act, NULL);
 }
-
-
-/*
-  structure describing a connected client in the daemon
- */
-struct ctdb_client {
-	struct ctdb_context *ctdb;
-	int fd;
-	struct ctdb_queue *queue;
-};
 
 
 /*
@@ -294,6 +297,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	talloc_free(dstate);
 }
 
+
 /*
   this is called when the ctdb daemon received a ctdb request call
   from a local client over the unix domain socket
@@ -305,6 +309,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct ctdb_db_context *ctdb_db;
 	struct daemon_call_state *dstate;
 	struct ctdb_call *call;
+	struct ctdb_ltdb_header header;
+	TDB_DATA key, data;
+	int ret;
+	struct ctdb_context *ctdb = client->ctdb;
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
@@ -313,27 +321,52 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
+	key.dptr = c->data;
+	key.dsize = c->keylen;
+
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
+					   (struct ctdb_req_header *)c, &data,
+					   daemon_incoming_packet, client);
+	if (ret == -2) {
+		/* will retry later */
+		return;
+	}
+
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Unable to fetch record\n"));
+		return;
+	}
+
 	dstate = talloc(client, struct daemon_call_state);
 	if (dstate == NULL) {
+		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(0,(__location__ " Unable to allocate dstate\n"));
 		return;
 	}
 	dstate->client = client;
 	dstate->reqid  = c->hdr.reqid;
+	talloc_steal(dstate, data.dptr);
 
 	call = dstate->call = talloc_zero(dstate, struct ctdb_call);
 	if (call == NULL) {
+		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(0,(__location__ " Unable to allocate call\n"));
 		return;
 	}
 
 	call->call_id = c->callid;
-	call->key.dptr = c->data;
-	call->key.dsize = c->keylen;
+	call->key = key;
 	call->call_data.dptr = c->data + c->keylen;
 	call->call_data.dsize = c->calldatalen;
 
-	state = ctdb_daemon_call_send(ctdb_db, call);
+	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
+	} else {
+		state = ctdb_daemon_call_send_remote(ctdb_db, call, &header);
+	}
+
+	ctdb_ltdb_unlock(ctdb_db, key);
+
 	if (state == NULL) {
 		DEBUG(0,(__location__ " Unable to setup call send\n"));
 		return;
@@ -346,9 +379,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 }
 
 /* data contains a packet from the client */
-static void daemon_incoming_packet(struct ctdb_client *client, void *data, size_t nread)
+static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 {
-	struct ctdb_req_header *hdr = data;
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+	struct ctdb_client *client = talloc_get_type(p, struct ctdb_client);
 	TALLOC_CTX *tmp_ctx;
 
 	/* place the packet as a child of a tmp_ctx. We then use

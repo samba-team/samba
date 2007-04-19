@@ -343,7 +343,9 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
-				 struct ctdb_req_header *hdr, TDB_DATA *data);
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void *recv_context);
 void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
@@ -450,5 +452,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
 #define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
+
+void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 #endif

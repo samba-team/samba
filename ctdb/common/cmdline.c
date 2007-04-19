@@ -32,12 +32,14 @@ static struct {
 	const char *myaddress;
 	int self_connect;
 	const char *db_dir;
+	int torture;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
 	.self_connect = 0,
-	.db_dir = NULL
+	.db_dir = NULL,
+	.torture = 0
 };
 
 
@@ -48,6 +50,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
 	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
+	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ NULL }
 };
 
@@ -74,6 +77,9 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 
 	if (ctdb_cmdline.self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
+	}
+	if (ctdb_cmdline.torture) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
 	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);

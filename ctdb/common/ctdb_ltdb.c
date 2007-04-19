@@ -226,15 +226,22 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 	return tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 }
 
+struct lock_fetch_state {
+	struct ctdb_context *ctdb;
+	void (*recv_pkt)(void *, uint8_t *, uint32_t);
+	void *recv_context;
+	struct ctdb_req_header *hdr;
+};
+
 /*
   called when we should retry the operation
  */
 static void lock_fetch_callback(void *p)
 {
-	struct ctdb_req_header *hdr = p;
-	struct ctdb_context *ctdb = talloc_find_parent_bytype(p, struct ctdb_context);
-	ctdb_recv_pkt(ctdb, (uint8_t *)hdr, hdr->length);
-	DEBUG(0,(__location__ " PACKET REQUEUED\n"));
+	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
+	state->recv_pkt(state->recv_context, (uint8_t *)state->hdr, state->hdr->length);
+	talloc_free(state);
+	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
 }
 
 /*
@@ -264,11 +271,14 @@ static void lock_fetch_callback(void *p)
  */
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
-				 struct ctdb_req_header *hdr, TDB_DATA *data)
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void *recv_context)
 {
 	int ret;
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
 	struct lockwait_handle *h;
+	struct lock_fetch_state *state;
 	
 	ret = tdb_chainlock_nonblock(tdb, key);
 
@@ -276,6 +286,13 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 	    !(errno == EACCES || errno == EAGAIN || errno == EDEADLK)) {
 		/* a hard failure - don't try again */
 		return -1;
+	}
+
+	/* when torturing, ensure we test the contended path */
+	if ((ctdb_db->ctdb->flags & CTDB_FLAG_TORTURE) &&
+	    random() % 5 == 0) {
+		ret = -1;
+		tdb_chainunlock(tdb, key);
 	}
 
 	/* first the non-contended path */
@@ -287,8 +304,14 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 		return ret;
 	}
 
+	state = talloc(ctdb_db, struct lock_fetch_state);
+	state->ctdb = ctdb_db->ctdb;
+	state->hdr = hdr;
+	state->recv_pkt = recv_pkt;
+	state->recv_context = recv_context;
+
 	/* now the contended path */
-	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, hdr);
+	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, state);
 	if (h == NULL) {
 		tdb_chainunlock(tdb, key);
 		return -1;
@@ -296,7 +319,8 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 
 	/* we need to move the packet off the temporary context in ctdb_recv_pkt(),
 	   so it won't be freed yet */
-	talloc_steal(ctdb_db, hdr);
+	talloc_steal(state, hdr);
+	talloc_steal(state, h);
 
 	/* now tell the caller than we will retry asynchronously */
 	return -2;

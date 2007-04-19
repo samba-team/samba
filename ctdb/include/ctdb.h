@@ -50,8 +50,7 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
-/* for test code only: make ctdb_start() block until all nodes are connected */
-#define CTDB_FLAG_CONNECT_WAIT (1<<2)
+#define CTDB_FLAG_TORTURE      (1<<1)
 
 
 /* 

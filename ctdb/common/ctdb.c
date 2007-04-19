@@ -286,6 +286,15 @@ done:
 }
 
 /*
+  called by the transport layer when a packet comes in
+*/
+void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+	ctdb_recv_pkt(ctdb, data, length);
+}
+
+/*
   called by the transport layer when a node is dead
 */
 static void ctdb_node_dead(struct ctdb_node *node)
