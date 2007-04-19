@@ -1,3 +1,7 @@
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: test rk_VERSIONSCRIPT
+	
 2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* fix-export: remove, all done by make dist now
