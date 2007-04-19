@@ -241,6 +241,7 @@ main(int argc, char **argv)
 	}
 	memset(&entry, 0, sizeof(entry));
 	ret = hdb_value2entry(context, &data, &entry.entry);
+	krb5_data_free(&data);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_value2entry");
 	if(print_dump)
