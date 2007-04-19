@@ -167,8 +167,8 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
