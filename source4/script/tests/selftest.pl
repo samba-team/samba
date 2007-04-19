@@ -677,13 +677,13 @@ sub setup_env($)
 	my ($envname) = @_;
 
 	my $testenv_vars;
-	if (defined($running_envs{$envname})) {
+	if ($envname eq "none") {
+		$testenv_vars = {};
+	} elsif (defined($running_envs{$envname})) {
 		$testenv_vars = $running_envs{$envname};
 		if (not $target->check_env($testenv_vars)) {
 			$testenv_vars = undef;
 		}
-	} elsif ($envname eq "none") {
-		$testenv_vars = {};
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
 	}
