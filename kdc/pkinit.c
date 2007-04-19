@@ -467,7 +467,7 @@ _kdc_pk_rd_padata(krb5_context context,
 						   edi->val[i].issuerAndSerialNumber->length,
 						   &iasn,
 						   &size);
-		if (ret || size != 0) {
+		if (ret) {
 		    hx509_query_free(kdc_identity->hx509ctx, q);
 		    continue;
 		}
