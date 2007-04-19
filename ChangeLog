@@ -1,5 +1,7 @@
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kinit: remove code that depend on kerberos 4 library
+	
 	* kdc: remove code that depend on kerberos 4 library
 	
 	* configure.in: Drop kerberos 4 support.
