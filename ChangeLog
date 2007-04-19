@@ -1,5 +1,8 @@
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): free content-type when
+	done.
+
 	* configure.in: test rk_VERSIONSCRIPT
 	
 2007-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
