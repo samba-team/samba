@@ -679,8 +679,9 @@ sub check_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	# TODO ...
-	return 1;
+	return 1 if (-p $envvars->{SMBD_TEST_FIFO});
+
+	return 0;
 }
 
 sub setup_env($$$)
