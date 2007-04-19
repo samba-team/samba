@@ -80,7 +80,7 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
-	void *(*allocate_pkt)(struct ctdb_context *, size_t );
+	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
 };
 
 /*
@@ -393,7 +393,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len);
+void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len);
 
 
 /*
@@ -458,5 +458,12 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 						     struct ctdb_ltdb_header *header);
 
 void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+		    struct ctdb_ltdb_header *header, TDB_DATA *data,
+		    uint32_t caller);
+
+void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
+#define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
 
 #endif

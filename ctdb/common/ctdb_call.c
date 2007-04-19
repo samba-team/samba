@@ -47,9 +47,9 @@
 /*
   local version of ctdb_call
 */
-static int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
-			   struct ctdb_ltdb_header *header, TDB_DATA *data,
-			   uint32_t caller)
+int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+		    struct ctdb_ltdb_header *header, TDB_DATA *data,
+		    uint32_t caller)
 {
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
@@ -141,7 +141,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 
 	msglen = strlen(msg)+1;
 	len = offsetof(struct ctdb_reply_error, msg);
-	r = ctdb->methods->allocate_pkt(ctdb, len + msglen);
+	r = ctdb->methods->allocate_pkt(msg, len + msglen);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	talloc_set_name_const(r, "send_error packet");
 
@@ -156,11 +156,9 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	r->msglen        = msglen;
 	memcpy(&r->msg[0], msg, msglen);
 
-	talloc_free(msg);
-
 	ctdb_queue_packet(ctdb, &r->hdr);
 
-	talloc_free(r);
+	talloc_free(msg);
 }
 
 
@@ -297,15 +295,14 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		}
 	}
 
-	/* send the CTDB_REPLY_DMASTER */
-	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
-	CTDB_NO_MEMORY_FATAL(ctdb, r);
-
 	/* put the packet on a temporary context, allowing us to safely free
 	   it below even if ctdb_reply_dmaster() has freed it already */
 	tmp_ctx = talloc_new(ctdb);
-	talloc_steal(tmp_ctx, r);
+
+	/* send the CTDB_REPLY_DMASTER */
+	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
+	r = ctdb->methods->allocate_pkt(tmp_ctx, len);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
 	talloc_set_name_const(r, "reply_dmaster packet");
 	r->hdr.length    = len;
@@ -429,14 +426,9 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find(ctdb->idr, hdr->reqid);
+	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
-		return;
-	}
-
-	if (!talloc_get_type(state, struct ctdb_call_state)) {
-		DEBUG(0,("ctdb idr type error at %s\n", __location__));
 		return;
 	}
 
@@ -466,13 +458,8 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
 
-	state = idr_find(ctdb->idr, hdr->reqid);
+	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		return;
-	}
-
-	if (!talloc_get_type(state, struct ctdb_call_state)) {
-		DEBUG(0,("ctdb idr type error at %s\n", __location__));
 		return;
 	}
 
@@ -511,13 +498,8 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find(ctdb->idr, hdr->reqid);
+	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) return;
-
-	if (!talloc_get_type(state, struct ctdb_call_state)) {
-		DEBUG(0,("ctdb idr type error at %s\n", __location__));
-		return;
-	}
 
 	talloc_steal(state, c);
 
@@ -541,13 +523,8 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_redirect *c = (struct ctdb_reply_redirect *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find(ctdb->idr, hdr->reqid);
+	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) return;
-
-	if (!talloc_get_type(state, struct ctdb_call_state)) {
-		DEBUG(0,("ctdb idr type error at %s\n", __location__));
-		return;
-	}
 
 	talloc_steal(state, c);
 	
@@ -653,10 +630,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdb->methods->allocate_pkt(ctdb, len);
+	state->c = ctdb->methods->allocate_pkt(state, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 	talloc_set_name_const(state->c, "req_call packet");
-	talloc_steal(state, state->c);
 
 	state->c->hdr.length    = len;
 	state->c->hdr.ctdb_magic = CTDB_MAGIC;
