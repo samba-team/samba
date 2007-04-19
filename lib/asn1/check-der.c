@@ -730,6 +730,7 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
 	free(p);
 	return ret;
     }
+    free(p);
     ret = der_heim_oid_cmp(&o2, oid);
     der_free_oid(&o2);
 
