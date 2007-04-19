@@ -921,7 +921,7 @@ static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *usern
 	} else if (PAM_WB_CACHED_LOGON(info3_user_flgs)) {
 
 		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
-			"Domain Controller unreachable, using cached credentials. Network resources may be unavailable");
+			"Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			"User %s logged on using cached account\n", username);
 	}
