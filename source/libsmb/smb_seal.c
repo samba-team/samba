@@ -191,8 +191,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
 		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap failed. Error %s\n",
 			ads_errstr(adss) ));
-		/* Um - no mapping for gss-errs to NTSTATUS yet. */
-		return ads_ntstatus(adss);
+		return map_nt_error_from_gss(ret, minor);
 	}
 
 	if (out_buf.length > in_buf.length) {
@@ -248,8 +247,7 @@ static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
 		DEBUG(0,("common_gss_encrypt_buffer: gss_wrap failed. Error %s\n",
 			ads_errstr(adss) ));
-		/* Um - no mapping for gss-errs to NTSTATUS yet. */
-		return ads_ntstatus(adss);
+		return map_nt_error_from_gss(ret, minor);
 	}
 
 	if (!flags_got) {
