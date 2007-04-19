@@ -1,3 +1,8 @@
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* make encoding function independent of krb4 and krb5, enable
+	removal of krb4
+
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add man_MANS to EXTRA_DIST
