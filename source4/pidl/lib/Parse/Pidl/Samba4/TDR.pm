@@ -17,8 +17,8 @@ $VERSION = '0.01';
 
 use strict;
 
-our $ret;
-our $ret_hdr;
+my $ret;
+my $ret_hdr;
 my $tabs = "";
 
 sub indent() { $tabs.="\t"; }

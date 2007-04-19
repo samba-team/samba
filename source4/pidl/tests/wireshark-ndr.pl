@@ -234,7 +234,7 @@ is(DumpHfList(), "\tstatic hf_register_info hf[] = {
 
 is(DumpHfDeclaration(), "
 /* Header field declarations */
-static gint hf_bla = -1;
+static gint hf_bla_idx = -1;
 
 ");
 

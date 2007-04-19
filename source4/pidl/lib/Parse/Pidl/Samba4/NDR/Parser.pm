@@ -9,10 +9,7 @@ package Parse::Pidl::Samba4::NDR::Parser;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(is_charset_array);
-@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv 
-   GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction
-   NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
+@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
@@ -110,7 +107,7 @@ sub get_value_of($)
 	}
 }
 
-our $res;
+my $res;
 my $deferred = [];
 my $tabs = "";
 
