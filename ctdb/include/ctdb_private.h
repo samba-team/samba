@@ -30,8 +30,8 @@
 #define CTDB_DS_ALIGNMENT 8
 
 
+#define CTDB_NULL_FUNC 0xf0000001
 
-#define CTDB_FETCH_FUNC 0xf0000001
 /*
   an installed ctdb remote call
 */
@@ -49,6 +49,11 @@ struct ctdb_address {
 	const char *address;
 	int port;
 };
+
+/*
+  check a vnn is valid
+ */
+#define ctdb_validate_vnn(ctdb, vnn) (((uint32_t)(vnn)) < (ctdb)->num_nodes)
 
 
 /* called from the queue code when a packet comes in. Called with data==NULL
@@ -68,12 +73,6 @@ struct ctdb_node {
 	uint32_t vnn;
 };
 
-struct ctdb_record_handle {
-	struct ctdb_db_context *ctdb_db;
-	TDB_DATA key;
-	TDB_DATA *data;
-};
-
 /*
   transport specific methods
 */
@@ -81,7 +80,7 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
-	void *(*allocate_pkt)(struct ctdb_context *, size_t );
+	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
 };
 
 /*
@@ -120,9 +119,11 @@ struct ctdb_context {
 	struct event_context *ev;
 	struct ctdb_address address;
 	const char *name;
+	const char *db_directory;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
+	uint32_t num_finished;
 	unsigned flags;
 	struct idr_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
@@ -192,13 +193,20 @@ struct ctdb_call_state {
 	struct ctdb_call call;
 	int redirect_count;
 	struct ctdb_ltdb_header header;
-	void *fetch_private;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
 	} async;
 };
 
+
+/* used for fetch_lock */
+struct ctdb_fetch_handle {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key;
+	TDB_DATA *data;
+	struct ctdb_ltdb_header header;
+};
 
 /*
   operation IDs
@@ -211,15 +219,13 @@ enum ctdb_operation {
 	CTDB_REPLY_DMASTER      = 4,
 	CTDB_REPLY_ERROR        = 5,
 	CTDB_REQ_MESSAGE        = 6,
+	CTDB_REQ_FINISHED       = 7,
 	
 	/* only used on the domain socket */
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_FETCH_LOCK     = 1003,
-	CTDB_REPLY_FETCH_LOCK   = 1004,
-	CTDB_REQ_STORE_UNLOCK   = 1005,
-	CTDB_REPLY_STORE_UNLOCK = 1006
+	CTDB_REQ_SHUTDOWN       = 1003
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -294,6 +300,14 @@ struct ctdb_req_message {
 	uint8_t data[1];
 };
 
+struct ctdb_req_finished {
+	struct ctdb_req_header hdr;
+};
+
+struct ctdb_req_shutdown {
+	struct ctdb_req_header hdr;
+};
+
 struct ctdb_req_connect_wait {
 	struct ctdb_req_header hdr;
 };
@@ -302,32 +316,6 @@ struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
 	uint32_t vnn;
 	uint32_t num_connected;
-};
-
-struct ctdb_req_fetch_lock {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-	uint32_t keylen;
-	uint8_t key[1]; /* key[] */
-};
-
-struct ctdb_reply_fetch_lock {
-	struct ctdb_req_header hdr;
-	uint32_t state;
-	uint32_t datalen;
-	uint8_t data[1]; /* data[] */
-};
-struct ctdb_req_store_unlock {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-	uint32_t keylen;	
-	uint32_t datalen;
-	uint8_t data[1]; /* key[] and data[] */
-};
-
-struct ctdb_reply_store_unlock {
-	struct ctdb_req_header hdr;
-	uint32_t state;
 };
 
 /* internal prototypes */
@@ -353,6 +341,16 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
+			   TDB_DATA key, struct ctdb_req_header *hdr,
+			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+			   void *recv_context);
+int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
+				 TDB_DATA key, struct ctdb_ltdb_header *header, 
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void *recv_context);
+void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
 					     struct ctdb_call *call,
@@ -386,7 +384,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(struct ctdb_context *ctdb, size_t len);
+void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len);
 
 
 /*
@@ -437,16 +435,28 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
 
 
-/*
-  do a fetch lock from a client to the local daemon
-*/
-struct ctdb_record_handle *ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
-						  TALLOC_CTX *mem_ctx, 
-						  TDB_DATA key, TDB_DATA *data);
+struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
+				      TDB_DATA key,
+				      void (*callback)(void *), void *private_data);
 
-/*
-  do a store unlock from a client to the local daemon
-*/
-int ctdb_client_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
+					      struct ctdb_call *call);
+
+int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
+						     struct ctdb_call *call, 
+						     struct ctdb_ltdb_header *header);
+
+void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+		    struct ctdb_ltdb_header *header, TDB_DATA *data,
+		    uint32_t caller);
+
+void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
+#define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
+
+void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 #endif

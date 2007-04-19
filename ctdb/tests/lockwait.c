@@ -23,7 +23,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 
 struct lockwait_handle {
@@ -103,7 +103,7 @@ static struct lockwait_handle *lockwait(struct event_context *ev,
 	close(h->fd[1]);
 	talloc_set_destructor(h, lockwait_destructor);
 
-	h->fde = event_add_fd(ev, h, fd, EVENT_FD_READ, lockwait_handler, h);
+	h->fde = event_add_fd(ev, h, h->fd[0], EVENT_FD_READ, lockwait_handler, h);
 	if (h->fde == NULL) {
 		talloc_free(h);
 		return NULL;

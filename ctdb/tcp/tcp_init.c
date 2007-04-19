@@ -46,12 +46,6 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 				ctdb_tcp_node_connect, node);
 	}
 
-	if (ctdb->flags&CTDB_FLAG_CONNECT_WAIT) {
-		/* wait until all nodes are connected (should not be needed
-		   outide of test code) */
-		ctdb_connect_wait(ctdb);
-	}
-
 	return 0;
 }
 
@@ -78,13 +72,13 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 /*
   transport packet allocator - allows transport to control memory for packets
 */
-static void *ctdb_tcp_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+static void *ctdb_tcp_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 {
 	/* tcp transport needs to round to 8 byte alignment to ensure
 	   that we can use a length header and 64 bit elements in
 	   structures */
 	size = (size+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
-	return talloc_size(ctdb, size);
+	return talloc_size(mem_ctx, size);
 }
 
 

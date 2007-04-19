@@ -10,3 +10,7 @@ config.h
 config.h.in
 nodes-ssh.txt
 TAGS
+ctdb-0
+ctdb-1
+ctdb-2
+ctdb-3

@@ -31,13 +31,15 @@ static struct {
 	const char *transport;
 	const char *myaddress;
 	int self_connect;
-	int daemon_mode;
+	const char *db_dir;
+	int torture;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
 	.self_connect = 0,
-	.daemon_mode = 0
+	.db_dir = NULL,
+	.torture = 0
 };
 
 
@@ -46,7 +48,9 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
-	{ "daemon", 0, POPT_ARG_NONE, &ctdb_cmdline.daemon_mode, 0, "spawn a ctdb daemon", "boolean" },
+	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
+	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
+	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ NULL }
 };
 
@@ -74,8 +78,8 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	if (ctdb_cmdline.self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
-	if (ctdb_cmdline.daemon_mode) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_DAEMON_MODE);
+	if (ctdb_cmdline.torture) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
 	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);
@@ -95,6 +99,12 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	ret = ctdb_set_nlist(ctdb, ctdb_cmdline.nlist);
 	if (ret == -1) {
 		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
+	if (ret == -1) {
+		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
