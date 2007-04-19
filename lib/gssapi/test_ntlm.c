@@ -144,6 +144,7 @@ test_libntlm_v1(void)
 	errx(1, "accept_sec_context v1 2 %s",
 	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
+    gss_delete_sec_context(&min_stat, &ctx, NULL);
 
     return 0;
 }
@@ -253,6 +254,7 @@ test_libntlm_v2(void)
 	errx(1, "accept_sec_context v2 2 %s",
 	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
+    gss_delete_sec_context(&min_stat, &ctx, NULL);
 
     return 0;
 }
