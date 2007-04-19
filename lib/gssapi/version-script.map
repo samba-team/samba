@@ -15,7 +15,7 @@ HEIMDAL_GSS_1.0 {
 		GSS_C_PEER_HAS_UPDATED_SPNEGO;
 		gss_acquire_cred;
 		gss_release_cred;
-		gss_init_sec_context
+		gss_init_sec_context;
 		gss_accept_sec_context;
 		gss_process_context_token;
 		gss_delete_sec_context;
