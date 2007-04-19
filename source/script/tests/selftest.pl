@@ -444,18 +444,19 @@ $prefix =~ s+//+/+;
 $prefix =~ s+/./+/+;
 $prefix =~ s+/$++;
 
+die("using an empty prefix isn't allowed") unless $prefix ne "";
+
+#Ensure we have the test prefix around
+mkdir $prefix unless -d $prefix;
+
 my $prefix_abs = abs_path($prefix);
 my $srcdir_abs = abs_path($srcdir);
 
-die("using an empty prefix isn't allowed") unless $prefix ne "";
 die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
 
 $ENV{PREFIX} = $prefix;
 $ENV{SRCDIR} = $srcdir;
-
-#Ensure we have the test prefix around
-mkdir $prefix unless -d $prefix;
 
 my $tls_enabled = not $opt_quick;
 my $from_build_farm = (defined($ENV{RUN_FROM_BUILD_FARM}) and 
