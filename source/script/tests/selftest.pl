@@ -191,7 +191,7 @@ sub buildfarm_start_msg($)
 	$out .= "Running test $state->{NAME} (level 0 stdout)\n";
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
 	$out .= scalar(localtime())."\n";
-	$out .= "SELFTEST RUNTIME: " . ($state->{START} - $start) . "s";
+	$out .= "SELFTEST RUNTIME: " . ($state->{START} - $start) . "s\n";
 	$out .= "NAME: $state->{NAME}\n";
 	$out .= "CMD: $state->{CMD}\n";
 
@@ -212,7 +212,7 @@ sub buildfarm_end_msg($$$)
 	my ($state, $expected_ret, $ret) = @_;
 	my $out = "";
 
-	$out .= "TEST RUNTIME: " . (time() - $state->{START}) . "s";
+	$out .= "TEST RUNTIME: " . (time() - $state->{START}) . "s\n";
 
 	if ($ret == $expected_ret) {
 		$out .= "ALL OK\n";
