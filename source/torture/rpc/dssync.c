@@ -747,11 +747,7 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	int i, y = 0;
-	uint64_t highest_usn = 0;
-	const char *partition = NULL;
 	struct drsuapi_DsGetNT4ChangeLog r;
-	int32_t out_level = 0;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
 	DATA_BLOB cookie;
