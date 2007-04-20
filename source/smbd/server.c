@@ -833,6 +833,7 @@ extern void build_options(BOOL screen);
 	static BOOL no_process_group = False;
 	static BOOL log_stdout = False;
 	static char *ports = NULL;
+	static char *profile_level = NULL;
 	int opt;
 	poptContext pc;
 
@@ -845,6 +846,7 @@ extern void build_options(BOOL screen);
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
+	{"profiling-level", 'P', POPT_ARG_STRING, &profile_level, 0, "Set profiling level","PROFILE_LEVEL"},
 	POPT_COMMON_SAMBA
 	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
@@ -966,6 +968,14 @@ extern void build_options(BOOL screen);
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
 		return -1;
+	}
+	if (profile_level != NULL) {
+		int pl = atoi(profile_level);
+		struct process_id src;
+
+		DEBUG(1, ("setting profiling level: %s\n",profile_level));
+		src.pid = getpid();
+		set_profile_level(pl, src);
 	}
 #endif
 
