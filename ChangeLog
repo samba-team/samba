@@ -1,3 +1,7 @@
+2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Rename libdes to libhcrypto.
+
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kinit: remove code that depend on kerberos 4 library
