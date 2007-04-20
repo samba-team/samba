@@ -21,7 +21,7 @@ sub setup_dir($$)
 		if ( -d $dir ) {
 			unlink <$dir/*>;
 		} else {
-			mkdir($dir);
+			mkdir($dir, 0777);
 		}
 
 		if ($pcap) {
@@ -30,7 +30,7 @@ sub setup_dir($$)
 			if ( -d $pcap_dir ) {
 				unlink <$pcap_dir/*>;
 			} else {
-				mkdir($pcap_dir);
+				mkdir($pcap_dir, 0777);
 			}
 		}
 	}

@@ -173,7 +173,7 @@ sub mk_fedora($$$$$$)
 {
 	my ($self, $ldapdir, $basedn, $root, $password, $privatedir, $configuration) = @_;
 
-	mkdir($ldapdir);
+	mkdir($ldapdir, 0777);
 
 	my $fedora_ds_inf = "$ldapdir/fedorads.inf";
 	my $fedora_ds_initial_ldif = "$ldapdir/fedorads-initial.ldif";
@@ -270,7 +270,7 @@ sub mk_openldap($$$$$$$$)
 	my $pidfile = "$ldapdir/slapd.pid";
 	my $modconf = "$ldapdir/modules.conf";
 
-	mkdir($_) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/bdb-logs", 
+	mkdir($_, 0777) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/bdb-logs", 
 		"$ldapdir/db/tmp");
 
 	open(CONF, ">$slapd_conf");
@@ -405,7 +405,7 @@ sub provision($$$$$)
 	my $root = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
 	my $server = "localhost";
 	my $srcdir="$RealBin/../..";
-	-d $prefix or mkdir($prefix) or die("Unable to create $prefix");
+	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
 	my $tmpdir = "$prefix_abs/tmp";
 	my $etcdir = "$prefix_abs/etc";
@@ -426,7 +426,7 @@ sub provision($$$$$)
 	my $interfaces = "$ifaceipv4/8";
 
 	(system("rm -rf $prefix/*") == 0) or die("Unable to clean up");
-	mkdir($_) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
+	mkdir($_, 0777) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
 		$tmpdir);
 
 	open(CONFFILE, ">$conffile");

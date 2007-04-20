@@ -8,7 +8,6 @@ package Samba3;
 use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
-use POSIX;
 
 sub binpath($$)
 {
@@ -203,12 +202,12 @@ sub provision($$)
 	## 
 	## create the test directory layout
 	##
-	mkdir($prefix_abs);
+	mkdir($prefix_abs, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
 	system("rm -rf $prefix_abs/*");
-	mkdir($_) foreach($privatedir,$libdir,$piddir,$lockdir,$logdir);
+	mkdir($_, 0777) foreach($privatedir,$libdir,$piddir,$lockdir,$logdir);
 	my $tmpdir = "$prefix_abs/tmp";
-	mkdir($tmpdir);
+	mkdir($tmpdir, 0777);
 	chmod 0777, $tmpdir;
 
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
