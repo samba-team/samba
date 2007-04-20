@@ -1,4 +1,14 @@
+2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_crypto.in: try generate a couple of rsa keys of
+	diffrent (random) sizes, spelling.
+
+	* test_rsa.c: try generate a couple of rsa keys of
+	diffrent (random) sizes.
+	
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* mdtest.c: stop leaking memory
 
 	* test_imath.c: fix warnings, make test into function.
 
