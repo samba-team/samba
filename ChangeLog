@@ -1,5 +1,14 @@
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kcm/acl.c: make compile again.
+
+	* kcm/client.c: fix warning.
+	
+	* kcm: First, it allows root to ignore the naming conventions.
+	Second, it allows root to always perform any operation on any
+	ccache.  Note that root could do this anyway with FILE ccaches.
+	From Bryan Jacobs.
+
 	* Rename libdes to libhcrypto.
 
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
