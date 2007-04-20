@@ -22,6 +22,8 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "../include/ctdb.h"
+#include "../include/ctdb_private.h"
 
 /* Handle common command line options for ctdb test progs
  */
@@ -106,6 +108,34 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	if (ret == -1) {
 		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
+	}
+
+	return ctdb;
+}
+
+
+/*
+  startup a client only ctdb context
+ */
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *ctdb_socket)
+{
+	struct ctdb_context *ctdb;
+	int ret;
+
+	/* initialise ctdb */
+	ctdb = ctdb_init(ev);
+	if (ctdb == NULL) {
+		printf("Failed to init ctdb\n");
+		exit(1);
+	}
+
+	ctdb->daemon.name = talloc_strdup(ctdb, ctdb_socket);
+
+	ret = ctdb_socket_connect(ctdb);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to connect to daemon\n"));
+		talloc_free(ctdb);
+		return NULL;
 	}
 
 	return ctdb;

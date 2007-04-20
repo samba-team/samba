@@ -114,6 +114,22 @@ struct ctdb_daemon_data {
 	struct ctdb_queue *queue;
 };
 
+/*
+  ctdb status information
+ */
+struct ctdb_status {
+	uint32_t client_packets_sent;
+	uint32_t client_packets_recv;
+	uint32_t node_packets_sent;
+	uint32_t node_packets_recv;
+	uint32_t total_calls;
+	uint32_t pending_calls;
+	uint32_t lockwait_calls;
+	uint32_t pending_lockwait_calls;
+	double max_call_latency;
+	double max_lockwait_latency;
+};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -135,6 +151,7 @@ struct ctdb_context {
 	struct ctdb_db_context *db_list;
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
+	struct ctdb_status status;
 };
 
 struct ctdb_db_context {
@@ -225,7 +242,9 @@ enum ctdb_operation {
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_SHUTDOWN       = 1003
+	CTDB_REQ_SHUTDOWN       = 1003,
+	CTDB_REQ_STATUS         = 1004,
+	CTDB_REPLY_STATUS       = 1005
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -316,6 +335,15 @@ struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
 	uint32_t vnn;
 	uint32_t num_connected;
+};
+
+struct ctdb_req_status {
+	struct ctdb_req_header hdr;
+};
+
+struct ctdb_reply_status {
+	struct ctdb_req_header hdr;
+	struct ctdb_status status;
 };
 
 /* internal prototypes */
@@ -458,5 +486,9 @@ void *_idr_find_type(struct idr_context *idp, int id, const char *type, const ch
 #define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
 
 void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
+
+int ctdb_socket_connect(struct ctdb_context *ctdb);
+
+void ctdb_latency(double *latency, struct timeval t);
 
 #endif

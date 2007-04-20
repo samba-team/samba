@@ -211,6 +211,8 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	TALLOC_CTX *tmp_ctx;
 
+	ctdb->status.node_packets_recv++;
+
 	/* place the packet as a child of the tmp_ctx. We then use
 	   talloc_free() below to free it. If any of the calls want
 	   to keep it, then they will steal it somewhere else, and the
@@ -375,6 +377,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
+	ctdb->status.node_packets_sent++;
 	node = ctdb->nodes[hdr->destnode];
 	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		ctdb_defer_packet(ctdb, hdr);

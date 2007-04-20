@@ -117,3 +117,14 @@ void *_idr_find_type(struct idr_context *idp, int id, const char *type, const ch
 	return p;
 }
 
+
+/*
+  update a max latency number
+ */
+void ctdb_latency(double *latency, struct timeval t)
+{
+	double l = timeval_elapsed(&t);
+	if (l > *latency) {
+		*latency = l;
+	}
+}

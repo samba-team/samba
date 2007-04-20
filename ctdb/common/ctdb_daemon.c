@@ -75,6 +75,15 @@ static void block_signal(int signum)
 
 
 /*
+  send a packet to a client
+ */
+static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header *hdr)
+{
+	client->ctdb->status.client_packets_sent++;
+	return ctdb_queue_send(client->queue, (uint8_t *)hdr, hdr->length);
+}
+
+/*
   message handler for when we are in daemon mode. This redirects the message
   to the right client
  */
@@ -101,7 +110,7 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, len);
+	daemon_queue_send(client, &r->hdr);
 
 	talloc_free(r);
 }
@@ -205,7 +214,34 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 	r.vnn           = ctdb_get_vnn(client->ctdb);
 	r.num_connected = client->ctdb->num_connected;
 	
-	res = ctdb_queue_send(client->queue, (uint8_t *)&r.hdr, r.hdr.length);
+	res = daemon_queue_send(client, &r.hdr);
+	if (res != 0) {
+		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
+		return;
+	}
+}
+
+
+/*
+  called when the daemon gets a status request from a client
+ */
+static void daemon_request_status(struct ctdb_client *client, 
+				  struct ctdb_req_status *c)
+{
+	struct ctdb_reply_status r;
+	int res;
+
+	/* now send the reply */
+	ZERO_STRUCT(r);
+
+	r.hdr.length     = sizeof(r);
+	r.hdr.ctdb_magic = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation = CTDB_REPLY_STATUS;
+	r.hdr.reqid = c->hdr.reqid;
+	r.status = client->ctdb->status;
+	
+	res = daemon_queue_send(client, &r.hdr);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
 		return;
@@ -255,6 +291,7 @@ struct daemon_call_state {
 	struct ctdb_client *client;
 	uint32_t reqid;
 	struct ctdb_call *call;
+	struct timeval start_time;
 };
 
 /* 
@@ -275,6 +312,8 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	res = ctdb_daemon_call_recv(state, dstate->call);
 	if (res != 0) {
 		DEBUG(0, (__location__ " ctdbd_call_recv() returned error\n"));
+		client->ctdb->status.pending_calls--;
+		ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -282,6 +321,8 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	r = ctdbd_allocate_pkt(dstate, length);
 	if (r == NULL) {
 		DEBUG(0, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
+		client->ctdb->status.pending_calls--;
+		ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 		return;
 	}
 	memset(r, 0, offsetof(struct ctdb_reply_call, data));
@@ -293,11 +334,13 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	r->datalen          = dstate->call->reply_data.dsize;
 	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
 
-	res = ctdb_queue_send(client->queue, (uint8_t *)&r->hdr, r->hdr.length);
+	res = daemon_queue_send(client, &r->hdr);
 	if (res != 0) {
 		DEBUG(0, (__location__ "Failed to queue packet from daemon to client\n"));
 	}
 	talloc_free(dstate);
+	client->ctdb->status.pending_calls--;
+	ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 }
 
 
@@ -317,10 +360,14 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	int ret;
 	struct ctdb_context *ctdb = client->ctdb;
 
+	ctdb->status.total_calls++;
+	ctdb->status.pending_calls++;
+
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
 		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
 			  c->db_id));
+		ctdb->status.pending_calls--;
 		return;
 	}
 
@@ -332,11 +379,13 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 					   daemon_incoming_packet, client);
 	if (ret == -2) {
 		/* will retry later */
+		ctdb->status.pending_calls--;
 		return;
 	}
 
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Unable to fetch record\n"));
+		ctdb->status.pending_calls--;
 		return;
 	}
 
@@ -344,8 +393,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (dstate == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(0,(__location__ " Unable to allocate dstate\n"));
+		ctdb->status.pending_calls--;
 		return;
 	}
+	dstate->start_time = timeval_current();
 	dstate->client = client;
 	dstate->reqid  = c->hdr.reqid;
 	talloc_steal(dstate, data.dptr);
@@ -354,6 +405,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (call == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(0,(__location__ " Unable to allocate call\n"));
+		ctdb->status.pending_calls--;
+		ctdb_latency(&ctdb->status.max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -373,6 +426,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	if (state == NULL) {
 		DEBUG(0,(__location__ " Unable to setup call send\n"));
+		ctdb->status.pending_calls--;
+		ctdb_latency(&ctdb->status.max_call_latency, dstate->start_time);
 		return;
 	}
 	talloc_steal(state, dstate);
@@ -427,6 +482,10 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
 		break;
 
+	case CTDB_REQ_STATUS:
+		daemon_request_status(client, (struct ctdb_req_status *)hdr);
+		break;
+
 	default:
 		DEBUG(0,(__location__ " daemon: unrecognized operation %d\n",
 			 hdr->operation));
@@ -436,7 +495,9 @@ done:
 	talloc_free(tmp_ctx);
 }
 
-
+/*
+  called when the daemon gets a incoming packet
+ */
 static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_client *client = talloc_get_type(args, struct ctdb_client);
@@ -446,6 +507,8 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		talloc_free(client);
 		return;
 	}
+
+	client->ctdb->status.client_packets_recv++;
 
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(client->ctdb, "Bad packet length %d in daemon\n", cnt);
@@ -467,6 +530,10 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
 		return;
 	}
+
+	DEBUG(3,(__location__ " client request %d of type %d length %d from "
+		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+		 hdr->srcnode, hdr->destnode));
 
 	/* it is the responsibility of the incoming packet function to free 'data' */
 	daemon_incoming_packet(client, data, cnt);

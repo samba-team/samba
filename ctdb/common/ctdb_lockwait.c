@@ -29,6 +29,7 @@
 
 
 struct lockwait_handle {
+	struct ctdb_context *ctdb;
 	struct fd_event *fde;
 	int fd[2];
 	pid_t child;
@@ -48,6 +49,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
 	DEBUG(3,(__location__ " lockwait took %.6f seconds\n", timeval_elapsed(&h->t)));
+	h->ctdb->status.pending_lockwait_calls--;
 	talloc_free(h);	
 	callback(p);
 	waitpid(child, NULL, 0);
@@ -55,6 +57,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 
 static int lockwait_destructor(struct lockwait_handle *h)
 {
+	h->ctdb->status.pending_lockwait_calls--;
 	close(h->fd[0]);
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
@@ -79,7 +82,11 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	struct lockwait_handle *result;
 	int ret;
 
+	ctdb_db->ctdb->status.lockwait_calls++;
+	ctdb_db->ctdb->status.pending_lockwait_calls++;
+
 	if (!(result = talloc_zero(ctdb_db, struct lockwait_handle))) {
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -87,6 +94,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 
 	if (ret != 0) {
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -96,11 +104,13 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		close(result->fd[1]);
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
 	result->callback = callback;
 	result->private_data = private_data;
+	result->ctdb = ctdb_db->ctdb;
 
 	if (result->child == 0) {
 		close(result->fd[0]);
@@ -119,6 +129,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 

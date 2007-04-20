@@ -84,6 +84,8 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	state->state = CTDB_CALL_DONE;
 }
 
+static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
 /*
   this is called in the client, when data comes in from the daemon
  */
@@ -138,6 +140,10 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		ctdb_reply_connect_wait(ctdb, hdr);
 		break;
 
+	case CTDB_REPLY_STATUS:
+		ctdb_reply_status(ctdb, hdr);
+		break;
+
 	default:
 		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
 	}
@@ -149,7 +155,7 @@ done:
 /*
   connect to a unix domain socket
 */
-static int ux_socket_connect(struct ctdb_context *ctdb)
+int ctdb_socket_connect(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr;
 
@@ -276,7 +282,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 
 	ret = ctdb_ltdb_lock(ctdb_db, call->key);
@@ -373,7 +379,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 
 	ZERO_STRUCT(c);
@@ -447,7 +453,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
@@ -585,7 +591,7 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 
 	len = sizeof(struct ctdb_req_shutdown);
@@ -604,4 +610,73 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 	}
 }
 
+enum ctdb_status_states {CTDB_STATUS_WAIT, CTDB_STATUS_DONE};
+
+struct ctdb_status_state {
+	uint32_t reqid;
+	struct ctdb_status *status;
+	enum ctdb_status_states state;
+};
+
+/*
+  handle a ctdb_reply_status reply
+ */
+static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_status *r = (struct ctdb_reply_status *)hdr;
+	struct ctdb_status_state *state;
+
+	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_status_state);
+	if (state == NULL) {
+		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	*state->status = r->status;
+	state->state = CTDB_STATUS_DONE;
+}
+
+/*
+  wait until we're the only node left.
+  this function never returns
+*/
+int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status)
+{
+	struct ctdb_req_status r;
+	int ret;
+	struct ctdb_status_state *state;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ctdb_socket_connect(ctdb);
+	}
+
+	state = talloc(ctdb, struct ctdb_status_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->reqid = idr_get_new(ctdb->idr, state, 0xFFFF);
+	state->status = status;
+	state->state = CTDB_STATUS_WAIT;
+	
+	ZERO_STRUCT(r);
+	r.hdr.length       = sizeof(r);
+	r.hdr.ctdb_magic   = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation    = CTDB_REQ_STATUS;
+	r.hdr.reqid        = state->reqid;
+
+	ret = ctdb_client_queue_pkt(ctdb, &(r.hdr));
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+	
+	while (state->state == CTDB_STATUS_WAIT) {
+		event_loop_once(ctdb->ev);
+	}
+
+	talloc_free(state);
+
+	return 0;
+}
 

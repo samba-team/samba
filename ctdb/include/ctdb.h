@@ -208,4 +208,9 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *ctdb_socket);
+
+struct ctdb_status;
+int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status);
+
 #endif
