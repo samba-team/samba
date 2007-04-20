@@ -129,6 +129,12 @@ imathsource =			\
 
 $(libhcrypto_la_OBJECTS): hcrypto-link
 
+if versionscript
+libhcrypto_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+$(libhcrypto_la_OBJECTS): $(srcdir)/version-script.map
+
+
 hcrypto-link:
 	$(LN_S) $(srcdir)/../hcrypto hcrypto
 	touch hcrypto-link
@@ -153,4 +159,5 @@ CLEANFILES = \
 
 EXTRA_DIST = \
 	rsakey.der \
-	test_crypto.in
+	test_crypto.in \
+	version-script.map
