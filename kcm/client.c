@@ -166,7 +166,7 @@ kcm_ccache_new_client(krb5_context context,
      * default gid.
      */
     if (CLIENT_IS_ROOT(client)) {
-	uid_t uid;
+	unsigned long uid;
 	int matches = sscanf(name,"%ld:",&uid);
 	if (matches == 0)
 	    matches = sscanf(name,"%ld",&uid);
