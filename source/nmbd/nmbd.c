@@ -33,15 +33,6 @@ extern BOOL global_in_nmbd;
 
 extern BOOL override_logfile;
 
-/* are we running as a daemon ? */
-static BOOL is_daemon;
-
-/* fork or run in foreground ? */
-static BOOL Fork = True;
-
-/* log to standard output ? */
-static BOOL log_stdout;
-
 /* have we found LanMan clients yet? */
 BOOL found_lm_clients = False;
 
@@ -578,7 +569,7 @@ static void process(void)
  Open the socket communication.
  **************************************************************************** */
 
-static BOOL open_sockets(BOOL isdaemon, int port)
+static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 {
 	/*
 	 * The sockets opened here will be used to receive broadcast
@@ -588,12 +579,13 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	 * now deprecated.
 	 */
 
-	if ( isdaemon )
+	if ( server_mode == SERVER_MODE_INETD ) {
+		ClientNMB = 0;
+	} else {
 		ClientNMB = open_socket_in(SOCK_DGRAM, port,
 					   0, interpret_addr(lp_socket_address()),
 					   True);
-	else
-		ClientNMB = 0;
+	}
   
 	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
 					   3, interpret_addr(lp_socket_address()),
@@ -622,15 +614,20 @@ static BOOL open_sockets(BOOL isdaemon, int port)
  int main(int argc, const char *argv[])
 {
 	pstring logfile;
-	static BOOL opt_interactive;
 	poptContext pc;
-	static char *p_lmhosts = dyn_LMHOSTSFILE;
-	static BOOL no_process_group = False;
+	const char *p_lmhosts = dyn_LMHOSTSFILE;
+	BOOL no_process_group = False;
+	BOOL log_stdout = False;
+	enum smb_server_mode server_mode = SERVER_MODE_DAEMON;
+
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"daemon", 'D', POPT_ARG_VAL, &server_mode, SERVER_MODE_DAEMON,
+		"Become a daemon(default)" },
+	{"interactive", 'i', POPT_ARG_VAL, &server_mode,
+		SERVER_MODE_INTERACTIVE, "Run interactive (not a daemon)" },
+	{"foreground", 'F', POPT_ARG_VAL, &server_mode,
+		SERVER_MODE_FOREGROUND, "Run daemon in foreground (for daemontools & etc)" },
 	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
@@ -680,12 +677,11 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	BlockSignals(True, SIGUSR2);
 #endif
 
-	if ( opt_interactive ) {
-		Fork = False;
+	if (server_mode == SERVER_MODE_INTERACTIVE) {
 		log_stdout = True;
 	}
 
-	if ( log_stdout && Fork ) {
+	if (log_stdout && server_mode == SERVER_MODE_DAEMON) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
@@ -712,14 +708,19 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
 	set_samba_nb_type();
 
-	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
-		is_daemon = True;
+	if (is_a_socket(0)) {
+		if (server_mode == SERVER_MODE_DAEMON) {
+			DEBUG(0,("standard input is a socket, "
+				    "assuming -F option\n"));
+		}
+		server_mode = SERVER_MODE_INETD;
 	}
-  
-	if (is_daemon && !opt_interactive) {
+
+	if (server_mode == SERVER_MODE_DAEMON) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork, no_process_group);
+		become_daemon(True, no_process_group);
+	} else if (server_mode == SERVER_MODE_FOREGROUND) {
+		become_daemon(False, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -727,7 +728,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	 * If we're interactive we want to set our own process group for 
 	 * signal management.
 	 */
-	if (opt_interactive && !no_process_group)
+	if (server_mode == SERVER_MODE_INTERACTIVE && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
@@ -758,7 +759,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
 	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-	if ( !open_sockets( is_daemon, global_nmb_port ) ) {
+	if ( !open_sockets( server_mode, global_nmb_port ) ) {
 		kill_async_dns_child();
 		return 1;
 	}

@@ -651,7 +651,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
  Start parsing the lmhosts file.
 *********************************************************/
 
-XFILE *startlmhosts(char *fname)
+XFILE *startlmhosts(const char *fname)
 {
 	XFILE *fp = x_fopen(fname,O_RDONLY, 0);
 	if (!fp) {
