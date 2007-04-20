@@ -15,6 +15,9 @@ sub create_cflags($$$$)
 
 	open(CFLAGS_TXT,">$file") || die ("Can't open `$file'\n");
 
+	my $src_ne_build = 0;
+	$src_ne_build = 1 unless ($srcdir eq $builddir);
+
 	foreach my $key (values %{$CTX}) {
 		next unless defined ($key->{OBJ_LIST});
 
@@ -26,7 +29,7 @@ sub create_cflags($$$$)
 		my $cflags = "";
 		foreach my $flag (@{$key->{FINAL_CFLAGS}}) {
 			my $dir;
-			if (($dir) = ($flag =~ /^-I([^\/].*)$/)) {
+			if ($src_ne_build and ($dir) = ($flag =~ /^-I([^\/].*)$/)) {
 				$cflags .= " -I$builddir/$dir";
 				$cflags .= " -I$srcdir/$dir";
 			} else {
