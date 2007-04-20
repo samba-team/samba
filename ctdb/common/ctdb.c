@@ -31,22 +31,45 @@
 */
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
+	ctdb->transport = talloc_strdup(ctdb, transport);
+	return 0;
+}
+
+int ctdb_init_transport(struct ctdb_context *ctdb)
+{
+	int	i;
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
+	int	transport_found = 0;
 #ifdef USE_INFINIBAND
 	int ctdb_ibw_init(struct ctdb_context *ctdb);
 #endif /* USE_INFINIBAND */
 
-	if (strcmp(transport, "tcp") == 0) {
-		return ctdb_tcp_init(ctdb);
+	if (strcmp(ctdb->transport, "tcp") == 0) {
+		transport_found = 1;
+		if (ctdb_tcp_init(ctdb))
+			return -1;
 	}
 #ifdef USE_INFINIBAND
-	if (strcmp(transport, "ib") == 0) {
-		return ctdb_ibw_init(ctdb);
+	else if (strcmp(ctdb->transport, "ib") == 0) {
+		transport_found = 1;
+		if (ctdb_ibw_init(ctdb))
+			return -1;
 	}
 #endif /* USE_INFINIBAND */
 
-	ctdb_set_error(ctdb, "Unknown transport '%s'\n", transport);
-	return -1;
+	if (!transport_found) {
+		ctdb_set_error(ctdb, "Unknown transport '%s'\n", ctdb->transport);
+		return -1;
+	}
+
+	for(i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb->methods->add_node(ctdb->nodes[i]) != 0) {
+			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 /*
@@ -115,11 +138,6 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	/* for now we just set the vnn to the line in the file - this
 	   will change! */
 	node->vnn = ctdb->num_nodes;
-
-	if (ctdb->methods->add_node(node) != 0) {
-		talloc_free(node);
-		return -1;
-	}
 
 	if (ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;

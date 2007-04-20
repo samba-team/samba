@@ -22,6 +22,22 @@
 #include "system/time.h"
 #include <unistd.h>
 
+static int vasprintf2(char **ptr, const char *format, va_list ap)
+{
+    int ret;
+    va_list tmp_ap;
+
+    va_copy(tmp_ap, ap);
+    ret = vsnprintf(NULL, 0, format, tmp_ap);
+    if (ret <= 0) return ret;
+
+    (*ptr) = (char *)malloc(ret+1);
+    if (!*ptr) return -1;
+    ret = vsnprintf(*ptr, ret+1, format, ap);
+
+    return ret;
+}
+
 void do_debug(const char *format, ...)
 {
 	struct timeval tm;
@@ -29,7 +45,7 @@ void do_debug(const char *format, ...)
 	char *s = NULL;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	vasprintf2(&s, format, ap);
 	va_end(ap);
 
 	gettimeofday(&tm, NULL);

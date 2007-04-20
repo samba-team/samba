@@ -120,6 +120,7 @@ struct ctdb_context {
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
+	char *transport;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
@@ -361,6 +362,11 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 int ctdbd_start(struct ctdb_context *ctdb);
 struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+
+/*
+  allocate a packet for sending via queue
+*/
+void *ctdb_queue_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size);
 
 /*
   queue a packet for sending

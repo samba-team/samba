@@ -373,7 +373,10 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		if (ux_socket_connect(ctdb)) {
+			DEBUG(0, ("ux_socket_connect failed\n"));
+			return -1;
+		}
 	}
 
 	ZERO_STRUCT(c);

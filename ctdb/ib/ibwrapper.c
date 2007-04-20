@@ -557,17 +557,17 @@ static void ibw_event_handler_cm(struct event_context *ev,
 	return;
 error:
 	if (event!=NULL && (rc=rdma_ack_cm_event(event))) {
-		sprintf(ibw_lasterr, "rdma_ack_cm_event failed with %d\n", rc);
-		goto error;
+		DEBUG(0, ("rdma_ack_cm_event failed with %d\n", rc));
 	}
 
 	DEBUG(0, ("cm event handler: %s", ibw_lasterr));
 
 	if (cma_id!=pctx->cm_id) {
 		conn = talloc_get_type(cma_id->context, struct ibw_conn);
-		if (conn)
+		if (conn) {
 			conn->state = IBWC_ERROR;
-		pctx->connstate_func(NULL, conn);
+			pctx->connstate_func(NULL, conn);
+		}
 	} else {
 		ctx->state = IBWS_ERROR;
 		pctx->connstate_func(ctx, NULL);
