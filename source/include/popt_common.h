@@ -50,6 +50,17 @@ struct user_auth_info {
 	int signing_state;
 };
 
+enum smb_server_mode {
+	/* Daemonize and manage our own sockets */
+	SERVER_MODE_DAEMON,
+	/* Don't daemonize or manage sockets */
+	SERVER_MODE_INETD,
+	/* Don't daemonize, but do manage sockets */
+	SERVER_MODE_FOREGROUND,
+	/* Run in the foreground, log to stdout, don't fork children */
+	SERVER_MODE_INTERACTIVE
+};
+
 extern struct user_auth_info cmdline_auth_info;
 
 #endif /* _POPT_COMMON_H */

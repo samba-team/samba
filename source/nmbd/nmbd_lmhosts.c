@@ -29,7 +29,7 @@
 Load a lmhosts file.
 ****************************************************************************/
 
-void load_lmhosts_file(char *fname)
+void load_lmhosts_file(const char *fname)
 {  
 	pstring name;
 	int name_type;
