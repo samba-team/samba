@@ -31,7 +31,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 SUBSYSTEM = share
 INIT_FUNCTION = share_classic_init
 OBJ_FILES = share_classic.o 
-PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End MODULE share_classic
 ################################################
 
@@ -41,7 +41,7 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL
 SUBSYSTEM = share
 INIT_FUNCTION = share_ldb_init
 OBJ_FILES = share_ldb.o 
-PUBLIC_DEPENDENCIES = ldb
+PRIVATE_DEPENDENCIES = ldb
 # End MODULE share_ldb
 ################################################
 

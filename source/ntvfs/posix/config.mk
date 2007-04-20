@@ -63,6 +63,6 @@ OBJ_FILES = \
 		xattr_system.o \
 		xattr_tdb.o
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
-PUBLIC_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio
+PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio
 # End MODULE ntvfs_posix
 ################################################
