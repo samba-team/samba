@@ -494,7 +494,7 @@ $prefix =~ s+/$++;
 die("using an empty prefix isn't allowed") unless $prefix ne "";
 
 #Ensure we have the test prefix around
-mkdir $prefix unless -d $prefix;
+mkdir($prefix, 0777) unless -d $prefix;
 
 my $prefix_abs = abs_path($prefix);
 my $srcdir_abs = abs_path($srcdir);
@@ -581,12 +581,12 @@ sub write_clientconf($$)
 {
 	my ($conffile, $vars) = @_;
 
-	mkdir "$prefix/client" unless -d "$prefix/client";
+	mkdir("$prefix/client", 0777) unless -d "$prefix/client";
 	
 	if ( -d "$prefix/client/private" ) {
 	        unlink <$prefix/client/private/*>;
 	} else {
-	        mkdir("$prefix/client/private");
+	        mkdir("$prefix/client/private", 0777);
 	}
 
 	open(CF, ">$conffile");
