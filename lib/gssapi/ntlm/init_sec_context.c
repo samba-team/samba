@@ -118,6 +118,7 @@ _gss_ntlm_init_sec_context
 	struct ntlm_type1 type1;
 	struct ntlm_buf data;
 	uint32_t flags = 0;
+	char *password;
 	
 	ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
@@ -126,12 +127,16 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = get_userinfo(name->domain, &ctx->username, &ctx->password);
+	ret = get_userinfo(name->domain, &ctx->username, &password);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
+
+	heim_ntlm_nt_key(password, &ctx->key);
+	memset(password, 0, strlen(password));
+	free(password);
 
 	if (req_flags & GSS_C_CONF_FLAG)
 	    flags |= NTLM_NEG_SEAL;
@@ -199,12 +204,8 @@ _gss_ntlm_init_sec_context
 	 */
 
 	if (1 || type2.targetinfo.length == 0) {
-	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
 	    unsigned char challange[8];
-
-	    heim_ntlm_nt_key(ctx->password, &key);
-	    memset(ctx->password, 0, strlen(ctx->password));
 
 	    if (type2.flags & NTLM_NEG_NTLM2_SESSION) {
 		unsigned char sessionhash[MD5_DIGEST_LENGTH];
@@ -238,15 +239,13 @@ _gss_ntlm_init_sec_context
 	    }
 
 
-	    heim_ntlm_calculate_ntlm1(key.data, key.length,
+	    heim_ntlm_calculate_ntlm1(ctx->key.data, ctx->key.length,
 				      challange,
 				      &type3.ntlm);
 
-	    ret = heim_ntlm_build_ntlm1_master(key.data, key.length,
+	    ret = heim_ntlm_build_ntlm1_master(ctx->key.data, ctx->key.length,
 					       &sessionkey,
 					       &type3.sessionkey);
-	    memset(key.data, 0, key.length);
-	    free(key.data);
 	    if (ret) {
 		if (type3.lm.data)
 		    free(type3.lm.data);
@@ -268,7 +267,6 @@ _gss_ntlm_init_sec_context
 	    ctx->status |= STATUS_SESSIONKEY; 
 
 	} else {
-	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
 	    unsigned char ntlmv2[16];
 	    struct ntlm_targetinfo ti;
@@ -290,18 +288,13 @@ _gss_ntlm_init_sec_context
 		return GSS_S_FAILURE;
 	    }
 
-	    heim_ntlm_nt_key(ctx->password, &key);
-	    memset(ctx->password, 0, strlen(ctx->password));
-
-	    ret = heim_ntlm_calculate_ntlm2(key.data, key.length,
+	    ret = heim_ntlm_calculate_ntlm2(ctx->key.data, ctx->key.length,
 					    ctx->username,
 					    name->domain,
 					    type2.challange,
 					    &type2.targetinfo,
 					    ntlmv2,
 					    &type3.ntlm);
-	    memset(key.data, 0, key.length);
-	    free(key.data);
 	    if (ret) {
 		_gss_ntlm_delete_sec_context(minor_status, 
 					     context_handle, NULL);
