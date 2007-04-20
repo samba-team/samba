@@ -259,6 +259,7 @@ dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SAMBA_CPPFLAGS)
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(MODULE_EXPORTS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
@@ -1672,10 +1673,12 @@ BLDSHARED="false"
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+MODULE_EXPORTS=""
 SONAMEFLAG="#"
 SHLD="\${CC} \${CFLAGS}"
 PICFLAG="${PIE_CFLAGS}"
 SHLIBEXT="so"
+
 
 # this bit needs to be modified for each OS that supports share libs
 # You need to specify how to create a shared library and
@@ -1850,6 +1853,7 @@ case "$host_os" in
 		*darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
 			BLDSHARED="true"
 			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
+			MODULE_EXPORTS="-exported_symbols_list \$(srcdir)/modules/exports.darwin"
 			SHLIBEXT="dylib"
 			# Since gcc doesn't fail on unrecognised options, the
 			# PIE test incorrectly succeeds. Darwin gcc does not
