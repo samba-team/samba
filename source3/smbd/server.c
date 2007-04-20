@@ -300,7 +300,7 @@ static BOOL allowable_number_of_smbd_processes(void)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
+static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_ports)
 {
 	int num_interfaces = iface_count();
 	int num_sockets = 0;
@@ -311,11 +311,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	int i;
 	char *ports;
 
-	if (!is_daemon) {
+	if (server_mode == SERVER_MODE_INETD) {
 		return open_sockets_inetd();
 	}
 
-		
 #ifdef HAVE_ATEXIT
 	{
 		static int atexit_set;
@@ -531,8 +530,13 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			/* Ensure child is set to blocking mode */
 			set_blocking(smbd_server_fd(),True);
 
-			if (smbd_server_fd() != -1 && interactive)
+			/* In interactive mode, return with a connected socket.
+			 * Foreground and daemon modes should fork worker
+			 * processes.
+			 */
+			if (server_mode == SERVER_MODE_INTERACTIVE) {
 				return True;
+			}
 			
 			if (allowable_number_of_smbd_processes() &&
 			    smbd_server_fd() != -1 &&
@@ -857,22 +861,25 @@ extern void build_options(BOOL screen);
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	static BOOL is_daemon = False;
-	static BOOL interactive = False;
-	static BOOL Fork = True;
-	static BOOL no_process_group = False;
-	static BOOL log_stdout = False;
-	static char *ports = NULL;
-	static char *profile_level = NULL;
+	BOOL no_process_group = False;
+	BOOL log_stdout = False;
+	const char *ports = NULL;
+	const char *profile_level = NULL;
 	int opt;
 	poptContext pc;
 
+	enum smb_server_mode server_mode = SERVER_MODE_DAEMON;
+
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc.)" },
-	{"no-process-group", '\0', POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
+	{"daemon", 'D', POPT_ARG_VAL, &server_mode, SERVER_MODE_DAEMON,
+		"Become a daemon (default)" },
+	{"interactive", 'i', POPT_ARG_VAL, &server_mode, SERVER_MODE_INTERACTIVE,
+		"Run interactive (not a daemon)"},
+	{"foreground", 'F', POPT_ARG_VAL, &server_mode, SERVER_MODE_FOREGROUND,
+		"Run daemon in foreground (for daemontools, etc.)" },
+	{"no-process-group", '\0', POPT_ARG_VAL, &no_process_group, True,
+		"Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
@@ -912,16 +919,14 @@ extern void build_options(BOOL screen);
 
 	set_remote_machine_name("smbd", False);
 
-	if (interactive) {
-		Fork = False;
+	if (server_mode == SERVER_MODE_INTERACTIVE) {
 		log_stdout = True;
+		if (DEBUGLEVEL >= 9) {
+			talloc_enable_leak_report();
+		}
 	}
 
-	if (interactive && (DEBUGLEVEL >= 9)) {
-		talloc_enable_leak_report();
-	}
-
-	if (log_stdout && Fork) {
+	if (log_stdout && server_mode == SERVER_MODE_DAEMON) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
@@ -1011,21 +1016,19 @@ extern void build_options(BOOL screen);
 
 	DEBUG(3,( "loaded services\n"));
 
-	if (!is_daemon && !is_a_socket(0)) {
-		if (!interactive)
-			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
-
-		/*
-		 * Setting is_daemon here prevents us from eventually calling
-		 * the open_sockets_inetd()
-		 */
-
-		is_daemon = True;
+	if (is_a_socket(0)) {
+		if (server_mode == SERVER_MODE_DAEMON) {
+			DEBUG(0,("standard input is a socket, "
+				    "assuming -F option\n"));
+		}
+		server_mode = SERVER_MODE_INETD;
 	}
 
-	if (is_daemon && !interactive) {
+	if (server_mode == SERVER_MODE_DAEMON) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork, no_process_group);
+		become_daemon(True, no_process_group);
+	} else if (server_mode == SERVER_MODE_FOREGROUND) {
+		become_daemon(False, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -1033,15 +1036,18 @@ extern void build_options(BOOL screen);
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive && !no_process_group)
+	if (server_mode == SERVER_MODE_INTERACTIVE && !no_process_group) {
 		setpgid( (pid_t)0, (pid_t)0);
+	}
 #endif
 
 	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
 
-	if (is_daemon)
+	if (server_mode != SERVER_MODE_INETD &&
+	    server_mode != SERVER_MODE_INTERACTIVE) {
 		pidfile_create("smbd");
+	}
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 	if (!message_init())
@@ -1099,9 +1105,10 @@ extern void build_options(BOOL screen);
 	   running as a daemon -- bad things will happen if
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
-
-	if ( is_daemon && !interactive )
+	if (server_mode != SERVER_MODE_INETD &&
+	    server_mode != SERVER_MODE_INTERACTIVE) {
 		start_background_queue(); 
+	}
 
 	/* Always attempt to initialize DMAPI. We will only use it later if
 	 * lp_dmapi_support is set on the share, but we need a single global
@@ -1109,8 +1116,9 @@ extern void build_options(BOOL screen);
 	 */
 	dmapi_init_session();
 
-	if (!open_sockets_smbd(is_daemon, interactive, ports))
+	if (!open_sockets_smbd(server_mode, ports)) {
 		exit(1);
+	}
 
 	/*
 	 * everything after this point is run after the fork()
@@ -1123,7 +1131,8 @@ extern void build_options(BOOL screen);
 	/* Possibly reload the services file. Only worth doing in
 	 * daemon mode. In inetd mode, we know we only just loaded this.
 	 */
-	if (is_daemon) {
+	if (server_mode != SERVER_MODE_INETD &&
+	    server_mode != SERVER_MODE_INTERACTIVE) {
 		reload_services(True);
 	}
 
