@@ -2,8 +2,7 @@ dnl $Id$
 dnl
 dnl test for crypto libraries:
 dnl - libcrypto (from openssl)
-dnl - libdes (from krb4)
-dnl - own-built libdes
+dnl - own-built libhcrypto
 
 m4_define([test_headers], [
 		#undef KRB5 /* makes md4.h et al unhappy */
@@ -62,7 +61,7 @@ AC_DEFUN([KRB_CRYPTO],[
 crypto_lib=unknown
 AC_WITH_ALL([openssl])
 
-DIR_des=
+DIR_hcrypto=
 
 AC_MSG_CHECKING([for crypto library])
 
@@ -104,35 +103,35 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 	if test "$ires" -a "$lres"; then
-		INCLUDE_des="$ires"
-		LIB_des="$lres"
+		INCLUDE_hcrypto="$ires"
+		LIB_hcrypto="$lres"
 		crypto_lib=krb4
 		AC_MSG_RESULT([same as krb4])
-		LIB_des_a='$(LIB_des)'
-		LIB_des_so='$(LIB_des)'
-		LIB_des_appl='$(LIB_des)'
+		LIB_hcrypto_a='$(LIB_hcrypto)'
+		LIB_hcrypto_so='$(LIB_hcrypto)'
+		LIB_hcrypto_appl='$(LIB_hcrypto)'
 	fi
 fi
 
 if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 	save_CFLAGS="$CFLAGS"
 	save_LIBS="$LIBS"
-	INCLUDE_des=
-	LIB_des=
+	INCLUDE_hcrypto=
+	LIB_hcrypto=
 	if test "$with_openssl_include" != ""; then
-		INCLUDE_des="-I${with_openssl_include}"
+		INCLUDE_hcrypto="-I${with_openssl_include}"
 	fi
 	if test "$with_openssl_lib" != ""; then
-		LIB_des="-L${with_openssl_lib}"
+		LIB_hcrypto="-L${with_openssl_lib}"
 	fi
-	CFLAGS="-DHAVE_OPENSSL ${INCLUDE_des} ${CFLAGS}"
-	saved_LIB_des="$LIB_des"
+	CFLAGS="-DHAVE_OPENSSL ${INCLUDE_hcrypto} ${CFLAGS}"
+	saved_LIB_hcrypto="$LIB_hcrypto"
 	for lres in "" "-lnsl -lsocket"; do
-		LIB_des="${saved_LIB_des} -lcrypto $lres"
-		LIB_des_a="$LIB_des"
-		LIB_des_so="$LIB_des"
-		LIB_des_appl="$LIB_des"
-		LIBS="${LIBS} ${LIB_des}"
+		LIB_hcrypto="${saved_LIB_hcrypto} -lcrypto $lres"
+		LIB_hcrypto_a="$LIB_hcrypto"
+		LIB_hcrypto_so="$LIB_hcrypto"
+		LIB_hcrypto_appl="$LIB_hcrypto"
+		LIBS="${LIBS} ${LIB_hcrypto}"
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],[test_body])], [
 			crypto_lib=libcrypto openssl=yes
 			AC_MSG_RESULT([libcrypto])
@@ -147,13 +146,13 @@ fi
 
 if test "$crypto_lib" = "unknown"; then
 
-  DIR_des='des'
-  LIB_des='$(top_builddir)/lib/des/libhcrypto.la'
-  LIB_des_a='$(top_builddir)/lib/des/.libs/libhcrypto.a'
-  LIB_des_so='$(top_builddir)/lib/des/.libs/libhcrypto.so'
-  LIB_des_appl="-lhcrypto"
+  DIR_hcrypto='hcrypto'
+  LIB_hcrypto='$(top_builddir)/lib/hcrypto/libhcrypto.la'
+  LIB_hcrypto_a='$(top_builddir)/lib/hcrypto/.libs/libhcrypto.a'
+  LIB_hcrypto_so='$(top_builddir)/lib/hcrypto/.libs/libhcrypto.so'
+  LIB_hcrypto_appl="-lhcrypto"
 
-  AC_MSG_RESULT([included libdes])
+  AC_MSG_RESULT([included libhcrypto])
 
 fi
 
@@ -168,10 +167,10 @@ if test "$openssl" = "yes"; then
 fi
 AM_CONDITIONAL(HAVE_OPENSSL, test "$openssl" = yes)dnl
 
-AC_SUBST(DIR_des)
-AC_SUBST(INCLUDE_des)
-AC_SUBST(LIB_des)
-AC_SUBST(LIB_des_a)
-AC_SUBST(LIB_des_so)
-AC_SUBST(LIB_des_appl)
+AC_SUBST(DIR_hcrypto)
+AC_SUBST(INCLUDE_hcrypto)
+AC_SUBST(LIB_hcrypto)
+AC_SUBST(LIB_hcrypto_a)
+AC_SUBST(LIB_hcrypto_so)
+AC_SUBST(LIB_hcrypto_appl)
 ])

@@ -42,7 +42,7 @@ LDADD = \
 	$(top_builddir)/lib/gssapi/libgssapi.la \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(DBLIB)
 

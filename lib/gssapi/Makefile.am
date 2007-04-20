@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CPPFLAGS += -I$(srcdir)/../krb5 \
 	-I$(srcdir) \
 	-I$(srcdir)/mech \
-	$(INCLUDE_des) \
+	$(INCLUDE_hcrypto) \
 	$(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
@@ -201,7 +201,7 @@ libgssapi_la_LIBADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_com_err) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIBADD_roken)
 
 man_MANS = gssapi.3 gss_acquire_cred.3

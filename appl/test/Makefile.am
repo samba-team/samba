@@ -37,6 +37,6 @@ nt_gss_client_LDADD = $(gssapi_server_LDADD)
 nt_gss_server_LDADD = $(nt_gss_client_LDADD)
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)

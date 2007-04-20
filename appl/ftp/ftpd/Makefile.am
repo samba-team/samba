@@ -53,7 +53,7 @@ LDADD = ../common/libcommon.a \
 	$(LIB_krb5) \
 	$(LIB_kafs) \
 	$(LIB_krb4) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken)
 
 EXTRA_DIST = $(man_MANS)

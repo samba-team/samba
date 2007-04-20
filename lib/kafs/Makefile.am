@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 AM_CPPFLAGS += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
 
 if KRB4
-DEPLIB_krb4 = $(LIB_krb4) $(LIB_des)
+DEPLIB_krb4 = $(LIB_krb4) $(LIB_hcrypto)
 krb4_am_workaround = $(INCLUDE_krb4)
 else
 DEPLIB_krb4  =
@@ -15,7 +15,7 @@ AM_CPPFLAGS += $(krb4_am_workaround)
 
 if KRB5
 DEPLIB_krb5 = ../krb5/libkrb5.la 
-krb5_am_workaround = $(INCLUDE_des) -I$(top_srcdir)/lib/krb5
+krb5_am_workaround = $(INCLUDE_hcrypto) -I$(top_srcdir)/lib/krb5
 else
 DEPLIB_krb5  =
 krb5_am_workaround = 

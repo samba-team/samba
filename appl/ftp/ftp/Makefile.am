@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += -I$(srcdir)/../common $(INCLUDE_readline) $(INCLUDE_krb4) $(INCLUDE_des)
+AM_CPPFLAGS += -I$(srcdir)/../common $(INCLUDE_readline) $(INCLUDE_krb4) $(INCLUDE_hcrypto)
 
 bin_PROGRAMS = ftp
 
@@ -42,7 +42,7 @@ LDADD = \
 	$(LIB_gssapi) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(LIB_readline)
 

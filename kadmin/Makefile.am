@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_readline) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
+AM_CPPFLAGS += $(INCLUDE_readline) $(INCLUDE_hcrypto) -I$(srcdir)/../lib/krb5
 
 sbin_PROGRAMS = kadmin
 
@@ -65,7 +65,7 @@ LDADD_common = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
 	$(DBLIB)

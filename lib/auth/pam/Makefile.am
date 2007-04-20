@@ -19,14 +19,14 @@ KAFS_S=$(top_builddir)/lib/kafs/.libs/libkafs.so
 L = \
 	$(KAFS)						\
 	$(top_builddir)/lib/krb/.libs/libkrb.a		\
-	$(LIB_des_a)		\
+	$(LIB_hcrypto_a)		\
 	$(top_builddir)/lib/roken/.libs/libroken.a	\
 	-lc
 
 L_shared = \
 	$(KAFS_S)					\
 	$(top_builddir)/lib/krb/.libs/libkrb.so		\
-	$(LIB_des_so)		\
+	$(LIB_hcrypto_so)		\
 	$(top_builddir)/lib/roken/.libs/libroken.so	\
 	$(LIB_getpwnam_r)				\
 	-lc

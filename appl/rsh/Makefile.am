@@ -23,7 +23,7 @@ limits_conf.c:
 LDADD = $(LIB_kafs) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken)
 
 EXTRA_DIST = $(man_MANS)

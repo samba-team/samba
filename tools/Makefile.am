@@ -22,8 +22,8 @@ krb5-config: krb5-config.in
 		-e "s!@includedir\@!$(includedir)!g" \
 		-e "s!@LIB_crypt\@!$(LIB_crypt)!g" \
 		-e "s!@LIB_dbopen\@!$(LIB_dbopen)!g" \
-		-e "s!@INCLUDE_des\@!$(INCLUDE_des)!g" \
-		-e "s!@LIB_des_appl\@!$(LIB_des_appl)!g" \
+		-e "s!@INCLUDE_hcrypto\@!$(INCLUDE_hcrypto)!g" \
+		-e "s!@LIB_hcrypto_appl\@!$(LIB_hcrypto_appl)!g" \
 		-e "s!@LIB_dlopen\@!$(LIB_dlopen)!g" \
 		-e "s!@LIB_door_create\@!$(LIB_door_create)!g" \
 		-e "s!@LIB_pkinit\@!$(LIB_pkinit)!g" \

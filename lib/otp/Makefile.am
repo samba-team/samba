@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_des) $(ROKEN_RENAME)
+AM_CPPFLAGS += $(INCLUDE_hcrypto) $(ROKEN_RENAME)
 
 noinst_PROGRAMS = otptest
 
@@ -14,7 +14,7 @@ include_HEADERS = otp.h
 
 lib_LTLIBRARIES = libotp.la
 libotp_la_LDFLAGS = -version-info 1:4:1
-libotp_la_LIBADD  = $(LIB_des) $(LIB_roken) $(LIB_NDBM)
+libotp_la_LIBADD  = $(LIB_hcrypto) $(LIB_roken) $(LIB_NDBM)
 
 if HAVE_DB3
 ndbm_wrap = ndbm_wrap.c ndbm_wrap.h

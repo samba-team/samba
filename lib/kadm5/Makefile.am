@@ -120,7 +120,7 @@ LDADD = \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(DBLIB) \
 	$(LIB_dlopen) \
@@ -132,7 +132,7 @@ iprop_log_LDADD = \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_readline) \
 	$(LIB_roken) \

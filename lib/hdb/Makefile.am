@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
+AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_hcrypto)
 
 BUILT_SOURCES = \
 	$(gen_files_hdb:.x=.c)	\
@@ -32,7 +32,7 @@ LDADD = libhdb.la \
 	$(LIB_openldap) \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(LIB_ldopen)
 

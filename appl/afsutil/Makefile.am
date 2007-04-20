@@ -16,7 +16,7 @@ LDADD = $(LIB_kafs) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken)
 
 EXTRA_DIST = $(man_MANS)

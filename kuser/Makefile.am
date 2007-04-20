@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I$(srcdir)/../lib/krb5
 
 man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1 kimpersonate.1
 
@@ -18,7 +18,7 @@ kinit_LDADD = \
 	$(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
@@ -34,7 +34,7 @@ nodist_kdigest_SOURCES = kdigest-commands.c
 kdigest_LDADD = \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_roken)
@@ -48,7 +48,7 @@ kdigest-commands.c kdigest-commands.h: kdigest-commands.in
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 

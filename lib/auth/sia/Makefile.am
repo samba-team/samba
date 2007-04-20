@@ -21,7 +21,7 @@ L = \
 	$(top_builddir)/lib/krb5/.libs/libkrb5.a	\
 	$(top_builddir)/lib/asn1/.libs/libasn1.a	\
 	$(LIB_krb4)					\
-	$(LIB_des_a)					\
+	$(LIB_hcrypto_a)					\
 	$(LIB_com_err_a)				\
 	$(top_builddir)/lib/roken/.libs/libroken.a	\
 	$(LIB_getpwnam_r)				\
@@ -32,7 +32,7 @@ L_shared = \
 	$(top_builddir)/lib/krb5/.libs/libkrb5.so	\
 	$(top_builddir)/lib/asn1/.libs/libasn1.so	\
 	$(LIB_krb4)					\
-	$(LIB_des_so)					\
+	$(LIB_hcrypto_so)					\
 	$(LIB_com_err_so)				\
 	$(top_builddir)/lib/roken/.libs/libroken.so	\
 	$(LIB_getpwnam_r)				\
@@ -46,7 +46,7 @@ L = \
 	$(KAFS)						\
 	$(top_builddir)/lib/kadm/.libs/libkadm.a	\
 	$(top_builddir)/lib/krb/.libs/libkrb.a		\
-	$(LIB_des_a)		\
+	$(LIB_hcrypto_a)		\
 	$(top_builddir)/lib/com_err/.libs/libcom_err.a	\
 	$(top_builddir)/lib/roken/.libs/libroken.a	\
 	$(LIB_getpwnam_r)				\
@@ -56,7 +56,7 @@ L_shared = \
 	$(KAFS_S)					\
 	$(top_builddir)/lib/kadm/.libs/libkadm.so	\
 	$(top_builddir)/lib/krb/.libs/libkrb.so		\
-	$(LIB_des_so)		\
+	$(LIB_hcrypto_so)		\
 	$(top_builddir)/lib/com_err/.libs/libcom_err.so	\
 	$(top_builddir)/lib/roken/.libs/libroken.so	\
 	$(LIB_getpwnam_r)				\

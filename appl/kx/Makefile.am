@@ -66,8 +66,8 @@ tenletxr: tenletxr.in
 
 LDADD = \
 	$(LIB_kafs)				\
-	$(LIB_krb5) \
+	$(LIB_krb5) 				\
 	$(LIB_krb4)				\
-	$(LIB_des)	\
+	$(LIB_hcrypto)				\
 	$(LIB_roken)				\
 	$(X_LIBS) $(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)

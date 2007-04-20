@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_des) -I../com_err -I$(srcdir)/../com_err
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err
 
 bin_PROGRAMS = verify_krb5_conf
 
@@ -39,7 +39,7 @@ TESTS =						\
 check_PROGRAMS = $(TESTS) test_hostname
 
 LDADD = libkrb5.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
@@ -50,7 +50,7 @@ endif
 libkrb5_la_LIBADD = \
 	$(LIB_pkinit) \
 	$(LIB_com_err) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIBADD_roken) \
 	$(LIB_door_create) \

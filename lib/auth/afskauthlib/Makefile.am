@@ -32,7 +32,7 @@ L = \
 	$(top_builddir)/lib/krb5/libkrb5.la	\
 	$(top_builddir)/lib/asn1/libasn1.la	\
 	$(LIB_krb4)				\
-	$(LIB_des)				\
+	$(LIB_hcrypto)				\
 	$(top_builddir)/lib/roken/libroken.la	\
 	-lc
 
@@ -41,7 +41,7 @@ else
 L = \
 	$(KAFS)	\
 	$(LIB_krb4)				\
-	$(LIB_des)				\
+	$(LIB_hcrypto)				\
 	$(top_builddir)/lib/roken/libroken.la	\
 	-lc
 endif

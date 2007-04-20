@@ -130,7 +130,7 @@ imathsource =			\
 $(libhcrypto_la_OBJECTS): hcrypto-link
 
 hcrypto-link:
-	$(LN_S) $(srcdir)/../des hcrypto
+	$(LN_S) $(srcdir)/../hcrypto hcrypto
 	touch hcrypto-link
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'

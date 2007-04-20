@@ -80,12 +80,12 @@ dist_libhx509_la_SOURCES = \
 
 libhx509_la_LIBADD = \
 	$(LIB_com_err) \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIBADD_roken) \
 	$(LIB_dlopen)
 
-libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
+libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_hcrypto)
 nodist_libhx509_la_SOURCES = $(BUILT_SOURCES)
 
 $(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
@@ -125,11 +125,11 @@ nodist_hxtool_SOURCES = hxtool-commands.c hxtool-commands.h
 
 $(hxtool_OBJECTS): hxtool-commands.h
 
-hxtool_CPPFLAGS = $(INCLUDE_des)
+hxtool_CPPFLAGS = $(INCLUDE_hcrypto)
 hxtool_LDADD = \
 	libhx509.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_des) \
+	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(top_builddir)/lib/sl/libsl.la
 
