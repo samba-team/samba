@@ -36,7 +36,7 @@ OBJ_FILES = \
 		local.o \
 		dbspeed.o \
 		torture.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		TDR \
 		LIBCLI_SMB \
@@ -46,9 +46,9 @@ PUBLIC_DEPENDENCIES = \
 		LIBCRYPTO \
 		POPT_CREDENTIALS \
 		TORTURE_AUTH \
-		TORTURE_UTIL
-PRIVATE_DEPENDENCIES = TORTURE_NDR \
-					   share
+		TORTURE_UTIL \
+		TORTURE_NDR \
+		share
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 

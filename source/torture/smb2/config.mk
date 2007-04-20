@@ -16,7 +16,7 @@ OBJ_FILES = \
 		lock.o \
 		notify.o \
 		smb2.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB2 POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_SMB2
 #################################
