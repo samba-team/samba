@@ -5,7 +5,7 @@
 [MODULE::service_auth]
 INIT_FUNCTION = server_service_auth_init
 SUBSYSTEM = service
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		auth
 # End MODULE server_auth
 ################################################
@@ -18,7 +18,7 @@ OBJ_FILES = \
 		service.o \
 		service_stream.o \
 		service_task.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		MESSAGING
 # End SUBSYSTEM SERVER
 #######################
