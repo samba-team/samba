@@ -7,7 +7,7 @@ INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_nt4.o
-PUBLIC_DEPENDENCIES = TDR_REGF
+PRIVATE_DEPENDENCIES = TDR_REGF
 # End MODULE registry_nt4
 ################################################
 
@@ -44,7 +44,7 @@ INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_dir.o
-PUBLIC_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC
 # End MODULE registry_dir
 ################################################
 
@@ -56,7 +56,7 @@ OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_rpc.o
-PUBLIC_DEPENDENCIES = RPC_NDR_WINREG
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
 
@@ -67,7 +67,7 @@ INIT_FUNCTION = registry_ldb_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_ldb.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		ldb
 # End MODULE registry_ldb
 ################################################
@@ -83,7 +83,7 @@ OBJ_FILES = \
 		common/reg_util.o \
 		reg_samba.o \
 		patchfile.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb

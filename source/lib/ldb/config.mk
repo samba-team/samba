@@ -79,13 +79,11 @@ OBJ_FILES = \
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
 SUBSYSTEM = ldb
-PRIVATE_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBCLI_LDAP
 INIT_FUNCTION = ldb_ildap_init
 ALIASES = ldapi ldaps ldap
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
-PUBLIC_DEPENDENCIES = \
-		LIBCLI_LDAP
 # End MODULE ldb_ildap
 ################################################
 
@@ -115,12 +113,10 @@ OBJ_FILES = modules/skel.o
 # Start MODULE ldb_sqlite3
 [MODULE::ldb_sqlite3]
 SUBSYSTEM = ldb
-PRIVATE_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTALLOC
 INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
-PUBLIC_DEPENDENCIES = \
-		SQLITE3 LIBTALLOC
 # End MODULE ldb_sqlite3
 ################################################
 
@@ -136,7 +132,7 @@ OBJ_FILES = \
 		ldb_tdb/ldb_index.o \
 		ldb_tdb/ldb_cache.o \
 		ldb_tdb/ldb_tdb_wrap.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBTDB LIBTALLOC
 # End MODULE ldb_tdb
 ################################################

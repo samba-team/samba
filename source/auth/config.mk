@@ -16,7 +16,7 @@ PUBLIC_DEPENDENCIES = SAMDB
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = auth
 OBJ_FILES = auth_sam.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		SAMDB auth_sam
 # End MODULE auth_sam
 #######################
@@ -36,7 +36,7 @@ OBJ_FILES = auth_anonymous.o
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = auth
 OBJ_FILES = auth_winbind.o
-PUBLIC_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT
+PRIVATE_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT
 # End MODULE auth_winbind
 #######################
 
@@ -55,7 +55,7 @@ OBJ_FILES = auth_developer.o
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
 OBJ_FILES = auth_unix.o
-PUBLIC_DEPENDENCIES = CRYPT PAM PAM_ERRORS
+PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS
 # End MODULE auth_unix
 #######################
 
