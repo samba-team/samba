@@ -31,6 +31,7 @@
  */
 
 #include "kcm_locl.h"
+#include <pwd.h>
 
 RCSID("$Id$");
 
@@ -116,17 +117,18 @@ kcm_ccache_new_client(krb5_context context,
 		bad = 0;
 	}
 
-	if (bad)
+	/* Allow root to create badly-named ccaches */
+	if (bad && CLIENT_IS_ROOT(client))
 	    return KRB5_CC_BADNAME;
     }
 	
     ret = kcm_ccache_resolve(context, name, &ccache);
     if (ret == 0) {
-	if (ccache->uid != client->uid ||
-	    ccache->gid != client->gid)
+	if ((ccache->uid != client->uid ||
+	     ccache->gid != client->gid) && !CLIENT_IS_ROOT(client))
 	    return KRB5_FCC_PERM;
-    } else if (ret != KRB5_FCC_NOFILE) {
-	return ret;
+    } else if (ret != KRB5_FCC_NOFILE && !(CLIENT_IS_ROOT(client) && ret == KRB5_FCC_PERM)) {
+		return ret;
     }
 
     if (ret == KRB5_FCC_NOFILE) {
@@ -158,6 +160,25 @@ kcm_ccache_new_client(krb5_context context,
 	return ret;
     }
 
+    /* 
+     * Finally, if the user is root and the cache was created under
+     * another user's name, chown the cache to that user and their
+     * default gid.
+     */
+    if (CLIENT_IS_ROOT(client)) {
+	uid_t uid;
+	int matches = sscanf(name,"%ld:",&uid);
+	if (matches == 0)
+	    matches = sscanf(name,"%ld",&uid);
+	if (matches == 1) {
+	    struct passwd *pwd = getpwuid(uid);
+	    if (pwd != NULL) {
+		gid_t gid = pwd->pw_gid;
+		kcm_chown(context, client, ccache, uid, gid);
+	    }
+	}
+    }
+    
     *ccache_p = ccache;
     return 0;
 }

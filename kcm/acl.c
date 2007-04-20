@@ -93,12 +93,13 @@ kcm_access(krb5_context context,
 
     mask = 0;
 
-    if (client->uid == ccache->uid) {
+    /* Root may do whatever they like */
+    if (client->uid == ccache->uid || CLIENT_IS_ROOT(client)) {
 	if (read_p)
 	    mask |= S_IRUSR;
 	if (write_p)
 	    mask |= S_IWUSR;
-    } else if (client->gid == ccache->gid) {
+    } else if (client->gid == ccache->gid || CLIENT_IS_ROOT(client->uid)) {
 	if (read_p)
 	    mask |= S_IRGRP;
 	if (write_p)

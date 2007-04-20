@@ -140,6 +140,8 @@ typedef struct kcm_client {
     gid_t gid;
 } kcm_client;
 
+#define CLIENT_IS_ROOT(client) ((client)->uid == 0)
+
 /* Dispatch table */
 /* passed in OPERATION | ... ; returns STATUS | ... */
 typedef krb5_error_code (*kcm_method)(krb5_context, kcm_client *, kcm_operation, krb5_storage *, krb5_storage *);
