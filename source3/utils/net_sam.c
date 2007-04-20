@@ -572,6 +572,46 @@ static int net_sam_createlocalgroup(int argc, const char **argv)
 }
 
 /*
+ * Delete a local group
+ */
+
+static int net_sam_deletelocalgroup(int argc, const char **argv)
+{
+	DOM_SID sid;
+        enum lsa_SidType type;
+        const char *dom, *name;
+	int ret;
+
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_fprintf(stderr, "Could not find name %s.\n", argv[0]);
+		return -1;
+	}
+
+	if (type != SID_NAME_ALIAS) {
+		d_fprintf(stderr, "%s is a %s, not a local group.\n", argv[0],
+			  sid_type_lookup(type));
+		return -1;
+	}
+
+	ret = pdb_delete_alias(&sid);
+
+	if ( !ret ) {
+		d_fprintf(stderr, "Could not delete local group %s.\n", argv[0]);
+		return -1;
+	}
+
+	d_printf("Deleted local group %s.\n", argv[0]);
+
+	return 0;
+}
+
+/*
  * Create a local group
  */
 
@@ -1341,6 +1381,8 @@ int net_sam(int argc, const char **argv)
 		  "Create a new BUILTIN group" },
 		{ "createlocalgroup", net_sam_createlocalgroup,
 		  "Create a new local group" },
+		{ "deletelocalgroup", net_sam_deletelocalgroup,
+		  "Delete an existing local group" },
 		{ "mapunixgroup", net_sam_mapunixgroup,
 		  "Map a unix group to a domain group" },
 		{ "addmem", net_sam_addmem,
