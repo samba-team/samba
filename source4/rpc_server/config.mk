@@ -19,7 +19,7 @@ INIT_FUNCTION = dcerpc_server_rpcecho_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		echo/rpc_echo.o
-PUBLIC_DEPENDENCIES = NDR_ECHO 
+PRIVATE_DEPENDENCIES = NDR_ECHO 
 # End MODULE dcerpc_rpcecho
 ################################################
 
@@ -30,7 +30,7 @@ INIT_FUNCTION = dcerpc_server_epmapper_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		epmapper/rpc_epmapper.o
-PUBLIC_DEPENDENCIES = NDR_EPMAPPER
+PRIVATE_DEPENDENCIES = NDR_EPMAPPER
 # End MODULE dcerpc_epmapper
 ################################################
 
@@ -41,7 +41,7 @@ INIT_FUNCTION = dcerpc_server_remote_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		remote/dcesrv_remote.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB NDR_TABLE
 # End MODULE dcerpc_remote
 ################################################
@@ -55,7 +55,7 @@ SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		srvsvc/dcesrv_srvsvc.o \
 		srvsvc/srvsvc_ntvfs.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON NDR_SRVSVC share
 # End MODULE dcerpc_srvsvc
 ################################################
@@ -67,7 +67,7 @@ INIT_FUNCTION = dcerpc_server_wkssvc_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		wkssvc/dcesrv_wkssvc.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON NDR_WKSSVC
 # End MODULE dcerpc_wkssvc
 ################################################
@@ -79,7 +79,7 @@ INIT_FUNCTION = dcerpc_server_unixinfo_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		unixinfo/dcesrv_unixinfo.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SAMDB \
 		NDR_UNIXINFO
@@ -95,7 +95,7 @@ SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		samr/dcesrv_samr.o \
 		samr/samr_password.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
 		NDR_SAMR
@@ -110,7 +110,7 @@ SUBSYSTEM = dcerpc_server
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
 		winreg/rpc_winreg.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		registry NDR_WINREG
 # End MODULE dcerpc_winreg
 ################################################
@@ -122,7 +122,7 @@ INIT_FUNCTION = dcerpc_server_netlogon_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		netlogon/dcerpc_netlogon.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SCHANNELDB \
 		NDR_NETLOGON \
@@ -137,7 +137,7 @@ INIT_FUNCTION = dcerpc_server_lsa_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		lsa/dcesrv_lsa.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
 		NDR_LSA \
@@ -154,7 +154,7 @@ SUBSYSTEM = dcerpc_server
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
 		spoolss/dcesrv_spoolss.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		NDR_SPOOLSS \
 		ntptr
@@ -168,7 +168,7 @@ INIT_FUNCTION = dcerpc_server_drsuapi_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		drsuapi/dcesrv_drsuapi.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
 		NDR_DRSUAPI
@@ -177,9 +177,7 @@ PUBLIC_DEPENDENCIES = \
 
 ################################################
 # Start SUBSYSTEM dcerpc_server
-[MODULE::dcerpc_server]
-INIT_FUNCTION = server_service_rpc_init
-SUBSYSTEM = service
+[SUBSYSTEM::dcerpc_server]
 PUBLIC_HEADERS = dcerpc_server.h
 PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
@@ -188,10 +186,15 @@ OBJ_FILES = \
 		dcesrv_auth.o \
 		dcesrv_mgmt.o \
 		handles.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
 		dcerpc
 #
 # End SUBSYSTEM DCERPC
 ################################################
+
+[MODULE::DCESRV]
+INIT_FUNCTION = server_service_rpc_init
+SUBSYSTEM = service
+PRIVATE_DEPENDENCIES = dcerpc_server
