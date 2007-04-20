@@ -26,6 +26,11 @@ EXEEXT=@EXEEXT@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
+
+# The MODULE_EXPORTS variable conatins the platform-specific linker flags
+# needed to restrict the exports for VFS, IDMAP, RPC and PASSDB modules.
+MODULE_EXPORTS=@MODULE_EXPORTS@
+
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
@@ -1320,85 +1325,75 @@ libsmbsharemodes: $(LIBSMBSHAREMODES)
 libmsrpc: $(LIBMSRPC)
 libaddns: $(LIBADDNS)
 
+# Linker command to link a RPC, VFS, AUTH, CHARSET or PASSDB module.
+SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
+	      -o $@ @SONAMEFLAG@`basename $@`
+
 bin/librpc_lsarpc.@SHLIBEXT@: proto_exists $(RPC_LSA_OBJ)
 	@echo "Linking $@"
+	@$(SHLD_MODULE) $(RPC_LSA_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_samr.@SHLIBEXT@: proto_exists $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_SAMR_OBJ)
 
 bin/librpc_unixinfo.@SHLIBEXT@: proto_exists $(RPC_UNIXINFO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_UNIXINFO_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_UNIXINFO_OBJ)
 
 bin/librpc_epmapper.@SHLIBEXT@: proto_exists $(RPC_EPMAPPER_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EPMAPPER_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
 
 bin/librpc_srvsvc.@SHLIBEXT@: proto_exists $(RPC_SVC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVC_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
 
 bin/librpc_svcctl.@SHLIBEXT@: proto_exists $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVCCTL_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_SVCCTL_OBJ)
 
 bin/librpc_ntsvcs.@SHLIBEXT@: proto_exists $(RPC_NTSVCS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NTSVCS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_NTSVCS_OBJ)
 
 bin/librpc_wkssvc.@SHLIBEXT@: proto_exists $(RPC_WKS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_WKS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_WKS_OBJ)
 
 bin/librpc_NETLOGON.@SHLIBEXT@: proto_exists $(RPC_NETLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_NETLOG_OBJ)
 
 bin/librpc_winreg.@SHLIBEXT@: proto_exists $(RPC_REG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_REG_OBJ)
 
 bin/librpc_initshutdown.@SHLIBEXT@: proto_exists $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_INITSHUTDOWN_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_INITSHUTDOWN_OBJ)
 
 bin/librpc_lsa_ds.@SHLIBEXT@: proto_exists $(RPC_LSA_DS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_DS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_LSA_DS_OBJ)
 
 bin/librpc_spoolss.@SHLIBEXT@: proto_exists $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_SPOOLSS_OBJ)
 
 bin/librpc_eventlog.@SHLIBEXT@: proto_exists $(RPC_EVENTLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EVENTLOG_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_EVENTLOG_OBJ)
 
 bin/librpc_netdfs.@SHLIBEXT@: proto_exists $(RPC_DFS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_DFS_OBJ)
 
 bin/librpc_echo.@SHLIBEXT@: proto_exists $(RPC_ECHO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(RPC_ECHO_OBJ)
 
 bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
@@ -1429,209 +1424,174 @@ bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 
 bin/builtin.@SHLIBEXT@: proto_exists $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_BUILTIN_OBJ)
 
 bin/domain.@SHLIBEXT@: proto_exists $(AUTH_DOMAIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_DOMAIN_OBJ)
 
 bin/script.@SHLIBEXT@: proto_exists $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SCRIPT_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_SCRIPT_OBJ)
 
 bin/smbserver.@SHLIBEXT@: proto_exists $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_SERVER_OBJ)
 
 bin/winbind.@SHLIBEXT@: proto_exists $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_WINBIND_OBJ)
 
 bin/unix.@SHLIBEXT@: proto_exists $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_UNIX_OBJ)
 
 bin/sam.@SHLIBEXT@: proto_exists $(AUTH_SAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ) @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(AUTH_SAM_OBJ)
 
-bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
+bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o passdb/pdb_nds.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.o \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o $(LDAP_LIBS)
 
 bin/tdbsam.@SHLIBEXT@: proto_exists passdb/pdb_tdb.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.o \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) passdb/pdb_tdb.o
 
 bin/smbpasswd.@SHLIBEXT@: proto_exists passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) passdb/pdb_smbpasswd.o
 
 bin/rid.@SHLIBEXT@: proto_exists nsswitch/idmap_rid.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_rid.o \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) nsswitch/idmap_rid.o
 
 bin/ad.@SHLIBEXT@: nsswitch/idmap_ad.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ad.o \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) nsswitch/idmap_ad.o
 
 bin/weird.@SHLIBEXT@: proto_exists $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
 
 bin/CP850.@SHLIBEXT@: proto_exists $(CP850_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP850_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(CP850_OBJ)
 
 bin/CP437.@SHLIBEXT@: proto_exists $(CP437_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(CP437_OBJ)
 
 bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ) \
-		-framework CoreFoundation @SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(CHARSET_MACOSXFS_OBJ) -framework CoreFoundation
 
 # NOTE, there is no build rule for a dynamic default VFS module because
 # this one MUST MUST MUST be built statically.
 
 bin/audit.@SHLIBEXT@: proto_exists $(VFS_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_AUDIT_OBJ)
 
 bin/extd_audit.@SHLIBEXT@: proto_exists $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_EXTD_AUDIT_OBJ)
 
 bin/full_audit.@SHLIBEXT@: proto_exists $(VFS_FULL_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FULL_AUDIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_FULL_AUDIT_OBJ)
 
 bin/recycle.@SHLIBEXT@: proto_exists $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_RECYCLE_OBJ)
 
 bin/netatalk.@SHLIBEXT@: proto_exists $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_NETATALK_OBJ)
 
 bin/fake_perms.@SHLIBEXT@: proto_exists $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_FAKE_PERMS_OBJ)
 
 bin/default_quota.@SHLIBEXT@: proto_exists $(VFS_DEFAULT_QUOTA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_DEFAULT_QUOTA_OBJ)
 
 bin/readonly.@SHLIBEXT@: proto_exists $(VFS_READONLY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_READONLY_OBJ)
 
 bin/shadow_copy.@SHLIBEXT@: proto_exists $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SHADOW_COPY_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_SHADOW_COPY_OBJ)
 
 bin/cap.@SHLIBEXT@: proto_exists $(VFS_CAP_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_CAP_OBJ)
 
 bin/expand_msdfs.@SHLIBEXT@: proto_exists $(VFS_EXPAND_MSDFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXPAND_MSDFS_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_EXPAND_MSDFS_OBJ)
 
-bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
+bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AFSACL_OBJ:.o=.po) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
 
 bin/posixacl.@SHLIBEXT@: $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_POSIXACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_POSIXACL_OBJ)
 
 bin/aixacl.@SHLIBEXT@: $(VFS_AIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AIXACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_AIXACL_OBJ)
 
 bin/aixacl2.@SHLIBEXT@: $(VFS_AIXACL2_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AIXACL2_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_AIXACL2_OBJ)
 
 bin/solarisacl.@SHLIBEXT@: $(VFS_SOLARISACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SOLARISACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_SOLARISACL_OBJ)
 
 bin/irixacl.@SHLIBEXT@: proto_exists $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_IRIXACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_IRIXACL_OBJ)
 
 bin/hpuxacl.@SHLIBEXT@: proto_exists $(VFS_HPUXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_HPUXACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_HPUXACL_OBJ)
 
 bin/tru64acl.@SHLIBEXT@: $(VFS_TRU64ACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_TRU64ACL_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_TRU64ACL_OBJ)
 
 bin/catia.@SHLIBEXT@: proto_exists $(VFS_CATIA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CATIA_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_CATIA_OBJ)
 
 bin/cacheprime.@SHLIBEXT@: proto_exists $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CACHEPRIME_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_CACHEPRIME_OBJ)
 
 bin/prealloc.@SHLIBEXT@: proto_exists $(VFS_PREALLOC_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_PREALLOC_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_PREALLOC_OBJ)
 
 bin/commit.@SHLIBEXT@: proto_exists $(VFS_COMMIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_COMMIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_COMMIT_OBJ)
 
 bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_GPFS_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_GPFS_OBJ)
 
 bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_NOTIFY_FAM_OBJ)
 
 bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READAHEAD_OBJ) \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD_MODULE) $(VFS_READAHEAD_OBJ)
 
 #########################################################
 ## IdMap NSS plugins
@@ -1727,6 +1687,8 @@ installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(NSSINFOLIBDIR) $(NSS_INFO_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam.@SHLIBEXT@
+	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) rhosts.@SHLIBEXT@ hostsequiv.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) sam.@SHLIBEXT@ sam_ignoredomain.@SHLIBEXT@
