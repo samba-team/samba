@@ -39,25 +39,21 @@ int ctdb_init_transport(struct ctdb_context *ctdb)
 {
 	int	i;
 	int ctdb_tcp_init(struct ctdb_context *ctdb);
-	int	transport_found = 0;
 #ifdef USE_INFINIBAND
 	int ctdb_ibw_init(struct ctdb_context *ctdb);
 #endif /* USE_INFINIBAND */
 
 	if (strcmp(ctdb->transport, "tcp") == 0) {
-		transport_found = 1;
 		if (ctdb_tcp_init(ctdb))
 			return -1;
 	}
 #ifdef USE_INFINIBAND
 	else if (strcmp(ctdb->transport, "ib") == 0) {
-		transport_found = 1;
 		if (ctdb_ibw_init(ctdb))
 			return -1;
 	}
 #endif /* USE_INFINIBAND */
-
-	if (!transport_found) {
+	else {
 		ctdb_set_error(ctdb, "Unknown transport '%s'\n", ctdb->transport);
 		return -1;
 	}
