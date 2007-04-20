@@ -1,5 +1,7 @@
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Add version-script
+
 	* test_crypto.in: try generate a couple of rsa keys of
 	diffrent (random) sizes, spelling.
 
