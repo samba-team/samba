@@ -5,6 +5,6 @@ INIT_FUNCTION = ntvfs_unixuid_init
 SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		vfs_unixuid.o
-PUBLIC_DEPENDENCIES = SAMDB
+PRIVATE_DEPENDENCIES = SAMDB
 # End MODULE ntvfs_unixuid
 ################################################

@@ -2,12 +2,10 @@
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = ldb
-PRIVATE_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR NDR_MISC
 INIT_FUNCTION = objectguid_module_init
 OBJ_FILES = \
 		objectguid.o
-PUBLIC_DEPENDENCIES = \
-		LIBNDR NDR_MISC
 # End MODULE ldb_objectguid
 ################################################
 
@@ -152,13 +150,11 @@ OBJ_FILES = local_password.o
 ################################################
 # Start MODULE ldb_kludge_acl
 [MODULE::ldb_kludge_acl]
-PRIVATE_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBSECURITY
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_kludge_acl_init
 OBJ_FILES = \
 		kludge_acl.o
-PUBLIC_DEPENDENCIES = \
-		LIBSECURITY
 #
 # End MODULE ldb_kludge_acl
 ################################################
