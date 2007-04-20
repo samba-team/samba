@@ -26,6 +26,7 @@
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number(s)&gt;</arg>
+		<arg choice="opt">-P &lt;profiling level&gt;</arg>
 		<arg choice="opt">-O &lt;socket option&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 	</cmdsynopsis>
@@ -133,15 +134,23 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-p &lt;port number(s)&gt;</term>
+		<term>-p|--port&lt;port number(s)&gt;</term>
 		<listitem><para><replaceable>port number(s)</replaceable> is a 
 		space or comma-separated list of TCP ports smbd should listen on.
 		The default value is taken from the <smbconfoption name="ports"/> parameter in &smb.conf;</para>
 
 		<para>The default ports are 139 (used for SMB over NetBIOS over TCP)
 			and port 445 (used for plain SMB over TCP).
-	</para></listitem>
+		</para></listitem>
+		</varlistentry>
 		
+		<varlistentry>
+		<term>-P|--profiling-level&lt;profiling level&gt;</term>
+		<listitem><para><replaceable>profiling level</replaceable> is a
+		number specifying the level of profiling data to be collected.
+		0 turns off profiling, 1 turns on counter profiling only,
+		2 turns on complete profiling, and 3 resets all profiling data.
+		</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
