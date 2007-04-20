@@ -305,6 +305,7 @@ EXTRA_DIST = \
 	krb5/gkrb5_err.et \
 	mech/gssapi.asn1 \
 	spnego/spnego.asn1 \
+	version-script.map \
 	gss-commands.in
 
 # to help stupid solaris make
