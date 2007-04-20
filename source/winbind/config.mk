@@ -25,7 +25,7 @@ OBJ_FILES = \
 		wb_cmd_list_trustdom.o \
 		wb_pam_auth.o \
 		wb_sam_logon.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		WB_HELPER \
 		NDR_WINBIND \
 		process_model \

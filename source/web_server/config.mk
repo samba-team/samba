@@ -9,6 +9,6 @@ PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		web_server.o \
 		http.o
-PUBLIC_DEPENDENCIES = ESP LIBTLS smbcalls process_model 
+PRIVATE_DEPENDENCIES = ESP LIBTLS smbcalls process_model 
 # End SUBSYSTEM WEB
 #######################

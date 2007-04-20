@@ -8,7 +8,7 @@ SUBSYSTEM = service
 OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
 # End SUBSYSTEM KDC
 #######################
@@ -21,7 +21,7 @@ PRIVATE_PROTO_HEADER = pac_glue.h
 OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		ldb auth_sam KERBEROS
 # End SUBSYSTEM KDC
 #######################
