@@ -364,11 +364,6 @@ struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct 
 int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
 /*
-  allocate a packet for sending via queue
-*/
-void *ctdb_queue_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size);
-
-/*
   queue a packet for sending
 */
 int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length);
