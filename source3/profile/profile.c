@@ -42,14 +42,10 @@ BOOL do_profile_flag = False;
 BOOL do_profile_times = False;
 
 /****************************************************************************
-receive a set profile level message
+Set a profiling level.
 ****************************************************************************/
-void profile_message(int msg_type, struct process_id src,
-		     void *buf, size_t len, void *private_data)
+void set_profile_level(int level, struct process_id src)
 {
-        int level;
-
-	memcpy(&level, buf, sizeof(int));
 #ifdef WITH_PROFILE
 	switch (level) {
 	case 0:		/* turn off profiling */
@@ -92,6 +88,17 @@ void profile_message(int msg_type, struct process_id src,
 #else /* WITH_PROFILE */
 	DEBUG(1,("INFO: Profiling support unavailable in this build.\n"));
 #endif /* WITH_PROFILE */
+}
+
+/****************************************************************************
+receive a set profile level message
+****************************************************************************/
+void profile_message(int msg_type, struct process_id src, void *buf, size_t len, void *private_data)
+{
+        int level;
+
+	memcpy(&level, buf, sizeof(int));
+	set_profile_level(level, src);
 }
 
 /****************************************************************************
