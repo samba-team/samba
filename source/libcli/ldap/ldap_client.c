@@ -186,6 +186,7 @@ static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 	
 	status = ldap_decode(&asn1, msg);
 	if (!NT_STATUS_IS_OK(status)) {
+		asn1_free(&asn1);
 		return status;
 	}
 
