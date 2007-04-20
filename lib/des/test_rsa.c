@@ -58,8 +58,11 @@ static char *time_key;
 static int key_blinding = 1;
 static char *rsa_key;
 static char *id_flag;
+static int loops = 1;
 
 static struct getargs args[] = {
+    { "loops",		0,	arg_integer,	&loops,
+      "number of loops", 	"loops" },
     { "id",		0,	arg_string,	&id_flag,
       "selects the engine id", 	"engine-id" },
     { "time-keygen",	0,	arg_flag,	&time_keygen,
@@ -193,7 +196,7 @@ int
 main(int argc, char **argv)
 {
     ENGINE *engine = NULL;
-    int i, idx = 0;
+    int i, j, idx = 0;
     RSA *rsa;
 
     setprogname(argv[0]);
@@ -335,9 +338,10 @@ main(int argc, char **argv)
 	RSA_free(rsa);
     }
 
-    {
+    for (i = 0; i < loops; i++) {
 	BN_GENCB cb;
 	BIGNUM *e;
+	unsigned int n;
 
 	rsa = RSA_new_method(engine);
 	if (!key_blinding)
@@ -347,13 +351,17 @@ main(int argc, char **argv)
 	BN_set_word(e, 0x10001);
 	
 	BN_GENCB_set(&cb, cb_func, NULL);
+	
+	RAND_bytes(&n, sizeof(n));
+	n &= 0x1ff;
+	n += 1024;
 
-	if (RSA_generate_key_ex(rsa, 1024, e, &cb) != 1)
+	if (RSA_generate_key_ex(rsa, n, e, &cb) != 1)
 	    errx(1, "RSA_generate_key_ex");
 
 	BN_free(e);
 	
-	for (i = 0; i < 8; i++) {
+	for (j = 0; j < 8; j++) {
 	    unsigned char sha1[20];
 	    RAND_bytes(sha1, sizeof(sha1));
 	    check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
