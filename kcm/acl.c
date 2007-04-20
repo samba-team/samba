@@ -99,7 +99,7 @@ kcm_access(krb5_context context,
 	    mask |= S_IRUSR;
 	if (write_p)
 	    mask |= S_IWUSR;
-    } else if (client->gid == ccache->gid || CLIENT_IS_ROOT(client->uid)) {
+    } else if (client->gid == ccache->gid || CLIENT_IS_ROOT(client)) {
 	if (read_p)
 	    mask |= S_IRGRP;
 	if (write_p)
