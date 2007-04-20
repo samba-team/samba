@@ -941,6 +941,16 @@ configured. The group gid will be allocated out of the winbindd range.
 </refsect2>
 
 <refsect2>
+<title>SAM DELETELOCALGROUP &lt;NAME&gt;</title>
+
+<para>
+Delete an existing LOCAL group (also known as Alias).
+
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>SAM MAPUNIXGROUP &lt;NAME&gt;</title>
 
 <para>
