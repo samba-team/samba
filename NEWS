@@ -1,3 +1,9 @@
+Changes in release 0.9
+
+* Alias support for inital ticket requests
+
+* Add symbol versioning to hcrypto
+
 Changes in release 0.8.1
 
 * Make ASN.1 library less paranoid to with regard to NUL in string to
