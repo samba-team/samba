@@ -343,11 +343,11 @@ sub run_test($$$$$$)
 
 	setup_pcap($msg_state);
 
-	$msg_ops->{start_msg}($msg_state);
+	$msg_ops->{start_msg}->($msg_state);
 
 	open(RESULT, "$cmd 2>&1|");
 	while (<RESULT>) {
-		$msg_ops->{output_msg}($msg_state, $_);
+		$msg_ops->{output_msg}->($msg_state, $_);
 		if (/^test: (.+)\n/) {
 			$open_tests->{$1} = 1;
 		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
@@ -377,14 +377,14 @@ sub run_test($$$$$$)
 		}
 	}
 	foreach (keys %$open_tests) {
-		$msg_ops->{output_msg}($msg_state, "$_ was started but never finished!\n");
+		$msg_ops->{output_msg}->($msg_state, "$_ was started but never finished!\n");
 		$statistics->{TESTS_ERROR}++;
 	}
 	my $ret = close(RESULT);
 
 	cleanup_pcap($msg_state,  $expected_ret, $ret);
 
-	$msg_ops->{end_msg}($msg_state, $expected_ret, $ret);
+	$msg_ops->{end_msg}->($msg_state, $expected_ret, $ret);
 
 	if ($ret != $expected_ret) {
 		push(@$suitesfailed, $name);
