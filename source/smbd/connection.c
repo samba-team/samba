@@ -96,13 +96,15 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 	struct connections_data crec;
 	struct count_stat *cs = (struct count_stat *)udp;
  
-	if (dbuf.dsize != sizeof(crec))
+	if (dbuf.dsize != sizeof(crec)) {
 		return 0;
+	}
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-	if (crec.cnum == -1)
+	if (crec.cnum == -1) {
 		return 0;
+	}
 
 	/* If the pid was not found delete the entry from connections.tdb */
 
@@ -113,9 +115,19 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
 	}
-
-	if (strequal(crec.servicename, cs->name))
+ 
+	if (cs->name) {
+		/* We are counting all the connections to a given share. */
+		if (strequal(crec.servicename, cs->name)) {
+			cs->curr_connections++;
+		}
+	} else {
+		/* We are counting all the connections. Static registrations
+		 * like the lpq backgroud process and the smbd daemon process
+		 * have a cnum of -1, so won't be counted here.
+		 */
 		cs->curr_connections++;
+	}
 
 	return 0;
 }
@@ -139,12 +151,28 @@ int count_current_connections( const char *sharename, BOOL clear  )
 	 */
 
 	if (tdb_traverse(tdb, count_fn, &cs) == -1) {
-		DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
+		DEBUG(0,("count_current_connections: traverse of connections.tdb failed with error %s\n",
 			tdb_errorstr(tdb) ));
-		return False;
+		DEBUGADD(0, ("count_current_connections: connection count of %d might not be accurate",
+			    cs.curr_connections));
 	}
-	
+
+	/* If the traverse failed part-way through, we at least return
+	 * as many connections as we had already counted. If it failed
+	 * right at the start, we will return 0, which is about all we
+	 * can do anywway.
+	 */
+
 	return cs.curr_connections;
+}
+
+/****************************************************************************
+ Count the number of connections open across all shares.
+****************************************************************************/
+
+int count_all_current_connections(void)
+{
+	return count_current_connections(NULL, True /* clear stale entries */);
 }
 
 /****************************************************************************

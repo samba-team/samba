@@ -348,6 +348,35 @@ AC_ARG_WITH(selftest-prefix,
   esac
 ])
 
+AC_ARG_ENABLE(launchd,
+[  --enable-launchd        Support running under launchd (default=auto)])
+
+if test x"$enable_launchd" != x"no" ; then
+    AC_CACHE_CHECK([whether to include launchd support],
+	samba_cv_launchd_support,
+	[
+	    AC_TRY_COMPILE(
+	    [
+#include <launch.h>
+	    ],
+	    [
+		launchd_msg(NULL);
+		launchd_data_get_fd(NULL);
+	    ],
+	    samba_cv_launchd_support=yes,
+	    samba_cv_launchd_support=no)
+	])
+
+    if test x"$samba_cv_launchd_support" = x"yes" ; then
+	AC_DEFINE(WITH_LAUNCHD_SUPPORT, 1,
+		    [Whether launchd support should be enabled])
+    else
+	if test x"$enable_launchd" = x"yes" ; then
+	    AC_ERROR(launchd support is not available)
+	fi
+    fi
+fi
+
 #################################################
 # set path of samba4's smbtorture
 smbtorture4_path=""

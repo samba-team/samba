@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
    Copyright (C) Jelmer Vernooij		2002-2003
+   Copyright (C) James Peach			2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "smb_launchd.h"
 
 static_decl_rpc;
 
@@ -296,39 +298,13 @@ static BOOL allowable_number_of_smbd_processes(void)
 	return num_children < max_processes;
 }
 
-/****************************************************************************
- Open the socket communication.
-****************************************************************************/
-
-static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_ports)
+static int init_sockets_smbd(const char *smb_ports,
+				int fd_listenset[FD_SETSIZE])
 {
 	int num_interfaces = iface_count();
+	char * ports;
 	int num_sockets = 0;
-	int fd_listenset[FD_SETSIZE];
-	fd_set listen_set;
-	int s;
-	int maxfd = 0;
-	int i;
-	char *ports;
-
-	if (server_mode == SERVER_MODE_INETD) {
-		return open_sockets_inetd();
-	}
-
-#ifdef HAVE_ATEXIT
-	{
-		static int atexit_set;
-		if(atexit_set == 0) {
-			atexit_set=1;
-			atexit(killkids);
-		}
-	}
-#endif
-
-	/* Stop zombies */
-	CatchSignal(SIGCLD, sig_cld);
-				
-	FD_ZERO(&listen_set);
+	int i, s;
 
 	/* use a reasonable default set of ports - listing on 445 and 139 */
 	if (!smb_ports) {
@@ -356,7 +332,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			const char *ptr;
 
 			if(ifip == NULL) {
-				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
+				DEBUG(0,("init_sockets_smbd: interface %d has NULL IP address !\n", i));
 				continue;
 			}
 
@@ -367,7 +343,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 				}
 				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 				if(s == -1)
-					return False;
+					return 0;
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE"); 
@@ -379,15 +355,13 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
 					DEBUG(0,("listen: %s\n",strerror(errno)));
 					close(s);
-					return False;
+					return 0;
 				}
-				FD_SET(s,&listen_set);
-				maxfd = MAX( maxfd, s);
 
 				num_sockets++;
 				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
-					return False;
+					DEBUG(0,("init_sockets_smbd: Too many sockets to bind to\n"));
+					return 0;
 				}
 			}
 		}
@@ -407,7 +381,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			s = open_socket_in(SOCK_STREAM, port, 0,
 					   interpret_addr(lp_socket_address()),True);
 			if (s == -1)
-				return(False);
+				return 0;
 		
 			/* ready to listen */
 			set_socket_options(s,"SO_KEEPALIVE"); 
@@ -417,26 +391,122 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			set_blocking(s,False); 
  
 			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-				DEBUG(0,("open_sockets_smbd: listen: %s\n",
+				DEBUG(0,("init_sockets_smbd: listen: %s\n",
 					 strerror(errno)));
 				close(s);
-				return False;
+				return 0;
 			}
 
 			fd_listenset[num_sockets] = s;
-			FD_SET(s,&listen_set);
-			maxfd = MAX( maxfd, s);
-
 			num_sockets++;
 
 			if (num_sockets >= FD_SETSIZE) {
-				DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
-				return False;
+				DEBUG(0,("init_sockets_smbd: Too many sockets to bind to\n"));
+				return 0;
 			}
 		}
 	} 
 
 	SAFE_FREE(ports);
+	return num_sockets;
+}
+
+static int init_sockets_launchd(const struct smb_launch_info *linfo,
+				const char * smb_ports,
+				int fd_listenset[FD_SETSIZE])
+{
+	int num_sockets;
+	int i;
+
+	/* The launchd service configuration does not have to provide sockets,
+	 * even though it's basically useless without it.
+	 */
+	if (!linfo->num_sockets) {
+		return init_sockets_smbd(smb_ports, fd_listenset);
+	}
+
+	/* Make sure we don't get more sockets than we can handle. */
+	num_sockets = MIN(FD_SETSIZE, linfo->num_sockets);
+	memcpy(fd_listenset, linfo->socket_list, num_sockets * sizeof(int));
+
+	/* Get the sockets ready. This could be hoisted into
+	 * open_sockets_smbd(), but the order of socket operations might
+	 * matter for some platforms, so this approach seems less risky.
+	 *	--jpeach
+	 */
+	for (i = 0; i < num_sockets; ++i) {
+		set_socket_options(fd_listenset[i], "SO_KEEPALIVE");
+		set_socket_options(fd_listenset[i], user_socket_options);
+
+		/* Set server socket to non-blocking for the accept. */
+		set_blocking(fd_listenset[i], False);
+	}
+
+	return num_sockets;
+}
+
+/****************************************************************************
+ Open the socket communication.
+****************************************************************************/
+
+static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_ports)
+{
+	int num_sockets = 0;
+	int fd_listenset[FD_SETSIZE];
+	fd_set listen_set;
+	int s;
+	int maxfd = 0;
+	int i;
+	struct timeval idle_timeout = {0, 0};
+	struct smb_launch_info linfo;
+
+	if (server_mode == SERVER_MODE_INETD) {
+		return open_sockets_inetd();
+	}
+
+#ifdef HAVE_ATEXIT
+	{
+		static int atexit_set;
+		if(atexit_set == 0) {
+			atexit_set=1;
+			atexit(killkids);
+		}
+	}
+#endif
+
+	/* Stop zombies */
+	CatchSignal(SIGCLD, sig_cld);
+
+	FD_ZERO(&listen_set);
+
+	/* At this point, it doesn't matter what daemon mode we are in, we
+	 * need some sockets to listen on. If we are in FOREGROUND mode,
+	 * the launchd checkin might succeed. If we are in DAEMON or
+	 * INTERACTIVE modes, it will fail and we will open the sockets
+	 * ourselves.
+	 */
+	if (smb_launchd_checkin(&linfo)) {
+		/* We are running under launchd and launchd has
+		 * opened some sockets for us.
+		 */
+		num_sockets = init_sockets_launchd(&linfo,
+					    smb_ports,
+					    fd_listenset);
+		idle_timeout.tv_sec = linfo.idle_timeout_secs;
+		smb_launchd_checkout(&linfo);
+	} else {
+		num_sockets = init_sockets_smbd(smb_ports,
+					    fd_listenset);
+	}
+
+	if (num_sockets == 0) {
+		return False;
+	}
+
+	for (i = 0; i < num_sockets; ++i) {
+		FD_SET(fd_listenset[i], &listen_set);
+		maxfd = MAX(maxfd, fd_listenset[i]);
+	}
 
         /* Listen to messages */
 
@@ -476,8 +546,9 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
-		
-		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
+
+		num = sys_select(maxfd+1,&lfds,NULL,NULL,
+			idle_timeout.tv_sec ? &idle_timeout : NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
@@ -494,7 +565,15 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 
 			continue;
 		}
-		
+
+		/* If the idle timeout fired and we don't have any connected
+		 * users, exit gracefully. We should be running under a process
+		 * controller that will restart us if necessry.
+		 */
+		if (num == 0 && count_all_current_connections() == 0) {
+			exit_server_cleanly("idle timeout");
+		}
+
 		/* check if we need to reload services */
 		check_reload(time(NULL));
 
