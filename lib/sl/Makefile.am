@@ -57,3 +57,5 @@ strupr.c:
 	$(LN_S) $(srcdir)/../roken/strupr.c .
 getprogname.c:
 	$(LN_S) $(srcdir)/../roken/getprogname.c .
+
+slc-lex.c: slc-gram.h
