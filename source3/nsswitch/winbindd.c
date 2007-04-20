@@ -7,6 +7,7 @@
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Jelmer Vernooij 2003
    Copyright (C) Volker Lendecke 2004
+   Copyright (C) James Peach 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "smb_launchd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -32,6 +34,7 @@
 BOOL opt_nocache = False;
 
 extern BOOL override_logfile;
+static BOOL unlink_winbindd_socket = True;
 
 struct event_context *winbind_event_context(void)
 {
@@ -121,9 +124,11 @@ static void terminate(void)
 	pstring path;
 
 	/* Remove socket file */
-	pstr_sprintf(path, "%s/%s", 
-		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-	unlink(path);
+	if (unlink_winbindd_socket) {
+		pstr_sprintf(path, "%s/%s",
+			 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
+		unlink(path);
+	}
 
 	idmap_close();
 	
@@ -714,27 +719,55 @@ static BOOL remove_idle_client(void)
 	return False;
 }
 
+static BOOL winbindd_init_sockets(int *public_sock, int *priv_sock,
+				int *idle_timeout_sec)
+{
+	struct smb_launch_info linfo;
+
+	if (smb_launchd_checkin_names(&linfo, "WinbindPublicPipe",
+		    "WinbindPrivilegedPipe", NULL)) {
+		if (linfo.num_sockets != 2) {
+			DEBUG(0, ("invalid launchd configuration, "
+				"expected 2 sockets but got %d\n",
+				linfo.num_sockets));
+			return False;
+		}
+
+		*public_sock = linfo.socket_list[0];
+		*priv_sock = linfo.socket_list[1];
+		*idle_timeout_sec = linfo.idle_timeout_secs;
+
+		unlink_winbindd_socket = False;
+
+		smb_launchd_checkout(&linfo);
+		return True;
+	} else {
+		*public_sock = open_winbindd_socket();
+		*priv_sock = open_winbindd_priv_socket();
+		*idle_timeout_sec = -1;
+
+		if (*public_sock == -1 || *priv_sock == -1) {
+			DEBUG(0, ("failed to open winbindd pipes: %s\n",
+			    errno ? strerror(errno) : "unknown error"));
+			return False;
+		}
+
+		return True;
+	}
+}
+
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
    service attacks. */
 
-static void process_loop(void)
+static int process_loop(int listen_sock, int listen_priv_sock)
 {
 	struct winbindd_cli_state *state;
 	struct fd_event *ev;
 	fd_set r_fds, w_fds;
-	int maxfd, listen_sock, listen_priv_sock, selret;
+	int maxfd, selret;
 	struct timeval timeout, ev_timeout;
-
-	/* Open Sockets here to get stuff going ASAP */
-	listen_sock = open_winbindd_socket();
-	listen_priv_sock = open_winbindd_priv_socket();
-
-	if (listen_sock == -1 || listen_priv_sock == -1) {
-		perror("open_winbind_socket");
-		exit(1);
-	}
 
 	/* We'll be doing this a lot */
 
@@ -901,6 +934,55 @@ static void process_loop(void)
 
 		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
 			winbind_child_died(pid);
+		}
+	}
+
+
+	return winbindd_num_clients();
+}
+
+static void winbindd_process_loop(enum smb_server_mode server_mode)
+{
+	int idle_timeout_sec;
+	struct timeval starttime;
+	int listen_public, listen_priv;
+
+	errno = 0;
+	if (!winbindd_init_sockets(&listen_public, &listen_priv,
+				    &idle_timeout_sec)) {
+		terminate();
+	}
+
+	starttime = timeval_current();
+
+	if (listen_public == -1 || listen_priv == -1) {
+		DEBUG(0, ("failed to open winbindd pipes: %s\n",
+			    errno ? strerror(errno) : "unknown error"));
+		terminate();
+	}
+
+	for (;;) {
+		int clients = process_loop(listen_public, listen_priv);
+
+		/* Don't bother figuring out the idle time if we won't be
+		 * timing out anyway.
+		 */
+		if (idle_timeout_sec < 0) {
+			continue;
+		}
+
+		if (clients == 0 && server_mode == SERVER_MODE_FOREGROUND) {
+			struct timeval now;
+
+			now = timeval_current();
+			if (timeval_elapsed2(&starttime, &now) >
+				(double)idle_timeout_sec) {
+				DEBUG(0, ("idle for %d secs, exitting\n",
+					    idle_timeout_sec));
+				terminate();
+			}
+		} else {
+			starttime = timeval_current();
 		}
 	}
 }
@@ -1114,9 +1196,7 @@ int main(int argc, char **argv, char **envp)
 	smb_nscd_flush_group_cache();
 
 	/* Loop waiting for requests */
-
-	while (1)
-		process_loop();
+	winbindd_process_loop(server_mode);
 
 	return 0;
 }
