@@ -2813,7 +2813,12 @@ if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
-	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
+	AC_TRY_RUN([
+#include "${srcdir-.}/lib/replace/test/os2_delete.c"
+int main(void) {
+    return test_readdir_os2_delete();
+}
+],
 		[samba_cv_HAVE_BROKEN_READDIR=no],
 			[samba_cv_HAVE_BROKEN_READDIR=yes],
 			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
@@ -2822,7 +2827,10 @@ if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
 AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
 	AC_TRY_RUN([
 #include "${srcdir-.}/lib/repdir.c"
-#include "${srcdir-.}/tests/os2_delete.c"],
+#include "${srcdir-.}/lib/replace/test/os2_delete.c"
+int main(void) {
+    return test_readdir_os2_delete();
+],
 	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
 fi
 
