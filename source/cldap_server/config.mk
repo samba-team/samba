@@ -10,7 +10,7 @@ OBJ_FILES = \
 		cldap_server.o \
 		netlogon.o \
 		rootdse.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_CLDAP LIBNETIF process_model
 # End SUBSYSTEM CLDAPD
 #######################

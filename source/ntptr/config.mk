@@ -7,7 +7,7 @@ INIT_FUNCTION = ntptr_simple_ldb_init
 SUBSYSTEM = ntptr
 OBJ_FILES = \
 		simple_ldb/ntptr_simple_ldb.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		ldb NDR_SPOOLSS DCERPC_COMMON
 # End MODULE ntptr_simple_ldb
 ################################################

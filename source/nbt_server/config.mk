@@ -19,7 +19,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = wins_ldb_module_init
 OBJ_FILES = \
 		wins/wins_ldb.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBNETIF
 # End MODULE ldb_wins_ldb
 #######################
@@ -33,7 +33,7 @@ OBJ_FILES = \
 		wins/winswack.o \
 		wins/wins_dns_proxy.o
 PRIVATE_PROTO_HEADER = wins/winsserver_proto.h
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_NBT WINSDB
 # End SUBSYSTEM NBTD_WINS
 #######################
@@ -47,7 +47,7 @@ OBJ_FILES = \
 		dgram/netlogon.o \
 		dgram/ntlogon.o \
 		dgram/browse.o
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_DGRAM
 # End SUBSYSTEM NBTD_DGRAM
 #######################
@@ -67,7 +67,7 @@ OBJ_FILES = \
 		packet.o \
 		irpc.o
 PRIVATE_PROTO_HEADER = nbt_server_proto.h
-PUBLIC_DEPENDENCIES = \
+PRIVATE_DEPENDENCIES = \
 		LIBCLI_NBT NBTD_WINS NBTD_DGRAM process_model
 # End SUBSYSTEM NBTD
 #######################
