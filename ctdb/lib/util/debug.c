@@ -22,21 +22,6 @@
 #include "system/time.h"
 #include <unistd.h>
 
-static int vasprintf2(char **ptr, const char *format, va_list ap)
-{
-    int ret;
-    va_list tmp_ap;
-
-    va_copy(tmp_ap, ap);
-    ret = vsnprintf(NULL, 0, format, tmp_ap);
-    if (ret <= 0) return ret;
-
-    (*ptr) = (char *)malloc(ret+1);
-    if (!*ptr) return -1;
-    ret = vsnprintf(*ptr, ret+1, format, ap);
-
-    return ret;
-}
 
 void do_debug(const char *format, ...)
 {
@@ -45,12 +30,12 @@ void do_debug(const char *format, ...)
 	char *s = NULL;
 
 	va_start(ap, format);
-	vasprintf2(&s, format, ap);
+	s = talloc_vasprintf(NULL, format, ap);
 	va_end(ap);
 
 	gettimeofday(&tm, NULL);
 	printf("%-8.8d.%-6.6d [%d]: %s", (int)tm.tv_sec, (int)tm.tv_usec,
 	       (int)getpid(), s);
 	fflush(stdout);
-	free(s);
+	talloc_free(s);
 }
