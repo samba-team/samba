@@ -1,5 +1,8 @@
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: move where hash is calculated to make
+	it easier to add ccache support.
+
 	* Makefile.am: Add version-script.map to EXTRA_DIST.
 	
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
