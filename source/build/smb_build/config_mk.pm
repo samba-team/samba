@@ -44,7 +44,6 @@ my $section_types = {
 		"INIT_FUNCTION"		=> "string",
 		"OBJ_FILES"		=> "list",
 
-		"PUBLIC_DEPENDENCIES"	=> "list",
 		"PRIVATE_DEPENDENCIES"	=> "list",
 
 		"ALIASES" => "list",
@@ -55,10 +54,6 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
-		"PUBLIC_PROTO_HEADER"	=> "string",
-
-
-		"PUBLIC_HEADERS"	=> "list",
 
 		"CFLAGS"		=> "list"
 		},
@@ -72,8 +67,6 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
-		"PUBLIC_PROTO_HEADER"	=> "string",
-		"PUBLIC_HEADERS"	=> "list", 
 
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
