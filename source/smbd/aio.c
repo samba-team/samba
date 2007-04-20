@@ -242,7 +242,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	bufsize = PTR_DIFF(smb_buf(outbuf),outbuf) + smb_maxcnt;
 
 	if ((aio_ex = create_aio_ex_read(fsp, bufsize,
-					 SVAL(inbuf,smb_mid))) == NULL) {
+					 SVAL(inbuf,smb_mid), inbuf)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return False;
 	}
@@ -382,6 +382,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
+	char *inbuf = aio_ex->inbuf;
 	char *data = smb_buf(outbuf);
 	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
@@ -405,7 +406,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 		ret = errno;
 	} else {
-		outsize = set_message(outbuf,12,nread,False);
+		outsize = set_message(inbuf,outbuf,12,nread,False);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 		SSVAL(outbuf,smb_vwv5,nread);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
@@ -418,7 +419,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			    aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
-	smb_setlen(aio_ex->inbuf,outbuf,outsize - 4);
+	smb_setlen(inbuf,outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server_cleanly("handle_aio_read_complete: send_smb "
@@ -443,6 +444,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
+	char *inbuf = aio_ex->inbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
 	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
 
