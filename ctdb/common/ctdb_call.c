@@ -222,17 +222,12 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	memcpy(&r->data[0], key->dptr, key->dsize);
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
-	if (r->hdr.destnode == ctdb->vnn) {
-		/* we are the lmaster - don't send to ourselves */
-		ctdb_recv_pkt(ctdb, (uint8_t *)&r->hdr, r->hdr.length);
-		return;
-	} else {
-		ctdb_queue_packet(ctdb, &r->hdr);
-
-		/* update the ltdb to record the new dmaster */
-		header->dmaster = r->hdr.destnode;
-		ctdb_ltdb_store(ctdb_db, *key, header, *data);
-	}
+	/* XXX - probably not necessary when lmaster==dmaster
+	   update the ltdb to record the new dmaster */
+	header->dmaster = r->hdr.destnode;
+	ctdb_ltdb_store(ctdb_db, *key, header, *data);
+	
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 }
@@ -280,7 +275,8 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 	
 	/* its a protocol error if the sending node is not the current dmaster */
-	if (header.dmaster != hdr->srcnode) {
+	if (header.dmaster != hdr->srcnode && 
+	    hdr->srcnode != ctdb_lmaster(ctdb_db->ctdb, &key)) {
 		ctdb_fatal(ctdb, "dmaster request from non-master");
 		return;
 	}
@@ -313,13 +309,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	if (r->hdr.destnode == r->hdr.srcnode) {
-		/* inject the packet back into the input queue */
-		talloc_steal(ctdb, r);
-		ctdb_recv_pkt(ctdb, (uint8_t *)&r->hdr, r->hdr.length);
-	} else {
-		ctdb_queue_packet(ctdb, &r->hdr);
-	}
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(tmp_ctx);
 }

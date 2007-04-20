@@ -34,6 +34,7 @@ struct lockwait_handle {
 	pid_t child;
 	void *private_data;
 	void (*callback)(void *);
+	struct timeval t;
 };
 
 static void lockwait_handler(struct event_context *ev, struct fd_event *fde, 
@@ -46,6 +47,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	pid_t child = h->child;
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
+	DEBUG(3,(__location__ " lockwait took %.6f seconds\n", timeval_elapsed(&h->t)));
 	talloc_free(h);	
 	callback(p);
 	waitpid(child, NULL, 0);
@@ -106,7 +108,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		 * Do we need a tdb_reopen here?
 		 */
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
-		exit(0);
+		_exit(0);
 	}
 
 	close(result->fd[1]);
@@ -119,6 +121,8 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		talloc_free(result);
 		return NULL;
 	}
+
+	result->t = timeval_current();
 
 	return result;
 }
