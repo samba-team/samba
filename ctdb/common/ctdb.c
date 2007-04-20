@@ -246,34 +246,42 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
+		ctdb->status.count.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CALL:
+		ctdb->status.count.reply_call++;
 		ctdb_reply_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_ERROR:
+		ctdb->status.count.reply_error++;
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_REDIRECT:
+		ctdb->status.count.reply_redirect++;
 		ctdb_reply_redirect(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_DMASTER:
+		ctdb->status.count.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_DMASTER:
+		ctdb->status.count.reply_dmaster++;
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
+		ctdb->status.count.req_message++;
 		ctdb_request_message(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_FINISHED:
+		ctdb->status.count.req_finished++;
 		ctdb_request_finished(ctdb, hdr);
 		break;
 

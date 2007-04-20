@@ -35,7 +35,7 @@ struct lockwait_handle {
 	pid_t child;
 	void *private_data;
 	void (*callback)(void *);
-	struct timeval t;
+	struct timeval start_time;
 };
 
 static void lockwait_handler(struct event_context *ev, struct fd_event *fde, 
@@ -48,7 +48,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	pid_t child = h->child;
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
-	DEBUG(3,(__location__ " lockwait took %.6f seconds\n", timeval_elapsed(&h->t)));
+	ctdb_latency(&h->ctdb->status.max_lockwait_latency, h->start_time);
 	h->ctdb->status.pending_lockwait_calls--;
 	talloc_free(h);	
 	callback(p);
@@ -133,7 +133,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	result->t = timeval_current();
+	result->start_time = timeval_current();
 
 	return result;
 }

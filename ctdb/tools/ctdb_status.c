@@ -33,8 +33,24 @@ static void show_status(struct ctdb_status *s)
 {
 	printf(" client_packets_sent     %u\n", s->client_packets_sent);
 	printf(" client_packets_recv     %u\n", s->client_packets_recv);
+	printf("   req_call              %u\n", s->client.req_call);
+	printf("   req_message           %u\n", s->client.req_message);
+	printf("   req_finished          %u\n", s->client.req_finished);
+	printf("   req_register          %u\n", s->client.req_register);
+	printf("   req_connect_wait      %u\n", s->client.req_connect_wait);
+	printf("   req_shutdown          %u\n", s->client.req_shutdown);
+	printf("   req_status            %u\n", s->client.req_status);
 	printf(" node_packets_sent       %u\n", s->node_packets_sent);
 	printf(" node_packets_recv       %u\n", s->node_packets_recv);
+	printf("   req_call              %u\n", s->client.req_call);
+	printf("   reply_call            %u\n", s->count.reply_call);
+	printf("   reply_redirect        %u\n", s->count.reply_redirect);
+	printf("   req_dmaster           %u\n", s->count.req_dmaster);
+	printf("   reply_dmaster         %u\n", s->count.reply_dmaster);
+	printf("   reply_error           %u\n", s->count.reply_error);
+	printf("   reply_redirect        %u\n", s->count.reply_redirect);
+	printf("   req_message           %u\n", s->count.req_message);
+	printf("   req_finished          %u\n", s->count.req_finished);
 	printf(" total_calls             %u\n", s->total_calls);
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);

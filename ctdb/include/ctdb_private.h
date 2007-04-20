@@ -122,6 +122,25 @@ struct ctdb_status {
 	uint32_t client_packets_recv;
 	uint32_t node_packets_sent;
 	uint32_t node_packets_recv;
+	struct {
+		uint32_t req_call;
+		uint32_t reply_call;
+		uint32_t reply_redirect;
+		uint32_t req_dmaster;
+		uint32_t reply_dmaster;
+		uint32_t reply_error;
+		uint32_t req_message;
+		uint32_t req_finished;
+	} count;
+	struct {
+		uint32_t req_call;
+		uint32_t req_message;
+		uint32_t req_finished;
+		uint32_t req_register;
+		uint32_t req_connect_wait;
+		uint32_t req_shutdown;
+		uint32_t req_status;
+	} client;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;

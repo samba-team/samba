@@ -443,6 +443,7 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	struct ctdb_client *client = talloc_get_type(p, struct ctdb_client);
 	TALLOC_CTX *tmp_ctx;
+	struct ctdb_context *ctdb = client->ctdb;
 
 	/* place the packet as a child of a tmp_ctx. We then use
 	   talloc_free() below to free it. If any of the calls want
@@ -463,26 +464,32 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
+		ctdb->status.client.req_call++;
 		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
 		break;
 
 	case CTDB_REQ_REGISTER:
+		ctdb->status.client.req_register++;
 		daemon_request_register_message_handler(client, 
 							(struct ctdb_req_register *)hdr);
 		break;
 	case CTDB_REQ_MESSAGE:
+		ctdb->status.client.req_message++;
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
 		break;
 
 	case CTDB_REQ_CONNECT_WAIT:
+		ctdb->status.client.req_connect_wait++;
 		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
 		break;
 
 	case CTDB_REQ_SHUTDOWN:
+		ctdb->status.client.req_shutdown++;
 		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
 		break;
 
 	case CTDB_REQ_STATUS:
+		ctdb->status.client.req_status++;
 		daemon_request_status(client, (struct ctdb_req_status *)hdr);
 		break;
 
