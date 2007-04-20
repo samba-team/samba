@@ -229,5 +229,7 @@ NTSTATUS unlink_xattr_tdb(struct pvfs_state *pvfs, const char *fname)
 		delete_xattr_tdb(pvfs, s, fname, -1);
 	}
 
-	return delete_xattr_tdb(pvfs, XATTR_LIST_ATTR, fname, -1);
+	status = delete_xattr_tdb(pvfs, XATTR_LIST_ATTR, fname, -1);
+	talloc_free(mem_ctx);
+	return status;
 }
