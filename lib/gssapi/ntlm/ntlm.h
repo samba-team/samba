@@ -76,7 +76,7 @@ typedef struct {
 #define STATUS_CLIENT 2
 #define STATUS_SESSIONKEY 4
     char *username;
-    char *password;
+    struct ntlm_buf key;
     krb5_data sessionkey;
 
     union {
