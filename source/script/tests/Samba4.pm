@@ -710,7 +710,7 @@ sub setup_member($$$$)
 
 	my $env = $self->provision_member($path, $dc_vars);
 
-	$self->check_or_start($env, ($ENV{SMBD_MAX_TIME} or 6500));
+	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 6500));
 
 	$self->wait_for_start($env);
 
@@ -724,7 +724,7 @@ sub setup_dc($$)
 	my $env = $self->provision_dc($path);
 
 	$self->check_or_start($env, 
-		($ENV{SMBD_MAX_TIME} or 5400));
+		($ENV{SMBD_MAXTIME} or 6500));
 
 	$self->wait_for_start($env);
 
