@@ -25,6 +25,8 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 
+int LogLevel;
+
 /*
   return error string for last error
 */
@@ -99,4 +101,30 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 		value = (value + (key->dptr[i] << (i*5 % 24)));
 
 	return (1103515243 * value + 12345);  
+}
+
+/*
+  a type checking varient of idr_find
+ */
+void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
+{
+	void *p = idr_find(idp, id);
+	if (p && talloc_check_name(p, type) == NULL) {
+		DEBUG(0,("%s idr_find_type expected type %s  but got %s\n",
+			 location, type, talloc_get_name(p)));
+		return NULL;
+	}
+	return p;
+}
+
+
+/*
+  update a max latency number
+ */
+void ctdb_latency(double *latency, struct timeval t)
+{
+	double l = timeval_elapsed(&t);
+	if (l > *latency) {
+		*latency = l;
+	}
 }

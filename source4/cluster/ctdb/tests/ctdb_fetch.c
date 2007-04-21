@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -58,18 +58,18 @@ static int msg_count;
 static void bench_fetch_1node(struct ctdb_context *ctdb)
 {
 	TDB_DATA key, data, nulldata;
-	struct ctdb_record_handle *rec;
 	struct ctdb_db_context *ctdb_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int dest, ret;
+	struct ctdb_record_handle *h;
 
-	key.dptr = discard_const("testkey");
-	key.dsize = strlen((const char *)key.dptr);
+	key.dptr = discard_const(TESTKEY);
+	key.dsize = strlen(TESTKEY);
 
 	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
 
-	rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-	if (rec == NULL) {
+	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
 		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
 		talloc_free(tmp_ctx);
@@ -88,7 +88,8 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 						      msg_count, ctdb_get_vnn(ctdb));
 	data.dsize = strlen((const char *)data.dptr)+1;
 
-	ret = ctdb_store_unlock(rec, data);
+	ret = ctdb_record_store(h, data);
+	talloc_free(h);
 	if (ret != 0) {
 		printf("Failed to store record\n");
 	}
@@ -141,6 +142,10 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 			printf("Event loop failed!\n");
 			break;
 		}
+
+		if (LogLevel > 9) {
+			talloc_report_null_full();
+		}
 	}
 
 	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
@@ -192,6 +197,8 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* talloc_enable_leak_report_full(); */
+
 	/* setup the remaining options for the main program to use */
 	extra_argv = poptGetArgs(pc);
 	if (extra_argv) {
@@ -240,7 +247,8 @@ int main(int argc, const char *argv[])
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
-	/* shut it down */
-	talloc_free(ctdb);
+	/* go into a wait loop to allow other nodes to complete */
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }

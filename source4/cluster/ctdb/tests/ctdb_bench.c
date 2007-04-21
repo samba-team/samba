@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -45,7 +45,6 @@ static double end_timer(void)
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
-static int num_repeats = 100;
 
 enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 
@@ -78,51 +77,6 @@ static int fetch_func(struct ctdb_call_info *call)
 	return 0;
 }
 
-/*
-  benchmark incrementing an integer
-*/
-static void bench_incr(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
-{
-	int loops=0;
-	int ret, i;
-	struct ctdb_call call;
-
-	ZERO_STRUCT(call);
-
-	start_timer();
-
-	while (1) {
-		uint32_t v = loops % num_records;
-
-		call.call_id = FUNC_INCR;
-		call.key.dptr = (uint8_t *)&v;
-		call.key.dsize = 4;
-
-		for (i=0;i<num_repeats;i++) {
-			ret = ctdb_call(ctdb_db, &call);
-			if (ret != 0) {
-				printf("incr call failed - %s\n", ctdb_errstr(ctdb));
-				return;
-			}
-		}
-		if (num_repeats * (++loops) % 10000 == 0) {
-			if (end_timer() > timelimit) break;
-			printf("Incr: %.2f ops/sec\r", num_repeats*loops/end_timer());
-			fflush(stdout);
-		}
-	}
-
-	call.call_id = FUNC_FETCH;
-
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		return;
-	}
-
-	printf("Incr: %.2f ops/sec (loops=%d val=%d)\n", 
-	       num_repeats*loops/end_timer(), loops, *(uint32_t *)call.reply_data.dptr);
-}
 
 static int msg_count;
 static int msg_plus, msg_minus;
@@ -259,6 +213,7 @@ int main(int argc, const char *argv[])
 	bench_ring(ctdb, ev);
        
 	/* shut it down */
-	talloc_free(ctdb);
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }

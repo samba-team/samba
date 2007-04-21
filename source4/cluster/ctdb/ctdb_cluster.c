@@ -104,12 +104,30 @@ static void *ctdb_backend_handle(struct cluster_ops *ops)
 	return (void *)state->ctdb;
 }
 
+struct ctdb_handler_state {
+	struct cluster_state *state;
+	cluster_message_fn_t handler;
+	struct messaging_context *msg;
+};
+
 /*
   dispatch incoming ctdb messages
 */
 static void ctdb_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 				 TDB_DATA data, void *private)
 {
+	struct ctdb_handler_state *s = talloc_get_type(private, 
+						       struct ctdb_handler_state);
+	DATA_BLOB blob;
+	blob.data = data.dptr;
+	blob.length = data.dsize;
+	s->handler(s->msg, blob);
+}
+
+static int ctdb_handler_destructor(struct ctdb_handler_state *s)
+{
+	/* XXX - tell ctdb to de-register the message handler */
+	return 0;
 }
 
 /*
@@ -120,7 +138,28 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 				  struct server_id server,
 				  cluster_message_fn_t handler)
 {
-	/* nothing to do - we're now using the wildcard message handler */
+	struct cluster_state *state = ops->private;
+	struct ctdb_handler_state *h;
+	int ret;
+
+	h = talloc(msg, struct ctdb_handler_state);
+	NT_STATUS_HAVE_NO_MEMORY(h);
+
+	h->state = state;
+	h->handler = handler;
+	h->msg = msg;
+
+	talloc_set_destructor(h, ctdb_handler_destructor);
+
+	/* setup a message handler */
+	ret = ctdb_set_message_handler(state->ctdb, server.id, 
+				       ctdb_message_handler, h);
+        if (ret == -1) {
+                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
+			 ctdb_errstr(state->ctdb)));
+		exit(1);
+        }
+
 	return NT_STATUS_OK;
 }
 
@@ -198,11 +237,6 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 		ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
 
-	if (strcmp(model, "single") != 0) {
-		DEBUG(0,("Enabling ctdb daemon mode\n"));
-		ctdb_set_flags(state->ctdb, CTDB_FLAG_DAEMON_MODE);
-	}
-
 	lacount = lp_parm_int(-1, "ctdb", "maxlacount", -1);
 	if (lacount != -1) {
 		ctdb_set_max_lacount(state->ctdb, lacount);
@@ -214,6 +248,12 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
                 DEBUG(0,("ctdb_set_address failed - %s\n", ctdb_errstr(state->ctdb)));
 		goto failed;
         }
+
+	ret = ctdb_set_tdb_dir(state->ctdb, lp_lockdir());
+	if (ret == -1) {
+		DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(state->ctdb)));
+		goto failed;
+	}
 
         /* tell ctdb what nodes are available */
         ret = ctdb_set_nlist(state->ctdb, nlist);
@@ -230,14 +270,13 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 		if (ctdb_db == NULL) goto failed;
 	}
 
-	/* setup a global message handler */
-	ret = ctdb_set_message_handler(state->ctdb, CTDB_SRVID_ALL, 
-				       ctdb_message_handler, state);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_set_message_handler failed - %s\n", 
-			 ctdb_errstr(state->ctdb)));
-		exit(1);
-        }
+	cluster_set_ops(&cluster_ctdb_ops);
+
+	/* nasty hack for now ... */
+	{
+		void brl_ctdb_init_ops(void);
+		brl_ctdb_init_ops();
+	}
 
 	/* start the protocol running */
 	ret = ctdb_start(state->ctdb);
@@ -249,8 +288,6 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
 	ctdb_connect_wait(state->ctdb);
-
-	cluster_set_ops(&cluster_ctdb_ops);
 
 	return;
 	
