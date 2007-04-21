@@ -46,7 +46,7 @@ foreach(<IN>) {
 close(IN);
 
 print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
-print "CFLAGS = -Iheimdal_build -I$dirname\n";
+print "CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -I$dirname\n";
 print "OBJ_FILES = ";
 foreach $o_file (@o_files) {
     print "\\\n\t$o_file";
