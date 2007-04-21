@@ -1,5 +1,9 @@
 2007-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/delete_sec_context.c: free the key stored in the context
+
+	* ntlm/ntlm.h: switch password for a key
+
 	* test_oid.c: Switch oid to one that is exported.
 	
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
