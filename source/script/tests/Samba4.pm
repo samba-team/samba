@@ -257,7 +257,7 @@ nsslapd-pluginDescription: Allow bitwise matching rules
 ";
 	close(LDIF);
 
-	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2");
+	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
 
 	return ($fedora_ds_dir, $pidfile);
 }
@@ -359,10 +359,10 @@ syncprov-sessionlog 100
 	close(CONF);
 
 	#This uses the provision we just did, to read out the schema
-	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2");
+	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	#Now create an LDAP baseDN
-	system("$self->{bindir}/smbscript $self->{setupdir}/provision $provision_options --ldap-base >&2");
+	system("$self->{bindir}/smbscript $self->{setupdir}/provision $provision_options --ldap-base >&2") == 0 or die("creating an OpenLDAP basedn failed");
 
 	my $oldpath = $ENV{PATH};
 	$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
@@ -531,10 +531,10 @@ sub provision($$$$$)
 #Ensure the config file is valid before we start
 	if (system("$self->{bindir}/testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$self->{bindir}/testparm $configuration >&2");
-		die("Failed to create configuration!");
+		die("Failed to create a valid smb.conf configuration!");
 	}
 
-	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i ^$netbiosname ) >/dev/null 2>&1") == 0) or die("Failed to create configuration!");
+	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i ^$netbiosname ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration!");
 
 	my @provision_options = ($configuration);
 	push (@provision_options, "--host-name=$netbiosname");
