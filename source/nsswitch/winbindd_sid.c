@@ -183,6 +183,40 @@ static void sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 	request_ok(state);
 }
 
+static void sid2uid_lookupsid_recv( void *private_data, BOOL success, 
+				    const char *domain_name, 
+				    const char *name, 
+				    enum lsa_SidType type)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+	DOM_SID sid;
+
+	if (!success) {
+		DEBUG(5, ("sid2uid_lookupsid_recv Could not convert get sid type for %s\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	if ( (type!=SID_NAME_USER) || (type!=SID_NAME_COMPUTER) ) {
+		DEBUG(5,("sid2uid_lookupsid_recv: Sid %s is not a user or a computer.\n", 
+			 state->request.data.sid));
+		request_error(state);
+		return;		
+	}
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("sid2uid_lookupsid_recv: Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+	
+	/* always use the async interface (may block) */
+	winbindd_sid2uid_async(state->mem_ctx, &sid, sid2uid_recv, state);
+}
+
 void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
@@ -200,8 +234,11 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* always use the async interface (may block) */
-	winbindd_sid2uid_async(state->mem_ctx, &sid, sid2uid_recv, state);
+	/* Validate the SID as a user.  Hopefully this will hit cache.
+	   Needed to prevent DoS by exhausting the uid allocation
+	   range from random SIDs. */
+
+	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2uid_lookupsid_recv, state );
 }
 
 /* Convert a sid to a gid.  We assume we only have one rid attached to the
@@ -223,6 +260,43 @@ static void sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	request_ok(state);
 }
 
+static void sid2gid_lookupsid_recv( void *private_data, BOOL success, 
+				    const char *domain_name, 
+				    const char *name, 
+				    enum lsa_SidType type)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+	DOM_SID sid;
+
+	if (!success) {
+		DEBUG(5, ("sid2gid_lookupsid_recv: Could not convert get sid type for %s\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	if ( (type!=SID_NAME_DOM_GRP) || 
+	     (type!=SID_NAME_ALIAS) ||
+	     (type!=SID_NAME_WKN_GRP) ) 
+	{
+		DEBUG(5,("sid2gid_lookupsid_recv: Sid %s is not a group.\n", 
+			 state->request.data.sid));
+		request_error(state);
+		return;		
+	}
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("sid2gid_lookupsid_recv: Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+	
+	/* always use the async interface (may block) */
+	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
+}
+
 void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
@@ -240,8 +314,11 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* always use the async interface (may block) */
-	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
+	/* Validate the SID as a group.  Hopefully this will hit cache.
+	   Needed to prevent DoS by exhausting the uid allocation
+	   range from random SIDs. */
+
+	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2gid_lookupsid_recv, state );	
 }
 
 static void sids2xids_recv(void *private_data, BOOL success, void *data, int len)
