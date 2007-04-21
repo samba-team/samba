@@ -114,7 +114,7 @@ sort < ${srcdir}/text-dump-unknown-ext | \
     awk '{$11=""; print;}' > out-text-dump-unknown-ext-orig || exit 1
 cmp out-text-dump-unknown-ext-orig out-text-dump-unknown-ext || exit 1
 
-${kstash} -e aes256-cts-hmac-sha1-96 --random-key -k ./mkey.file || exit 1
+${kstash} -e aes256-cts-hmac-sha1-96 --random-key -k ./mkey.file >/dev/null 2>/dev/null || exit 1
 
 # remove masterkey
 ${kadmin} load ${srcdir}/text-dump-0.7  || exit 1
