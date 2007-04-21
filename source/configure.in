@@ -297,6 +297,7 @@ AC_SUBST(LDAP_LIBS)
 AC_SUBST(PAM_MODULES)
 AC_SUBST(INSTALL_PAM_MODULES)
 AC_SUBST(UNINSTALL_PAM_MODULES)
+AC_SUBST(NSS_MODULES)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(SMBMOUNT_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
@@ -3525,6 +3526,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
@@ -3561,6 +3563,26 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$smb_krb5_ticket_has_keyinfo" = x"yes" ; then
 	AC_DEFINE(KRB5_TICKET_HAS_KEYINFO, 1,
 	    [Whether the krb5_ticket structure contains the kvno and enctype])
+  fi
+
+  AC_CACHE_CHECK(whether krb5_get_init_creds_opt_free takes a context argument,
+	  smb_krb5_creds_opt_free_context,
+	  [
+		AC_TRY_COMPILE([
+		    #include <krb5.h>],
+		    [
+			krb5_context ctx;
+			krb5_get_init_creds_opt *opt = NULL;
+			krb5_get_init_creds_opt_free(ctx, opt);
+		    ],
+		    [smb_krb5_creds_opt_free_context=yes],
+		    [smb_krb5_creds_opt_free_context=no]
+		)
+	  ])
+
+  if test x"$smb_krb5_creds_opt_free_context" = x"yes" ; then
+	AC_DEFINE(KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT, 1,
+	    [Whether krb5_get_init_creds_opt_free takes a context argument])
   fi
 
   AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
@@ -5741,6 +5763,10 @@ AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 AC_SUBST(NSSSONAMEVERSIONSUFFIX)
+
+if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
+	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
+fi
 
 AC_SUBST(SMB_KRB5_LOCATOR)
 

@@ -1191,8 +1191,11 @@ krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 void smb_krb5_free_error(krb5_context context, krb5_error *krberror);
 krb5_error_code handle_krberror_packet(krb5_context context,
                                          krb5_data *packet);
-void krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt);
-krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context context, krb5_get_init_creds_opt **opt);
+
+void smb_krb5_get_init_creds_opt_free(krb5_context context,
+				    krb5_get_init_creds_opt *opt);
+krb5_error_code smb_krb5_get_init_creds_opt_alloc(krb5_context context,
+				    krb5_get_init_creds_opt **opt);
 krb5_error_code smb_krb5_mk_error(krb5_context context,
 					krb5_error_code error_code,
 					const krb5_principal server,

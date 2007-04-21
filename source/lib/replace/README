@@ -12,7 +12,6 @@ strlcpy
 strlcat
 mktime
 rename
-innetgr
 initgroups
 memmove
 strdup
@@ -21,6 +20,7 @@ setlinebuf
 vsyslog
 timegm
 setenv
+unsetenv
 strndup
 strnlen
 waitpid
@@ -53,6 +53,7 @@ inet_ntoa
 strtoll
 strtoull
 socketpair
+strptime
 
 Types:
 bool
@@ -76,13 +77,27 @@ CHAR_BIT
 Macros:
 va_copy
 __FUNCTION__
+__FILE__
+__LINE__
+__LINESTR__
+__location__
 __STRING
+__STRINGSTRING
 MIN
 MAX
 QSORT_CAST
+ZERO_STRUCT
+ZERO_STRUCTP
+ZERO_STRUCTPN
+ZERO_ARRAY
+ARRAY_SIZE
+PTR_DIFF
+
+Headers:
+stdint.h
+stdbool.h
 
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
-setnetgrent, getnetgrent, endnetgrent (for innetgr)
 mktemp (for mkstemp and mkdtemp)

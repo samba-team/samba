@@ -3976,13 +3976,13 @@ static int do_message_op(void)
 			/* We must use old option processing for this. Find the
 			 * position of the -T option in the raw argv[]. */
 			{
-				int i, optnum;
+				int i;
 				for (i = 1; i < argc; i++) {
 					if (strncmp("-T", argv[i],2)==0)
 						break;
 				}
 				i++;
-				if (!(optnum = tar_parseargs(argc, argv, poptGetOptArg(pc), i))) {
+				if (!tar_parseargs(argc, argv, poptGetOptArg(pc), i)) {
 					poptPrintUsage(pc, stderr, 0);
 					exit(1);
 				}

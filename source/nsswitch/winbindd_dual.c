@@ -364,7 +364,9 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
 	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
+#if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
 	{ WINBINDD_DUAL_SIDS2XIDS,       winbindd_dual_sids2xids,             "DUAL_SIDS2XIDS" },
+#endif  /* end DISABLED */
 	{ WINBINDD_DUAL_UID2SID,         winbindd_dual_uid2sid,               "DUAL_UID2SID" },
 	{ WINBINDD_DUAL_GID2SID,         winbindd_dual_gid2sid,               "DUAL_GID2SID" },
 	{ WINBINDD_DUAL_UID2NAME,        winbindd_dual_uid2name,              "DUAL_UID2NAME" },

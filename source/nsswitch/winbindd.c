@@ -248,7 +248,9 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+#if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
 	{ WINBINDD_SIDS_TO_XIDS, winbindd_sids_to_unixids, "SIDS_TO_XIDS" },
+#endif  /* end DISABLED */
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
@@ -1062,6 +1064,11 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 	
+	/* Initialize cache (ensure version is correct). */
+	if (!initialize_winbindd_cache()) {
+		exit(1);
+	}
+
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services, NULL);

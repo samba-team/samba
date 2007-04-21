@@ -286,12 +286,14 @@ typedef struct dom_sid {
 #define dom_sid28 dom_sid
 
 enum id_mapping {
-	ID_UNKNOWN,
+	ID_UNKNOWN = 0,
 	ID_MAPPED,
-	ID_UNMAPPED
+	ID_UNMAPPED,
+	ID_EXPIRED
 };
 
 enum id_type {
+	ID_TYPE_NOT_SPECIFIED = 0,
 	ID_TYPE_UID,
 	ID_TYPE_GID
 };
@@ -885,7 +887,7 @@ struct connections_data {
 	int cnum;
 	uid_t uid;
 	gid_t gid;
-	char name[24];
+	char servicename[FSTRING_LEN];
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;

@@ -921,9 +921,9 @@ static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *usern
 	} else if (PAM_WB_CACHED_LOGON(info3_user_flgs)) {
 
 		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
-			"Logging on using cached account. Network resources can be unavailable");
+			"Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable");
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
-			"User %s logged on using cached account\n", username);
+			"User %s logged on using cached credentials\n", username);
 	}
 }
 
@@ -1517,7 +1517,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	dictionary *d = NULL;
 	char *username_ret = NULL;
 	char *new_authtok_required = NULL;
-	const char *real_username = NULL;
+	char *real_username = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);

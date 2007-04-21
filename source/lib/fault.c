@@ -161,6 +161,13 @@ void dump_core_setup(const char *progname)
 	}
 
 #if DUMP_CORE
+	/* If we're running as non root we might not be able to dump the core
+	 * file to the corepath.  There must not be an unbecome_root() before
+	 * we call abort(). */
+	if (geteuid() != 0) {
+		become_root();
+	}
+
 	if (*corepath != '\0') {
 		/* The chdir might fail if we dump core before we finish
 		 * processing the config file.

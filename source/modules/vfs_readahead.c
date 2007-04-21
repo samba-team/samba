@@ -101,12 +101,12 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 			(unsigned int)rhd->len,
 			err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fromfd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_pread: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
 			(unsigned int)fd,
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
-			(err ));
+			err ));
 #else
 		if (!rhd->didmsg) {
 			DEBUG(0,("readahead_pread: no readahead on this platform\n"));

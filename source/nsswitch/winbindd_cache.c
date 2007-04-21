@@ -29,11 +29,52 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+#define WINBINDD_CACHE_VERSION 1
+#define WINBINDD_CACHE_VERSION_KEYSTR "WINBINDD_CACHE_VERSION"
+
 extern struct winbindd_methods reconnect_methods;
 extern BOOL opt_nocache;
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
 #endif
+
+/*
+ * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
+ * Here are the list of entry types that are *not* stored
+ * as form struct cache_entry in the cache.
+ */
+
+static const char *non_centry_keys[] = {
+	"SEQNUM/",
+	"DR/",
+	"DE/",
+	"WINBINDD_OFFLINE",
+	WINBINDD_CACHE_VERSION_KEYSTR,
+	NULL
+};
+
+/************************************************************************
+ Is this key a non-centry type ?
+************************************************************************/
+
+static BOOL is_non_centry_key(TDB_DATA kbuf)
+{
+	int i;
+
+	if (kbuf.dptr == NULL || kbuf.dsize == 0) {
+		return False;
+	}
+	for (i = 0; non_centry_keys[i] != NULL; i++) {
+		size_t namelen = strlen(non_centry_keys[i]);
+		if (kbuf.dsize < namelen) {
+			continue;
+		}
+		if (strncmp(non_centry_keys[i], (const char *)kbuf.dptr, namelen) == 0) {
+			return True;
+		}
+	}
+	return False;
+}
 
 /* Global online/offline state - False when online. winbindd starts up online
    and sets this to true if the first query fails and there's an entry in
@@ -227,19 +268,11 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 }
 
 /*
-  pull a time_t from a cache entry 
+  pull a time_t from a cache entry. time_t stored portably as a 64-bit time.
 */
 static time_t centry_time(struct cache_entry *centry)
 {
-	time_t ret;
-	if (centry->len - centry->ofs < sizeof(time_t)) {
-		DEBUG(0,("centry corruption? needed %u bytes, have %u\n", 
-			 (unsigned int)sizeof(time_t), (unsigned int)(centry->len - centry->ofs)));
-		smb_panic("centry_time");
-	}
-	ret = IVAL(centry->data, centry->ofs); /* FIXME: correct ? */
-	centry->ofs += sizeof(time_t);
-	return ret;
+	return (time_t)centry_nttime(centry);
 }
 
 /* pull a string from a cache entry, using the supplied
@@ -713,13 +746,13 @@ static void centry_put_nttime(struct cache_entry *centry, NTTIME nt)
 }
 
 /*
-  push a time_t into a centry 
+  push a time_t into a centry - use a 64 bit size.
+  NTTIME here is being used as a convenient 64-bit size.
 */
 static void centry_put_time(struct cache_entry *centry, time_t t)
 {
-	centry_expand(centry, sizeof(time_t));
-	SIVAL(centry->data, centry->ofs, t); /* FIXME: is this correct ?? */
-	centry->ofs += sizeof(time_t);
+	NTTIME nt = (NTTIME)t;
+	centry_put_nttime(centry, nt);
 }
 
 /*
@@ -2119,7 +2152,7 @@ void wcache_invalidate_cache(void)
 	}
 }
 
-BOOL init_wcache(void)
+static BOOL init_wcache(void)
 {
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
@@ -2140,6 +2173,61 @@ BOOL init_wcache(void)
 		return False;
 	}
 
+	return True;
+}
+
+/************************************************************************
+ This is called by the parent to initialize the cache file.
+ We don't need sophisticated locking here as we know we're the
+ only opener.
+************************************************************************/
+
+BOOL initialize_winbindd_cache(void)
+{
+	BOOL cache_bad = True;
+	uint32 vers;
+
+	if (!init_wcache()) {
+		DEBUG(0,("initialize_winbindd_cache: init_wcache failed.\n"));
+		return False;
+	}
+
+	/* Check version number. */
+	if (tdb_fetch_uint32(wcache->tdb, WINBINDD_CACHE_VERSION_KEYSTR, &vers) &&
+			vers == WINBINDD_CACHE_VERSION) {
+		cache_bad = False;
+	}
+
+	if (cache_bad) {
+		DEBUG(0,("initialize_winbindd_cache: clearing cache "
+			"and re-creating with version number %d\n",
+			WINBINDD_CACHE_VERSION ));
+
+		tdb_close(wcache->tdb);
+		wcache->tdb = NULL;
+
+		if (unlink(lock_path("winbindd_cache.tdb")) == -1) {
+			DEBUG(0,("initialize_winbindd_cache: unlink %s failed %s ",
+				lock_path("winbindd_cache.tdb"),
+				strerror(errno) ));
+			return False;
+		}
+		if (!init_wcache()) {
+			DEBUG(0,("initialize_winbindd_cache: re-initialization "
+					"init_wcache failed.\n"));
+			return False;
+		}
+
+		/* Write the version. */
+		if (!tdb_store_uint32(wcache->tdb, WINBINDD_CACHE_VERSION_KEYSTR, WINBINDD_CACHE_VERSION)) {
+			DEBUG(0,("initialize_winbindd_cache: version number store failed %s\n",
+				tdb_errorstr(wcache->tdb) ));
+			return False;
+		}
+	}
+
+	tdb_close(wcache->tdb);
+	wcache->tdb = NULL;
 	return True;
 }
 
@@ -2340,10 +2428,20 @@ void cache_name2sid(struct winbindd_domain *domain,
 }
 
 /* delete all centries that don't have NT_STATUS_OK set */
+/*
+ * The original idea that this cache only contains centries has
+ * been blurred - now other stuff gets put in here. Ensure we
+ * ignore these things on cleanup.
+ */
+
 static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, 
 			       TDB_DATA dbuf, void *state)
 {
 	struct cache_entry *centry;
+
+	if (is_non_centry_key(kbuf)) {
+		return 0;
+	}
 
 	centry = wcache_fetch_raw(kbuf.dptr);
 	if (!centry) {

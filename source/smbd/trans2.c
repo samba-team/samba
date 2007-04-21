@@ -2232,7 +2232,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	uint16 info_level;
 	int data_len, len;
 	SMB_STRUCT_STAT st;
-	char *vname = volume_label(SNUM(conn));
+	const char *vname = volume_label(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 	int quota_flag = 0;
@@ -2353,9 +2353,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
 				(str_checksum(get_local_machine_name())<<16));
 
+			/* Max label len is 32 characters. */
 			len = srvstr_push(outbuf, pdata+18, vname, -1, STR_UNICODE);
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
+
 			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n", 
 				(int)strlen(vname),vname, lp_servicename(snum)));
 			break;

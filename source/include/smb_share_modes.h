@@ -33,12 +33,8 @@ extern "C" {
 # endif
 #endif
 
-#include "tdb.h"
-
-/* Database context handle. */
-struct smbdb_ctx {
-	TDB_CONTEXT *smb_tdb;
-};
+/* Opaque database context handle. */
+struct smbdb_ctx;
 
 /* Share mode entry. */
 /*

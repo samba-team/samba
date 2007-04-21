@@ -160,17 +160,12 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 /************************************************************************
  ***********************************************************************/
 
-static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params)
+static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;
-	const char *range;
-	ADS_STRUCT *ads;
-
-	/* verify AD is reachable (not critical, we may just be offline at start) */
-	if ( (ads = ad_idmap_cached_connection()) == NULL ) {
-		DEBUG(1, ("WARNING: Could not init an AD connection! Mapping might not work.\n"));
-	}
+	const char *range = NULL;
+	const char *schema_mode = NULL;	
 
 	if ( (ctx = talloc_zero(dom, struct idmap_ad_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -194,7 +189,22 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params
 		}
 	}
 
+	/* schema mode */
+	if ( ad_map_type == WB_POSIX_MAP_UNKNOWN )
+		ad_map_type = WB_POSIX_MAP_RFC2307;
+	schema_mode = lp_parm_const_string(-1, config_option, "schema_mode", NULL);
+	if ( schema_mode && schema_mode[0] ) {
+		if ( strequal(schema_mode, "sfu") )
+			ad_map_type = WB_POSIX_MAP_SFU;
+		else if ( strequal(schema_mode, "rfc2307" ) )
+			ad_map_type = WB_POSIX_MAP_RFC2307;
+		else
+			DEBUG(0,("idmap_ad_initialize: Unknown schema_mode (%s)\n",
+				 schema_mode));
+	}
+
 	dom->private_data = ctx;
+	dom->initialized = True;
 
 	talloc_free(config_option);
 
@@ -251,6 +261,7 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 				NULL, /* gidnumber */
 				NULL };
 	LDAPMessage *res = NULL;
+	LDAPMessage *entry = NULL;
 	char *filter = NULL;
 	int idx = 0;
 	int bidx = 0;
@@ -258,6 +269,19 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 	int i;
 	char *u_filter = NULL;
 	char *g_filter = NULL;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ad_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
 
@@ -310,7 +334,7 @@ again:
 			break;
 
 		default:
-			DEBUG(3, ("Unknown ID type\n"));
+			DEBUG(3, ("Error: mapping requested but Unknown ID type\n"));
 			ids[idx]->status = ID_UNKNOWN;
 			continue;
 		}
@@ -329,7 +353,7 @@ again:
 	}
 	filter = talloc_asprintf_append(filter, ")");
 	CHECK_ALLOC_DONE(filter);
-	DEBUG(10, ("Filter: [%s]\n", filter));
+
 	rc = ads_search_retry(ads, &res, filter, attrs);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1, ("ERROR: ads search returned: %s\n", ads_errstr(rc)));
@@ -341,8 +365,8 @@ again:
 		DEBUG(10, ("No IDs found\n"));
 	}
 
-	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
+	entry = res;
+	for (i = 0; (i < count) && entry; i++) {
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
@@ -350,13 +374,14 @@ again:
 		uint32_t atype;
 
 		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ads, res);
+			entry = ads_first_entry(ads, entry);
 		} else { /* following ones */
 			entry = ads_next_entry(ads, entry);
 		}
-		if ( ! entry) {
+
+		if ( !entry ) {
 			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			continue;
+			break;
 		}
 
 		/* first check if the SID is present */
@@ -430,9 +455,9 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknown ones as unmapped */
+	/* mark all unknown/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) 
+		if (ids[i]->status != ID_MAPPED) 
 			ids[i]->status = ID_UNMAPPED;
 	}
 
@@ -457,12 +482,26 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 				NULL, /* attr_gidnumber */
 				NULL };
 	LDAPMessage *res = NULL;
+	LDAPMessage *entry = NULL;
 	char *filter = NULL;
 	int idx = 0;
 	int bidx = 0;
 	int count;
 	int i;
 	char *sidstr;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
+
+	/* Initilization my have been deferred because we were offline */
+	if ( ! dom->initialized) {
+		ret = idmap_ad_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);	
 
@@ -514,8 +553,8 @@ again:
 		DEBUG(10, ("No IDs found\n"));
 	}
 
-	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
+	entry = res;	
+	for (i = 0; (i < count) && entry; i++) {
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
@@ -523,13 +562,14 @@ again:
 		uint32_t atype;
 
 		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ads, res);
+			entry = ads_first_entry(ads, entry);
 		} else { /* following ones */
 			entry = ads_next_entry(ads, entry);
 		}
-		if ( ! entry) {
+
+		if ( !entry ) {
 			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			continue;
+			break;
 		}
 
 		/* first check if the SID is present */
@@ -602,9 +642,9 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknwon ones as unmapped */
+	/* mark all unknwoni/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status == ID_UNKNOWN) 
+		if (ids[i]->status != ID_MAPPED) 
 			ids[i]->status = ID_UNMAPPED;
 	}
 
@@ -655,9 +695,6 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 	
 	ad_map_type =  WB_POSIX_MAP_SFU;	
 
-	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize( NULL, NULL );	
-
 	return NT_STATUS_OK;
 }
 
@@ -676,9 +713,6 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 	
 	ad_map_type =  WB_POSIX_MAP_RFC2307;
 
-	if ( !ad_idmap_ads ) 
-		return idmap_ad_initialize( NULL, NULL );	
-
 	return NT_STATUS_OK;
 }
 
@@ -696,6 +730,11 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  uint32 *gid )
 {
 	ADS_STRUCT *ads_internal = NULL;
+
+	/* Only do query if we are online */
+	if (idmap_is_offline())	{
+		return NT_STATUS_FILE_IS_OFFLINE;
+	}
 
 	/* We are assuming that the internal ADS_STRUCT is for the 
 	   same forest as the incoming *ads pointer */

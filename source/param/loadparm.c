@@ -2229,7 +2229,7 @@ static int lp_int(const char *s)
 		return (-1);
 	}
 
-	return atoi(s); 
+	return (int)strtol(s, NULL, 0);
 }
 
 /*******************************************************************
@@ -2243,7 +2243,7 @@ static unsigned long lp_ulong(const char *s)
 		return (0);
 	}
 
-	return strtoul(s, NULL, 10);
+	return strtoul(s, NULL, 0);
 }
 
 /*******************************************************************
@@ -5293,14 +5293,21 @@ struct share_params *snum2params_static(int snum)
  A useful volume label function. 
 ********************************************************************/
 
-char *volume_label(int snum)
+const char *volume_label(int snum)
 {
-	char *ret = lp_volume(snum);
-	if (!*ret)
-		return lp_servicename(snum);
-	return (ret);
+	char *ret;
+	const char *label = lp_volume(snum);
+	if (!*label) {
+		label = lp_servicename(snum);
+	}
+		
+	/* This returns a 33 byte guarenteed null terminated string. */
+	ret = talloc_strndup(main_loop_talloc_get(), label, 32);
+	if (!ret) {
+		return "";
+	}		
+	return ret;
 }
-
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
