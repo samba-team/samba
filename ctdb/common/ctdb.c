@@ -211,6 +211,8 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	TALLOC_CTX *tmp_ctx;
 
+	ctdb->status.node_packets_recv++;
+
 	/* place the packet as a child of the tmp_ctx. We then use
 	   talloc_free() below to free it. If any of the calls want
 	   to keep it, then they will steal it somewhere else, and the
@@ -244,34 +246,42 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
+		ctdb->status.count.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CALL:
+		ctdb->status.count.reply_call++;
 		ctdb_reply_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_ERROR:
+		ctdb->status.count.reply_error++;
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_REDIRECT:
+		ctdb->status.count.reply_redirect++;
 		ctdb_reply_redirect(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_DMASTER:
+		ctdb->status.count.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_DMASTER:
+		ctdb->status.count.reply_dmaster++;
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
+		ctdb->status.count.req_message++;
 		ctdb_request_message(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_FINISHED:
+		ctdb->status.count.req_finished++;
 		ctdb_request_finished(ctdb, hdr);
 		break;
 
@@ -283,6 +293,15 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 done:
 	talloc_free(tmp_ctx);
+}
+
+/*
+  called by the transport layer when a packet comes in
+*/
+void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+	ctdb_recv_pkt(ctdb, data, length);
 }
 
 /*
@@ -322,14 +341,55 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 	DEBUG(3,("ctdb_connect_wait: got all %d nodes\n", expected));
 }
 
+struct queue_next {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_header *hdr;
+};
+
+
+/*
+  trigered when a deferred packet is due
+ */
+static void queue_next_trigger(struct event_context *ev, struct timed_event *te, 
+			       struct timeval t, void *private_data)
+{
+	struct queue_next *q = talloc_get_type(private_data, struct queue_next);
+	ctdb_recv_pkt(q->ctdb, (uint8_t *)q->hdr, q->hdr->length);
+	talloc_free(q);
+}	
+
+/*
+  defer a packet, so it is processed on the next event loop
+  this is used for sending packets to ourselves
+ */
+static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct queue_next *q;
+	q = talloc(ctdb, struct queue_next);
+	if (q == NULL) {
+		DEBUG(0,(__location__ " Failed to allocate deferred packet\n"));
+		return;
+	}
+	q->ctdb = ctdb;
+	q->hdr = talloc_memdup(ctdb, hdr, hdr->length);
+	if (q->hdr == NULL) {
+		DEBUG(0,("Error copying deferred packet to self\n"));
+		return;
+	}
+	event_add_timed(ctdb->ev, q, timeval_zero(), queue_next_trigger, q);
+}
+
 /*
   queue a packet or die
 */
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
+	ctdb->status.node_packets_sent++;
 	node = ctdb->nodes[hdr->destnode];
-	if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
+	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+		ctdb_defer_packet(ctdb, hdr);
+	} else if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
 		ctdb_fatal(ctdb, "Unable to queue packet\n");
 	}
 }

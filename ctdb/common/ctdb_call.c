@@ -222,16 +222,12 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	memcpy(&r->data[0], key->dptr, key->dsize);
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
-	if (r->hdr.destnode == ctdb->vnn) {
-		/* we are the lmaster - don't send to ourselves */
-		ctdb_request_dmaster(ctdb, &r->hdr);
-	} else {
-		ctdb_queue_packet(ctdb, &r->hdr);
-
-		/* update the ltdb to record the new dmaster */
-		header->dmaster = r->hdr.destnode;
-		ctdb_ltdb_store(ctdb_db, *key, header, *data);
-	}
+	/* XXX - probably not necessary when lmaster==dmaster
+	   update the ltdb to record the new dmaster */
+	header->dmaster = r->hdr.destnode;
+	ctdb_ltdb_store(ctdb_db, *key, header, *data);
+	
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 }
@@ -266,33 +262,31 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 	
-	/* if the new dmaster and the lmaster are the same node, then
-	   we don't need to update the record header now */
-	if (c->dmaster != ctdb->vnn) {
-		/* fetch the current record */
-		ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2);
-		if (ret == -1) {
-			ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
-			return;
-		}
-		if (ret == -2) {
-			DEBUG(2,(__location__ " deferring ctdb_request_dmaster\n"));
-			return;
-		}
-		
-		/* its a protocol error if the sending node is not the current dmaster */
-		if (header.dmaster != hdr->srcnode) {
-			ctdb_fatal(ctdb, "dmaster request from non-master");
-			return;
-		}
-
-		header.dmaster = c->dmaster;
-		ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
-		ctdb_ltdb_unlock(ctdb_db, key);
-		if (ret != 0) {
-			ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
-			return;
-		}
+	/* fetch the current record */
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2,
+					   ctdb_recv_raw_pkt, ctdb);
+	if (ret == -1) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+		return;
+	}
+	if (ret == -2) {
+		DEBUG(2,(__location__ " deferring ctdb_request_dmaster\n"));
+		return;
+	}
+	
+	/* its a protocol error if the sending node is not the current dmaster */
+	if (header.dmaster != hdr->srcnode && 
+	    hdr->srcnode != ctdb_lmaster(ctdb_db->ctdb, &key)) {
+		ctdb_fatal(ctdb, "dmaster request from non-master");
+		return;
+	}
+	
+	header.dmaster = c->dmaster;
+	ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+	ctdb_ltdb_unlock(ctdb_db, key);
+	if (ret != 0) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+		return;
 	}
 
 	/* put the packet on a temporary context, allowing us to safely free
@@ -315,11 +309,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	if (r->hdr.destnode == r->hdr.srcnode) {
-		ctdb_reply_dmaster(ctdb, &r->hdr);
-	} else {
-		ctdb_queue_packet(ctdb, &r->hdr);
-	}
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(tmp_ctx);
 }
@@ -356,7 +346,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data);
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data,
+					   ctdb_recv_raw_pkt, ctdb);
 	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
@@ -379,9 +370,10 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record
 	   or if the node requested an immediate migration
 	*/
-	if ( (header.laccessor == c->hdr.srcnode
-	      && header.lacount >= ctdb->max_lacount)
-	   || c->flags&CTDB_IMMEDIATE_MIGRATION ) {
+	if ( c->hdr.srcnode != ctdb->vnn &&
+	     ((header.laccessor == c->hdr.srcnode
+	       && header.lacount >= ctdb->max_lacount)
+	      || (c->flags&CTDB_IMMEDIATE_MIGRATION)) ) {
 		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
@@ -428,7 +420,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		DEBUG(0, (__location__ " reqid %d not found\n", hdr->reqid));
 		return;
 	}
 
@@ -457,6 +449,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call_state *state;
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
+	int ret;
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
@@ -464,6 +457,16 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 
 	ctdb_db = state->ctdb_db;
+
+	ret = ctdb_ltdb_lock_requeue(ctdb_db, state->call.key, hdr,
+				     ctdb_recv_raw_pkt, ctdb);
+	if (ret == -2) {
+		return;
+	}
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to get lock in ctdb_reply_dmaster\n"));
+		return;
+	}
 
 	data.dptr = c->data;
 	data.dsize = c->datalen;
@@ -475,11 +478,14 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state->header.dmaster = ctdb->vnn;
 
 	if (ctdb_ltdb_store(ctdb_db, state->call.key, &state->header, data) != 0) {
+		ctdb_ltdb_unlock(ctdb_db, state->call.key);
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 		return;
 	}
 
 	ctdb_call_local(ctdb_db, &state->call, &state->header, &data, ctdb->vnn);
+
+	ctdb_ltdb_unlock(ctdb_db, state->call.key);
 
 	talloc_steal(state, state->call.reply_data.dptr);
 
@@ -557,6 +563,7 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 		       struct timeval t, void *private_data)
 {
 	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
+	DEBUG(0,(__location__ " call timeout for reqid %d\n", state->c->hdr.reqid));
 	state->state = CTDB_CALL_ERROR;
 	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
 		       state->c->hdr.reqid);
@@ -667,42 +674,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 			ctdb_call_timeout, state);
 	return state;
 }
-
-/*
-  make a remote ctdb call - async send. Called in daemon context.
-
-  This constructs a ctdb_call request and queues it for processing. 
-  This call never blocks.
-*/
-struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
-					      struct ctdb_call *call)
-{
-	int ret;
-	struct ctdb_ltdb_header header;
-	TDB_DATA data;
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-
-	/*
-	  if we are the dmaster for this key then we don't need to
-	  send it off at all, we can bypass the network and handle it
-	  locally. To find out if we are the dmaster we need to look
-	  in our ltdb
-	*/
-	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
-	if (ret != 0) return NULL;
-
-	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		struct ctdb_call_state *state;
-		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
-		talloc_free(data.dptr);
-		return state;
-	}
-
-	talloc_free(data.dptr);
-
-	return ctdb_daemon_call_send_remote(ctdb_db, call, &header);
-}
-
 
 /*
   make a remote ctdb call - async recv - called in daemon context

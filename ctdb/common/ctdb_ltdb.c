@@ -156,13 +156,15 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
 	if (rec.dsize < sizeof(*header)) {
+		TDB_DATA d2;
 		/* return an initial header */
-		free(rec.dptr);
+		if (rec.dptr) free(rec.dptr);
 		ltdb_initial_header(ctdb_db, key, header);
+		ZERO_STRUCT(d2);
 		if (data) {
-			data->dptr = NULL;
-			data->dsize = 0;
+			*data = d2;
 		}
+		ctdb_ltdb_store(ctdb_db, key, header, d2);
 		return 0;
 	}
 
@@ -226,25 +228,32 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 	return tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 }
 
+struct lock_fetch_state {
+	struct ctdb_context *ctdb;
+	void (*recv_pkt)(void *, uint8_t *, uint32_t);
+	void *recv_context;
+	struct ctdb_req_header *hdr;
+};
+
 /*
   called when we should retry the operation
  */
 static void lock_fetch_callback(void *p)
 {
-	struct ctdb_req_header *hdr = p;
-	struct ctdb_context *ctdb = talloc_find_parent_bytype(p, struct ctdb_context);
-	ctdb_recv_pkt(ctdb, (uint8_t *)hdr, hdr->length);
-	DEBUG(0,(__location__ " PACKET REQUEUED\n"));
+	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
+	state->recv_pkt(state->recv_context, (uint8_t *)state->hdr, state->hdr->length);
+	talloc_free(state);
+	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
 }
 
+
 /*
-  do a non-blocking ltdb_fetch with a locked record, deferring this
-  ctdb request until we have the chainlock
+  do a non-blocking ltdb_lock, deferring this ctdb request until we
+  have the chainlock
 
   It does the following:
 
-   1) tries to get the chainlock. If it succeeds, then it fetches the record, and 
-      returns 0
+   1) tries to get the chainlock. If it succeeds, then it returns 0
 
    2) if it fails to get a chainlock immediately then it sets up a
    non-blocking chainlock via ctdb_lockwait, and when it gets the
@@ -262,13 +271,15 @@ static void lock_fetch_callback(void *p)
       -1:    means that it failed to get the lock, and won't retry
       -2:    means that it failed to get the lock immediately, but will retry
  */
-int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
-				 TDB_DATA key, struct ctdb_ltdb_header *header, 
-				 struct ctdb_req_header *hdr, TDB_DATA *data)
+int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
+			   TDB_DATA key, struct ctdb_req_header *hdr,
+			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+			   void *recv_context)
 {
 	int ret;
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
 	struct lockwait_handle *h;
+	struct lock_fetch_state *state;
 	
 	ret = tdb_chainlock_nonblock(tdb, key);
 
@@ -278,17 +289,26 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 		return -1;
 	}
 
-	/* first the non-contended path */
-	if (ret == 0) {
-		ret = ctdb_ltdb_fetch(ctdb_db, key, header, hdr, data);
-		if (ret != 0) {
-			tdb_chainunlock(tdb, key);
-		}	
-		return ret;
+	/* when torturing, ensure we test the contended path */
+	if ((ctdb_db->ctdb->flags & CTDB_FLAG_TORTURE) &&
+	    random() % 5 == 0) {
+		ret = -1;
+		tdb_chainunlock(tdb, key);
 	}
 
+	/* first the non-contended path */
+	if (ret == 0) {
+		return 0;
+	}
+
+	state = talloc(ctdb_db, struct lock_fetch_state);
+	state->ctdb = ctdb_db->ctdb;
+	state->hdr = hdr;
+	state->recv_pkt = recv_pkt;
+	state->recv_context = recv_context;
+
 	/* now the contended path */
-	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, hdr);
+	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, state);
 	if (h == NULL) {
 		tdb_chainunlock(tdb, key);
 		return -1;
@@ -296,8 +316,30 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 
 	/* we need to move the packet off the temporary context in ctdb_recv_pkt(),
 	   so it won't be freed yet */
-	talloc_steal(ctdb_db, hdr);
+	talloc_steal(state, hdr);
+	talloc_steal(state, h);
 
 	/* now tell the caller than we will retry asynchronously */
 	return -2;
+}
+
+/*
+  a varient of ctdb_ltdb_lock_requeue that also fetches the record
+ */
+int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
+				 TDB_DATA key, struct ctdb_ltdb_header *header, 
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void *recv_context)
+{
+	int ret;
+
+	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr, recv_pkt, recv_context);
+	if (ret == 0) {
+		ret = ctdb_ltdb_fetch(ctdb_db, key, header, hdr, data);
+		if (ret != 0) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+		}
+	}
+	return ret;
 }

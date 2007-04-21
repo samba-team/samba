@@ -114,6 +114,41 @@ struct ctdb_daemon_data {
 	struct ctdb_queue *queue;
 };
 
+/*
+  ctdb status information
+ */
+struct ctdb_status {
+	uint32_t client_packets_sent;
+	uint32_t client_packets_recv;
+	uint32_t node_packets_sent;
+	uint32_t node_packets_recv;
+	struct {
+		uint32_t req_call;
+		uint32_t reply_call;
+		uint32_t reply_redirect;
+		uint32_t req_dmaster;
+		uint32_t reply_dmaster;
+		uint32_t reply_error;
+		uint32_t req_message;
+		uint32_t req_finished;
+	} count;
+	struct {
+		uint32_t req_call;
+		uint32_t req_message;
+		uint32_t req_finished;
+		uint32_t req_register;
+		uint32_t req_connect_wait;
+		uint32_t req_shutdown;
+		uint32_t req_status;
+	} client;
+	uint32_t total_calls;
+	uint32_t pending_calls;
+	uint32_t lockwait_calls;
+	uint32_t pending_lockwait_calls;
+	double max_call_latency;
+	double max_lockwait_latency;
+};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -135,6 +170,7 @@ struct ctdb_context {
 	struct ctdb_db_context *db_list;
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
+	struct ctdb_status status;
 };
 
 struct ctdb_db_context {
@@ -225,7 +261,9 @@ enum ctdb_operation {
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_SHUTDOWN       = 1003
+	CTDB_REQ_SHUTDOWN       = 1003,
+	CTDB_REQ_STATUS         = 1004,
+	CTDB_REPLY_STATUS       = 1005
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -318,16 +356,13 @@ struct ctdb_reply_connect_wait {
 	uint32_t num_connected;
 };
 
-struct ctdb_req_fetch_lock {
+struct ctdb_req_status {
 	struct ctdb_req_header hdr;
-	uint32_t db_id;
-	uint32_t keylen;
-	uint8_t key[1]; /* key[] */
 };
 
-struct ctdb_reply_fetch_lock {
+struct ctdb_reply_status {
 	struct ctdb_req_header hdr;
-	uint32_t state;
+	struct ctdb_status status;
 };
 
 /* internal prototypes */
@@ -353,9 +388,15 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
+			   TDB_DATA key, struct ctdb_req_header *hdr,
+			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+			   void *recv_context);
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
-				 struct ctdb_req_header *hdr, TDB_DATA *data);
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void *recv_context);
 void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
@@ -462,5 +503,11 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
 #define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
+
+void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
+
+int ctdb_socket_connect(struct ctdb_context *ctdb);
+
+void ctdb_latency(double *latency, struct timeval t);
 
 #endif

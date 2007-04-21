@@ -15,7 +15,6 @@ OBJ_FILES = \
 
 ##################
 [SUBSYSTEM::ctdb]
-INIT_FUNCTION = server_service_ctdbd_init
 OBJ_FILES = \
 		ctdb_cluster.o \
 		common/ctdb.o \
@@ -25,6 +24,7 @@ OBJ_FILES = \
 		common/ctdb_util.o \
 		common/ctdb_io.o \
 		common/ctdb_client.o \
-		common/ctdb_daemon.o
+		common/ctdb_daemon.o \
+		common/ctdb_lockwait.o
 PUBLIC_DEPENDENCIES = LIBTDB LIBTALLOC
 PRIVATE_DEPENDENCIES = ctdb_tcp

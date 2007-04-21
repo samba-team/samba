@@ -23,17 +23,19 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "popt.h"
-#include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
+#include "../include/ctdb_private.h"
 
 
 struct lockwait_handle {
+	struct ctdb_context *ctdb;
 	struct fd_event *fde;
 	int fd[2];
 	pid_t child;
 	void *private_data;
 	void (*callback)(void *);
+	struct timeval start_time;
 };
 
 static void lockwait_handler(struct event_context *ev, struct fd_event *fde, 
@@ -46,6 +48,8 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	pid_t child = h->child;
 	talloc_set_destructor(h, NULL);
 	close(h->fd[0]);
+	ctdb_latency(&h->ctdb->status.max_lockwait_latency, h->start_time);
+	h->ctdb->status.pending_lockwait_calls--;
 	talloc_free(h);	
 	callback(p);
 	waitpid(child, NULL, 0);
@@ -53,6 +57,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 
 static int lockwait_destructor(struct lockwait_handle *h)
 {
+	h->ctdb->status.pending_lockwait_calls--;
 	close(h->fd[0]);
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
@@ -77,7 +82,11 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	struct lockwait_handle *result;
 	int ret;
 
+	ctdb_db->ctdb->status.lockwait_calls++;
+	ctdb_db->ctdb->status.pending_lockwait_calls++;
+
 	if (!(result = talloc_zero(ctdb_db, struct lockwait_handle))) {
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -85,6 +94,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 
 	if (ret != 0) {
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -94,11 +104,13 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		close(result->fd[1]);
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
 
 	result->callback = callback;
 	result->private_data = private_data;
+	result->ctdb = ctdb_db->ctdb;
 
 	if (result->child == 0) {
 		close(result->fd[0]);
@@ -106,7 +118,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		 * Do we need a tdb_reopen here?
 		 */
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
-		exit(0);
+		_exit(0);
 	}
 
 	close(result->fd[1]);
@@ -117,8 +129,11 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
+		ctdb_db->ctdb->status.pending_lockwait_calls--;
 		return NULL;
 	}
+
+	result->start_time = timeval_current();
 
 	return result;
 }
