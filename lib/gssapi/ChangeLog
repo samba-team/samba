@@ -1,3 +1,7 @@
+2007-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_oid.c: Switch oid to one that is exported.
+	
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/init_sec_context.c: move where hash is calculated to make
