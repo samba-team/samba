@@ -215,6 +215,11 @@ BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct
 	if ( (our_domain && lp_security()==SEC_ADS) || realm ) {
 		ret = ads_dc_name(domain, realm, &dc_ip, srv_name);
 	}
+
+	if (!domain) {
+		/* if we have only the realm we can't do anything else */
+		return False;
+	}
 	
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
