@@ -1,3 +1,11 @@
+2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_ccache.3 (krb5_cc_retrieve_cred): document what to
+	free 'cred' with.
+
+	* lib/krb5/cache.c (krb5_cc_retrieve_cred): document what to free
+	'cred' with.
+	
 2007-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/store.c (krb5_store_creds_tag): use session.keytype to
