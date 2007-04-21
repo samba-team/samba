@@ -184,78 +184,32 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 	return (1103515243 * value + 12345);  
 }
 
-void fetch_lock(int fd, uint32_t db_id, TDB_DATA key)
+/* ask the daemon to migrate a record over so that the local node is the dmaster   the client must not have the record locked when performing this call.
+
+   when the daemon has responded   this node should be the dmaster (unless it has migrated off again)
+ */
+void fetch_record(int fd, uint32_t db_id, TDB_DATA key)
 {
-	struct ctdb_req_fetch_lock *req;
-	struct ctdb_reply_fetch_lock *rep;
+	struct ctdb_req_call *req;
+	struct ctdb_reply_call *rep;
 	uint32_t length;
 	int len, cnt, tot;
 
-	len = offsetof(struct ctdb_req_fetch_lock, key) + key.dsize;
+	len = offsetof(struct ctdb_req_call, data) + key.dsize;
 	req = malloc(len);
 
 	req->hdr.length      = len;
 	req->hdr.ctdb_magic  = CTDB_MAGIC;
 	req->hdr.ctdb_version = CTDB_VERSION;
-	req->hdr.operation   = CTDB_REQ_FETCH_LOCK;
+	req->hdr.operation   = CTDB_REQ_CALL;
 	req->hdr.reqid       = 1;
+
+	req->flags           = CTDB_IMMEDIATE_MIGRATION;
 	req->db_id           = db_id;
+	req->callid          = CTDB_NULL_FUNC;
 	req->keylen          = key.dsize;
-	memcpy(&req->key[0], key.dptr, key.dsize);
-
-	cnt=write(fd, req, len);
-
-
-	/* wait fot the reply */
-	/* read the 4 bytes of length for the pdu */
-	cnt=0;
-	tot=4;
-	while(cnt!=tot){
-		int numread;
-		numread=read(fd, ((char *)&length)+cnt, tot-cnt);
-		if(numread>0){
-			cnt+=numread;
-		}
-	}
-	/* read the rest of the pdu */
-	rep = malloc(length);
-	tot=length;
-	while(cnt!=tot){
-		int numread;
-		numread=read(fd, ((char *)rep)+cnt, tot-cnt);
-		if(numread>0){
-			cnt+=numread;
-		}
-	}
-	printf("fetch lock reply: state:%d datalen:%d\n",rep->state,rep->datalen);
-	if(!rep->datalen){
-		printf("no data\n");
-	} else {
-		printf("data:[%s]\n",rep->data);
-	}
-
-}
-
-void store_unlock(int fd, uint32_t db_id, TDB_DATA key, TDB_DATA data)
-{
-	struct ctdb_req_store_unlock *req;
-	struct ctdb_reply_store_unlock *rep;
-	uint32_t length;
-	int len, cnt, tot;
-
-	len = offsetof(struct ctdb_req_store_unlock, data) + key.dsize + data.dsize;
-	req = malloc(len);
-
-	req->hdr.length      = len;
-	req->hdr.ctdb_magic  = CTDB_MAGIC;
-	req->hdr.ctdb_version = CTDB_VERSION;
-	req->hdr.operation   = CTDB_REQ_STORE_UNLOCK;
-	req->hdr.reqid       = 1;
-	req->db_id           = db_id;
-	req->keylen          = key.dsize;
-	req->datalen         = data.dsize;
+	req->calldatalen     = 0;
 	memcpy(&req->data[0], key.dptr, key.dsize);
-	memcpy(&req->data[key.dsize], data.dptr, data.dsize);
 
 	cnt=write(fd, req, len);
 
@@ -281,7 +235,7 @@ void store_unlock(int fd, uint32_t db_id, TDB_DATA key, TDB_DATA data)
 			cnt+=numread;
 		}
 	}
-	printf("store unlock reply: state:%d\n",rep->state);
+	printf("fetch record reply: operation:%d state:%d\n",rep->hdr.operation,rep->status);
 }
 
 int main(int argc, const char *argv[])
@@ -291,8 +245,7 @@ int main(int argc, const char *argv[])
 	struct ctdb_req_message *reply;
 	TDB_DATA dbname;
 	uint32_t db_id;
-	TDB_DATA key, data;
-	char str[256];
+	TDB_DATA key;
 
 	/* open the socket to talk to the local ctdb daemon */
 	fd=ux_socket_connect(CTDB_SOCKET);
@@ -338,25 +291,12 @@ int main(int argc, const char *argv[])
 	printf("the has for the database id is 0x%08x\n",db_id);
 	printf("\n");
 
-	/* send a fetch lock */
+	/* send a request to migrate a record to the local node */
 	key.dptr=discard_const("TestKey");
 	key.dsize=strlen((const char *)(key.dptr));
 	printf("fetch the test key:[%s]\n",key.dptr);
-	fetch_lock(fd, db_id, key);
-	printf("\n");
 
-
-	/* send a store unlock */
-	sprintf(str,"TestData_%d",getpid());
-	data.dptr=discard_const(str);
-	data.dsize=strlen((const char *)(data.dptr));
-	printf("store new data==[%s] for this record\n",data.dptr);
-	store_unlock(fd, db_id, key, data);
-	printf("\n");
-
-	/* send a fetch lock */
-	printf("fetch the test key:[%s]\n",key.dptr);
-	fetch_lock(fd, db_id, key);
+	fetch_record(fd, db_id, key);
 	printf("\n");
 
 

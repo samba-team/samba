@@ -22,7 +22,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
 
 static int timelimit = 10;
 static int num_records = 10;
@@ -130,7 +130,7 @@ int main(int argc, const char *argv[])
 		for (j=0;j<num_clients;j++) {
 			printf("sending message to %d:%d\n", i, j);
 			sprintf(buf,"Message from %d to vnn:%d srvid:%d",ctdb_get_vnn(ctdb),i,j);
-			data.dptr=buf;
+			data.dptr = (unsigned char *)buf;
 			data.dsize=strlen(buf)+1;
 			ctdb_send_message(ctdb, i, j, data);
 		}
@@ -141,6 +141,7 @@ int main(int argc, const char *argv[])
 	}
        
 	/* shut it down */
-	talloc_free(ctdb);
+	ctdb_shutdown(ctdb);
+
 	return 0;
 }
