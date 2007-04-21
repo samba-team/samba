@@ -338,9 +338,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (res != 0) {
 		DEBUG(0, (__location__ "Failed to queue packet from daemon to client\n"));
 	}
+	ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 	talloc_free(dstate);
 	client->ctdb->status.pending_calls--;
-	ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 }
 
 
