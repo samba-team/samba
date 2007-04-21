@@ -37,7 +37,7 @@ struct idmap_rid_context {
   we support multiple domains in the new idmap
  *****************************************************************************/
 
-static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom, const char *compat_params)
+static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_rid_context *ctx;
@@ -86,9 +86,6 @@ failed:
 
 static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
-	const char *domname, *name;
-	enum lsa_SidType sid_type;
-	BOOL ret;
 	struct winbindd_domain *domain;	
 
 	/* apply filters before checking */
@@ -119,10 +116,7 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 
 static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
-	const char *domname, *name;
-	enum lsa_SidType sid_type;
 	uint32_t rid;
-	BOOL ret;
 
 	sid_peek_rid(map->sid, &rid);
 	map->xid.id = rid - ctx->base_rid + ctx->low_id;
