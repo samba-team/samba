@@ -18,8 +18,6 @@ Implement RFC1731 and 1734, pop over GSS-API
 
 * kadmin
 
-make it happy with reading and parsing kdc.conf
-
 is in need of a major cleanup
 
 * kpasswdd
