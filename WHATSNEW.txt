@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.0.25rc1
-                               Apr 9, 2007
+                   Release Notes for Samba 3.0.25rc2
+                               Apr 22, 2007
                    =================================
 
-This is the first release candidate of the Samba 3.0.25 code base 
+This is the second release candidate of the Samba 3.0.25 code base 
 and is provided for testing only.  An RC release means that we are 
 close to the final release but the code may still have a few 
 remaining minor bugs.  This release is *not* intended for production 
@@ -89,6 +89,120 @@ in smb.conf:
 Note that this plugin will result in additional RAM requirements
 due to the increased amount of kernel buffer caches used by smbd.
 Please refer to vfs_readahead(8) for more information.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25pre2
+------------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4494: Make sure to fail immediately if sendfile fails and
+      don't continue on to call chain_reply() (based on report from
+      Kevin Jamieson).
+    * Remove tdb.h from the libsmbsharemodes.so header file.
+    * BUG 3634: Fix crash in nmbd caused by a bad "interfaces" include
+      in smb.conf.
+    * Add initial version to winbindd_cache.tdb file.  Automatically
+      delete existing non-versioned cache files.
+    * Fix the storage size of time_t in winbindd_cache.tdb to be 8
+      bytes.
+    * Cope with signature errors on sessionsetupX logins where the
+      server just reflects our signature back to us. Allow the upper 
+      layer to see the real error.  
+    * BUG 4512: Limit the volume label for a share to 32 UNICODE
+      characters.
+    * Allow arbitrary bases in int and ulong parsing in smb.conf.
+    * Fix off-by-one error in tconX parsing.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Ensure debug messages from tools print the correct config file 
+      location if the file was defined as a command line option.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 4501 (partial): Fix crash bugs in idmap_ad plugin by adding
+      the schema_mode option when using "winbind nss info = template".
+    * BUG 4491, 4501 (partial): Disable attempts to allocate a uid/gid if no
+      idmap alloc backend has been defined.  Do not defined a default
+      alloc backend.
+    * Fix "make install" to include creating the links between
+      idmap_ad and the nss_info_rfc2307 and nss_info_sfu plugins.
+    * Enable the --with-dnsupdate in the Fedora/RHEL RPM packaging
+      files.
+    * BUG 4508: Remove potential loops in the idmap API by requiring
+      the caller defined the SID type rather than having the idmap layer
+      call back up to determine the SID type when allocating
+      uids/gids.
+    * Don't inherit the offline flag for winbindd_domains that have
+      not been initialized yet.
+    * Fix a crash in idmap_ldap caused by a NULL pointer dereference.
+    * Fix deadlock and timeout conditions in idmap_rid.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Build fixes when linking against Heimdal 0.8 Kerberos libraries.
+    * Build fixes when using older Heimdal Krb5 libs (e.g. 0.6.3).
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * BUG 3632: Fix for EISCON in open_any_socket_out() on AIX.
+
+
+o   Taj Khattra <taj.khattra@gmail.com>
+    * Fix missing lock count release in transaction cancel.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Allow profiling level to be set on startup.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Various compile warning fixes. 
+    * Initial patch set for strptime() in libreplace.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fix the GPFS VFS module to pass the POSIX ACL tests (Thanks to
+      Gomati Mohanan).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 4496: Fix libreplace failure on ulibc systems.    
+    * Merge numerous libreplace fixes from the SAMBA_4_0 code base 
+      (stdint.h, stdbool.h, unsetenv, strptime(), strtoll(), et. al.).
+    * Move ZERO_*, ARRAY_SIZE and PTR_DIFF macros into libreplace.
+
+
+o   Lars Mueller <lmuelle@samba.org>
+    * Log the reason for failures when not creating a core file on a
+      crash due to restrictive permissions on the log file directory.
+
+
+o   Jorge Santos <jorge_a_santos@hotmail.com>
+    * BUG 4500: Fix compile bug in quota.c.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Offline logon fixes in the idmap backend manager.
+    * Cleanup initialization code in the sfu and rfc2307 nss_info
+      plugins to protect against a crash if called before the idmap_ad
+      module has been initialized.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   =================================
+                   Release Notes for Samba 3.0.25rc1
+                               Apr 9, 2007
+                   =================================
 
 
 ######################################################################
