@@ -370,9 +370,10 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record
 	   or if the node requested an immediate migration
 	*/
-	if ( (header.laccessor == c->hdr.srcnode
-	      && header.lacount >= ctdb->max_lacount)
-	   || c->flags&CTDB_IMMEDIATE_MIGRATION ) {
+	if ( c->hdr.srcnode != ctdb->vnn &&
+	     ((header.laccessor == c->hdr.srcnode
+	       && header.lacount >= ctdb->max_lacount)
+	      || (c->flags&CTDB_IMMEDIATE_MIGRATION)) ) {
 		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
@@ -419,7 +420,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		DEBUG(0, (__location__ " reqid %d not found\n", hdr->reqid));
 		return;
 	}
 
@@ -562,6 +563,7 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 		       struct timeval t, void *private_data)
 {
 	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
+	DEBUG(0,(__location__ " call timeout for reqid %d\n", state->c->hdr.reqid));
 	state->state = CTDB_CALL_ERROR;
 	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
 		       state->c->hdr.reqid);

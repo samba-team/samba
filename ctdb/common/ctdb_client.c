@@ -71,7 +71,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
 		return;
 	}
 
@@ -628,7 +628,7 @@ static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header 
 
 	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_status_state);
 	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
 		return;
 	}
 
