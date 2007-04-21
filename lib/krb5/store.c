@@ -891,7 +891,7 @@ krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 	header |= SC_CLIENT_PRINCIPAL;
     if (creds->server)
 	header |= SC_SERVER_PRINCIPAL;
-    if (creds->session.keyvalue.data)
+    if (creds->session.keytype != ETYPE_NULL)
 	header |= SC_SESSION_KEY;
     if (creds->ticket.data)
 	header |= SC_TICKET;
