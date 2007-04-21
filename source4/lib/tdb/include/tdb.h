@@ -134,6 +134,7 @@ int tdb_get_flags(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
