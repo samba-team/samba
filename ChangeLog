@@ -1,5 +1,8 @@
 2007-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/store.c (krb5_store_creds_tag): use session.keytype to
+	determine if to send the session-key.
+
 	* kcm/client.c (kcm_ccache_new_client): make root be able to pass
 	the name constraints, not the opposite. From Bryan Jacobs.
 	
