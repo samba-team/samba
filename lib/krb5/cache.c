@@ -473,7 +473,8 @@ krb5_cc_store_cred(krb5_context context,
 
 /*
  * Retrieve the credential identified by `mcreds' (and `whichfields')
- * from `id' in `creds'.
+ * from `id' in `creds'. 'creds' must be free by the caller using
+ * krb5_free_cred_contents.
  * Return 0 or an error code.
  */
 
