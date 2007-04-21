@@ -1012,9 +1012,6 @@ int main(int argc, char **argv, char **envp)
 
 	namecache_enable();
 
-	/* quick hack to avoid a loop in idmap, proper fix later */
-	reset_idmap_in_own_child();
-
 	/* Winbind daemon initialisation */
 
 	if ( ! NT_STATUS_IS_OK(idmap_init_cache()) ) {

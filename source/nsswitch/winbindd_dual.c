@@ -923,9 +923,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			child);
 	}
 
-	/* quick hack to avoid a loop in idmap, proper fix later */
-	set_idmap_in_own_child();
-
 	while (1) {
 
 		int ret;

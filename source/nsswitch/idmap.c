@@ -91,24 +91,6 @@ static struct idmap_alloc_methods *get_alloc_methods(struct idmap_alloc_backend 
 	return NULL;
 }
 
-/* part of a quick hack to avoid loops, need to be sorted out correctly later on */
-static BOOL idmap_in_own_child;
-
-static BOOL idmap_is_in_own_child(void)
-{
-	return idmap_in_own_child;
-}
-
-void reset_idmap_in_own_child(void)
-{
-	idmap_in_own_child = False;
-}
-
-void set_idmap_in_own_child(void)
-{
-	idmap_in_own_child = True;
-}
-
 BOOL idmap_is_offline(void)
 {
 	return ( lp_winbind_offline_logon() &&
@@ -855,9 +837,6 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 {
 	NTSTATUS ret;
 	struct idmap_domain *dom;
-	char *domname, *name;
-	enum lsa_SidType sid_type;
-	BOOL wbret;
 
 	/* If we are offline we cannot lookup SIDs, deny mapping */
 	if (idmap_is_offline())	{
@@ -1414,6 +1393,8 @@ void idmap_dump_maps(char *logfile)
 			fprintf(dump, "GID %lu %s\n",
 				(unsigned long)maps[i].xid.id,
 				sid_string_static(maps[i].sid));
+			break;
+		case ID_TYPE_NOT_SPECIFIED:
 			break;
 		}
 	}

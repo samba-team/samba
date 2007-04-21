@@ -982,9 +982,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 {
 	TALLOC_CTX *mem_ctx;
-	struct id_map *ids;
 	NTSTATUS status;
-	BOOL wb = True;
 	size_t i;
 	
 
