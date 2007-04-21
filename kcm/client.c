@@ -118,7 +118,7 @@ kcm_ccache_new_client(krb5_context context,
 	}
 
 	/* Allow root to create badly-named ccaches */
-	if (bad && CLIENT_IS_ROOT(client))
+	if (bad && !CLIENT_IS_ROOT(client))
 	    return KRB5_CC_BADNAME;
     }
 	
