@@ -43,6 +43,10 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->private_data, struct ctdb_tcp_node);
 
+	if (data == NULL) {
+		node->ctdb->upcalls->node_dead(node);
+	}
+
 	/* start a new connect cycle to try to re-establish the
 	   link */
 	close(tnode->fd);

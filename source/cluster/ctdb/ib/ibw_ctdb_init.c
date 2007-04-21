@@ -158,10 +158,10 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
-static void *ctdb_ibw_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+static void *ctdb_ibw_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 {
 	/* TODO: use ibw_alloc_send_buf instead... */
-	return talloc_size(ctdb, size);
+	return talloc_size(mem_ctx, size);
 }
 
 #ifdef __NOTDEF__

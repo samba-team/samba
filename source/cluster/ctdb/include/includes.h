@@ -6,15 +6,16 @@
 #include "idtree.h"
 #include "ctdb.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
 
 typedef bool BOOL;
 
 #define True 1
 #define False 0
 
-#define LogLevel 0
+extern int LogLevel;
 
-#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (printf x)
+#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (do_debug x)
 
 #define _PUBLIC_
 
@@ -32,5 +33,5 @@ int timeval_compare(const struct timeval *tv1, const struct timeval *tv2);
 struct timeval timeval_until(const struct timeval *tv1,
 			     const struct timeval *tv2);
 _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs);
+double timeval_elapsed(struct timeval *tv);
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
-

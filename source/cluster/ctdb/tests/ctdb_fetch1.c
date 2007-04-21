@@ -24,13 +24,28 @@
 #include "popt.h"
 #include "ctdb.h"
 #include "ctdb_private.h"
-#include "tests/cmdline.h"
+#include "cmdline.h"
+#include <sys/time.h>
 
 #define PARENT_SRVID	0
 #define CHILD1_SRVID	1
 #define CHILD2_SRVID	2
 
 int num_msg=0;
+
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
 
 static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
 			    TDB_DATA data, void *private_data)
@@ -45,9 +60,9 @@ static void child_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 void test1(struct ctdb_db_context *ctdb_db)
 {
-	struct ctdb_record_handle *rh;
 	TDB_DATA key, data, data2, store_data;
 	int ret;
+	struct ctdb_record_handle *h;
  
 	/* 
 	   test 1 : write data and read it back.   should all be the same
@@ -55,13 +70,27 @@ void test1(struct ctdb_db_context *ctdb_db)
 	printf("Test1: write and verify we can read it back: ");
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data);
+	if (h == NULL) {
+		printf("test1: ctdb_fetch_lock() failed\n");
+		exit(1);
+	}
 
 	store_data.dptr  = discard_const("data to store");
 	store_data.dsize = strlen((const char *)store_data.dptr)+1;
-	ret = ctdb_store_unlock(rh, store_data);
+	ret = ctdb_record_store(h, store_data);
+	talloc_free(h);
+	if (ret!=0) {
+		printf("test1: ctdb_record_store() failed\n");
+		exit(1);
+	}
 
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	if (h == NULL) {
+		printf("test1: ctdb_fetch_lock() failed\n");
+		exit(1);
+	}
+
 	/* hopefully   data2 will now contain the record written above */
 	if (!strcmp("data to store", (const char *)data2.dptr)) {
 		printf("SUCCESS\n");
@@ -71,14 +100,19 @@ void test1(struct ctdb_db_context *ctdb_db)
 	}
 	
 	/* just write it back to unlock it */
-	ret = ctdb_store_unlock(rh, store_data);
+	ret = ctdb_record_store(h, store_data);
+	talloc_free(h);
+	if (ret!=0) {
+		printf("test1: ctdb_record_store() failed\n");
+		exit(1);
+	}
 }
 
 void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
 	TDB_DATA data;
-	struct ctdb_record_handle *rh;
 	TDB_DATA key, data2;
+	struct ctdb_record_handle *h;
 
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
@@ -94,13 +128,23 @@ void child(int srvid, struct event_context *ev, struct ctdb_context *ctdb, struc
 	/* fetch and lock the record */
 	key.dptr  = discard_const("Record");
 	key.dsize = strlen((const char *)key.dptr)+1;
-	rh = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	printf("client:%d fetching the record\n",srvid);
+	h = ctdb_fetch_lock(ctdb_db, ctdb_db, key, &data2);
+	printf("client:%d the record is fetched and locked\n",srvid);
+	if (h == NULL) {
+		printf("client: ctdb_fetch_lock() failed\n");
+		exit(1);
+	}
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), PARENT_SRVID, data);
 
-
-	while (1) {
+	/* wait until parent tells us to release the lock */
+	while (num_msg==1) {
 		event_loop_once(ev);
 	}
+
+	printf("child %d terminating\n",srvid);
+	exit(10);
+	   
 }
 
 /*
@@ -204,29 +248,48 @@ int main(int argc, const char *argv[])
 	 */
 	data.dptr=discard_const("dummy message");
 	data.dsize=strlen((const char *)data.dptr)+1;
-	printf("Send message to child 1 to fetch_lock the record\n");
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD1_SRVID, data);
 
 	/* wait for child 1 to complete fetching and locking the record */
 	while (num_msg!=3) {
 		event_loop_once(ev);
 	}
-	printf("Child 1 has fetched and locked the record\n");
 
 	/* now tell child 2 to fetch and lock the same record */
-	printf("Send message to child 2 to fetch_lock the record\n");
 	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD2_SRVID, data);
 
-	/* wait for child 2 to complete fetching and locking the record */
+	/* wait a while for child 2 to complete fetching and locking the 
+	   record, this should fail since the record is already locked
+	   by the first child */
+	start_timer();
+	while ( (end_timer() < 1.0) && (num_msg!=4) ) {
+		event_loop_once(ev);
+	}
+	if (num_msg!=4) {
+		printf("Child 2 did not get the lock since it is held by client 1:SUCCESS\n");
+	} else {
+		printf("Child 2 did get the lock:FAILURE\n");
+		exit(10);
+	}
+
+	/* send message to child 1 to terminate, which should let child 2
+	   get the lock.
+	 */
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD1_SRVID, data);
+
+
+	/* wait for a final message from child 2 it has received the lock
+	   which indicates success */
 	while (num_msg!=4) {
 		event_loop_once(ev);
 	}
-	printf("Child 2 has fetched and locked the record\n");
+	printf("child 2 aquired the lock after child 1 terminated:SUCCESS\n");
+
+	/* send a message to child 2 to tell it to terminate too */
+	ctdb_send_message(ctdb, ctdb_get_vnn(ctdb), CHILD2_SRVID, data);
 
 
-	while (1) {
-		event_loop_once(ev);
-	}
+	printf("Test was SUCCESSFUL\n");
 
 	/* shut it down */
 	talloc_free(ctdb);

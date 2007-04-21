@@ -42,7 +42,8 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) break;
 	}
 	if (ml == NULL) {
-		printf("daemon vnn:%d  no msg handler for srvid=%u\n", ctdb_get_vnn(ctdb), srvid);
+		DEBUG(1,(__location__ " daemon vnn:%d  no msg handler for srvid=%u\n", 
+			 ctdb_get_vnn(ctdb), srvid));
 		/* no registered message handler */
 		return -1;
 	}
@@ -86,7 +87,7 @@ static void ctdb_local_message_trigger(struct event_context *ev, struct timed_ev
 
 	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
 	if (res != 0) {
-		printf("Failed to dispatch message for srvid=%u\n", m->srvid);
+		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%u\n", m->srvid));
 	}
 	talloc_free(m);
 }
@@ -145,18 +146,6 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 
 	talloc_free(r);
 	return 0;
-}
-
-/*
-  send a ctdb message
-*/
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data)
-{
-	if (ctdb->flags & CTDB_FLAG_DAEMON_MODE) {
-		return ctdb_client_send_message(ctdb, vnn, srvid, data);
-	}
-	return ctdb_daemon_send_message(ctdb, vnn, srvid, data);
 }
 
 

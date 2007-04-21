@@ -389,6 +389,8 @@ static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 	call.key.dsize = brlh->key.length;
 	call.call_data.dptr = (uint8_t *)&req;
 	call.call_data.dsize = sizeof(req);
+	call.flags = 0;
+	call.status = 0;
 
 	ZERO_STRUCT(req);
 	req.smbpid = smbpid;

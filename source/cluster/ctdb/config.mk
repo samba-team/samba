@@ -24,6 +24,7 @@ OBJ_FILES = \
 		common/ctdb_util.o \
 		common/ctdb_io.o \
 		common/ctdb_client.o \
-		common/ctdb_daemon.o
+		common/ctdb_daemon.o \
+		common/ctdb_lockwait.o
 PUBLIC_DEPENDENCIES = LIBTDB LIBTALLOC
 PRIVATE_DEPENDENCIES = ctdb_tcp

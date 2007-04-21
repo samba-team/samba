@@ -50,10 +50,7 @@ struct ctdb_call_info {
   ctdb flags
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
-/* fork off a separate ctdb daemon */
-#define CTDB_FLAG_DAEMON_MODE  (1<<1)
-/* for test code only: make ctdb_start() block until all nodes are connected */
-#define CTDB_FLAG_CONNECT_WAIT (1<<2)
+#define CTDB_FLAG_TORTURE      (1<<1)
 
 
 /* 
@@ -72,6 +69,11 @@ struct ctdb_context *ctdb_init(struct event_context *ev);
   choose the transport
 */
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
+
+/*
+  set the directory for the local databases
+*/
+int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
 
 /*
   set some flags
@@ -142,9 +144,10 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 void ctdb_connect_wait(struct ctdb_context *ctdb);
 
 /*
-  wait until we're the only node left
+  initiate an ordered ctdb cluster shutdown
+  this function will never return
 */
-void ctdb_wait_loop(struct ctdb_context *ctdb);
+void ctdb_shutdown(struct ctdb_context *ctdb);
 
 /* return vnn of this node */
 uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
@@ -163,8 +166,8 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-struct ctdb_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-int ctdb_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
+struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
@@ -172,19 +175,29 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 
 
 /* 
-   fetch and lock a ctdb record. Underneath this will force the
+   Fetch a ctdb record from a remote node
+ . Underneath this will force the
    dmaster for the record to be moved to the local node. 
 
-   The lock is released when is talloc_free() is called on the
-   returned ctdb_record_handle. 
 */
-struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data);
+struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+					   TDB_DATA key, TDB_DATA *data);
+
 
 /*
-  change the data in a record held with a ctdb_record_handle
-  if the new data is zero length, this implies a delete of the record
- */
-int ctdb_store_unlock(struct ctdb_record_handle *rec, TDB_DATA data);
+  do a fetch lock from a client to the local daemon
+*/
+#define FETCH_LOCK_SUCCESS		0
+#define FETCH_LOCK_LOCKFAILED		1
+#define FETCH_LOCK_FETCHFAILED		2
+#define FETCH_LOCK_DMASTERFAILED	3
+
+int ctdb_client_fetch_lock(struct ctdb_db_context *ctdb_db, 
+						  TALLOC_CTX *mem_ctx, 
+						  TDB_DATA key, TDB_DATA *data);
+
+
+int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
@@ -193,5 +206,11 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  void *private_data);
 
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
+
+
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *ctdb_socket);
+
+struct ctdb_status;
+int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status);
 
 #endif
