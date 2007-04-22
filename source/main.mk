@@ -421,7 +421,3 @@ dist:: distclean idl_full manpages configure
 
 configure: 
 	./autogen.sh
-
-clean::
-	@echo Removing dependency files
-	@find . -name \*.d -o -name \*.hd | xargs rm -f

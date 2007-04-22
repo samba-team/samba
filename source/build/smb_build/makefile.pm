@@ -637,9 +637,17 @@ sub write($$)
 ifneq (\$(MAKECMDGOALS),clean)
 ifneq (\$(MAKECMDGOALS),distclean)
 ifneq (\$(MAKECMDGOALS),realdistclean)
+ifneq (\$(SKIP_DEP_FILES),yes)
 -include \$(DEP_FILES)
 endif
 endif
+endif
+endif
+
+ifneq (\$(SKIP_DEP_FILES),yes)
+clean::
+	\@echo Removing dependency files
+	\@find . -name '*.d' -o -name '*.hd' | xargs rm -f
 endif
 ");
 	} else {
