@@ -76,6 +76,12 @@ ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, LDAPMessage **res,
 					const char *dn, 
 					const char **attrs,
 					enum ads_extended_dn_flags flags);
+ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
+						const char *dn, 
+						const char **attrs,
+						enum ads_extended_dn_flags flags,
+						char ***strings,
+						size_t *num_strings);
 ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
 				const DOM_SID *sid,
 				const char **attrs);
