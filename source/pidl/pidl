@@ -702,7 +702,8 @@ sub process_file($)
 		my $client = ($opt_samba3_ndr_client or "$outputdir/cli_$basename.c");
 		my $header = $client; $header =~ s/\.c$/\.h/;
 		require Parse::Pidl::Samba3::ClientNDR;
-		my ($c_code,$h_code) = Parse::Pidl::Samba3::ClientNDR::Parse($ndr, $header, $h_filename);
+		my $generator = new Parse::Pidl::Samba3::ClientNDR();
+		my ($c_code,$h_code) = $generator->Parse($ndr, $header, $h_filename);
 		FileSave($client, $c_code);
 		FileSave($header, $h_code);
 	}
