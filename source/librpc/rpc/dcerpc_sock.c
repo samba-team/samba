@@ -48,10 +48,32 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 {
 	struct sock_private *sock = p->transport.private;
 
-	if (sock && sock->sock != NULL) {
+	if (!sock) return;
+
+	if (sock->fde) {
 		talloc_free(sock->fde);
+		sock->fde = NULL;
+	}
+
+	if (sock->sock) {
+		talloc_free(sock->fde);
+		sock->fde = NULL;
 		talloc_free(sock->sock);
 		sock->sock = NULL;
+	}
+
+	if (sock->packet) {
+		packet_recv_disable(sock->packet);
+		packet_set_fde(sock->packet, NULL);
+		packet_set_socket(sock->packet, NULL);
+	}
+
+	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
+		status = NT_STATUS_END_OF_FILE;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -172,15 +194,15 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data,
 /* 
    shutdown sock pipe connection
 */
-static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p)
+static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p, NTSTATUS status)
 {
 	struct sock_private *sock = p->transport.private;
 
 	if (sock && sock->sock) {
-		sock_dead(p, NT_STATUS_OK);
+		sock_dead(p, status);
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
@@ -253,7 +275,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	sock->server_name   = strupper_talloc(sock, s->target_hostname);
 
 	sock->fde = event_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
-				 0, sock_io_handler, conn);
+				 EVENT_FD_READ, sock_io_handler, conn);
 	
 	conn->transport.private = sock;
 
@@ -272,7 +294,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 	packet_set_event_context(sock->packet, conn->event_ctx);
 	packet_set_fde(sock->packet, sock->fde);
 	packet_set_serialise(sock->packet);
-	packet_recv_disable(sock->packet);
 	packet_set_initial_read(sock->packet, 16);
 
 	/* ensure we don't get SIGPIPE */
