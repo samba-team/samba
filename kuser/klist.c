@@ -225,7 +225,8 @@ print_tickets (krb5_context context,
 	       krb5_ccache ccache,
 	       krb5_principal principal,
 	       int do_verbose,
-	       int do_flags)
+	       int do_flags,
+	       int do_hidden)
 {
     krb5_error_code ret;
     char *str;
@@ -289,7 +290,11 @@ print_tickets (krb5_context context,
 				     ccache,
 				     &cursor,
 				     &creds)) == 0) {
-	if(do_verbose){
+	const char *str;
+	str = krb5_principal_get_comp_string(context, creds.server, 0);
+	if (!do_hidden && str && str[0] == '@') {
+	    ;
+	}else if(do_verbose){
 	    print_cred_verbose(context, &creds);
 	}else{
 	    print_cred(context, &creds, ct, do_flags);
@@ -429,7 +434,7 @@ display_tokens(int do_verbose)
 
 static int
 display_v5_ccache (const char *cred_cache, int do_test, int do_verbose, 
-		   int do_flags)
+		   int do_flags, int do_hidden)
 {
     krb5_error_code ret;
     krb5_context context;
@@ -464,7 +469,8 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
     if (do_test)
 	exit_status = check_for_tgt (context, ccache, principal, NULL);
     else
-	print_tickets (context, ccache, principal, do_verbose, do_flags);
+	print_tickets (context, ccache, principal, do_verbose,
+		       do_flags, do_hidden);
 
     ret = krb5_cc_close (context, ccache);
     if (ret)
@@ -550,6 +556,7 @@ static int do_tokens		= 0;
 static int do_v5		= 1;
 static char *cred_cache;
 static int do_flags	 	= 0;
+static int do_hidden	 	= 0;
 
 static struct getargs args[] = {
     { NULL, 'f', arg_flag, &do_flags },
@@ -566,6 +573,8 @@ static struct getargs args[] = {
       "verbose output", NULL },
     { "verbose",		'v', arg_flag, &do_verbose,
       "verbose output", NULL },
+    { "hidden",			0,   arg_flag, &do_hidden,
+      "display hidden credentials", NULL },
     { NULL,			'a', arg_flag, &do_verbose },
     { NULL,			'n', arg_flag, &do_verbose },
     { "version", 		0,   arg_flag, &version_flag, 
@@ -616,7 +625,7 @@ main (int argc, char **argv)
 
     if (do_v5)
 	exit_status = display_v5_ccache (cred_cache, do_test, 
-					 do_verbose, do_flags);
+					 do_verbose, do_flags, do_hidden);
 
     if (!do_test) {
 	if (do_tokens && k_hasafs ()) {
