@@ -1,5 +1,7 @@
 2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: ntlm-key credential entry is prefix with @
+	
 	* ntlm/init_sec_context.c (get_user_ccache): pick up the ntlm
 	creds from the krb5 credential cache.
 	
