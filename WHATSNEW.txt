@@ -194,6 +194,8 @@ o   Simo Sorce <idra@samba.org>
     * Cleanup initialization code in the sfu and rfc2307 nss_info
       plugins to protect against a crash if called before the idmap_ad
       module has been initialized.
+    * Protect against crashes in get_dc_name() in the idmap_ad code
+      when we are working offline.
 
 
 Release Notes for older release follow:
