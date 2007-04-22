@@ -930,10 +930,17 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			} else if (crack[i].expected_str
 				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
 					      crack[i].expected_str) != 0)) {
-				printf("DsCrackNames failed - got %s, expected %s on %s\n", 
-				       r.out.ctr.ctr1->array[0].result_name, 
-				       crack[i].expected_str, comment);
-				ret = False;
+				if (strcasecmp(r.out.ctr.ctr1->array[0].result_name, 
+					       crack[i].expected_str) != 0) {
+					printf("DsCrackNames failed - got %s, expected %s on %s\n", 
+					       r.out.ctr.ctr1->array[0].result_name, 
+					       crack[i].expected_str, comment);
+					ret = False;
+				} else {
+					printf("(warning) DsCrackNames returned different case - got %s, expected %s on %s\n", 
+					       r.out.ctr.ctr1->array[0].result_name, 
+					       crack[i].expected_str, comment);
+				}
 			} else if (crack[i].expected_dns
 				   && (strcmp(r.out.ctr.ctr1->array[0].dns_domain_name, 
 					      crack[i].expected_dns) != 0)) {
