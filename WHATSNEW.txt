@@ -163,6 +163,11 @@ o   Herb Lewis <herb@samba.org>
     * Allow profiling level to be set on startup.
 
 
+o   Ying Li <ying.li2@hp.com>
+    * Use the default tdb idmap plugin when neither idmap domains
+      nor idmap backend have been defined.
+
+
 o   Jason Mader <jason@ncac.gwu.edu>
     * Various compile warning fixes. 
     * Initial patch set for strptime() in libreplace.
