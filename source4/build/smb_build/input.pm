@@ -162,10 +162,10 @@ sub import_integrated($$)
 	}
 }
 
-sub calc_unique_deps($$$$$$)
+sub calc_unique_deps($$$$$$$$)
 {
-	sub calc_unique_deps($$$$$$);
-	my ($name, $INPUT, $deps, $udeps, $withlibs, $busy) = @_;
+	sub calc_unique_deps($$$$$$$$);
+	my ($name, $INPUT, $deps, $udeps, $withlibs, $forward, $pubonly, $busy) = @_;
 
 	foreach my $n (@$deps) {
 		die("Dependency unknown: $n") unless (defined($INPUT->{$n}));
@@ -173,17 +173,19 @@ sub calc_unique_deps($$$$$$)
 		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
 
+		push (@{$udeps}, $dep->{NAME}) if $forward;
+
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "INTEGRATED") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $busy);
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $busy);
+			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
+			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy) unless $pubonly;
 				pop (@$busy);
 	        }
 
-		unshift (@{$udeps}, $dep->{NAME});
+		unshift (@{$udeps}, $dep->{NAME}) unless $forward;
 	}
 }
 
@@ -242,15 +244,21 @@ sub check($$$$$)
 	}
 
 	foreach my $part (values %$INPUT) {
-		$part->{UNIQUE_DEPENDENCIES} = [];
-		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0, []);
-		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0, []);
+		$part->{UNIQUE_DEPENDENCIES_LINK} = [];
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_LINK}, 0, 0, 0, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_LINK}, 0, 0, 0, []);
+	}
+
+	foreach my $part (values %$INPUT) {
+		$part->{UNIQUE_DEPENDENCIES_COMPILE} = [];
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_COMPILE}, 1, 1, 1, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_COMPILE}, 1, 1, 1, []);
 	}
 
 	foreach my $part (values %$INPUT) {
 		$part->{UNIQUE_DEPENDENCIES_ALL} = [];
-		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, []);
-		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, 0, 0, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, 0, 0, []);
 	}
 
 	return $INPUT;
