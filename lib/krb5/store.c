@@ -916,7 +916,7 @@ krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 	    return ret;
     }
 
-    if (creds->session.keyvalue.data) {
+    if (creds->session.keytype != ETYPE_NULL) {
 	ret = krb5_store_keyblock(sp, creds->session);
 	if(ret)
 	    return ret;
