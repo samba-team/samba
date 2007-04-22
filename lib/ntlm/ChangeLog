@@ -1,5 +1,7 @@
 2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: symbol versioning.
+	
 	* version-script.map: symbol versioning.
 	
 2007-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
