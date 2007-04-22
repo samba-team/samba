@@ -2678,23 +2678,57 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 }
 
 /**
+ * pull a dn from an extended dn string
+ * @param mem_ctx TALLOC_CTX 
+ * @param extended_dn string
+ * @param dn pointer to the dn
+ * @return boolean inidicating success
+ **/
+BOOL ads_get_dn_from_extended_dn(TALLOC_CTX *mem_ctx, 
+				 const char *extended_dn,
+				 char **dn)
+{
+	char *p;
+	pstring tok;
+
+	if (!extended_dn) {
+		return False;
+	}
+
+	while (next_token(&extended_dn, tok, ";", sizeof(tok))) {
+		p = tok;
+	}
+
+	if ((*dn = talloc_strdup(mem_ctx, p)) == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
+/**
  * pull a DOM_SID from an extended dn string
  * @param mem_ctx TALLOC_CTX 
+ * @param extended_dn string
  * @param flags string type of extended_dn
  * @param sid pointer to a DOM_SID
  * @return boolean inidicating success
  **/
 BOOL ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				  const char *dn, 
+				  const char *extended_dn, 
 				  enum ads_extended_dn_flags flags, 
 				  DOM_SID *sid)
 {
-	char *p, *q;
+	char *p, *q, *dn;
 
-	if (!dn) {
+	if (!extended_dn) {
 		return False;
 	}
 
+	/* otherwise extended_dn gets stripped off */
+	if ((dn = talloc_strdup(mem_ctx, extended_dn)) == NULL) {
+		return False;
+	}
 	/* 
 	 * ADS_EXTENDED_DN_HEX_STRING:
 	 * <GUID=238e1963cb390f4bb032ba0105525a29>;<SID=010500000000000515000000bb68c8fd6b61b427572eb04556040000>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
