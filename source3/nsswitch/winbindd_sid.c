@@ -199,7 +199,7 @@ static void sid2uid_lookupsid_recv( void *private_data, BOOL success,
 		return;
 	}
 
-	if ( (type!=SID_NAME_USER) || (type!=SID_NAME_COMPUTER) ) {
+	if ( (type!=SID_NAME_USER) && (type!=SID_NAME_COMPUTER) ) {
 		DEBUG(5,("sid2uid_lookupsid_recv: Sid %s is not a user or a computer.\n", 
 			 state->request.data.sid));
 		request_error(state);
@@ -276,8 +276,8 @@ static void sid2gid_lookupsid_recv( void *private_data, BOOL success,
 		return;
 	}
 
-	if ( (type!=SID_NAME_DOM_GRP) || 
-	     (type!=SID_NAME_ALIAS) ||
+	if ( (type!=SID_NAME_DOM_GRP) &&
+	     (type!=SID_NAME_ALIAS) && 
 	     (type!=SID_NAME_WKN_GRP) ) 
 	{
 		DEBUG(5,("sid2gid_lookupsid_recv: Sid %s is not a group.\n", 
