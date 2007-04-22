@@ -660,8 +660,8 @@ sub process_file($)
 	if (defined($opt_ndr_parser)) {
 		my $parser_fname = ($opt_ndr_parser or "$outputdir/ndr_$basename.c");
 		require Parse::Pidl::Samba4::NDR::Parser;
-		my ($header,$parser) = Parse::Pidl::Samba4::NDR::Parser::Parse($ndr, $gen_header, $h_filename);
-
+		my $generator = new Parse::Pidl::Samba4::NDR::Parser();
+		my ($header,$parser) = $generator->Parse($ndr, $gen_header, $h_filename);
 
 		FileSave($parser_fname, $parser);
 		FileSave($h_filename, $header);
