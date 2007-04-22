@@ -225,7 +225,11 @@ int ctdb_ltdb_lock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
  */
 int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
-	return tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+	int ret = tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+	if (ret != 0) {
+		DEBUG(0,("tdb_chainunlock failed\n"));
+	}
+	return ret;
 }
 
 struct lock_fetch_state {
