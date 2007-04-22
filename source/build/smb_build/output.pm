@@ -148,7 +148,7 @@ sub create_output($$)
 		merge_array(\$part->{FINAL_CFLAGS}, $part->{CPPFLAGS});
 		merge_array(\$part->{FINAL_CFLAGS}, $part->{CFLAGS});
 
-		foreach (reverse @{$part->{UNIQUE_DEPENDENCIES_ALL}}) {
+		foreach (@{$part->{UNIQUE_DEPENDENCIES_COMPILE}}) {
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
@@ -157,7 +157,7 @@ sub create_output($$)
 		}
 
 		# Always import the link options of the unique dependencies
-		foreach (@{$part->{UNIQUE_DEPENDENCIES}}) {
+		foreach (@{$part->{UNIQUE_DEPENDENCIES_LINK}}) {
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
