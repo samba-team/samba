@@ -38,6 +38,7 @@ static void usage(void)
 
 static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
+	int *num_nodes = (int *)p;
 	struct id {
 		dev_t dev;
 		ino_t inode;
@@ -51,7 +52,10 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	} else {
 		keystr = hex_encode(NULL, key.dptr, key.dsize);
 	}
-	printf("  rec %s dmaster=%u\n", keystr, h->dmaster);
+	printf("  rec %s lmaster=%u dmaster=%u\n", 
+	       keystr, 
+	       ctdb_hash(&key) % (*num_nodes),
+	       h->dmaster);
 	talloc_free(keystr);
 	return 0;
 }
@@ -103,7 +107,7 @@ int main(int argc, const char *argv[])
 		}
 
 		printf("db %s\n", extra_argv[i]);
-		tdb_traverse(db->tdb, traverse_fn, NULL);
+		tdb_traverse(db->tdb, traverse_fn, &extra_argc);
 		
 		talloc_free(db);
 	}

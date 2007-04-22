@@ -196,7 +196,7 @@ struct ctdb_db_context {
 	  }} while (0)
 
 /* arbitrary maximum timeout for ctdb operations */
-#define CTDB_REQ_TIMEOUT 10
+#define CTDB_REQ_TIMEOUT 0
 
 /* max number of redirects before we ask the lmaster */
 #define CTDB_MAX_REDIRECT 2
