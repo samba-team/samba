@@ -42,7 +42,7 @@ static void show_status(struct ctdb_status *s)
 	printf("   req_status            %u\n", s->client.req_status);
 	printf(" node_packets_sent       %u\n", s->node_packets_sent);
 	printf(" node_packets_recv       %u\n", s->node_packets_recv);
-	printf("   req_call              %u\n", s->client.req_call);
+	printf("   req_call              %u\n", s->count.req_call);
 	printf("   reply_call            %u\n", s->count.reply_call);
 	printf("   reply_redirect        %u\n", s->count.reply_redirect);
 	printf("   req_dmaster           %u\n", s->count.req_dmaster);

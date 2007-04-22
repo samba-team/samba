@@ -52,10 +52,11 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	} else {
 		keystr = hex_encode(NULL, key.dptr, key.dsize);
 	}
-	printf("  rec %s lmaster=%u dmaster=%u\n", 
+	printf("  rec %s lmaster=%u dmaster=%u %c\n", 
 	       keystr, 
 	       ctdb_hash(&key) % (*num_nodes),
-	       h->dmaster);
+	       h->dmaster,
+		);
 	talloc_free(keystr);
 	return 0;
 }
