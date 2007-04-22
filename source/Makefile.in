@@ -1007,19 +1007,43 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
+CHECK_CC = $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
+
+COMPILE = $(COMPILE_CC)
+
+# BEGIN GNU make specific
+# Rewrite the COMPILE rule to generate dependencies as a side-effect.
+# This is is actually toolchain-independent, but making use of the dependency
+# files requires GNU make, so it's pointless to have them otherwise.
+@ifGNUmake@DEPDIR=.
+@ifGNUmake@COMPILE_DEPENDS = source=$< object=$@ libtool=no \
+@ifGNUmake@	tmpdepfile=$(DEPDIR)/$*.TPo depfile=$(DEPDIR)/$*.d \
+@ifGNUmake@	DEPDIR=$(DEPDIR) @CCDEPMODE@ \
+@ifGNUmake@	$(srcdir)/depcomp $(COMPILE_CC)
+@ifGNUmake@COMPILE = $(COMPILE_DEPENDS)
+# END GNU make specific
+
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@if test -n "$(CC_CHECKER)"; then \
 	  echo "Checking  $*.c with '$(CC_CHECKER)'";\
-	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@;\
+	  $(CHECK_CC); \
 	 fi
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@ && exit 0;\
+	@$(COMPILE) && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@" 1>&2;\
-		$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@ >/dev/null 2>&1
+		echo "$(COMPILE_CC)" 1>&2;\
+		$(COMPILE_CC) >/dev/null 2>&1
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+
+# BEGIN GNU make specific
+# Include all the generated dependency files. The sort is done to
+# remove duplicates.
+@ifGNUmake@DEPENDS_OBJ = $(SMBD_SRV_OBJ) $(NET_OBJ) $(WINBINDD_OBJ)
+@ifGNUmake@-include $(patsubst %.o, %.d, $(sort $(DEPENDS_OBJ)))
+# END GNU make specific
 
 PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
@@ -1027,7 +1051,10 @@ PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 # of gcc-3.4 and run 'make pch' before you do the main build.
 pch: proto_exists
 	rm -f $(PRECOMPILED_HEADER)
-	$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $(srcdir)/include/includes.h -o $(PRECOMPILED_HEADER)
+	$(MAKE) $(PRECOMPILED_HEADER)
+
+$(PRECOMPILED_HEADER): $(srcdir)/include/includes.h
+	$(COMPILE)
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
@@ -1860,7 +1887,9 @@ TOPFILES=dynconfig.o
 
 clean: delheaders python_clean
 	-rm -f $(PRECOMPILED_HEADER)
-	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o \
+	-rm -f core */*~ *~ \
+	        */*.o */*/*.o */*/*/*.o \
+	        */*.d */*/*.d */*/*/*.d \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \

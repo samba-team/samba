@@ -573,7 +573,29 @@ if test x"$SMB_BUILD_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
 	PIDL_ARGS="$PIDL_ARGS --uint-enums"
 fi
 
-dnl Figure out the flags to support named structure initializers
+############################################
+# Check whether we can do automatic dependency tracking
+
+m4_include(m4/substnot.m4)
+m4_include(m4/cond.m4)
+m4_include(m4/make.m4)
+m4_include(m4/depout.m4)
+m4_include(m4/lead-dot.m4)
+m4_include(m4/check_gnu_make.m4)
+m4_include(m4/depend.m4)
+
+# Using the dependency files requires GNU make until someone adds support
+# for Makefile includes for other make implementations.
+CHECK_GNU_MAKE()
+if test "x$_cv_gnu_make_command" != "x" ; then
+    AC_SUBST(MAKE, $_cv_gnu_make_command)
+fi
+
+AM_DEP_TRACK()
+_AM_DEPENDENCIES(CC)
+
+############################################
+# Figure out the flags to support named structure initializers
 
 LIBREPLACE_C99_STRUCT_INIT([],[AC_MSG_ERROR([c99 structure initializer are not supported])])
 
