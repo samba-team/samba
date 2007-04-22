@@ -156,6 +156,7 @@ sub _read_config_file
 			$basedir = $builddir;
 		} else {
 			$basedir = dirname($filename);
+			push(@parsed_files, $filename);
 		}
 		$basedir =~ s!^($builddir|$srcdir)[/]!!;
 		return ($filename, $basedir, @lines);
