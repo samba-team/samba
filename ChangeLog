@@ -1,5 +1,15 @@
 2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/Makefile.am: depend on libheimntlm
+
+	* kuser/kinit.c: Add --ntlm-domain that store the ntlm cred for
+	this domain if the Kerberos password auth worked.
+
+	* kuser/klist.c: add new option --hidden that doesn't display
+	principal that starts with @
+
+	* tools/krb5-config.in: Add heimntlm when we use gssapi.
+
 	* lib/krb5/krb5_ccache.3 (krb5_cc_retrieve_cred): document what to
 	free 'cred' with.
 
