@@ -37,14 +37,17 @@ NTSTATUS dcerpc_init(void)
 	return NT_STATUS_OK;
 }
 
+static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status);
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 
 /* destroy a dcerpc connection */
-static int dcerpc_connection_destructor(struct dcerpc_connection *c)
+static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
 {
-	if (c->transport.shutdown_pipe) {
-		c->transport.shutdown_pipe(c);
+	if (conn->dead) {
+		conn->free_skipped = True;
+		return -1;
 	}
+	dcerpc_connection_dead(conn, NT_STATUS_LOCAL_DISCONNECT);
 	return 0;
 }
 
@@ -553,6 +556,14 @@ static int dcerpc_req_dequeue(struct rpc_request *req)
 */
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status)
 {
+	if (conn->dead) return;
+
+	conn->dead = true;
+
+	if (conn->transport.shutdown_pipe) {
+		conn->transport.shutdown_pipe(conn, status);
+	}
+
 	/* all pending requests get the error */
 	while (conn->pending) {
 		struct rpc_request *req = conn->pending;
@@ -563,6 +574,11 @@ static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS stat
 			req->async.callback(req);
 		}
 	}	
+
+	talloc_set_destructor(conn, NULL);
+	if (conn->free_skipped) {
+		talloc_free(conn);
+	}
 }
 
 /*
@@ -657,18 +673,7 @@ static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event 
 				   struct timeval t, void *private)
 {
 	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
-
-	if (req->state == RPC_REQUEST_DONE) {
-		return;
-	}
-
-	dcerpc_req_dequeue(req);
-
-	req->status = NT_STATUS_IO_TIMEOUT;
-	req->state = RPC_REQUEST_DONE;
-	if (req->async.callback) {
-		req->async.callback(req);
-	}
+	dcerpc_connection_dead(req->p->conn, NT_STATUS_IO_TIMEOUT);
 }
 
 /*
