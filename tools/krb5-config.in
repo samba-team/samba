@@ -106,13 +106,13 @@ if test "$do_libs" = "yes"; then
 	;;
     esac
     lib_flags="$lib_flags -lkrb5 @LIB_pkinit@ -lcom_err"
-    lib_flags="$lib_flags @LIB_des_appl@ -lasn1 -lroken"
+    lib_flags="$lib_flags @LIB_hcrypto_appl@ -lasn1 -lroken"
     lib_flags="$lib_flags @LIB_crypt@ @LIB_dlopen@"
     lib_flags="$lib_flags @LIB_door_create@ @LIBS@"
     echo $lib_flags
 fi
 if test "$do_cflags" = "yes"; then
-    echo "-I${includedir} @INCLUDE_des@"
+    echo "-I${includedir} @INCLUDE_hcrypto@"
 fi
 
 exit 0
