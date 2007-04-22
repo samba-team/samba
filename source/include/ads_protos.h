@@ -82,6 +82,9 @@ ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_
 						enum ads_extended_dn_flags flags,
 						char ***strings,
 						size_t *num_strings);
+BOOL ads_get_dn_from_extended_dn(TALLOC_CTX *mem_ctx, 
+				 const char *extended_dn,
+				 char **dn);
 ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
 				const DOM_SID *sid,
 				const char **attrs);
