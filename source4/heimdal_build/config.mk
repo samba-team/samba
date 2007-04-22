@@ -553,20 +553,12 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
 
-.SUFFIXES: .hin 
-.hin.h:
-	@cp $< $@
-
-heimdal/lib/roken/vis.h: heimdal/lib/roken/vis.hin
-heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
-
 include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/des/*.h|
 
 heimdal/lib/des/hcrypto: 
 	@rm -f $@; ln -s ./../des $@
 
 clean::	
-	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
 	@-rm -f bin/compile_et bin/asn1_compile
 	@-rm -f heimdal/lib/krb5/des/hcrypto
 
