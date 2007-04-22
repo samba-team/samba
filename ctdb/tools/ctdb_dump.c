@@ -36,15 +36,25 @@ static void usage(void)
 	exit(1);
 }
 
+struct node_info {
+	uint32_t num_nodes;
+	uint32_t vnn;
+};
+
 static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
-	int *num_nodes = (int *)p;
+	struct node_info *info = (struct node_info *)p;
 	struct id {
 		dev_t dev;
 		ino_t inode;
 	} *id;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
 	char *keystr;
+	uint32_t lmaster;
+	int authoritative=0;
+
+	lmaster = ctdb_hash(&key) % info->num_nodes;
+
 	id = (struct id *)key.dptr;
 	if (key.dsize == sizeof(*id)) {
 		keystr = talloc_asprintf(NULL, "%llu:%llu", 
@@ -52,11 +62,12 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	} else {
 		keystr = hex_encode(NULL, key.dptr, key.dsize);
 	}
+	authoritative = (info->vnn == lmaster || info->vnn == h->dmaster);
 	printf("  rec %s lmaster=%u dmaster=%u %c\n", 
 	       keystr, 
-	       ctdb_hash(&key) % (*num_nodes),
+	       lmaster,
 	       h->dmaster,
-		);
+	       authoritative?'A':' ');
 	talloc_free(keystr);
 	return 0;
 }
@@ -76,6 +87,7 @@ int main(int argc, const char *argv[])
 	int i, extra_argc = 0;
 	poptContext pc;
 	struct tdb_wrap *db;
+	struct node_info info;	
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -108,7 +120,9 @@ int main(int argc, const char *argv[])
 		}
 
 		printf("db %s\n", extra_argv[i]);
-		tdb_traverse(db->tdb, traverse_fn, &extra_argc);
+		info.vnn = i;
+		info.num_nodes = extra_argc;
+		tdb_traverse(db->tdb, traverse_fn, &info);
 		
 		talloc_free(db);
 	}
