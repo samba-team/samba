@@ -17,8 +17,6 @@ include/includes.h: \
 		librpc/gen_ndr/misc.h
 
 heimdal_basics: \
-       heimdal/lib/roken/vis.h \
-       heimdal/lib/roken/err.h \
        heimdal/lib/hdb/hdb_asn1.h \
        heimdal/lib/gssapi/spnego_asn1.h \
        heimdal/lib/gssapi/gssapi_asn1.h \
