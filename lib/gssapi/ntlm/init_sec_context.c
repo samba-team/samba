@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 static int
 from_file(const char *fn, const char *domain,
-	  char **username, char **password)
+	  char **username, struct ntlm_buf *key)
 {	  
     char *str, buf[1024];
     FILE *f;
@@ -60,7 +60,9 @@ from_file(const char *fn, const char *domain,
 	if (u == NULL || p == NULL)
 	    continue;
 	*username = strdup(u);
-	*password = strdup(p);
+
+	heim_ntlm_nt_key(p, key);
+
 	memset(buf, 0, sizeof(buf));
 	fclose(f);
 	return 0;
@@ -71,18 +73,97 @@ from_file(const char *fn, const char *domain,
 }
 
 static int
-get_userinfo(const char *domain, char **username, char **password)
+get_user_file(const char *domain, char **username, struct ntlm_buf *key)
 {
     const char *fn = NULL;
 
     if (!issuid()) {
 	fn = getenv("NTLM_USER_FILE");
-	if (fn != NULL && from_file(fn, domain, username, password) == 0)
+	if (fn != NULL && from_file(fn, domain, username, key) == 0)
 	    return 0;
     }
     return ENOENT;
 }
 
+/*
+ * Pick up the ntlm cred from the default krb5 credential cache.
+ */
+
+static int
+get_user_ccache(const char *domain, char **username, struct ntlm_buf *key)
+{
+    krb5_principal client;
+    krb5_context context = NULL;
+    krb5_error_code ret;
+    krb5_ccache id = NULL;
+    krb5_creds mcreds, creds;
+
+    *username = NULL;
+    key->length = 0;
+    key->data = NULL;
+
+    memset(&creds, 0, sizeof(creds));
+    memset(&mcreds, 0, sizeof(mcreds));
+
+    ret = krb5_init_context(&context);
+    if (ret)
+	return ret;
+
+    ret = krb5_cc_default(context, &id);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_get_principal(context, id, &client);
+    if (ret)
+	goto out;
+
+    ret = krb5_unparse_name_flags(context, client,
+				  KRB5_PRINCIPAL_UNPARSE_NO_REALM,
+				  username);
+    if (ret)
+	goto out;
+
+    ret = krb5_make_principal(context, &mcreds.server,
+			      krb5_principal_get_realm(context, client),
+			      "ntlm-key", domain, NULL);
+    krb5_free_principal(context, client);
+    if (ret)
+	goto out;
+
+    mcreds.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
+    ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_MATCH_KEYTYPE, 
+				&mcreds, &creds);
+    if (ret) {
+	char *s = krb5_get_error_message(context, ret);
+	krb5_free_error_string(context, s);
+	goto out;
+    }
+
+    key->data = malloc(creds.session.keyvalue.length);
+    if (key->data == NULL)
+	goto out;
+    key->length = creds.session.keyvalue.length;
+    memcpy(key->data, creds.session.keyvalue.data, key->length);
+
+    krb5_free_cred_contents(context, &creds);
+
+    return 0;
+
+out:
+    if (*username) {
+	free(*username);
+	*username = NULL;
+    }
+    krb5_free_cred_contents(context, &creds);
+    if (mcreds.server)
+	krb5_free_principal(context, mcreds.server);
+    if (id)
+	krb5_cc_close(context, id);
+    if (context)
+	krb5_free_context(context);
+
+    return ret;
+}
 
 OM_uint32
 _gss_ntlm_init_sec_context
@@ -118,7 +199,6 @@ _gss_ntlm_init_sec_context
 	struct ntlm_type1 type1;
 	struct ntlm_buf data;
 	uint32_t flags = 0;
-	char *password;
 	
 	ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
@@ -127,16 +207,14 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = get_userinfo(name->domain, &ctx->username, &password);
+	ret = get_user_file(name->domain, &ctx->username, &ctx->key);
+	if (ret)
+	    ret = get_user_ccache(name->domain, &ctx->username, &ctx->key);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
-
-	heim_ntlm_nt_key(password, &ctx->key);
-	memset(password, 0, strlen(password));
-	free(password);
 
 	if (req_flags & GSS_C_CONF_FLAG)
 	    flags |= NTLM_NEG_SEAL;
