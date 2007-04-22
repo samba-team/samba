@@ -299,14 +299,14 @@ static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 /* 
    shutdown SMB pipe connection
 */
-static NTSTATUS smb2_shutdown_pipe(struct dcerpc_connection *c)
+static NTSTATUS smb2_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 {
 	struct smb2_private *smb = c->transport.private;
 	struct smb2_close io;
 	struct smb2_request *req;
 
 	/* maybe we're still starting up */
-	if (!smb) return NT_STATUS_OK;
+	if (!smb) return status;
 
 	ZERO_STRUCT(io);
 	io.in.file.handle = smb->handle;
@@ -318,7 +318,7 @@ static NTSTATUS smb2_shutdown_pipe(struct dcerpc_connection *c)
 
 	talloc_free(smb);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*

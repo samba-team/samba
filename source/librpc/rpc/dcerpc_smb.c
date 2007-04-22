@@ -326,14 +326,14 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 /* 
    shutdown SMB pipe connection
 */
-static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
+static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 {
 	struct smb_private *smb = c->transport.private;
 	union smb_close io;
 	struct smbcli_request *req;
 
 	/* maybe we're still starting up */
-	if (!smb) return NT_STATUS_OK;
+	if (!smb) return status;
 
 	io.close.level = RAW_CLOSE_CLOSE;
 	io.close.in.file.fnum = smb->fnum;
@@ -346,7 +346,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 
 	talloc_free(smb);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*

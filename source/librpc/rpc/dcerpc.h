@@ -57,11 +57,14 @@ struct dcerpc_connection {
 	const char *binding_string;
 	struct event_context *event_ctx;
 
+	bool dead;
+	bool free_skipped;
+
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
 		void *private;
 
-		NTSTATUS (*shutdown_pipe)(struct dcerpc_connection *);
+		NTSTATUS (*shutdown_pipe)(struct dcerpc_connection *, NTSTATUS status);
 
 		const char *(*peer_name)(struct dcerpc_connection *);
 
