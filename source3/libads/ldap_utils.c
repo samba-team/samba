@@ -46,7 +46,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	bp = SMB_STRDUP(bind_path);
 
 	if (!bp) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	*res = NULL;
@@ -163,6 +163,30 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 					"(objectclass=*)", attrs, &args, res);
 }
 
+ ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
+						const char *dn, 
+						const char **attrs,
+						enum ads_extended_dn_flags flags,
+						char ***strings,
+						size_t *num_strings)
+{
+	ads_control args;
+
+	args.control = ADS_EXTENDED_DN_OID;
+	args.val = flags;
+	args.critical = True;
+
+	/* we can only range process one attribute */
+	if (!attrs || !attrs[0] || attrs[1]) {
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	return ads_ranged_search(ads, mem_ctx, LDAP_SCOPE_BASE, dn, 
+				 "(objectclass=*)", &args, attrs[0],
+				 strings, num_strings);
+
+}
+
  ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
 				 const DOM_SID *sid,
 				 const char **attrs)
@@ -185,6 +209,154 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	SAFE_FREE(dn);
 	SAFE_FREE(sid_string);
 	return status;
+}
+
+ADS_STATUS ads_ranged_search(ADS_STRUCT *ads, 
+			     TALLOC_CTX *mem_ctx,
+			     int scope,
+			     const char *base,
+			     const char *filter,
+			     void *args,
+			     const char *range_attr,
+			     char ***strings,
+			     size_t *num_strings)
+{
+	ADS_STATUS status;
+	uint32 first_usn;
+	int num_retries = 0;
+	const char **attrs;
+	BOOL more_values = False;
+
+	*num_strings = 0;
+	*strings = NULL;
+
+	attrs = TALLOC_ARRAY(mem_ctx, const char *, 3);
+	ADS_ERROR_HAVE_NO_MEMORY(attrs);
+
+	attrs[0] = talloc_strdup(mem_ctx, range_attr);
+	attrs[1] = talloc_strdup(mem_ctx, "usnChanged");
+	attrs[2] = NULL;
+
+	ADS_ERROR_HAVE_NO_MEMORY(attrs[0]);
+	ADS_ERROR_HAVE_NO_MEMORY(attrs[1]);
+
+	do {
+		status = ads_ranged_search_internal(ads, mem_ctx, 
+						    scope, base, filter, 
+						    attrs, args, range_attr, 
+						    strings, num_strings,
+						    &first_usn, &num_retries, 
+						    &more_values);
+
+		if (NT_STATUS_EQUAL(STATUS_MORE_ENTRIES, ads_ntstatus(status))) {
+			continue;
+		}
+
+		if (!ADS_ERR_OK(status)) {
+			*num_strings = 0;
+			strings = NULL;
+			goto done;
+		}
+
+	} while (more_values);
+
+ done:
+	DEBUG(10,("returning with %d strings\n", (int)*num_strings));
+
+	return status;
+}
+
+ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads, 
+				      TALLOC_CTX *mem_ctx,
+				      int scope,
+				      const char *base,
+				      const char *filter,
+				      const char **attrs,
+				      void *args,
+				      const char *range_attr,
+				      char ***strings,
+				      size_t *num_strings,
+				      uint32 *first_usn,
+				      int *num_retries,
+				      BOOL *more_values)
+{
+	LDAPMessage *res = NULL;
+	ADS_STATUS status;
+	int count;
+	uint32 current_usn;
+
+	DEBUG(10, ("Searching for attrs[0] = %s, attrs[1] = %s\n", attrs[0], attrs[1]));
+
+	*more_values = False;
+
+	status = ads_do_search_retry_internal(ads, base, scope, filter, attrs, args, &res);
+
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("ads_search: %s\n",
+			 ads_errstr(status)));
+		return status;
+	}
+	
+	if (!res) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_SUCCESS);
+	}
+
+	if (*num_strings == 0) {
+		if (!ads_pull_uint32(ads, res, "usnChanged", first_usn)) {
+			DEBUG(1, ("could not pull first usnChanged!\n"));
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	if (!ads_pull_uint32(ads, res, "usnChanged", &current_usn)) {
+		DEBUG(1, ("could not pull current usnChanged!\n"));
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	if (*first_usn != current_usn) {
+		DEBUG(5, ("USN on this record changed"
+			  " - restarting search\n"));
+		if (*num_retries < 5) {
+			(*num_retries)++;
+			*num_strings = 0;
+			ads_msgfree(ads, res);
+			return ADS_ERROR_NT(STATUS_MORE_ENTRIES);
+		} else {
+			DEBUG(5, ("USN on this record changed"
+				  " - restarted search too many times, aborting!\n"));
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	*strings = ads_pull_strings_range(ads, mem_ctx, res,
+					 range_attr,
+					 *strings,
+					 &attrs[0],
+					 num_strings,
+					 more_values);
+
+	ads_msgfree(ads, res);
+
+	/* paranoia checks */
+	if (*strings == NULL && *more_values) {
+		DEBUG(0,("no strings found but more values???\n"));
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	if (*num_strings == 0 && *more_values) {
+		DEBUG(0,("no strings found but more values???\n"));
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	return (*more_values) ? ADS_ERROR_NT(STATUS_MORE_ENTRIES) : ADS_ERROR(LDAP_SUCCESS);
 }
 
 #endif
