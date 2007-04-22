@@ -44,6 +44,7 @@ struct krb5_dh_moduli;
 struct krb5_plugin;
 enum plugin_type;
 #include "krb5-private.h"
+#include "heimntlm.h"
 
 int forwardable_flag	= -1;
 int proxiable_flag	= -1;
@@ -73,6 +74,7 @@ char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
+static char *ntlm_domain;
 
 static char *krb4_cc_name;
 
@@ -154,19 +156,19 @@ static struct getargs args[] = {
 
     { "canonicalize",0,   arg_flag, &canonicalize_flag,
       "canonicalize client principal" },
-
 #ifdef PKINIT
-    {  "pk-user",	'C',	arg_string,	&pk_user_id,
-       "principal's public/private/certificate identifier",
-       "id" },
+    { "pk-user",	'C',	arg_string,	&pk_user_id,
+      "principal's public/private/certificate identifier", "id" },
 
-    {  "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
-       "directory with CA certificates", "directory" },
+    { "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
+      "directory with CA certificates", "directory" },
 
-    {  "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
-       "Use RSA encrypted reply (instead of DH)" },
-
+    { "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
+      "Use RSA encrypted reply (instead of DH)" },
 #endif
+    { "ntlm-domain",	0,  arg_string, &ntlm_domain,
+      "NTLM domain", "domain" },
+
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -335,6 +337,39 @@ out:
 }
 
 static krb5_error_code
+store_ntlmkey(krb5_context context, krb5_ccache id, 
+	      const char *domain, krb5_const_principal client,
+	      struct ntlm_buf *buf)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+    
+    memset(&cred, 0, sizeof(cred));
+
+    ret = krb5_make_principal(context, &cred.server,
+			      krb5_principal_get_realm(context, client),
+			      "@ntlm-key", domain, NULL);
+    if (ret)
+	goto out;
+    ret = krb5_copy_principal(context, client, &cred.client);
+    if (ret)
+	goto out;
+    
+    cred.times.authtime = time(NULL);
+    cred.times.endtime = time(NULL) + 3600 * 24 * 30; /* XXX */
+    cred.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
+    ret = krb5_data_copy(&cred.session.keyvalue, buf->data, buf->length);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_store_cred(context, id, &cred);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    return 0;
+}
+
+static krb5_error_code
 get_new_tickets(krb5_context context, 
 		krb5_principal principal,
 		krb5_ccache ccache,
@@ -349,7 +384,9 @@ get_new_tickets(krb5_context context,
     krb5_deltat renew = 0;
     char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
+    struct ntlm_buf ntlmkey;
 
+    memset(&ntlmkey, 0, sizeof(ntlmkey));
     passwd[0] = '\0';
 
     if (password_file) {
@@ -378,8 +415,8 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     
-    krb5_get_init_creds_opt_set_default_flags(context, "kinit", 
-					      /* XXX */principal->realm, opt);
+    krb5_get_init_creds_opt_set_default_flags(context, "kinit",
+	krb5_principal_get_realm(context, principal), opt);
 
     if(forwardable_flag != -1)
 	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
@@ -509,6 +546,8 @@ get_new_tickets(krb5_context context,
 					    opt);
     }
     krb5_get_init_creds_opt_free(context, opt);
+    if (ntlm_domain && passwd[0])
+	heim_ntlm_nt_key(passwd, &ntlmkey);
     memset(passwd, 0, sizeof(passwd));
 
     switch(ret){
@@ -555,6 +594,9 @@ get_new_tickets(krb5_context context,
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
     krb5_free_cred_contents (context, &cred);
+
+    if (ntlm_domain && ntlmkey.data)
+	store_ntlmkey(context, ccache, ntlm_domain, principal, &ntlmkey);
 
     if (enctype)
 	free(enctype);
