@@ -376,7 +376,13 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 		DEBUG(0,("Error copying deferred packet to self\n"));
 		return;
 	}
+#if 0
+	/* use this to put packets directly into our recv function */
+	ctdb_recv_pkt(q->ctdb, (uint8_t *)q->hdr, q->hdr->length);
+	talloc_free(q);
+#else
 	event_add_timed(ctdb->ev, q, timeval_zero(), queue_next_trigger, q);
+#endif
 }
 
 /*
