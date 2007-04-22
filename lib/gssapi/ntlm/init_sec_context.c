@@ -125,7 +125,7 @@ get_user_ccache(const char *domain, char **username, struct ntlm_buf *key)
 
     ret = krb5_make_principal(context, &mcreds.server,
 			      krb5_principal_get_realm(context, client),
-			      "ntlm-key", domain, NULL);
+			      "@ntlm-key", domain, NULL);
     krb5_free_principal(context, client);
     if (ret)
 	goto out;
