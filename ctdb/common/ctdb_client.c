@@ -45,6 +45,7 @@ static void ctdb_reply_connect_wait(struct ctdb_context *ctdb,
 				    struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_connect_wait *r = (struct ctdb_reply_connect_wait *)hdr;
+	ctdb->vnn = r->vnn;
 	ctdb->num_connected = r->num_connected;
 }
 

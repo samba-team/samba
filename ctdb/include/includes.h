@@ -35,3 +35,5 @@ struct timeval timeval_until(const struct timeval *tv1,
 _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs);
 double timeval_elapsed(struct timeval *tv);
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
+char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
+
