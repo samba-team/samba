@@ -2363,7 +2363,7 @@ void cache_cleanup_response(pid_t pid)
 
 
 BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-		       const char **domain_name, const char **name,
+		       char **domain_name, char **name,
 		       enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
