@@ -17,7 +17,8 @@ OBJ_FILES = \
 	../heimdal/kdc/windc.o \
 	../heimdal/kdc/kx509.o \
 	../heimdal/lib/asn1/asn1_KRB5SignedPath.o
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 HEIMDAL_NTLM
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1
+PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_DES
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
@@ -47,14 +48,14 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/mkey.o \
 	../heimdal/lib/hdb/ndbm.o \
 	../heimdal/lib/hdb/hdb_err.o
-PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HDB_ASN1
+PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi/gssapi -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi/krb5 -Iheimdal/lib/gssapi/mech
+CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/gssapi -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi/krb5 -Iheimdal/lib/gssapi/mech
 OBJ_FILES = \
 	../heimdal/lib/gssapi/mech/gss_krb5.o \
 	../heimdal/lib/gssapi/mech/gss_mech_switch.o \
@@ -163,7 +164,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/krb5/accept_sec_context.o \
 	../heimdal/lib/gssapi/krb5/set_sec_context_option.o \
 	../heimdal/lib/gssapi/krb5/process_context_token.o
-PRIVATE_DEPENDENCIES = HEIMDAL_DES HEIMDAL_ASN1 HEIMDAL_SPNEGO_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_DES HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
@@ -172,8 +173,8 @@ PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_PKINIT_ASN1
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_DES
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
@@ -264,8 +265,8 @@ OBJ_FILES = \
 #######################
 
 #######################
-# Start SUBSYSTEM HEIMDAL_ASN1
-[SUBSYSTEM::HEIMDAL_ASN1]
+# Start SUBSYSTEM HEIMDAL_HEIM_ASN1
+[SUBSYSTEM::HEIMDAL_HEIM_ASN1]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
@@ -297,7 +298,7 @@ OBJ_FILES = \
 
 [SUBSYSTEM::HEIMDAL_DES]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/des 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_ASN1 HEIMDAL_DES_IMATH HEIMDAL_RFC2459_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_DES_IMATH HEIMDAL_RFC2459_ASN1
 OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
 	../heimdal/lib/des/bn.o \
@@ -333,7 +334,7 @@ OBJ_FILES = \
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hx509 
 PRIVATE_DEPENDENCIES = \
 	HEIMDAL_ROKEN HEIMDAL_COM_ERR \
-	HEIMDAL_ASN1 HEIMDAL_DES \
+	HEIMDAL_HEIM_ASN1 HEIMDAL_DES \
 	HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 \
 	HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 \
 	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1
