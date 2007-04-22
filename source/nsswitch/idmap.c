@@ -322,7 +322,15 @@ NTSTATUS idmap_init(void)
 			*p = '\0';			
 			compat_params = p + 1;
 		}
+	} else {
+		/* Back compatible: without idmap domains and explicit
+		   idmap backend.  Taking default idmap backend: tdb */
+		
+		compat = 1;
+		compat_backend = talloc_strdup( idmap_ctx, "tdb");
+		compat_params = compat_backend;
 	}
+
 
 	if ( ! dom_list) {
 		dom_list = idmap_default_domain;
