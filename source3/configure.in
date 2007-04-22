@@ -399,7 +399,7 @@ AC_ARG_WITH(smbtorture4_path,
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
-    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
@@ -414,7 +414,24 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
        ])
        if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
-	    CFLAGS="${CFLAGS} -Wdeclaration-after-statement"
+	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Wdeclaration-after-statement"
+       fi
+	# here
+	#-Werror-implicit-function-declaration
+	AC_CACHE_CHECK(
+          [that the C compiler understands -Werror-implicit-function-declaration],
+          samba_cv_HAVE_Werror_implicit_function_declaration, [
+	  AC_TRY_RUN_STRICT([
+	    int main(void)
+	    {
+	    	return 0;
+	    }],[-Werror-implicit-function-declaration],[$CPPFLAGS],[$LDFLAGS],
+	    samba_cv_HAVE_Werror_implicit_function_declaration=yes,
+	    samba_cv_HAVE_Werror_implicit_function_declaration=no,
+	    samba_cv_HAVE_Werror_implicit_function_declaration=cross)
+       ])
+       if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes"; then
+	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Werror-implicit-function-declaration"
        fi
     fi])
 
@@ -6286,6 +6303,11 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            AC_MSG_RESULT(yes),
 	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
 	   AC_MSG_WARN([cannot run when cross-compiling]))
+
+dnl Merge in developer cflags from now on
+if test x"$developer" = x"yes"; then
+    CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+fi
 
 builddir=`pwd`
 AC_SUBST(builddir)
