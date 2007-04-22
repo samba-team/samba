@@ -605,8 +605,11 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (state == NULL) return;
 
 	/* don't allow for too many redirects */
-	if (state->redirect_count++ == CTDB_MAX_REDIRECT) {
+	if ((++state->redirect_count) % CTDB_MAX_REDIRECT == 0) {
 		c->dmaster = ctdb_lmaster(ctdb, &state->call.key);
+		if (state->redirect_count > ctdb->status.max_redirect_count) {
+			ctdb->status.max_redirect_count = state->redirect_count;
+		}
 	}
 
 	/* send it off again */

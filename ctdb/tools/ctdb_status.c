@@ -55,6 +55,7 @@ static void show_status(struct ctdb_status *s)
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
+	printf(" max_redirect_count      %u\n", s->max_redirect_count);
 	printf(" max_call_latency        %.6f seconds\n", s->max_call_latency);
 	printf(" max_lockwait_latency    %.6f seconds\n", s->max_lockwait_latency);
 }

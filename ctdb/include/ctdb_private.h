@@ -145,6 +145,7 @@ struct ctdb_status {
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
+	uint32_t max_redirect_count;
 	double max_call_latency;
 	double max_lockwait_latency;
 };
