@@ -4023,10 +4023,11 @@ if test x"$with_ads_support" != x"no"; then
 	AC_TRY_RUN_STRICT([
 		#include <krb5.h>
 		int main(void) {
-		krb5_context context;
-		char *str = NULL;
-		krb5_enctype_to_string(context, 1, &str);
-		if (str) free (str);
+			krb5_context context;
+			char *str = NULL;
+			krb5_enctype_to_string(context, 1, &str);
+			if (str) free (str); 
+			return 0;
 		}
 		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
 		smb_krb5_enctype_to_string_takes_krb5_context_arg=yes,
@@ -4042,8 +4043,9 @@ if test x"$with_ads_support" != x"no"; then
 	AC_TRY_RUN_STRICT([
 		#include <krb5.h>
 		int main(void) {
-		char buf[256];
-		krb5_enctype_to_string(1, buf, 256);
+			char buf[256];
+			krb5_enctype_to_string(1, buf, 256);
+			return 0;
 		}
 		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
 		smb_krb5_enctype_to_string_takes_size_t_arg=yes,
