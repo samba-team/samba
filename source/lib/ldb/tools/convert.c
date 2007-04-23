@@ -34,12 +34,21 @@ static const struct syntax_map syntax_map[] = {
 		.equality = "distinguishedNameMatch",
 		.comment = "Object(DS-DN) == a DN" 
 	},
+#if 0
 	{
 		.Standard_OID =  "1.3.6.1.4.1.1466.115.121.1.38",
 		.AD_OID =  "2.5.5.2",
 		.equality = "objectIdentifierMatch",
 		.comment =  "OID String"
 	},
+#else 
+	{ 
+		.Standard_OID =  "1.2.840.113556.1.4.905", 
+		.AD_OID =  "2.5.5.2",
+		.equality = "caseIgnoreMatch",
+		.comment =   "OID as a Case Insensitive String" 
+	},
+#endif
 	{ 
 		.Standard_OID =  "1.2.840.113556.1.4.905", 
 		.AD_OID =  "2.5.5.4",

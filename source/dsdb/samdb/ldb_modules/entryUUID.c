@@ -360,6 +360,7 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 			 }
 		}
 	},
+#if 0
 	{
 		.local_name = "allowedChildClassesEffective",
 		.type = MAP_CONVERT,
@@ -371,6 +372,7 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 			},
 		},
 	},
+#endif
 	{
 		.local_name = "objectCategory",
 		.type = MAP_CONVERT,
@@ -508,6 +510,7 @@ const struct ldb_map_attribute nsuniqueid_attributes[] =
 			 }
 		}
 	},
+#if 0
 	{
 		.local_name = "allowedChildClassesEffective",
 		.type = MAP_CONVERT,
@@ -519,6 +522,7 @@ const struct ldb_map_attribute nsuniqueid_attributes[] =
 			},
 		},
 	},
+#endif
 	{
 		.local_name = "objectCategory",
 		.type = MAP_CONVERT,
