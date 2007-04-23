@@ -1347,17 +1347,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 		SEC_ACE *psa = &dacl->aces[i];
 
 		/*
-		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
-		 */
-
-		if (non_mappable_sid(&psa->trustee)) {
-			fstring str;
-			DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
-				sid_to_string(str, &psa->trustee) ));
-			continue;
-		}
-
-		/*
 		 * Create a cannon_ace entry representing this NT DACL ACE.
 		 */
 
@@ -1416,6 +1405,16 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			current_ace->type = SMB_ACL_GROUP;
 		} else {
 			fstring str;
+
+			/*
+			 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
+			 */
+
+			if (non_mappable_sid(&psa->trustee)) {
+				DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
+					sid_to_string(str, &psa->trustee) ));
+				continue;
+			}
 
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
