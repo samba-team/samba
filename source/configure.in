@@ -5992,15 +5992,6 @@ if test x"$samba_cv_HAVE_PEERCRED" = x"yes"; then
     AC_DEFINE(HAVE_PEERCRED,1,[Whether we can use SO_PEERCRED to get socket credentials])
 fi
 
-AC_CHECK_FUNCS(getpeereid sendmsg)
-AC_CHECK_HEADERS(sys/ucred.h)
-
-AC_CHECK_MEMBERS([struct msghdr.msg_accrightslen],,,
-		[#include <sys/socket.h>])
-AC_CHECK_MEMBERS([struct msghdr.msg_control],,,
-		[#include <sys/socket.h>])
-
-
 #################################################
 # Check to see if we should use the included popt
 
