@@ -265,7 +265,9 @@ enum ctdb_operation {
 	CTDB_REPLY_CONNECT_WAIT = 1002,
 	CTDB_REQ_SHUTDOWN       = 1003,
 	CTDB_REQ_STATUS         = 1004,
-	CTDB_REPLY_STATUS       = 1005
+	CTDB_REPLY_STATUS       = 1005,
+	CTDB_REQ_GETDBPATH      = 1006,
+	CTDB_REPLY_GETDBPATH    = 1007
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -356,6 +358,17 @@ struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
 	uint32_t vnn;
 	uint32_t num_connected;
+};
+
+struct ctdb_req_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t db_id;
+};
+
+struct ctdb_reply_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t datalen;
+	uint8_t data[1];
 };
 
 struct ctdb_req_status {

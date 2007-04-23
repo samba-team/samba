@@ -249,6 +249,51 @@ static void daemon_request_status(struct ctdb_client *client,
 }
 
 /*
+  called when the daemon gets a getdbpath request from a client
+ */
+static void daemon_request_getdbpath(struct ctdb_client *client, 
+				  struct ctdb_req_getdbpath *c)
+{
+	struct ctdb_reply_getdbpath *r;
+	struct ctdb_db_context *ctdb_db;
+	char *path;
+	int res, len;
+
+	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
+	if (!ctdb_db) {
+		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
+			  c->db_id));
+		ctdb_db->ctdb->status.pending_calls--;
+		return;
+	}
+
+	path = talloc_asprintf(c, "%s/%s", ctdb_db->ctdb->db_directory, ctdb_db->db_name);
+
+	/* now send the reply */
+	len = offsetof(struct ctdb_reply_getdbpath, data) + strlen(path);
+	r = ctdbd_allocate_pkt(ctdb_db->ctdb, len);
+
+	talloc_set_name_const(r, "reply_getdbpath packet");
+
+	memset(r, 0, offsetof(struct ctdb_reply_getdbpath, data));
+
+	r->hdr.length       = len;
+	r->hdr.ctdb_magic   = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation    = CTDB_REPLY_GETDBPATH;
+	r->hdr.reqid        = c->hdr.reqid;
+	r->datalen          = strlen(path);
+	memcpy(&r->data[0], path, r->datalen);
+
+	res = daemon_queue_send(client, &(r->hdr));
+	if (res != 0) {
+		DEBUG(0,(__location__ " Failed to queue a getdbpath response\n"));
+		return;
+	}
+}
+
+
+/*
   destroy a ctdb_client
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
@@ -491,6 +536,10 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 	case CTDB_REQ_STATUS:
 		ctdb->status.client.req_status++;
 		daemon_request_status(client, (struct ctdb_req_status *)hdr);
+		break;
+
+	case CTDB_REQ_GETDBPATH:
+		daemon_request_getdbpath(client, (struct ctdb_req_getdbpath *)hdr);
 		break;
 
 	default:
