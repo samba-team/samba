@@ -26,7 +26,7 @@ sub openldap_start($$$) {
         my ($slapd_conf, $uri, $logs) = @_;
         my $oldpath = $ENV{PATH};
         $ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-        system("slapd -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
+        system("slapd -d -f $slapd_conf -h $uri > $logs 2>&1 &");
         $ENV{PATH} = $oldpath;
 }
 
@@ -66,6 +66,7 @@ sub slapd_stop($$)
 		kill 9, <IN>;
 		close(IN);
 	}
+	return 1;
 }
 
 sub check_or_start($$$) 
@@ -645,8 +646,6 @@ sub provision($$$$$)
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface
 	};
 
-	$ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
-
 	if (defined($self->{ldap})) {
 
 	        if ($self->{ldap} eq "openldap") {
@@ -659,12 +658,16 @@ sub provision($$$$$)
 		$self->slapd_start($ret) or 
 			die("couldn't start slapd");
 		    
+	        $ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
+
 		print "LDAP PROVISIONING...";
 		$self->provision_ldap($ret);
 
 		$self->slapd_stop($ret) or 
 			die("couldn't stop slapd");
-	}
+	} else {
+	        $ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
+        }
 	return $ret; 
 }
 
