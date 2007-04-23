@@ -30,7 +30,11 @@ OBJ_FILES = \
 INIT_FUNCTION = server_service_drepl_init
 SUBSYSTEM = service
 OBJ_FILES = \
-		repl/drepl_service.o
+		repl/drepl_service.o \
+		repl/drepl_periodic.o \
+		repl/drepl_partitions.o \
+		repl/drepl_out_pull.o \
+		repl/drepl_out_helpers.o
 PRIVATE_PROTO_HEADER = repl/drepl_service_proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
