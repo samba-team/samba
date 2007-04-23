@@ -70,9 +70,15 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_client_call_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
 		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -230,7 +236,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 */
 static int ctdb_client_call_destructor(struct ctdb_client_call_state *state)	
 {
-	idr_remove(state->ctdb_db->ctdb->idr, state->reqid);
+	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
 	return 0;
 }
 
@@ -329,7 +335,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	c->hdr.ctdb_version = CTDB_VERSION;
 	c->hdr.operation = CTDB_REQ_CALL;
 	/* this limits us to 16k outstanding messages - not unreasonable */
-	c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
+	c->hdr.reqid     = ctdb_reqid_new(ctdb, state);
 	c->flags         = call->flags;
 	c->db_id         = ctdb_db->db_id;
 	c->callid        = call->call_id;
@@ -627,9 +633,15 @@ static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header 
 	struct ctdb_reply_status *r = (struct ctdb_reply_status *)hdr;
 	struct ctdb_status_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_status_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_status_state);
 	if (state == NULL) {
 		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -655,7 +667,7 @@ int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status)
 	state = talloc(ctdb, struct ctdb_status_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->reqid = idr_get_new(ctdb->idr, state, 0xFFFF);
+	state->reqid = ctdb_reqid_new(ctdb, state);
 	state->status = status;
 	state->state = CTDB_STATUS_WAIT;
 	

@@ -305,8 +305,15 @@ static void ctdb_become_dmaster(struct ctdb_context *ctdb,
 	struct ctdb_call_state *state;
 	struct ctdb_db_context *ctdb_db;
 
-	state = idr_find_type(ctdb->idr, reqid, struct ctdb_call_state);
+	state = ctdb_reqid_find(ctdb, reqid, struct ctdb_call_state);
+
 	if (state == NULL) {
+		return;
+	}
+
+	if (reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",reqid));
 		return;
 	}
 
@@ -510,9 +517,15 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(0, (__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -544,8 +557,15 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	TDB_DATA data;
 	int ret;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+
 	if (state == NULL) {
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -576,8 +596,16 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
-	if (state == NULL) return;
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	if (state == NULL) {
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
+		return;
+	}
 
 	talloc_steal(state, c);
 
@@ -601,8 +629,16 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_redirect *c = (struct ctdb_reply_redirect *)hdr;
 	struct ctdb_call_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_call_state);
-	if (state == NULL) return;
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	if (state == NULL) {
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
+		return;
+	}
 
 	/* don't allow for too many redirects */
 	if (state->redirect_count++ == CTDB_MAX_REDIRECT) {
@@ -621,7 +657,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
-	idr_remove(state->node->ctdb->idr, state->c->hdr.reqid);
+	ctdb_reqid_remove(state->node->ctdb, state->reqid);
 	return 0;
 }
 
@@ -705,6 +741,8 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
+	state->reqid = ctdb_reqid_new(ctdb, state);
+	talloc_set_destructor(state, ctdb_call_destructor);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	state->c = ctdb->methods->allocate_pkt(state, len);
@@ -726,7 +764,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
-	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
+	state->c->hdr.reqid     = state->reqid;
 	state->c->flags         = call->flags;
 	state->c->db_id         = ctdb_db->db_id;
 	state->c->callid        = call->call_id;
@@ -743,8 +781,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->state  = CTDB_CALL_WAIT;
 	state->header = *header;
 	state->ctdb_db = ctdb_db;
-
-	talloc_set_destructor(state, ctdb_call_destructor);
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 
