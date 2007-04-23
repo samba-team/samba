@@ -188,6 +188,7 @@ NTSTATUS ads_gpo_get_sysvol_gpt_version(ADS_STRUCT *ads,
 
 	if (name && *display_name) {
 		*display_name = talloc_strdup(mem_ctx, name);
+		NT_STATUS_HAVE_NO_MEMORY(*display_name);
 	}
 
 	return NT_STATUS_OK;
