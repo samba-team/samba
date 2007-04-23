@@ -325,6 +325,12 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		char *schema_entry = NULL;
 		int j;
 
+		if (!name) {
+			printf("Failed to find lDAPDisplayName for schema DN: %s\n", ldb_dn_get_linearized(msg->dn));
+			ret.failures = 1;
+			continue;
+		}
+
 		/* We have been asked to skip some attributes/objectClasses */
 		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
