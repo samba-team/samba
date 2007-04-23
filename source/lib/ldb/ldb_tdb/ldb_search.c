@@ -207,7 +207,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
   search the database for a single simple dn, returning all attributes
   in a single message
 
-  return 1 on success, 0 on record-not-found and -1 on error
+  return LDB_ERR_NO_SUCH_OBJECT on record-not-found
+  and LDB_SUCCESS on success
 */
 int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
 {
@@ -220,13 +221,13 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	/* form the key */
 	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 	if (!tdb_data.dptr) {
-		return 0;
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
 	msg->num_elements = 0;
@@ -235,17 +236,17 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	ret = ltdb_unpack_data(module, &tdb_data, msg);
 	free(tdb_data.dptr);
 	if (ret == -1) {
-		return -1;		
+		return LDB_ERR_OPERATIONS_ERROR;		
 	}
 
 	if (!msg->dn) {
 		msg->dn = ldb_dn_copy(msg, dn);
 	}
 	if (!msg->dn) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return 1;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -495,7 +496,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	ltdb_ac->attrs = req->op.search.attrs;
 
 	ret = ltdb_search_indexed(req->handle);
-	if (ret == -1) {
+	if (ret == LDB_ERR_OPERATIONS_ERROR) {
 		ret = ltdb_search_full(req->handle);
 	}
 	if (ret != LDB_SUCCESS) {
