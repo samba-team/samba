@@ -76,7 +76,7 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 		status = NT_STATUS_END_OF_FILE;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (p->transport.recv_data) {
 		p->transport.recv_data(p, NULL, status);
 	}
 }
