@@ -289,40 +289,42 @@ NTSTATUS idmap_init(void)
 
 	dom_list = lp_idmap_domains();
 	
-	if ( dom_list && lp_idmap_backend() ) {
-		DEBUG(0, ("WARNING: idmap backend and idmap domains are "
-			  "mutually excusive!\n"));
-		DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
-	} else if ( lp_idmap_backend() ) {
-		const char **compat_list = lp_idmap_backend();
+	if ( lp_idmap_backend() ) {
+       		const char **compat_list = lp_idmap_backend();
 		char *p = NULL;
 		const char *q = NULL;		
 
-		compat = 1;
-
-		if ( (compat_backend = talloc_strdup( idmap_ctx, *compat_list )) == NULL ) {
-			ret = NT_STATUS_NO_MEMORY;
-			goto done;			
-		}
-		
-		/* strip any leading idmap_ prefix of */
-		if (strncmp(*compat_list, "idmap_", 6) == 0 ) {
-			q = *compat_list += 6;
-			DEBUG(0, ("WARNING: idmap backend uses obsolete and "
-				  "deprecated 'idmap_' prefix.\n"
-				  "Please replace 'idmap_%s' by '%s' in %s\n", 
-				  q, q, dyn_CONFIGFILE));
-			compat_backend = talloc_strdup( idmap_ctx, q);
+		if ( dom_list ) {			
+			DEBUG(0, ("WARNING: idmap backend and idmap domains are "
+				  "mutually excusive!\n"));
+			DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
 		} else {
-			compat_backend = talloc_strdup( idmap_ctx, *compat_list);
-		}
+			compat = 1;
+
+			if ( (compat_backend = talloc_strdup( idmap_ctx, *compat_list )) == NULL ) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		
+			/* strip any leading idmap_ prefix of */
+			if (strncmp(*compat_list, "idmap_", 6) == 0 ) {
+				q = *compat_list += 6;
+				DEBUG(0, ("WARNING: idmap backend uses obsolete and "
+					  "deprecated 'idmap_' prefix.\n"
+					  "Please replace 'idmap_%s' by '%s' in %s\n", 
+					  q, q, dyn_CONFIGFILE));
+				compat_backend = talloc_strdup( idmap_ctx, q);
+			} else {
+				compat_backend = talloc_strdup( idmap_ctx, *compat_list);
+			}
 			
-		/* separate the backend and module arguements */
-		if ((p = strchr(compat_backend, ':')) != NULL) {
-			*p = '\0';			
-			compat_params = p + 1;
-		}
-	} else {
+			/* separate the backend and module arguements */
+			if ((p = strchr(compat_backend, ':')) != NULL) {
+				*p = '\0';			
+				compat_params = p + 1;
+			}
+		}		
+	} else if ( !dom_list ) {
 		/* Back compatible: without idmap domains and explicit
 		   idmap backend.  Taking default idmap backend: tdb */
 		
@@ -330,7 +332,6 @@ NTSTATUS idmap_init(void)
 		compat_backend = talloc_strdup( idmap_ctx, "tdb");
 		compat_params = compat_backend;
 	}
-
 
 	if ( ! dom_list) {
 		dom_list = idmap_default_domain;
