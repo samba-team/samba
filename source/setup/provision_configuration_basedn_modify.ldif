@@ -1,0 +1,22 @@
+###############################
+# Configuration Naming Context
+###############################
+dn: ${CONFIGDN}
+changetype: modify
+replace: instanceType
+instanceType: 13
+-
+replace: showInAdvancedViewOnly
+showInAdvancedViewOnly: TRUE
+-
+replace: objectCategory
+objectCategory: CN=Configuration,${SCHEMADN}
+-
+replace: subRefs
+subRefs: ${SCHEMADN}
+-
+replace: masteredBy
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+-
+replace: msDs-masteredBy
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}

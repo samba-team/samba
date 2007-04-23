@@ -12,6 +12,8 @@ description
 cn
 dITContentRules
 top
+#This shouldn't make it to the ldap server
+sambaPassword
 #Skip ObjectClasses
 #
 #MiddleName has a conflicting OID

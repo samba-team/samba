@@ -123,12 +123,18 @@ if (options["aci"] != undefined) {
 	println("set ACI: " + subobj["ACI"]);
 }
 
+println("set DOMAIN SID: " + subobj["DOMAINSID"]);
+
 if (ldapbackend) {
 	if (!ldapmodule) {
 		subobj["LDAPMODULE"] = "entryUUID";
 	}
 	subobj["DOMAINDN_LDB"] = subobj["LDAPBACKEND"];
 	subobj["DOMAINDN_MOD"] = subobj["LDAPMODULE"] + ",paged_searches";
+	subobj["CONFIGDN_LDB"] = subobj["LDAPBACKEND"];
+	subobj["CONFIGDN_MOD"] = subobj["LDAPMODULE"] + ",paged_searches";
+	subobj["SCHEMADN_LDB"] = subobj["LDAPBACKEND"];
+	subobj["SCHEMADN_MOD"] = subobj["LDAPMODULE"] + ",paged_searches";
 }
 
 if (!provision_validate(subobj, message)) {

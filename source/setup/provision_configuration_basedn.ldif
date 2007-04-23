@@ -1,0 +1,9 @@
+###############################
+# Configuration Naming Context
+###############################
+dn: ${CONFIGDN}
+objectClass: top
+objectClass: configuration
+${EXTENSIBLEOBJECT}
+${ACI}
+cn: Configuration

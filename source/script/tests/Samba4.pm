@@ -22,6 +22,14 @@ sub new($$$$) {
 	return $self;
 }
 
+sub openldap_start($$$) {
+        my ($slapd_conf, $uri, $logs) = @_;
+        my $oldpath = $ENV{PATH};
+        $ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
+        system("slapd -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
+        $ENV{PATH} = $oldpath;
+}
+
 sub slapd_start($$)
 {
 	my $count = 0;
@@ -34,14 +42,11 @@ sub slapd_start($$)
 	if ($self->{ldap} eq "fedora") {
 	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
 	} elsif ($self->{ldap} eq "openldap") {
-		my $oldpath = $ENV{PATH};
-		$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-		system("slapd -d0 -f $env_vars->{SLAPD_CONF} -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
-		$ENV{PATH} = $oldpath;
+	        openldap_start($env_vars->{SLAPD_CONF}, $uri, "$env_vars->{LDAPDIR}/logs");
 	}
 	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
 	        $count++;
-		if ($count > 10) {
+		if ($count > 40) {
 		    $self->slapd_stop($env_vars);
 		    return 0;
 		}
@@ -81,21 +86,18 @@ sub check_or_start($$$)
 		
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		# Start slapd before smbd, but with the fifo on stdin
-		if (defined($self->{ldap})) {
-		    $self->slapd_start($env_vars) or 
-			die("couldn't start slapd");
-		    
-		    print "LDAP PROVISIONING...";
-		    $self->provision_ldap($env_vars);
-		}
-		
 		my $valgrind = "";
 		if (defined($ENV{SMBD_VALGRIND})) {
 		    $valgrind = $ENV{SMBD_VALGRIND};
 		} 
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
+
+		# Start slapd before smbd, but with the fifo on stdin
+		if (defined($self->{ldap})) {
+		    $self->slapd_start($env_vars) or 
+			die("couldn't start slapd (2nd time)");
+		}
 
 		my $optarg = "";
 		if (defined($max_time)) {
@@ -136,6 +138,8 @@ sub wait_for_start($$)
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{SERVER}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
+	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER} $testenv_vars->{NETBIOSNAME}");
@@ -219,7 +223,7 @@ start_server= 0
 # These entries need to be added to get the container for the 
 # provision to be aimed at.
 
-dn: cn=\"dc=$basedn\",cn=mapping tree,cn=config
+dn: cn=\"$basedn\",cn=mapping tree,cn=config
 objectclass: top
 objectclass: extensibleObject
 objectclass: nsMappingTree
@@ -231,11 +235,47 @@ dn: cn=userData,cn=ldbm database,cn=plugins,cn=config
 objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: $basedn
+cn=userData
+
+dn: cn=\"cn=Configuration,$basedn\",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: configData
+nsslapd-parent-suffix: $basedn
+cn: cn=Configuration,$basedn
+
+dn: cn=configData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: cn=Configuration,$basedn
+cn=configData
+
+dn: cn=\"cn=Schema,cn=Configuration,$basedn\",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: schemaData
+nsslapd-parent-suffix: cn=Configuration,$basedn
+cn: cn=Schema,cn=Configuration,$basedn
+
+dn: cn=schemaData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: cn=Schema,cn=Configuration,$basedn
+cn=schemaData
 ";
 	close(LDIF);
 
-	system("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf >&2") == 0 or return 0;
-
+my $dir = getcwd();
+chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
+	if (system("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf >&2") != 0) {
+            chdir $dir;
+            die("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf FAILED: $?");
+        }
+        chdir $dir || die;
 	foreach(<$fedora_ds_dir/schema/*>) {
 		unlink unless (/00core.*/);
 	}
@@ -262,6 +302,40 @@ nsslapd-pluginDescription: Allow bitwise matching rules
 	return ($fedora_ds_dir, $pidfile);
 }
 
+sub write_openldap_dbconfig($) {
+    my ( $ldapdbdir ) = @_;
+	open(CONF, ">$ldapdbdir/DB_CONFIG");
+	print CONF "
+#
+	# Set the database in memory cache size.
+	#
+	set_cachesize   0       524288        0
+	
+	
+	#
+	# Set database flags (this is a test environment, we don't need to fsync()).
+	#		
+	set_flags       DB_TXN_NOSYNC
+	
+	#
+	# Set log values.
+	#
+	set_lg_regionmax        104857
+	set_lg_max              1048576
+	set_lg_bsize            209715
+	set_lg_dir              $ldapdbdir/bdb-logs
+	
+	
+	#
+	# Set temporary file creation directory.
+	#			
+	set_tmp_dir             $ldapdbdir/tmp
+	";
+	close(CONF);
+
+
+}
+
 sub mk_openldap($$$$$$$$)
 {
 	my ($self, $ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, $provision_options) = @_;
@@ -270,7 +344,7 @@ sub mk_openldap($$$$$$$$)
 	my $pidfile = "$ldapdir/slapd.pid";
 	my $modconf = "$ldapdir/modules.conf";
 
-	mkdir($_, 0777) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/bdb-logs", 
+	mkdir($_, 0777) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/user", "$ldapdir/db/config", "$ldapdir/db/schema", "$ldapdir/db/bdb-logs", 
 		"$ldapdir/db/tmp");
 
 	open(CONF, ">$slapd_conf");
@@ -300,10 +374,33 @@ defaultsearchbase \"$basedn\"
 
 backend		bdb
 database        bdb
+suffix		\"cn=Schema,cn=Configuration,$basedn\"
+directory	$ldapdir/db/schema
+index           objectClass eq
+index           samAccountName eq
+index name eq
+index objectCategory eq
+index lDAPDisplayName eq
+index subClassOf eq
+
+database        bdb
+suffix		\"cn=Configuration,$basedn\"
+directory	$ldapdir/db/config
+index           objectClass eq
+index           samAccountName eq
+index name eq
+index objectSid eq
+index objectCategory eq
+index nCName eq pres
+index subClassOf eq
+index dnsRoot eq
+index nETBIOSName eq pres
+
+database        bdb
 suffix		\"$basedn\"
 rootdn          \"cn=Manager,$basedn\"
 rootpw          $password
-directory	$ldapdir/db
+directory	$ldapdir/db/user
 index           objectClass eq
 index           samAccountName eq
 index name eq
@@ -328,35 +425,10 @@ syncprov-sessionlog 100
 ";
 
 	close(CONF);
-
-	open(CONF, ">$ldapdir/db/DB_CONFIG");
-	print CONF "
-#
-	# Set the database in memory cache size.
-	#
-	set_cachesize   0       524288        0
 	
-	
-	#
-	# Set database flags (this is a test environment, we don't need to fsync()).
-	#		
-	set_flags       DB_TXN_NOSYNC
-	
-	#
-	# Set log values.
-	#
-	set_lg_regionmax        104857
-	set_lg_max              1048576
-	set_lg_bsize            209715
-	set_lg_dir              $ldapdir/db/bdb-logs
-	
-	
-	#
-	# Set temporary file creation directory.
-	#			
-	set_tmp_dir             $ldapdir/db/tmp
-	";
-	close(CONF);
+	write_openldap_dbconfig("$ldapdir/db/user");
+	write_openldap_dbconfig("$ldapdir/db/config");
+	write_openldap_dbconfig("$ldapdir/db/schema");
 
 	#This uses the provision we just did, to read out the schema
 	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
@@ -382,7 +454,9 @@ moduleload	syncprov
 	}
 
 	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
-	system("slapadd -f $slapd_conf < $privatedir/$dnsname.ldif >/dev/null") == 0 or die("slapadd failed");
+	system("slapadd -b $basedn -f $slapd_conf -l $privatedir/$dnsname.ldif >/dev/null") == 0 or die("slapadd failed");
+	system("slapadd -b cn=Configuration,$basedn -f $slapd_conf -l $privatedir/$dnsname-config.ldif >/dev/null") == 0 or die("slapadd failed");
+	system("slapadd -b cn=Schema,cn=Configuration,$basedn -f $slapd_conf -l $privatedir/$dnsname-schema.ldif >/dev/null") == 0 or die("slapadd failed");
 
     system("slaptest -f $slapd_conf >/dev/null") == 0 or 
 		die ("slaptest after database load failed");
@@ -571,16 +645,26 @@ sub provision($$$$$)
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface
 	};
 
-	if (not defined($self->{ldap})) {
-	} elsif ($self->{ldap} eq "openldap") {
-		($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, join(' ', @provision_options)) or die("Unable to create openldap directories");
-	} elsif ($self->{ldap} eq "fedora") {
-		($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora($ldapdir, $basedn, $root, $password, $privatedir, $configuration) or die("Unable to create fedora ds directories");
-		push (@provision_options, "--ldap-module=nsuniqueid");
-	}
-
 	$ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
 
+	if (defined($self->{ldap})) {
+
+	        if ($self->{ldap} eq "openldap") {
+		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, join(' ', @provision_options)) or die("Unable to create openldap directories");
+	        } elsif ($self->{ldap} eq "fedora") {
+		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora($ldapdir, $basedn, $root, $password, $privatedir, $configuration) or die("Unable to create fedora ds directories");
+		       push (@provision_options, "--ldap-module=nsuniqueid");
+	        }
+
+		$self->slapd_start($ret) or 
+			die("couldn't start slapd");
+		    
+		print "LDAP PROVISIONING...";
+		$self->provision_ldap($ret);
+
+		$self->slapd_stop($ret) or 
+			die("couldn't stop slapd");
+	}
 	return $ret; 
 }
 

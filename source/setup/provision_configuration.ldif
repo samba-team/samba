@@ -1,17 +1,6 @@
 ###############################
 # Configuration Naming Context
 ###############################
-dn: ${CONFIGDN}
-objectClass: top
-objectClass: configuration
-cn: Configuration
-instanceType: 13
-showInAdvancedViewOnly: TRUE
-objectCategory: CN=Configuration,${SCHEMADN}
-subRefs: ${SCHEMADN}
-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-
 dn: CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRefContainer
@@ -165,18 +154,3 @@ lDAPAdminLimits: MaxConnIdleTime=900
 lDAPAdminLimits: InitRecvTimeout=120
 lDAPAdminLimits: MaxConnections=5000
 
-
-###############################
-# Schema Naming Context
-###############################
-dn: ${SCHEMADN}
-objectClass: top
-objectClass: dMD
-cn: Schema
-instanceType: 13
-showInAdvancedViewOnly: TRUE
-objectCategory: CN=DMD,${SCHEMADN}
-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-objectVersion: 30
