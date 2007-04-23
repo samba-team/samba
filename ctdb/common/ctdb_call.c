@@ -716,6 +716,14 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->c->hdr.ctdb_version = CTDB_VERSION;
 	state->c->hdr.operation = CTDB_REQ_CALL;
 	state->c->hdr.destnode  = header->dmaster;
+	/*
+	   always sending the remote call straight to the lmaster
+	   improved performance slightly in some tests.
+	   worth investigating further in the future
+	state->c->hdr.destnode  = ctdb_lmaster(ctdb_db->ctdb, &(call->key));
+	*/
+
+
 	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
