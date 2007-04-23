@@ -5382,6 +5382,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
+	pdata = *ppdata;
 
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
 	SSVAL(pdata,2,0); /* No fnum. */
@@ -5558,6 +5559,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
+	pdata = *ppdata;
 
 	if (extended_oplock_granted) {
 		if (flags & REQUEST_BATCH_OPLOCK) {
