@@ -970,8 +970,6 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res);
 		*result = res;
-	} else {
-		talloc_free(res);
 	}
 
 	talloc_free(expression);
