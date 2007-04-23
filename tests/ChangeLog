@@ -1,3 +1,7 @@
+2007-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* db: basic tests for dbinfo
+
 2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/Makefile.am: Add check-ntlm.
