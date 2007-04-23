@@ -510,6 +510,9 @@ BOOL non_mappable_sid(DOM_SID *sid)
 	DOM_SID dom;
 	uint32 rid;
 
+	if (sid_equal(sid, &global_sid_System))
+		return True;
+
 	sid_copy(&dom, sid);
 	sid_split_rid(&dom, &rid);
 
