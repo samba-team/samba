@@ -541,6 +541,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				 "objectClass=server");
 	
 	if (ret) {
+		DEBUG(1, ("searching for servers in sites DN %s failed: %s\n", 
+			  ldb_dn_get_linearized(sites_dn), ldb_errstring(b_state->sam_ctx)));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -568,10 +570,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
 						 LDB_SCOPE_BASE, attrs_account_1, "objectClass=computer");
-			if (ret) {
-				return WERR_GENERAL_FAILURE;
-			}
-			if (res_account->count == 1) {
+			if (ret == LDB_SUCCESS && res_account->count == 1) {
 				ctr1->array[i].dns_name
 					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
 				ctr1->array[i].netbios_name
@@ -594,6 +593,10 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 						ctr1->array[i].is_pdc = True;
 					}
 				}
+			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for computer DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
 			}
 
 			/* Look at server DN and extract site component */
@@ -635,34 +638,33 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn, 
 						 LDB_SCOPE_BASE, attrs_ntds, "objectClass=nTDSDSA");
-			if (ret) {
-				return WERR_GENERAL_FAILURE;
-			}
-			if (res_ntds->count == 1) {
+			if (ret == LDB_SUCCESS && res_ntds->count == 1) {
 				ctr2->array[i].is_gc
 					= (ldb_msg_find_attr_as_int(res_ntds->msgs[0], "options", 0) == 1);
 				ctr2->array[i].ntds_guid 
 					= samdb_result_guid(res_ntds->msgs[0], "objectGUID");
 				ctr2->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
 			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for NTDS DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx)));
+			}
 
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_site, site_dn, 
 						 LDB_SCOPE_BASE, attrs_site, "objectClass=site");
-			if (ret) {
-				return WERR_GENERAL_FAILURE;
-			}
-			if (res_site->count == 1) {
+			if (ret == LDB_SUCCESS && res_site->count == 1) {
 				ctr2->array[i].site_guid 
 					= samdb_result_guid(res_site->msgs[0], "objectGUID");
 				ctr2->array[i].site_dn = ldb_dn_get_linearized(res_site->msgs[0]->dn);
 			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for site DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx)));
+			}
 
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
 						 LDB_SCOPE_BASE, attrs_account_2, "objectClass=computer");
-			if (ret) {
-				return WERR_GENERAL_FAILURE;
-			}
-			if (res_account->count == 1) {
+			if (ret == LDB_SUCCESS && res_account->count == 1) {
 				ctr2->array[i].dns_name
 					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
 				ctr2->array[i].netbios_name
@@ -679,13 +681,18 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
-					if (ret) {
-						return WERR_GENERAL_FAILURE;
-					}
-					if (res_domain->count == 1) {
+					if (ret == LDB_SUCCESS && res_domain->count == 1) {
 						ctr2->array[i].is_pdc = True;
 					}
+					if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+						DEBUG(5, ("warning: searching for domain DN %s failed: %s\n", 
+							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx)));
+					}
 				}
+			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for computer account DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
 			}
 
 			/* Look at server DN and extract site component */
