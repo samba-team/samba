@@ -386,6 +386,8 @@ function provision_default_paths(subobj)
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
 	paths.ldap_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".ldif";
+	paths.ldap_config_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-config.ldif";
+	paths.ldap_schema_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-schema.ldif";
 	return paths;
 }
 
@@ -573,6 +575,31 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 		assert(modify_ok);
 	};
 
+	message("Adding configuration container (permitted to fail)\n");
+	var add_ok = setup_add_ldif("provision_configuration_basedn.ldif", info, samdb, true);
+	message("Modifying configuration container\n");
+	var modify_ok = setup_ldb_modify("provision_configuration_basedn_modify.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify the configuration container\n");
+			assert(modify_ok);
+		}
+		assert(modify_ok);
+	}
+
+	message("Adding schema container (permitted to fail)\n");
+	var add_ok = setup_add_ldif("provision_schema_basedn.ldif", info, samdb, true);
+	message("Modifying schema container\n");
+	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify the schema container: " + samdb.errstring() + "\n");
+			assert(modify_ok);
+		}
+		message("Failed to modify the schema container: " + samdb.errstring() + "\n");
+		assert(modify_ok);
+	}
+
 	message("Setting up sam.ldb Samba4 schema\n");
 	setup_add_ldif("schema_samba4.ldif", info, samdb, false);
 	message("Setting up sam.ldb AD schema\n");
@@ -587,6 +614,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	samdb.close();
 
 	samdb = open_ldb(info, paths.samdb, false);
+
+	message("Setting up sam.ldb configuration data\n");
+	setup_add_ldif("provision_configuration.ldif", info, samdb, false);
 
 	message("Setting up display specifiers\n");
 	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
@@ -618,8 +648,6 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	message("Setting up sam.ldb data\n");
 	setup_add_ldif("provision.ldif", info, samdb, false);
-	message("Setting up sam.ldb configuration data\n");
-	setup_add_ldif("provision_configuration.ldif", info, samdb, false);
 
 	if (blank != false) {
 		message("Setting up sam.ldb index\n");
@@ -716,7 +744,15 @@ function provision_ldapbase(subobj, message, paths)
 		   message, paths.ldap_basedn_ldif, 
 		   subobj);
 
-	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
+	setup_file("provision_configuration_basedn.ldif", 
+		   message, paths.ldap_config_basedn_ldif, 
+		   subobj);
+
+	setup_file("provision_schema_basedn.ldif", 
+		   message, paths.ldap_schema_basedn_ldif, 
+		   subobj);
+
+	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
 }
 
 
