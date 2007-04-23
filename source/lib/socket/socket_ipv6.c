@@ -166,9 +166,11 @@ static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
 		return map_nt_error_from_unix(errno);
 	}
 
-	ret = listen(sock->fd, queue_size);
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+	if (sock->type == SOCKET_TYPE_STREAM) {
+		ret = listen(sock->fd, queue_size);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
@@ -390,6 +392,16 @@ static int ipv6_tcp_get_fd(struct socket_context *sock)
 	return sock->fd;
 }
 
+static NTSTATUS ipv6_pending(struct socket_context *sock, size_t *npending)
+{
+	int value = 0;
+	if (ioctl(sock->fd, FIONREAD, &value) == 0) {
+		*npending = value;
+		return NT_STATUS_OK;
+	}
+	return map_nt_error_from_unix(errno);
+}
+
 static const struct socket_ops ipv6_tcp_ops = {
 	.name			= "ipv6",
 	.fn_init		= ipv6_tcp_init,
@@ -400,6 +412,7 @@ static const struct socket_ops ipv6_tcp_ops = {
 	.fn_recv		= ipv6_tcp_recv,
 	.fn_send		= ipv6_tcp_send,
 	.fn_close		= ipv6_tcp_close,
+	.fn_pending		= ipv6_pending,
 
 	.fn_set_option		= ipv6_tcp_set_option,
 
