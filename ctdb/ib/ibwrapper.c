@@ -428,6 +428,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 	rc = rdma_get_cm_event(pctx->cm_channel, &event);
 	if (rc) {
 		ctx->state = IBWS_ERROR;
+		event = NULL;
 		sprintf(ibw_lasterr, "rdma_get_cm_event error %d\n", rc);
 		goto error;
 	}
@@ -520,9 +521,10 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		if (conn) {
 			if ((rc=rdma_ack_cm_event(event)))
 				DEBUG(0, ("reject/rdma_ack_cm_event failed with %d\n", rc));
-			event = NULL;
-			pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
-			ibw_conn_priv_destruct(pconn);
+			event = NULL; /* not to touch cma_id or conn */
+			conn->state = IBWC_ERROR;
+			/* it should free the conn */
+			pctx->connstate_func(NULL, conn);
 		}
 		goto error;
 
@@ -556,22 +558,26 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	return;
 error:
-	if (event!=NULL && (rc=rdma_ack_cm_event(event))) {
-		DEBUG(0, ("rdma_ack_cm_event failed with %d\n", rc));
-	}
-
 	DEBUG(0, ("cm event handler: %s", ibw_lasterr));
 
-	if (cma_id!=pctx->cm_id) {
-		conn = talloc_get_type(cma_id->context, struct ibw_conn);
-		if (conn) {
-			conn->state = IBWC_ERROR;
-			pctx->connstate_func(NULL, conn);
+	if (event!=NULL) {
+		if (cma_id!=NULL && cma_id!=pctx->cm_id) {
+			conn = talloc_get_type(cma_id->context, struct ibw_conn);
+			if (conn) {
+				conn->state = IBWC_ERROR;
+				pctx->connstate_func(NULL, conn);
+			}
+		} else {
+			ctx->state = IBWS_ERROR;
+			pctx->connstate_func(ctx, NULL);
 		}
-	} else {
-		ctx->state = IBWS_ERROR;
-		pctx->connstate_func(ctx, NULL);
+
+		if ((rc=rdma_ack_cm_event(event))!=0) {
+			DEBUG(0, ("rdma_ack_cm_event failed with %d\n", rc));
+		}
 	}
+
+	return;
 }
 
 static void ibw_event_handler_verbs(struct event_context *ev,

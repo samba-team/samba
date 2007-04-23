@@ -30,12 +30,12 @@ void do_debug(const char *format, ...)
 	char *s = NULL;
 
 	va_start(ap, format);
-	s = talloc_vasprintf(NULL, format, ap);
+	vasprintf(&s, format, ap);
 	va_end(ap);
 
 	gettimeofday(&tm, NULL);
 	printf("%-8.8d.%-6.6d [%d]: %s", (int)tm.tv_sec, (int)tm.tv_usec,
 	       (int)getpid(), s);
 	fflush(stdout);
-	talloc_free(s);
+	free(s);
 }
