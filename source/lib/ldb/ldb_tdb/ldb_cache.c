@@ -110,12 +110,13 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg = ltdb->cache->attributes;
 	struct ldb_dn *dn;
-	int i;
+	int i, r;
 
 	dn = ldb_dn_new(module, module->ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, dn, msg) == -1) {
+	r = ltdb_search_dn1(module, dn, msg);
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(dn);
 		goto failed;
 	}
@@ -176,12 +177,13 @@ static int ltdb_subclasses_load(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg = ltdb->cache->subclasses;
 	struct ldb_dn *dn;
-	int i, j;
+	int i, j, r;
 
 	dn = ldb_dn_new(module, module->ldb, LTDB_SUBCLASSES);
 	if (dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, dn, msg) == -1) {
+	r = ltdb_search_dn1(module, dn, msg);
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(dn);
 		goto failed;
 	}
@@ -277,7 +279,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 failed:
 	talloc_free(msg);
 	errno = ENOMEM;
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 /*
@@ -313,6 +315,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL;
+	int r;
 
 	/* a very fast check to avoid extra database reads */
 	if (ltdb->cache != NULL && 
@@ -339,16 +342,17 @@ int ltdb_cache_load(struct ldb_module *module)
 	baseinfo_dn = ldb_dn_new(module, module->ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) == -1) {
+	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo);
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
 	
 	/* possibly initialise the baseinfo */
 	if (!baseinfo->dn) {
-		if (ltdb_baseinfo_init(module) != 0) {
+		if (ltdb_baseinfo_init(module) != LDB_SUCCESS) {
 			goto failed;
 		}
-		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != 1) {
+		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -384,7 +388,8 @@ int ltdb_cache_load(struct ldb_module *module)
 	indexlist_dn = ldb_dn_new(module, module->ldb, LTDB_INDEXLIST);
 	if (indexlist_dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist) == -1) {
+	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist);
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
 
@@ -426,13 +431,13 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	msg = talloc(ltdb, struct ldb_message);
 	if (msg == NULL) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	s = talloc_asprintf(msg, "%llu", ltdb->sequence_number+1);
 	if (!s) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg->num_elements = ARRAY_SIZE(el);
@@ -441,13 +446,13 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	if (msg->dn == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el[0].name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
 	if (el[0].name == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el[0].values = &val;
 	el[0].num_values = 1;
@@ -459,7 +464,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	if (el[1].name == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el[1].values = &val_time;
 	el[1].num_values = 1;
@@ -467,7 +472,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	val_time.data = (uint8_t *)s;
@@ -477,7 +482,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	talloc_free(msg);
 
-	if (ret == 0) {
+	if (ret == LDB_SUCCESS) {
 		ltdb->sequence_number += 1;
 	}
 

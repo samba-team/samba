@@ -198,7 +198,7 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 */
 static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 {
-	int ret = 0;
+	int ret = LDB_SUCCESS;
 
 	if (ldb_dn_is_special(dn) &&
 	    (ldb_dn_check_special(dn, LTDB_INDEXLIST) ||
@@ -206,7 +206,7 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		ret = ltdb_reindex(module);
 	}
 
-	if (ret == 0 &&
+	if (ret == LDB_SUCCESS &&
 	    !(ldb_dn_is_special(dn) &&
 	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
 		ret = ltdb_increase_sequence_number(module);
@@ -243,7 +243,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 	
 	ret = ltdb_index_add(module, msg);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		tdb_delete(ltdb->tdb, tdb_key);
 	}
 
@@ -278,12 +278,12 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	if (ret == LDB_SUCCESS) {
 		ret = ltdb_index_one(module, msg, 1);
 		if (ret != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		ret = ltdb_modified(module, msg->dn);
 		if (ret != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 	}
 
@@ -362,40 +362,36 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
 	ret = ltdb_search_dn1(module, dn, msg);
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
-		talloc_free(msg);
-		return LDB_ERR_NO_SUCH_OBJECT;
+		goto done;
 	}
 
 	ret = ltdb_delete_noindex(module, dn);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return LDB_ERR_NO_SUCH_OBJECT;
+		goto done;
 	}
 
 	/* remove one level attribute */
 	ret = ltdb_index_one(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
 	/* remove any indexed attributes */
 	ret = ltdb_index_del(module, msg);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
 	ret = ltdb_modified(module, dn);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
+done:
 	talloc_free(msg);
-	return LDB_SUCCESS;
+	return ret;
 }
 
 /*
@@ -718,8 +714,8 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
-				if (ltdb_index_del_value(module, dn, &msg->elements[i], j) != 0) {
-					ret = LDB_ERR_OTHER;
+				ret = ltdb_index_del_value(module, dn, &msg->elements[i], j);
+				if (ret != LDB_SUCCESS) {
 					goto failed;
 				}
 			}
@@ -739,8 +735,8 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		goto failed;
 	}
 
-	if (ltdb_modified(module, msg->dn) != LDB_SUCCESS) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
+	ret = ltdb_modified(module, msg->dn);
+	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
@@ -835,9 +831,9 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
 	tret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
-	if (tret != 1) {
+	if (tret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
-		req->handle->status = LDB_ERR_NO_SUCH_OBJECT;
+		req->handle->status = tret;
 		goto done;
 	}
 
@@ -944,10 +940,10 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 	req->op.seq_num.flags = 0;
 
 	tret = ltdb_search_dn1(module, dn, msg);
-	if (tret != 1) {
+	if (tret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		req->op.seq_num.seq_num = 0;
 		/* zero is as good as anything when we don't know */
+		req->op.seq_num.seq_num = 0;
 		return LDB_SUCCESS;
 	}
 
