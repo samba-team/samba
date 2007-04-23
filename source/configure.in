@@ -3640,6 +3640,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(initialize_krb5_error_table, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_alloc, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_free, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_enctype_to_string, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -4016,6 +4017,43 @@ if test x"$with_ads_support" != x"no"; then
               [whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal])
   fi
 
+  if test x"$ac_cv_func_ext_krb5_enctype_to_string" = x"yes"; then
+    AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_context context, krb5_enctype enctype, char **str)],
+        smb_krb5_enctype_to_string_takes_krb5_context_arg,[
+	AC_TRY_RUN_STRICT([
+		#include <krb5.h>
+		int main(void) {
+		krb5_context context;
+		char *str = NULL;
+		krb5_enctype_to_string(context, 1, &str);
+		if (str) free (str);
+		}
+		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+		smb_krb5_enctype_to_string_takes_krb5_context_arg=yes,
+		smb_krb5_enctype_to_string_takes_krb5_context_arg=no)])
+
+    if test x"$smb_krb5_enctype_to_string_takes_krb5_context_arg" = x"yes"; then
+      AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG,1,
+                [whether krb5_enctype_to_string takes krb5_context argument])
+    fi
+
+    AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_enctype enctype, char *str, size_t len)],
+        smb_krb5_enctype_to_string_takes_size_t_arg,[
+	AC_TRY_RUN_STRICT([
+		#include <krb5.h>
+		int main(void) {
+		char buf[256];
+		krb5_enctype_to_string(1, buf, 256);
+		}
+		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+		smb_krb5_enctype_to_string_takes_size_t_arg=yes,
+		smb_krb5_enctype_to_string_takes_size_t_arg=no)])
+
+    if test x"$smb_krb5_enctype_to_string_takes_size_t_arg" = x"yes"; then
+      AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG,1,
+                [whether krb5_enctype_to_string takes size_t argument])
+    fi
+  fi
 
   #
   #
@@ -5953,6 +5991,14 @@ samba_cv_HAVE_PEERCRED=yes,samba_cv_HAVE_PEERCRED=no,samba_cv_HAVE_PEERCRED=cros
 if test x"$samba_cv_HAVE_PEERCRED" = x"yes"; then
     AC_DEFINE(HAVE_PEERCRED,1,[Whether we can use SO_PEERCRED to get socket credentials])
 fi
+
+AC_CHECK_FUNCS(getpeereid sendmsg)
+AC_CHECK_HEADERS(sys/ucred.h)
+
+AC_CHECK_MEMBERS([struct msghdr.msg_accrightslen],,,
+		[#include <sys/socket.h>])
+AC_CHECK_MEMBERS([struct msghdr.msg_control],,,
+		[#include <sys/socket.h>])
 
 
 #################################################

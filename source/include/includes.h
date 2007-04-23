@@ -1194,6 +1194,10 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 					krb5_error_code error_code,
 					const krb5_principal server,
 					krb5_data *reply);
+krb5_enctype smb_get_enctype_from_kt_entry(const krb5_keytab_entry *kt_entry);
+krb5_error_code smb_krb5_enctype_to_string(krb5_context context, 
+ 					    krb5_enctype enctype, 
+					    char **etype_s);
 
 #endif /* HAVE_KRB5 */
 
