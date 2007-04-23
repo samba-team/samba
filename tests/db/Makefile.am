@@ -6,9 +6,9 @@ noinst_DATA = krb5.conf
 
 noinst_SCRIPTS = have-db
 
-check_SCRIPTS = loaddump-db add-modify-delete
+check_SCRIPTS = loaddump-db add-modify-delete check-dbinfo
 
-TESTS = loaddump-db add-modify-delete
+TESTS = $(check_SCRIPTS) 
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/db,g' \
@@ -24,6 +24,11 @@ add-modify-delete: add-modify-delete.in Makefile
 	chmod +x add-modify-delete.tmp
 	mv add-modify-delete.tmp add-modify-delete
 
+check-dbinfo: check-dbinfo.in Makefile
+	$(do_subst) < $(srcdir)/check-dbinfo.in > check-dbinfo.tmp
+	chmod +x check-dbinfo.tmp
+	mv check-dbinfo.tmp check-dbinfo
+
 have-db: have-db.in Makefile
 	$(do_subst) < $(srcdir)/have-db.in > have-db.tmp
 	chmod +x have-db.tmp
@@ -38,6 +43,7 @@ CLEANFILES= \
 	$(TESTS) \
 	have-db \
 	db-dump* \
+	dbinfo.out \
 	current-db* \
 	out-text-dump* \
 	out-current-* \
@@ -47,6 +53,7 @@ CLEANFILES= \
 	messages.log
 
 EXTRA_DIST = \
+	check-dbinfo.in \
 	loaddump-db.in \
 	add-modify-delete.in \
 	have-db.in \

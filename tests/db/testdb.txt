@@ -1,0 +1,4 @@
+label: default
+        realm: EXAMPLE.ORG
+        dbname: ../../tests/db/current-db
+        mkey_file: ../../tests/db/mkey.file
