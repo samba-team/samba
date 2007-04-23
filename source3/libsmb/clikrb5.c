@@ -28,11 +28,11 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype) 
 #define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
 #define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else
+#else /* MIT */
 #define	KRB5_KEY_TYPE(k)	((k)->enctype)
 #define KRB5_KEY_LENGTH(k)	((k)->length)
 #define KRB5_KEY_DATA(k)	((k)->contents)
@@ -1216,7 +1216,7 @@ out:
 		krb5_free_creds(context, creds);
 	}
 #else
-#error No suitable krb5 ticket renew function available
+#error NO_SUITABKE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
 #endif
 
 
@@ -1428,18 +1428,53 @@ done:
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_FREE
 
 #ifdef KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT
-	/* Modern MIT version */
+	/* Modern MIT or Heimdal version */
 	krb5_get_init_creds_opt_free(context, opt);
 #else
 	/* Heimdal version */
 	krb5_get_init_creds_opt_free(opt);
-#endif
+#endif /* KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT */
 
 #else /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
 	/* Historical MIT version */
 	SAFE_FREE(opt);
 	opt = NULL;
 #endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
+}
+
+ krb5_enctype smb_get_enctype_from_kt_entry(const krb5_keytab_entry *kt_entry)
+{
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY		/* MIT */
+	return kt_entry->key.enctype;
+#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)	/* Heimdal */
+	return kt_entry->keyblock.keytype;
+#else
+#error UNKNOWN_KRB5_KEYTAB_ENTRY_KEYBLOCK_FORMAT
+#endif
+}
+
+
+/* caller needs to free etype_s */
+ krb5_error_code smb_krb5_enctype_to_string(krb5_context context, 
+ 					    krb5_enctype enctype, 
+					    char **etype_s)
+{
+#ifdef HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG
+	return krb5_enctype_to_string(context, enctype, etype_s); /* Heimdal */
+#elif defined(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG)
+	char buf[256];
+	krb5_error_code ret = krb5_enctype_to_string(enctype, buf, 256); /* MIT */
+	if (ret) {
+		return ret;
+	}
+	*etype_s = SMB_STRDUP(buf);
+	if (!*etype_s) {
+		return ENOMEM;
+	}
+	return ret;
+#else
+#error UNKNOWN_KRB5_ENCTYPE_TO_STRING_FUNCTION
+#endif
 }
 
  krb5_error_code smb_krb5_mk_error(krb5_context context,
