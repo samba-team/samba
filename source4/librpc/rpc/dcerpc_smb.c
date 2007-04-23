@@ -39,7 +39,17 @@ struct smb_private {
 */
 static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
-	c->transport.recv_data(c, NULL, status);
+	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
+		status = NT_STATUS_END_OF_FILE;
+	}
+
+	if (c->transport.recv_data) {
+		c->transport.recv_data(c, NULL, status);
+	}
 }
 
 
