@@ -2,6 +2,7 @@
  * Copyright (C)  Rafal Szczesniak 2007
  */
 
+
 /**
  * Swat Net Manager class graphical user interface
  */
@@ -14,7 +15,6 @@ function()
 
 //qx.OO.addProperty({ name : "_tree", type : "object" });
 //qx.OO.addProperty({ name : "_panel", type : "object" });
-//qx.OO.addProperty({ name : "_view", type : "object" });
 //qx.OO.addProperty({ name : "_txtDomain", type : "object" });
 //qx.OO.addProperty({ name : "_txtUsername", type : "object" });
 
@@ -30,9 +30,9 @@ qx.Proto.buildGui = function(module)
   // Main layout composing the whole form
   var vlayout = new qx.ui.layout.VerticalBoxLayout();
   vlayout.set({
-                top: 20,
-                left: 20,
-                width: "100%",
+                top: 10,
+                left: 10,
+                right: 10,
                 bottom: 20
               });
 
@@ -70,37 +70,17 @@ qx.Proto.buildGui = function(module)
   // "Panel" for list view
   this._panel = new qx.ui.layout.VerticalBoxLayout();
   var panel = this._panel;
-  
+
+  // TODO: Find out what's causing this bug - specifying 'width' works fine,
+  // but setting 'right' instead does not which makes impossible to position
+  // the panel against right boundary of a box
   panel.set({
               top: 0,
               left: 10,
-              width: "80%",
+              width:"80%",
               height: "100%"
             });
 
-  // Setup some initial columns and (empty) item list - to be replaced soon
-  // with default view loading
-  var columns = { name : { label: "Name", width: 120, type: "text" }};
-  var items = [];
-
-  // Setup the list view
-  this._view = new qx.ui.listview.ListView(items, columns);
-  var view = this._view;
-  view.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
-  view.setBackgroundColor("white");
-  view.set({
-             top: 0,
-             left: 0,
-             width: "80%",
-             height: "100%"
-           });
-
-  // Give a list view name to handle
-  fsm.addObject("view", view);
-
-  // and the list view to the panel
-  panel.add(view);
-  
   // Add the tree view and panel for list view to the layout
   hlayout.add(tree);
   hlayout.add(panel);
@@ -110,8 +90,8 @@ qx.Proto.buildGui = function(module)
   statusLayout.set({
                      top: 10,
                      left: 0,
-                     right: 0,
-                     height: "100%"
+                     width: "100%",
+                     height: "20%"
                    });
 
   // First "column" of status fields
@@ -119,13 +99,13 @@ qx.Proto.buildGui = function(module)
   colALayout.set({
                   top: 0,
                   left: 0,
-                  width: 150,
+                  width: "25%",
                   height: "100%"
                 });
 
   // Domain name (credentials) - label and text box
   var statusDomain = new qx.ui.layout.HorizontalBoxLayout();
-  statusDomain.set({ top: 0, left: 0, width: "100%", height: 20,
+  statusDomain.set({ top: 0, left: 0, width: "100%", height: "auto",
 		       verticalChildrenAlign: "middle" });
   
   var lblDomain = new qx.ui.basic.Atom();
@@ -141,7 +121,7 @@ qx.Proto.buildGui = function(module)
   
   // Username (credentials) - label and text box
   var statusUsername = new qx.ui.layout.HorizontalBoxLayout();
-  statusUsername.set({ top: 0, left: 0, width: "100%", height: 20,
+  statusUsername.set({ top: 0, left: 0, width: "100%", height: "auto",
                        verticalChildrenAlign: "middle" });
 
   var lblUsername = new qx.ui.basic.Atom();
@@ -281,7 +261,13 @@ qx.Proto._updateNetContextCreds = function(module, rpcRequest)
 qx.Proto._initUserManager = function(module, rpcRequest)
 {
   // Get obtained UsrCtx handle
-  var result = rpcRequest.getUserData("result").data;
+  var usrCtx = rpcRequest.getUserData("result").data;
+
+  // Create user view and pass the context
+  var view = new swat.module.netmgr.UsersView(module.fsm);
+  view.setUsrCtx(usrCtx);
+  
+  this._panel.add(view);
 };
 
 
