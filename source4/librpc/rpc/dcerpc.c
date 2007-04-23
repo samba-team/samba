@@ -673,6 +673,17 @@ static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event 
 				   struct timeval t, void *private)
 {
 	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
+
+	if (req->ignore_timeout) {
+		dcerpc_req_dequeue(req);
+		req->state = RPC_REQUEST_DONE;
+		req->status = NT_STATUS_IO_TIMEOUT;
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
+		return;
+	}
+
 	dcerpc_connection_dead(req->p->conn, NT_STATUS_IO_TIMEOUT);
 }
 
@@ -945,6 +956,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->flags = 0;
 	req->fault_code = 0;
 	req->async_call = async;
+	req->ignore_timeout = False;
 	req->async.callback = NULL;
 	req->async.private = NULL;
 	req->recv_handler = NULL;

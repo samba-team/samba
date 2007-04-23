@@ -246,6 +246,7 @@ struct rpc_request {
 	uint16_t opnum;
 	DATA_BLOB request_data;
 	BOOL async_call;
+	BOOL ignore_timeout;
 
 	/* use by the ndr level async recv call */
 	struct {
