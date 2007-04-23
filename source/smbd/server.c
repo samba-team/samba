@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "smb_launchd.h"
 
 static_decl_rpc;
 
@@ -298,153 +297,6 @@ static BOOL allowable_number_of_smbd_processes(void)
 	return num_children < max_processes;
 }
 
-static int init_sockets_smbd(const char *smb_ports,
-				int fd_listenset[FD_SETSIZE])
-{
-	int num_interfaces = iface_count();
-	char * ports;
-	int num_sockets = 0;
-	int i, s;
-
-	/* use a reasonable default set of ports - listing on 445 and 139 */
-	if (!smb_ports) {
-		ports = lp_smb_ports();
-		if (!ports || !*ports) {
-			ports = smb_xstrdup(SMB_PORTS);
-		} else {
-			ports = smb_xstrdup(ports);
-		}
-	} else {
-		ports = smb_xstrdup(smb_ports);
-	}
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		/* We have been given an interfaces line, and been 
-		   told to only bind to those interfaces. Create a
-		   socket per interface and bind to only these.
-		*/
-		
-		/* Now open a listen socket for each of the
-		   interfaces. */
-		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
-			fstring tok;
-			const char *ptr;
-
-			if(ifip == NULL) {
-				DEBUG(0,("init_sockets_smbd: interface %d has NULL IP address !\n", i));
-				continue;
-			}
-
-			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
-				unsigned port = atoi(tok);
-				if (port == 0) {
-					continue;
-				}
-				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-				if(s == -1)
-					return 0;
-
-				/* ready to listen */
-				set_socket_options(s,"SO_KEEPALIVE"); 
-				set_socket_options(s,user_socket_options);
-     
-				/* Set server socket to non-blocking for the accept. */
-				set_blocking(s,False); 
- 
-				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-					DEBUG(0,("listen: %s\n",strerror(errno)));
-					close(s);
-					return 0;
-				}
-
-				num_sockets++;
-				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("init_sockets_smbd: Too many sockets to bind to\n"));
-					return 0;
-				}
-			}
-		}
-	} else {
-		/* Just bind to 0.0.0.0 - accept connections
-		   from anywhere. */
-
-		fstring tok;
-		const char *ptr;
-
-		num_interfaces = 1;
-		
-		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
-			unsigned port = atoi(tok);
-			if (port == 0) continue;
-			/* open an incoming socket */
-			s = open_socket_in(SOCK_STREAM, port, 0,
-					   interpret_addr(lp_socket_address()),True);
-			if (s == -1)
-				return 0;
-		
-			/* ready to listen */
-			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,user_socket_options);
-			
-			/* Set server socket to non-blocking for the accept. */
-			set_blocking(s,False); 
- 
-			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-				DEBUG(0,("init_sockets_smbd: listen: %s\n",
-					 strerror(errno)));
-				close(s);
-				return 0;
-			}
-
-			fd_listenset[num_sockets] = s;
-			num_sockets++;
-
-			if (num_sockets >= FD_SETSIZE) {
-				DEBUG(0,("init_sockets_smbd: Too many sockets to bind to\n"));
-				return 0;
-			}
-		}
-	} 
-
-	SAFE_FREE(ports);
-	return num_sockets;
-}
-
-static int init_sockets_launchd(const struct smb_launch_info *linfo,
-				const char * smb_ports,
-				int fd_listenset[FD_SETSIZE])
-{
-	int num_sockets;
-	int i;
-
-	/* The launchd service configuration does not have to provide sockets,
-	 * even though it's basically useless without it.
-	 */
-	if (!linfo->num_sockets) {
-		return init_sockets_smbd(smb_ports, fd_listenset);
-	}
-
-	/* Make sure we don't get more sockets than we can handle. */
-	num_sockets = MIN(FD_SETSIZE, linfo->num_sockets);
-	memcpy(fd_listenset, linfo->socket_list, num_sockets * sizeof(int));
-
-	/* Get the sockets ready. This could be hoisted into
-	 * open_sockets_smbd(), but the order of socket operations might
-	 * matter for some platforms, so this approach seems less risky.
-	 *	--jpeach
-	 */
-	for (i = 0; i < num_sockets; ++i) {
-		set_socket_options(fd_listenset[i], "SO_KEEPALIVE");
-		set_socket_options(fd_listenset[i], user_socket_options);
-
-		/* Set server socket to non-blocking for the accept. */
-		set_blocking(fd_listenset[i], False);
-	}
-
-	return num_sockets;
-}
-
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -458,7 +310,6 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 	int maxfd = 0;
 	int i;
 	struct timeval idle_timeout = {0, 0};
-	struct smb_launch_info linfo;
 
 	if (server_mode == SERVER_MODE_INETD) {
 		return open_sockets_inetd();
@@ -480,25 +331,9 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 	FD_ZERO(&listen_set);
 
 	/* At this point, it doesn't matter what daemon mode we are in, we
-	 * need some sockets to listen on. If we are in FOREGROUND mode,
-	 * the launchd checkin might succeed. If we are in DAEMON or
-	 * INTERACTIVE modes, it will fail and we will open the sockets
-	 * ourselves.
+	 * need some sockets to listen on.
 	 */
-	if (smb_launchd_checkin(&linfo)) {
-		/* We are running under launchd and launchd has
-		 * opened some sockets for us.
-		 */
-		num_sockets = init_sockets_launchd(&linfo,
-					    smb_ports,
-					    fd_listenset);
-		idle_timeout.tv_sec = linfo.idle_timeout_secs;
-		smb_launchd_checkout(&linfo);
-	} else {
-		num_sockets = init_sockets_smbd(smb_ports,
-					    fd_listenset);
-	}
-
+	num_sockets = smbd_sockinit(smb_ports, fd_listenset, &idle_timeout);
 	if (num_sockets == 0) {
 		return False;
 	}
