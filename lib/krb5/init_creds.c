@@ -386,7 +386,7 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 	return ENOMEM;
     }
 
-    ret = copy_KRB_ERROR(*error, opt->opt_private->error);
+    ret = copy_KRB_ERROR(opt->opt_private->error, *error);
     if (ret)
 	krb5_clear_error_string(context);
 
