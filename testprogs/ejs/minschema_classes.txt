@@ -30,3 +30,6 @@ user
 displaySpecifier
 foreignSecurityPrincipal
 trustedDomain
+attributeSchema
+subSchema
+queryPolicy
