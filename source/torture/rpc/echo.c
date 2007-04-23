@@ -388,8 +388,12 @@ static bool test_timeout(struct torture_context *tctx,
 	r.in.seconds = 2;
 	p->request_timeout = 1;
 
-	torture_assert(tctx, req = dcerpc_echo_TestSleep_send(p, tctx, &r), 
-		"Failed to send async sleep request");
+	req = dcerpc_echo_TestSleep_send(p, tctx, &r);
+	if (!req) {
+		torture_comment(tctx, "Failed to send async sleep request\n");
+		goto failed;
+	}
+	req->ignore_timeout = True;
 
 	status	= dcerpc_ndr_request_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
@@ -408,6 +412,7 @@ static bool test_timeout(struct torture_context *tctx,
 		torture_comment(tctx, "Failed to send async sleep request\n");
 		goto failed;
 	}
+	req->ignore_timeout = True;
 	status	= dcerpc_ndr_request_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
 		"request should have timed out");
