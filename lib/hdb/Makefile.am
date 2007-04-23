@@ -52,6 +52,8 @@ endif
 lib_LTLIBRARIES = libhdb.la $(ldap_so)
 libhdb_la_LDFLAGS = -version-info 9:0:0
 
+noinst_PROGRAMS = test_dbinfo
+
 dist_libhdb_la_SOURCES =			\
 	common.c				\
 	db.c					\
@@ -63,6 +65,7 @@ dist_libhdb_la_SOURCES =			\
 	hdb-private.h				\
 	keys.c					\
 	keytab.c				\
+	dbinfo.c				\
 	mkey.c					\
 	ndbm.c					\
 	print.c
@@ -101,6 +104,10 @@ hdb_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1
 	../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
+
+test_dbinfo_SOURCES = test_dbinfo.c
+
+test_dbinfo_LIBS = libhdb.la
 
 # to help stupid solaris make
 
