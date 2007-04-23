@@ -1,5 +1,9 @@
 2007-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/Makefile.am: Add and test dbinfo.
+
+	* lib/hdb/hdb.h: Forward declaration for struct hdb_dbinfo;
+
 	* kdc/config.c: Use krb5_kdc_get_config and just fill in what the
 	users wanted differently.
 
