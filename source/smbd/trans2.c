@@ -3262,7 +3262,7 @@ static int call_trans2qpipeinfo(connection_struct *conn, char *inbuf, char *outb
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
+	send_trans2_replies(inbuf, outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
 
 	return(-1);
 }
