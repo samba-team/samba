@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,8 @@
 
 #include <heim_asn1.h>
 #include <hdb_asn1.h>
+
+struct hdb_dbinfo;
 
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
