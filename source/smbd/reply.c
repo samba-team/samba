@@ -3867,7 +3867,23 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 	int ret;
 	SMB_STRUCT_STAT st;
 
-	ret = SMB_VFS_RMDIR(conn,directory);
+	/* Might be a symlink. */
+	if(SMB_VFS_LSTAT(conn, directory, &st) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (S_ISLNK(st.st_mode)) {
+		/* Is what it points to a directory ? */
+		if(SMB_VFS_STAT(conn, directory, &st) != 0) {
+			return map_nt_error_from_unix(errno);
+		}
+		if (!(S_ISDIR(st.st_mode))) {
+			return NT_STATUS_NOT_A_DIRECTORY;
+		}
+		ret = SMB_VFS_UNLINK(conn,directory);
+	} else {
+		ret = SMB_VFS_RMDIR(conn,directory);
+	}
 	if (ret == 0) {
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
