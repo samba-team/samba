@@ -111,7 +111,7 @@ generate_type_seq (const Symbol *s)
 	     "\t\tsizeof(data->val[0]) * data->len);\n"
 	     /* resize but don't care about failures since it doesn't matter */
 	     "ptr = realloc(data->val, data->len * sizeof(data->val[0]));\n"
-	     "if (ptr) data->val = ptr;\n"
+	     "if (ptr != NULL || data->len == 0) data->val = ptr;\n"
 	     "return 0;\n",
 	     subname);
 
