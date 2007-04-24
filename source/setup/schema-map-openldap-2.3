@@ -1,7 +1,6 @@
 #Standard OpenLDAP attributes
 name
 labeledURI
-objectClasses
 createTimeStamp
 attributeTypes
 objectClass
@@ -10,7 +9,6 @@ seeAlso
 uid
 subSchemaSubEntry
 structuralObjectClass
-modifyTimeStamp
 distinguishedName
 description
 cn
@@ -18,8 +16,14 @@ dITContentRules
 top
 #This shouldn't make it to the ldap server
 sambaPassword
-#Skip ObjectClasses
-subSchema
+#These conflict with OpenLDAP builtins
+objectClasses:samba4ObjectClasses
+2.5.21.6:1.3.6.1.4.1.7165.4.255.5
+subSchema:samba4SubSchema
+2.5.20.1:1.3.6.1.4.1.7165.4.255.4
+#Remap these so that we don't put operational attributes in a schema MAY
+modifyTimeStamp:samba4ModifyTimestamp
+2.5.18.2:1.3.6.1.4.1.7165.4.255.3
 #MiddleName has a conflicting OID
 2.16.840.1.113730.3.1.34:1.3.6.1.4.1.7165.4.255.1
 #defaultGroup has a conflicting OID

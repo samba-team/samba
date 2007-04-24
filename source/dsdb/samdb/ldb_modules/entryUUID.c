@@ -352,6 +352,15 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
+		.local_name = "objectClasses",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaObjectClasses"
+			 }
+		}
+	},
+	{
 		.local_name = "sambaPassword",
 		.type = MAP_RENAME,
 		.u = {
@@ -446,9 +455,21 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 	}
 };
 
+/* This objectClass conflicts with builtin classes on OpenLDAP */
+const struct ldb_map_objectclass entryUUID_objectclasses[] =
+{
+	{
+		.local_name = "subSchema",
+		.remote_name = "samba4SubSchema"
+	},
+	{
+		.local_name = NULL
+	}
+};
+
 /* These things do not show up in wildcard searches in OpenLDAP, but
  * we need them to show up in the AD-like view */
-const char * const wildcard_attributes[] = {
+const char * const entryUUID_wildcard_attributes[] = {
 	"objectGUID", 
 	"whenCreated", 
 	"whenChanged",
@@ -471,7 +492,7 @@ const struct ldb_map_attribute nsuniqueid_attributes[] =
 			},
 		},
 	},
-	/* objectSid */
+	/* objectSid */	
 	{
 		.local_name = "objectSid",
 		.type = MAP_CONVERT,
@@ -751,7 +772,7 @@ static int entryUUID_init(struct ldb_module *module)
 	struct entryUUID_private *entryUUID_private;
 	struct ldb_dn *schema_dn;
 
-	ret = ldb_map_init(module, entryUUID_attributes, NULL, wildcard_attributes, NULL);
+	ret = ldb_map_init(module, entryUUID_attributes, entryUUID_objectclasses, entryUUID_wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
