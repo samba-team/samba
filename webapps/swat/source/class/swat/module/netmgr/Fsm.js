@@ -73,6 +73,13 @@ qx.Proto.buildFsm = function(module)
 	      "Transition_Idle_to_Idle_via_tree_selection_changed"
           },
 
+          "changeSelected":
+          {
+            // this one is dispatched from UsersView widget
+	    "domainName":
+              "Transition_Idle_to_AwaitRpcResult_via_domainName_changed"
+          },
+	 
 	  "changeNetCtx" :
 	  {
 	    "swat.module.netmgr.Gui" :
@@ -120,7 +127,7 @@ qx.Proto.buildFsm = function(module)
   var trans = new qx.util.fsm.Transition(
     "Transition_Idle_to_Idle_via_tree_selection_changed",
     {
-      "nextState" : "State_AwaitRpcResult",
+      "nextState" : "State_Idle",
 
       "ontransition" : function(fsm, event)
       {
@@ -135,15 +142,14 @@ qx.Proto.buildFsm = function(module)
         {
 	  module.setNetCtx(parentNode.netCtx);
 	}
-
+	
+	var domainName = parentNode.label;
 	var nodeName = selectedNode.label;
-	var callName = undefined;               // rpc call name
-	var callArgs = [ gui.getNetCtx() ];       // NetContex goes first
 
 	switch (nodeName)
         {
 	case "Users":
-	  callName = "UserMgr";
+	  gui.openUserManager(module, domainName);
 	  break;
 
 	case "Groups":
@@ -155,14 +161,26 @@ qx.Proto.buildFsm = function(module)
 	default:
 	  alert("Undefined call selected for node=['" + nodeName + "']");
 	}
-
-	// Bail out if no appropriate call name has been found
-	if (callName == undefined) return;
-
-	var req = _this.callRpc(fsm, "samba.ejsnet", callName, callArgs);
-	req.setUserData("requestType", "UserMgr");
       }
       
+    });
+
+  // Add the new transition
+  state.addTransition(trans);
+
+  var trans = new qx.util.fsm.Transition(
+    "Transition_Idle_to_AwaitRpcResult_via_domainName_changed",
+    {
+      "nextState" : "State_AwaitRpcResult",
+
+      "ontransition" : function(fsm, event)
+      {
+	var domainName = fsm.getObject("domainName").getValue();
+	var netCtxId = swat.module.netmgr.Gui.getInstance().getNetCtx();
+	
+	var req = _this.callRpc(fsm, "samba.ejsnet", "UserMgr", [ netCtxId, domainName ]);
+	req.setUserData("requestType", "UserMgr");
+      }
     });
 
   // Add the new transition
@@ -175,7 +193,8 @@ qx.Proto.buildFsm = function(module)
 
       "ontransition" : function(fsm, event)
       {
-	var netCtxId = 0;
+	var netCtxId = swat.module.netmgr.Gui.getInstance().getNetCtx();
+
 	var req = _this.callRpc(fsm, "samba.ejsnet", "NetContextCreds", [ netCtxId ]);
 	req.setUserData("requestType", "NetContextCreds");
       }
