@@ -213,6 +213,20 @@ qx.Proto.getParentNode = function(module, node)
 };
 
 
+qx.Proto.openUserManager = function(module, domainName)
+{
+  // Remove existing panel if there is any
+  if (this._panel.getChildrenLength() > 0)
+  {
+    this._panel.removeAll();
+  }
+
+  // Create user view, pass the context and the view to the panel
+  var view = new swat.module.netmgr.UsersView(module.fsm, domainName);
+  this._panel.add(view);
+};
+
+
 qx.Proto._addHostNode = function(module, rpcRequest, local)
 {
   var fsm = module.fsm;
@@ -260,14 +274,8 @@ qx.Proto._updateNetContextCreds = function(module, rpcRequest)
 
 qx.Proto._initUserManager = function(module, rpcRequest)
 {
-  // Get obtained UsrCtx handle
+  // Get obtained usrCtx handle
   var usrCtx = rpcRequest.getUserData("result").data;
-
-  // Create user view and pass the context
-  var view = new swat.module.netmgr.UsersView(module.fsm);
-  view.setUsrCtx(usrCtx);
-  
-  this._panel.add(view);
 };
 
 

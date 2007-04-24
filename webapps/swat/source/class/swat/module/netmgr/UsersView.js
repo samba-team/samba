@@ -11,7 +11,7 @@
  * Users View 
  */
 qx.OO.defineClass("swat.module.netmgr.UsersView", qx.ui.layout.HorizontalBoxLayout,
-function(fsm)
+function(fsm, domainName)
 {
   qx.ui.layout.HorizontalBoxLayout.call(this);
 
@@ -38,6 +38,39 @@ function(fsm)
   var cmbDomain = new qx.ui.form.ComboBox();
   cmbDomain.setEditable(false);
 
+  // there's always BUILTIN domain so add it to the list
+  var item = new qx.ui.form.ListItem("BUILTIN");
+  cmbDomain.add(item);
+
+  var selectedItem = undefined;
+  
+  // Simply add the domain name if it is passed as a string
+  if (typeof(domainName) == "string")
+  {
+    item = new qx.ui.form.ListItem(domainName);
+    cmbDomain.add(item);
+
+    selectedItem = item;
+  }
+  else // if it's not a string we assume it is a list of strings
+  {
+    for (var s in domainName)
+    {
+      item = new qx.ui.form.ListItem(s);
+      cmbDomain.add(s);
+    }
+
+    selectedItem = new qx.ui.form.ListItem(domainName[0]);
+  }
+
+  // Add event handling
+  cmbDomain.addEventListener("changeSelected", fsm.eventListener, fsm);
+  fsm.addObject("domainName", cmbDomain);
+
+  // Set default selection and dispatch the respective event to initialise the view
+  cmbDomain.setSelected(selectedItem);
+  cmbDomain.dispatchEvent(new qx.event.type.Event("changeSelected"), true);
+
   // Create an empty list view with sample column
   this._columns = { username : { label: "Username", width: 150, type: "text" }};
   this._items = [];
@@ -60,3 +93,15 @@ function(fsm)
 
 // UsrMgr context is required for any operation on user accounts
 qx.OO.addProperty({ name : "usrCtx", type : "number" });
+
+
+qx.Proto.refreshView = function()
+{
+}
+
+
+qx.Proto._initUserManager = function(module, rpcRequest)
+{
+  // Get obtained UsrCtx handle
+  var usrCtx = rpcRequest.getUserData("result").data;
+};
