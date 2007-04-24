@@ -45,6 +45,9 @@ OM_uint32 _gss_ntlm_delete_sec_context
 	ntlm_ctx ctx = (ntlm_ctx)*context_handle;
 	*context_handle = GSS_C_NO_CONTEXT;
 
+	if (ctx->id)
+	    krb5_cc_close(ctx->context, ctx->id);
+
 	if (ctx->context) {
 	    krb5_ntlm_free(ctx->context, ctx->ntlm);
 	    krb5_free_context(ctx->context);
