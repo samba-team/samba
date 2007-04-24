@@ -168,7 +168,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	}
 
 	if (idx >= key->values->num_values) {
-		return WERR_BADFILE;
+		return WERR_NO_MORE_ITEMS;
 	}
 
 	err = registry_pull_value(mem_ctx, &val,
