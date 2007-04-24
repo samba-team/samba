@@ -303,7 +303,7 @@ configure(krb5_context context, int argc, char **argv)
 	config->enable_kaserver = 0;
     }
 
-    _kdc_windc_init(context);
+    krb5_kdc_windc_init(context);
 
     return config;
 }
