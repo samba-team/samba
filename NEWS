@@ -2,7 +2,9 @@ Changes in release 0.9
 
  * Alias support for inital ticket requests
 
- * Add symbol versioning to hcrypto and heimntlm
+ * Add symbol versioning to hcrypto, heimntlm, and libkdc
+
+ * Bugs fixes
 
 Changes in release 0.8.1
 
