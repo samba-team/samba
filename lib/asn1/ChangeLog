@@ -1,5 +1,8 @@
 2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen_seq.c: Handle the case of resize to 0 and realloc that
+	returns NULL.
+
 	* check-gen.c (check_seq): free seq.
 	
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
