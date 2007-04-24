@@ -190,6 +190,11 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 	struct sockaddr_in cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
 	int new_fd;
+	
+	if (sock->type != SOCKET_TYPE_STREAM) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
@@ -249,6 +254,62 @@ static NTSTATUS ipv6_tcp_recv(struct socket_context *sock, void *buf,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ipv6_recvfrom(struct socket_context *sock, void *buf, 
+			      size_t wantlen, size_t *nread, 
+			      TALLOC_CTX *addr_ctx, struct socket_address **_src)
+{
+	ssize_t gotlen;
+	struct sockaddr_in6 *from_addr;
+	socklen_t from_len = sizeof(*from_addr);
+	struct socket_address *src;
+	struct hostent *he;
+	
+	src = talloc(addr_ctx, struct socket_address);
+	if (!src) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	src->family = sock->backend_name;
+
+	from_addr = talloc(src, struct sockaddr_in6);
+	if (!from_addr) {
+		talloc_free(src);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	src->sockaddr = (struct sockaddr *)from_addr;
+
+	*nread = 0;
+
+	gotlen = recvfrom(sock->fd, buf, wantlen, 0, 
+			  src->sockaddr, &from_len);
+	if (gotlen == 0) {
+		talloc_free(src);
+		return NT_STATUS_END_OF_FILE;
+	} else if (gotlen == -1) {
+		talloc_free(src);
+		return map_nt_error_from_unix(errno);
+	}
+
+	src->sockaddrlen = from_len;
+
+	he = gethostbyaddr((void *)&from_addr->sin6_addr, sizeof(from_addr->sin6_addr), AF_INET6);
+	if (he == NULL) {
+		talloc_free(src);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	src->addr = talloc_strdup(src, he->h_name);
+	if (src->addr == NULL) {
+		talloc_free(src);
+		return NT_STATUS_NO_MEMORY;
+	}
+	src->port = ntohs(from_addr->sin6_port);
+
+	*nread	= gotlen;
+	*_src	= src;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS ipv6_tcp_send(struct socket_context *sock, 
 			      const DATA_BLOB *blob, size_t *sendlen)
 {
@@ -257,6 +318,42 @@ static NTSTATUS ipv6_tcp_send(struct socket_context *sock,
 	*sendlen = 0;
 
 	len = send(sock->fd, blob->data, blob->length, 0);
+	if (len == -1) {
+		return map_nt_error_from_unix(errno);
+	}	
+
+	*sendlen = len;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ipv6_sendto(struct socket_context *sock, 
+			    const DATA_BLOB *blob, size_t *sendlen, 
+			    const struct socket_address *dest_addr)
+{
+	ssize_t len;
+
+	if (dest_addr->sockaddr) {
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
+			     dest_addr->sockaddr, dest_addr->sockaddrlen);
+	} else {
+		struct sockaddr_in6 srv_addr;
+		struct in6_addr addr;
+		
+		ZERO_STRUCT(srv_addr);
+		addr                     = interpret_addr6(dest_addr->addr);
+		if (addr.s6_addr == 0) {
+			return NT_STATUS_HOST_UNREACHABLE;
+		}
+		srv_addr.sin6_addr = addr;
+		srv_addr.sin6_port        = htons(dest_addr->port);
+		srv_addr.sin6_family      = PF_INET6;
+		
+		*sendlen = 0;
+		
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
+			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+	}
 	if (len == -1) {
 		return map_nt_error_from_unix(errno);
 	}	
@@ -410,6 +507,8 @@ static const struct socket_ops ipv6_tcp_ops = {
 	.fn_listen		= ipv6_tcp_listen,
 	.fn_accept		= ipv6_tcp_accept,
 	.fn_recv		= ipv6_tcp_recv,
+	.fn_recvfrom 	= ipv6_recvfrom,
+	.fn_sendto		= ipv6_sendto,
 	.fn_send		= ipv6_tcp_send,
 	.fn_close		= ipv6_tcp_close,
 	.fn_pending		= ipv6_pending,
@@ -425,8 +524,5 @@ static const struct socket_ops ipv6_tcp_ops = {
 
 const struct socket_ops *socket_ipv6_ops(enum socket_type type)
 {
-	if (type != SOCKET_TYPE_STREAM) {
-		return NULL;
-	}
 	return &ipv6_tcp_ops;
 }
