@@ -1,0 +1,14 @@
+# $Id$
+
+HEIMDAL_KDC_1.0 {
+	global:
+		kdc_log;
+		kdc_log_msg;
+		kdc_log_msg_va;
+		kdc_openlog;
+		krb5_kdc_get_config;
+		krb5_kdc_process_krb5_request;
+		krb5_kdc_process_request;
+	local:
+		*;
+};
