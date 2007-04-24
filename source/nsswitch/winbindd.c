@@ -26,7 +26,6 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "smb_launchd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -34,7 +33,6 @@
 BOOL opt_nocache = False;
 
 extern BOOL override_logfile;
-static BOOL unlink_winbindd_socket = True;
 
 struct event_context *winbind_event_context(void)
 {
@@ -121,15 +119,8 @@ static void flush_caches(void)
 
 static void terminate(void)
 {
-	pstring path;
 
-	/* Remove socket file */
-	if (unlink_winbindd_socket) {
-		pstr_sprintf(path, "%s/%s",
-			 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-		unlink(path);
-	}
-
+	winbindd_release_sockets();
 	idmap_close();
 	
 	trustdom_cache_shutdown();
@@ -717,43 +708,6 @@ static BOOL remove_idle_client(void)
 	}
 
 	return False;
-}
-
-static BOOL winbindd_init_sockets(int *public_sock, int *priv_sock,
-				int *idle_timeout_sec)
-{
-	struct smb_launch_info linfo;
-
-	if (smb_launchd_checkin_names(&linfo, "WinbindPublicPipe",
-		    "WinbindPrivilegedPipe", NULL)) {
-		if (linfo.num_sockets != 2) {
-			DEBUG(0, ("invalid launchd configuration, "
-				"expected 2 sockets but got %d\n",
-				linfo.num_sockets));
-			return False;
-		}
-
-		*public_sock = linfo.socket_list[0];
-		*priv_sock = linfo.socket_list[1];
-		*idle_timeout_sec = linfo.idle_timeout_secs;
-
-		unlink_winbindd_socket = False;
-
-		smb_launchd_checkout(&linfo);
-		return True;
-	} else {
-		*public_sock = open_winbindd_socket();
-		*priv_sock = open_winbindd_priv_socket();
-		*idle_timeout_sec = -1;
-
-		if (*public_sock == -1 || *priv_sock == -1) {
-			DEBUG(0, ("failed to open winbindd pipes: %s\n",
-			    errno ? strerror(errno) : "unknown error"));
-			return False;
-		}
-
-		return True;
-	}
 }
 
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
