@@ -165,3 +165,7 @@ oMSyntax: 20
 #Allocated: (middleName) attributeID: 1.3.6.1.4.1.7165.4.255.1
 
 #Allocated: (defaultGroup) attributeID: 1.3.6.1.4.1.7165.4.255.2
+
+#Allocated: (modifyTimestamp) samba4ModifyTimestamp: 1.3.6.1.4.1.7165.4.255.3
+#Allocated: (subSchema) samba4SubSchema: 1.3.6.1.4.1.7165.4.255.4
+#Allocated: (objectClasses) samba4ObjectClasses: 1.3.6.1.4.1.7165.4.255.5
