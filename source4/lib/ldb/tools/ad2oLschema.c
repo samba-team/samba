@@ -246,7 +246,12 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		char *old_oid;
 		char *new_oid;
 	} *oid_map = NULL;
-	int num_maps = 0;
+	int num_oid_maps = 0;
+	struct attr_map {
+		char *old_attr;
+		char *new_attr;
+	} *attr_map = NULL;
+	int num_attr_maps = 0;	
 	struct ldb_result *attrs_res, *objectclasses_res;
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
@@ -269,25 +274,36 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		if (isdigit(line[0])) {
 			char *p = strchr(line, ':');
 			IF_NULL_FAIL_RET(p);
-			if (!p) {
-				ret.failures = 1;
-				return ret;
-			}
 			p[0] = '\0';
 			p++;
-			oid_map = talloc_realloc(mem_ctx, oid_map, struct oid_map, num_maps + 2);
+			oid_map = talloc_realloc(mem_ctx, oid_map, struct oid_map, num_oid_maps + 2);
 			trim_string(line, " ", " ");
-			oid_map[num_maps].old_oid = talloc_move(oid_map, &line);
+			oid_map[num_oid_maps].old_oid = talloc_move(oid_map, &line);
 			trim_string(p, " ", " ");
-			oid_map[num_maps].new_oid = p;
-			num_maps++;
-			oid_map[num_maps].old_oid = NULL;
+			oid_map[num_oid_maps].new_oid = p;
+			num_oid_maps++;
+			oid_map[num_oid_maps].old_oid = NULL;
 		} else {
-			attrs_skip = talloc_realloc(mem_ctx, attrs_skip, const char *, num_skip + 2);
-			trim_string(line, " ", " ");
-			attrs_skip[num_skip] = talloc_move(attrs_skip, &line);
-			num_skip++;
-			attrs_skip[num_skip] = NULL;
+			char *p = strchr(line, ':');
+			if (p) {
+				/* remap attribute/objectClass */
+				p[0] = '\0';
+				p++;
+				attr_map = talloc_realloc(mem_ctx, attr_map, struct attr_map, num_attr_maps + 2);
+				trim_string(line, " ", " ");
+				attr_map[num_attr_maps].old_attr = talloc_move(attr_map, &line);
+				trim_string(p, " ", " ");
+				attr_map[num_attr_maps].new_attr = p;
+				num_attr_maps++;
+				attr_map[num_attr_maps].old_attr = NULL;
+			} else {
+				/* skip attribute/objectClass */
+				attrs_skip = talloc_realloc(mem_ctx, attrs_skip, const char *, num_skip + 2);
+				trim_string(line, " ", " ");
+				attrs_skip[num_skip] = talloc_move(attrs_skip, &line);
+				num_skip++;
+				attrs_skip[num_skip] = NULL;
+			}
 		}
 	}
 
@@ -327,7 +343,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		if (!name) {
 			printf("Failed to find lDAPDisplayName for schema DN: %s\n", ldb_dn_get_linearized(msg->dn));
-			ret.failures = 1;
+			ret.failures++;
 			continue;
 		}
 
@@ -359,6 +375,14 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 		IF_NULL_FAIL_RET(schema_entry);
 
+		/* We might have been asked to remap this name, due to a conflict */
+		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
+			if (strcmp(name, attr_map[j].old_attr) == 0) {
+				name =  attr_map[j].new_attr;
+				break;
+			}
+		}
+		
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "  NAME '%s'\n", name);
 		IF_NULL_FAIL_RET(schema_entry);
@@ -437,6 +461,12 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		char *schema_entry = NULL;
 		int j;
 
+		if (!name) {
+			printf("Failed to find lDAPDisplayName for schema DN: %s\n", ldb_dn_get_linearized(msg->dn));
+			ret.failures++;
+			continue;
+		}
+
 		/* We have been asked to skip some attributes/objectClasses */
 		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
@@ -469,6 +499,14 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			break;
 		}
 
+		/* We might have been asked to remap this name, due to a conflict */
+		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
+			if (strcmp(name, attr_map[j].old_attr) == 0) {
+				name =  attr_map[j].new_attr;
+				break;
+			}
+		}
+		
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "  NAME '%s'\n", name);
 		IF_NULL_FAIL_RET(schema_entry);
@@ -509,9 +547,19 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		do {						\
 			int k;						\
 			for (k=0; attributes && k < attributes->num_values; k++) { \
+				int attr_idx; \
+				const char *attr_name = (const char *)attributes->values[k].data;  \
+				/* We might have been asked to remap this name, due to a conflict */ \
+				for (attr_idx=0; attr_name && attr_map && attr_map[attr_idx].old_attr; attr_idx++) { \
+					if (strcmp(attr_name, attr_map[attr_idx].old_attr) == 0) { \
+						attr_name =  attr_map[attr_idx].new_attr; \
+						break;			\
+					}				\
+				}					\
+									\
 				schema_entry = talloc_asprintf_append(schema_entry, \
 								      " %s", \
-								      (const char *)attributes->values[k].data); \
+								      attr_name); \
 				IF_NULL_FAIL_RET(schema_entry);		\
 				if (k != (attributes->num_values - 1)) { \
 					schema_entry = talloc_asprintf_append(schema_entry, \
