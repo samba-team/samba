@@ -837,6 +837,7 @@ check_seq(void)
 	printf("seq not empty!");
 	return 1;
     }
+    free_TESTSeqOf(&seq);
     ret = 0;
 
 out:
