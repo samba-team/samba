@@ -36,15 +36,6 @@ extern struct winbindd_methods passdb_methods;
  * Winbind daemon for NT domain authentication nss module.
  **/
 
-
-/**
- * Used to clobber name fields that have an undefined value.
- *
- * Correct code should never look at a field that has this value.
- **/
-
-static const fstring name_deadbeef = "<deadbeef>";
-
 /* The list of trusted domains.  Note that the list can be deleted and
    recreated using the init_domain_list() function so pointers to
    individual winbindd_domain structures cannot be made.  Keep a copy of
@@ -913,53 +904,6 @@ void fill_domain_username(fstring name, const char *domain, const char *user, BO
 char *get_winbind_priv_pipe_dir(void) 
 {
 	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
-}
-
-/* Open the winbindd socket */
-
-static int _winbindd_socket = -1;
-static int _winbindd_priv_socket = -1;
-
-int open_winbindd_socket(void)
-{
-	if (_winbindd_socket == -1) {
-		_winbindd_socket = create_pipe_sock(
-			WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME, 0755);
-		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
-			   _winbindd_socket));
-	}
-
-	return _winbindd_socket;
-}
-
-int open_winbindd_priv_socket(void)
-{
-	if (_winbindd_priv_socket == -1) {
-		_winbindd_priv_socket = create_pipe_sock(
-			get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
-		DEBUG(10, ("open_winbindd_priv_socket: opened socket fd %d\n",
-			   _winbindd_priv_socket));
-	}
-
-	return _winbindd_priv_socket;
-}
-
-/* Close the winbindd socket */
-
-void close_winbindd_socket(void)
-{
-	if (_winbindd_socket != -1) {
-		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
-			   _winbindd_socket));
-		close(_winbindd_socket);
-		_winbindd_socket = -1;
-	}
-	if (_winbindd_priv_socket != -1) {
-		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
-			   _winbindd_priv_socket));
-		close(_winbindd_priv_socket);
-		_winbindd_priv_socket = -1;
-	}
 }
 
 /*
