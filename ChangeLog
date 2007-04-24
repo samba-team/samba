@@ -1,5 +1,7 @@
 2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc: rename windc_init to krb5_kdc_windc_init
+
 	* kdc/version-script.map: version script for libkdc
 	
 	* kdc/Makefile.am: version script for libkdc
