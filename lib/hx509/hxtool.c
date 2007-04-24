@@ -1193,9 +1193,11 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 	    
 	ret = hx509_peer_info_set_cms_algs(context, peer, val, 
 					   opt->peer_cmstype_strings.num_strings);
+	for (i = 0; i < opt->peer_cmstype_strings.num_strings; i++)
+	    free_AlgorithmIdentifier(&val[i]);
+	free(val);
 	if (ret)
 	    errx(1, "hx509_peer_info_set_cms_algs");
-
     }
 
     ret = hx509_crypto_select(context, type, NULL, peer, &selected);
