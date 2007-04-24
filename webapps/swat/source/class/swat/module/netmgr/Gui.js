@@ -215,8 +215,8 @@ qx.Proto.getParentNode = function(module, node)
 
 qx.Proto.openUserManager = function(module, domainName)
 {
-  // Remove existing panel if there is any
-  if (this._panel.getChildrenLength() > 0)
+  // Remove existing panel if there is any - there can be only one at the time
+  if (this._panel.hasChildren())
   {
     this._panel.removeAll();
   }
