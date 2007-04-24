@@ -31,6 +31,7 @@
  */
 static void show_status(struct ctdb_status *s)
 {
+	printf("CTDB version %u\n", CTDB_VERSION);
 	printf(" client_packets_sent     %u\n", s->client_packets_sent);
 	printf(" client_packets_recv     %u\n", s->client_packets_recv);
 	printf("   req_call              %u\n", s->client.req_call);
