@@ -201,7 +201,7 @@ Suffix= $basedn
 RootDN= cn=Manager,$basedn
 RootDNPwd= $password
 ServerIdentifier= samba4
-InstallLdifFile=$fedora_ds_initial_ldif
+#InstallLdifFile=$fedora_ds_initial_ldif
 
 inst_dir= $fedora_ds_dir
 config_dir= $fedora_ds_dir
@@ -220,55 +220,6 @@ start_server= 0
 	close(CONF);
 
 	open(LDIF, ">$fedora_ds_initial_ldif");
-	print LDIF "
-# These entries need to be added to get the container for the 
-# provision to be aimed at.
-
-dn: cn=\"$basedn\",cn=mapping tree,cn=config
-objectclass: top
-objectclass: extensibleObject
-objectclass: nsMappingTree
-nsslapd-state: backend
-nsslapd-backend: userData
-cn: $basedn
-
-dn: cn=userData,cn=ldbm database,cn=plugins,cn=config
-objectclass: extensibleObject
-objectclass: nsBackendInstance
-nsslapd-suffix: $basedn
-cn=userData
-
-dn: cn=\"cn=Configuration,$basedn\",cn=mapping tree,cn=config
-objectclass: top
-objectclass: extensibleObject
-objectclass: nsMappingTree
-nsslapd-state: backend
-nsslapd-backend: configData
-nsslapd-parent-suffix: $basedn
-cn: cn=Configuration,$basedn
-
-dn: cn=configData,cn=ldbm database,cn=plugins,cn=config
-objectclass: extensibleObject
-objectclass: nsBackendInstance
-nsslapd-suffix: cn=Configuration,$basedn
-cn=configData
-
-dn: cn=\"cn=Schema,cn=Configuration,$basedn\",cn=mapping tree,cn=config
-objectclass: top
-objectclass: extensibleObject
-objectclass: nsMappingTree
-nsslapd-state: backend
-nsslapd-backend: schemaData
-nsslapd-parent-suffix: cn=Configuration,$basedn
-cn: cn=Schema,cn=Configuration,$basedn
-
-dn: cn=schemaData,cn=ldbm database,cn=plugins,cn=config
-objectclass: extensibleObject
-objectclass: nsBackendInstance
-nsslapd-suffix: cn=Schema,cn=Configuration,$basedn
-cn=schemaData
-";
-	close(LDIF);
 
 my $dir = getcwd();
 chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
@@ -282,7 +233,35 @@ chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
 	}
 
 	open(LDIF, ">>$fedora_ds_dir/dse.ldif");
-	print LDIF "dn: cn=bitwise,cn=plugins,cn=config
+	print LDIF "dn: cn=\"cn=Configuration,$basedn\",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: configData
+cn: cn=Configuration,$basedn
+
+dn: cn=configData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: cn=Configuration,$basedn
+cn: configData
+
+dn: cn=\"cn=Schema,cn=Configuration,$basedn\",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: schemaData
+cn: cn=Schema,cn=Configuration,$basedn
+
+dn: cn=schemaData,cn=ldbm database,cn=plugins,cn=config
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: cn=Schema,cn=Configuration,$basedn
+cn: schemaData
+
+dn: cn=bitwise,cn=plugins,cn=config
 objectClass: top
 objectClass: nsSlapdPlugin
 objectClass: extensibleObject
