@@ -1,3 +1,8 @@
+2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/delete_sec_context.c (_gss_ntlm_delete_sec_context): free
+	credcache when done
+	
 2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/init_sec_context.c: ntlm-key credential entry is prefix with @
