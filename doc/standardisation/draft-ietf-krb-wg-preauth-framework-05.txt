@@ -1,149 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="en" xml:lang="en">
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
-    <meta name="robots" content="index,follow" />
-    <meta name="creator" content="rfcmarkup version 1.48" />
-    <link rel="icon" href="/images/id.png" type="image/png" />
-    <link rel="shortcut icon" href="/images/id.png" type="image/png" />
-    <title>draft-ietf-krb-wg-preauth-framework-05 - A Generalized Framework for Kerberos Pre-Authentication</title>
-    
-    <style type="text/css">
-	body {
-	    margin: 0px 8px;
-            font-size: 1em;
-	}
-        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-	    font-weight: bold;
-            line-height: 0pt;
-            display: inline;
-            white-space: pre;
-            font-family: monospace;
-            font-size: 1em;
-	    font-weight: bold;
-        }
-        pre {
-            font-size: 1em;
-        }
-	.pre {
-	    white-space: pre;
-	    font-family: monospace;
-	}
-	.header{
-	    font-weight: bold;
-	}
-        @media print {
-            body {
-                font-size: 10.5pt;
-            }
-            h1, h2, h3, h4, h5, h6 {
-                font-size: 10.5pt;
-            }
-        
-            a:link, a:visited {
-                color: inherit;
-                text-decoration: none;
-            }
-	    .break {
-		page-break-before: always;
-                text-decoration: none;
-	    }
-            .noprint {
-                display: none;
-            }
-        }
-	@media screen {
-	    .grey, .grey a:link, .grey a:visited {
-		color: #777;
-	    }
-	    .break {
-                text-decoration: none;
-                display: none;
-	    }            
-            .docinfo {
-                background-color: #EEE;
-            }
-            .top {
-                border-top: 2px solid #EEE;
-            }
-            .bgwhite  { background-color: white; }
-            .bgred    { background-color: #F44; }
-            .bggrey   { background-color: #666; }
-            .bgbrown  { background-color: #840; }            
-            .bgorange { background-color: #FA0; }
-            .bgyellow { background-color: #EE0; }
-            .bgmagenta{ background-color: #F4F; }
-            .bgblue   { background-color: #66F; }
-            .bgcyan   { background-color: #4DD; }
-            .bggreen  { background-color: #4F4; }
 
-            .legend   { font-size: 90%; }
-            .cplate   { font-size: 70%; border: solid grey 1px; }
-	}
-    </style>
 
-    <script type="text/javascript"><!--
-    function addHeaderTags() {
-	var spans = document.getElementsByTagName("span");
-	for (var i=0; i < spans.length; i++) {
-	    var elem = spans[i];
-	    if (elem) {
-		var level = elem.getAttribute("class");
-                if (level == "h1" || level == "h2" || level == "h3" || level == "h4" || level == "h5" || level == "h6") {
-                    elem.innerHTML = "<"+level+">"+elem.innerHTML+"</"+level+">";		
-                }
-	    }
-	}
-    }
-    var legend_html = "Colour legend:<br />      <table>         <tr><td>Unknown:</td>          <td><span class='cplate bgwhite'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft:</td>            <td><span class='cplate bgred'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Informational:</td>    <td><span class='cplate bgorange'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Experimental:</td>     <td><span class='cplate bgyellow'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Best Common Practice:</td><td><span class='cplate bgmagenta'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Proposed Standard:</td><td><span class='cplate bgblue'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft Standard:</td>   <td><span class='cplate bgcyan'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Standard:</td>         <td><span class='cplate bggreen'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Historic:</td>         <td><span class='cplate bggrey'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Obsolete:</td>         <td><span class='cplate bgbrown'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>     </table>";
-    function showElem(id) {
-        var elem = document.getElementById(id);
-        elem.innerHTML = eval(id+"_html");
-        elem.style.visibility='visible';
-    }
-    function hideElem(id) {
-        var elem = document.getElementById(id);
-        elem.style.visibility='hidden';        
-        elem.innerHTML = "";
-    }
-    // -->
-    </script>
-</head>
-<body onload="addHeaderTags()">
-   <div style="height:8px;">
-      <span onmouseover="this.style.cursor='pointer';"
-         onclick="showElem('legend');"
-         onmouseout="hideElem('legend')"
-         class="pre noprint docinfo bgred" title="Click for colour legend." >                                                                        </span>
-      <div id="legend"
-           class="docinfo noprint pre legend"
-           style="position:absolute; top: 4px; left: 4ex; visibility:hidden; background-color: white; padding: 4px 9px 5px 7px; border: solid #345 1px; "
-           onmouseover="showElem('legend');"
-           onmouseout="hideElem('legend');">
-      </div>
-   </div>
-<span class="pre noprint docinfo top">[<a href="../html/" title="Document search and retrieval page">RFCs/IDs</a>] [<a href="http://tools.ietf.org/id/draft-ietf-krb-wg-preauth-framework-05.txt" title="Plaintext version of this document">Plain Text</a>] [<a href="../wg/krb" title="The working group handling this document">WG</a>] [<a href="../wg/krb/draft-ietf-krb-wg-preauth-framework" title="The WG docment page for this document">Doc Info</a>] [<a href="/rfcdiff?difftype=--hwdiff&amp;url2=http://tools.ietf.org/id/draft-ietf-krb-wg-preauth-framework-05.txt" title="Inline diff (wdiff)">Diff1</a>] [<a href="/rfcdiff?url2=http://tools.ietf.org/id/draft-ietf-krb-wg-preauth-framework-05.txt" title="Side-by-side diff">Diff2</a>] [<a href="/idnits?url=http://tools.ietf.org/id/draft-ietf-krb-wg-preauth-framework-05.txt" title="Run an idnits check of this document">Nits</a>]          </span><br />
-<span class="pre noprint docinfo">                                                                        </span><br />
-<span class="pre noprint docinfo">Versions: <a href="./draft-ietf-krb-wg-preauth-framework-00">00</a> <a href="./draft-ietf-krb-wg-preauth-framework-01">01</a> <a href="./draft-ietf-krb-wg-preauth-framework-02">02</a> <a href="./draft-ietf-krb-wg-preauth-framework-03">03</a> <a href="./draft-ietf-krb-wg-preauth-framework-04">04</a> <a href="./draft-ietf-krb-wg-preauth-framework-05">05</a>                                             </span><br />
-<span class="pre noprint docinfo">                                                                        </span><br />
-<pre>
 Kerberos Working Group                                            L. Zhu
 Internet-Draft                                     Microsoft Corporation
-Updates: <a href="./rfc4120">4120</a> (if approved)                                   S. Hartman
+Updates: 4120 (if approved)                                   S. Hartman
 Intended status: Standards Track                                     MIT
 Expires: September 6, 2007                                 March 5, 2007
 
 
-        <span class="h1">A Generalized Framework for Kerberos Pre-Authentication</span>
-                 <span class="h1">draft-ietf-krb-wg-preauth-framework-05</span>
+        A Generalized Framework for Kerberos Pre-Authentication
+                 draft-ietf-krb-wg-preauth-framework-05
 
 Status of this Memo
 
    By submitting this Internet-Draft, each author represents that any
    applicable patent or other IPR claims of which he or she is aware
    have been or will be disclosed, and any of which he or she becomes
-   aware will be disclosed, in accordance with <a href="./bcp79#section-6">Section&nbsp;6 of BCP 79</a>.
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
 
    Internet-Drafts are working documents of the Internet Engineering
    Task Force (IETF), its areas, and its working groups.  Note that
@@ -156,10 +28,10 @@ Status of this Memo
    material or to cite them other than as "work in progress."
 
    The list of current Internet-Drafts can be accessed at
-   <a href="http://www.ietf.org/ietf/1id-abstracts.txt">http://www.ietf.org/ietf/1id-abstracts.txt</a>.
+   http://www.ietf.org/ietf/1id-abstracts.txt.
 
    The list of Internet-Draft Shadow Directories can be accessed at
-   <a href="http://www.ietf.org/shadow.html">http://www.ietf.org/shadow.html</a>.
+   http://www.ietf.org/shadow.html.
 
    This Internet-Draft will expire on September 6, 2007.
 
@@ -179,9 +51,9 @@ Abstract
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 1]</span>
-<a name="page-2" id="page-2" href="#page-2"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 1]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    mechanisms.  The model describes what state in the Kerberos request a
@@ -235,47 +107,47 @@ Abstract
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 2]</span>
-<a name="page-3" id="page-3" href="#page-3"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 2]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
 Table of Contents
 
-   <a href="#section-1">1</a>.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-4">4</a>
-   <a href="#section-2">2</a>.  Conventions and Terminologies Used in This Document  . . . . .  <a href="#page-5">5</a>
-   <a href="#section-3">3</a>.  Model for Pre-Authentication . . . . . . . . . . . . . . . . .  <a href="#page-5">5</a>
-     <a href="#section-3.1">3.1</a>.  Information Managed by the Pre-authentication Model  . . .  <a href="#page-6">6</a>
-     <a href="#section-3.2">3.2</a>.  Initial Pre-authentication Required Error  . . . . . . . .  <a href="#page-8">8</a>
-     <a href="#section-3.3">3.3</a>.  Client to KDC  . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-9">9</a>
-     <a href="#section-3.4">3.4</a>.  KDC to Client  . . . . . . . . . . . . . . . . . . . . . . <a href="#page-10">10</a>
-   <a href="#section-4">4</a>.  Pre-Authentication Facilities  . . . . . . . . . . . . . . . . <a href="#page-10">10</a>
-     <a href="#section-4.1">4.1</a>.  Client-authentication Facility . . . . . . . . . . . . . . <a href="#page-12">12</a>
-     <a href="#section-4.2">4.2</a>.  Strengthening-reply-key Facility . . . . . . . . . . . . . <a href="#page-12">12</a>
-     <a href="#section-4.3">4.3</a>.  Replacing-reply-key Facility . . . . . . . . . . . . . . . <a href="#page-13">13</a>
-     <a href="#section-4.4">4.4</a>.  KDC-authentication Facility  . . . . . . . . . . . . . . . <a href="#page-14">14</a>
-   <a href="#section-5">5</a>.  Requirements for Pre-Authentication Mechanisms . . . . . . . . <a href="#page-14">14</a>
-   <a href="#section-6">6</a>.  Tools for Use in Pre-Authentication Mechanisms . . . . . . . . <a href="#page-15">15</a>
-     <a href="#section-6.1">6.1</a>.  Combining Keys . . . . . . . . . . . . . . . . . . . . . . <a href="#page-15">15</a>
-     <a href="#section-6.2">6.2</a>.  Protecting Requests/Responses  . . . . . . . . . . . . . . <a href="#page-16">16</a>
-     <a href="#section-6.3">6.3</a>.  Managing States for the KDC  . . . . . . . . . . . . . . . <a href="#page-17">17</a>
-     <a href="#section-6.4">6.4</a>.  Pre-authentication Set . . . . . . . . . . . . . . . . . . <a href="#page-19">19</a>
-     <a href="#section-6.5">6.5</a>.  Definition of Kerberos FAST Padata . . . . . . . . . . . . <a href="#page-20">20</a>
-       <a href="#section-6.5.1">6.5.1</a>.  FAST and Encrypted Time Stamp  . . . . . . . . . . . . <a href="#page-21">21</a>
-       <a href="#section-6.5.2">6.5.2</a>.  FAST Armors  . . . . . . . . . . . . . . . . . . . . . <a href="#page-21">21</a>
-       <a href="#section-6.5.3">6.5.3</a>.  FAST Request . . . . . . . . . . . . . . . . . . . . . <a href="#page-22">22</a>
-       <a href="#section-6.5.4">6.5.4</a>.  FAST Response  . . . . . . . . . . . . . . . . . . . . <a href="#page-26">26</a>
-       <a href="#section-6.5.5">6.5.5</a>.  Error Messages used with Kerberos FAST . . . . . . . . <a href="#page-28">28</a>
-     <a href="#section-6.6">6.6</a>.  Authentication Strength Indication . . . . . . . . . . . . <a href="#page-28">28</a>
-   <a href="#section-7">7</a>.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . <a href="#page-29">29</a>
-   <a href="#section-8">8</a>.  Security Considerations  . . . . . . . . . . . . . . . . . . . <a href="#page-29">29</a>
-   <a href="#section-9">9</a>.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-30">30</a>
-   <a href="#section-10">10</a>. References . . . . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-30">30</a>
-     <a href="#section-10.1">10.1</a>. Normative References . . . . . . . . . . . . . . . . . . . <a href="#page-30">30</a>
-     <a href="#section-10.2">10.2</a>. Informative References . . . . . . . . . . . . . . . . . . <a href="#page-30">30</a>
-   Appendix A.  ASN.1 module  . . . . . . . . . . . . . . . . . . . . <a href="#page-30">30</a>
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-33">33</a>
-   Intellectual Property and Copyright Statements . . . . . . . . . . <a href="#page-34">34</a>
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  4
+   2.  Conventions and Terminologies Used in This Document  . . . . .  5
+   3.  Model for Pre-Authentication . . . . . . . . . . . . . . . . .  5
+     3.1.  Information Managed by the Pre-authentication Model  . . .  6
+     3.2.  Initial Pre-authentication Required Error  . . . . . . . .  8
+     3.3.  Client to KDC  . . . . . . . . . . . . . . . . . . . . . .  9
+     3.4.  KDC to Client  . . . . . . . . . . . . . . . . . . . . . . 10
+   4.  Pre-Authentication Facilities  . . . . . . . . . . . . . . . . 10
+     4.1.  Client-authentication Facility . . . . . . . . . . . . . . 12
+     4.2.  Strengthening-reply-key Facility . . . . . . . . . . . . . 12
+     4.3.  Replacing-reply-key Facility . . . . . . . . . . . . . . . 13
+     4.4.  KDC-authentication Facility  . . . . . . . . . . . . . . . 14
+   5.  Requirements for Pre-Authentication Mechanisms . . . . . . . . 14
+   6.  Tools for Use in Pre-Authentication Mechanisms . . . . . . . . 15
+     6.1.  Combining Keys . . . . . . . . . . . . . . . . . . . . . . 15
+     6.2.  Protecting Requests/Responses  . . . . . . . . . . . . . . 16
+     6.3.  Managing States for the KDC  . . . . . . . . . . . . . . . 17
+     6.4.  Pre-authentication Set . . . . . . . . . . . . . . . . . . 19
+     6.5.  Definition of Kerberos FAST Padata . . . . . . . . . . . . 20
+       6.5.1.  FAST and Encrypted Time Stamp  . . . . . . . . . . . . 21
+       6.5.2.  FAST Armors  . . . . . . . . . . . . . . . . . . . . . 21
+       6.5.3.  FAST Request . . . . . . . . . . . . . . . . . . . . . 22
+       6.5.4.  FAST Response  . . . . . . . . . . . . . . . . . . . . 26
+       6.5.5.  Error Messages used with Kerberos FAST . . . . . . . . 28
+     6.6.  Authentication Strength Indication . . . . . . . . . . . . 28
+   7.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 29
+   8.  Security Considerations  . . . . . . . . . . . . . . . . . . . 29
+   9.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 30
+   10. References . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+     10.1. Normative References . . . . . . . . . . . . . . . . . . . 30
+     10.2. Informative References . . . . . . . . . . . . . . . . . . 30
+   Appendix A.  ASN.1 module  . . . . . . . . . . . . . . . . . . . . 30
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 33
+   Intellectual Property and Copyright Statements . . . . . . . . . . 34
 
 
 
@@ -291,14 +163,14 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 3]</span>
-<a name="page-4" id="page-4" href="#page-4"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 3]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-<span class="h2"><a name="section-1">1</a>.  Introduction</span>
+1.  Introduction
 
-   The core Kerberos specification [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] treats pre-authentication
+   The core Kerberos specification [RFC4120] treats pre-authentication
    data as an opaque typed hole in the messages to the KDC that may
    influence the reply key used to encrypt the KDC reply.  This
    generality has been useful: pre-authentication data is used for a
@@ -320,7 +192,7 @@ Table of Contents
    authentication mechanisms perform as well as how these functions
    affect the state of the request and reply.  In addition several
    common tools needed by pre-authentication mechanisms are provided.
-   Unlike [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>], this framework is not complete--it does not
+   Unlike [RFC3961], this framework is not complete--it does not
    describe all the inputs and outputs for the pre-authentication
    mechanisms.  Pre-Authentication mechanism designers should try to be
    consistent with this framework because doing so will make their
@@ -335,9 +207,9 @@ Table of Contents
    protected channel.  Based on FAST, pre-authentication mechanisms can
    extend Kerberos with ease, to support, for example, password
    authenticated key exchange (PAKE) protocols with zero knowledge
-   password proof (ZKPP) [<a href="#ref-EKE">EKE</a>] [<a href="#ref-IEEE1363.2" title='"Integrating Single-use Authentication Mechanisms with Kerberos"'>IEEE1363.2</a>].  Any pre-authentication
+   password proof (ZKPP) [EKE] [IEEE1363.2].  Any pre-authentication
    mechanism can be encapsulated in the FAST messages as defined in
-   <a href="#section-6.5">Section 6.5</a>.  A pre-authentication type carried within FAST is called
+   Section 6.5.  A pre-authentication type carried within FAST is called
    a FAST factor.  Creating a FAST factor is the easiest path to create
    a new pre-authentication mechanism.  FAST factors are significantly
    easier to analyze from a security standpoint than other pre-
@@ -347,25 +219,25 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 4]</span>
-<a name="page-5" id="page-5" href="#page-5"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 4]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    authentication mechanisms outside of FAST.
 
    This document should be read only after reading the documents
-   describing the Kerberos cryptography framework [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>] and the core
-   Kerberos protocol [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].  This document freely uses terminology
+   describing the Kerberos cryptography framework [RFC3961] and the core
+   Kerberos protocol [RFC4120].  This document freely uses terminology
    and notation from these documents without reference or further
    explanation.
 
 
-<span class="h2"><a name="section-2">2</a>.  Conventions and Terminologies Used in This Document</span>
+2.  Conventions and Terminologies Used in This Document
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in [<a href="./rfc2119" title='"Key words for use in RFCs to Indicate Requirement Levels"'>RFC2119</a>].
+   document are to be interpreted as described in [RFC2119].
 
    The word padata is used as the shorthand of pre-authentication data.
 
@@ -377,7 +249,7 @@ Table of Contents
    exchanged between the client and the KDC.
 
 
-<span class="h2"><a name="section-3">3</a>.  Model for Pre-Authentication</span>
+3.  Model for Pre-Authentication
 
    When a Kerberos client wishes to obtain a ticket using the
    authentication server, it sends an initial Authentication Service
@@ -403,9 +275,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 5]</span>
-<a name="page-6" id="page-6" href="#page-6"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 5]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    These models for state management are in apparent conflict.  For many
@@ -418,7 +290,7 @@ Table of Contents
    needs to provide the client with a cookie to include in future
    requests to capture the current state of the authentication session.
    Handling of multiple round-trip mechanisms is discussed in
-   <a href="#section-6.3">Section 6.3</a>.
+   Section 6.3.
 
    This framework specifies the behavior of Kerberos pre-authentication
    mechanisms used to identify users or to modify the reply key used to
@@ -434,7 +306,7 @@ Table of Contents
    implementations process the padata at each step of the AS request
    process.
 
-<span class="h3"><a name="section-3.1">3.1</a>.  Information Managed by the Pre-authentication Model</span>
+3.1.  Information Managed by the Pre-authentication Model
 
    The following information is maintained by the client and KDC as each
    request is being processed:
@@ -454,14 +326,14 @@ Table of Contents
    Conceptually, the reply key is initially the long-term key of the
    principal.  However, principals can have multiple long-term keys
    because of support for multiple encryption types, salts and
-   string2key parameters.  As described in <a href="#section-5.2.7.5">Section 5.2.7.5</a> of the
-   Kerberos protocol [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>], the KDC sends PA-ETYPE-INFO2 to notify
+   string2key parameters.  As described in Section 5.2.7.5 of the
+   Kerberos protocol [RFC4120], the KDC sends PA-ETYPE-INFO2 to notify
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 6]</span>
-<a name="page-7" id="page-7" href="#page-7"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 6]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    the client what types of keys are available.  Thus in full
@@ -493,17 +365,17 @@ Table of Contents
    because the primary purpose of pre-authentication is to authenticate
    the client identity before issuing a ticket.  The handling of
    authentication strength using various authentication mechanisms is
-   discussed in <a href="#section-6.6">Section 6.6</a>.
+   discussed in Section 6.6.
 
    Initially the reply key has not been used.  A pre-authentication
    mechanism that uses the reply key to encrypt or checksum some data in
    the generation of new keys MUST indicate that the reply key is used.
    This state is maintained by the client and the KDC to enforce the
-   security requirement stated in <a href="#section-4.3">Section 4.3</a> that the reply key cannot
+   security requirement stated in Section 4.3 that the reply key cannot
    be replaced after it is used.
 
    Initially the reply key has not been replaced.  If a mechanism
-   implements the Replace Reply Key facility discussed in <a href="#section-4.3">Section 4.3</a>,
+   implements the Replace Reply Key facility discussed in Section 4.3,
    then the state MUST be updated to indicate that the reply key has
    been replaced.  Once the reply key has been replaced, knowledge of
    the reply key is insufficient to authenticate the client.  The reply
@@ -515,9 +387,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 7]</span>
-<a name="page-8" id="page-8" href="#page-8"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 7]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    Without pre-authentication, the client knows that the KDC reply is
@@ -546,15 +418,15 @@ Table of Contents
    known public key or providing a ticket for the client machine as a
    service.
 
-<span class="h3"><a name="section-3.2">3.2</a>.  Initial Pre-authentication Required Error</span>
+3.2.  Initial Pre-authentication Required Error
 
    Typically a client starts a conversation by sending an initial
    request with no pre-authentication.  If the KDC requires pre-
    authentication, then it returns a KDC_ERR_PREAUTH_REQUIRED message.
    After the first reply with the KDC_ERR_PREAUTH_REQUIRED error code,
    the KDC returns the error code KDC_ERR_MORE_PREAUTH_DATA_NEEDED
-   (defined in <a href="#section-6.3">Section 6.3</a>) for pre-authentication configurations that
-   use multi-round-trip mechanisms; see <a href="#section-3.4">Section 3.4</a> for details of that
+   (defined in Section 6.3) for pre-authentication configurations that
+   use multi-round-trip mechanisms; see Section 3.4 for details of that
    case. [[anchor3: Is it desirable to define a new error code for this?
    Probably but we need to call out to the WG.]]
 
@@ -571,9 +443,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 8]</span>
-<a name="page-9" id="page-9" href="#page-9"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 8]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    mechanisms may only be useful in authentication sets; others may be
@@ -591,7 +463,7 @@ Table of Contents
    the KDC needs to expose cipher text encrypted in a weak key before
    the client has proven knowledge of that key.
 
-<span class="h3"><a name="section-3.3">3.3</a>.  Client to KDC</span>
+3.3.  Client to KDC
 
    This description assumes that a client has already received a
    KDC_ERR_PREAUTH_REQUIRED from the KDC.  If the client performs
@@ -606,7 +478,7 @@ Table of Contents
    When processing the response to the KDC_ERR_PREAUTH_REQUIRED, the
    client MAY ignore any padata it chooses unless doing so violates a
    specification to which the client conforms.  Clients conforming to
-   this specification MUST NOT ignore the padata defined in <a href="#section-6.3">Section 6.3</a>.
+   this specification MUST NOT ignore the padata defined in Section 6.3.
    Clients SHOULD process padata unrelated to this framework or other
    means of authenticating the user.  Clients SHOULD choose one
    authentication set or mechanism that could lead to authenticating the
@@ -627,15 +499,15 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007               [Page 9]</span>
-<a name="page-10" id="page-10" href="#page-10"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007               [Page 9]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    order in which they will appear in the next request, updating the
    state as appropriate.  The request is sent when it is complete.
 
-<span class="h3"><a name="section-3.4">3.4</a>.  KDC to Client</span>
+3.4.  KDC to Client
 
    When a KDC receives an AS request from a client, it needs to
    determine whether it will respond with an error or an AS reply.
@@ -645,7 +517,7 @@ Table of Contents
 
    From the standpoint of evaluating the pre-authentication, the KDC
    first starts by initializing the pre-authentication state.  It then
-   processes the padata in the request.  As mentioned in <a href="#section-3.3">Section 3.3</a>,
+   processes the padata in the request.  As mentioned in Section 3.3,
    the KDC MAY ignore padata that is inappropriate for the configuration
    and MUST ignore padata of an unknown type.
 
@@ -670,22 +542,22 @@ Table of Contents
    input.  After the padata is generated, the error response is sent.
    Typically the errors with the code KDC_ERR_MORE_PREAUTH_DATA_NEEDED
    in a converstation will include KDC state as discussed in
-   <a href="#section-6.3">Section 6.3</a>.
+   Section 6.3.
 
    To generate a final reply, the KDC generates the padata modifying the
    pre-authentication state as necessary.  Then it generates the final
    response, encrypting it in the current pre-authentication reply key.
 
 
-<span class="h2"><a name="section-4">4</a>.  Pre-Authentication Facilities</span>
+4.  Pre-Authentication Facilities
 
    Pre-Authentication mechanisms can be thought of as providing various
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 10]</span>
-<a name="page-11" id="page-11" href="#page-11"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 10]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    conceptual facilities.  This serves two useful purposes.  First,
@@ -711,8 +583,8 @@ Table of Contents
    provided by a single mechanism without complicating the security
    analysis.
 
-   According to Kerberos extensibility rules (<a href="#section-1.5">Section 1.5</a> of the
-   Kerberos specification [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>]), an extension MUST NOT change the
+   According to Kerberos extensibility rules (Section 1.5 of the
+   Kerberos specification [RFC4120]), an extension MUST NOT change the
    semantics of a message unless a recipient is known to understand that
    extension.  Because a client does not know that the KDC supports a
    particular pre-authentication mechanism when it sends an initial
@@ -731,29 +603,29 @@ Table of Contents
    parts.  The first part proposes a change to the core semantic--for
    example proposes a new reply key.  The second part acknowledges that
    the extension is understood and that the change takes effect.
-   <a href="#section-4.2">Section 4.2</a> discusses how to design mechanisms that modify the reply
+   Section 4.2 discusses how to design mechanisms that modify the reply
    key to be split into a proposal and acceptance without requiring
    additional round trips to use the new reply key in subsequent pre-
-   authentication.  Other changes in the state described in <a href="#section-3.1">Section 3.1</a>
+   authentication.  Other changes in the state described in Section 3.1
    can safely be ignored by a KDC that does not understand a mechanism.
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 11]</span>
-<a name="page-12" id="page-12" href="#page-12"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 11]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    Mechanisms that modify the behavior of the request outside the scope
    of this framework need to carefully consider the Kerberos
    extensibility rules to avoid similar problems.
 
-<span class="h3"><a name="section-4.1">4.1</a>.  Client-authentication Facility</span>
+4.1.  Client-authentication Facility
 
    The client authentication facility proves the identity of a user to
    the KDC before a ticket is issued.  Examples of mechanisms
    implementing this facility include the encrypted timestamp facility
-   defined in <a href="#section-5.2.7.2">Section 5.2.7.2</a> of the Kerberos specification [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].
+   defined in Section 5.2.7.2 of the Kerberos specification [RFC4120].
    Mechanisms that provide this facility are expected to mark the client
    as authenticated.
 
@@ -762,22 +634,22 @@ Table of Contents
    reply.  Otherwise, an attacker can intercept the pre-authentication
    exchange and get a reply to attack.  One way of proving the client
    knows the reply key is to implement the Replace Reply Key facility
-   along with this facility.  The PKINIT mechanism [<a href="./rfc4556" title='"Public Key Cryptography for Initial Authentication in Kerberos (PKINIT)"'>RFC4556</a>] implements
+   along with this facility.  The PKINIT mechanism [RFC4556] implements
    Client Authentication alongside Replace Reply Key.
 
    If the reply key has been replaced, then mechanisms such as
    encrypted-timestamp that rely on knowledge of the reply key to
    authenticate the client MUST NOT be used.
 
-<span class="h3"><a name="section-4.2">4.2</a>.  Strengthening-reply-key Facility</span>
+4.2.  Strengthening-reply-key Facility
 
    Particularly, when dealing with keys based on passwords, it is
    desirable to increase the strength of the key by adding additional
    secrets to it.  Examples of sources of additional secrets include the
    results of a Diffie-Hellman key exchange or key bits from the output
-   of a smart card [<a href="#ref-KRB-WG.SAM">KRB-WG.SAM</a>].  Typically these additional secrets can
+   of a smart card [KRB-WG.SAM].  Typically these additional secrets can
    be first combined with the existing reply key and then converted to a
-   protocol key using tools defined in <a href="#section-6.1">Section 6.1</a>.
+   protocol key using tools defined in Section 6.1.
 
    If a mechanism implementing this facility wishes to modify the reply
    key before knowing that the other party in the exchange supports the
@@ -795,9 +667,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 12]</span>
-<a name="page-13" id="page-13" href="#page-13"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 12]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    with the outer level, one authentication set or mechanism is
@@ -833,7 +705,7 @@ Table of Contents
    because we also recommend client authentication facilities be tied to
    the reply key.
 
-<span class="h3"><a name="section-4.3">4.3</a>.  Replacing-reply-key Facility</span>
+4.3.  Replacing-reply-key Facility
 
    The Replace Reply Key facility replaces the key in which a successful
    AS reply will be encrypted.  This facility can only be used in cases
@@ -851,9 +723,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 13]</span>
-<a name="page-14" id="page-14" href="#page-14"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 13]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    rules require that the reply key not be changed unless both sides of
@@ -861,9 +733,9 @@ Table of Contents
    it will likely be more common for both sides to know that the
    facility is available by the time that the new key is available to be
    used.  However, mechanism designers can use a container for padata in
-   a proposal message as discussed in <a href="#section-4.2">Section 4.2</a> if appropriate.
+   a proposal message as discussed in Section 4.2 if appropriate.
 
-<span class="h3"><a name="section-4.4">4.4</a>.  KDC-authentication Facility</span>
+4.4.  KDC-authentication Facility
 
    This facility verifies that the reply comes from the expected KDC.
    In traditional Kerberos, the KDC and the client share a key, so if
@@ -878,7 +750,7 @@ Table of Contents
    having been verified.
 
 
-<span class="h2"><a name="section-5">5</a>.  Requirements for Pre-Authentication Mechanisms</span>
+5.  Requirements for Pre-Authentication Mechanisms
 
    This section lists requirements for specifications of pre-
    authentication mechanisms.
@@ -897,7 +769,7 @@ Table of Contents
    addition, such mechanisms should also define a pa-hint to be included
    in authentication sets.  Often, the same information included in the
    padata-value is appropriate to include in the pa-hint (as defined in
-   <a href="#section-6.4">Section 6.4</a>).
+   Section 6.4).
 
    In order to ease security analysis the mechanism specification should
    describe what facilities from this document are offered by the
@@ -907,9 +779,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 14]</span>
-<a name="page-15" id="page-15" href="#page-15"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 14]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    applicable to any FAST factor that provides authentication
@@ -924,7 +796,7 @@ Table of Contents
    to be able to cause the protocol negotiation to fail by modifying
    plaintext.  More significant attacks should be evaluated carefully.
 
-   As discussed in <a href="#section-6.3">Section 6.3</a>, there is no guarantee that a client will
+   As discussed in Section 6.3, there is no guarantee that a client will
    use the same KDCs for all messages in a conversation.  The mechanism
    specification needs to show why the mechanism is secure in this
    situation.  The hardest problem to deal with, especially for
@@ -933,14 +805,14 @@ Table of Contents
    to any KDC.
 
 
-<span class="h2"><a name="section-6">6</a>.  Tools for Use in Pre-Authentication Mechanisms</span>
+6.  Tools for Use in Pre-Authentication Mechanisms
 
    This section describes common tools needed by multiple pre-
    authentication mechanisms.  By using these tools mechanism designers
    can use a modular approach to specify mechanism details and ease
    security analysis.
 
-<span class="h3"><a name="section-6.1">6.1</a>.  Combining Keys</span>
+6.1.  Combining Keys
 
    Frequently a weak key need to be combined with a stronger key before
    use.  For example, passwords are typically limited in size and
@@ -952,20 +824,20 @@ Table of Contents
 
    KRB-FX-CF1() is defined to combine two pass-phrases.
 
-       KRB-FX-CF1(UTF-8 string, UTF-8 string) -&gt; (UTF-8 string)
-       KRB-FX-CF1(x, y) -&gt; x || y
+       KRB-FX-CF1(UTF-8 string, UTF-8 string) -> (UTF-8 string)
+       KRB-FX-CF1(x, y) -> x || y
 
    Where || denotes concatenation.  The strength of the final key is
    roughly the total strength of the individual keys being combined
-   assuming that the string_to_key() function [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>] uses all its
+   assuming that the string_to_key() function [RFC3961] uses all its
    input evenly.
 
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 15]</span>
-<a name="page-16" id="page-16" href="#page-16"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 15]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    An example usage of KRB-FX-CF1() is when a device provides random but
@@ -974,33 +846,33 @@ Table of Contents
    combined using KRB-FX-CF1().
 
    KRB-FX-CF2() combines two protocol keys based on the pseudo-random()
-   function defined in [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>].
+   function defined in [RFC3961].
 
    Given two input keys, K1 and K2, where K1 and K2 can be of two
    different enctypes, the output key of KRB-FX-CF2(), K3, is derived as
    follows:
 
        KRB-FX-CF2(protocol key, protocol key, octet string,
-                 octet string)  -&gt;  (protocol key)
+                 octet string)  ->  (protocol key)
 
-       PRF+(K1, pepper1) -&gt; octet-string-1
-       PRF+(K2, pepper2) -&gt; octet-string-2
-       KRB-FX-CF2(K1, K2, pepper1, pepper2) -&gt;
+       PRF+(K1, pepper1) -> octet-string-1
+       PRF+(K2, pepper2) -> octet-string-2
+       KRB-FX-CF2(K1, K2, pepper1, pepper2) ->
               random-to-key(octet-string-1 ^ octet-string-2)
 
    Where ^ denotes the exclusive-OR operation.  PRF+() is defined as
    follows:
 
-    PRF+(protocol key, octet string) -&gt; (octet string)
+    PRF+(protocol key, octet string) -> (octet string)
 
-    PRF+(key, shared-info) -&gt; pseudo-random( key,  1 || shared-info ) ||
+    PRF+(key, shared-info) -> pseudo-random( key,  1 || shared-info ) ||
                   pseudo-random( key, 2 || shared-info ) ||
                   pseudo-random( key, 3 || shared-info ) || ...
 
    Here the counter value 1, 2, 3 and so on are encoded as a one-octet
    integer.  The pseudo-random() operation is specified by the enctype
    of the protocol key.  PRF+() uses the counter to generate enough bits
-   as needed by the random-to-key() [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>] function for the
+   as needed by the random-to-key() [RFC3961] function for the
    encryption type specified for the resulting key; unneeded bits are
    removed from the tail.
 
@@ -1009,19 +881,19 @@ Table of Contents
    that if the two keys being combined are the same, the resulting key
    is not a trivial key.
 
-<span class="h3"><a name="section-6.2">6.2</a>.  Protecting Requests/Responses</span>
+6.2.  Protecting Requests/Responses
 
    Mechanism designers SHOULD protect clear text portions of pre-
    authentication data.  Various denial of service attacks and downgrade
    attacks against Kerberos are possible unless plaintexts are somehow
    protected against modification.  An early design goal of Kerberos
-   Version 5 [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] was to avoid encrypting more of the
+   Version 5 [RFC4120] was to avoid encrypting more of the
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 16]</span>
-<a name="page-17" id="page-17" href="#page-17"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 16]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    authentication exchange that was required.  (Version 4 doubly-
@@ -1039,9 +911,9 @@ Table of Contents
    provide a checksum of all the messages exchanged on the wire in the
    conversation, and the checksum is then verified by the receiver.
 
-   Primitives defined in [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>] are RECOMMENDED for integrity
+   Primitives defined in [RFC3961] are RECOMMENDED for integrity
    protection and confidentiality.  Mechanisms based on these primitives
-   have the benefit of crypto-agility provided by [<a href="./rfc3961" title='"Encryption and Checksum Specifications for Kerberos 5"'>RFC3961</a>].
+   have the benefit of crypto-agility provided by [RFC3961].
 
    The advantage afforded by crypto-agility is the ability to avoid a
    multi-year standardization and deployment cycle to fix a problem that
@@ -1050,13 +922,13 @@ Table of Contents
 
    New mechanisms MUST NOT be hard-wired to use a specific algorithm.
 
-   Note that data used by FAST factors (defined in <a href="#section-6.5">Section 6.5</a>) are
+   Note that data used by FAST factors (defined in Section 6.5) are
    encrypted in a protected channel, in most cases, therefore no un-
    authenticated-text issue is associated with these mechanisms.
    However mechanism designers MUST consider the case carefully when the
    KDC authentication is not provided by Kerberos FAST.
 
-<span class="h3"><a name="section-6.3">6.3</a>.  Managing States for the KDC</span>
+6.3.  Managing States for the KDC
 
    [[anchor11: Kerberos is stateless today.  We can either maintain that
    and store all the state in a cookie or change that and require
@@ -1075,9 +947,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 17]</span>
-<a name="page-18" id="page-18" href="#page-18"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 17]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
        KDC_ERR_PREAUTH_EXPIRED            TBA
@@ -1100,12 +972,12 @@ Table of Contents
        PA_FX_COOKIE                       TBA
            -- Stateless cookie that is not tied to a specific KDC.
 
-   The corresponding padata-value field [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] contains the
-   Distinguished Encoding Rules (DER) [<a href="#ref-X60">X60</a>] [<a href="#ref-X690">X690</a>] encoding of the
+   The corresponding padata-value field [RFC4120] contains the
+   Distinguished Encoding Rules (DER) [X60] [X690] encoding of the
    following Abstract Syntax Notation One (ASN.1) type PA-FX-COOKIE:
 
      PA-FX-COOKIE ::= SEQUENCE {
-         Cookie            [<a href="#ref-1">1</a>] OCTET STRING,
+         Cookie            [1] OCTET STRING,
              -- Opaque data, for use to associate all the messages in a
              -- single conversation between the client and the KDC.
              -- This can be generated by either the client or the KDC.
@@ -1123,7 +995,7 @@ Table of Contents
    design.  The content of the Cookie field is likely specific to the
    pre-authentication mechanisms used to authenticate the client.  In
    order to compute the finished field in the KrbFastRespons structure
-   as defined in <a href="#section-6.5.4">Section 6.5.4</a>, all the previous messages in the
+   as defined in Section 6.5.4, all the previous messages in the
    conversation MUST be included in the Cookie.  If a client
    authentication response can be replayed to multiple KDCs via the
    PA_FX_COOKIE mechanism, an expiration in the Cookie is RECOMMENDED to
@@ -1131,9 +1003,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 18]</span>
-<a name="page-19" id="page-19" href="#page-19"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 18]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    If at least one more message for a mechanism or a mechanism set is
@@ -1143,7 +1015,7 @@ Table of Contents
 
        KDC_ERR_MORE_PREAUTH_DATA_NEEDED   TBA
 
-<span class="h3"><a name="section-6.4">6.4</a>.  Pre-authentication Set</span>
+6.4.  Pre-authentication Set
 
    If all mechanisms in a group need to successfully complete in order
    to authenticate a client, the client and the KDC SHOULD use the
@@ -1155,15 +1027,15 @@ Table of Contents
        PA-AUTHENTICATION-SET ::= SEQUENCE OF PA-AUTHENTICATION-SET-ELEM
 
        PA-AUTHENTICATION-SET-ELEM ::= SEQUENCE {
-           pa-type           [<a href="#ref-1">1</a>] Int32,
+           pa-type           [1] Int32,
                -- same as padata-type.
-           pa-hint           [<a href="#ref-2">2</a>] OCTET STRING,
+           pa-hint           [2] OCTET STRING,
                -- hint data.
            ...
        }
 
    The pa-type field of the PA-AUTHENTICATION-SET-ELEM structure
-   contains the corresponding value of padata-type in PA-DATA [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].
+   contains the corresponding value of padata-type in PA-DATA [RFC4120].
    Associated with the pa-type is a pa-hint, which is an octet-string
    specified by the pre-authentication mechanism.  This hint may provide
    information for the client which helps it determine whether the
@@ -1187,9 +1059,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 19]</span>
-<a name="page-20" id="page-20" href="#page-20"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 19]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    When indicating which sets of padata are supported, the KDC includes
@@ -1199,7 +1071,7 @@ Table of Contents
    the authentication set, when the first mechanism completes, the
    client and the KDC will proceed with the second mechanism, and so on
    until all mechanisms complete successfully.  The PA_FX_COOKIE as
-   defined in <a href="#section-6.3">Section 6.3</a> MUST be sent by the KDC along with the first
+   defined in Section 6.3 MUST be sent by the KDC along with the first
    message that contains a PA-AUTHENTICATION-SET, in order to keep track
    of KDC states.
 
@@ -1210,7 +1082,7 @@ Table of Contents
    we can simplify the UI for login.  I propose that we make this
    requirement.  WG agreement required.]]
 
-<span class="h3"><a name="section-6.5">6.5</a>.  Definition of Kerberos FAST Padata</span>
+6.5.  Definition of Kerberos FAST Padata
 
    The cipher text exposure when using the encrypted timestamp pre-
    authentication data is a security concern for Kerberos.  Attackers
@@ -1234,26 +1106,26 @@ Table of Contents
    instead of full-blown pre-authentication mechanisms.
 
    FAST factors that are pre-authentication mechanisms MUST meet the
-   requirements in <a href="#section-5">Section 5</a>.
+   requirements in Section 5.
 
    FAST employs an armoring scheme.  The armor can be a host Ticket
    Granting Ticket (TGT), or an anonymous TGT obtained based on
-   anonymous PKINIT [<a href="#ref-KRB-ANON" title='"Kerberos Anonymity Support"'>KRB-ANON</a>], or a pre-shared long term key such as a
+   anonymous PKINIT [KRB-ANON], or a pre-shared long term key such as a
    host key.  The armoring TGT can be a cross-realm TGT.  The rest of
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 20]</span>
-<a name="page-21" id="page-21" href="#page-21"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 20]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    this section describes the types of armors and the messages used by
    FAST.
 
-<span class="h4"><a name="section-6.5.1">6.5.1</a>.  FAST and Encrypted Time Stamp</span>
+6.5.1.  FAST and Encrypted Time Stamp
 
-   FAST provides new behavior for encrypted time stamp [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].  When
+   FAST provides new behavior for encrypted time stamp [RFC4120].  When
    used as a FAST factor, this mechanism provides stronger security
    guarantees.
 
@@ -1262,13 +1134,13 @@ Table of Contents
    authenticate the client, as a FAST factor to avoid security exposure.
 
    The encrypted timestamp FAST factor MUST fill out the encrypted rep-
-   key-package field as described in <a href="#section-6.5.4">Section 6.5.4</a>.  It provides the
+   key-package field as described in Section 6.5.4.  It provides the
    following facilities: client-authentication, replacing-reply-key,
    KDC-authentication.  It does not provide the strengthening-reply-key
    facility.  The security considerations section of this document
    provides an explanation why the security requirements are met.
 
-<span class="h4"><a name="section-6.5.2">6.5.2</a>.  FAST Armors</span>
+6.5.2.  FAST Armors
 
    An armor key is used to encrypt pre-authentication data in the FAST
    request and the response.  The ArmorData structure is used to
@@ -1277,9 +1149,9 @@ Table of Contents
    an OCTET STRING contains the data.
 
        KrbFastArmor ::= SEQUENCE {
-           armor-type        [<a href="#ref-1">1</a>] Int32,
+           armor-type        [1] Int32,
                -- Type of the armor.
-           armor-value       [<a href="#ref-2">2</a>] OCTET STRING,
+           armor-value       [2] OCTET STRING,
                -- Value of the armor.
            ...
        }
@@ -1299,12 +1171,12 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 21]</span>
-<a name="page-22" id="page-22" href="#page-22"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 21]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-<span class="h5"><a name="section-6.5.2.1">6.5.2.1</a>.  Ticket-based Armors</span>
+6.5.2.1.  Ticket-based Armors
 
    The FX_FAST_ARMOR_AP_REQUEST armor type is based on a Kerberos TGT.
    The armor-value field of an FX_FAST_ARMOR_AP_REQUEST armor contains
@@ -1321,7 +1193,7 @@ Table of Contents
        the armor ticket.
 
    2.  Otherwise, the client's host machine cannot obtain a host ticket
-       strictly based on <a href="./rfc4120">RFC4120</a>, but the KDC has a signing asymmetric
+       strictly based on RFC4120, but the KDC has a signing asymmetric
        key that the client can verify its binding with the expected KDC,
        the client then can use anonymous PKINIT to obtain a anonymous
        TGT, and use that TGT to as the armor ticket.
@@ -1335,7 +1207,7 @@ Table of Contents
    ticket it has, the KDC and client MUST initialize the pre-
    authentication state to an unverified KDC.
 
-<span class="h5"><a name="section-6.5.2.2">6.5.2.2</a>.  Key-based Armors</span>
+6.5.2.2.  Key-based Armors
 
    The FX_FAST_ARMOR_KEY_ID armor type is used to carry an identifier of
    a key that is shared between the client host and the KDC.  The
@@ -1348,41 +1220,41 @@ Table of Contents
    host key. [[anchor19: Do we believe this has sufficient value to
    specify or do we want to assume all armor comes from tickets?]]
 
-<span class="h4"><a name="section-6.5.3">6.5.3</a>.  FAST Request</span>
+6.5.3.  FAST Request
 
    A padata type PA_FX_FAST is defined for the Kerberos FAST pre-
    authentication padata.  The corresponding padata-value field
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 22]</span>
-<a name="page-23" id="page-23" href="#page-23"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 22]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-   [<a name="ref-RFC4120" id="ref-RFC4120">RFC4120</a>] contains the DER encoding of the ASN.1 type PA-FX-FAST-
+   [RFC4120] contains the DER encoding of the ASN.1 type PA-FX-FAST-
    REQUEST.
 
        PA_FX_FAST                         TBA
            -- Padata type for Kerberos FAST
 
        PA-FX-FAST-REQUEST ::= CHOICE {
-           armored-data      [<a href="#ref-1">1</a>] KrbFastAmoredReq,
+           armored-data      [1] KrbFastAmoredReq,
            ...
        }
 
        KrbFastAmoredReq ::= SEQUENCE {
-           armor             [<a href="#ref-1">1</a>] KrbFastArmor OPTIONAL,
+           armor             [1] KrbFastArmor OPTIONAL,
                -- Contains the armor that determines the armor key.
                -- MUST be present in AS-REQ.
                -- MUST be absent in TGS-REQ.
-           req-checksum      [<a href="#ref-2">2</a>] Checksum,
+           req-checksum      [2] Checksum,
                -- Checksum performed over the type KDC-REQ-BODY.
                -- The checksum key is the armor key, the checksum
                -- type is the required checksum type for the enctype of
                -- the armor key, and the key usage number is
                -- KEY_USAGE_FAST_REA_CHKSUM.
-           enc-fast-req      [<a href="#ref-3">3</a>] EncryptedData, -- KrbFastReq --
+           enc-fast-req      [3] EncryptedData, -- KrbFastReq --
                -- The encryption key is the armor key, and the key usage
                -- number is KEY_USAGE_FAST_ENC.
            ...
@@ -1411,9 +1283,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 23]</span>
-<a name="page-24" id="page-24" href="#page-24"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 23]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    o  When a KrbFastAmoredReq is included in a TGS request, the armor
@@ -1430,15 +1302,15 @@ Table of Contents
    The KrbFastReq structure contains the following information:
 
        KrbFastReq ::= SEQUENCE {
-           fast-options      [<a href="#ref-0">0</a>] FastOptions,
+           fast-options      [0] FastOptions,
                -- Additional options.
-           padata            [<a href="#ref-1">1</a>] SEQUENCE OF PA-DATA,
+           padata            [1] SEQUENCE OF PA-DATA,
                -- padata typed holes.
-           crealm            [<a href="#ref-2">2</a>] Realm OPTIONAL,
-           cname             [<a href="#ref-3">3</a>] PrincipalName OPTIONAL,
+           crealm            [2] Realm OPTIONAL,
+           cname             [3] PrincipalName OPTIONAL,
                -- Contains the client realm and the client name.
                -- If present, the client name and realm in the
-               -- AS_REQ KDC-REQ-BODY [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] MUST be ignored.
+               -- AS_REQ KDC-REQ-BODY [RFC4120] MUST be ignored.
            ...
        }
 
@@ -1467,16 +1339,16 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 24]</span>
-<a name="page-25" id="page-25" href="#page-25"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 24]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    unknown non-critical options.
 
    The anonymous Option
 
-      The Kerberos response defined in [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] contains the client
+      The Kerberos response defined in [RFC4120] contains the client
       identity in clear text, This makes traffic analysis
       straightforward.  The anonymous option is designed to complicate
       traffic analysis performed over the messages exchanged between the
@@ -1488,10 +1360,10 @@ Table of Contents
 
    The kdc-referrals Option
 
-      The Kerberos client described in [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] has to request referral
+      The Kerberos client described in [RFC4120] has to request referral
       TGTs along the authentication path in order to get a service
       ticket for the target service.  The Kerberos client described in
-      the [<a href="#ref-REFERRALS">REFERRALS</a>] need to contact the AS specified in the error
+      the [REFERRALS] need to contact the AS specified in the error
       response in order to complete client referrals.  The kdc-referrals
       option is designed to minimize the number of messages that need to
       be processed by the client.  This option is useful when, for
@@ -1499,7 +1371,7 @@ Table of Contents
       has high latency, or the client has limited computational
       capabilities.  If the kdc-referrals option is set, the KDC that
       honors this option acts as the client to follow AS referrals and
-      TGS referrals [<a href="#ref-REFERRALS">REFERRALS</a>], and return the ticket thus-obtained
+      TGS referrals [REFERRALS], and return the ticket thus-obtained
       using the reply key expected by the client.  The kdc-referrals
       option can be implemented when the KDC knows the reply key.  The
       KDC can ignore kdc-referrals option when it does not understand it
@@ -1508,7 +1380,7 @@ Table of Contents
       is not honored by the KDC, unless otherwise specified.
 
    The padata field contains a list of PA-DATA structures as described
-   in <a href="#section-5.2.7">Section 5.2.7</a> of [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].  These PA-DATA structures can contain
+   in Section 5.2.7 of [RFC4120].  These PA-DATA structures can contain
    FAST factors.  They can also be used as generic typed-holes to
    contain data not intended for proving the client's identity or
    establishing a reply key, but for protocol extensibility.
@@ -1516,33 +1388,33 @@ Table of Contents
    The crealm field and the cname field identify the client principal in
    the ticket request.  If either the crealm field or the cname field is
    present, the corresponding crealm or cname field in the KDC-REQ-BODY
-   [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] of an AS-REQ MUST be ignored.  The client can fill in these
+   [RFC4120] of an AS-REQ MUST be ignored.  The client can fill in these
    fields in the KrbFastReq structure and leaves the cname field and the
    crealm field KDC-REQ-BODY absent, thus conceals its identity in the
    AS-REQ.
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 25]</span>
-<a name="page-26" id="page-26" href="#page-26"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 25]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-<span class="h4"><a name="section-6.5.4">6.5.4</a>.  FAST Response</span>
+6.5.4.  FAST Response
 
    The KDC that supports the PA_FX_FAST padata MUST include a PA_FX_FAST
    padata element in the KDC reply and/or the error response, when the
    client and the KDC agreed upon the armor key.  The corresponding
-   padata-value field [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] in the KDC response is the DER encoding
+   padata-value field [RFC4120] in the KDC response is the DER encoding
    of the ASN.1 type PA-FX-FAST-REPLY.
 
       PA-FX-FAST-REPLY ::= CHOICE {
-          armored-data      [<a href="#ref-1">1</a>] KrbFastArmoredRep,
+          armored-data      [1] KrbFastArmoredRep,
           ...
       }
 
       KrbFastArmoredRep ::= SEQUENCE {
-          enc-fast-rep      [<a href="#ref-1">1</a>] EncryptedData, -- KrbFastResponse --
+          enc-fast-rep      [1] EncryptedData, -- KrbFastResponse --
               -- The encryption key is the armor key in the request, and
               -- the key usage number is KEY_USAGE_FAST_REP.
           ...
@@ -1568,9 +1440,9 @@ Table of Contents
    The KrbFastResponse structure contains the following information:
 
       KrbFastResponse ::= SEQUENCE {
-          padata            [<a href="#ref-1">1</a>] SEQUENCE OF PA-DATA,
+          padata            [1] SEQUENCE OF PA-DATA,
               -- padata typed holes.
-          finished          [<a href="#ref-2">2</a>] KrbFastFinished OPTIONAL,
+          finished          [2] KrbFastFinished OPTIONAL,
               -- MUST be present if the client is authenticated,
               -- absent otherwise.
               -- Typically this is present if and only if the containing
@@ -1579,15 +1451,15 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 26]</span>
-<a name="page-27" id="page-27" href="#page-27"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 26]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
       }
 
    The padata field in the KrbFastResponse structure contains a list of
-   PA-DATA structures as described in <a href="#section-5.2.7">Section 5.2.7</a> of [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].  These
+   PA-DATA structures as described in Section 5.2.7 of [RFC4120].  These
    PA-DATA structures are used to carry data advancing the exchange
    specific for the FAST factors.  They can also be used as generic
    typed-holes for protocol extensibility.
@@ -1600,20 +1472,20 @@ Table of Contents
    The KrbFastFinished structure contains the following information:
 
      KrbFastFinished ::= SEQUENCE {
-         timestamp         [<a href="#ref-1">1</a>] KerberosTime,
-         usec              [<a href="#ref-2">2</a>] Microseconds,
+         timestamp         [1] KerberosTime,
+         usec              [2] Microseconds,
              -- timestamp and usec represent the time on the KDC when
              -- the reply was generated.
-         rep-key-package   [<a href="#ref-3">3</a>]  EncryptedData OPTIONAL,
+         rep-key-package   [3]  EncryptedData OPTIONAL,
                        -- EncryptionKey --
              -- This, if present, replaces the reply key for AS and TGS.
              -- The encryption key is the client key, unless otherwise
              -- specified. The key usage number is
              -- KEY_USAGE_FAST_FINISHED.
-         crealm            [<a href="#ref-4">4</a>] Realm,
-         cname             [<a href="#ref-5">5</a>] PrincipalName,
+         crealm            [4] Realm,
+         cname             [5] PrincipalName,
              -- Contains the client realm and the client name.
-         checksum          [<a href="#ref-6">6</a>] Checksum,
+         checksum          [6] Checksum,
              -- Checksum performed over all the messages in the
              -- conversation, except the containing message.
              -- The checksum key is the ticket session key of the reply
@@ -1626,8 +1498,8 @@ Table of Contents
 
    The timestamp and usec fields represent the time on the KDC when the
    reply ticket was generated, these fields have the same semantics as
-   the corresponding-identically-named fields in <a href="#section-5.6.1">Section 5.6.1</a> of
-   [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>].  The client MUST use the KDC's time in these fields
+   the corresponding-identically-named fields in Section 5.6.1 of
+   [RFC4120].  The client MUST use the KDC's time in these fields
    thereafter when using the returned ticket.  Note that the KDC's time
    in AS-REP may not match the authtime in the reply ticket if the kdc-
    referrals option is requested and honored by the KDC.
@@ -1635,9 +1507,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 27]</span>
-<a name="page-28" id="page-28" href="#page-28"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 27]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    The rep-key-package field, if present, contains the reply key
@@ -1657,17 +1529,17 @@ Table of Contents
    enctype of that key, and the key usage number is
    KEY_USAGE_FAST_FINISHED.
 
-<span class="h4"><a name="section-6.5.5">6.5.5</a>.  Error Messages used with Kerberos FAST</span>
+6.5.5.  Error Messages used with Kerberos FAST
 
    If the Kerberos FAST padata was included in the request, unless
    otherwise specified, the e-data field of the KRB-ERROR message
-   [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] contains the ASN.1 DER encoding of the type METHOD-DATA
-   [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>], where a PA_FX_FAST padata element is included and it
+   [RFC4120] contains the ASN.1 DER encoding of the type METHOD-DATA
+   [RFC4120], where a PA_FX_FAST padata element is included and it
    contains the DER encoding of the type PA-FX-FAST-REPLY.  If the
    e-data field of the KRB-ERROR message contains the DER encoding of a
    TYPED-DATA, a typed data element TD_FX_FAST SHOULD be included in the
    e-data if the Kerberos FAST padata is included in the request, and
-   the corresponding data-value field [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] contains the ASN.1 DER
+   the corresponding data-value field [RFC4120] contains the ASN.1 DER
    encoding of the type PA-FX-FAST-REPLY.  In other words, the typed
    data element type TD_FX_FAST is allocated to encapsulate the FAST
    reply message in the error responses.  If a PA-FX-FAST-REPLY is not
@@ -1683,7 +1555,7 @@ Table of Contents
        TD_FX_FAST                         TBA
            -- Typed data element type for Kerberos FAST
 
-<span class="h3"><a name="section-6.6">6.6</a>.  Authentication Strength Indication</span>
+6.6.  Authentication Strength Indication
 
    Implementations that have pre-authentication mechanisms offering
    significantly different strengths of client authentication MAY choose
@@ -1691,9 +1563,9 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 28]</span>
-<a name="page-29" id="page-29" href="#page-29"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 28]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
    into policy decisions.  For example, some principals might require
@@ -1706,7 +1578,7 @@ Table of Contents
        AD-authentication-strength         TBA
 
    The corresponding ad-data field contains the DER encoding of the pre-
-   authentication data set as defined in <a href="#section-6.4">Section 6.4</a>.  This set contains
+   authentication data set as defined in Section 6.4.  This set contains
    all the pre-authentication mechanisms that were used to authenticate
    the client.  If only one pre-authentication mechanism was used to
    authenticate the client, the pre-authentication set contains one
@@ -1716,7 +1588,7 @@ Table of Contents
    RELEVANT, thus it can be ignored if it is unknown to the receiver.
 
 
-<span class="h2"><a name="section-7">7</a>.  IANA Considerations</span>
+7.  IANA Considerations
 
    This document defines FAST factors, these are mini- and light-
    weighted- pre-authentication mechanisms.  A new IANA registry should
@@ -1724,7 +1596,7 @@ Table of Contents
    "Specification Required".
 
 
-<span class="h2"><a name="section-8">8</a>.  Security Considerations</span>
+8.  Security Considerations
 
    The kdc-referrals option in the Kerberos FAST padata requests the KDC
    to act as the client to follow referrals.  This can overload the KDC.
@@ -1747,75 +1619,75 @@ Table of Contents
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 29]</span>
-<a name="page-30" id="page-30" href="#page-30"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 29]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-<span class="h2"><a name="section-9">9</a>.  Acknowledgements</span>
+9.  Acknowledgements
 
    Several suggestions from Jeffery Hutzman based on early revisions of
    this documents led to significant improvements of this document.
 
 
-<span class="h2"><a name="section-10">10</a>.  References</span>
+10.  References
 
-<span class="h3"><a name="section-10.1">10.1</a>.  Normative References</span>
+10.1.  Normative References
 
-   [<a name="ref-KRB-ANON" id="ref-KRB-ANON">KRB-ANON</a>] Zhu, L., Leach, P. and Jaganathan, K., "Kerberos Anonymity
-              Support", <a href="./draft-ietf-krb-wg-anon">draft-ietf-krb-wg-anon</a>, work in progress.
+   [KRB-ANON] Zhu, L., Leach, P. and Jaganathan, K., "Kerberos Anonymity 
+              Support", draft-ietf-krb-wg-anon, work in progress.
 
-   [<a name="ref-RFC2119" id="ref-RFC2119">RFC2119</a>]  Bradner, S., "Key words for use in RFCs to Indicate
-              Requirement Levels", <a href="./bcp14">BCP 14</a>, <a href="./rfc2119">RFC 2119</a>, March 1997.
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
 
-   [<a name="ref-RFC3961" id="ref-RFC3961">RFC3961</a>]  Raeburn, K., "Encryption and Checksum Specifications for
-              Kerberos 5", <a href="./rfc3961">RFC 3961</a>, February 2005.
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
 
-   [<a name="ref-RFC4120" id="ref-RFC4120">RFC4120</a>]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
-              Kerberos Network Authentication Service (V5)", <a href="./rfc4120">RFC 4120</a>,
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
               July 2005.
 
-   [<a name="ref-REFERALS" id="ref-REFERALS">REFERALS</a>] Raeburn, K. et al, "Generating KDC Referrals to Locate
-              Kerberos Realms", <a href="./draft-ietf-krb-wg-kerberos-referrals">draft-ietf-krb-wg-kerberos-referrals</a>,
+   [REFERALS] Raeburn, K. et al, "Generating KDC Referrals to Locate 
+              Kerberos Realms", draft-ietf-krb-wg-kerberos-referrals, 
               work in progress.
 
-   [<a name="ref-SHA2" id="ref-SHA2">SHA2</a>]     National Institute of Standards and Technology, "Secure
-              Hash Standard (SHS)", Federal Information Processing
-              Standards Publication 180-2, August 2002.
+   [SHA2]     National Institute of Standards and Technology, "Secure 
+              Hash Standard (SHS)", Federal Information Processing 
+              Standards Publication 180-2, August 2002.  
 
-   [<a name="ref-X680" id="ref-X680">X680</a>]     ITU-T Recommendation X.680 (2002) | ISO/IEC 8824-1:2002,
+   [X680]     ITU-T Recommendation X.680 (2002) | ISO/IEC 8824-1:2002,
               Information technology - Abstract Syntax Notation One
               (ASN.1): Specification of basic notation.
-
-   [<a name="ref-X690" id="ref-X690">X690</a>]     ITU-T Recommendation X.690 (2002) | ISO/IEC 8825-1:2002,
+   
+   [X690]     ITU-T Recommendation X.690 (2002) | ISO/IEC 8825-1:2002,
               Information technology - ASN.1 encoding Rules:
               Specification of Basic Encoding Rules (BER), Canonical
               Encoding Rules (CER) and Distinguished Encoding Rules
               (DER).
 
-<span class="h3"><a name="section-10.2">10.2</a>.  Informative References</span>
+10.2.  Informative References
 
-   [<a name="ref-EKE" id="ref-EKE">EKE</a>]      Bellovin, S. M. and M. Merritt. "Augmented
-              Encrypted Key Exchange: A Password-Based Protocol Secure
-              Against Dictionary Attacks and Password File Compromise".
-              Proceedings of the 1st ACM Conference on Computer and
+   [EKE]      Bellovin, S. M. and M. Merritt. "Augmented 
+              Encrypted Key Exchange: A Password-Based Protocol Secure 
+              Against Dictionary Attacks and Password File Compromise". 
+              Proceedings of the 1st ACM Conference on Computer and 
               Communications Security, ACM Press, November 1993.
-
-   [<a name="ref-HKDF" id="ref-HKDF">HKDF</a>]     Dang, Q. and P. Polk, <a href="./draft-dang-nistkdf">draft-dang-nistkdf</a>, work in
+   
+   [HKDF]     Dang, Q. and P. Polk, draft-dang-nistkdf, work in 
               progress.
 
-   [<a name="ref-IEEE1363.2" id="ref-IEEE1363.2">IEEE1363.2</a>]
-              IEEE P1363.2: Password-Based Public-Key Cryptography,
+   [IEEE1363.2] 
+              IEEE P1363.2: Password-Based Public-Key Cryptography, 
               2004.
 
-   [<a name="ref-KRB-WG.SAM" id="ref-KRB-WG.SAM">KRB-WG.SAM</a>]
+   [KRB-WG.SAM]
               Hornstein, K., Renard, K., Neuman, C., and G. Zorn,
               "Integrating Single-use Authentication Mechanisms with
-              Kerberos", <a href="./draft-ietf-krb-wg-kerberos-sam-02.txt">draft-ietf-krb-wg-kerberos-sam-02.txt</a> (work in
+              Kerberos", draft-ietf-krb-wg-kerberos-sam-02.txt (work in
               progress), October 2003.
 
-   [<a name="ref-RFC4556" id="ref-RFC4556">RFC4556</a>]  Zhu, L. and B. Tung, "Public Key Cryptography for Initial
-              Authentication in Kerberos (PKINIT)", <a href="./rfc4556">RFC 4556</a>, June 2006.
+   [RFC4556]  Zhu, L. and B. Tung, "Public Key Cryptography for Initial
+              Authentication in Kerberos (PKINIT)", RFC 4556, June 2006.
 
 
 Appendix A.  ASN.1 module
@@ -1831,18 +1703,18 @@ Appendix A.  ASN.1 module
                 FROM KerberosV5Spec2 { iso(1) identified-organization(3)
                   dod(6) internet(1) security(5) kerberosV5(2)
                   modules(4) krb5spec2(2) };
-                  -- as defined in <a href="./rfc4120">RFC 4120</a>.
+                  -- as defined in RFC 4120.
 
      PA-FX-COOKIE ::= SEQUENCE {
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 30]</span>
-<a name="page-31" id="page-31" href="#page-31"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 30]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-         Cookie            [<a href="#ref-1">1</a>] OCTET STRING,
+         Cookie            [1] OCTET STRING,
              -- Opaque data, for use to associate all the messages in a
              -- single conversation between the client and the KDC.
              -- This can be generated by either the client or the KDC.
@@ -1855,61 +1727,61 @@ Appendix A.  ASN.1 module
      PA-AUTHENTICATION-SET ::= SEQUENCE OF PA-AUTHENTICATION-SET-ELEM
 
      PA-AUTHENTICATION-SET-ELEM ::= SEQUENCE {
-         pa-type           [<a href="#ref-1">1</a>] Int32,
+         pa-type           [1] Int32,
              -- same as padata-type.
-         pa-hint           [<a href="#ref-2">2</a>] OCTET STRING,
+         pa-hint           [2] OCTET STRING,
              -- hint data.
          ...
      }
 
      PA-FX-FAST-REQUEST ::= CHOICE {
-         armored-data      [<a href="#ref-1">1</a>] KrbFastAmoredReq,
+         armored-data      [1] KrbFastAmoredReq,
          ...
      }
 
      KrbFastAmoredReq ::= SEQUENCE {
-         armor             [<a href="#ref-1">1</a>] KrbFastArmor OPTIONAL,
+         armor             [1] KrbFastArmor OPTIONAL,
              -- Contains the armor that determines the armor key.
              -- MUST be present in AS-REQ.
              -- MUST be absent in TGS-REQ.
-         req-checksum      [<a href="#ref-2">2</a>] Checksum,
+         req-checksum      [2] Checksum,
              -- Checksum performed over the type KDC-REQ-BODY.
              -- The checksum key is the armor key, the checksum
              -- type is the required checksum type for the enctype of
              -- the armor key, and the key usage number is
              -- KEY_USAGE_FAST_REA_CHKSUM.
-         enc-fast-req      [<a href="#ref-3">3</a>] EncryptedData, -- KrbFastReq --
+         enc-fast-req      [3] EncryptedData, -- KrbFastReq --
              -- The encryption key is the armor key, and the key usage
              -- number is KEY_USAGE_FAST_ENC.
          ...
      }
 
      KrbFastArmor ::= SEQUENCE {
-         armor-type        [<a href="#ref-1">1</a>] Int32,
+         armor-type        [1] Int32,
              -- Type of the armor.
-         armor-value       [<a href="#ref-2">2</a>] OCTET STRING,
+         armor-value       [2] OCTET STRING,
              -- Value of the armor.
          ...
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 31]</span>
-<a name="page-32" id="page-32" href="#page-32"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 31]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
      }
 
      KrbFastReq ::= SEQUENCE {
-         fast-options      [<a href="#ref-0">0</a>] FastOptions,
+         fast-options      [0] FastOptions,
              -- Additional options.
-         padata            [<a href="#ref-1">1</a>] SEQUENCE OF PA-DATA,
+         padata            [1] SEQUENCE OF PA-DATA,
              -- padata typed holes.
-         crealm            [<a href="#ref-2">2</a>] Realm OPTIONAL,
-         cname             [<a href="#ref-3">3</a>] PrincipalName OPTIONAL,
+         crealm            [2] Realm OPTIONAL,
+         cname             [3] PrincipalName OPTIONAL,
              -- Contains the client realm and the client name.
              -- If present, the client name and realm in the
-             -- AS_REQ KDC-REQ-BODY [<a href="./rfc4120" title='"The Kerberos Network Authentication Service (V5)"'>RFC4120</a>] MUST be ignored.
+             -- AS_REQ KDC-REQ-BODY [RFC4120] MUST be ignored.
          ...
      }
 
@@ -1919,21 +1791,21 @@ Appendix A.  ASN.1 module
          -- kdc-referrals(16)
 
      PA-FX-FAST-REPLY ::= CHOICE {
-         armored-data      [<a href="#ref-1">1</a>] KrbFastArmoredRep,
+         armored-data      [1] KrbFastArmoredRep,
          ...
      }
 
      KrbFastArmoredRep ::= SEQUENCE {
-         enc-fast-rep      [<a href="#ref-1">1</a>] EncryptedData, -- KrbFastResponse --
+         enc-fast-rep      [1] EncryptedData, -- KrbFastResponse --
              -- The encryption key is the armor key in the request, and
              -- the key usage number is KEY_USAGE_FAST_REP.
          ...
      }
 
      KrbFastResponse ::= SEQUENCE {
-         padata            [<a href="#ref-1">1</a>] SEQUENCE OF PA-DATA,
+         padata            [1] SEQUENCE OF PA-DATA,
              -- padata typed holes.
-         finished          [<a href="#ref-2">2</a>] KrbFastFinished OPTIONAL,
+         finished          [2] KrbFastFinished OPTIONAL,
              -- MUST be present if the client is authenticated,
              -- absent otherwise.
              -- Typically this is present if and only if the containing
@@ -1942,28 +1814,28 @@ Appendix A.  ASN.1 module
      }
 
      KrbFastFinished ::= SEQUENCE {
-         timestamp         [<a href="#ref-1">1</a>] KerberosTime,
-         usec              [<a href="#ref-2">2</a>] Microseconds,
+         timestamp         [1] KerberosTime,
+         usec              [2] Microseconds,
              -- timestamp and usec represent the time on the KDC when
              -- the reply was generated.
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 32]</span>
-<a name="page-33" id="page-33" href="#page-33"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 32]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
-         rep-key-package   [<a href="#ref-3">3</a>]  EncryptedData OPTIONAL,
+         rep-key-package   [3]  EncryptedData OPTIONAL,
                        -- EncryptionKey --
              -- This, if present, replaces the reply key for AS and TGS.
              -- The encryption key is the client key, unless otherwise
              -- specified. The key usage number is
              -- KEY_USAGE_FAST_FINISHED.
-         crealm            [<a href="#ref-4">4</a>] Realm,
-         cname             [<a href="#ref-5">5</a>] PrincipalName,
+         crealm            [4] Realm,
+         cname             [5] PrincipalName,
              -- Contains the client realm and the client name.
-         checksum          [<a href="#ref-6">6</a>] Checksum,
+         checksum          [6] Checksum,
              -- Checksum performed over all the messages in the
              -- conversation, except the containing message.
              -- The checksum key is the ticket session key of the reply
@@ -2005,9 +1877,9 @@ Authors' Addresses
 
 
 
-<span class="grey">Zhu &amp; Hartman           Expires September 6, 2007              [Page 33]</span>
-<a name="page-34" id="page-34" href="#page-34"><span class="break"> </span></a>
-<span class="grey">Internet-Draft         Kerberos Preauth Framework             March 2007</span>
+Zhu & Hartman           Expires September 6, 2007              [Page 33]
+
+Internet-Draft         Kerberos Preauth Framework             March 2007
 
 
 Full Copyright Statement
@@ -2015,7 +1887,7 @@ Full Copyright Statement
    Copyright (C) The IETF Trust (2007).
 
    This document is subject to the rights, licenses and restrictions
-   contained in <a href="./bcp78">BCP 78</a>, and except as set forth therein, the authors
+   contained in BCP 78, and except as set forth therein, the authors
    retain all their rights.
 
    This document and the information contained herein are provided on an
@@ -2036,14 +1908,14 @@ Intellectual Property
    might or might not be available; nor does it represent that it has
    made any independent effort to identify any such rights.  Information
    on the procedures with respect to rights in RFC documents can be
-   found in <a href="./bcp78">BCP 78</a> and <a href="./bcp79">BCP 79</a>.
+   found in BCP 78 and BCP 79.
 
    Copies of IPR disclosures made to the IETF Secretariat and any
    assurances of licenses to be made available, or the result of an
    attempt made to obtain a general license or permission for the use of
    such proprietary rights by implementers or users of this
    specification can be obtained from the IETF on-line IPR repository at
-   <a href="http://www.ietf.org/ipr">http://www.ietf.org/ipr</a>.
+   http://www.ietf.org/ipr.
 
    The IETF invites any interested party to bring to its attention any
    copyrights, patents or patent applications, or other proprietary
@@ -2061,12 +1933,6 @@ Acknowledgment
 
 
 
-Zhu &amp; Hartman           Expires September 6, 2007              [Page 34]
-<span class="break"> </span>
+Zhu & Hartman           Expires September 6, 2007              [Page 34]
+
 
-
-</pre><br />
-<span class="noprint"><small><small>Html markup produced by rfcmarkup 1.48, available from
-<a href="http://tools.ietf.org/tools/rfcmarkup/">http://tools.ietf.org/tools/rfcmarkup/</a>
-</small></small></span>
-</body></html>
