@@ -1,3 +1,7 @@
+2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c (crypto_select): stop memory leak
+	
 2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* peer.c (hx509_peer_info_free): free memory used too
