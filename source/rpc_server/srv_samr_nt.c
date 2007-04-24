@@ -725,7 +725,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 	}
 
 	status = access_check_samr_function(acc_granted, SA_RIGHT_USER_SET_ATTRIBUTES, "_samr_set_sec_obj");
-	if NT_STATUS_IS_OK(status) {
+	if (NT_STATUS_IS_OK(status)) {
 		become_root();
 		status = pdb_update_sam_account(sampass);
 		unbecome_root();
