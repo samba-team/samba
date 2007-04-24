@@ -1,3 +1,9 @@
+2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/version-script.map: version script for libkdc
+	
+	* kdc/Makefile.am: version script for libkdc
+	
 2007-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_get_error):
