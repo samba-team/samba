@@ -42,7 +42,6 @@ qx.Proto.initialAppear = function(module)
   // Force the global database to be opened
   var dbName = module.fsm.getObject("dbName");
   dbName.setSelected(dbName.getList().getFirstChild());
-  dbName.dispatchEvent(new qx.event.type.Event("changeSelection"), true);
 };
 
 

@@ -69,7 +69,6 @@ function(fsm, domainName)
 
   // Set default selection and dispatch the respective event to initialise the view
   cmbDomain.setSelected(selectedItem);
-  cmbDomain.dispatchEvent(new qx.event.type.Event("changeSelected"), true);
 
   // Create an empty list view with sample column
   this._columns = { username : { label: "Username", width: 150, type: "text" }};
