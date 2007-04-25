@@ -87,6 +87,21 @@ due to the increased amount of kernel buffer caches used by smbd.
 Please refer to vfs_readahead(8) for more information.
 
 
+Windows Vista, Office 2007, and Offline Files
+=============================================
+
+Research surrounding offline files, Windows Vista, and Microsoft 
+Office 2007 has revealed a incompatibility between these 
+applications and the "map acl inherit = no" setting in smb.conf.  
+Users requiring support client side caching (csc) and offline 
+files are encouraged to enable the "map acl inherit" for any 
+affected share definitions in the server's configuration.
+Future versions of Samba will enable this setting by default.
+
+Please refer to the smb.conf(5) man page for more details on 
+"map acl inherit".
+
+
 ######################################################################
 Changes
 #######
