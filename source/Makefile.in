@@ -23,10 +23,10 @@ SHLD=@SHLD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
 EXEEXT=@EXEEXT@
-LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
+LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
@@ -1144,7 +1144,7 @@ bin/smbfilter@EXEEXT@: proto_exists $(SMBFILTER_OBJ) bin/.dummy
 
 bin/libaddns.@SHLIBEXT@: proto_exists $(LIBADDNS_OBJ)
 	@echo Linking libaddns shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS)\
 		@SONAMEFLAG@`basename $@`.$(LIBADDNS_MAJOR)
 
@@ -1154,7 +1154,7 @@ bin/libaddns.a: proto_exists $(LIBADDNS_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: proto_exists $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
@@ -1164,7 +1164,7 @@ bin/libsmbclient.a: proto_exists $(LIBSMBCLIENT_OBJ)
 
 bin/libsmbsharemodes.@SHLIBEXT@: proto_exists $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
 
@@ -1174,7 +1174,7 @@ bin/libsmbsharemodes.a: proto_exists $(LIBSMBSHAREMODES_OBJ)
 
 bin/libmsrpc.@SHLIBEXT@: proto_exists $(CAC_OBJ)
 	@echo Linking libmsrpc shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ) $(LIBS) \
 	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
 
 bin/libmsrpc.a: proto_exists $(CAC_OBJ)

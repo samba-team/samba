@@ -3717,7 +3717,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				SIVAL(pdata,0,0); /* ??? */
 				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 				SOFF_T(pdata,8,file_size);
-				SIVAL(pdata,16,allocation_size);
+				SOFF_T(pdata,16,allocation_size);
 				SIVAL(pdata,20,0); /* ??? */
 				data_size = 24 + byte_len;
 			}
@@ -3738,7 +3738,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			put_long_date_timespec(pdata+8,atime_ts);
 			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
 			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
-			SIVAL(pdata,32,allocation_size);
+			SOFF_T(pdata,32,allocation_size);
 			SOFF_T(pdata,40,file_size);
 			SIVAL(pdata,48,mode);
 			SIVAL(pdata,52,0); /* ??? */
@@ -5295,6 +5295,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
+	pdata = *ppdata;
 
 	SSVAL(pdata,0,NO_OPLOCK_RETURN);
 	SSVAL(pdata,2,0); /* No fnum. */
@@ -5471,6 +5472,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
+	pdata = *ppdata;
 
 	if (extended_oplock_granted) {
 		if (flags & REQUEST_BATCH_OPLOCK) {

@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.0.25rc2
-                               Apr 22, 2007
+                   Release Notes for Samba 3.0.25rc3
+                               Apr 25, 2007
                    =================================
 
-This is the second release candidate of the Samba 3.0.25 code base 
+This is the third release candidate of the Samba 3.0.25 code base 
 and is provided for testing only.  An RC release means that we are 
 close to the final release but the code may still have a few 
 remaining minor bugs.  This release is *not* intended for production 
@@ -27,7 +27,7 @@ Major features included in the 3.0.25 code base include:
     by side on the Same server.
   o Improved compatibility with Windows Vista clients including 
     improved read performance with Linux servers.
-  o Man pages for VFS plug-ins.
+  o Man pages for IdMap and VFS plug-ins.
 
 
 Off-line Logons and AD Site Support
@@ -42,14 +42,10 @@ information.
 New IdMap Interface for Winbindd
 ================================
 
-The 3.0.25 release of Samba will include a rewritten IdMap interface
-for winbindd which replaces the "idmap backend" parameter.  The
-initial design document may be found at
-
-	http://www.samba.org/~idra/samba3_newidmap.pdf
-
-Please refer to the "idmap domains" description in the smb.conf(5)
-man page for more details.
+The 3.0.25 release of Samba includes a rewritten IdMap interface
+for winbindd which replaces the "idmap backend" parameter.  Please 
+refer to the "idmap domains" description in the smb.conf(5) man 
+page for more details.
 
 
 Dynamic DNS Updates
@@ -95,8 +91,56 @@ Please refer to vfs_readahead(8) for more information.
 Changes
 #######
 
-Changes since 3.0.25pre2
-------------------------
+Changes since 3.0.25rc2
+-----------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Allow Well-Known and Local Groups to be stored in POSIX ACLs
+      as long as there is a SID/gid mapping entry available.
+    * Fix memory corruption bug in the CIFS POSIX open/mkdir.
+    * BUG 4536: Correctly delete symlinks pointing to a directory.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Ensure winbindd honors the "idmap domains" option and not 
+      default to idmap_tdb.
+    * Fix memory corruption caused by calling free() on talloc()'d
+      memory when adding and removing users from local groups.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Memory allocation error checks in libgpo.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fix crate_user() access checks when setting the "User Cannot 
+      Change Password" flag.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix linking flags used when creating shared libraries.
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+
+                   =================================
+                   Release Notes for Samba 3.0.25rc2
+                               Apr 22, 2007
+                   =================================
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25rc1
+-----------------------
 
 commits
 -------
