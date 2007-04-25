@@ -889,9 +889,10 @@ NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 	struct pipe_conn_state *s;
 
 	status = composite_wait(c);
-	s = talloc_get_type(c->private_data, struct pipe_conn_state);
-	*pp = talloc_steal(mem_ctx, s->pipe);
-
+	if (NT_STATUS_IS_OK(status)) {
+		s = talloc_get_type(c->private_data, struct pipe_conn_state);
+		*pp = talloc_steal(mem_ctx, s->pipe);
+	}
 	talloc_free(c);
 	return status;
 }
