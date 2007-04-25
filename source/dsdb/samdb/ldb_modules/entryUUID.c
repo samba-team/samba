@@ -790,8 +790,8 @@ static int entryUUID_init(struct ldb_module *module)
 	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
 				       &entryUUID_private->objectclass_res);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
-		return ret;
+		/* Perhaps no schema yet */
+		return LDB_SUCCESS;
 	}	
 
 	ret = find_base_dns(module, entryUUID_private);
@@ -825,8 +825,8 @@ static int nsuniqueid_init(struct ldb_module *module)
 	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
 				       &entryUUID_private->objectclass_res);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
-		return ret;
+		/* Perhaps no schema yet */
+		return LDB_SUCCESS;
 	}	
 
 	ret = find_base_dns(module, entryUUID_private);
