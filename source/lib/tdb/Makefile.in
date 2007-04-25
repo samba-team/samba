@@ -45,13 +45,13 @@ dirs:
 	@mkdir -p $(DIRS)
 
 install: all
-	mkdir -p $(bindir)
-	mkdir -p $(includedir)
-	mkdir -p $(libdir) 
-	mkdir -p $(libdir)/pkgconfig
-	cp $(PROGS) $(bindir)
-	cp $(srcdir)/include/tdb.h $(includedir)
-	cp tdb.pc $(libdir)/pkgconfig
+	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(includedir)
+	mkdir -p $(DESTDIR)$(libdir) 
+	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
+	cp $(PROGS) $(DESTDIR)$(bindir)
+	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
+	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
