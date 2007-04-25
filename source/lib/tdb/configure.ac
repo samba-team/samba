@@ -2,7 +2,7 @@ AC_PREREQ(2.50)
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
-AC_INIT(include/tdb.h)
+AC_INIT(include/tdb.h, 1.1)
 AC_CONFIG_SRCDIR([common/tdb.c])
 AC_CONFIG_HEADER(include/config.h)
 AC_LIBREPLACE_ALL_CHECKS
