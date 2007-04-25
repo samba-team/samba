@@ -34,13 +34,13 @@ libtalloc.a: $(LIBOBJ)
 	@-ranlib $@
 
 install: all 
-	${INSTALLCMD} -d ${libdir}
-	${INSTALLCMD} -m 755 libtalloc.a $(libdir)
-	${INSTALLCMD} -d ${includedir}
-	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(includedir)
-	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
-	if [ -f talloc.3 ];then ${INSTALLCMD} -d ${mandir}/man3; fi
-	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3; fi
+	${INSTALLCMD} -d $(DESTDIR)${libdir}
+	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
+	${INSTALLCMD} -d $(DESTDIR)${includedir}
+	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
+	if [ -f talloc.3 ];then ${INSTALLCMD} -d $(DESTDIR)${mandir}/man3; fi
+	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(DESTDIR)$(mandir)/man3; fi
 
 doc: talloc.3 talloc.3.html
 
