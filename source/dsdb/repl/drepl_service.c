@@ -116,6 +116,7 @@ static void dreplsrv_task_init(struct task_server *task)
 {
 	WERROR status;
 	struct dreplsrv_service *service;
+	uint32_t periodic_startup_interval;
 
 	switch (lp_server_role()) {
 	case ROLE_STANDALONE:
@@ -164,9 +165,10 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
+	periodic_startup_interval	= lp_parm_int(-1, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
 	service->periodic.interval	= lp_parm_int(-1, "dreplsrv", "periodic_interval", 300); /* in seconds */
 
-	status = dreplsrv_periodic_schedule(service, service->periodic.interval);
+	status = dreplsrv_periodic_schedule(service, periodic_startup_interval);
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to periodic schedule: %s\n",
