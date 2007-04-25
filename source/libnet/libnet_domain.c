@@ -1,4 +1,4 @@
-/* 
+ /* 
    Unix SMB/CIFS implementation.
 
    Copyright (C) Rafal Szczesniak 2005
@@ -28,22 +28,15 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
-static void domain_open_handler(struct rpc_request*);
-
-enum domain_open_stage { DOMOPEN_CONNECT, DOMOPEN_LOOKUP, DOMOPEN_OPEN,
-			 DOMOPEN_CLOSE_EXISTING, DOMOPEN_RPC_CONNECT };
 
 struct domain_open_samr_state {
-	enum domain_open_stage    stage;
 	struct libnet_context     *ctx;
 	struct dcerpc_pipe        *pipe;
-	struct rpc_request        *req;
-	struct composite_context  *rpcconn_req;
+	struct libnet_RpcConnect  rpcconn;
 	struct samr_Connect       connect;
 	struct samr_LookupDomain  lookup;
 	struct samr_OpenDomain    open;
 	struct samr_Close         close;
-	struct libnet_RpcConnect  rpcconn;
 	struct lsa_String         domain_name;
 	uint32_t                  access_mask;
 	struct policy_handle      connect_handle;
@@ -54,13 +47,20 @@ struct domain_open_samr_state {
 };
 
 
+static void continue_domain_open_close(struct rpc_request *req);
+static void continue_domain_open_connect(struct rpc_request *req);
+static void continue_domain_open_lookup(struct rpc_request *req);
+static void continue_domain_open_open(struct rpc_request *req);
+
+
 /**
  * Stage 0.5 (optional): Connect to samr rpc pipe
  */
-static void domain_open_rpc_connect(struct composite_context *ctx)
+static void continue_domain_open_rpc_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct domain_open_samr_state *s;
+	struct rpc_request *conn_req;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
@@ -76,13 +76,11 @@ static void domain_open_rpc_connect(struct composite_context *ctx)
 	s->connect.out.connect_handle  = &s->connect_handle;
 
 	/* send request */
-	s->req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
-	if (composite_nomem(s->req, c)) return;
+	conn_req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
+	if (composite_nomem(conn_req, c)) return;
 
 	/* callback handler */
-	s->req->async.callback = domain_open_handler;
-	s->req->async.private  = c;
-	s->stage = DOMOPEN_CONNECT;
+	composite_continue_rpc(c, conn_req, continue_domain_open_connect, c);
 }
 
 
@@ -90,12 +88,18 @@ static void domain_open_rpc_connect(struct composite_context *ctx)
  * Stage 0.5 (optional): Close existing (in libnet context) domain
  * handle
  */
-static NTSTATUS domain_open_close(struct composite_context *c,
-				  struct domain_open_samr_state *s)
+static void continue_domain_open_close(struct rpc_request *req)
 {
+	struct composite_context *c;
+	struct domain_open_samr_state *s;
+	struct rpc_request *conn_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
+
 	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
 
 	/* reset domain handle and associated data in libnet_context */
 	s->ctx->samr.name        = NULL;
@@ -108,59 +112,70 @@ static NTSTATUS domain_open_close(struct composite_context *c,
 	s->connect.out.connect_handle  = &s->connect_handle;
 	
 	/* send request */
-	s->req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
-	if (s->req == NULL) return NT_STATUS_NO_MEMORY;
+	conn_req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
+	if (composite_nomem(conn_req, c)) return;
 
 	/* callback handler */
-	s->req->async.callback = domain_open_handler;
-	s->req->async.private  = c;
-	s->stage = DOMOPEN_CONNECT;
-	
-	return NT_STATUS_OK;
+	composite_continue_rpc(c, conn_req, continue_domain_open_connect, c);
 }
 
 
 /**
  * Stage 1: Connect to SAM server.
  */
-static NTSTATUS domain_open_connect(struct composite_context *c,
-				    struct domain_open_samr_state *s)
+static void continue_domain_open_connect(struct rpc_request *req)
 {
-	struct samr_LookupDomain *r = &s->lookup;
+	struct composite_context *c;
+	struct domain_open_samr_state *s;
+	struct rpc_request *lookup_req;
+	struct samr_LookupDomain *r;
+	
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
 
 	/* receive samr_Connect reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	r = &s->lookup;
 
 	/* prepare for samr_LookupDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.domain_name    = &s->domain_name;
 
-	s->req = dcerpc_samr_LookupDomain_send(s->pipe, c, r);
-	if (s->req == NULL) goto failure;
+	lookup_req = dcerpc_samr_LookupDomain_send(s->pipe, c, r);
+	if (composite_nomem(lookup_req, c)) return;
 
-	s->req->async.callback = domain_open_handler;
-	s->req->async.private  = c;
-	s->stage = DOMOPEN_LOOKUP;
-
-	return NT_STATUS_OK;
-
-failure:
-	return NT_STATUS_UNSUCCESSFUL;
+	composite_continue_rpc(c, lookup_req, continue_domain_open_lookup, c);
 }
 
 
 /**
  * Stage 2: Lookup domain by name.
  */
-static NTSTATUS domain_open_lookup(struct composite_context *c,
-				   struct domain_open_samr_state *s)
+static void continue_domain_open_lookup(struct rpc_request *req)
 {
-	struct samr_OpenDomain *r = &s->open;
+	struct composite_context *c;
+	struct domain_open_samr_state *s;
+	struct rpc_request *opendom_req;
+	struct samr_OpenDomain *r;
 
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
+	
 	/* receive samr_LookupDomain reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
+	c->status = dcerpc_ndr_request_recv(req);
+
+	r = &s->open;
+
+	/* check the rpc layer status */
+	if (!composite_is_ok(c));
+
+	/* check the rpc call itself status */
+	if (!NT_STATUS_IS_OK(s->lookup.out.result)) {
+		composite_error(c, s->lookup.out.result);
+		return;
+	}
 
 	/* prepare for samr_OpenDomain call */
 	r->in.connect_handle = &s->connect_handle;
@@ -168,75 +183,29 @@ static NTSTATUS domain_open_lookup(struct composite_context *c,
 	r->in.sid            = s->lookup.out.sid;
 	r->out.domain_handle = &s->domain_handle;
 
-	s->req = dcerpc_samr_OpenDomain_send(s->pipe, c, r);
-	if (s->req == NULL) goto failure;
+	opendom_req = dcerpc_samr_OpenDomain_send(s->pipe, c, r);
+	if (composite_nomem(opendom_req, c)) return;
 
-	s->req->async.callback = domain_open_handler;
-	s->req->async.private  = c;
-	s->stage = DOMOPEN_OPEN;
-
-	return NT_STATUS_OK;
-
-failure:
-	return NT_STATUS_UNSUCCESSFUL;
+	composite_continue_rpc(c, opendom_req, continue_domain_open_open, c);
 }
 
 
 /*
  * Stage 3: Open domain.
  */
-static NTSTATUS domain_open_open(struct composite_context *c,
-				 struct domain_open_samr_state *s)
+static void continue_domain_open_open(struct rpc_request *req)
 {
+	struct composite_context *c;
+	struct domain_open_samr_state *s;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
+
 	/* receive samr_OpenDomain reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
 
-	c->state = COMPOSITE_STATE_DONE;
-	
-	return NT_STATUS_OK;
-}
-
-
-/**
- * Event handler for asynchronous request. Handles transition through
- * intermediate stages of the call.
- *
- * @param req rpc call context
- */
-static void domain_open_handler(struct rpc_request *req)
-{
-	struct composite_context *c = req->async.private;
-	struct domain_open_samr_state *s = talloc_get_type(c->private_data,
-							   struct domain_open_samr_state);
-
-	/* Stages of the call */
-	switch (s->stage) {
-	case DOMOPEN_CONNECT:
-		c->status = domain_open_connect(c, s);
-		break;
-	case DOMOPEN_LOOKUP:
-		c->status = domain_open_lookup(c, s);
-		break;
-	case DOMOPEN_OPEN:
-		c->status = domain_open_open(c, s);
-		break;
-	case DOMOPEN_CLOSE_EXISTING:
-		c->status = domain_open_close(c, s);
-		break;
-	case DOMOPEN_RPC_CONNECT:
-		/* this state shouldn't be handled here */
-		c->status = NT_STATUS_UNSUCCESSFUL;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_ERROR;
-	}
-
-	if (c->state == COMPOSITE_STATE_DONE) {
-		composite_done(c);
-	}
+	composite_done(c);
 }
 
 
@@ -254,6 +223,8 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct domain_open_samr_state *s;
+	struct composite_context *rpcconn_req;
+	struct rpc_request *close_req, *conn_req;
 
 	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
@@ -278,13 +249,10 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
 		
 		/* send rpc pipe connect request */
-		s->rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
-		if (composite_nomem(s->rpcconn_req, c)) return c;
+		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
+		if (composite_nomem(rpcconn_req, c)) return c;
 
-		s->rpcconn_req->async.fn = domain_open_rpc_connect;
-		s->rpcconn_req->async.private_data  = c;
-		s->stage = DOMOPEN_RPC_CONNECT;
-
+		composite_continue(c, rpcconn_req, continue_domain_open_rpc_connect, c);
 		return c;
 	}
 
@@ -304,14 +272,11 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 			s->close.in.handle = &ctx->samr.handle;
 
 			/* send request to close domain handle */
-			s->req = dcerpc_samr_Close_send(s->pipe, c, &s->close);
-			if (composite_nomem(s->req, c)) return c;
+			close_req = dcerpc_samr_Close_send(s->pipe, c, &s->close);
+			if (composite_nomem(close_req, c)) return c;
 
 			/* callback handler */
-			s->req->async.callback = domain_open_handler;
-			s->req->async.private  = c;
-			s->stage = DOMOPEN_CLOSE_EXISTING;
-
+			composite_continue_rpc(c, close_req, continue_domain_open_close, c);
 			return c;
 		}
 	}
@@ -322,14 +287,11 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 	s->connect.out.connect_handle  = &s->connect_handle;
 	
 	/* send request */
-	s->req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
-	if (composite_nomem(s->req, c)) return c;
+	conn_req = dcerpc_samr_Connect_send(s->pipe, c, &s->connect);
+	if (composite_nomem(conn_req, c)) return c;
 
 	/* callback handler */
-	s->req->async.callback = domain_open_handler;
-	s->req->async.private  = c;
-	s->stage = DOMOPEN_CONNECT;
-
+	composite_continue_rpc(c, conn_req, continue_domain_open_connect, c);
 	return c;
 }
 
