@@ -455,11 +455,11 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	for (i=0; i<num; i++) {
 		if (sid_compare(alias, &sids[i]) == 0) {
-			SAFE_FREE(sids);
+			TALLOC_FREE(sids);
 			return True;
 		}
 	}
-	SAFE_FREE(sids);
+	TALLOC_FREE(sids);
 	return False;
 }
 
@@ -622,7 +622,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	}
 
 	if (!found) {
-		SAFE_FREE(sids);
+		TALLOC_FREE(sids);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
 	}
 
@@ -641,7 +641,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	member_string = SMB_STRDUP("");
 
 	if (member_string == NULL) {
-		SAFE_FREE(sids);
+		TALLOC_FREE(sids);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -653,7 +653,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 
 		SAFE_FREE(s);
 		if (member_string == NULL) {
-			SAFE_FREE(sids);
+			TALLOC_FREE(sids);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -663,7 +663,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	result = tdb_store_bystring(tdb, key, dbuf, 0) == 0 ?
 		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 
-	SAFE_FREE(sids);
+	TALLOC_FREE(sids);
 	SAFE_FREE(member_string);
 
 	return result;
