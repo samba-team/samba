@@ -1163,6 +1163,8 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 
 	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, NULL, root_attrs, &root_res);
 	if (ret) {
+		DEBUG(1,("Searching for dsServiceName in rootDSE failed: %s\n", 
+			 ldb_errstring(ldb)));
 		goto failed;
 	}
 	talloc_steal(tmp_ctx, root_res);
@@ -1414,11 +1416,15 @@ BOOL samdb_is_pdc(struct ldb_context *ldb)
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) {
-		goto failed;
+		DEBUG(1, ("talloc_new failed in samdb_is_pdc"));
+		return False;
 	}
 
 	ret = ldb_search(ldb, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
 	if (ret) {
+		DEBUG(1,("Searching for fSMORoleOwner in %s failed: %s\n", 
+			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
+			 ldb_errstring(ldb)));
 		goto failed;
 	}
 	talloc_steal(tmp_ctx, dom_res);
