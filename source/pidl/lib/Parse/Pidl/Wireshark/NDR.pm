@@ -834,6 +834,8 @@ sub register_type($$$$$$$$)
 {
 	my ($self, $type,$call,$ft,$base,$mask,$vals,$length) = @_;
 
+	return if (defined($self->{conformance}->{types}->{$type}));
+
 	$self->{conformance}->{types}->{$type} = {
 		NAME => $type,
 		DISSECTOR_NAME => $call,
