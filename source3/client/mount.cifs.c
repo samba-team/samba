@@ -78,6 +78,7 @@ static int free_share_name = 0;
 static char * user_name = NULL;
 static char * mountpassword = NULL;
 char * domain_name = NULL;
+char * prefixpath = NULL;
 
 
 /* BB finish BB
@@ -804,6 +805,11 @@ continue_unc_parsing:
 					host_entry = gethostbyname(unc_name);
 				}
 				*(share - 1) = '/'; /* put the slash back */
+				if ((prefixpath = strchr(share, '/'))) {
+					*prefixpath = 0;  /* permanently terminate the string */
+					if (!strlen(++prefixpath))
+						prefixpath = NULL; /* this needs to be done explicitly */
+				}
 				if(got_ip) {
 					if(verboseflag)
 						printf("ip address specified explicitly\n");
@@ -1196,6 +1202,10 @@ mount_retry:
 		strcat(options,",");
 		strcat(options,orgoptions);
 	}
+	if(prefixpath) {
+		strncat(options,",prefixpath=",12);
+		strcat(options,prefixpath); /* no need to cat the / */
+	}	
 	if(verboseflag)
 		printf("\nmount.cifs kernel mount options %s \n",options);
 	if(mount(share_name, mountpoint, "cifs", flags, options)) {
