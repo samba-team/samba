@@ -50,7 +50,7 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 		int ctdb_tcp_init(struct ctdb_context *);
 		ret = ctdb_tcp_init(ctdb);
 	}
-#ifdef USE_INFINBAND
+#ifdef USE_INFINIBAND
 	if (strcmp(ctdb->transport, "ib") == 0) {
 		int ctdb_ibw_init(struct ctdb_context *);
 		ret = ctdb_ibw_init(ctdb);
