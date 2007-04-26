@@ -38,8 +38,9 @@
 #include "lib/events/events.h"
 #include "ibwrapper.h"
 
+#include <infiniband/kern-abi.h>
+#include <rdma/rdma_cma_abi.h>
 #include <rdma/rdma_cma.h>
-#include "infiniband/sa-kern-abi.h"
 
 #include "ibwrapper_internal.h"
 #include "lib/util/dlinklist.h"
@@ -83,7 +84,7 @@ static void *ibw_alloc_mr(struct ibw_ctx_priv *pctx, struct ibw_conn_priv *pconn
 
 static void ibw_free_mr(char **ppbuf, struct ibv_mr **ppmr)
 {
-	DEBUG(10, ("ibw_free_mr(%u %u)\n", (uint32_t)*ppbuf, (uint32_t)*ppmr));
+	DEBUG(10, ("ibw_free_mr(%p %p)\n", *ppbuf, *ppmr));
 	if (*ppmr!=NULL) {
 		ibv_dereg_mr(*ppmr);
 		*ppmr = NULL;
@@ -133,7 +134,7 @@ static int ibw_init_memory(struct ibw_conn *conn)
 
 static int ibw_ctx_priv_destruct(struct ibw_ctx_priv *pctx)
 {
-	DEBUG(10, ("ibw_ctx_priv_destruct(%u)\n", (uint32_t)pctx));
+	DEBUG(10, ("ibw_ctx_priv_destruct(%p)\n", pctx));
 
 	/* destroy cm */
 	if (pctx->cm_channel) {
@@ -155,7 +156,7 @@ static int ibw_ctx_priv_destruct(struct ibw_ctx_priv *pctx)
 
 static int ibw_ctx_destruct(struct ibw_ctx *ctx)
 {
-	DEBUG(10, ("ibw_ctx_destruct(%u)\n", (uint32_t)ctx));
+	DEBUG(10, ("ibw_ctx_destruct(%p)\n", ctx));
 	return 0;
 }
 
@@ -217,7 +218,7 @@ static int ibw_wr_destruct(struct ibw_wr *wr)
 
 static int ibw_conn_destruct(struct ibw_conn *conn)
 {
-	DEBUG(10, ("ibw_conn_destruct(%u)\n", (uint32_t)conn));
+	DEBUG(10, ("ibw_conn_destruct(%p)\n", conn));
 	
 	/* important here: ctx is a talloc _parent_ */
 	DLIST_REMOVE(conn->ctx->conn_list, conn);
@@ -973,7 +974,11 @@ struct ibw_ctx *ibw_init(struct ibw_initattr *attr, int nattr,
 	pctx->cm_channel_event = event_add_fd(pctx->ectx, pctx,
 		pctx->cm_channel->fd, EVENT_FD_READ, ibw_event_handler_cm, ctx);
 
+#if RDMA_USER_CM_MAX_ABI_VERSION >= 2
 	rc = rdma_create_id(pctx->cm_channel, &pctx->cm_id, ctx, RDMA_PS_TCP);
+#else
+	rc = rdma_create_id(pctx->cm_channel, &pctx->cm_id, ctx);
+#endif
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "rdma_create_id error %d\n", rc);
@@ -1094,7 +1099,11 @@ int ibw_connect(struct ibw_conn *conn, struct sockaddr_in *serv_addr, void *conn
 	}
 
 	/* init cm */
+#if RDMA_USER_CM_MAX_ABI_VERSION >= 2
 	rc = rdma_create_id(pctx->cm_channel, &pconn->cm_id, conn, RDMA_PS_TCP);
+#else
+	rc = rdma_create_id(pctx->cm_channel, &pconn->cm_id, conn);
+#endif
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "ibw_connect/rdma_create_id error %d\n", rc);
