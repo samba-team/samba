@@ -90,12 +90,13 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 
 	/* add the node id to the database name, so when we run on loopback
 	   we don't conflict in the local filesystem */
-	name = talloc_asprintf(ctdb_db, "%s/%s", ctdb->db_directory, name);
+	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s", ctdb->db_directory, name);
 
 	/* when we have a separate daemon this will need to be a real
 	   file, not a TDB_INTERNAL, so the parent can access it to
 	   for ltdb bypass */
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, name, 0, TDB_CLEAR_IF_FIRST, open_flags, mode);
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 
+				      TDB_CLEAR_IF_FIRST, open_flags, mode);
 	if (ctdb_db->ltdb == NULL) {
 		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
 		talloc_free(ctdb_db);

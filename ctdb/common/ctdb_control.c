@@ -66,6 +66,22 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_PING:
 		return 0;
 
+	case CTDB_CONTROL_GETDBPATH: {
+		uint32_t db_id;
+		struct ctdb_db_context *ctdb_db;
+
+		if (indata.dsize != sizeof(uint32_t)) {
+			DEBUG(0,(__location__ " Invalid data in CTDB_CONTROL_GETDBPATH\n"));
+			return -1;
+		}
+		db_id = *(uint32_t *)indata.dptr;
+		ctdb_db = find_ctdb_db(ctdb, db_id);
+		if (ctdb_db == NULL) return -1;
+		outdata->dptr = discard_const(ctdb_db->db_path);
+		outdata->dsize = strlen(ctdb_db->db_path);
+		return 0;
+	}
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

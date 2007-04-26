@@ -215,7 +215,7 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 struct ctdb_status;
 int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
 
-int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path);
+int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, const char **path);
 
 int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 

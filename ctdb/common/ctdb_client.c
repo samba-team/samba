@@ -91,7 +91,6 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	state->state = CTDB_CALL_DONE;
 }
 
-static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 /*
@@ -146,10 +145,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_CONNECT_WAIT:
 		ctdb_reply_connect_wait(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_GETDBPATH:
-		ctdb_reply_getdbpath(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CONTROL:
@@ -626,83 +621,6 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 }
 
 
-enum ctdb_getdbpath_states {CTDB_GETDBPATH_WAIT, CTDB_GETDBPATH_DONE};
-
-struct ctdb_getdbpath_state {
-	uint32_t reqid;
-	TDB_DATA path;
-	enum ctdb_getdbpath_states state;
-};
-
-/*
-  handle a ctdb_reply_getdbpath reply
- */
-static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_getdbpath *r = (struct ctdb_reply_getdbpath *)hdr;
-	struct ctdb_getdbpath_state *state;
-
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_getdbpath_state);
-	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
-		return;
-	}
-
-	if (hdr->reqid != state->reqid) {
-		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
-		return;
-	}
-
-	state->path.dsize = r->datalen;
-	state->path.dptr = talloc_memdup(state, &r->data[0], r->datalen);
-
-	state->state = CTDB_GETDBPATH_DONE;
-}
-
-int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path)
-{
-	struct ctdb_req_getdbpath r;
-	int ret;
-	struct ctdb_getdbpath_state *state;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb_db->ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb_db->ctdb);
-	}
-
-	state = talloc(ctdb_db, struct ctdb_getdbpath_state);
-/*	CTDB_NO_MEMORY(ctdb_db, state);*/
-
-	state->reqid = ctdb_reqid_new(ctdb_db->ctdb, state);
-	state->state = CTDB_GETDBPATH_WAIT;
-	
-	ZERO_STRUCT(r);
-	r.hdr.length       = sizeof(r);
-	r.hdr.ctdb_magic   = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation    = CTDB_REQ_GETDBPATH;
-	r.hdr.reqid        = state->reqid;
-	r.db_id            = ctdb_db->db_id;
-
-	ret = ctdb_client_queue_pkt(ctdb_db->ctdb, &r.hdr);
-	if (ret != 0) {
-		talloc_free(state);
-		return -1;
-	}
-	
-	while (state->state == CTDB_GETDBPATH_WAIT) {
-		event_loop_once(ctdb_db->ctdb->ev);
-	}
-
-	path->dsize = state->path.dsize;
-	path->dptr = talloc_steal(path, state->path.dptr);
-	talloc_free(state);
-
-	return 0;
-}
-
-
 struct ctdb_client_control_state {
 	uint32_t reqid;
 	int32_t status;
@@ -909,4 +827,35 @@ int ctdb_get_config(struct ctdb_context *ctdb)
 	ctdb->max_lacount = c.max_lacount;
 	
 	return 0;
+}
+
+/*
+  find the real path to a ltdb 
+ */
+int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+		   const char **path)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&ctdb_db->db_id;
+	data.dsize = sizeof(ctdb_db->db_id);
+
+	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, 
+			   CTDB_CONTROL_GETDBPATH, data, 
+			   ctdb_db, &data, &res);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+
+	(*path) = talloc_strndup(mem_ctx, (const char *)data.dptr, data.dsize);
+	if ((*path) == NULL) {
+		return -1;
+	}
+
+	talloc_free(data.dptr);
+
+	return 0;
+	
 }

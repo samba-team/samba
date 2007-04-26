@@ -188,6 +188,7 @@ struct ctdb_db_context {
 	struct ctdb_context *ctdb;
 	uint32_t db_id;
 	const char *db_name;
+	const char *db_path;
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 };
@@ -232,7 +233,8 @@ struct ctdb_ltdb_header {
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS, 
 		    CTDB_CONTROL_STATUS, 
 		    CTDB_CONTROL_CONFIG,
-		    CTDB_CONTROL_PING};
+		    CTDB_CONTROL_PING,
+		    CTDB_CONTROL_GETDBPATH};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
@@ -283,9 +285,7 @@ enum ctdb_operation {
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_SHUTDOWN       = 1003,
-	CTDB_REQ_GETDBPATH      = 1004,
-	CTDB_REPLY_GETDBPATH    = 1005
+	CTDB_REQ_SHUTDOWN       = 1003
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
