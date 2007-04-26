@@ -495,7 +495,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	case RDMA_CM_EVENT_ESTABLISHED:
 		/* expected after ibw_accept and ibw_connect[not directly] */
-		DEBUG(0, ("ESTABLISHED (conn: %p)\n", cma_id->context));
+		DEBUG(1, ("ESTABLISHED (conn: %p)\n", cma_id->context));
 		conn = talloc_get_type(cma_id->context, struct ibw_conn);
 		assert(conn!=NULL); /* important assumption */
 
@@ -516,10 +516,13 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_CONNECT_ERROR, error %d\n", event->status);
 	case RDMA_CM_EVENT_UNREACHABLE:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_UNREACHABLE, error %d\n", event->status);
+		goto error;
 	case RDMA_CM_EVENT_REJECTED:
 		sprintf(ibw_lasterr, "RDMA_CM_EVENT_REJECTED, error %d\n", event->status);
+		DEBUG(1, ("cm event handler: %s", ibw_lasterr));
 		conn = talloc_get_type(cma_id->context, struct ibw_conn);
 		if (conn) {
+			/* must be done BEFORE connstate */
 			if ((rc=rdma_ack_cm_event(event)))
 				DEBUG(0, ("reject/rdma_ack_cm_event failed with %d\n", rc));
 			event = NULL; /* not to touch cma_id or conn */
@@ -527,7 +530,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 			/* it should free the conn */
 			pctx->connstate_func(NULL, conn);
 		}
-		goto error;
+		break; /* this is not strictly an error */
 
 	case RDMA_CM_EVENT_DISCONNECTED:
 		DEBUG(11, ("RDMA_CM_EVENT_DISCONNECTED\n"));
