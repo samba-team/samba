@@ -22,6 +22,8 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "../include/ctdb.h"
+#include "../include/ctdb_private.h"
 
 /* Handle common command line options for ctdb test progs
  */
@@ -30,6 +32,7 @@ static struct {
 	const char *nlist;
 	const char *transport;
 	const char *myaddress;
+	const char *socketname;
 	int self_connect;
 	const char *db_dir;
 	int torture;
@@ -37,6 +40,7 @@ static struct {
 	.nlist = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
+	.socketname = CTDB_PATH,
 	.self_connect = 0,
 	.db_dir = NULL,
 	.torture = 0
@@ -46,6 +50,7 @@ static struct {
 struct poptOption popt_ctdb_cmdline[] = {
 	{ "nlist", 0, POPT_ARG_STRING, &ctdb_cmdline.nlist, 0, "node list file", "filename" },
 	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
+	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
@@ -95,6 +100,13 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		exit(1);
 	}
 
+	/* tell ctdb the socket address */
+	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
+	if (ret == -1) {
+		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
 	/* tell ctdb what nodes are available */
 	ret = ctdb_set_nlist(ctdb, ctdb_cmdline.nlist);
 	if (ret == -1) {
@@ -106,6 +118,39 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	if (ret == -1) {
 		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
+	}
+
+	return ctdb;
+}
+
+
+/*
+  startup a client only ctdb context
+ */
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
+{
+	struct ctdb_context *ctdb;
+	int ret;
+
+	/* initialise ctdb */
+	ctdb = ctdb_init(ev);
+	if (ctdb == NULL) {
+		printf("Failed to init ctdb\n");
+		exit(1);
+	}
+
+	/* tell ctdb the socket address */
+	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
+	if (ret == -1) {
+		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	ret = ctdb_socket_connect(ctdb);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to connect to daemon\n"));
+		talloc_free(ctdb);
+		return NULL;
 	}
 
 	return ctdb;

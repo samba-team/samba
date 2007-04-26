@@ -51,7 +51,6 @@ PRIVATE_DEPENDENCIES = \
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
 INSTALLDIR = BINDIR
-ENABLE = NO
 OBJ_FILES= \
 		tools/tdbbackup.o
 PRIVATE_DEPENDENCIES = \

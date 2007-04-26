@@ -91,6 +91,7 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct event_context *ev;
 	struct ctdb_call call;
+	TDB_DATA *path;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -134,6 +135,11 @@ int main(int argc, const char *argv[])
 	ret = ctdb_start(ctdb);
 
 	ctdb_connect_wait(ctdb);
+
+	/* find the full path to the database file */
+	path = talloc_zero(ctdb_db, TDB_DATA);
+	ctdb_getdbpath(ctdb_db, path);
+	printf("path to database:[%s]\n",path->dptr);
 
 	ZERO_STRUCT(call);
 	call.key.dptr = discard_const("test");

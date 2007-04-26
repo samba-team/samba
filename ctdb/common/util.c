@@ -194,3 +194,16 @@ _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *me
 
 	return file_lines_parse(p, size, numlines, mem_ctx);
 }
+
+char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
+{
+	int i;
+	char *hex_buffer;
+
+	hex_buffer = talloc_array(mem_ctx, char, (len*2)+1);
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+
+	return hex_buffer;
+}

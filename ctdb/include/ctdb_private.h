@@ -61,6 +61,10 @@ struct ctdb_address {
 typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
 				   void *private_data);
 
+/* used for callbacks in ctdb_control requests */
+typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
+					   uint32_t status, TDB_DATA data, 
+					   void *private_data);
 
 /*
   state associated with one node
@@ -114,6 +118,44 @@ struct ctdb_daemon_data {
 	struct ctdb_queue *queue;
 };
 
+/*
+  ctdb status information
+ */
+struct ctdb_status {
+	uint32_t client_packets_sent;
+	uint32_t client_packets_recv;
+	uint32_t node_packets_sent;
+	uint32_t node_packets_recv;
+	struct {
+		uint32_t req_call;
+		uint32_t reply_call;
+		uint32_t reply_redirect;
+		uint32_t req_dmaster;
+		uint32_t reply_dmaster;
+		uint32_t reply_error;
+		uint32_t req_message;
+		uint32_t req_finished;
+		uint32_t req_control;
+		uint32_t reply_control;
+	} count;
+	struct {
+		uint32_t req_call;
+		uint32_t req_message;
+		uint32_t req_finished;
+		uint32_t req_register;
+		uint32_t req_connect_wait;
+		uint32_t req_shutdown;
+		uint32_t req_control;
+	} client;
+	uint32_t total_calls;
+	uint32_t pending_calls;
+	uint32_t lockwait_calls;
+	uint32_t pending_lockwait_calls;
+	uint32_t max_redirect_count;
+	double max_call_latency;
+	double max_lockwait_latency;
+};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -127,6 +169,7 @@ struct ctdb_context {
 	uint32_t num_finished;
 	unsigned flags;
 	struct idr_context *idr;
+	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
@@ -136,6 +179,7 @@ struct ctdb_context {
 	struct ctdb_db_context *db_list;
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
+	struct ctdb_status status;
 };
 
 struct ctdb_db_context {
@@ -152,6 +196,10 @@ struct ctdb_db_context {
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return -1; }} while (0)
 
+#define CTDB_NO_MEMORY_VOID(ctdb, p) do { if (!(p)) { \
+          ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
+	  }} while (0)
+
 #define CTDB_NO_MEMORY_NULL(ctdb, p) do { if (!(p)) { \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return NULL; }} while (0)
@@ -161,7 +209,7 @@ struct ctdb_db_context {
 	  }} while (0)
 
 /* arbitrary maximum timeout for ctdb operations */
-#define CTDB_REQ_TIMEOUT 10
+#define CTDB_REQ_TIMEOUT 0
 
 /* max number of redirects before we ask the lmaster */
 #define CTDB_MAX_REDIRECT 2
@@ -180,6 +228,8 @@ struct ctdb_ltdb_header {
 	uint32_t lacount;
 };
 
+enum {CTDB_CONTROL_PROCESS_EXISTS, CTDB_CONTROL_STATUS};
+
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
 /*
@@ -187,6 +237,7 @@ enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 */
 struct ctdb_call_state {
 	enum call_state state;
+	uint32_t reqid;
 	struct ctdb_req_call *c;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_node *node;
@@ -221,12 +272,16 @@ enum ctdb_operation {
 	CTDB_REPLY_ERROR        = 5,
 	CTDB_REQ_MESSAGE        = 6,
 	CTDB_REQ_FINISHED       = 7,
+	CTDB_REQ_CONTROL        = 8,
+	CTDB_REPLY_CONTROL      = 9,
 	
 	/* only used on the domain socket */
 	CTDB_REQ_REGISTER       = 1000,     
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_SHUTDOWN       = 1003
+	CTDB_REQ_SHUTDOWN       = 1003,
+	CTDB_REQ_GETDBPATH      = 1004,
+	CTDB_REPLY_GETDBPATH    = 1005
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -318,6 +373,33 @@ struct ctdb_reply_connect_wait {
 	uint32_t vnn;
 	uint32_t num_connected;
 };
+
+struct ctdb_req_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t db_id;
+};
+
+struct ctdb_reply_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
+struct ctdb_req_control {
+	struct ctdb_req_header hdr;
+	uint32_t opcode;
+	uint32_t srvid;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
+struct ctdb_reply_control {
+	struct ctdb_req_header hdr;
+	int32_t  status;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
 
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -455,9 +537,24 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TDB_DATA *data,
 		    uint32_t caller);
 
-void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
-#define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
+#define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 
 void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
+
+int ctdb_socket_connect(struct ctdb_context *ctdb);
+
+void ctdb_latency(double *latency, struct timeval t);
+
+uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
+void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
+void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);
+
+void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
+			     uint32_t srvid, uint32_t opcode, TDB_DATA data,
+			     ctdb_control_callback_fn_t callback,
+			     void *private_data);
 
 #endif

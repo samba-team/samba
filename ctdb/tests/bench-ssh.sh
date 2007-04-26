@@ -33,9 +33,9 @@ echo "Starting nodes"
 i=0
 for h in $nodes; do
     if [ $i -eq `expr $count - 1` ]; then
-	ssh $h $dir/bin/ctdb_bench --nlist $dir/nodes-ssh.txt --listen $h:9001 $options
+	ssh $h $dir/bin/ctdb_bench --nlist $dir/nodes-ssh.txt --listen $h:9001 --socket $h$options
     else
-	ssh -f $h $dir/bin/ctdb_bench --nlist $dir/nodes-ssh.txt --listen $h:9001 $options
+	ssh -f $h $dir/bin/ctdb_bench --nlist $dir/nodes-ssh.txt --listen $h:9001 --socket $h $options
     fi
     i=`expr $i + 1`
 done

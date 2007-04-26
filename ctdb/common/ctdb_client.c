@@ -45,6 +45,7 @@ static void ctdb_reply_connect_wait(struct ctdb_context *ctdb,
 				    struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_connect_wait *r = (struct ctdb_reply_connect_wait *)hdr;
+	ctdb->vnn = r->vnn;
 	ctdb->num_connected = r->num_connected;
 }
 
@@ -69,9 +70,15 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_client_call_state *state;
 
-	state = idr_find_type(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
-		DEBUG(0, ("reqid %d not found\n", hdr->reqid));
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -83,6 +90,9 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 	state->state = CTDB_CALL_DONE;
 }
+
+static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 /*
   this is called in the client, when data comes in from the daemon
@@ -138,6 +148,14 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		ctdb_reply_connect_wait(ctdb, hdr);
 		break;
 
+	case CTDB_REPLY_GETDBPATH:
+		ctdb_reply_getdbpath(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_CONTROL:
+		ctdb_client_reply_control(ctdb, hdr);
+		break;
+
 	default:
 		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
 	}
@@ -149,7 +167,7 @@ done:
 /*
   connect to a unix domain socket
 */
-static int ux_socket_connect(struct ctdb_context *ctdb)
+int ctdb_socket_connect(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr;
 
@@ -223,7 +241,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 */
 static int ctdb_client_call_destructor(struct ctdb_client_call_state *state)	
 {
-	idr_remove(state->ctdb_db->ctdb->idr, state->reqid);
+	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
 	return 0;
 }
 
@@ -276,7 +294,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 
 	ret = ctdb_ltdb_lock(ctdb_db, call->key);
@@ -322,7 +340,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	c->hdr.ctdb_version = CTDB_VERSION;
 	c->hdr.operation = CTDB_REQ_CALL;
 	/* this limits us to 16k outstanding messages - not unreasonable */
-	c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
+	c->hdr.reqid     = ctdb_reqid_new(ctdb, state);
 	c->flags         = call->flags;
 	c->db_id         = ctdb_db->db_id;
 	c->callid        = call->call_id;
@@ -373,10 +391,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		if (ux_socket_connect(ctdb)) {
-			DEBUG(0, ("ux_socket_connect failed\n"));
-			return -1;
-		}
+		ctdb_socket_connect(ctdb);
 	}
 
 	ZERO_STRUCT(c);
@@ -407,7 +422,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	int len, res;
 
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdbd_allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY(ctdb, r);
 	talloc_set_name_const(r, "req_message packet");
 
@@ -450,7 +465,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 	
 	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
@@ -588,7 +603,7 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
-		ux_socket_connect(ctdb);
+		ctdb_socket_connect(ctdb);
 	}
 
 	len = sizeof(struct ctdb_req_shutdown);
@@ -608,3 +623,239 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 }
 
 
+enum ctdb_getdbpath_states {CTDB_GETDBPATH_WAIT, CTDB_GETDBPATH_DONE};
+
+struct ctdb_getdbpath_state {
+	uint32_t reqid;
+	TDB_DATA path;
+	enum ctdb_getdbpath_states state;
+};
+
+/*
+  handle a ctdb_reply_getdbpath reply
+ */
+static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_getdbpath *r = (struct ctdb_reply_getdbpath *)hdr;
+	struct ctdb_getdbpath_state *state;
+
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_getdbpath_state);
+	if (state == NULL) {
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
+		return;
+	}
+
+	state->path.dsize = r->datalen;
+	state->path.dptr = talloc_memdup(state, &r->data[0], r->datalen);
+
+	state->state = CTDB_GETDBPATH_DONE;
+}
+
+int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path)
+{
+	struct ctdb_req_getdbpath r;
+	int ret;
+	struct ctdb_getdbpath_state *state;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb_db->ctdb->daemon.sd==-1) {
+		ctdb_socket_connect(ctdb_db->ctdb);
+	}
+
+	state = talloc(ctdb_db, struct ctdb_getdbpath_state);
+/*	CTDB_NO_MEMORY(ctdb_db, state);*/
+
+	state->reqid = ctdb_reqid_new(ctdb_db->ctdb, state);
+	state->state = CTDB_GETDBPATH_WAIT;
+	
+	ZERO_STRUCT(r);
+	r.hdr.length       = sizeof(r);
+	r.hdr.ctdb_magic   = CTDB_MAGIC;
+	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.operation    = CTDB_REQ_GETDBPATH;
+	r.hdr.reqid        = state->reqid;
+	r.db_id            = ctdb_db->db_id;
+
+	ret = ctdb_client_queue_pkt(ctdb_db->ctdb, &r.hdr);
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+	
+	while (state->state == CTDB_GETDBPATH_WAIT) {
+		event_loop_once(ctdb_db->ctdb->ev);
+	}
+
+	path->dsize = state->path.dsize;
+	path->dptr = talloc_steal(path, state->path.dptr);
+	talloc_free(state);
+
+	return 0;
+}
+
+
+struct ctdb_client_control_state {
+	uint32_t reqid;
+	int32_t status;
+	TDB_DATA outdata;
+	enum call_state state;
+};
+
+/*
+  called when a CTDB_REPLY_CONTROL packet comes in in the client
+
+  This packet comes in response to a CTDB_REQ_CONTROL request packet. It
+  contains any reply data from the control
+*/
+static void ctdb_client_reply_control(struct ctdb_context *ctdb, 
+				      struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
+	if (state == NULL) {
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply control with reqid:%d\n",hdr->reqid));
+		return;
+	}
+
+	state->outdata.dptr = c->data;
+	state->outdata.dsize = c->datalen;
+	state->status = c->status;
+
+	talloc_steal(state, c);
+
+	state->state = CTDB_CALL_DONE;
+}
+
+
+/*
+  send a ctdb control message
+ */
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint32_t srvid, 
+		 uint32_t opcode, TDB_DATA data, 
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status)
+{
+	struct ctdb_client_control_state *state;
+	struct ctdb_req_control *c;
+	size_t len;
+	int ret;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ctdb_socket_connect(ctdb);
+	}
+
+	state = talloc_zero(ctdb, struct ctdb_client_control_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->state = CTDB_CALL_WAIT;
+
+	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	c = ctdbd_allocate_pkt(state, len);
+	
+	memset(c, 0, len);
+	c->hdr.length       = len;
+	c->hdr.ctdb_magic   = CTDB_MAGIC;
+	c->hdr.ctdb_version = CTDB_VERSION;
+	c->hdr.operation    = CTDB_REQ_CONTROL;
+	c->hdr.reqid        = state->reqid;
+	c->hdr.destnode     = destnode;
+	c->hdr.srcnode      = ctdb->vnn;
+	c->hdr.reqid        = state->reqid;
+	c->opcode           = opcode;
+	c->srvid            = srvid;
+	c->datalen          = data.dsize;
+	if (data.dsize) {
+		memcpy(&c->data[0], data.dptr, data.dsize);
+	}
+
+	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	/* semi-async operation */
+	while (state->state == CTDB_CALL_WAIT) {
+		event_loop_once(ctdb->ev);
+	}
+
+	if (outdata) {
+		*outdata = state->outdata;
+		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
+	}
+
+	*status = state->status;
+
+	talloc_free(state);
+
+	return 0;	
+}
+
+
+
+/*
+  a process exists call. Returns 0 if process exists, -1 otherwise
+ */
+int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t status;
+
+	data.dptr = (uint8_t*)&pid;
+	data.dsize = sizeof(pid);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_PROCESS_EXISTS, data, 
+			   NULL, NULL, &status);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for process_exists failed\n"));
+		return -1;
+	}
+
+	return status;
+}
+
+/*
+  get remote status
+ */
+int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_STATUS, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for status failed\n"));
+		return -1;
+	}
+
+	if (outdata.dsize != sizeof(struct ctdb_status)) {
+		DEBUG(0,(__location__ " Wrong status size %u - expected %u\n",
+			 outdata.dsize, sizeof(struct ctdb_status)));
+		      return -1;
+	}
+
+	*status = *(struct ctdb_status *)outdata.dptr;
+			
+	return 0;
+}
