@@ -758,6 +758,7 @@ void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 struct daemon_control_state {
 	struct ctdb_client *client;
 	struct ctdb_req_control *c;
+	uint32_t reqid;
 };
 
 /*
@@ -784,6 +785,7 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REPLY_CONTROL;
+	r->hdr.reqid     = state->reqid;
 	r->status        = status;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -804,11 +806,16 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	int res;
 	struct daemon_control_state *state;
 
+	if (c->hdr.destnode == CTDB_CURRENT_NODE) {
+		c->hdr.destnode = client->ctdb->vnn;
+	}
+
 	state = talloc(client, struct daemon_control_state);
 	CTDB_NO_MEMORY_VOID(client->ctdb, state);
 
 	state->client = client;
 	state->c = talloc_steal(state, c);
+	state->reqid = c->hdr.reqid;
 	
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;

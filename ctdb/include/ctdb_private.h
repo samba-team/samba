@@ -31,6 +31,7 @@
 
 
 #define CTDB_NULL_FUNC 0xf0000001
+#define CTDB_CURRENT_NODE 0xF0000001
 
 /*
   an installed ctdb remote call
@@ -228,7 +229,10 @@ struct ctdb_ltdb_header {
 	uint32_t lacount;
 };
 
-enum {CTDB_CONTROL_PROCESS_EXISTS, CTDB_CONTROL_STATUS};
+enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS, 
+		    CTDB_CONTROL_STATUS, 
+		    CTDB_CONTROL_CONFIG,
+		    CTDB_CONTROL_PING};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 

@@ -50,11 +50,22 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		pid = *(pid_t *)indata.dptr;
 		return kill(pid, 0);
 	}
+
 	case CTDB_CONTROL_STATUS: {
 		outdata->dptr = (uint8_t *)&ctdb->status;
 		outdata->dsize = sizeof(ctdb->status);
 		return 0;
 	}
+
+	case CTDB_CONTROL_CONFIG: {
+		outdata->dptr = (uint8_t *)ctdb;
+		outdata->dsize = sizeof(*ctdb);
+		return 0;
+	}
+
+	case CTDB_CONTROL_PING:
+		return 0;
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

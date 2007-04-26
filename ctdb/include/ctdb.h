@@ -219,4 +219,8 @@ int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path);
 
 int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 
+int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode);
+
+int ctdb_get_config(struct ctdb_context *ctdb);
+
 #endif

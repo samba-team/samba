@@ -33,6 +33,7 @@ static void usage(void)
 {
 	printf("Usage: ctdb_control [options] <control>\n");
 	printf("\nControls:\n");
+	printf("  ping\n");
 	printf("  process-exists <vnn:pid>\n");
 	printf("  status <vnn>\n");
 	exit(1);
@@ -115,6 +116,24 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+
+static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret, i;
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct timeval tv = timeval_current();
+		ret = ctdb_ping(ctdb, i);
+		if (ret != 0) {
+			printf("Unable to get ping response from node %u\n", i);
+		} else {
+			printf("response from %u time=%.6f sec\n", 
+			       i, timeval_elapsed(&tv));
+		}
+	}
+	return 0;
+}
+
 /*
   main program
 */
@@ -171,6 +190,8 @@ int main(int argc, const char *argv[])
 		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "status") == 0) {
 		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "ping") == 0) {
+		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else {
 		printf("Unknown control '%s'\n", control);
 		exit(1);

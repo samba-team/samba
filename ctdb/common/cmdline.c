@@ -153,5 +153,13 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 		return NULL;
 	}
 
+	/* get our config */
+	ret = ctdb_get_config(ctdb);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to get ctdb config\n"));
+		talloc_free(ctdb);
+		return NULL;
+	}
+
 	return ctdb;
 }
