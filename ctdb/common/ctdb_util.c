@@ -106,7 +106,7 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 /*
   a type checking varient of idr_find
  */
-void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
+static void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
 {
 	void *p = idr_find(idp, id);
 	if (p && talloc_check_name(p, type) == NULL) {
@@ -126,5 +126,37 @@ void ctdb_latency(double *latency, struct timeval t)
 	double l = timeval_elapsed(&t);
 	if (l > *latency) {
 		*latency = l;
+	}
+}
+
+uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
+{
+	uint32_t id;
+
+	id  = ctdb->idr_cnt++ & 0xFFFF;
+	id |= (idr_get_new(ctdb->idr, state, 0xFFFF)<<16);
+	return id;
+}
+
+void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location)
+{
+	void *p;
+
+	p = _idr_find_type(ctdb->idr, (reqid>>16)&0xFFFF, type, location);
+	if (p == NULL) {
+		DEBUG(0, ("Could not find idr:%d\n",reqid));
+	}
+
+	return p;
+}
+
+
+void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
+{
+	int ret;
+
+	ret = idr_remove(ctdb->idr, (reqid>>16)&0xFFFF);
+	if (ret != 0) {
+		DEBUG(0, ("Removing idr that does not exist\n"));
 	}
 }

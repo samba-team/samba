@@ -162,6 +162,7 @@ struct ctdb_context {
 	uint32_t num_finished;
 	unsigned flags;
 	struct idr_context *idr;
+	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
@@ -223,6 +224,7 @@ enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 */
 struct ctdb_call_state {
 	enum call_state state;
+	uint32_t reqid;
 	struct ctdb_req_call *c;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_node *node;
@@ -264,7 +266,9 @@ enum ctdb_operation {
 	CTDB_REPLY_CONNECT_WAIT = 1002,
 	CTDB_REQ_SHUTDOWN       = 1003,
 	CTDB_REQ_STATUS         = 1004,
-	CTDB_REPLY_STATUS       = 1005
+	CTDB_REPLY_STATUS       = 1005,
+	CTDB_REQ_GETDBPATH      = 1006,
+	CTDB_REPLY_GETDBPATH    = 1007
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -355,6 +359,17 @@ struct ctdb_reply_connect_wait {
 	struct ctdb_req_header hdr;
 	uint32_t vnn;
 	uint32_t num_connected;
+};
+
+struct ctdb_req_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t db_id;
+};
+
+struct ctdb_reply_getdbpath {
+	struct ctdb_req_header hdr;
+	uint32_t datalen;
+	uint8_t data[1];
 };
 
 struct ctdb_req_status {
@@ -502,13 +517,16 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TDB_DATA *data,
 		    uint32_t caller);
 
-void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location);
-#define idr_find_type(idp, id, type) (type *)_idr_find_type(idp, id, #type, __location__)
+#define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 
 void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
 void ctdb_latency(double *latency, struct timeval t);
+
+uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
+void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
+void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);
 
 #endif

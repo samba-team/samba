@@ -213,4 +213,6 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *c
 struct ctdb_status;
 int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status);
 
+int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path);
+
 #endif
