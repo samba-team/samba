@@ -7,3 +7,5 @@ module on svn.samba.org named 'samba-docs'.
 See http://svn.samba.org/samba/subversion.html
 for details on accessing Samba svn trees.  
 
+For anonymous access to samba-docs, point svn here:
+    svn://svnanon.samba.org/samba-docs/trunk
