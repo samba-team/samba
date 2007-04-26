@@ -171,6 +171,16 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 	return 0;
 }
 
+
+/*
+  setup the local socket name
+*/
+int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
+{
+	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
+	return 0;
+}
+
 /*
   add a node to the list of active nodes
 */
@@ -283,6 +293,16 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	case CTDB_REQ_FINISHED:
 		ctdb->status.count.req_finished++;
 		ctdb_request_finished(ctdb, hdr);
+		break;
+
+	case CTDB_REQ_CONTROL:
+		ctdb->status.count.req_control++;
+		ctdb_request_control(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_CONTROL:
+		ctdb->status.count.reply_control++;
+		ctdb_reply_control(ctdb, hdr);
 		break;
 
 	default:

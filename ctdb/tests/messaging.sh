@@ -1,8 +1,23 @@
 #!/bin/sh
 
+#!/bin/sh
+
 killall -q ctdb_messaging
 
-echo "Trying 2 nodes"
-bin/ctdb_messaging --nlist tests/nodes.txt --listen 127.0.0.2:9001 $* &
-bin/ctdb_messaging --nlist tests/nodes.txt --listen 127.0.0.1:9001 $*
+NUMNODES=2
+if [ $# -gt 0 ]; then
+    NUMNODES=$1
+fi
+
+rm -f nodes.txt
+for i in `seq 1 $NUMNODES`; do
+  echo 127.0.0.$i:9001 >> nodes.txt
+done
+
+killall -9 ctdb_messaging
+echo "Trying $NUMNODES nodes"
+for i in `seq 1 $NUMNODES`; do
+  $VALGRIND bin/ctdb_messaging --nlist nodes.txt --listen 127.0.0.$i:9001 --socket /tmp/ctdb.127.0.0.$i $* &
+done
+
 wait

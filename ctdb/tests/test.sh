@@ -1,17 +1,24 @@
 #!/bin/sh
 
+#!/bin/sh
+
 killall -q ctdb_test
 
+NUMNODES=2
+if [ $# -gt 0 ]; then
+    NUMNODES=$1
+    shift
+fi
 
-echo "Trying 2 nodes ..."
-$VALGRIND bin/ctdb_test --nlist tests/nodes.txt --listen 127.0.0.1:9001 &
-$VALGRIND bin/ctdb_test --nlist tests/nodes.txt --listen 127.0.0.2:9001
+rm -f nodes.txt
+for i in `seq 1 $NUMNODES`; do
+  echo 127.0.0.$i:9001 >> nodes.txt
+done
+
+killall -9 ctdb_test
+echo "Trying $NUMNODES nodes"
+for i in `seq 1 $NUMNODES`; do
+  $VALGRIND bin/ctdb_test --nlist nodes.txt --listen 127.0.0.$i:9001 --socket /tmp/ctdb.127.0.0.$i $* &
+done
+
 wait
-
-echo "Trying 4 nodes ..."
-$VALGRIND bin/ctdb_test --nlist tests/4nodes.txt --listen 127.0.0.1:9001 &
-$VALGRIND bin/ctdb_test --nlist tests/4nodes.txt --listen 127.0.0.2:9001 &
-$VALGRIND bin/ctdb_test --nlist tests/4nodes.txt --listen 127.0.0.3:9001 &
-$VALGRIND bin/ctdb_test --nlist tests/4nodes.txt --listen 127.0.0.4:9001
-wait
-

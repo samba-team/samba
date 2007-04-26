@@ -482,6 +482,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	state->async.private_data = dstate;
 }
 
+
+static void daemon_request_control_from_client(struct ctdb_client *client, 
+					       struct ctdb_req_control *c);
+
 /* data contains a packet from the client */
 static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 {
@@ -518,6 +522,7 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 		daemon_request_register_message_handler(client, 
 							(struct ctdb_req_register *)hdr);
 		break;
+
 	case CTDB_REQ_MESSAGE:
 		ctdb->status.client.req_message++;
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
@@ -540,6 +545,11 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 
 	case CTDB_REQ_GETDBPATH:
 		daemon_request_getdbpath(client, (struct ctdb_req_getdbpath *)hdr);
+		break;
+
+	case CTDB_REQ_CONTROL:
+		ctdb->status.client.req_control++;
+		daemon_request_control_from_client(client, (struct ctdb_req_control *)hdr);
 		break;
 
 	default:
@@ -694,8 +704,6 @@ int ctdb_start(struct ctdb_context *ctdb)
 	struct fd_event *fde;
 	const char *domain_socket_name;
 
-	/* generate a name to use for our local socket */
-	ctdb->daemon.name = talloc_asprintf(ctdb, "%s.%s", CTDB_PATH, ctdb->address.address);
 	/* get rid of any old sockets */
 	unlink(ctdb->daemon.name);
 
@@ -757,4 +765,71 @@ void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len)
 void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	ctdb->num_finished++;
+}
+
+
+struct daemon_control_state {
+	struct ctdb_client *client;
+	struct ctdb_req_control *c;
+};
+
+/*
+  callback when a control reply comes in
+ */
+static void daemon_control_callback(struct ctdb_context *ctdb,
+				    uint32_t status, TDB_DATA data, 
+				    void *private_data)
+{
+	struct daemon_control_state *state = talloc_get_type(private_data, 
+							     struct daemon_control_state);
+	struct ctdb_client *client = state->client;
+	struct ctdb_reply_control *r;
+	size_t len;
+
+	/* construct a message to send to the client containing the data */
+	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	r = ctdbd_allocate_pkt(client, len);
+	talloc_set_name_const(r, "reply_control packet");
+
+	memset(r, 0, offsetof(struct ctdb_req_message, data));
+
+	r->hdr.length    = len;
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REPLY_CONTROL;
+	r->status        = status;
+	r->datalen       = data.dsize;
+	memcpy(&r->data[0], data.dptr, data.dsize);
+
+	daemon_queue_send(client, &r->hdr);
+
+	talloc_free(state);
+}
+
+/*
+  this is called when the ctdb daemon received a ctdb request control
+  from a local client over the unix domain socket
+ */
+static void daemon_request_control_from_client(struct ctdb_client *client, 
+					       struct ctdb_req_control *c)
+{
+	TDB_DATA data;
+	int res;
+	struct daemon_control_state *state;
+
+	state = talloc(client, struct daemon_control_state);
+	CTDB_NO_MEMORY_VOID(client->ctdb, state);
+
+	state->client = client;
+	state->c = talloc_steal(state, c);
+	
+	data.dptr = &c->data[0];
+	data.dsize = c->datalen;
+	res = ctdb_daemon_send_control(client->ctdb, c->hdr.destnode,
+				       c->srvid, c->opcode, data, daemon_control_callback,
+				       state);
+	if (res != 0) {
+		DEBUG(0,(__location__ " Failed to send control to remote node %u\n",
+			 c->hdr.destnode));
+	}
 }

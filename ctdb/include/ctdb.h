@@ -95,6 +95,8 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count);
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
 
+int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
+
 /*
   tell ctdb what nodes are available. This takes a filename, which will contain
   1 node address per line, in a transport specific format
@@ -208,11 +210,13 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 
-struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *ctdb_socket);
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 
 struct ctdb_status;
 int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status);
 
 int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path);
+
+int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 
 #endif

@@ -117,7 +117,7 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
-	ctdb = ctdb_cmdline_client(ev, ctdb_socket);
+	ctdb = ctdb_cmdline_client(ev);
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
 		exit(1);

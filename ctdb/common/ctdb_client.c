@@ -93,6 +93,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 /*
   this is called in the client, when data comes in from the daemon
@@ -154,6 +155,10 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_GETDBPATH:
 		ctdb_reply_getdbpath(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_CONTROL:
+		ctdb_client_reply_control(ctdb, hdr);
 		break;
 
 	default:
@@ -422,7 +427,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	int len, res;
 
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdbd_allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY(ctdb, r);
 	talloc_set_name_const(r, "req_message packet");
 
@@ -771,3 +776,134 @@ int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TDB_DATA *path)
 	return 0;
 }
 
+
+struct ctdb_client_control_state {
+	uint32_t reqid;
+	int32_t status;
+	TDB_DATA outdata;
+	enum call_state state;
+};
+
+/*
+  called when a CTDB_REPLY_CONTROL packet comes in in the client
+
+  This packet comes in response to a CTDB_REQ_CONTROL request packet. It
+  contains any reply data from the control
+*/
+static void ctdb_client_reply_control(struct ctdb_context *ctdb, 
+				      struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
+	if (state == NULL) {
+		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		return;
+	}
+
+	if (hdr->reqid != state->reqid) {
+		/* we found a record  but it was the wrong one */
+		DEBUG(0, ("Dropped orphaned reply control with reqid:%d\n",hdr->reqid));
+		return;
+	}
+
+	state->outdata.dptr = c->data;
+	state->outdata.dsize = c->datalen;
+	state->status = c->status;
+
+	talloc_steal(state, c);
+
+	state->state = CTDB_CALL_DONE;
+}
+
+
+/*
+  send a ctdb control message
+ */
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint32_t srvid, 
+		 uint32_t opcode, TDB_DATA data, 
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status)
+{
+	struct ctdb_client_control_state *state;
+	struct ctdb_req_control *c;
+	size_t len;
+	int ret;
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ctdb_socket_connect(ctdb);
+	}
+
+	state = talloc_zero(ctdb, struct ctdb_client_control_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->state = CTDB_CALL_WAIT;
+
+	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	c = ctdbd_allocate_pkt(state, len);
+	
+	memset(c, 0, len);
+	c->hdr.length       = len;
+	c->hdr.ctdb_magic   = CTDB_MAGIC;
+	c->hdr.ctdb_version = CTDB_VERSION;
+	c->hdr.operation    = CTDB_REQ_CONTROL;
+	c->hdr.reqid        = state->reqid;
+	c->hdr.destnode     = destnode;
+	c->hdr.srcnode      = ctdb->vnn;
+	c->hdr.reqid        = state->reqid;
+	c->opcode           = opcode;
+	c->srvid            = srvid;
+	c->datalen          = data.dsize;
+	if (data.dsize) {
+		memcpy(&c->data[0], data.dptr, data.dsize);
+	}
+
+	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	/* semi-async operation */
+	while (state->state == CTDB_CALL_WAIT) {
+		event_loop_once(ctdb->ev);
+	}
+
+	if (outdata) {
+		*outdata = state->outdata;
+		outdata->dptr = talloc_steal(mem_ctx, outdata->dptr);
+	}
+
+	*status = state->status;
+
+	talloc_free(state);
+
+	return 0;	
+}
+
+
+
+/*
+  a process exists call. Returns 0 if process exists, -1 otherwise
+ */
+int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t status;
+
+	data.dptr = (uint8_t*)&pid;
+	data.dsize = sizeof(pid);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_PROCESS_EXISTS, data, 
+			   NULL, NULL, &status);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control failed\n"));
+		return -1;
+	}
+
+	return status;
+}
