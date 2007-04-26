@@ -71,12 +71,6 @@ struct ctdb_context *ctdb_init(struct event_context *ev);
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 
 /*
-  initialize the chosen transport
-  do this in the process where it is going to be used
- */
-int ctdb_init_transport(struct ctdb_context *ctdb);
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
