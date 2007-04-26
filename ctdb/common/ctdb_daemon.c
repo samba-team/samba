@@ -564,12 +564,12 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 	client->ctdb->status.client_packets_recv++;
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(client->ctdb, "Bad packet length %d in daemon\n", cnt);
+		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n", cnt);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
-		ctdb_set_error(client->ctdb, "Bad header length %d expected %d\n in daemon", 
+		ctdb_set_error(client->ctdb, "Bad header length %u expected %u\n in daemon", 
 			       hdr->length, cnt);
 		return;
 	}
@@ -772,13 +772,6 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	struct ctdb_client *client = state->client;
 	struct ctdb_reply_control *r;
 	size_t len;
-
-	DEBUG(0,("callback: size=%u\n", data.dsize));
-	DEBUG(0,("callback: size=%u\n", data.dsize));
-	DEBUG(0,("callback: size=%u\n", data.dsize));
-	DEBUG(0,("callback: size=%u\n", data.dsize));
-	DEBUG(0,("callback: size=%u\n", data.dsize));
-	DEBUG(0,("callback: size=%u\n", data.dsize));
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;

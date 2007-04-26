@@ -124,8 +124,6 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
-	DEBUG(0,("data.dsize=%u\n", data.dsize));
-
 	state->callback(ctdb, c->status, data, state->private_data);
 	talloc_free(state);
 }
