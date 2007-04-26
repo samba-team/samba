@@ -78,7 +78,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_db = find_ctdb_db(ctdb, db_id);
 		if (ctdb_db == NULL) return -1;
 		outdata->dptr = discard_const(ctdb_db->db_path);
-		outdata->dsize = strlen(ctdb_db->db_path);
+		outdata->dsize = strlen(ctdb_db->db_path)+1;
 		return 0;
 	}
 
