@@ -44,6 +44,24 @@ static void daemon_incoming_packet(void *, uint8_t *, uint32_t );
 
 static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
+	int ret = -1;
+
+	if (strcmp(ctdb->transport, "tcp") == 0) {
+		int ctdb_tcp_init(struct ctdb_context *);
+		ret = ctdb_tcp_init(ctdb);
+	}
+#ifdef USE_INFINBAND
+	if (strcmp(ctdb->transport, "ib") == 0) {
+		int ctdb_ibw_init(struct ctdb_context *);
+		ret = ctdb_ibw_init(ctdb);
+	}
+#endif
+	if (ret != 0) {
+		DEBUG(0,("Failed to initialise transport '%s'\n", ctdb->transport));
+		return;
+	}
+
+	/* start the transport running */
 	ctdb->methods->start(ctdb);
 
 	/* go into a wait loop to allow other nodes to complete */

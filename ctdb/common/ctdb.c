@@ -31,23 +31,10 @@
 */
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
-	int ctdb_tcp_init(struct ctdb_context *ctdb);
-#ifdef USE_INFINIBAND
-	int ctdb_ibw_init(struct ctdb_context *ctdb);
-#endif /* USE_INFINIBAND */
-
-	if (strcmp(transport, "tcp") == 0) {
-		return ctdb_tcp_init(ctdb);
-	}
-#ifdef USE_INFINIBAND
-	if (strcmp(transport, "ib") == 0) {
-		return ctdb_ibw_init(ctdb);
-	}
-#endif /* USE_INFINIBAND */
-
-	ctdb_set_error(ctdb, "Unknown transport '%s'\n", transport);
-	return -1;
+	ctdb->transport = talloc_strdup(ctdb, transport);
+	return 0;
 }
+
 
 /*
   set some ctdb flags
@@ -115,11 +102,6 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	/* for now we just set the vnn to the line in the file - this
 	   will change! */
 	node->vnn = ctdb->num_nodes;
-
-	if (ctdb->methods->add_node(node) != 0) {
-		talloc_free(node);
-		return -1;
-	}
 
 	if (ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;

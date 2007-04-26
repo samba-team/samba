@@ -336,7 +336,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				ibw_stop(tcx->ibwctx);
 				goto error;
 			}
-		} else {
+		} else if (op!=TESTOP_SEND_ID) {
 			char *buf2;
 			void *key2;
 

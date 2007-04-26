@@ -54,11 +54,38 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 }
 
 /*
+ * initialise ibw portion of a ctdb node 
+ */
+static int ctdb_ibw_add_node(struct ctdb_node *node)
+{
+	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private_data, struct ibw_ctx);
+	struct ctdb_ibw_node *cn = talloc_zero(node, struct ctdb_ibw_node);
+
+	assert(cn!=NULL);
+	cn->conn = ibw_conn_new(ictx, node);
+	node->private_data = (void *)cn;
+
+	return (cn->conn!=NULL ? 0 : -1);
+}
+
+/*
  * Start infiniband
  */
 static int ctdb_ibw_start(struct ctdb_context *ctdb)
 {
-	int i;
+	int i, ret;
+
+	ret = ctdb_ibw_init(ctdb);
+	if (ret != 0) {
+		return ret;
+	}
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb_ibw_add_node(ctdb->nodes[i]) != 0) {
+			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			return -1;
+		}
+	}
 
 	/* listen on our own address */
 	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
@@ -74,21 +101,6 @@ static int ctdb_ibw_start(struct ctdb_context *ctdb)
 	}
 
 	return 0;
-}
-
-/*
- * initialise ibw portion of a ctdb node 
- */
-static int ctdb_ibw_add_node(struct ctdb_node *node)
-{
-	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private_data, struct ibw_ctx);
-	struct ctdb_ibw_node *cn = talloc_zero(node, struct ctdb_ibw_node);
-
-	assert(cn!=NULL);
-	cn->conn = ibw_conn_new(ictx, node);
-	node->private_data = (void *)cn;
-
-	return (cn->conn!=NULL ? 0 : -1);
 }
 
 static int ctdb_ibw_send_pkt(struct ibw_conn *conn, uint8_t *data, uint32_t length)
@@ -178,8 +190,8 @@ static int ctdb_ibw_stop(struct ctdb_context *cctx)
 
 static const struct ctdb_methods ctdb_ibw_methods = {
 	.start     = ctdb_ibw_start,
-	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
+	.add_node = ctdb_ibw_add_node,
 	.allocate_pkt = ctdb_ibw_allocate_pkt,
 
 //	.stop = ctdb_ibw_stop

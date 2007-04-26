@@ -204,7 +204,8 @@ int main(int argc, const char *argv[])
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
 
-	ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count);
+	if (ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
+		goto error;
 
 	/* wait until all nodes are connected (should not be needed
 	   outside of test code) */
@@ -212,6 +213,7 @@ int main(int argc, const char *argv[])
 
 	bench_ring(ctdb, ev);
        
+error:
 	/* shut it down */
 	ctdb_shutdown(ctdb);
 

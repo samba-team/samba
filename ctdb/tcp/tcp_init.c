@@ -26,29 +26,6 @@
 #include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
-/*
-  start the protocol going
-*/
-static int ctdb_tcp_start(struct ctdb_context *ctdb)
-{
-	int i;
-
-	/* listen on our own address */
-	if (ctdb_tcp_listen(ctdb) != 0) return -1;
-
-	/* startup connections to the other servers - will happen on
-	   next event loop */
-	for (i=0;i<ctdb->num_nodes;i++) {
-		struct ctdb_node *node = *(ctdb->nodes + i);
-		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
-		    ctdb_same_address(&ctdb->address, &node->address)) continue;
-		event_add_timed(ctdb->ev, node, timeval_zero(), 
-				ctdb_tcp_node_connect, node);
-	}
-
-	return 0;
-}
-
 
 /*
   initialise tcp portion of a ctdb node 
@@ -68,6 +45,36 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	return 0;
 }
 
+/*
+  start the protocol going
+*/
+static int ctdb_tcp_start(struct ctdb_context *ctdb)
+{
+	int i;
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
+			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			return -1;
+		}
+	}
+	
+	/* listen on our own address */
+	if (ctdb_tcp_listen(ctdb) != 0) return -1;
+
+	/* startup connections to the other servers - will happen on
+	   next event loop */
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct ctdb_node *node = *(ctdb->nodes + i);
+		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
+		    ctdb_same_address(&ctdb->address, &node->address)) continue;
+		event_add_timed(ctdb->ev, node, timeval_zero(), 
+				ctdb_tcp_node_connect, node);
+	}
+
+	return 0;
+}
+
 
 /*
   transport packet allocator - allows transport to control memory for packets
@@ -83,9 +90,9 @@ static void *ctdb_tcp_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 
 
 static const struct ctdb_methods ctdb_tcp_methods = {
-	.start     = ctdb_tcp_start,
-	.add_node  = ctdb_tcp_add_node,
-	.queue_pkt = ctdb_tcp_queue_pkt,
+	.start        = ctdb_tcp_start,
+	.queue_pkt    = ctdb_tcp_queue_pkt,
+	.add_node     = ctdb_tcp_add_node,
 	.allocate_pkt = ctdb_tcp_allocate_pkt
 };
 

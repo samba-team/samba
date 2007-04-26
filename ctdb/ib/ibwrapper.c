@@ -38,8 +38,9 @@
 #include "lib/events/events.h"
 #include "ibwrapper.h"
 
+#include <infiniband/kern-abi.h>
+#include <rdma/rdma_cma_abi.h>
 #include <rdma/rdma_cma.h>
-#include "infiniband/sa-kern-abi.h"
 
 #include "ibwrapper_internal.h"
 #include "lib/util/dlinklist.h"
@@ -83,7 +84,7 @@ static void *ibw_alloc_mr(struct ibw_ctx_priv *pctx, struct ibw_conn_priv *pconn
 
 static void ibw_free_mr(char **ppbuf, struct ibv_mr **ppmr)
 {
-	DEBUG(10, ("ibw_free_mr(%u %u)\n", (uint32_t)*ppbuf, (uint32_t)*ppmr));
+	DEBUG(10, ("ibw_free_mr(%p %p)\n", *ppbuf, *ppmr));
 	if (*ppmr!=NULL) {
 		ibv_dereg_mr(*ppmr);
 		*ppmr = NULL;
@@ -133,7 +134,7 @@ static int ibw_init_memory(struct ibw_conn *conn)
 
 static int ibw_ctx_priv_destruct(struct ibw_ctx_priv *pctx)
 {
-	DEBUG(10, ("ibw_ctx_priv_destruct(%u)\n", (uint32_t)pctx));
+	DEBUG(10, ("ibw_ctx_priv_destruct(%p)\n", pctx));
 
 	/* destroy cm */
 	if (pctx->cm_channel) {
@@ -155,7 +156,7 @@ static int ibw_ctx_priv_destruct(struct ibw_ctx_priv *pctx)
 
 static int ibw_ctx_destruct(struct ibw_ctx *ctx)
 {
-	DEBUG(10, ("ibw_ctx_destruct(%u)\n", (uint32_t)ctx));
+	DEBUG(10, ("ibw_ctx_destruct(%p)\n", ctx));
 	return 0;
 }
 
@@ -217,7 +218,7 @@ static int ibw_wr_destruct(struct ibw_wr *wr)
 
 static int ibw_conn_destruct(struct ibw_conn *conn)
 {
-	DEBUG(10, ("ibw_conn_destruct(%u)\n", (uint32_t)conn));
+	DEBUG(10, ("ibw_conn_destruct(%p)\n", conn));
 	
 	/* important here: ctx is a talloc _parent_ */
 	DLIST_REMOVE(conn->ctx->conn_list, conn);
@@ -428,6 +429,7 @@ static void ibw_event_handler_cm(struct event_context *ev,
 	rc = rdma_get_cm_event(pctx->cm_channel, &event);
 	if (rc) {
 		ctx->state = IBWS_ERROR;
+		event = NULL;
 		sprintf(ibw_lasterr, "rdma_get_cm_event error %d\n", rc);
 		goto error;
 	}
@@ -520,9 +522,10 @@ static void ibw_event_handler_cm(struct event_context *ev,
 		if (conn) {
 			if ((rc=rdma_ack_cm_event(event)))
 				DEBUG(0, ("reject/rdma_ack_cm_event failed with %d\n", rc));
-			event = NULL;
-			pconn = talloc_get_type(conn->internal, struct ibw_conn_priv);
-			ibw_conn_priv_destruct(pconn);
+			event = NULL; /* not to touch cma_id or conn */
+			conn->state = IBWC_ERROR;
+			/* it should free the conn */
+			pctx->connstate_func(NULL, conn);
 		}
 		goto error;
 
@@ -556,22 +559,26 @@ static void ibw_event_handler_cm(struct event_context *ev,
 
 	return;
 error:
-	if (event!=NULL && (rc=rdma_ack_cm_event(event))) {
-		sprintf(ibw_lasterr, "rdma_ack_cm_event failed with %d\n", rc);
-		goto error;
-	}
-
 	DEBUG(0, ("cm event handler: %s", ibw_lasterr));
 
-	if (cma_id!=pctx->cm_id) {
-		conn = talloc_get_type(cma_id->context, struct ibw_conn);
-		if (conn)
-			conn->state = IBWC_ERROR;
-		pctx->connstate_func(NULL, conn);
-	} else {
-		ctx->state = IBWS_ERROR;
-		pctx->connstate_func(ctx, NULL);
+	if (event!=NULL) {
+		if (cma_id!=NULL && cma_id!=pctx->cm_id) {
+			conn = talloc_get_type(cma_id->context, struct ibw_conn);
+			if (conn) {
+				conn->state = IBWC_ERROR;
+				pctx->connstate_func(NULL, conn);
+			}
+		} else {
+			ctx->state = IBWS_ERROR;
+			pctx->connstate_func(ctx, NULL);
+		}
+
+		if ((rc=rdma_ack_cm_event(event))!=0) {
+			DEBUG(0, ("rdma_ack_cm_event failed with %d\n", rc));
+		}
 	}
+
+	return;
 }
 
 static void ibw_event_handler_verbs(struct event_context *ev,
@@ -967,7 +974,11 @@ struct ibw_ctx *ibw_init(struct ibw_initattr *attr, int nattr,
 	pctx->cm_channel_event = event_add_fd(pctx->ectx, pctx,
 		pctx->cm_channel->fd, EVENT_FD_READ, ibw_event_handler_cm, ctx);
 
+#if RDMA_USER_CM_MAX_ABI_VERSION >= 2
 	rc = rdma_create_id(pctx->cm_channel, &pctx->cm_id, ctx, RDMA_PS_TCP);
+#else
+	rc = rdma_create_id(pctx->cm_channel, &pctx->cm_id, ctx);
+#endif
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "rdma_create_id error %d\n", rc);
@@ -1088,7 +1099,11 @@ int ibw_connect(struct ibw_conn *conn, struct sockaddr_in *serv_addr, void *conn
 	}
 
 	/* init cm */
+#if RDMA_USER_CM_MAX_ABI_VERSION >= 2
 	rc = rdma_create_id(pctx->cm_channel, &pconn->cm_id, conn, RDMA_PS_TCP);
+#else
+	rc = rdma_create_id(pctx->cm_channel, &pconn->cm_id, conn);
+#endif
 	if (rc) {
 		rc = errno;
 		sprintf(ibw_lasterr, "ibw_connect/rdma_create_id error %d\n", rc);
