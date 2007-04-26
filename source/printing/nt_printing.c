@@ -3264,6 +3264,7 @@ WERROR check_published_printers(void)
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
 		ads_destroy(&ads);
+		ads_kdestroy("MEMORY:prtpub_cache");
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3280,6 +3281,7 @@ WERROR check_published_printers(void)
 	}
 
 	ads_destroy(&ads);
+	ads_kdestroy("MEMORY:prtpub_cache");
 	return WERR_OK;
 }
 
