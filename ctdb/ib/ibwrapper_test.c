@@ -561,7 +561,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, ibwtest_sigint_handler);
 	srand((unsigned)time(NULL));
 
-	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:v:g:")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:v:a:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
