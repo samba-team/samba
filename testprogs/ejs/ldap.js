@@ -428,6 +428,9 @@ objectClass: user
 	var attrs = new Array("cn");
 	var res = ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	assert(res.error == 0);
+	if (res.msgs.length != 0) {
+		println("Got configuration DN " + res.msgs[0].dn + " which should not be able to be seen from main search base");
+	}
 	assert(res.msgs.length == 0);
 
 	println("Testing that we can get at the configuration DN from the main search base on the LDAP port with the 'phantom root' search_options control");
