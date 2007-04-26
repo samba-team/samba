@@ -32,7 +32,7 @@
 
     <para>There is a bug in WfWg that has relevance to this 
     setting. When in user or server level security a WfWg client 
-    will totally ignore the password you type in the &quot;connect 
+    will totally ignore the username and password you type in the &quot;connect 
     drive&quot; dialog box. This makes it very difficult (if not impossible) 
     to connect to a Samba service as anyone except the user that 
     you are logged into WfWg as.</para>
