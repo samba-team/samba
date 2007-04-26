@@ -394,7 +394,15 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
 	ctdb->status.node_packets_sent++;
+
+	if (!ctdb_validate_vnn(ctdb, hdr->destnode)) {
+	  	DEBUG(0,(__location__ " cant send to node %u that does not exist\n", 
+			 hdr->destnode));
+		return;
+	}
+
 	node = ctdb->nodes[hdr->destnode];
+
 	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
