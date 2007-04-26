@@ -531,14 +531,14 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t%s -i <id> -o {name:value} -d {addr:port} -t nsec -s\n", name);
 	printf("\t-i <id> is a free text, acting as a server id, max 23 chars [mandatory]\n");
 	printf("\t-o name1:value1,name2:value2,... is a list of (name, value) pairs\n");
-	printf("\t-d addr1:port1,addr2:port2,... is a list of destination ip addresses\n");
+	printf("\t-a addr1:port1,addr2:port2,... is a list of destination ip addresses\n");
 	printf("\t-t nsec delta time between sends in nanosec [default %d]\n", tcx->nsec);
 	printf("\t\t send message periodically and endless when nsec is non-zero\n");
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
 	printf("\t-l usec time to sleep in the main loop [default %d]\n", tcx->sleep_usec);
 	printf("\t-v max variable msg size in bytes [default %d], 0=don't send var. size\n", tcx->maxsize);
-	printf("\t-g LogLevel [default %d]\n", LogLevel);	
+	printf("\t-d LogLevel [default %d]\n", LogLevel);	
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -572,7 +572,7 @@ int main(int argc, char *argv[])
 				&tcx->nattrs, op))
 				goto cleanup;
 			break;
-		case 'd':
+		case 'a':
 			if (ibwtest_getdests(tcx, op))
 				goto cleanup;
 			break;
@@ -591,7 +591,7 @@ int main(int argc, char *argv[])
 		case 'v':
 			tcx->maxsize = (unsigned int)atoi(optarg);
 			break;
-		case 'g':
+		case 'd':
 			LogLevel = atoi(optarg);
 			break;
 		default:
