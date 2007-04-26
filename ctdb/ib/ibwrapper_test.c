@@ -290,7 +290,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			talloc_free(conn);
 			break;
 		case IBWC_ERROR:
-			DEBUG(10, ("test IBWC_ERROR\n"));
+			DEBUG(10, ("test IBWC_ERROR %s\n", ibw_getLastError()));
 			break;
 		default:
 			assert(0);
@@ -466,6 +466,19 @@ int ibwtest_parse_attrs(struct ibwtest_ctx *tcx, char *optext,
 	return 0;
 }
 
+static int ibwtest_get_address(const char *address, struct in_addr *addr)
+{
+	if (inet_pton(AF_INET, address, addr) <= 0) {
+		struct hostent *he = gethostbyname(address);
+		if (he == NULL || he->h_length > sizeof(*addr)) {
+			DEBUG(0, ("invalid nework address '%s'\n", address));
+			return -1;
+		}
+		memcpy(addr, he->h_addr, he->h_length);
+	}
+	return 0;
+}
+
 int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 {
 	int	i;
@@ -483,7 +496,8 @@ int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 	for(i=0; i<tcx->naddrs; i++) {
 		p = tcx->addrs + i;
 		p->sin_family = AF_INET;
-		p->sin_addr.s_addr = inet_addr(attrs[i].name);
+		if (ibwtest_get_address(attrs[i].name, &p->sin_addr))
+			return -1;
 		p->sin_port = htons(atoi(attrs[i].value));
 	}
 
@@ -524,6 +538,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
 	printf("\t-l usec time to sleep in the main loop [default %d]\n", tcx->sleep_usec);
 	printf("\t-v max variable msg size in bytes [default %d], 0=don't send var. size\n", tcx->maxsize);
+	printf("\t-g LogLevel [default %d]\n", LogLevel);	
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -539,13 +554,14 @@ int main(int argc, char *argv[])
 	memset(tcx, 0, sizeof(struct ibwtest_ctx));
 	tcx->nsec = 0;
 	tcx->nmsg = 1000;
+	LogLevel = 0;
 
 	/* here is the only case we can't avoid using global... */
 	testctx = tcx;
 	signal(SIGINT, ibwtest_sigint_handler);
 	srand((unsigned)time(NULL));
 
-	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:v:")) != -1) {
+	while ((op=getopt(argc, argv, "i:o:d:m:st:n:l:v:g:")) != -1) {
 		switch (op) {
 		case 'i':
 			tcx->id = talloc_strdup(tcx, optarg);
@@ -574,6 +590,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			tcx->maxsize = (unsigned int)atoi(optarg);
+			break;
+		case 'g':
+			LogLevel = atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);

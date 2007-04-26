@@ -38,7 +38,8 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 	memset(&my_addr, 0, sizeof(struct sockaddr_in));
 	my_addr.sin_port = htons(ctdb->address.port);
 	my_addr.sin_family = PF_INET;
-	inet_pton(AF_INET, ctdb->address.address, &my_addr.sin_addr);
+	if (ctdb_ibw_get_address(ctdb, ctdb->address.address, &my_addr.sin_addr))
+		return -1;
 
 	if (ibw_bind(ictx, &my_addr)) {
 		DEBUG(0, ("ctdb_ibw_listen: ibw_bind failed\n"));
