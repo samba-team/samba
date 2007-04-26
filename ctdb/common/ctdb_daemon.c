@@ -223,32 +223,6 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 
 
 /*
-  called when the daemon gets a status request from a client
- */
-static void daemon_request_status(struct ctdb_client *client, 
-				  struct ctdb_req_status *c)
-{
-	struct ctdb_reply_status r;
-	int res;
-
-	/* now send the reply */
-	ZERO_STRUCT(r);
-
-	r.hdr.length     = sizeof(r);
-	r.hdr.ctdb_magic = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation = CTDB_REPLY_STATUS;
-	r.hdr.reqid = c->hdr.reqid;
-	r.status = client->ctdb->status;
-	
-	res = daemon_queue_send(client, &r.hdr);
-	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
-		return;
-	}
-}
-
-/*
   called when the daemon gets a getdbpath request from a client
  */
 static void daemon_request_getdbpath(struct ctdb_client *client, 
@@ -538,11 +512,6 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
 		break;
 
-	case CTDB_REQ_STATUS:
-		ctdb->status.client.req_status++;
-		daemon_request_status(client, (struct ctdb_req_status *)hdr);
-		break;
-
 	case CTDB_REQ_GETDBPATH:
 		daemon_request_getdbpath(client, (struct ctdb_req_getdbpath *)hdr);
 		break;
@@ -785,6 +754,13 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	struct ctdb_client *client = state->client;
 	struct ctdb_reply_control *r;
 	size_t len;
+
+	DEBUG(0,("callback: size=%u\n", data.dsize));
+	DEBUG(0,("callback: size=%u\n", data.dsize));
+	DEBUG(0,("callback: size=%u\n", data.dsize));
+	DEBUG(0,("callback: size=%u\n", data.dsize));
+	DEBUG(0,("callback: size=%u\n", data.dsize));
+	DEBUG(0,("callback: size=%u\n", data.dsize));
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;

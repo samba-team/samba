@@ -91,7 +91,6 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	state->state = CTDB_CALL_DONE;
 }
 
-static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 static void ctdb_reply_getdbpath(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
@@ -147,10 +146,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REPLY_CONNECT_WAIT:
 		ctdb_reply_connect_wait(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_STATUS:
-		ctdb_reply_status(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_GETDBPATH:
@@ -627,78 +622,6 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 	}
 }
 
-enum ctdb_status_states {CTDB_STATUS_WAIT, CTDB_STATUS_DONE};
-
-struct ctdb_status_state {
-	uint32_t reqid;
-	struct ctdb_status *status;
-	enum ctdb_status_states state;
-};
-
-/*
-  handle a ctdb_reply_status reply
- */
-static void ctdb_reply_status(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_status *r = (struct ctdb_reply_status *)hdr;
-	struct ctdb_status_state *state;
-
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_status_state);
-	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
-		return;
-	}
-
-	if (hdr->reqid != state->reqid) {
-		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
-		return;
-	}
-
-	*state->status = r->status;
-	state->state = CTDB_STATUS_DONE;
-}
-
-int ctdb_status(struct ctdb_context *ctdb, struct ctdb_status *status)
-{
-	struct ctdb_req_status r;
-	int ret;
-	struct ctdb_status_state *state;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb);
-	}
-
-	state = talloc(ctdb, struct ctdb_status_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	state->reqid = ctdb_reqid_new(ctdb, state);
-	state->status = status;
-	state->state = CTDB_STATUS_WAIT;
-	
-	ZERO_STRUCT(r);
-	r.hdr.length       = sizeof(r);
-	r.hdr.ctdb_magic   = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation    = CTDB_REQ_STATUS;
-	r.hdr.reqid        = state->reqid;
-
-	ret = ctdb_client_queue_pkt(ctdb, &(r.hdr));
-	if (ret != 0) {
-		talloc_free(state);
-		return -1;
-	}
-	
-	while (state->state == CTDB_STATUS_WAIT) {
-		event_loop_once(ctdb->ev);
-	}
-
-	talloc_free(state);
-
-	return 0;
-}
-
 
 enum ctdb_getdbpath_states {CTDB_GETDBPATH_WAIT, CTDB_GETDBPATH_DONE};
 
@@ -873,7 +796,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint32_t srvid,
 
 	if (outdata) {
 		*outdata = state->outdata;
-		outdata->dptr = talloc_steal(mem_ctx, outdata->dptr);
+		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
 	}
 
 	*status = state->status;
@@ -901,9 +824,38 @@ int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
 			   CTDB_CONTROL_PROCESS_EXISTS, data, 
 			   NULL, NULL, &status);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for process_exists failed\n"));
 		return -1;
 	}
 
 	return status;
+}
+
+/*
+  get remote status
+ */
+int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_STATUS, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for status failed\n"));
+		return -1;
+	}
+
+	if (outdata.dsize != sizeof(struct ctdb_status)) {
+		DEBUG(0,(__location__ " Wrong status size %u - expected %u\n",
+			 outdata.dsize, sizeof(struct ctdb_status)));
+		      return -1;
+	}
+
+	*status = *(struct ctdb_status *)outdata.dptr;
+			
+	return 0;
 }

@@ -32,7 +32,7 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
 
 OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
 
-BINS = bin/ctdbd bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait bin/ctdb_status bin/ctdb_control bin/ctdb_dump @INFINIBAND_BINS@
+BINS = bin/ctdbd bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait bin/ctdb_control bin/ctdb_dump @INFINIBAND_BINS@
 
 DIRS = lib bin
 
@@ -58,10 +58,6 @@ bin/ctdb_test: $(OBJS) tests/ctdb_test.o
 bin/ctdbd: $(OBJS) direct/ctdbd.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o $(OBJS) $(LIB_FLAGS)
-
-bin/ctdb_status: $(OBJS) tools/ctdb_status.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb_status.o $(OBJS) $(LIB_FLAGS)
 
 bin/ctdb_control: $(OBJS) tools/ctdb_control.o 
 	@echo Linking $@

@@ -32,28 +32,87 @@
 static void usage(void)
 {
 	printf("Usage: ctdb_control [options] <control>\n");
+	printf("\nControls:\n");
+	printf("  process-exists <vnn:pid>\n");
+	printf("  status <vnn>\n");
 	exit(1);
 }
 
 static int control_process_exists(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t srvid;
-	pid_t pid;
+	uint32_t vnn, pid;
 	int ret;
-	if (argc < 2) {
+	if (argc < 1) {
 		usage();
 	}
 
-	srvid = strtoul(argv[0], NULL, 0);
-	pid   = strtoul(argv[1], NULL, 0);
+	if (sscanf(argv[0], "%u:%u", &vnn, &pid) != 2) {
+		printf("Badly formed vnn:pid\n");
+		return -1;
+	}
 
-	ret = ctdb_process_exists(ctdb, srvid, pid);
+	ret = ctdb_process_exists(ctdb, vnn, pid);
 	if (ret == 0) {
-		printf("%u:%u exists\n", srvid, pid);
+		printf("%u:%u exists\n", vnn, pid);
 	} else {
-		printf("%u:%u does not exist\n", srvid, pid);
+		printf("%u:%u does not exist\n", vnn, pid);
 	}
 	return ret;
+}
+
+/*
+  display status structure
+ */
+static void show_status(struct ctdb_status *s)
+{
+	printf("CTDB version %u\n", CTDB_VERSION);
+	printf(" client_packets_sent     %u\n", s->client_packets_sent);
+	printf(" client_packets_recv     %u\n", s->client_packets_recv);
+	printf("   req_call              %u\n", s->client.req_call);
+	printf("   req_message           %u\n", s->client.req_message);
+	printf("   req_finished          %u\n", s->client.req_finished);
+	printf("   req_register          %u\n", s->client.req_register);
+	printf("   req_connect_wait      %u\n", s->client.req_connect_wait);
+	printf("   req_shutdown          %u\n", s->client.req_shutdown);
+	printf("   req_control           %u\n", s->client.req_control);
+	printf(" node_packets_sent       %u\n", s->node_packets_sent);
+	printf(" node_packets_recv       %u\n", s->node_packets_recv);
+	printf("   req_call              %u\n", s->count.req_call);
+	printf("   reply_call            %u\n", s->count.reply_call);
+	printf("   reply_redirect        %u\n", s->count.reply_redirect);
+	printf("   req_dmaster           %u\n", s->count.req_dmaster);
+	printf("   reply_dmaster         %u\n", s->count.reply_dmaster);
+	printf("   reply_error           %u\n", s->count.reply_error);
+	printf("   reply_redirect        %u\n", s->count.reply_redirect);
+	printf("   req_message           %u\n", s->count.req_message);
+	printf("   req_finished          %u\n", s->count.req_finished);
+	printf(" total_calls             %u\n", s->total_calls);
+	printf(" pending_calls           %u\n", s->pending_calls);
+	printf(" lockwait_calls          %u\n", s->lockwait_calls);
+	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
+	printf(" max_redirect_count      %u\n", s->max_redirect_count);
+	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
+	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
+}
+
+static int control_status(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int ret;
+	struct ctdb_status status;
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_status(ctdb, vnn, &status);
+	if (ret != 0) {
+		printf("Unable to get status from node %u\n", vnn);
+		return ret;
+	}
+	show_status(&status);
+	return 0;
 }
 
 /*
@@ -110,6 +169,8 @@ int main(int argc, const char *argv[])
 
 	if (strcmp(control, "process-exists") == 0) {
 		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "status") == 0) {
+		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
 	} else {
 		printf("Unknown control '%s'\n", control);
 		exit(1);

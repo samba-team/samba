@@ -145,7 +145,6 @@ struct ctdb_status {
 		uint32_t req_register;
 		uint32_t req_connect_wait;
 		uint32_t req_shutdown;
-		uint32_t req_status;
 		uint32_t req_control;
 	} client;
 	uint32_t total_calls;
@@ -228,7 +227,7 @@ struct ctdb_ltdb_header {
 	uint32_t lacount;
 };
 
-enum {CTDB_CONTROL_PROCESS_EXISTS};
+enum {CTDB_CONTROL_PROCESS_EXISTS, CTDB_CONTROL_STATUS};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
@@ -280,10 +279,8 @@ enum ctdb_operation {
 	CTDB_REQ_CONNECT_WAIT   = 1001,
 	CTDB_REPLY_CONNECT_WAIT = 1002,
 	CTDB_REQ_SHUTDOWN       = 1003,
-	CTDB_REQ_STATUS         = 1004,
-	CTDB_REPLY_STATUS       = 1005,
-	CTDB_REQ_GETDBPATH      = 1006,
-	CTDB_REPLY_GETDBPATH    = 1007
+	CTDB_REQ_GETDBPATH      = 1004,
+	CTDB_REPLY_GETDBPATH    = 1005
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -385,15 +382,6 @@ struct ctdb_reply_getdbpath {
 	struct ctdb_req_header hdr;
 	uint32_t datalen;
 	uint8_t data[1];
-};
-
-struct ctdb_req_status {
-	struct ctdb_req_header hdr;
-};
-
-struct ctdb_reply_status {
-	struct ctdb_req_header hdr;
-	struct ctdb_status status;
 };
 
 struct ctdb_req_control {

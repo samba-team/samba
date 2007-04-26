@@ -50,6 +50,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		pid = *(pid_t *)indata.dptr;
 		return kill(pid, 0);
 	}
+	case CTDB_CONTROL_STATUS: {
+		outdata->dptr = (uint8_t *)&ctdb->status;
+		outdata->dsize = sizeof(ctdb->status);
+		return 0;
+	}
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -86,7 +91,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->hdr.srcnode      = ctdb->vnn;
 	r->hdr.reqid        = hdr->reqid;
 	r->status           = status;
-	c->datalen          = outdata.dsize;
+	r->datalen          = outdata.dsize;
 	if (outdata.dsize) {
 		memcpy(&r->data[0], outdata.dptr, outdata.dsize);
 	}
@@ -118,6 +123,8 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
+
+	DEBUG(0,("data.dsize=%u\n", data.dsize));
 
 	state->callback(ctdb, c->status, data, state->private_data);
 	talloc_free(state);
