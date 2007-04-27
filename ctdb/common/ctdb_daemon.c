@@ -216,23 +216,23 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 static void daemon_request_connect_wait(struct ctdb_client *client, 
 					struct ctdb_req_connect_wait *c)
 {
-	struct ctdb_reply_connect_wait r;
+	struct ctdb_reply_connect_wait *r;
 	int res;
 
 	/* first wait - in the daemon */
 	ctdb_daemon_connect_wait(client->ctdb);
 
 	/* now send the reply */
-	ZERO_STRUCT(r);
-
-	r.hdr.length     = sizeof(r);
-	r.hdr.ctdb_magic = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation = CTDB_REPLY_CONNECT_WAIT;
-	r.vnn           = ctdb_get_vnn(client->ctdb);
-	r.num_connected = client->ctdb->num_connected;
+	r = ctdbd_allocate_pkt(client, sizeof(*r));
+	r->hdr.length     = sizeof(*r);
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REPLY_CONNECT_WAIT;
+	r->vnn           = ctdb_get_vnn(client->ctdb);
+	r->num_connected = client->ctdb->num_connected;
 	
-	res = daemon_queue_send(client, &r.hdr);
+	res = daemon_queue_send(client, &r->hdr);
+	talloc_free(r);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
 		return;

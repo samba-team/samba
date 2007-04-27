@@ -381,7 +381,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     void *private_data)
 				    
 {
-	struct ctdb_req_register c;
+	struct ctdb_req_register *c;
 	int res;
 
 	/* if the domain socket is not yet open, open it */
@@ -389,15 +389,15 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		ctdb_socket_connect(ctdb);
 	}
 
-	ZERO_STRUCT(c);
+	c = ctdbd_allocate_pkt(ctdb, sizeof(*c));
+	c->hdr.length       = sizeof(*c);
+	c->hdr.ctdb_magic   = CTDB_MAGIC;
+	c->hdr.ctdb_version = CTDB_VERSION;
+	c->hdr.operation    = CTDB_REQ_REGISTER;
+	c->srvid            = srvid;
 
-	c.hdr.length       = sizeof(c);
-	c.hdr.ctdb_magic   = CTDB_MAGIC;
-	c.hdr.ctdb_version = CTDB_VERSION;
-	c.hdr.operation    = CTDB_REQ_REGISTER;
-	c.srvid            = srvid;
-
-	res = ctdb_client_queue_pkt(ctdb, &c.hdr);
+	res = ctdb_client_queue_pkt(ctdb, &c->hdr);
+	talloc_free(c);
 	if (res != 0) {
 		return res;
 	}
@@ -446,15 +446,14 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
  */
 void ctdb_connect_wait(struct ctdb_context *ctdb)
 {
-	struct ctdb_req_connect_wait r;
+	struct ctdb_req_connect_wait *r;
 	int res;
 
-	ZERO_STRUCT(r);
-
-	r.hdr.length     = sizeof(r);
-	r.hdr.ctdb_magic = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
+	r = ctdbd_allocate_pkt(ctdb, sizeof(*r));
+	r->hdr.length     = sizeof(*r);
+	r->hdr.ctdb_magic = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation = CTDB_REQ_CONNECT_WAIT;
 
 	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
 
@@ -463,7 +462,8 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 		ctdb_socket_connect(ctdb);
 	}
 	
-	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r.hdr, r.hdr.length);
+	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r->hdr, r->hdr.length);
+	talloc_free(r);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to queue a connect wait request\n"));
 		return;
@@ -596,23 +596,24 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 */
 void ctdb_shutdown(struct ctdb_context *ctdb)
 {
-	struct ctdb_req_shutdown r;
-	int len;
+	struct ctdb_req_shutdown *r;
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
 		ctdb_socket_connect(ctdb);
 	}
 
-	len = sizeof(struct ctdb_req_shutdown);
-	ZERO_STRUCT(r);
-	r.hdr.length       = len;
-	r.hdr.ctdb_magic   = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.operation    = CTDB_REQ_SHUTDOWN;
-	r.hdr.reqid        = 0;
+	r = ctdbd_allocate_pkt(ctdb, sizeof(*r));
+	ZERO_STRUCT(*r);
+	r->hdr.length       = sizeof(*r);
+	r->hdr.ctdb_magic   = CTDB_MAGIC;
+	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.operation    = CTDB_REQ_SHUTDOWN;
+	r->hdr.reqid        = 0;
 
-	ctdb_client_queue_pkt(ctdb, &(r.hdr));
+	ctdb_client_queue_pkt(ctdb, &(r->hdr));
+
+	talloc_free(r);
 
 	/* this event loop will terminate once we receive the reply */
 	while (1) {
