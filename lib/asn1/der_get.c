@@ -193,6 +193,8 @@ der_get_bmp_string (const unsigned char *p, size_t len,
     if (len & 1)
 	return ASN1_BAD_FORMAT;
     data->length = len / 2;
+    if (data->length > UINT_MAX/sizeof(data->data[0]))
+	return ERANGE;
     data->data = malloc(data->length * sizeof(data->data[0]));
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
@@ -215,6 +217,8 @@ der_get_universal_string (const unsigned char *p, size_t len,
     if (len & 3)
 	return ASN1_BAD_FORMAT;
     data->length = len / 4;
+    if (data->length > UINT_MAX/sizeof(data->data[0]))
+	return ERANGE;
     data->data = malloc(data->length * sizeof(data->data[0]));
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
@@ -379,7 +383,7 @@ int
 der_get_oid (const unsigned char *p, size_t len,
 	     heim_oid *data, size_t *size)
 {
-    int n;
+    size_t n;
     size_t oldlen = len;
 
     if (len < 1)
@@ -388,7 +392,10 @@ der_get_oid (const unsigned char *p, size_t len,
     if (len > len + 1)
 	return ASN1_BAD_LENGTH;
 
-    data->components = malloc((len + 1) * sizeof(*data->components));
+    if (len + 1 > UINT_MAX/sizeof(data->components[0]))
+	return ERANGE;
+
+    data->components = malloc((len + 1) * sizeof(data->components[0]));
     if (data->components == NULL)
 	return ENOMEM;
     data->components[0] = (*p) / 40;
