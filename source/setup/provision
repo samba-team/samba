@@ -120,10 +120,10 @@ var ldapbackend = (options["ldap-backend"] != undefined);
 var ldapmodule = (options["ldap-module"] != undefined);
 
 if (options["aci"] != undefined) {
-	println("set ACI: " + subobj["ACI"]);
+	message("set ACI: %s\n", subobj["ACI"]);
 }
 
-println("set DOMAIN SID: " + subobj["DOMAINSID"]);
+message("set DOMAIN SID: %s\n", subobj["DOMAINSID"]);
 
 if (ldapbackend) {
 	if (!ldapmodule) {
