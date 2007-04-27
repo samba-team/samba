@@ -24,6 +24,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/rpc/dcerpc.h"
+#include "libcli/resolve/resolve.h"
 
 /*
  * 1. Setup a CLDAP socket.
@@ -128,6 +129,8 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 
 	const char *server_dn_str;
 	const char *config_dn_str;
+	struct nbt_name name;
+	const char *dest_addr = NULL;
 
 	tmp_ctx = talloc_named(libnet_r, 0, "libnet_JoinSite temp context");
 	if (!tmp_ctx) {
@@ -142,8 +145,16 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
+	status = resolve_name(&name, r, &dest_addr, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
 	/* Resolve the site name and AD DN's. */
-	r->in.dest_address = libnet_r->out.samr_binding->host;
+	r->in.dest_address = dest_addr;
 	r->in.netbios_name = libnet_r->in.netbios_name;
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
 
@@ -152,7 +163,7 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 		libnet_r->out.error_string =
 			talloc_steal(libnet_r, r->out.error_string);
 		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	config_dn_str = r->out.config_dn_str;
