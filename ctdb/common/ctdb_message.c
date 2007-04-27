@@ -36,8 +36,6 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 {
 	struct ctdb_message_list *ml;
 
-	/* XXX we need a must faster way of finding the matching srvid
-	   - maybe a tree? */
 	for (ml=ctdb->message_list;ml;ml=ml->next) {
 		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) {
 			ml->message_handler(ctdb, srvid, data, ml->message_private);

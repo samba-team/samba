@@ -227,4 +227,7 @@ int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode);
 
 int ctdb_get_config(struct ctdb_context *ctdb);
 
+int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
+int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
+
 #endif

@@ -758,25 +758,26 @@ int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
 int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
 {
 	int ret;
-	TDB_DATA data, outdata;
+	TDB_DATA data;
 	int32_t res;
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_STATUS, data, 
-			   ctdb, &outdata, &res);
+			   ctdb, &data, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for status failed\n"));
 		return -1;
 	}
 
-	if (outdata.dsize != sizeof(struct ctdb_status)) {
+	if (data.dsize != sizeof(struct ctdb_status)) {
 		DEBUG(0,(__location__ " Wrong status size %u - expected %u\n",
-			 outdata.dsize, sizeof(struct ctdb_status)));
+			 data.dsize, sizeof(struct ctdb_status)));
 		      return -1;
 	}
 
-	*status = *(struct ctdb_status *)outdata.dptr;
+	*status = *(struct ctdb_status *)data.dptr;
+	talloc_free(data.dptr);
 			
 	return 0;
 }
@@ -884,6 +885,7 @@ int ctdb_get_config(struct ctdb_context *ctdb)
 	}
 
 	c = *(struct ctdb_context *)data.dptr;
+	talloc_free(data.dptr);
 
 	ctdb->num_nodes = c.num_nodes;
 	ctdb->num_connected = c.num_connected;
@@ -921,5 +923,49 @@ int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 	talloc_free(data.dptr);
 
 	return 0;
-	
+}
+
+/*
+  get debug level on a node
+ */
+int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DEBUG, data, 
+			   ctdb, &data, &res);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Bad control reply size in ctdb_get_debuglevel (got %u)\n",
+			      data.dsize));
+		return -1;
+	}
+	*level = *(uint32_t *)data.dptr;
+	talloc_free(data.dptr);
+	return 0;
+}
+
+/*
+  set debug level on a node
+ */
+int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&level;
+	data.dsize = sizeof(level);
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_DEBUG, data, 
+			   NULL, NULL, &res);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+	return 0;
 }
