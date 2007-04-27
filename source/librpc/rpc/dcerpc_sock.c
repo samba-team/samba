@@ -50,22 +50,20 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 
 	if (!sock) return;
 
+	if (sock->packet) {
+		packet_recv_disable(sock->packet);
+		packet_set_fde(sock->packet, NULL);
+		packet_set_socket(sock->packet, NULL);
+	}
+
 	if (sock->fde) {
 		talloc_free(sock->fde);
 		sock->fde = NULL;
 	}
 
 	if (sock->sock) {
-		talloc_free(sock->fde);
-		sock->fde = NULL;
 		talloc_free(sock->sock);
 		sock->sock = NULL;
-	}
-
-	if (sock->packet) {
-		packet_recv_disable(sock->packet);
-		packet_set_fde(sock->packet, NULL);
-		packet_set_socket(sock->packet, NULL);
 	}
 
 	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
