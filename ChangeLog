@@ -1,3 +1,11 @@
+2007-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: SUBDIRS += etc
+
+	* configure.in: Add etc/Makefile.
+
+	* etc/Makefile.am: make sure services.append is distributed
+
 2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc: rename windc_init to krb5_kdc_windc_init
