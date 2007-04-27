@@ -88,13 +88,13 @@
 
 #include <talloc.h>
 
-#define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
-#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
-#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup(ctx, ptr, size, __location__)
-#define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
-#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
+#define TALLOC(ctx, size) talloc_strict(ctx, size, __location__)
+#define TALLOC_P(ctx, type) (type *)talloc_strict(ctx, sizeof(type), #type)
+#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array_strict(ctx, sizeof(type), count, #type)
+#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup_strict(ctx, ptr, size, __location__)
+#define TALLOC_ZERO(ctx, size) _talloc_zero_strict(ctx, size, __location__)
+#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero_strict(ctx, sizeof(type), #type)
+#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array_strict(ctx, sizeof(type), count, #type)
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)

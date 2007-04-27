@@ -775,14 +775,14 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	/*we need to assume that the max number of values will be enumerated */
-	types_out = talloc_array( mem_ctx, uint32, op->in.max_values );
+	types_out = TALLOC_ARRAY( mem_ctx, uint32, op->in.max_values );
 
 	if ( !types_out ) {
 		hnd->status = NT_STATUS_NO_MEMORY;
 		return CAC_FAILURE;
 	}
 
-	values_out = talloc_array( mem_ctx, REG_VALUE_DATA *, 
+	values_out = TALLOC_ARRAY( mem_ctx, REG_VALUE_DATA *, 
 				   op->in.max_values );
 
 	if ( !values_out ) {
@@ -791,7 +791,7 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	val_names_out = talloc_array( mem_ctx, char *, op->in.max_values );
+	val_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_values );
 
 	if ( !val_names_out ) {
 		TALLOC_FREE( types_out );

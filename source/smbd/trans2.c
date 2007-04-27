@@ -3517,7 +3517,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 
 			/* Copy the lock range data. */
-			lock_data = (char *)talloc_memdup(
+			lock_data = (char *)TALLOC_MEMDUP(
 				data_ctx, pdata, total_data);
 			if (!lock_data) {
 				talloc_destroy(data_ctx);

@@ -104,7 +104,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 	int ret;
 	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
 
-	acl = (struct gpfs_acl *)talloc_size(mem_ctx, len);
+	acl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, len);
 	if (acl == NULL) {
 		errno = ENOMEM;
 		return NULL;
@@ -117,7 +117,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 
 	ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT | GPFS_ACL_SAMBA, acl);
 	if ((ret != 0) && (errno == ENOSPC)) {
-		struct gpfs_acl *new_acl = (struct gpfs_acl *)talloc_size(
+		struct gpfs_acl *new_acl = (struct gpfs_acl *)TALLOC_SIZE(
 			mem_ctx, acl->acl_len + sizeof(struct gpfs_acl));
 		if (new_acl == NULL) {
 			errno = ENOMEM;
@@ -260,7 +260,7 @@ static BOOL gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	gacl_len = sizeof(struct gpfs_acl) +
 		(smb_get_naces(smbacl)-1)*sizeof(gpfs_ace_v4_t);
 
-	gacl = talloc_size(mem_ctx, gacl_len);
+	gacl = TALLOC_SIZE(mem_ctx, gacl_len);
 	if (gacl == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		errno = ENOMEM;

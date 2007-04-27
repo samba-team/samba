@@ -68,7 +68,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	TALLOC_CTX	*mem_ctx;
 
 	mem_ctx = main_loop_talloc_get();
-	acl = (AIXJFS2_ACL_T *)talloc_size(mem_ctx, len);
+	acl = (AIXJFS2_ACL_T *)TALLOC_SIZE(mem_ctx, len);
 	if (acl == NULL) {
 		errno = ENOMEM;
 		return NULL;
@@ -83,7 +83,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 		len = aixacl2_getlen(acl, type) + sizeof(AIXJFS2_ACL_T);
 		DEBUG(10,("aixjfs2_getacl_alloc - acl_len:%d\n",len));
 
-		acl = (AIXJFS2_ACL_T *)talloc_size(mem_ctx, len);
+		acl = (AIXJFS2_ACL_T *)TALLOC_SIZE(mem_ctx, len);
 		if (acl == NULL) {
 			errno = ENOMEM;
 			return NULL;
@@ -312,9 +312,9 @@ static BOOL aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 
 	naces = smb_get_naces(smbacl);
 	aclLen = ACL_V4_SIZ + naces * entryLen;
-	jfs2acl = (nfs4_acl_int_t *)talloc_size(mem_ctx, aclLen);
+	jfs2acl = (nfs4_acl_int_t *)TALLOC_SIZE(mem_ctx, aclLen);
 	if (jfs2acl==NULL) {
-		DEBUG(0, ("talloc_size failed\n"));
+		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return False;
 	}
