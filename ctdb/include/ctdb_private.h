@@ -30,9 +30,10 @@
 #define CTDB_DS_ALIGNMENT 8
 
 
-#define CTDB_NULL_FUNC 0xf0000001
-#define CTDB_CURRENT_NODE 0xF0000001
+#define CTDB_NULL_FUNC     0xF0000001
 
+#define CTDB_CURRENT_NODE  0xF0000001
+#define CTDB_BROADCAST_VNN 0xF0000002
 /*
   an installed ctdb remote call
 */

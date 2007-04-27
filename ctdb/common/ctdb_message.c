@@ -39,16 +39,11 @@ static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_
 	/* XXX we need a must faster way of finding the matching srvid
 	   - maybe a tree? */
 	for (ml=ctdb->message_list;ml;ml=ml->next) {
-		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) break;
-	}
-	if (ml == NULL) {
-		DEBUG(1,(__location__ " daemon vnn:%d  no msg handler for srvid=%u\n", 
-			 ctdb_get_vnn(ctdb), srvid));
-		/* no registered message handler */
-		return -1;
+		if (ml->srvid == srvid || ml->srvid == CTDB_SRVID_ALL) {
+			ml->message_handler(ctdb, srvid, data, ml->message_private);
+		}
 	}
 
-	ml->message_handler(ctdb, srvid, data, ml->message_private);
 	return 0;
 }
 
@@ -141,8 +136,28 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
-	
-	ctdb_queue_packet(ctdb, &r->hdr);
+
+	if (vnn != CTDB_BROADCAST_VNN) {
+		ctdb_queue_packet(ctdb, &r->hdr);
+	} else {
+		struct ctdb_node *node;
+		int i;
+
+		/* this was a broadcast message
+		   loop over all other nodes and send them each a copy
+		*/
+		for (i=0; i<ctdb_get_num_nodes(ctdb); i++) {
+			node=ctdb->nodes[i];
+
+			/* we do not send the message to ourself */
+			if (node && node->vnn!=ctdb->vnn) {
+				r->hdr.destnode = node->vnn;
+				ctdb_queue_packet(ctdb, &r->hdr);
+			}
+		}
+		/* also make sure to dispatch the message locally */
+		ctdb_dispatch_message(ctdb, srvid, data);
+	}
 
 	talloc_free(r);
 	return 0;
