@@ -36,6 +36,7 @@ static void usage(void)
 	printf("  ping\n");
 	printf("  process-exists <vnn:pid>\n");
 	printf("  status <vnn>\n");
+	printf("  getvnnmap <vnn>\n");
 	exit(1);
 }
 
@@ -116,6 +117,30 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int i, ret;
+	struct ctdb_vnn_map *vnnmap;
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	vnnmap = talloc_zero(ctdb, struct ctdb_vnn_map);
+	ret = ctdb_getvnnmap(ctdb, vnn, vnnmap);
+	if (ret != 0) {
+		printf("Unable to get vnnmap from node %u\n", vnn);
+		return ret;
+	}
+	printf("Generation:%d\n",vnnmap->generation);
+	printf("Size:%d\n",vnnmap->size);
+	for(i=0;i<vnnmap->size;i++){
+		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
+	}
+	return 0;
+}
 
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
@@ -190,6 +215,8 @@ int main(int argc, const char *argv[])
 		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "status") == 0) {
 		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getvnnmap") == 0) {
+		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else {
