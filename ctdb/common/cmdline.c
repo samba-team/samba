@@ -66,7 +66,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 {
 	struct ctdb_context *ctdb;
-	int ret;
+	int i, ret;
 
 	if (ctdb_cmdline.nlist == NULL || ctdb_cmdline.myaddress == NULL) {
 		printf("You must provide a node list with --nlist and an address with --listen\n");
@@ -119,6 +119,31 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
+
+	/* initialize the vnn mapping table */
+/*
+XXX we currently initialize it to the maximum number of nodes to 
+XXX make it behave the same way as previously.  
+XXX Once we have recovery working we should initialize this always to 
+XXX generation==0 (==invalid) and let the recovery tool populate this 
+XXX table for the daemons. 
+*/
+	ctdb->vnn_map = talloc_zero(ctdb, struct ctdb_vnn_map);
+	if (ctdb->vnn_map == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
+		exit(1);
+	}
+	ctdb->vnn_map->generation = 1;
+	ctdb->vnn_map->size = 1024;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+	if (ctdb->vnn_map->map == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map->map structure\n"));
+		exit(1);
+	}
+	for(i=0;i<ctdb->vnn_map->size;i++){
+		ctdb->vnn_map->map[i] = i%ctdb->num_nodes;
+	}
+
 
 	return ctdb;
 }

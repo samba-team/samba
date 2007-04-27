@@ -678,6 +678,7 @@ int ctdb_start(struct ctdb_context *ctdb)
 	
 	close(fd[1]);
 
+
 	ctdb->ev = event_context_init(NULL);
 	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ, ctdb_read_from_parent, &fd[0]);
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, ctdb_accept_client, ctdb);
