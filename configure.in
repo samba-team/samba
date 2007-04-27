@@ -435,6 +435,7 @@ AH_BOTTOM([#ifdef ROKEN_RENAME
 #endif])
 
 AC_CONFIG_FILES(Makefile 		\
+	etc/Makefile			\
 	include/Makefile		\
 	include/gssapi/Makefile		\
 	include/hcrypto/Makefile	\
