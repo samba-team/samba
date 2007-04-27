@@ -105,5 +105,12 @@ distclean: clean
 	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
 
+install:
+	mkdir -p $(bindir)
+	mkdir -p $(includedir)
+	cp $(BINS) $(bindir)
+	cp $(srcdir)/include/ctdb.h $(includedir)
+
+
 realdistclean: distclean
 	rm -f configure config.h.in
