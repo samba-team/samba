@@ -56,7 +56,7 @@ struct ctdb_call_info {
 /* 
    a message handler ID meaning "give me all messages"
  */
-#define CTDB_SRVID_ALL 0xFFFFFFFF
+#define CTDB_SRVID_ALL (~(uint64_t)0)
 
 struct event_context;
 
@@ -160,9 +160,9 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
 uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 
 /* setup a handler for ctdb messages */
-typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint32_t srvid, 
+typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid, 
 				  TDB_DATA data, void *);
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     ctdb_message_fn_t handler,
 			     void *private_data);
 
@@ -173,7 +173,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 
 /* send a ctdb message */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data);
+		      uint64_t srvid, TDB_DATA data);
 
 
 /* 
@@ -203,7 +203,7 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
-				  uint32_t srvid,
+				  uint64_t srvid,
 				  ctdb_message_fn_t handler,
 				  void *private_data);
 

@@ -105,7 +105,7 @@ static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header 
   message handler for when we are in daemon mode. This redirects the message
   to the right client
  */
-static void daemon_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 				    TDB_DATA data, void *private_data)
 {
 	struct ctdb_client *client = talloc_get_type(private_data, struct ctdb_client);
@@ -146,10 +146,10 @@ static void daemon_request_register_message_handler(struct ctdb_client *client,
 					    c->srvid, daemon_message_handler, 
 					    client);
 	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to register handler %u in daemon\n", 
+		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
 			 c->srvid));
 	} else {
-		DEBUG(2,(__location__ " Registered message handler for srvid=%u\n", 
+		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", 
 			 c->srvid));
 	}
 }
