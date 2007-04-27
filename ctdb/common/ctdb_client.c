@@ -376,7 +376,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   tell the daemon what messaging srvid we will use, and register the message
   handler function in the client
 */
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     ctdb_message_fn_t handler,
 			     void *private_data)
 				    
@@ -411,7 +411,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid,
   send a message - from client context
  */
 int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-		      uint32_t srvid, TDB_DATA data)
+		      uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
 	int len, res;
@@ -665,7 +665,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 /*
   send a ctdb control message
  */
-int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint32_t srvid, 
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status)
 {

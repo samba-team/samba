@@ -107,7 +107,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 /*
   handler for messages in bench_ring()
 */
-static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			    TDB_DATA data, void *private_data)
 {
 	msg_count++;

@@ -84,7 +84,7 @@ static int msg_plus, msg_minus;
 /*
   handler for messages in bench_ring()
 */
-static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 				 TDB_DATA data, void *private_data)
 {
 	int incr = *(int *)data.dptr;

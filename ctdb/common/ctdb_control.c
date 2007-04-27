@@ -220,7 +220,7 @@ static int ctdb_control_destructor(struct ctdb_control_state *state)
   send a control message to a node
  */
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint32_t srvid, uint32_t opcode, TDB_DATA data,
+			     uint64_t srvid, uint32_t opcode, TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data)
 {

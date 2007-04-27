@@ -108,7 +108,7 @@ struct ctdb_upcalls {
 struct ctdb_message_list {
 	struct ctdb_context *ctdb;
 	struct ctdb_message_list *next, *prev;
-	uint32_t srvid;
+	uint64_t srvid;
 	ctdb_message_fn_t message_handler;
 	void *message_private;
 };
@@ -364,12 +364,12 @@ struct ctdb_reply_dmaster {
 
 struct ctdb_req_register {
 	struct ctdb_req_header hdr;
-	uint32_t srvid;
+	uint64_t srvid;
 };
 
 struct ctdb_req_message {
 	struct ctdb_req_header hdr;
-	uint32_t srvid;
+	uint64_t srvid;
 	uint32_t datalen;
 	uint8_t data[1];
 };
@@ -406,7 +406,7 @@ struct ctdb_reply_getdbpath {
 struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
-	uint32_t srvid;
+	uint64_t srvid;
 	uint32_t datalen;
 	uint8_t data[1];
 };
@@ -516,18 +516,18 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
 */
 int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
-int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     ctdb_message_fn_t handler,
 			     void *private_data);
 
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-			     uint32_t srvid, TDB_DATA data);
+			     uint64_t srvid, TDB_DATA data);
 
 /*
   send a ctdb message
 */
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-			     uint32_t srvid, TDB_DATA data);
+			     uint64_t srvid, TDB_DATA data);
 
 
 /*
@@ -571,7 +571,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint32_t srvid, uint32_t opcode, TDB_DATA data,
+			     uint64_t srvid, uint32_t opcode, TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data);
 

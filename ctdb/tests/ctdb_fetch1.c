@@ -47,12 +47,12 @@ static double end_timer(void)
 		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
 }
 
-static void message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			    TDB_DATA data, void *private_data)
 {
 	num_msg++;
 }
-static void child_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void child_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			    TDB_DATA data, void *private_data)
 {
 	num_msg++;

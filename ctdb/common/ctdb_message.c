@@ -32,7 +32,7 @@
 /*
   this dispatches the messages to the registered ctdb message handler
 */
-static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_DATA data)
+static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_message_list *ml;
 
@@ -67,7 +67,7 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
  */
 struct ctdb_local_message {
 	struct ctdb_context *ctdb;
-	uint32_t srvid;
+	uint64_t srvid;
 	TDB_DATA data;
 };
 
@@ -80,12 +80,12 @@ static void ctdb_local_message_trigger(struct event_context *ev, struct timed_ev
 
 	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
 	if (res != 0) {
-		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%u\n", m->srvid));
+		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%llu\n", m->srvid));
 	}
 	talloc_free(m);
 }
 
-static int ctdb_local_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_DATA data)
+static int ctdb_local_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_local_message *m;
 	m = talloc(ctdb, struct ctdb_local_message);
@@ -109,7 +109,7 @@ static int ctdb_local_message(struct ctdb_context *ctdb, uint32_t srvid, TDB_DAT
   send a ctdb message
 */
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
-			     uint32_t srvid, TDB_DATA data)
+			     uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
 	int len;
@@ -176,7 +176,7 @@ static int message_handler_destructor(struct ctdb_message_list *m)
 */
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
-				  uint32_t srvid,
+				  uint64_t srvid,
 				  ctdb_message_fn_t handler,
 				  void *private_data)
 {
