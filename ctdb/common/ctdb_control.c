@@ -57,6 +57,43 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_GETVNNMAP: {
+		uint32_t i, len;
+
+		len = 2+ctdb->vnn_map->size;
+		outdata->dsize = 4*len;
+		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, len);
+		
+		((uint32_t *)outdata->dptr)[0] = ctdb->vnn_map->generation;
+		((uint32_t *)outdata->dptr)[1] = ctdb->vnn_map->size;
+		for (i=0;i<ctdb->vnn_map->size;i++) {
+			((uint32_t *)outdata->dptr)[i+2] = ctdb->vnn_map->map[i];
+		}
+
+		return 0;
+	}
+
+	case CTDB_CONTROL_SETVNNMAP: {
+		uint32_t *ptr, i;
+		
+		ptr = (uint32_t *)(&indata.dptr[0]);
+		ctdb->vnn_map->generation = ptr[0];
+		ctdb->vnn_map->size = ptr[1];
+		if (ctdb->vnn_map->map) {
+			talloc_free(ctdb->vnn_map->map);
+			ctdb->vnn_map->map = NULL;
+		}
+		ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+		if (ctdb->vnn_map->map == NULL) {
+			DEBUG(0,(__location__ " Unable to allocate vnn_map->map structure\n"));
+			exit(1);
+		}
+		for (i=0;i<ctdb->vnn_map->size;i++) {
+			ctdb->vnn_map->map[i] = ptr[i+2];
+		}
+		return 0;
+	}
+
 	case CTDB_CONTROL_CONFIG: {
 		outdata->dptr = (uint8_t *)ctdb;
 		outdata->dsize = sizeof(*ctdb);
@@ -94,7 +131,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
-	TDB_DATA data, outdata;
+	TDB_DATA data, *outdata;
 	struct ctdb_reply_control *r;
 	int32_t status;
 	size_t len;
@@ -102,10 +139,10 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
-	ZERO_STRUCT(outdata);
-	status = ctdb_control_dispatch(ctdb, c->opcode, data, &outdata);
+	outdata = talloc_zero(c, TDB_DATA);
+	status = ctdb_control_dispatch(ctdb, c->opcode, data, outdata);
 
-	len = offsetof(struct ctdb_reply_control, data) + outdata.dsize;
+	len = offsetof(struct ctdb_reply_control, data) + outdata->dsize;
 	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
 	talloc_set_name_const(r, "ctdb_reply_control packet");
@@ -118,9 +155,9 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->hdr.srcnode      = ctdb->vnn;
 	r->hdr.reqid        = hdr->reqid;
 	r->status           = status;
-	r->datalen          = outdata.dsize;
-	if (outdata.dsize) {
-		memcpy(&r->data[0], outdata.dptr, outdata.dsize);
+	r->datalen          = outdata->dsize;
+	if (outdata->dsize) {
+		memcpy(&r->data[0], outdata->dptr, outdata->dsize);
 	}
 	
 	ctdb_queue_packet(ctdb, &r->hdr);	
