@@ -139,19 +139,18 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 			case 1:
 				for (k=0; k < r.out.ctr.ctr1.count; k++) {
 					if (strcasecmp_m(r.out.ctr.ctr1.array[k].netbios_name, 
-							 torture_join_netbios_name(priv->join))) {
+							 torture_join_netbios_name(priv->join)) == 0) {
 						found = True;
+						break;
 					}
 				}
 				break;
 			case 2:
-				if (r.out.ctr.ctr2.count > 0) {
-					priv->dcinfo	= r.out.ctr.ctr2.array[0];
-				}
 				for (k=0; k < r.out.ctr.ctr2.count; k++) {
 					if (strcasecmp_m(r.out.ctr.ctr2.array[k].netbios_name, 
-							 torture_join_netbios_name(priv->join))) {
+							 torture_join_netbios_name(priv->join)) == 0) {
 						found = True;
+						priv->dcinfo	= r.out.ctr.ctr2.array[k];
 						break;
 					}
 				}
