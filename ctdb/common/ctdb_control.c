@@ -73,6 +73,27 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_SETVNNMAP: {
+		uint32_t *ptr, i;
+		
+		ptr = (uint32_t *)(&indata.dptr[0]);
+		ctdb->vnn_map->generation = ptr[0];
+		ctdb->vnn_map->size = ptr[1];
+		if (ctdb->vnn_map->map) {
+			talloc_free(ctdb->vnn_map->map);
+			ctdb->vnn_map->map = NULL;
+		}
+		ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+		if (ctdb->vnn_map->map == NULL) {
+			DEBUG(0,(__location__ " Unable to allocate vnn_map->map structure\n"));
+			exit(1);
+		}
+		for (i=0;i<ctdb->vnn_map->size;i++) {
+			ctdb->vnn_map->map[i] = ptr[i+2];
+		}
+		return 0;
+	}
+
 	case CTDB_CONTROL_CONFIG: {
 		outdata->dptr = (uint8_t *)ctdb;
 		outdata->dsize = sizeof(*ctdb);

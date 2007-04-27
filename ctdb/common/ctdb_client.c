@@ -813,6 +813,38 @@ int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 	return 0;
 }
 
+
+/*
+  set vnn map on a node
+ */
+int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
+{
+	int ret;
+	TDB_DATA *data, outdata;
+	int32_t i, res;
+
+	data = talloc_zero(ctdb, TDB_DATA);
+	data->dsize = (vnnmap->size+2)*sizeof(uint32_t);
+	data->dptr = (unsigned char *)talloc_array(data, uint32_t, vnnmap->size+2);
+
+	((uint32_t *)&data->dptr[0])[0] = vnnmap->generation;
+	((uint32_t *)&data->dptr[0])[1] = vnnmap->size;
+	for (i=0;i<vnnmap->size;i++) {
+		((uint32_t *)&data->dptr[0])[i+2] = vnnmap->map[i];
+	}
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SETVNNMAP, *data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for setvnnmap failed\n"));
+		return -1;
+	}
+
+	talloc_free(data);		    
+	return 0;
+}
+
 /*
   ping a node
  */
