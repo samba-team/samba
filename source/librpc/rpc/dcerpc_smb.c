@@ -31,6 +31,7 @@ struct smb_private {
 	uint16_t fnum;
 	struct smbcli_tree *tree;
 	const char *server_name;
+	bool dead;
 };
 
 
@@ -39,6 +40,14 @@ struct smb_private {
 */
 static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
+	struct smb_private *smb = c->transport.private;
+
+	smb->dead = true;
+
+	if (smb->dead) {
+		return;
+	}
+
 	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
@@ -189,6 +198,12 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 */
 static NTSTATUS send_read_request(struct dcerpc_connection *c)
 {
+	struct smb_private *smb = c->transport.private;
+
+	if (smb->dead) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
+
 	return send_read_request_continue(c, NULL);
 }
 
@@ -301,6 +316,10 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 	struct smb_private *smb = c->transport.private;
 	union smb_write io;
 	struct smbcli_request *req;
+
+	if (smb->dead) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 
 	if (trigger_read) {
 		return smb_send_trans_request(c, blob);
@@ -505,6 +524,8 @@ static void pipe_open_recv(struct smbcli_request *req)
 	smb->server_name= strupper_talloc(smb,
 			  state->tree->session->transport->called.name);
 	if (composite_nomem(smb->server_name, ctx)) return;
+	smb->dead	= false;
+
 	c->transport.private = smb;
 
 	composite_done(ctx);
