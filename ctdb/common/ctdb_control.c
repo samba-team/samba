@@ -34,8 +34,9 @@ struct ctdb_control_state {
 };
 
 #define CHECK_CONTROL_DATA_SIZE(size) do { \
- if (indata.dsize != sizeof(pid_t)) { \
-	 DEBUG(0,(__location__ " Invalid data in opcode %u\n", opcode)); \
+ if (indata.dsize != size) { \
+	 DEBUG(0,(__location__ " Invalid data size in opcode %u. Got %u expected %u\n", \
+		  opcode, indata.dsize, size));				\
 	 return -1; \
  } \
  } while (0)
@@ -53,6 +54,19 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(pid));
 		pid = *(pid_t *)indata.dptr;
 		return kill(pid, 0);
+	}
+
+	case CTDB_CONTROL_SET_DEBUG: {
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		LogLevel = *(uint32_t *)indata.dptr;
+		return 0;
+	}
+
+	case CTDB_CONTROL_GET_DEBUG: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		outdata->dptr = (uint8_t *)&LogLevel;
+		outdata->dsize = sizeof(LogLevel);
+		return 0;
 	}
 
 	case CTDB_CONTROL_STATUS: {
@@ -114,7 +128,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		uint32_t db_id;
 		struct ctdb_db_context *ctdb_db;
 
-		CHECK_CONTROL_DATA_SIZE(db_id);
+		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
 		db_id = *(uint32_t *)indata.dptr;
 		ctdb_db = find_ctdb_db(ctdb, db_id);
 		if (ctdb_db == NULL) return -1;

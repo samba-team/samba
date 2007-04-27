@@ -34,13 +34,18 @@ static void usage(void)
 	printf("Usage: ctdb_control [options] <control>\n");
 	printf("\nControls:\n");
 	printf("  ping\n");
-	printf("  process-exists <vnn:pid>\n");
-	printf("  status <vnn>\n");
-	printf("  getvnnmap <vnn>\n");
+	printf("  process-exists <vnn:pid>           see if a process exists\n");
+	printf("  status <vnn>                       show ctdb status on a node\n");
+	printf("  debug <vnn> <level>                set ctdb debug level on a node\n");
+	printf("  debuglevel                         display ctdb debug levels\n");
+	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	exit(1);
 }
 
+/*
+  see if a process exists
+ */
 static int control_process_exists(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn, pid;
@@ -98,6 +103,9 @@ static void show_status(struct ctdb_status *s)
 	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
 }
 
+/*
+  display remote ctdb status
+ */
 static int control_status(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
@@ -118,6 +126,9 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+/*
+  display remote ctdb vnn map
+ */
 static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
@@ -143,6 +154,9 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	return 0;
 }
 
+/*
+  set remote ctdb vnn map
+ */
 static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
@@ -170,6 +184,9 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	return 0;
 }
 
+/*
+  ping all node
+ */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret, i;
@@ -183,6 +200,48 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 			printf("response from %u time=%.6f sec\n", 
 			       i, timeval_elapsed(&tv));
 		}
+	}
+	return 0;
+}
+
+
+/*
+  display debug level on all node
+ */
+static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret, i;
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		uint32_t level;
+		ret = ctdb_get_debuglevel(ctdb, i, &level);
+		if (ret != 0) {
+			printf("Unable to get debuglevel response from node %u\n", i);
+		} else {
+			printf("Node %u is at debug level %u\n", i, level);
+		}
+	}
+	return 0;
+}
+
+/*
+  set debug level on a node
+ */
+static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t vnn, level;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn   = strtoul(argv[0], NULL, 0);
+	level = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_set_debuglevel(ctdb, vnn, level);
+	if (ret != 0) {
+		printf("Unable to set debug level on node %u\n", vnn);
 	}
 	return 0;
 }
@@ -249,6 +308,10 @@ int main(int argc, const char *argv[])
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "debug") == 0) {
+		ret = control_debug(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "debuglevel") == 0) {
+		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
 	} else {
 		printf("Unknown control '%s'\n", control);
 		exit(1);
