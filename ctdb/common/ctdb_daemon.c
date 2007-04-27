@@ -266,7 +266,7 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 		ctdb_request_message(client->ctdb, (struct ctdb_req_header *)c);
 		return;
 	}
-	
+
 	/* its for a remote node */
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
