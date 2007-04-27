@@ -33,6 +33,13 @@ struct ctdb_control_state {
 	void *private_data;
 };
 
+#define CHECK_CONTROL_DATA_SIZE(size) do { \
+ if (indata.dsize != sizeof(pid_t)) { \
+	 DEBUG(0,(__location__ " Invalid data in opcode %u\n", opcode)); \
+	 return -1; \
+ } \
+ } while (0)
+
 /*
   process a control request
  */
@@ -43,15 +50,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
 		pid_t pid;
-		if (indata.dsize != sizeof(pid_t)) {
-			DEBUG(0,(__location__ " Invalid data in CTDB_CONTROL_PROCESS_EXISTS\n"));
-			return -1;
-		}
+		CHECK_CONTROL_DATA_SIZE(sizeof(pid));
 		pid = *(pid_t *)indata.dptr;
 		return kill(pid, 0);
 	}
 
 	case CTDB_CONTROL_STATUS: {
+		CHECK_CONTROL_DATA_SIZE(0);
 		outdata->dptr = (uint8_t *)&ctdb->status;
 		outdata->dsize = sizeof(ctdb->status);
 		return 0;
@@ -59,7 +64,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_GETVNNMAP: {
 		uint32_t i, len;
-
+		CHECK_CONTROL_DATA_SIZE(0);
 		len = 2+ctdb->vnn_map->size;
 		outdata->dsize = 4*len;
 		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, len);
@@ -95,22 +100,21 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_CONFIG: {
+		CHECK_CONTROL_DATA_SIZE(0);
 		outdata->dptr = (uint8_t *)ctdb;
 		outdata->dsize = sizeof(*ctdb);
 		return 0;
 	}
 
 	case CTDB_CONTROL_PING:
+		CHECK_CONTROL_DATA_SIZE(0);
 		return 0;
 
 	case CTDB_CONTROL_GETDBPATH: {
 		uint32_t db_id;
 		struct ctdb_db_context *ctdb_db;
 
-		if (indata.dsize != sizeof(uint32_t)) {
-			DEBUG(0,(__location__ " Invalid data in CTDB_CONTROL_GETDBPATH\n"));
-			return -1;
-		}
+		CHECK_CONTROL_DATA_SIZE(db_id);
 		db_id = *(uint32_t *)indata.dptr;
 		ctdb_db = find_ctdb_db(ctdb, db_id);
 		if (ctdb_db == NULL) return -1;
