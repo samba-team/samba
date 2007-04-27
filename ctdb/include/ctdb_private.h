@@ -312,6 +312,7 @@ struct ctdb_req_header {
 	uint32_t length;
 	uint32_t ctdb_magic;
 	uint32_t ctdb_version;
+	uint32_t generation;
 	uint32_t operation;
 	uint32_t destnode;
 	uint32_t srcnode;

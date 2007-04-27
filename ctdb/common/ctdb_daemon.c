@@ -123,6 +123,7 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
@@ -188,6 +189,7 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 		rf->hdr.length    = len;
 		rf->hdr.ctdb_magic = CTDB_MAGIC;
 		rf->hdr.ctdb_version = CTDB_VERSION;
+		rf->hdr.generation= ctdb->vnn_map->generation;
 		rf->hdr.operation = CTDB_REQ_FINISHED;
 		rf->hdr.destnode  = node;
 		rf->hdr.srcnode   = ctdb->vnn;
@@ -228,6 +230,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 	r.hdr.length     = sizeof(r);
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.generation= client->ctdb->vnn_map->generation;
 	r.hdr.operation = CTDB_REPLY_CONNECT_WAIT;
 	r.vnn           = ctdb_get_vnn(client->ctdb);
 	r.num_connected = client->ctdb->num_connected;
@@ -321,6 +324,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	r->hdr.length       = length;
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation   = client->ctdb->vnn_map->generation;
 	r->hdr.operation    = CTDB_REPLY_CALL;
 	r->hdr.reqid        = dstate->reqid;
 	r->datalen          = dstate->call->reply_data.dsize;
@@ -736,6 +740,7 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REPLY_CONTROL;
 	r->hdr.reqid     = state->reqid;
 	r->status        = status;

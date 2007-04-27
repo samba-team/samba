@@ -334,6 +334,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	c->hdr.ctdb_magic = CTDB_MAGIC;
 	c->hdr.ctdb_version = CTDB_VERSION;
 	c->hdr.operation = CTDB_REQ_CALL;
+	c->hdr.generation= ctdb->vnn_map->generation;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	c->hdr.reqid     = ctdb_reqid_new(ctdb, state);
 	c->flags         = call->flags;
@@ -394,6 +395,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	c.hdr.length       = sizeof(c);
 	c.hdr.ctdb_magic   = CTDB_MAGIC;
 	c.hdr.ctdb_version = CTDB_VERSION;
+	c.hdr.generation   = ctdb->vnn_map->generation;
 	c.hdr.operation    = CTDB_REQ_REGISTER;
 	c.srvid            = srvid;
 
@@ -424,6 +426,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->hdr.destnode  = vnn;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -454,6 +457,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	r.hdr.length     = sizeof(r);
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.generation= ctdb->vnn_map->generation;
 	r.hdr.operation = CTDB_REQ_CONNECT_WAIT;
 
 	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
@@ -609,6 +613,7 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 	r.hdr.length       = len;
 	r.hdr.ctdb_magic   = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.generation   = ctdb->vnn_map->generation;
 	r.hdr.operation    = CTDB_REQ_SHUTDOWN;
 	r.hdr.reqid        = 0;
 
@@ -692,6 +697,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	c->hdr.length       = len;
 	c->hdr.ctdb_magic   = CTDB_MAGIC;
 	c->hdr.ctdb_version = CTDB_VERSION;
+	c->hdr.generation   = ctdb->vnn_map->generation;
 	c->hdr.operation    = CTDB_REQ_CONTROL;
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;

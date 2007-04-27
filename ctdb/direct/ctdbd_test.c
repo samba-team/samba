@@ -59,6 +59,7 @@ void register_pid_with_daemon(int fd, int pid)
 	r.hdr.length       = sizeof(r);
 	r.hdr.ctdb_magic   = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.generation   = 1;
 	r.hdr.operation    = CTDB_REQ_REGISTER;
 	r.srvid            = pid;
 
@@ -80,6 +81,7 @@ int wait_for_cluster(int fd)
 	req.hdr.length       = sizeof(req);
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_VERSION;
+	req.hdr.generation   = 1;
 	req.hdr.operation    = CTDB_REQ_CONNECT_WAIT;
 
 	/* XXX must deal with partial writes here */
@@ -119,6 +121,7 @@ int send_a_message(int fd, int ourvnn, int vnn, int pid, TDB_DATA data)
 	r.hdr.length     = len;
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.generation = 1;
 	r.hdr.operation  = CTDB_REQ_MESSAGE;
 	r.hdr.destnode   = vnn;
 	r.hdr.srcnode    = ourvnn;
@@ -201,6 +204,7 @@ void fetch_record(int fd, uint32_t db_id, TDB_DATA key)
 	req->hdr.length      = len;
 	req->hdr.ctdb_magic  = CTDB_MAGIC;
 	req->hdr.ctdb_version = CTDB_VERSION;
+	req->hdr.generation  = 1;
 	req->hdr.operation   = CTDB_REQ_CALL;
 	req->hdr.reqid       = 1;
 

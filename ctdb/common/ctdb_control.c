@@ -168,6 +168,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->hdr.length       = len;
 	r->hdr.ctdb_magic   = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation   = ctdb->vnn_map->generation;
 	r->hdr.operation    = CTDB_REPLY_CONTROL;
 	r->hdr.destnode     = hdr->srcnode;
 	r->hdr.srcnode      = ctdb->vnn;
@@ -246,6 +247,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	c->hdr.length       = len;
 	c->hdr.ctdb_magic   = CTDB_MAGIC;
 	c->hdr.ctdb_version = CTDB_VERSION;
+	c->hdr.generation= ctdb->vnn_map->generation;
 	c->hdr.operation    = CTDB_REQ_CONTROL;
 	c->hdr.destnode     = destnode;
 	c->hdr.srcnode      = ctdb->vnn;
