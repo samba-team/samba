@@ -356,7 +356,25 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		.type = MAP_RENAME,
 		.u = {
 			.rename = {
-				 .remote_name = "sambaObjectClasses"
+				 .remote_name = "samba4ObjectClasses"
+			 }
+		}
+	},
+	{
+		.local_name = "dITContentRules",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "samba4DITContentRules"
+			 }
+		}
+	},
+	{
+		.local_name = "attributeTypes",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "samba4AttributeTypes"
 			 }
 		}
 	},
