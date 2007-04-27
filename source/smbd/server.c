@@ -309,7 +309,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 	int s;
 	int maxfd = 0;
 	int i;
-	struct timeval idle_timeout = {0, 0};
+	struct timeval idle_timeout = timeval_zero();
 
 	if (server_mode == SERVER_MODE_INETD) {
 		return open_sockets_inetd();
@@ -383,7 +383,8 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 		       sizeof(listen_set));
 
 		num = sys_select(maxfd+1,&lfds,NULL,NULL,
-			idle_timeout.tv_sec ? &idle_timeout : NULL);
+				 timeval_is_zero(&idle_timeout) ?
+				 NULL : &idle_timeout);
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
