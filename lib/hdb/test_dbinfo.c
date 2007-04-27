@@ -80,6 +80,7 @@ main(int argc, char **argv)
 	printf("\trealm: %s\n", hdb_dbinfo_get_realm(context, d));
 	printf("\tdbname: %s\n", hdb_dbinfo_get_dbname(context, d));
 	printf("\tmkey_file: %s\n", hdb_dbinfo_get_mkey_file(context, d));
+	printf("\tacl_file: %s\n", hdb_dbinfo_get_acl_file(context, d));
     }
 
     hdb_free_dbinfo(context, &info);
