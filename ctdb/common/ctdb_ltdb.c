@@ -124,7 +124,12 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 */
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key)
 {
-	return ctdb_hash(key) % ctdb->num_nodes;
+	uint32_t idx, lmaster;
+
+	idx = ctdb_hash(key) % ctdb->vnn_map->size;
+	lmaster = ctdb->vnn_map->map[idx];
+
+	return lmaster;
 }
 
 

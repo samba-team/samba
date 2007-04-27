@@ -157,6 +157,14 @@ struct ctdb_status {
 	double max_lockwait_latency;
 };
 
+/* table that contains the mapping between a hash value and lmaster
+ */
+struct ctdb_vnn_map {
+	uint32_t generation;
+	uint32_t size;
+	uint32_t *map;
+};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -181,6 +189,7 @@ struct ctdb_context {
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
 	struct ctdb_status status;
+	struct ctdb_vnn_map *vnn_map;
 };
 
 struct ctdb_db_context {
