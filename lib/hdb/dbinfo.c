@@ -40,6 +40,7 @@ struct hdb_dbinfo {
     char *realm;
     char *dbname;
     char *mkey_file;
+    char *acl_file;
     const krb5_config_binding *binding;
     struct hdb_dbinfo *next;
 };
@@ -73,6 +74,9 @@ get_dbinfo(krb5_context context,
     p = krb5_config_get_string(context, db_binding, "mkey_file", NULL);
     if(p)
 	di->mkey_file = strdup(p);
+    p = krb5_config_get_string(context, db_binding, "acl_file", NULL);
+    if(p)
+	di->acl_file = strdup(p);
 
     di->binding = db_binding;
 
@@ -88,6 +92,7 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
     struct hdb_dbinfo *di, **dt, *databases;
     const char *default_dbname = HDB_DEFAULT_DB;
     const char *default_mkey = HDB_DB_DIR "/m-key";
+    const char *default_acl = HDB_DB_DIR "/kadmind.acl";
     const char *p;
     int ret;
 
@@ -134,6 +139,7 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 	di = calloc(1, sizeof(*di));
 	di->dbname = strdup(default_dbname);
 	di->mkey_file = strdup(default_mkey);
+	di->acl_file = strdup(default_acl);
 	databases = di;
     }
     for(di = databases; di; di = di->next) {
@@ -150,6 +156,9 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 		asprintf(&di->mkey_file, "%.*s.mkey", 
 			 (int)(p - di->dbname), di->dbname);
 	}
+	if(di->acl_file == NULL)
+	    di->acl_file = strdup(default_acl);
+
     }
     *dbp = databases;
     return 0;
@@ -187,6 +196,12 @@ const char *
 hdb_dbinfo_get_mkey_file(krb5_context context, struct hdb_dbinfo *dbp)
 {
     return dbp->mkey_file;
+}
+
+const char *
+hdb_dbinfo_get_acl_file(krb5_context context, struct hdb_dbinfo *dbp)
+{
+    return dbp->acl_file;
 }
 
 const krb5_config_binding *
