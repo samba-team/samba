@@ -84,10 +84,10 @@ static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
 SMB4ACL_T *smb_create_smb4acl(void)
 {
 	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
-	SMB_ACL4_INT_T	*acl = (SMB_ACL4_INT_T *)talloc_size(mem_ctx, sizeof(SMB_ACL4_INT_T));
+	SMB_ACL4_INT_T	*acl = (SMB_ACL4_INT_T *)TALLOC_SIZE(mem_ctx, sizeof(SMB_ACL4_INT_T));
 	if (acl==NULL)
 	{
-		DEBUG(0, ("talloc_size failed\n"));
+		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -103,10 +103,10 @@ SMB4ACE_T *smb_add_ace4(SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
 	SMB_ACE4_INT_T *ace;
 
-	ace = (SMB_ACE4_INT_T *)talloc_size(mem_ctx, sizeof(SMB_ACE4_INT_T));
+	ace = (SMB_ACE4_INT_T *)TALLOC_SIZE(mem_ctx, sizeof(SMB_ACE4_INT_T));
 	if (ace==NULL)
 	{
-		DEBUG(0, ("talloc_size failed\n"));
+		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -206,7 +206,7 @@ static BOOL smbacl4_nfs42win(SMB4ACL_T *acl, /* in */
 	if (aclint==NULL)
 		return False;
 
-	nt_ace_list = (SEC_ACE *)talloc_size(mem_ctx, aclint->naces * sizeof(SEC_ACE));
+	nt_ace_list = (SEC_ACE *)TALLOC_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
 	if (nt_ace_list==NULL)
 	{
 		DEBUG(10, ("talloc error"));

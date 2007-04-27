@@ -521,7 +521,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 				  
 		lck->share_modes = (struct share_mode_entry *)
-			talloc_memdup(lck, dbuf.dptr+sizeof(*data),
+			TALLOC_MEMDUP(lck, dbuf.dptr+sizeof(*data),
 				      lck->num_share_modes *
 				      sizeof(struct share_mode_entry));
 

@@ -148,7 +148,7 @@ find_again:
 
 	if (!(conn=TALLOC_ZERO_P(mem_ctx, connection_struct)) ||
 	    !(conn->params = TALLOC_P(mem_ctx, struct share_params))) {
-		DEBUG(0,("talloc_zero() failed!\n"));
+		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		TALLOC_FREE(mem_ctx);
 		return NULL;
 	}

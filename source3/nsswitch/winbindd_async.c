@@ -276,13 +276,13 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 	sids = (DOM_SID *)state->request.extra_data.data;
 	num = state->request.extra_len / sizeof(DOM_SID);
 
-	ids = talloc_zero_array(state->mem_ctx, struct id_map *, num + 1);
+	ids = TALLOC_ZERO_ARRAY(state->mem_ctx, struct id_map *, num + 1);
 	if ( ! ids) {
 		DEBUG(0, ("Out of memory!\n"));
 		return WINBINDD_ERROR;
 	}
 	for (i = 0; i < num; i++) {
-		ids[i] = talloc(ids, struct id_map);
+		ids[i] = TALLOC_P(ids, struct id_map);
 		if ( ! ids[i]) {
 			DEBUG(0, ("Out of memory!\n"));
 			talloc_free(ids);

@@ -2367,7 +2367,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
 		if (shadow_data == NULL) {
-			DEBUG(0,("talloc_zero() failed!\n"));
+			DEBUG(0,("TALLOC_ZERO() failed!\n"));
 			talloc_destroy(shadow_mem_ctx);
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}

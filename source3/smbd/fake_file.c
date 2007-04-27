@@ -49,7 +49,7 @@ static struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 			}
 
 			if ((fh =TALLOC_ZERO_P(mem_ctx, FAKE_FILE_HANDLE))==NULL) {
-				DEBUG(0,("talloc_zero() failed.\n"));
+				DEBUG(0,("TALLOC_ZERO() failed.\n"));
 				talloc_destroy(mem_ctx);
 				return NULL;
 			}

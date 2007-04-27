@@ -221,7 +221,7 @@ BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **s
 
 	if (UNMARSHALLING(ps)) {
 		if ( !(*sid2 = PRS_ALLOC_MEM(ps, DOM_SID2, 1)) )
-		return False;
+			return False;
 	}
 
 	return True;

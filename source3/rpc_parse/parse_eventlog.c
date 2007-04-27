@@ -354,7 +354,9 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 	/* Now pad with whitespace until the end of the response buffer */
 
 	if (q_u->max_read_size - r_u->num_bytes_in_resp) {
-		r_u->end_of_entries_padding = SMB_CALLOC_ARRAY(uint8, q_u->max_read_size - r_u->num_bytes_in_resp);
+		if (!r_u->end_of_entries_padding) {
+			return False;
+		}
 
 		if(!(prs_uint8s(False, "end of entries padding", ps, 
 				depth, r_u->end_of_entries_padding,
