@@ -164,7 +164,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 			NT_STATUS_UNSUCCESSFUL );
 
 	if (!NT_STATUS_IS_OK(r.status) &&
-	    NT_STATUS_V(r.status) != NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
+	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) {
 	  
 		/* An actual error occured */
 		result = r.status;
