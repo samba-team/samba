@@ -120,7 +120,7 @@ void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
 void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
 {
 	r->out.data->x *= 2;
-	r->out.data->surrounding = talloc_zero_array(p->mem_ctx, uint16_t, r->in.data->x);
+	r->out.data->surrounding = TALLOC_ZERO_ARRAY(p->mem_ctx, uint16_t, r->in.data->x);
 }
 
 uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)

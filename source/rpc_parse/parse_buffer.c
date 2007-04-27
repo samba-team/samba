@@ -401,6 +401,9 @@ BOOL smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 		{
 			chaine2[l_chaine2] = '\0';
 			*string=(uint16 *)TALLOC_MEMDUP(prs_get_mem_context(ps),chaine2,realloc_size);
+			if (!*string) {
+				return False;
+			}
 			SAFE_FREE(chaine2);
 		}
 

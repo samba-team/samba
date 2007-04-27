@@ -156,7 +156,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 		return UID_FIELD_INVALID;
 	}
 
-	if((vuser = talloc_zero(NULL, user_struct)) == NULL) {
+	if((vuser = TALLOC_ZERO_P(NULL, user_struct)) == NULL) {
 		DEBUG(0,("Failed to talloc users struct!\n"));
 		data_blob_free(&session_key);
 		return UID_FIELD_INVALID;

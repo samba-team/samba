@@ -222,7 +222,7 @@ static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 	if ( from->len ) {
 		to->notify.data = (char *)TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
 		if ( !to->notify.data ) {
-			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
+			DEBUG(0,("copy_notify2_msg: TALLOC_MEMDUP() of size [%d] failed!\n", from->len ));
 			return False;
 		}
 	}

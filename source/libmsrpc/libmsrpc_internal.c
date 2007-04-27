@@ -200,7 +200,7 @@ char *cac_unistr_to_str( TALLOC_CTX * mem_ctx, uint16 * src, int num_bytes )
 	/*need room for a '\0' */
 	str_len++;
 
-	buf = talloc_array( mem_ctx, char, str_len );
+	buf = TALLOC_ARRAY( mem_ctx, char, str_len );
 
 	if ( !buf ) {
 		return NULL;
@@ -265,7 +265,7 @@ REG_VALUE_DATA *cac_MakeRegValueData( TALLOC_CTX * mem_ctx, uint32 data_type,
 		data->reg_binary.data_length = size;
 
 		data->reg_binary.data =
-			( uint8 * ) talloc_memdup( mem_ctx, buf.buffer,
+			( uint8 * ) TALLOC_MEMDUP( mem_ctx, buf.buffer,
 						   size );
 		if ( !data->reg_binary.data ) {
 			TALLOC_FREE( data );
@@ -296,7 +296,7 @@ REG_VALUE_DATA *cac_MakeRegValueData( TALLOC_CTX * mem_ctx, uint32 data_type,
 				break;
 		}
 
-		strings = talloc_array( mem_ctx, char *, num_strings );
+		strings = TALLOC_ARRAY( mem_ctx, char *, num_strings );
 
 		if ( !strings ) {
 			errno = ENOMEM;
@@ -424,7 +424,7 @@ char *talloc_unistr2_to_ascii( TALLOC_CTX * mem_ctx, UNISTR2 str )
 	if ( !mem_ctx )
 		return NULL;
 
-	buf = talloc_array( mem_ctx, char, ( str.uni_str_len + 1 ) );
+	buf = TALLOC_ARRAY( mem_ctx, char, ( str.uni_str_len + 1 ) );
 	if ( !buf )
 		return NULL;
 
@@ -514,7 +514,7 @@ CacUserInfo *cac_MakeUserInfo( TALLOC_CTX * mem_ctx, SAM_USERINFO_CTR * ctr )
 	memcpy( info->lm_password, id21->lm_pwd, 8 );
 
 	info->logon_hours =
-		( LOGON_HRS * ) talloc_memdup( mem_ctx, &( id21->logon_hrs ),
+		( LOGON_HRS * ) TALLOC_MEMDUP( mem_ctx, &( id21->logon_hrs ),
 					       sizeof( LOGON_HRS ) );
 	if ( !info->logon_hours )
 		return NULL;

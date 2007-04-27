@@ -322,13 +322,13 @@ BOOL cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 		}
 
 		if ((tmp_list_ent=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
-			DEBUG(0,("talloc_zero() failed\n"));
+			DEBUG(0,("TALLOC_ZERO() failed\n"));
 			talloc_destroy(mem_ctx);
 			return (-1);
 		}
 
 		if ((tmp_list_ent->quotas=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
-			DEBUG(0,("talloc_zero() failed\n"));
+			DEBUG(0,("TALLOC_ZERO() failed\n"));
 			talloc_destroy(mem_ctx);
 			return (-1);
 		}
@@ -382,13 +382,13 @@ BOOL cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 			}
 
 			if ((tmp_list_ent=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
-				DEBUG(0,("talloc_zero() failed\n"));
+				DEBUG(0,("TALLOC_ZERO() failed\n"));
 				talloc_destroy(mem_ctx);
 				goto cleanup;
 			}
 	
 			if ((tmp_list_ent->quotas=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
-				DEBUG(0,("talloc_zero() failed\n"));
+				DEBUG(0,("TALLOC_ZERO() failed\n"));
 				talloc_destroy(mem_ctx);
 				goto cleanup;
 			}

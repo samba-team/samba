@@ -138,7 +138,7 @@ static void pull_launch_sockets(launch_data_t key,
 			    count, launch_data_dict_get_count(item)));
 		}
 
-		linfo->socket_list = talloc_array(NULL, int, count);
+		linfo->socket_list = TALLOC_ARRAY(NULL, int, count);
 		if (linfo->socket_list == NULL) {
 			goto done;
 		}
@@ -200,7 +200,7 @@ done:
 					linfo->num_sockets));
 
 		count = linfo->num_sockets;
-		linfo->socket_list = talloc_array(NULL, int, count);
+		linfo->socket_list = TALLOC_ARRAY(NULL, int, count);
 		if (linfo->socket_list == NULL) {
 			goto done;
 		}

@@ -854,7 +854,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
 	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_entries);
 
 	if (sam == NULL || uni_name == NULL) {
-		DEBUG(0, ("make_user_sam_entry_list: talloc_zero failed!\n"));
+		DEBUG(0, ("make_user_sam_entry_list: TALLOC_ZERO failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
