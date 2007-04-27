@@ -156,9 +156,9 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 {
 	char *ret = NULL;
 
-	if (size) {
+	if (size && count) {
 		/* We can't call the type-safe version here. */
-		ret = (char *)_talloc_zero_array(ps->mem_ctx, size, count,
+		ret = (char *)_talloc_zero_array_strict(ps->mem_ctx, size, count,
 						 "parse_prs");
 	}
 	return ret;
@@ -1817,7 +1817,7 @@ return the contents of a prs_struct in a DATA_BLOB
 BOOL prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	blob->length = prs_data_size(prs);
-	blob->data = (uint8 *)talloc_zero_size(mem_ctx, blob->length);
+	blob->data = (uint8 *)TALLOC_ZERO_SIZE(mem_ctx, blob->length);
 	
 	/* set the pointer at the end of the buffer */
 	prs_set_offset( prs, prs_data_size(prs) );

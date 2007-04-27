@@ -159,7 +159,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 	handle = TALLOC_ZERO_P(conn->mem_ctx,vfs_handle_struct);
 	if (!handle) {
-		DEBUG(0,("talloc_zero() failed!\n"));
+		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		SAFE_FREE(module_name);
 		return False;
 	}

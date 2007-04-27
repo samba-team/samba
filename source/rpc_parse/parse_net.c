@@ -2911,7 +2911,16 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
                 return False;
 
-	info->attributes = TALLOC_ARRAY(ps->mem_ctx, uint32, info->attribute_count);
+	if (UNMARSHALLING(ps)) {
+		if (info->attribute_count) {
+			info->attributes = TALLOC_ARRAY(ps->mem_ctx, uint32, info->attribute_count);
+			if (!info->attributes) {
+				return False;
+			}
+		} else {
+			info->attributes = NULL;
+		}
+	}
 
 	for (i=0; i<info->attribute_count; i++)
 		if(!prs_uint32("attributes", ps, depth, &info->attributes[i]))
@@ -2920,8 +2929,21 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("privlist_count", ps, depth, &info->privlist_count))
                 return False;
 
-	info->hdr_privslist = TALLOC_ARRAY(ps->mem_ctx, UNIHDR, info->privlist_count);
-	info->uni_privslist = TALLOC_ARRAY(ps->mem_ctx, UNISTR2, info->privlist_count);
+	if (UNMARSHALLING(ps)) {
+		if (info->privlist_count) {
+			info->hdr_privslist = TALLOC_ARRAY(ps->mem_ctx, UNIHDR, info->privlist_count);
+			info->uni_privslist = TALLOC_ARRAY(ps->mem_ctx, UNISTR2, info->privlist_count);
+			if (!info->hdr_privslist) {
+				return False;
+			}
+			if (!info->uni_privslist) {
+				return False;
+			}
+		} else {
+			info->hdr_privslist = NULL;
+			info->uni_privslist = NULL;
+		}
+	}
 
 	for (i=0; i<info->privlist_count; i++)
 		if(!smb_io_unihdr("hdr_privslist", &info->hdr_privslist[i], ps, depth))

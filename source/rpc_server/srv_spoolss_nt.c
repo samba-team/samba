@@ -9371,7 +9371,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		if ( data_len ) {
 			if ( !(enum_values[i].data = TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
 			{
-				DEBUG(0,("talloc_memdup failed to allocate memory [data_len=%d] for data!\n", 
+				DEBUG(0,("TALLOC_MEMDUP failed to allocate memory [data_len=%d] for data!\n", 
 					data_len ));
 				result = WERR_NOMEM;
 				goto done;

@@ -215,7 +215,7 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 		return NT_STATUS_FILE_IS_OFFLINE;
 	}
 
-	idmap_alloc_ldap = talloc_zero(NULL, struct idmap_ldap_alloc_context);
+	idmap_alloc_ldap = TALLOC_ZERO_P(NULL, struct idmap_ldap_alloc_context);
         CHECK_ALLOC_DONE( idmap_alloc_ldap );
 	
 	/* load ranges */
@@ -734,7 +734,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		return NT_STATUS_FILE_IS_OFFLINE;
 	}
 
-	ctx = talloc_zero(dom, struct idmap_ldap_context);
+	ctx = TALLOC_ZERO_P(dom, struct idmap_ldap_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;

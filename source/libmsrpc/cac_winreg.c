@@ -611,7 +611,7 @@ int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	} else if ( class_len != 0 && class_name_out[class_len - 1] != '\0' ) {
 		/*then we need to add a '\0' */
 		op->out.class_name =
-			talloc_size( mem_ctx,
+			TALLOC_SIZE( mem_ctx,
 				     sizeof( char ) * ( class_len + 1 ) );
 
 		memcpy( op->out.class_name, class_name_out, class_len );
@@ -735,21 +735,21 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	/*we need to assume that the max number of values will be enumerated */
 	types_out =
-		( uint32 * ) talloc_array( mem_ctx, int, op->in.max_values );
+		( uint32 * ) TALLOC_ARRAY( mem_ctx, int, op->in.max_values );
 	if ( !types_out ) {
 		hnd->status = NT_STATUS_NO_MEMORY;
 		return CAC_FAILURE;
 	}
 
 	values_out =
-		talloc_array( mem_ctx, REG_VALUE_DATA *, op->in.max_values );
+		TALLOC_ARRAY( mem_ctx, REG_VALUE_DATA *, op->in.max_values );
 	if ( !values_out ) {
 		TALLOC_FREE( types_out );
 		hnd->status = NT_STATUS_NO_MEMORY;
 		return CAC_FAILURE;
 	}
 
-	val_names_out = talloc_array( mem_ctx, char *, op->in.max_values );
+	val_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_values );
 	if ( !val_names_out ) {
 		TALLOC_FREE( types_out );
 		TALLOC_FREE( values_out );

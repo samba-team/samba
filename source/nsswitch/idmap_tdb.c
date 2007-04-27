@@ -1198,7 +1198,7 @@ static NTSTATUS idmap_tdb_dump_data(struct idmap_domain *dom, struct id_map **ma
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
-	data = talloc_zero(ctx, struct dump_data);
+	data = TALLOC_ZERO_P(ctx, struct dump_data);
 	if ( ! data) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
