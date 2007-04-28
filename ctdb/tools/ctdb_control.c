@@ -215,7 +215,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		printf("vnn:0x%08x %s\n", nodemap->nodes[i].vnn, nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?"UNAVAILABLE":"CONNECTED");
+		printf("vnn:%d %s\n", nodemap->nodes[i].vnn, nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?"UNAVAILABLE":"CONNECTED");
 	}
 	talloc_free(nodemap);
 	return 0;
