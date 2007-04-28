@@ -1086,29 +1086,6 @@ void *_talloc_zero(const void *ctx, size_t size, const char *name)
 	return p;
 }
 
-
-/* 
-   talloc and zero memory. 
-   Strict version - returns NULL if size is zero.
-*/
-void *_talloc_zero_strict(const void *ctx, size_t size, const char *name)
-{
-	void *p;
-
-	if (unlikely(size == 0)) {
-		return NULL;
-	}
-
-	p = _talloc_named_const(ctx, size, name);
-
-	if (p) {
-		memset(p, '\0', size);
-	}
-
-	return p;
-}
-
-
 /*
   memdup with a talloc. 
 */
@@ -1116,26 +1093,6 @@ void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name
 {
 	void *newp = _talloc_named_const(t, size, name);
 
-	if (likely(newp)) {
-		memcpy(newp, p, size);
-	}
-
-	return newp;
-}
-
-/*
-  memdup with a talloc. 
-  Strict version - returns NULL if size is zero.
-*/
-void *_talloc_memdup_strict(const void *t, const void *p, size_t size, const char *name)
-{
-	void *newp;
-
-	if (unlikely(size == 0)) {
-		return NULL;
-	}
-
-	newp = _talloc_named_const(t, size, name);
 	if (likely(newp)) {
 		memcpy(newp, p, size);
 	}
@@ -1324,23 +1281,6 @@ void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char 
 }
 
 /*
-  alloc an array, checking for integer overflow in the array size.
-  Strict version - returns NULL if count or el_size are zero.
-*/
-void *_talloc_array_strict(const void *ctx, size_t el_size, unsigned count, const char *name)
-{
-	if (count >= MAX_TALLOC_SIZE/el_size) {
-		return NULL;
-	}
-
-	if (el_size == 0 || count == 0) {
-		return NULL;
-	}
-
-	return _talloc_named_const(ctx, el_size * count, name);
-}
-
-/*
   alloc an zero array, checking for integer overflow in the array size
 */
 void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name)
@@ -1350,24 +1290,6 @@ void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const 
 	}
 	return _talloc_zero(ctx, el_size * count, name);
 }
-
-/*
-  alloc an zero array, checking for integer overflow in the array size
-  Strict version - returns NULL if count or el_size are zero.
-*/
-void *_talloc_zero_array_strict(const void *ctx, size_t el_size, unsigned count, const char *name)
-{
-	if (count >= MAX_TALLOC_SIZE/el_size) {
-		return NULL;
-	}
-
-	if (el_size == 0 || count == 0) {
-		return NULL;
-	}
-
-	return _talloc_zero(ctx, el_size * count, name);
-}
-
 
 /*
   realloc an array, checking for integer overflow in the array size
@@ -1496,15 +1418,4 @@ int talloc_is_parent(const void *context, const void *ptr)
 		}
 	}
 	return 0;
-}
-
-/*
-  Talloc wrapper that returns NULL if size == 0.
-*/
-void *talloc_strict(const void *context, size_t size, const char *name)
-{
-	if (unlikely(size == 0)) {
-		return NULL;
-	}
-	return _talloc_named_const(context, size, name);
 }
