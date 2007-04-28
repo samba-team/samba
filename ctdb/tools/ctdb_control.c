@@ -112,18 +112,24 @@ static int control_status_all(struct ctdb_context *ctdb)
 {
 	int ret, i;
 	struct ctdb_status status;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	
 	ZERO_STRUCT(status);
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	for (i=0;i<num_nodes;i++) {
 		struct ctdb_status s1;
 		int j;
 		uint32_t *v1 = (uint32_t *)&s1;
 		uint32_t *v2 = (uint32_t *)&status;
 		uint32_t num_ints = 
 			offsetof(struct ctdb_status, __last_uint32) / sizeof(uint32_t);
-		ret = ctdb_status(ctdb, i, &s1);
+		ret = ctdb_status(ctdb, nodes[i], &s1);
 		if (ret != 0) {
-			printf("Unable to get status from node %u\n", i);
+			printf("Unable to get status from node %u\n", nodes[i]);
 			return ret;
 		}
 		for (j=0;j<num_ints;j++) {
@@ -136,6 +142,8 @@ static int control_status_all(struct ctdb_context *ctdb)
 		status.max_lockwait_latency = 
 			MAX(status.max_lockwait_latency, s1.max_lockwait_latency);
 	}
+	talloc_free(nodes);
+	printf("Gathered status for %u nodes\n", num_nodes);
 	show_status(&status);
 	return 0;
 }
@@ -245,7 +253,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 	vnn = strtoul(argv[0], NULL, 0);
 
 	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
-	ret = ctdb_getnodemap(ctdb, vnn, nodemap);
+	ret = ctdb_getnodemap(ctdb, vnn, nodemap, nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		talloc_free(nodemap);
@@ -296,17 +304,23 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+
+	for (i=0;i<num_nodes;i++) {
 		struct timeval tv = timeval_current();
-		ret = ctdb_ping(ctdb, i);
+		ret = ctdb_ping(ctdb, nodes[i]);
 		if (ret == -1) {
-			printf("Unable to get ping response from node %u\n", i);
+			printf("Unable to get ping response from node %u\n", nodes[i]);
 		} else {
 			printf("response from %u time=%.6f sec  (%d clients)\n", 
-			       i, timeval_elapsed(&tv), ret);
+			       nodes[i], timeval_elapsed(&tv), ret);
 		}
 	}
+	talloc_free(nodes);
 	return 0;
 }
 
@@ -317,16 +331,23 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+
+	for (i=0;i<num_nodes;i++) {
 		uint32_t level;
-		ret = ctdb_get_debuglevel(ctdb, i, &level);
+		ret = ctdb_get_debuglevel(ctdb, nodes[i], &level);
 		if (ret != 0) {
-			printf("Unable to get debuglevel response from node %u\n", i);
+			printf("Unable to get debuglevel response from node %u\n", 
+				nodes[i]);
 		} else {
-			printf("Node %u is at debug level %u\n", i, level);
+			printf("Node %u is at debug level %u\n", nodes[i], level);
 		}
 	}
+	talloc_free(nodes);
 	return 0;
 }
 
@@ -337,6 +358,8 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 	uint32_t vnn, level, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
 	if (argc < 2) {
 		usage();
@@ -344,23 +367,26 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	level = strtoul(argv[1], NULL, 0);
 
-	if (strcmp(argv[0], "all") == 0) {
-		for (i=0;i<ctdb->num_nodes;i++) {
-			ret = ctdb_set_debuglevel(ctdb, i, level);
-			if (ret != 0) {
-				printf("Unable to set debug level on node %u\n", i);
-				break;
-			}
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_set_debuglevel(ctdb, vnn, level);
+		if (ret != 0) {
+			printf("Unable to set debug level on node %u\n", vnn);
 		}
+		
 		return 0;
 	}
 
-	vnn = strtoul(argv[0], NULL, 0);
-	ret = ctdb_set_debuglevel(ctdb, vnn, level);
-	if (ret != 0) {
-		printf("Unable to set debug level on node %u\n", vnn);
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		ret = ctdb_set_debuglevel(ctdb, nodes[i], level);
+		if (ret != 0) {
+			printf("Unable to set debug level on node %u\n", nodes[i]);
+			break;
+		}
 	}
-
+	talloc_free(nodes);
 	return 0;
 }
 

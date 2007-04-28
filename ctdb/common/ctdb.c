@@ -105,6 +105,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 
 	if (ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;
+		node->flags |= NODE_FLAGS_CONNECTED;
 	}
 
 	ctdb->num_nodes++;

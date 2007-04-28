@@ -239,7 +239,8 @@ struct ctdb_node_map {
 	uint32_t num;
 	struct ctdb_node_and_flags *nodes;
 };
-int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap);
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap);
 
 int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 
@@ -251,5 +252,8 @@ int ctdb_get_config(struct ctdb_context *ctdb);
 
 int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
 int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
+
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+				   uint32_t *num_nodes);
 
 #endif
