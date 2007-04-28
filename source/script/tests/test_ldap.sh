@@ -25,7 +25,7 @@ done
 test "$TORTURE_QUICK" = "yes" || {
    LDBDIR=lib/ldb
    export LDBDIR
-   plantest "ldb" dc $LDBDIR/tests/test-tdb.sh
+   plantest "ldb" none $LDBDIR/tests/test-tdb.sh
 }
 
 SCRIPTDIR=../testprogs/ejs
