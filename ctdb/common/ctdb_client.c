@@ -322,18 +322,12 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	}
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	c = ctdbd_allocate_pkt(state, len);
+	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CALL, len, struct ctdb_req_call);
 	if (c == NULL) {
 		DEBUG(0, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
-	talloc_set_name_const(c, "ctdb client req_call packet");
-	memset(c, 0, offsetof(struct ctdb_req_call, data));
 
-	c->hdr.length    = len;
-	c->hdr.ctdb_magic = CTDB_MAGIC;
-	c->hdr.ctdb_version = CTDB_VERSION;
-	c->hdr.operation = CTDB_REQ_CALL;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	c->hdr.reqid     = ctdb_reqid_new(ctdb, state);
 	c->flags         = call->flags;
@@ -389,11 +383,9 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		ctdb_socket_connect(ctdb);
 	}
 
-	c = ctdbd_allocate_pkt(ctdb, sizeof(*c));
-	c->hdr.length       = sizeof(*c);
-	c->hdr.ctdb_magic   = CTDB_MAGIC;
-	c->hdr.ctdb_version = CTDB_VERSION;
-	c->hdr.operation    = CTDB_REQ_REGISTER;
+	c = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_REGISTER, sizeof(*c), 
+			       struct ctdb_req_register);
+	CTDB_NO_MEMORY(ctdb, c);
 	c->srvid            = srvid;
 
 	res = ctdb_client_queue_pkt(ctdb, &c->hdr);
@@ -417,17 +409,12 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	int len, res;
 
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdbd_allocate_pkt(ctdb, len);
+	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_MESSAGE, 
+			       len, struct ctdb_req_message);
 	CTDB_NO_MEMORY(ctdb, r);
-	talloc_set_name_const(r, "req_message packet");
 
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->hdr.destnode  = vnn;
 	r->hdr.srcnode   = ctdb->vnn;
-	r->hdr.reqid     = 0;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -449,12 +436,9 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	struct ctdb_req_connect_wait *r;
 	int res;
 
-	r = ctdbd_allocate_pkt(ctdb, sizeof(*r));
-	r->hdr.length     = sizeof(*r);
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.operation = CTDB_REQ_CONNECT_WAIT;
-	r->hdr.generation= ctdb->vnn_map->generation;
+	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_CONNECT_WAIT, sizeof(*r), 
+			       struct ctdb_req_connect_wait);
+	CTDB_NO_MEMORY_VOID(ctdb, r);
 
 	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
 
@@ -604,13 +588,9 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 		ctdb_socket_connect(ctdb);
 	}
 
-	r = ctdbd_allocate_pkt(ctdb, sizeof(*r));
-	ZERO_STRUCT(*r);
-	r->hdr.length       = sizeof(*r);
-	r->hdr.ctdb_magic   = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.operation    = CTDB_REQ_SHUTDOWN;
-	r->hdr.reqid        = 0;
+	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_SHUTDOWN, sizeof(*r), 
+			       struct ctdb_req_shutdown);
+	CTDB_NO_MEMORY_VOID(ctdb, r);
 
 	ctdb_client_queue_pkt(ctdb, &(r->hdr));
 
@@ -688,13 +668,10 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	state->state = CTDB_CALL_WAIT;
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
-	c = ctdbd_allocate_pkt(state, len);
+	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
+			       len, struct ctdb_req_control);
+	CTDB_NO_MEMORY(ctdb, c);
 	
-	memset(c, 0, len);
-	c->hdr.length       = len;
-	c->hdr.ctdb_magic   = CTDB_MAGIC;
-	c->hdr.ctdb_version = CTDB_VERSION;
-	c->hdr.operation    = CTDB_REQ_CONTROL;
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;
 	c->hdr.srcnode      = ctdb->vnn;

@@ -142,17 +142,11 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 
 	msglen = strlen(msg)+1;
 	len = offsetof(struct ctdb_reply_error, msg);
-	r = ctdb->methods->allocate_pkt(msg, len + msglen);
+	r = ctdb_transport_allocate(ctdb, msg, CTDB_REPLY_ERROR, len + msglen, 
+				    struct ctdb_reply_error);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	talloc_set_name_const(r, "send_error packet");
 
-	r->hdr.length    = len + msglen;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
-	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = hdr->reqid;
 	r->status        = status;
 	r->msglen        = msglen;
@@ -173,16 +167,11 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 {
 	struct ctdb_reply_redirect *r;
 
-	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r));
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_REDIRECT, sizeof(*r), 
+				    struct ctdb_reply_redirect);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	talloc_set_name_const(r, "send_redirect packet");
-	r->hdr.length = sizeof(*r);
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REPLY_REDIRECT;
+
 	r->hdr.destnode  = c->hdr.srcnode;
-	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = c->hdr.reqid;
 	r->dmaster       = header->dmaster;
 
@@ -227,17 +216,11 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 
 	/* send the CTDB_REPLY_DMASTER */
 	len = offsetof(struct ctdb_reply_dmaster, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(tmp_ctx, len);
+	r = ctdb_transport_allocate(ctdb, tmp_ctx, CTDB_REPLY_DMASTER, len,
+				    struct ctdb_reply_dmaster);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
-	talloc_set_name_const(r, "reply_dmaster packet");
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = new_dmaster;
-	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = reqid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -271,16 +254,10 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	}
 	
 	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_DMASTER, len, 
+				    struct ctdb_req_dmaster);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	talloc_set_name_const(r, "send_dmaster packet");
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REQ_DMASTER;
 	r->hdr.destnode  = lmaster;
-	r->hdr.srcnode   = ctdb->vnn;
 	r->hdr.reqid     = c->hdr.reqid;
 	r->db_id         = c->db_id;
 	r->dmaster       = c->hdr.srcnode;
@@ -488,14 +465,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	ctdb_ltdb_unlock(ctdb_db, call.key);
 
 	len = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CALL, len, 
+				    struct ctdb_reply_call);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	talloc_set_name_const(r, "reply_call packet");
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
 	r->hdr.reqid     = hdr->reqid;
@@ -753,15 +725,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	talloc_set_destructor(state, ctdb_call_destructor);
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdb->methods->allocate_pkt(state, len);
+	state->c = ctdb_transport_allocate(ctdb, state, CTDB_REQ_CALL, len, 
+					   struct ctdb_req_call);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
-	talloc_set_name_const(state->c, "req_call packet");
-
-	state->c->hdr.length    = len;
-	state->c->hdr.ctdb_magic = CTDB_MAGIC;
-	state->c->hdr.ctdb_version = CTDB_VERSION;
-	state->c->hdr.generation= ctdb_db->ctdb->vnn_map->generation;
-	state->c->hdr.operation = CTDB_REQ_CALL;
 	state->c->hdr.destnode  = header->dmaster;
 	/*
 	   always sending the remote call straight to the lmaster
@@ -771,7 +737,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	*/
 
 
-	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = state->reqid;
 	state->c->flags         = call->flags;

@@ -488,7 +488,21 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len);
+struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
+					    TALLOC_CTX *mem_ctx, 
+					    enum ctdb_operation operation, 
+					    size_t length, size_t slength,
+					    const char *type);
+#define ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, type) \
+	(type *)_ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, sizeof(type), #type)
+
+struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
+						 TALLOC_CTX *mem_ctx, 
+						 enum ctdb_operation operation, 
+						 size_t length, size_t slength,
+						 const char *type);
+#define ctdb_transport_allocate(ctdb, mem_ctx, operation, length, type) \
+	(type *)_ctdb_transport_allocate(ctdb, mem_ctx, operation, length, sizeof(type), #type)
 
 
 /*
