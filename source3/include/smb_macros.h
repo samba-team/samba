@@ -282,7 +282,7 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
 #define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
-#define TALLOC_SIZE(ctx, size) talloc_strict(ctx, size)
+#define TALLOC_SIZE(ctx, size) talloc_strict(ctx, size, __location__)
 #define TALLOC_ZERO_SIZE(ctx, size) talloc_zero_size_strict(ctx, size)
 
 /* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
