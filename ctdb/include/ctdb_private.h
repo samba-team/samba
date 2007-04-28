@@ -263,7 +263,6 @@ struct ctdb_call_state {
 	uint32_t reqid;
 	struct ctdb_req_call *c;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_node *node;
 	const char *errmsg;
 	struct ctdb_call call;
 	struct ctdb_ltdb_header header;
