@@ -149,6 +149,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	r->hdr.length    = len + msglen;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -178,6 +179,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	r->hdr.length = sizeof(*r);
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REPLY_REDIRECT;
 	r->hdr.destnode  = c->hdr.srcnode;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -232,6 +234,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = new_dmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -274,6 +277,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REQ_DMASTER;
 	r->hdr.destnode  = lmaster;
 	r->hdr.srcnode   = ctdb->vnn;
@@ -490,6 +494,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	r->hdr.length    = len;
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
+	r->hdr.generation= ctdb->vnn_map->generation;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.srcnode   = hdr->destnode;
@@ -755,6 +760,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->c->hdr.length    = len;
 	state->c->hdr.ctdb_magic = CTDB_MAGIC;
 	state->c->hdr.ctdb_version = CTDB_VERSION;
+	state->c->hdr.generation= ctdb_db->ctdb->vnn_map->generation;
 	state->c->hdr.operation = CTDB_REQ_CALL;
 	state->c->hdr.destnode  = header->dmaster;
 	/*

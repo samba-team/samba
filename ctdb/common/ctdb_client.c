@@ -454,6 +454,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	r->hdr.ctdb_magic = CTDB_MAGIC;
 	r->hdr.ctdb_version = CTDB_VERSION;
 	r->hdr.operation = CTDB_REQ_CONNECT_WAIT;
+	r->hdr.generation= ctdb->vnn_map->generation;
 
 	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
 

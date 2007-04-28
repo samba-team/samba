@@ -238,6 +238,20 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
+		/* verify that the remote node that sent us the call
+		   is running in the same generation instance as this node
+		*/
+		if (ctdb->vnn_map->generation != hdr->generation) {
+			DEBUG(0,(__location__ " ctdb request %d of type"
+				" %d length %d from node %d to %d had an"
+				" invalid generation id:%d while our"
+				" generation id is:%d\n", 
+				hdr->reqid, hdr->operation, hdr->length, 
+				hdr->srcnode, hdr->destnode, 
+				ctdb->vnn_map->generation, 
+				hdr->generation));
+			break;
+		}
 		ctdb->status.count.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
