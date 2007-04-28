@@ -261,11 +261,11 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct timeval tv = timeval_current();
 		ret = ctdb_ping(ctdb, i);
-		if (ret != 0) {
+		if (ret == -1) {
 			printf("Unable to get ping response from node %u\n", i);
 		} else {
-			printf("response from %u time=%.6f sec\n", 
-			       i, timeval_elapsed(&tv));
+			printf("response from %u time=%.6f sec  (%d clients)\n", 
+			       i, timeval_elapsed(&tv), ret);
 		}
 	}
 	return 0;

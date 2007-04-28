@@ -195,6 +195,7 @@ struct ctdb_context {
 	struct ctdb_daemon_data daemon;
 	struct ctdb_status status;
 	struct ctdb_vnn_map *vnn_map;
+	uint32_t num_clients;
 };
 
 struct ctdb_db_context {

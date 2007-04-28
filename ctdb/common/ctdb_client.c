@@ -897,7 +897,7 @@ int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 }
 
 /*
-  ping a node
+  ping a node, return number of clients connected
  */
 int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 {
@@ -907,10 +907,10 @@ int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_PING, data, NULL, NULL, &res);
-	if (ret != 0 || res != 0) {
+	if (ret != 0) {
 		return -1;
 	}
-	return 0;
+	return res;
 }
 
 /*
