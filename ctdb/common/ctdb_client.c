@@ -1054,3 +1054,24 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 	talloc_free(map);
 	return nodes;
 }
+
+
+/*
+  reset remote status
+ */
+int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_STATUS_RESET, data, 
+			   NULL, NULL, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for reset status failed\n"));
+		return -1;
+	}
+	return 0;
+}

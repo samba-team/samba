@@ -256,4 +256,6 @@ int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t l
 uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes);
 
+int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
+
 #endif

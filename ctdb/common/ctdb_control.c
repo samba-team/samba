@@ -80,6 +80,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_STATUS_RESET: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		ZERO_STRUCT(ctdb->status);
+		return 0;
+	}
+
 	case CTDB_CONTROL_GETVNNMAP: {
 		uint32_t i, len;
 		CHECK_CONTROL_DATA_SIZE(0);

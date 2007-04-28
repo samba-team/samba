@@ -36,6 +36,7 @@ static void usage(void)
 	printf("  ping\n");
 	printf("  process-exists <vnn:pid>           see if a process exists\n");
 	printf("  status <vnn|all>                   show ctdb status on a node\n");
+	printf("  statusreset <vnn|all>              reset status on a node\n");
 	printf("  debug <vnn|all> <level>            set ctdb debug level on a node\n");
 	printf("  debuglevel                         display ctdb debug levels\n");
 	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
@@ -167,6 +168,56 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 	show_status(&status);
+	return 0;
+}
+
+
+/*
+  reset status on all nodes
+ */
+static int control_status_reset_all(struct ctdb_context *ctdb)
+{
+	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	
+	for (i=0;i<num_nodes;i++) {
+		ret = ctdb_status_reset(ctdb, nodes[i]);
+		if (ret != 0) {
+			printf("Unable to reset status on node %u\n", nodes[i]);
+			return ret;
+		}
+	}
+	talloc_free(nodes);
+	return 0;
+}
+
+
+/*
+  reset remote ctdb status
+ */
+static int control_status_reset(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int ret;
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") == 0) {
+		return control_status_reset_all(ctdb);
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_status_reset(ctdb, vnn);
+	if (ret != 0) {
+		printf("Unable to reset status on node %u\n", vnn);
+		return ret;
+	}
 	return 0;
 }
 
@@ -441,6 +492,8 @@ int main(int argc, const char *argv[])
 		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "status") == 0) {
 		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "statusreset") == 0) {
+		ret = control_status_reset(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getvnnmap") == 0) {
 		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getdbmap") == 0) {
