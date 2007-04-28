@@ -618,6 +618,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 nocopy:
 		data = next_keyword;
 	}
+	free(*optionsp);
 	*optionsp = out;
 	return 0;
 }
@@ -1233,14 +1234,11 @@ mount_retry:
 				}
 			}
 		default:
-			
 			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
-		if(mountpassword) {
-			memset(mountpassword,0,64);
-		}
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	} else {
 		pmntfile = setmntent(MOUNTED, "a+");
 		if(pmntfile) {
@@ -1283,6 +1281,8 @@ mount_retry:
 		    printf("could not update mount table\n");
 		}
 	}
+	rc = 0;
+mount_exit:
 	if(mountpassword) {
 		int len = strlen(mountpassword);
 		memset(mountpassword,0,len);
@@ -1305,6 +1305,6 @@ mount_retry:
 	if(free_share_name) {
 		free(share_name);
 		}
-	return 0;
+	return rc;
 }
 
