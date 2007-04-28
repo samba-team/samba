@@ -79,6 +79,8 @@ struct ctdb_node {
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
 	uint32_t vnn;
+#define NODE_FLAGS_CONNECTED 0x00000001
+	uint32_t flags;
 };
 
 /*
@@ -250,7 +252,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GETVNNMAP,
 		    CTDB_CONTROL_SETVNNMAP,
 		    CTDB_CONTROL_GET_DEBUG,
-		    CTDB_CONTROL_SET_DEBUG};
+		    CTDB_CONTROL_SET_DEBUG,
+		    CTDB_CONTROL_GET_DBMAP,
+		    CTDB_CONTROL_GET_NODEMAP};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 

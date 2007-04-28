@@ -793,6 +793,77 @@ int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 	return 0;
 }
 
+/*
+  get a list of databases off a remote node
+ */
+int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t i, res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_DBMAP, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
+		return -1;
+	}
+
+	dbmap->num = ((uint32_t *)outdata.dptr)[0];
+	if (dbmap->dbids) {
+		talloc_free(dbmap->dbids);
+		dbmap->dbids=NULL;
+	}
+	dbmap->dbids=talloc_array(dbmap, uint32_t, dbmap->num);
+	if (!dbmap->dbids) {
+		DEBUG(0,(__location__ " failed to talloc dbmap\n"));
+		return -1;
+	}
+	for (i=0;i<dbmap->num;i++) {
+		dbmap->dbids[i] = ((uint32_t *)outdata.dptr)[i+1];
+	}
+		    
+	return 0;
+}
+
+
+/*
+  get a list of nodes (vnn and flags ) from a remote node
+ */
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t i, res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_NODEMAP, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
+		return -1;
+	}
+
+	nodemap->num = ((uint32_t *)outdata.dptr)[0];
+	if (nodemap->nodes) {
+		talloc_free(nodemap->nodes);
+		nodemap->nodes=NULL;
+	}
+	nodemap->nodes=talloc_array(nodemap, struct ctdb_node_and_flags, nodemap->num);
+	if (!nodemap->nodes) {
+		DEBUG(0,(__location__ " failed to talloc nodemap\n"));
+		return -1;
+	}
+	for (i=0;i<nodemap->num;i++) {
+		nodemap->nodes[i].vnn = ((uint32_t *)outdata.dptr)[2*i+1];
+		nodemap->nodes[i].flags = ((uint32_t *)outdata.dptr)[2*i+2];
+	}
+		    
+	return 0;
+}
 
 /*
   set vnn map on a node
@@ -877,19 +948,19 @@ int ctdb_get_config(struct ctdb_context *ctdb)
 /*
   find the real path to a ltdb 
  */
-int ctdb_getdbpath(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, 
 		   const char **path)
 {
 	int ret;
 	int32_t res;
 	TDB_DATA data;
 
-	data.dptr = (uint8_t *)&ctdb_db->db_id;
-	data.dsize = sizeof(ctdb_db->db_id);
+	data.dptr = (uint8_t *)&dbid;
+	data.dsize = sizeof(dbid);
 
-	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, 
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
 			   CTDB_CONTROL_GETDBPATH, data, 
-			   ctdb_db, &data, &res);
+			   mem_ctx, &data, &res);
 	if (ret != 0 || res != 0) {
 		return -1;
 	}

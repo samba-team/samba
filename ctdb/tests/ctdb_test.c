@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "ctdb_private.h"
 
 enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
 
@@ -137,7 +138,7 @@ int main(int argc, const char *argv[])
 	ctdb_connect_wait(ctdb);
 
 	/* find the full path to the database file */
-	ctdb_getdbpath(ctdb_db, ctdb_db, &path);
+	ctdb_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &path);
 	printf("path to database:[%s]\n",path);
 
 	ZERO_STRUCT(call);
