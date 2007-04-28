@@ -126,7 +126,7 @@ static int control_status_all(struct ctdb_context *ctdb)
 		uint32_t *v1 = (uint32_t *)&s1;
 		uint32_t *v2 = (uint32_t *)&status;
 		uint32_t num_ints = 
-			offsetof(struct ctdb_status, __last_uint32) / sizeof(uint32_t);
+			offsetof(struct ctdb_status, __last_counter) / sizeof(uint32_t);
 		ret = ctdb_status(ctdb, nodes[i], &s1);
 		if (ret != 0) {
 			printf("Unable to get status from node %u\n", nodes[i]);
