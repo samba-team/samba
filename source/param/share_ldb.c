@@ -175,7 +175,7 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	n = talloc_array(mem_ctx, const char *, res->count);
@@ -223,9 +223,12 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res,
 				 ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, NULL,
 				 "(name=%s)", name);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS || res->count > 1) {
 		talloc_free(tmp_ctx);
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (res->count != 1) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	s = talloc(tmp_ctx, struct share_config);
@@ -363,7 +366,9 @@ NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_i
 		DEBUG(2,("ERROR: unable to add share %s to share.ldb\n"
 			 "       err=%d [%s]\n", name, err, ldb_errstring(ldb)));
 		if (err == LDB_ERR_NO_SUCH_OBJECT) {
-			ret = NT_STATUS_BAD_NETWORK_NAME;
+			ret = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		} else if (err == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+			ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		} else {
 			ret = NT_STATUS_UNSUCCESSFUL;
 		}
@@ -499,7 +504,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 			DEBUG(2,("ERROR: unable to rename share %s (to %s)\n"
 				 "       err=%d [%s]\n", name, newname, err, ldb_errstring(ldb)));
 			if (err == LDB_ERR_NO_SUCH_OBJECT) {
-				ret = NT_STATUS_BAD_NETWORK_NAME;
+				ret = NT_STATUS_OBJECT_NAME_COLLISION;
 			} else {
 				ret = NT_STATUS_UNSUCCESSFUL;
 			}
@@ -514,7 +519,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 		DEBUG(2,("ERROR: unable to add share %s to share.ldb\n"
 			 "       err=%d [%s]\n", name, err, ldb_errstring(ldb)));
 		if (err == LDB_ERR_NO_SUCH_OBJECT) {
-			ret = NT_STATUS_BAD_NETWORK_NAME;
+			ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		} else {
 			ret = NT_STATUS_UNSUCCESSFUL;
 		}
