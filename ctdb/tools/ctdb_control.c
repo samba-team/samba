@@ -41,6 +41,7 @@ static void usage(void)
 	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
+	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
 	exit(1);
 }
 
@@ -186,6 +187,37 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 	talloc_free(dbmap);
+	return 0;
+}
+
+/*
+  display a list nodes known to a remote ctdb
+ */
+static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int i, ret;
+	struct ctdb_node_map *nodemap;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
+	ret = ctdb_getnodemap(ctdb, vnn, nodemap);
+	if (ret != 0) {
+		printf("Unable to get nodemap from node %u\n", vnn);
+		talloc_free(nodemap);
+		return ret;
+	}
+
+	printf("Number of nodes:%d\n", nodemap->num);
+	for(i=0;i<nodemap->num;i++){
+		printf("vnn:0x%08x %s\n", nodemap->nodes[i].vnn, nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?"UNAVAILABLE":"CONNECTED");
+	}
+	talloc_free(nodemap);
 	return 0;
 }
 
@@ -341,6 +373,8 @@ int main(int argc, const char *argv[])
 		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getdbmap") == 0) {
 		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getnodemap") == 0) {
+		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {

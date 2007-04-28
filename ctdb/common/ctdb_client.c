@@ -830,6 +830,42 @@ int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid
 
 
 /*
+  get a list of nodes (vnn and flags ) from a remote node
+ */
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t i, res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_NODEMAP, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
+		return -1;
+	}
+
+	nodemap->num = ((uint32_t *)outdata.dptr)[0];
+	if (nodemap->nodes) {
+		talloc_free(nodemap->nodes);
+		nodemap->nodes=NULL;
+	}
+	nodemap->nodes=talloc_array(nodemap, struct ctdb_node_and_flags, nodemap->num);
+	if (!nodemap->nodes) {
+		DEBUG(0,(__location__ " failed to talloc nodemap\n"));
+		return -1;
+	}
+	for (i=0;i<nodemap->num;i++) {
+		nodemap->nodes[i].vnn = ((uint32_t *)outdata.dptr)[2*i+1];
+		nodemap->nodes[i].flags = ((uint32_t *)outdata.dptr)[2*i+2];
+	}
+		    
+	return 0;
+}
+
+/*
   set vnn map on a node
  */
 int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)

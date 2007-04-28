@@ -218,8 +218,28 @@ int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status
 struct ctdb_vnn_map;
 int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
 int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
-struct ctdb_dbid_map;
+
+/* table that contains a list of all dbids on a node
+ */
+struct ctdb_dbid_map {
+	uint32_t num;
+	uint32_t *dbids;
+};
 int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap);
+
+
+/* table that contains a list of all nodes a ctdb knows about and their 
+   status
+ */
+struct ctdb_node_and_flags {
+	uint32_t vnn;
+	uint32_t flags;
+};
+struct ctdb_node_map {
+	uint32_t num;
+	struct ctdb_node_and_flags *nodes;
+};
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap);
 
 int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 
