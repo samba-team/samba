@@ -36,7 +36,8 @@ static int num_clients = 2;
 static void message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 				 TDB_DATA data, void *private_data)
 {
-	printf("client vnn:%d received a message to srvid:%lld [%s]\n",ctdb_get_vnn(ctdb),srvid,data.dptr);
+	printf("client vnn:%d received a message to srvid:%llu [%s]\n",
+	       ctdb_get_vnn(ctdb), (unsigned long long)srvid, data.dptr);
 	fflush(stdout);
 }
 

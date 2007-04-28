@@ -43,13 +43,13 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(in->ctdb, "Bad packet length %d\n", cnt);
+		ctdb_set_error(in->ctdb, "Bad packet length %u\n", (unsigned)cnt);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
-		ctdb_set_error(in->ctdb, "Bad header length %d expected %d\n", 
-			       hdr->length, cnt);
+		ctdb_set_error(in->ctdb, "Bad header length %u expected %u\n", 
+			       (unsigned)hdr->length, (unsigned)cnt);
 		return;
 	}
 

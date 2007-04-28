@@ -498,13 +498,14 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 	client->ctdb->status.client_packets_recv++;
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n", cnt);
+		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n", 
+			       (unsigned)cnt);
 		return;
 	}
 	hdr = (struct ctdb_req_header *)data;
 	if (cnt != hdr->length) {
 		ctdb_set_error(client->ctdb, "Bad header length %u expected %u\n in daemon", 
-			       hdr->length, cnt);
+			       (unsigned)hdr->length, (unsigned)cnt);
 		return;
 	}
 
@@ -694,6 +695,9 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr->length       = length;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
+	if (ctdb->vnn_map) {
+		hdr->generation = ctdb->vnn_map->generation;
+	}
 
 	return hdr;
 }
