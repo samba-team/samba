@@ -675,6 +675,23 @@ $| = 1;
 
 my %running_envs = ();
 
+my @exported_envvars = (
+	# domain stuff
+	"DOMAIN",
+	"REALM",
+
+	# server stuff
+	"SERVER",
+	"NETBIOSNAME",
+
+	# user stuff
+	"USERNAME",
+	"PASSWORD",
+
+	# misc stuff
+	"KRB5_CONFIG"
+);
+
 sub setup_env($)
 {
 	my ($envname) = @_;
@@ -693,9 +710,10 @@ sub setup_env($)
 
 	return undef unless defined($testenv_vars);
 
+	SocketWrapper::set_default_iface(6);
 	write_clientconf($conffile, $testenv_vars);
-	foreach ("PASSWORD", "DOMAIN", "SERVER", "USERNAME", "NETBIOSNAME", 
-			 "KRB5_CONFIG", "REALM") {
+
+	foreach (@exported_envvars) {
 		if (defined($testenv_vars->{$_})) {
 			$ENV{$_} = $testenv_vars->{$_};
 		} else {
@@ -703,10 +721,21 @@ sub setup_env($)
 		}
 	}
 
-	SocketWrapper::set_default_iface(6);
-
 	$running_envs{$envname} = $testenv_vars;
 	return $testenv_vars;
+}
+
+sub exported_envvars_str($)
+{
+	my ($testenv_vars) = @_;
+	my $out = "";
+
+	foreach (@exported_envvars) {
+		next unless defined($testenv_vars->{$_});
+		$out .= $_."=".$testenv_vars->{$_}."\n";
+	}
+
+	return $out;
 }
 
 sub getlog_env($)
@@ -739,19 +768,29 @@ if ($from_build_farm) {
 }
 
 if ($opt_testenv) {
-	my $testenv_vars = setup_env("dc");
+	my $testenv_name = $ENV{SELFTEST_TESTENV};
+	$testenv_name = "dc" unless defined($testenv_name);
+
+	my $testenv_vars = setup_env($testenv_name);
+
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
+
+	my $envvarstr = exported_envvars_str($testenv_vars);
+
 	my $term = ($ENV{TERM} or "xterm");
-	system("$term -e 'echo -e \"Welcome to the Samba4 Test environment
+	system("$term -e 'echo -e \"
+Welcome to the Samba4 Test environment '$testenv_name'
+
 This matches the client environment used in make test
 smbd is pid `cat \$PIDDIR/smbd.pid`
 
 Some useful environment variables:
 TORTURE_OPTIONS=\$TORTURE_OPTIONS
 CONFIGURATION=\$CONFIGURATION
-SERVER=\$SERVER
-NETBIOSNAME=\$NETBIOSNAME\" && bash'");
-	teardown_env("dc");
+
+$envvarstr
+\" && bash'");
+	teardown_env($testenv_name);
 } else {
 	foreach (@todo) {
 		$i++;
