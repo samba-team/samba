@@ -160,6 +160,13 @@ struct ctdb_status {
 	double max_lockwait_latency;
 };
 
+/* table that contains a list of all dbids on a node
+ */
+struct ctdb_dbid_map {
+	uint32_t num;
+	uint32_t *dbids;
+};
+
 /* table that contains the mapping between a hash value and lmaster
  */
 struct ctdb_vnn_map {
@@ -250,7 +257,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GETVNNMAP,
 		    CTDB_CONTROL_SETVNNMAP,
 		    CTDB_CONTROL_GET_DEBUG,
-		    CTDB_CONTROL_SET_DEBUG};
+		    CTDB_CONTROL_SET_DEBUG,
+		    CTDB_CONTROL_GET_DBMAP};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 

@@ -40,6 +40,7 @@ static void usage(void)
 	printf("  debuglevel                         display ctdb debug levels\n");
 	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
+	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	exit(1);
 }
 
@@ -151,6 +152,40 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
 	}
+	return 0;
+}
+
+/*
+  display a list of the databases on a remote ctdb
+ */
+static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int i, ret;
+	struct ctdb_dbid_map *dbmap;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	dbmap = talloc_zero(ctdb, struct ctdb_dbid_map);
+	ret = ctdb_getdbmap(ctdb, vnn, dbmap);
+	if (ret != 0) {
+		printf("Unable to get dbids from node %u\n", vnn);
+		talloc_free(dbmap);
+		return ret;
+	}
+
+	printf("Number of databases:%d\n", dbmap->num);
+	for(i=0;i<dbmap->num;i++){
+		const char *path;
+
+		ctdb_getdbpath(ctdb, dbmap->dbids[i], dbmap, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+	}
+	talloc_free(dbmap);
 	return 0;
 }
 
@@ -304,6 +339,8 @@ int main(int argc, const char *argv[])
 		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getvnnmap") == 0) {
 		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getdbmap") == 0) {
+		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {

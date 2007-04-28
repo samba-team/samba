@@ -96,6 +96,31 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_GET_DBMAP: {
+		uint32_t i, len;
+		struct ctdb_db_context *ctdb_db;
+
+		CHECK_CONTROL_DATA_SIZE(0);
+		len = 0;
+		for(ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next){
+			len++;
+		}
+
+		outdata->dsize = (len+1)*sizeof(uint32_t);
+		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, len+1);
+		if (!outdata->dptr) {
+			DEBUG(0, (__location__ "Failed to allocate dbmap array\n"));
+			exit(1);
+		}
+
+		((uint32_t *)outdata->dptr)[0] = len;
+		for(i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
+			((uint32_t *)outdata->dptr)[i+1] = ctdb_db->db_id;
+		}
+	
+		return 0;
+	}
+
 	case CTDB_CONTROL_SETVNNMAP: {
 		uint32_t *ptr, i;
 		
