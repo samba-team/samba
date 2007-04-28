@@ -613,7 +613,7 @@ sub write_clientconf($$)
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
 	print CF "
-	private dir = $srcdir_abs/$prefix/client/private
+	private dir = $prefix_abs/client/private
 	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
 	interfaces = $interfaces
@@ -622,7 +622,7 @@ sub write_clientconf($$)
 	notify:inotify = false
 	ldb:nosync = true
 	system:anonymous = true
-	torture:basedir = $prefix_abs
+	torture:basedir = $prefix_abs/client
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 ";
