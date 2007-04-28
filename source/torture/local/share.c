@@ -25,8 +25,8 @@
 #include "torture/torture.h"
 
 static bool test_list_empty(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+			    const void *tcase_data, 
+			    const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	int count;
@@ -39,8 +39,8 @@ static bool test_list_empty(struct torture_context *tctx,
 }
 
 static bool test_create(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+			const void *tcase_data, 
+			const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	int count;
@@ -77,8 +77,8 @@ static bool test_create(struct torture_context *tctx,
 
 
 static bool test_create_invalid(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+				const void *tcase_data, 
+				const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	NTSTATUS status;
@@ -89,19 +89,19 @@ static bool test_create_invalid(struct torture_context *tctx,
 		torture_skip(tctx, "Not supported by backend");
 
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
-								  status,
-							   "create_share failed");
+				      status,
+				      "create_share failed");
 
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
-								  share_create(ctx, NULL, NULL, 0),
-							   "create_share failed");
+				      share_create(ctx, NULL, NULL, 0),
+				      "create_share failed");
 
 	return true;
 }
 
 static bool test_share_remove_invalid(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+				      const void *tcase_data, 
+				      const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	NTSTATUS status;
@@ -111,8 +111,7 @@ static bool test_share_remove_invalid(struct torture_context *tctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
 		torture_skip(tctx, "Not supported by backend");
 
-	torture_assert_ntstatus_equal(ctx, status, NT_STATUS_UNSUCCESSFUL, 
-								  "remove fails");
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_UNSUCCESSFUL, "remove fails");
 
 	return true;
 }
@@ -120,8 +119,8 @@ static bool test_share_remove_invalid(struct torture_context *tctx,
 
 
 static bool test_share_remove(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+			      const void *tcase_data, 
+			      const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	struct share_info inf[] = { 
@@ -135,18 +134,16 @@ static bool test_share_remove(struct torture_context *tctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
 		torture_skip(tctx, "Not supported by backend");
 
-	torture_assert_ntstatus_ok(tctx, status,
-							   "create_share failed");
+	torture_assert_ntstatus_ok(tctx, status, "create_share failed");
 
-	torture_assert_ntstatus_ok(tctx, share_remove(ctx, "blie"), 
-							   "remove failed");
+	torture_assert_ntstatus_ok(tctx, share_remove(ctx, "blie"), "remove failed");
 
 	return true;
 }
 
 static bool test_double_create(struct torture_context *tctx, 
-							const void *tcase_data, 
-							const void *test_data)
+			       const void *tcase_data, 
+			       const void *test_data)
 {
 	struct share_context *ctx = discard_const(tcase_data);
 	struct share_info inf[] = { 
@@ -160,12 +157,11 @@ static bool test_double_create(struct torture_context *tctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
 		torture_skip(tctx, "Not supported by backend");
 
-	torture_assert_ntstatus_ok(tctx, status,
-							   "create_share failed");
+	torture_assert_ntstatus_ok(tctx, status, "create_share failed");
 
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_UNSUCCESSFUL, 
-								  share_create(ctx, "bla", inf, 2),
-							   "create_share failed");
+				      share_create(ctx, "bla", inf, 2),
+				      "create_share failed");
 
 	return true;
 }
@@ -176,8 +172,7 @@ static void tcase_add_share_tests(struct torture_tcase *tcase)
 	torture_tcase_add_test(tcase, "share_create", test_create, NULL);
 	torture_tcase_add_test(tcase, "share_remove", test_share_remove, NULL);
 	torture_tcase_add_test(tcase, "share_remove_invalid", test_share_remove_invalid, NULL);
-	torture_tcase_add_test(tcase, "share_create_invalid", test_create_invalid, 
-						   NULL);
+	torture_tcase_add_test(tcase, "share_create_invalid", test_create_invalid, NULL);
 	torture_tcase_add_test(tcase, "share_double_create", test_double_create, NULL);
 }
 
@@ -199,8 +194,7 @@ static BOOL teardown(struct torture_context *tctx, void *data)
 
 struct torture_suite *torture_local_share(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "SHARE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SHARE");
 	struct torture_tcase *tcase;
 
 	share_init();
