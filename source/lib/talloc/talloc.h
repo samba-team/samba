@@ -84,33 +84,22 @@ typedef void TALLOC_CTX;
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
-#define talloc_size_strict(ctx, size) talloc_strict(ctx, size, __location__)
 #define talloc_ptrtype(ctx, ptr) (_TALLOC_TYPEOF(ptr))talloc_size(ctx, sizeof(*(ptr)))
 
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
 
 #define talloc_zero(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
-/* Varient of talloc_zero that returns NULL if size is zero. */
-#define talloc_zero_strict(ctx, type) (type *)_talloc_zero_strict(ctx, sizeof(type), #type)
 #define talloc_zero_size(ctx, size) _talloc_zero(ctx, size, __location__)
-#define talloc_zero_size_strict(ctx, size) _talloc_zero_strict(ctx, size, __location__)
 
 #define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
-/* Varient of talloc_zero_array that returns NULL if count is zero. */
-#define talloc_zero_array_strict(ctx, type, count) (type *)_talloc_zero_array_strict(ctx, sizeof(type), count, #type)
 #define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
-/* Varient of talloc_array that returns NULL if count is zero. */
-#define talloc_array_strict(ctx, type, count) (type *)_talloc_array_strict(ctx, sizeof(type), count, #type)
 #define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
-#define talloc_array_size_strict(ctx, size, count) _talloc_array_strict(ctx, size, count, __location__)
 #define talloc_array_ptrtype(ctx, ptr, count) (_TALLOC_TYPEOF(ptr))talloc_array_size(ctx, sizeof(*(ptr)), count)
 
 #define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
 #define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
 
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
-/* Varient of talloc_memdup that returns NULL if count is zero. */
-#define talloc_memdup_strict(t, p, size) _talloc_memdup_strict(t, p, size, __location__)
 
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
@@ -163,9 +152,7 @@ void talloc_disable_null_tracking(void);
 void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
 void *_talloc_zero(const void *ctx, size_t size, const char *name);
-void *_talloc_zero_strict(const void *ctx, size_t size, const char *name);
 void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
-void *_talloc_memdup_strict(const void *t, const void *p, size_t size, const char *name);
 char *talloc_strdup(const void *t, const char *p);
 char *talloc_strndup(const void *t, const char *p, size_t n);
 char *talloc_append_string(const void *t, char *orig, const char *append);
@@ -174,9 +161,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRI
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *_talloc_array_strict(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *_talloc_zero_array_strict(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
 void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 void *talloc_autofree_context(void);
@@ -184,6 +169,5 @@ size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
 int talloc_is_parent(const void *context, const void *ptr);
-void *talloc_strict(const void *context, size_t size, const char *name);
 
 #endif
