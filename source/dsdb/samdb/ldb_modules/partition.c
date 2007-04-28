@@ -703,6 +703,33 @@ static int sort_compare(void *void1,
 	return ldb_dn_compare(partition1->dn, partition2->dn);
 }
 
+static const char *relative_path(struct ldb_module *module, 
+				 TALLOC_CTX *mem_ctx, 
+				 const char *name) 
+{
+	const char *base_url = ldb_get_opaque(module->ldb, "ldb_url");
+	char *path, *p, *full_name;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
+	path = talloc_strdup(mem_ctx, base_url);
+	if (path == NULL) {
+		return NULL;
+	}
+	if ( (p = strrchr(path, '/')) != NULL) {
+		p[0] = '\0';
+	} else {
+		talloc_free(path);
+		return NULL;
+	}
+	full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
+	talloc_free(path);
+	return full_name;
+}
+
 static int partition_init(struct ldb_module *module)
 {
 	int ret, i;
@@ -791,7 +818,9 @@ static int partition_init(struct ldb_module *module)
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		data->partitions[i]->backend = private_path(data->partitions[i], p);
+		data->partitions[i]->backend = relative_path(module, 
+							     data->partitions[i], 
+							     p);
 		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
