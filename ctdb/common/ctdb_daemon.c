@@ -695,7 +695,9 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr->length       = length;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
-	hdr->generation   = ctdb->vnn_map->generation;
+	if (ctdb->vnn_map) {
+		hdr->generation = ctdb->vnn_map->generation;
+	}
 
 	return hdr;
 }
