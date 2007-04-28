@@ -267,11 +267,6 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
-	case CTDB_REPLY_REDIRECT:
-		ctdb->status.count.reply_redirect++;
-		ctdb_reply_redirect(ctdb, hdr);
-		break;
-
 	case CTDB_REQ_DMASTER:
 		ctdb->status.count.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);

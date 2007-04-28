@@ -135,7 +135,6 @@ struct ctdb_status {
 	struct {
 		uint32_t req_call;
 		uint32_t reply_call;
-		uint32_t reply_redirect;
 		uint32_t req_dmaster;
 		uint32_t reply_dmaster;
 		uint32_t reply_error;
@@ -158,7 +157,6 @@ struct ctdb_status {
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t __last_counter; /* hack for control_status_all */
-	uint32_t max_redirect_count;
 	double max_call_latency;
 	double max_lockwait_latency;
 };
@@ -229,9 +227,6 @@ struct ctdb_db_context {
 /* arbitrary maximum timeout for ctdb operations */
 #define CTDB_REQ_TIMEOUT 0
 
-/* max number of redirects before we ask the lmaster */
-#define CTDB_MAX_REDIRECT 2
-
 /* number of consecutive calls from the same node before we give them
    the record */
 #define CTDB_DEFAULT_MAX_LACOUNT 7
@@ -271,7 +266,6 @@ struct ctdb_call_state {
 	struct ctdb_node *node;
 	const char *errmsg;
 	struct ctdb_call call;
-	int redirect_count;
 	struct ctdb_ltdb_header header;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
@@ -293,21 +287,20 @@ struct ctdb_fetch_handle {
 */
 enum ctdb_operation {
 	CTDB_REQ_CALL           = 0,
-	CTDB_REPLY_CALL         = 1,
-	CTDB_REPLY_REDIRECT     = 2,
-	CTDB_REQ_DMASTER        = 3,
-	CTDB_REPLY_DMASTER      = 4,
-	CTDB_REPLY_ERROR        = 5,
-	CTDB_REQ_MESSAGE        = 6,
-	CTDB_REQ_FINISHED       = 7,
-	CTDB_REQ_CONTROL        = 8,
-	CTDB_REPLY_CONTROL      = 9,
+	CTDB_REPLY_CALL,
+	CTDB_REQ_DMASTER,
+	CTDB_REPLY_DMASTER,
+	CTDB_REPLY_ERROR,
+	CTDB_REQ_MESSAGE,
+	CTDB_REQ_FINISHED,
+	CTDB_REQ_CONTROL,
+	CTDB_REPLY_CONTROL,
 	
 	/* only used on the domain socket */
 	CTDB_REQ_REGISTER       = 1000,     
-	CTDB_REQ_CONNECT_WAIT   = 1001,
-	CTDB_REPLY_CONNECT_WAIT = 1002,
-	CTDB_REQ_SHUTDOWN       = 1003
+	CTDB_REQ_CONNECT_WAIT,
+	CTDB_REPLY_CONNECT_WAIT,
+	CTDB_REQ_SHUTDOWN
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -349,11 +342,6 @@ struct ctdb_reply_error {
 	uint32_t status;
 	uint32_t msglen;
 	uint8_t  msg[1];
-};
-
-struct ctdb_reply_redirect {
-	struct ctdb_req_header hdr;
-	uint32_t dmaster;
 };
 
 struct ctdb_req_dmaster {
@@ -442,7 +430,6 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 

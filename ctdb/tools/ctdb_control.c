@@ -89,18 +89,15 @@ static void show_status(struct ctdb_status *s)
 	printf(" node_packets_recv       %u\n", s->node_packets_recv);
 	printf("   req_call              %u\n", s->count.req_call);
 	printf("   reply_call            %u\n", s->count.reply_call);
-	printf("   reply_redirect        %u\n", s->count.reply_redirect);
 	printf("   req_dmaster           %u\n", s->count.req_dmaster);
 	printf("   reply_dmaster         %u\n", s->count.reply_dmaster);
 	printf("   reply_error           %u\n", s->count.reply_error);
-	printf("   reply_redirect        %u\n", s->count.reply_redirect);
 	printf("   req_message           %u\n", s->count.req_message);
 	printf("   req_finished          %u\n", s->count.req_finished);
 	printf(" total_calls             %u\n", s->total_calls);
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
-	printf(" max_redirect_count      %u\n", s->max_redirect_count);
 	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
 	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
 }
@@ -135,8 +132,6 @@ static int control_status_all(struct ctdb_context *ctdb)
 		for (j=0;j<num_ints;j++) {
 			v2[j] += v1[j];
 		}
-		status.max_redirect_count = 
-			MAX(status.max_redirect_count, s1.max_redirect_count);
 		status.max_call_latency = 
 			MAX(status.max_call_latency, s1.max_call_latency);
 		status.max_lockwait_latency = 

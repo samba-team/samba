@@ -162,22 +162,18 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
   send a redirect reply
 */
 static void ctdb_call_send_redirect(struct ctdb_context *ctdb, 
+				    TDB_DATA key,
 				    struct ctdb_req_call *c, 
 				    struct ctdb_ltdb_header *header)
 {
-	struct ctdb_reply_redirect *r;
-
-	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_REDIRECT, sizeof(*r), 
-				    struct ctdb_reply_redirect);
-	CTDB_NO_MEMORY_FATAL(ctdb, r);
-
-	r->hdr.destnode  = c->hdr.srcnode;
-	r->hdr.reqid     = c->hdr.reqid;
-	r->dmaster       = header->dmaster;
-
-	ctdb_queue_packet(ctdb, &r->hdr);
-
-	talloc_free(r);
+	
+	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
+	if (ctdb->vnn == lmaster) {
+		c->hdr.destnode = header->dmaster;
+	} else {
+		c->hdr.destnode = lmaster;
+	}
+	ctdb_queue_packet(ctdb, &c->hdr);
 }
 
 
@@ -438,7 +434,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* if we are not the dmaster, then send a redirect to the
 	   requesting node */
 	if (header.dmaster != ctdb->vnn) {
-		ctdb_call_send_redirect(ctdb, c, &header);
+		ctdb_call_send_redirect(ctdb, call.key, c, &header);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
 		return;
@@ -593,44 +589,6 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 }
 
-
-/*
-  called when a CTDB_REPLY_REDIRECT packet comes in
-
-  This packet arrives when we have sent a CTDB_REQ_CALL request and
-  the node that received it is not the dmaster for the given key. We
-  are given a hint as to what node to try next.
-*/
-void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_redirect *c = (struct ctdb_reply_redirect *)hdr;
-	struct ctdb_call_state *state;
-
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
-	if (state == NULL) {
-		return;
-	}
-
-	if (hdr->reqid != state->reqid) {
-		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
-		return;
-	}
-
-	/* don't allow for too many redirects */
-	if ((++state->redirect_count) % CTDB_MAX_REDIRECT == 0) {
-		c->dmaster = ctdb_lmaster(ctdb, &state->call.key);
-		if (state->redirect_count > ctdb->status.max_redirect_count) {
-			ctdb->status.max_redirect_count = state->redirect_count;
-		}
-	}
-
-	/* send it off again */
-	state->node = ctdb->nodes[c->dmaster];
-	state->c->hdr.destnode = c->dmaster;
-
-	ctdb_queue_packet(ctdb, &state->c->hdr);
-}
 
 /*
   destroy a ctdb_call
