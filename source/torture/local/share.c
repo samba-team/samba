@@ -159,7 +159,7 @@ static bool test_double_create(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "create_share failed");
 
-	torture_assert_ntstatus_equal(tctx, NT_STATUS_UNSUCCESSFUL, 
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_OBJECT_NAME_COLLISION,
 				      share_create(ctx, "bla", inf, 2),
 				      "create_share failed");
 
