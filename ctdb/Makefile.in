@@ -108,8 +108,8 @@ distclean: clean
 install: all
 	mkdir -p $(bindir)
 	mkdir -p $(includedir)
-	cp $(BINS) $(bindir)
-	cp $(srcdir)/include/ctdb.h $(includedir)
+	rsync $(BINS) $(bindir)
+	rsync $(srcdir)/include/ctdb.h $(includedir)
 
 test:
 	tests/run_tests.sh
