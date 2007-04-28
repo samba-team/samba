@@ -35,8 +35,8 @@ static void usage(void)
 	printf("\nControls:\n");
 	printf("  ping\n");
 	printf("  process-exists <vnn:pid>           see if a process exists\n");
-	printf("  status <vnn>                       show ctdb status on a node\n");
-	printf("  debug <vnn> <level>                set ctdb debug level on a node\n");
+	printf("  status <vnn|all>                   show ctdb status on a node\n");
+	printf("  debug <vnn|all> <level>            set ctdb debug level on a node\n");
 	printf("  debuglevel                         display ctdb debug levels\n");
 	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
@@ -106,6 +106,41 @@ static void show_status(struct ctdb_status *s)
 }
 
 /*
+  display remote ctdb status combined from all nodes
+ */
+static int control_status_all(struct ctdb_context *ctdb)
+{
+	int ret, i;
+	struct ctdb_status status;
+	ZERO_STRUCT(status);
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct ctdb_status s1;
+		int j;
+		uint32_t *v1 = (uint32_t *)&s1;
+		uint32_t *v2 = (uint32_t *)&status;
+		uint32_t num_ints = 
+			offsetof(struct ctdb_status, __last_uint32) / sizeof(uint32_t);
+		ret = ctdb_status(ctdb, i, &s1);
+		if (ret != 0) {
+			printf("Unable to get status from node %u\n", i);
+			return ret;
+		}
+		for (j=0;j<num_ints;j++) {
+			v2[j] += v1[j];
+		}
+		status.max_redirect_count = 
+			MAX(status.max_redirect_count, s1.max_redirect_count);
+		status.max_call_latency = 
+			MAX(status.max_call_latency, s1.max_call_latency);
+		status.max_lockwait_latency = 
+			MAX(status.max_lockwait_latency, s1.max_lockwait_latency);
+	}
+	show_status(&status);
+	return 0;
+}
+
+/*
   display remote ctdb status
  */
 static int control_status(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -115,6 +150,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_status status;
 	if (argc < 1) {
 		usage();
+	}
+
+	if (strcmp(argv[0], "all") == 0) {
+		return control_status_all(ctdb);
 	}
 
 	vnn = strtoul(argv[0], NULL, 0);
@@ -297,19 +336,31 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t vnn, level;
+	uint32_t vnn, level, i;
 
 	if (argc < 2) {
 		usage();
 	}
 
-	vnn   = strtoul(argv[0], NULL, 0);
 	level = strtoul(argv[1], NULL, 0);
 
+	if (strcmp(argv[0], "all") == 0) {
+		for (i=0;i<ctdb->num_nodes;i++) {
+			ret = ctdb_set_debuglevel(ctdb, i, level);
+			if (ret != 0) {
+				printf("Unable to set debug level on node %u\n", i);
+				break;
+			}
+		}
+		return 0;
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
 	ret = ctdb_set_debuglevel(ctdb, vnn, level);
 	if (ret != 0) {
 		printf("Unable to set debug level on node %u\n", vnn);
 	}
+
 	return 0;
 }
 
