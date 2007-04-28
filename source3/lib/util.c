@@ -942,6 +942,9 @@ BOOL yesno(char *p)
 
 void *malloc_(size_t size)
 {
+	if (size == 0) {
+		return NULL;
+	}
 #undef malloc
 	return malloc(size);
 #define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
@@ -953,6 +956,9 @@ void *malloc_(size_t size)
 
 static void *calloc_(size_t count, size_t size)
 {
+	if (size == 0 || count == 0) {
+		return NULL;
+	}
 #undef calloc
 	return calloc(count, size);
 #define calloc(n,s) __ERROR_DONT_USE_CALLOC_DIRECTLY
@@ -981,6 +987,9 @@ void *malloc_array(size_t el_size, unsigned int count)
 		return NULL;
 	}
 
+	if (el_size == 0 || count == 0) {
+		return NULL;
+	}
 #if defined(PARANOID_MALLOC_CHECKER)
 	return malloc_(el_size*count);
 #else
@@ -1008,6 +1017,9 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count)
 void *calloc_array(size_t size, size_t nmemb)
 {
 	if (nmemb >= MAX_ALLOC_SIZE/size) {
+		return NULL;
+	}
+	if (size == 0 || nmemb == 0) {
 		return NULL;
 	}
 #if defined(PARANOID_MALLOC_CHECKER)
