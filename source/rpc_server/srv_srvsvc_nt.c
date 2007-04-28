@@ -769,13 +769,12 @@ static void init_srv_sess_info_0(pipes_struct *p, struct srvsvc_NetSessCtr0 *ss0
 {
 	struct sessionid *session_list;
 	uint32 num_entries = 0;
-	(*stot) = list_sessions(&session_list);
+	(*stot) = list_sessions(p->mem_ctx, &session_list);
 
 	if (ss0 == NULL) {
 		if (snum) {
 			(*snum) = 0;
 		}
-		SAFE_FREE(session_list);
 		return;
 	}
 
@@ -799,7 +798,6 @@ static void init_srv_sess_info_0(pipes_struct *p, struct srvsvc_NetSessCtr0 *ss0
 		ss0->array = NULL;
 		ss0->count = 0;
 	}
-	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
@@ -859,7 +857,7 @@ static void init_srv_sess_info_1(pipes_struct *p, struct srvsvc_NetSessCtr1 *ss1
 		return;
 	}
 
-	(*stot) = list_sessions(&session_list);
+	(*stot) = list_sessions(p->mem_ctx, &session_list);
 
 	ss1->array = TALLOC_ARRAY(p->mem_ctx, struct srvsvc_NetSessInfo1, *stot);
 	
@@ -900,8 +898,6 @@ static void init_srv_sess_info_1(pipes_struct *p, struct srvsvc_NetSessCtr1 *ss1
 	if ((*snum) >= (*stot)) {
 		(*snum) = 0;
 	}
-
-	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
@@ -1222,7 +1218,7 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 		memmove(machine, &machine[1], strlen(machine));
 	}
 
-	num_sessions = list_sessions(&session_list);
+	num_sessions = list_sessions(p->mem_ctx, &session_list);
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
@@ -1248,10 +1244,7 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
-
 done:
-	SAFE_FREE(session_list);
-
 	return status;
 }
 

@@ -218,6 +218,7 @@ BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *),
 ********************************************************************/
 
 struct session_list {
+	TALLOC_CTX *mem_ctx;
 	int count;
 	struct sessionid *sessions;
 };
@@ -230,7 +231,9 @@ static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf, v
 
 	i = sesslist->count;
 	
-	sesslist->sessions = SMB_REALLOC_ARRAY(sesslist->sessions, struct sessionid, i+1);
+	sesslist->sessions = TALLOC_REALLOC_ARRAY(
+		sesslist->mem_ctx, sesslist->sessions, struct sessionid, i+1);
+
 	if (!sesslist->sessions) {
 		sesslist->count = 0;
 		return -1;
@@ -248,10 +251,11 @@ static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf, v
 /********************************************************************
 ********************************************************************/
 
-int list_sessions(struct sessionid **session_list)
+int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 {
 	struct session_list sesslist;
 
+	sesslist.mem_ctx = mem_ctx;
 	sesslist.count = 0;
 	sesslist.sessions = NULL;
 	
