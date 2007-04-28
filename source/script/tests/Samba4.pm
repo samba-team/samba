@@ -600,6 +600,8 @@ sub provision($$$$$)
 	push (@provision_options, "--domain $domain");
 	push (@provision_options, "--realm $realm");
 	push (@provision_options, "--adminpass $password");
+	push (@provision_options, "--krbtgtpass krbtgt$password");
+	push (@provision_options, "--machinepass machine$password");
 	push (@provision_options, "--root=$root");
 	push (@provision_options, "--simple-bind-dn=cn=Manager,$basedn");
 	push (@provision_options, "--password=$password");
