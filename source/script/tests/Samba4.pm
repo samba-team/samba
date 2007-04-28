@@ -612,7 +612,9 @@ sub provision($$$$$)
 		KRB5_CONFIG => $krb5_config,
 		PIDDIR => $piddir,
 		SERVER => $server,
+		SERVER_IP => $ifaceipv4,
 		NETBIOSNAME => $netbiosname,
+		NETBIOSALIAS => $server,
 		LDAP_URI => $ldap_uri,
 		DOMAIN => $domain,
 		USERNAME => $username,
@@ -665,6 +667,14 @@ sub provision_member($$$)
 	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
 	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret->{SMBD_TEST_LOG_POS} = 0;
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $dcvars->{NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
 	return $ret;
 }
 

@@ -680,13 +680,23 @@ my @exported_envvars = (
 	"DOMAIN",
 	"REALM",
 
+	# domain controller stuff
+	"DC_SERVER",
+	"DC_SERVER_IP",
+	"DC_NETBIOSNAME",
+	"DC_NETBIOSALIAS",
+
 	# server stuff
 	"SERVER",
+	"SERVER_IP",
 	"NETBIOSNAME",
+	"NETBIOSALIAS",
 
 	# user stuff
 	"USERNAME",
 	"PASSWORD",
+	"DC_USERNAME",
+	"DC_PASSWORD",
 
 	# misc stuff
 	"KRB5_CONFIG"
