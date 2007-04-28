@@ -119,8 +119,8 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		goto done;
 	}
 	if (cnt != hdr->length) {
-		ctdb_set_error(ctdb, "Bad header length %d expected %d in client\n", 
-			       hdr->length, cnt);
+		ctdb_set_error(ctdb, "Bad header length %u expected %u in client\n", 
+			       (unsigned)hdr->length, (unsigned)cnt);
 		goto done;
 	}
 
