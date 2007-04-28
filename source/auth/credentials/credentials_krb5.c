@@ -141,7 +141,10 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		talloc_free(ccc);
 		return ret;
 	}
-	talloc_reference(ccc, ccc->smb_krb5_context);
+	if (!talloc_reference(ccc, ccc->smb_krb5_context)) {
+		talloc_free(ccc);
+		return ENOMEM;
+	}
 
 	if (name) {
 		ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, name, &ccc->ccache);
@@ -218,7 +221,10 @@ int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_conta
 		talloc_free(ccc);
 		return ret;
 	}
-	talloc_reference(ccc, ccc->smb_krb5_context);
+	if (!talloc_reference(ccc, ccc->smb_krb5_context)) {
+		talloc_free(ccc);
+		return ENOMEM;
+	}
 
 	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, &ccc->ccache);
 	if (ret) {
@@ -394,6 +400,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	krb5_error_code ret;
 	struct keytab_container *ktc;
 	struct smb_krb5_context *smb_krb5_context;
+	const char **enctype_strings;
 	TALLOC_CTX *mem_ctx;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
@@ -416,7 +423,11 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_create_memory_keytab(mem_ctx, cred, smb_krb5_context, &ktc);
+	enctype_strings = cli_credentials_get_enctype_strings(cred);
+	
+	ret = smb_krb5_create_memory_keytab(mem_ctx, cred, 
+					    smb_krb5_context, 
+					    enctype_strings, &ktc);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -478,6 +489,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 	krb5_error_code ret;
 	struct keytab_container *ktc;
 	struct smb_krb5_context *smb_krb5_context;
+	const char **enctype_strings;
 	TALLOC_CTX *mem_ctx;
 	
 	mem_ctx = talloc_new(cred);
@@ -491,13 +503,15 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 		return ret;
 	}
 
+	enctype_strings = cli_credentials_get_enctype_strings(cred);
+	
 	ret = cli_credentials_get_keytab(cred, &ktc);
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	ret = smb_krb5_update_keytab(mem_ctx, cred, smb_krb5_context, ktc);
+	ret = smb_krb5_update_keytab(mem_ctx, cred, smb_krb5_context, enctype_strings, ktc);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -592,6 +606,22 @@ void cli_credentials_set_kvno(struct cli_credentials *cred,
 int cli_credentials_get_kvno(struct cli_credentials *cred)
 {
 	return cred->kvno;
+}
+
+
+const char **cli_credentials_get_enctype_strings(struct cli_credentials *cred) 
+{
+	/* If this is ever made user-configurable, we need to add code
+	 * to remove/hide the other entries from the generated
+	 * keytab */
+	static const char *default_enctypes[] = {
+		"des-cbc-md5",
+		"aes256-cts-hmac-sha1-96",
+		"des3-cbc-sha1",
+		"arcfour-hmac-md5",
+		NULL
+	};
+	return default_enctypes;
 }
 
 const char *cli_credentials_get_salt_principal(struct cli_credentials *cred) 
