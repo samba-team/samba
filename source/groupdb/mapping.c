@@ -578,11 +578,16 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
+	*p_num_alias_rids = 0;
+
+	if (num_alias_sids == 0) {
+		TALLOC_FREE(alias_sids);
+		return NT_STATUS_OK;
+	}
+
 	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
 	if (*pp_alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
-
-	*p_num_alias_rids = 0;
 
 	for (i=0; i<num_alias_sids; i++) {
 		if (!sid_peek_check_rid(domain_sid, &alias_sids[i],
