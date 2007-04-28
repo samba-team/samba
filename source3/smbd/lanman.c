@@ -4213,7 +4213,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	num_sessions = list_sessions(&session_list);
+	num_sessions = list_sessions(tmp_talloc_ctx(), &session_list);
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
