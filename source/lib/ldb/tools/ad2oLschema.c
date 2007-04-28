@@ -355,7 +355,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		/* We might have been asked to remap this oid, due to a conflict */
 		for (j=0; oid && oid_map && oid_map[j].old_oid; j++) {
-			if (strcmp(oid, oid_map[j].old_oid) == 0) {
+			if (strcasecmp(oid, oid_map[j].old_oid) == 0) {
 				oid =  oid_map[j].new_oid;
 				break;
 			}
@@ -377,7 +377,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		/* We might have been asked to remap this name, due to a conflict */
 		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
-			if (strcmp(name, attr_map[j].old_attr) == 0) {
+			if (strcasecmp(name, attr_map[j].old_attr) == 0) {
 				name =  attr_map[j].new_attr;
 				break;
 			}
@@ -410,7 +410,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			 * due to a conflict, or lack of
 			 * implementation */
 			for (j=0; syntax_oid && oid_map[j].old_oid; j++) {
-				if (strcmp(syntax_oid, oid_map[j].old_oid) == 0) {
+				if (strcasecmp(syntax_oid, oid_map[j].old_oid) == 0) {
 					syntax_oid =  oid_map[j].new_oid;
 					break;
 				}
@@ -475,7 +475,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		/* We might have been asked to remap this oid, due to a conflict */
 		for (j=0; oid_map[j].old_oid; j++) {
-			if (strcmp(oid, oid_map[j].old_oid) == 0) {
+			if (strcasecmp(oid, oid_map[j].old_oid) == 0) {
 				oid =  oid_map[j].new_oid;
 				break;
 			}
@@ -501,7 +501,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		/* We might have been asked to remap this name, due to a conflict */
 		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
-			if (strcmp(name, attr_map[j].old_attr) == 0) {
+			if (strcasecmp(name, attr_map[j].old_attr) == 0) {
 				name =  attr_map[j].new_attr;
 				break;
 			}
@@ -551,7 +551,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 				const char *attr_name = (const char *)attributes->values[k].data;  \
 				/* We might have been asked to remap this name, due to a conflict */ \
 				for (attr_idx=0; attr_name && attr_map && attr_map[attr_idx].old_attr; attr_idx++) { \
-					if (strcmp(attr_name, attr_map[attr_idx].old_attr) == 0) { \
+					if (strcasecmp(attr_name, attr_map[attr_idx].old_attr) == 0) { \
 						attr_name =  attr_map[attr_idx].new_attr; \
 						break;			\
 					}				\
