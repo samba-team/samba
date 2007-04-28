@@ -897,6 +897,68 @@ int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 }
 
 /*
+  get all keys for a specific database
+ */
+int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys)
+{
+	int i, ret;
+	TDB_DATA indata, outdata;
+	int32_t res;
+	unsigned char *ptr;
+
+	indata.dsize = sizeof(uint32_t);
+	indata.dptr = (unsigned char *)&dbid;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_KEYS, indata, 
+			   mem_ctx, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getkeys failed\n"));
+		return -1;
+	}
+
+
+	keys->num= *((uint32_t *)(&outdata.dptr[0]));
+	keys->keys=talloc_array(mem_ctx, TDB_DATA, keys->num);
+	keys->headers=talloc_array(mem_ctx, struct ctdb_ltdb_header, keys->num);
+	keys->lmasters=talloc_array(mem_ctx, uint32_t, keys->num);
+	keys->data=talloc_array(mem_ctx, TDB_DATA, keys->num);
+
+	/* loop over all key/data pairs */
+	ptr=&outdata.dptr[4];
+	for(i=0;i<keys->num;i++){
+		uint32_t len;
+		TDB_DATA *key, *data;
+
+		keys->lmasters[i]= *((uint32_t *)ptr);
+		ptr+=4;
+
+		key=&keys->keys[i];
+		key->dsize= *((uint32_t *)ptr);
+		ptr+=4;
+		key->dptr=talloc_size(mem_ctx, key->dsize);
+		memcpy(key->dptr, ptr, key->dsize);
+		len = (key->dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+		ptr+=len;
+
+		memcpy(&keys->headers[i], ptr, sizeof(struct ctdb_ltdb_header));
+		len = (sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+		ptr+=len;
+
+		data=&keys->data[i];
+		data->dsize= *((uint32_t *)ptr);
+		ptr+=4;
+		data->dptr=talloc_size(mem_ctx, data->dsize);
+		memcpy(data->dptr, ptr, data->dsize);
+		len = (data->dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+		ptr+=len;
+
+	}
+
+	return 0;
+}
+
+/*
   ping a node
  */
 int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)

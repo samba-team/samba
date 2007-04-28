@@ -241,6 +241,15 @@ struct ctdb_node_map {
 };
 int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap);
 
+struct ctdb_key_list {
+	uint32_t num;
+	TDB_DATA *keys;
+	struct ctdb_ltdb_header *headers;
+	uint32_t *lmasters;
+	TDB_DATA *data;
+};
+int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
+
 int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 
 int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);

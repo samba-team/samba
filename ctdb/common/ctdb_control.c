@@ -25,6 +25,7 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
+#include "db_wrap.h"
 
 struct ctdb_control_state {
 	struct ctdb_context *ctdb;
@@ -40,6 +41,56 @@ struct ctdb_control_state {
 	 return -1; \
  } \
  } while (0)
+
+
+struct getkeys_params {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA *outdata;
+};
+
+static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	struct getkeys_params *params = (struct getkeys_params *)p;
+	TDB_DATA *outdata = talloc_get_type(params->outdata, TDB_DATA);
+	struct ctdb_db_context *ctdb_db = talloc_get_type(params->ctdb_db, struct ctdb_db_context);
+	unsigned char *ptr;
+	int len, ret;
+
+	len=outdata->dsize;
+	len+=4; /*lmaster*/
+	len+=4; /*key len*/
+	len+=key.dsize;
+	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+	len+=sizeof(struct ctdb_ltdb_header);
+	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+	len+=4; /*data len */
+	len+=data.dsize;
+	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	ptr=outdata->dptr=talloc_realloc_size(outdata, outdata->dptr, len);
+	ptr+=outdata->dsize;
+	outdata->dsize=len;
+	/* number of records is stored as the first 4 bytes */
+	(*((uint32_t *)(&outdata->dptr[0])))++;
+
+	*((uint32_t *)ptr)=ctdb_lmaster(ctdb_db->ctdb, &key);
+	ptr+=4;
+
+	*((uint32_t *)ptr)=key.dsize;
+	ptr+=4;
+	memcpy(ptr, key.dptr, key.dsize);
+	ptr+= (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	memcpy(ptr, data.dptr, sizeof(struct ctdb_ltdb_header));
+	ptr+=(sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	*((uint32_t *)ptr)=data.dsize-sizeof(struct ctdb_ltdb_header);
+	ptr+=4;
+	memcpy(ptr, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+	ptr+= (data.dsize-sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	return 0;
+}
 
 /*
   process a control request
@@ -164,6 +215,38 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		for (i=0;i<ctdb->vnn_map->size;i++) {
 			ctdb->vnn_map->map[i] = ptr[i+2];
 		}
+		return 0;
+	}
+
+	case CTDB_CONTROL_GET_KEYS: {
+		uint32_t dbid;
+		struct ctdb_db_context *ctdb_db;
+		struct tdb_wrap *db;
+		struct getkeys_params params;
+
+		dbid = *((uint32_t *)(&indata.dptr[0]));
+		ctdb_db = find_ctdb_db(ctdb, dbid);
+		if (!ctdb_db) {
+			DEBUG(0,(__location__ " Unknown db\n"));
+			return -1;
+		}
+
+		outdata->dsize = sizeof(uint32_t);
+		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
+		*((uint32_t *)(&outdata->dptr[0]))=0;
+
+		db = tdb_wrap_open(NULL, ctdb_db->db_path, 0, TDB_DEFAULT, O_RDONLY, 0);
+		if (db == NULL) {
+			DEBUG(0,(__location__ " failed to open db\n"));
+			return -1;
+		}
+
+		params.ctdb_db = ctdb_db;
+		params.outdata = outdata;
+		tdb_traverse(db->tdb, traverse_getkeys, &params);
+
+		talloc_free(db);
+
 		return 0;
 	}
 

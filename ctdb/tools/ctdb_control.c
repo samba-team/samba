@@ -42,6 +42,7 @@ static void usage(void)
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
+	printf("  getkeys <vnn> <dbid>               lists all keys in a remote tdb\n");
 	exit(1);
 }
 
@@ -153,6 +154,47 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
 	}
+	return 0;
+}
+
+/*
+  display remote list of keys for a tdb
+ */
+static int control_getkeys(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	int i, j, ret;
+	struct ctdb_key_list keys;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn  = strtoul(argv[0], NULL, 0);
+	dbid = strtoul(argv[1], NULL, 0);
+
+	mem_ctx = talloc_new(ctdb);
+	ret = ctdb_getkeys(ctdb, vnn, dbid, mem_ctx, &keys);
+	if (ret != 0) {
+		printf("Unable to get keys from node %u\n", vnn);
+		return ret;
+	}
+	printf("Number of keys:%d\n",keys.num);
+	for(i=0;i<keys.num;i++){
+		printf("key:");
+		for(j=0;j<keys.keys[i].dsize;j++){
+			printf("%02x",keys.keys[i].dptr[j]);
+		}
+		printf(" lmaster:%d rsn:%llu dmaster:%d laccessor:%d lacount:%d",keys.lmasters[i],keys.headers[i].rsn,keys.headers[i].dmaster,keys.headers[i].laccessor,keys.headers[i].lacount);
+		printf(" data:");	
+		for(j=0;j<keys.data[i].dsize;j++){
+			printf("%02x",keys.data[i].dptr[j]);
+		}
+		printf("\n");
+	}
+
+	talloc_free(mem_ctx);
 	return 0;
 }
 
@@ -378,6 +420,8 @@ int main(int argc, const char *argv[])
 		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getnodemap") == 0) {
 		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getkeys") == 0) {
+		ret = control_getkeys(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
