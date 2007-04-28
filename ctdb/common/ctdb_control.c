@@ -51,9 +51,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
 		pid_t pid;
+		int32_t ret;
 		CHECK_CONTROL_DATA_SIZE(sizeof(pid));
 		pid = *(pid_t *)indata.dptr;
-		return kill(pid, 0);
+		ret = kill(pid, 0);
+		DEBUG(5,("process_exists on %u:%u gave %d\n", 
+			 ctdb->vnn, pid, ret));
+		return ret;
 	}
 
 	case CTDB_CONTROL_SET_DEBUG: {
@@ -161,17 +165,10 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	status = ctdb_control_dispatch(ctdb, c->opcode, data, outdata);
 
 	len = offsetof(struct ctdb_reply_control, data) + outdata->dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
-	talloc_set_name_const(r, "ctdb_reply_control packet");
 
-	r->hdr.length       = len;
-	r->hdr.ctdb_magic   = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation   = ctdb->vnn_map->generation;
-	r->hdr.operation    = CTDB_REPLY_CONTROL;
 	r->hdr.destnode     = hdr->srcnode;
-	r->hdr.srcnode      = ctdb->vnn;
 	r->hdr.reqid        = hdr->reqid;
 	r->status           = status;
 	r->datalen          = outdata->dsize;
@@ -240,17 +237,12 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	talloc_set_destructor(state, ctdb_control_destructor);
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
-	c = ctdb->methods->allocate_pkt(state, len);
+	c = ctdb_transport_allocate(ctdb, state, CTDB_REQ_CONTROL, len, 
+				    struct ctdb_req_control);
 	CTDB_NO_MEMORY(ctdb, c);
 	talloc_set_name_const(c, "ctdb_req_control packet");
 
-	c->hdr.length       = len;
-	c->hdr.ctdb_magic   = CTDB_MAGIC;
-	c->hdr.ctdb_version = CTDB_VERSION;
-	c->hdr.generation= ctdb->vnn_map->generation;
-	c->hdr.operation    = CTDB_REQ_CONTROL;
 	c->hdr.destnode     = destnode;
-	c->hdr.srcnode      = ctdb->vnn;
 	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
 	c->srvid            = srvid;

@@ -160,3 +160,4 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 		DEBUG(0, ("Removing idr that does not exist\n"));
 	}
 }
+

@@ -114,17 +114,12 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdbd_allocate_pkt(ctdb, len);
+	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_MESSAGE, 
+			       len, struct ctdb_req_message);
+	CTDB_NO_MEMORY_VOID(ctdb, r);
 
 	talloc_set_name_const(r, "req_message packet");
 
-	memset(r, 0, offsetof(struct ctdb_req_message, data));
-
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -181,19 +176,11 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 		}
 
 		len = sizeof(struct ctdb_req_finished);
-		rf = ctdb->methods->allocate_pkt(ctdb, len);
+		rf = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_FINISHED, len,
+					     struct ctdb_req_finished);
 		CTDB_NO_MEMORY_FATAL(ctdb, rf);
-		talloc_set_name_const(rf, "ctdb_req_finished packet");
 
-		ZERO_STRUCT(*rf);
-		rf->hdr.length    = len;
-		rf->hdr.ctdb_magic = CTDB_MAGIC;
-		rf->hdr.ctdb_version = CTDB_VERSION;
-		rf->hdr.generation= ctdb->vnn_map->generation;
-		rf->hdr.operation = CTDB_REQ_FINISHED;
 		rf->hdr.destnode  = node;
-		rf->hdr.srcnode   = ctdb->vnn;
-		rf->hdr.reqid     = 0;
 
 		ctdb_queue_packet(ctdb, &(rf->hdr));
 
@@ -218,24 +205,21 @@ static void daemon_request_shutdown(struct ctdb_client *client,
 static void daemon_request_connect_wait(struct ctdb_client *client, 
 					struct ctdb_req_connect_wait *c)
 {
-	struct ctdb_reply_connect_wait r;
+	struct ctdb_reply_connect_wait *r;
 	int res;
 
 	/* first wait - in the daemon */
 	ctdb_daemon_connect_wait(client->ctdb);
 
 	/* now send the reply */
-	ZERO_STRUCT(r);
-
-	r.hdr.length     = sizeof(r);
-	r.hdr.ctdb_magic = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.generation= client->ctdb->vnn_map->generation;
-	r.hdr.operation = CTDB_REPLY_CONNECT_WAIT;
-	r.vnn           = ctdb_get_vnn(client->ctdb);
-	r.num_connected = client->ctdb->num_connected;
+	r = ctdbd_allocate_pkt(client->ctdb, client, CTDB_REPLY_CONNECT_WAIT, sizeof(*r), 
+			       struct ctdb_reply_connect_wait);
+	CTDB_NO_MEMORY_VOID(client->ctdb, r);
+	r->vnn           = ctdb_get_vnn(client->ctdb);
+	r->num_connected = client->ctdb->num_connected;
 	
-	res = daemon_queue_send(client, &r.hdr);
+	res = daemon_queue_send(client, &r->hdr);
+	talloc_free(r);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
 		return;
@@ -313,19 +297,14 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 
 	length = offsetof(struct ctdb_reply_call, data) + dstate->call->reply_data.dsize;
-	r = ctdbd_allocate_pkt(dstate, length);
+	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL, 
+			       length, struct ctdb_reply_call);
 	if (r == NULL) {
 		DEBUG(0, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		client->ctdb->status.pending_calls--;
 		ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 		return;
 	}
-	memset(r, 0, offsetof(struct ctdb_reply_call, data));
-	r->hdr.length       = length;
-	r->hdr.ctdb_magic   = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation   = client->ctdb->vnn_map->generation;
-	r->hdr.operation    = CTDB_REPLY_CALL;
 	r->hdr.reqid        = dstate->reqid;
 	r->datalen          = dstate->call->reply_data.dsize;
 	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
@@ -694,12 +673,61 @@ int ctdb_start(struct ctdb_context *ctdb)
 /*
   allocate a packet for use in client<->daemon communication
  */
-void *ctdbd_allocate_pkt(TALLOC_CTX *mem_ctx, size_t len)
+struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
+					    TALLOC_CTX *mem_ctx, 
+					    enum ctdb_operation operation, 
+					    size_t length, size_t slength,
+					    const char *type)
 {
 	int size;
+	struct ctdb_req_header *hdr;
+	size = ((length+1)+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
+	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
+	if (hdr == NULL) {
+		DEBUG(0,("Unable to allocate packet for operation %u of length %u\n",
+			 operation, length));
+		return NULL;
+	}
+	talloc_set_name_const(hdr, type);
+	memset(hdr, 0, slength);
+	hdr->operation    = operation;
+	hdr->length       = length;
+	hdr->ctdb_magic   = CTDB_MAGIC;
+	hdr->ctdb_version = CTDB_VERSION;
+	hdr->generation   = ctdb->vnn_map->generation;
 
-	size = (len+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
-	return talloc_size(mem_ctx, size);
+	return hdr;
+}
+
+
+/*
+  allocate a packet for use in daemon<->daemon communication
+ */
+struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
+						 TALLOC_CTX *mem_ctx, 
+						 enum ctdb_operation operation, 
+						 size_t length, size_t slength,
+						 const char *type)
+{
+	int size;
+	struct ctdb_req_header *hdr;
+	size = ((length+1)+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
+	hdr = (struct ctdb_req_header *)ctdb->methods->allocate_pkt(mem_ctx, size);
+	if (hdr == NULL) {
+		DEBUG(0,("Unable to allocate transport packet for operation %u of length %u\n",
+			 operation, length));
+		return NULL;
+	}
+	talloc_set_name_const(hdr, type);
+	memset(hdr, 0, slength);
+	hdr->operation    = operation;
+	hdr->length       = length;
+	hdr->ctdb_magic   = CTDB_MAGIC;
+	hdr->ctdb_version = CTDB_VERSION;
+	hdr->generation   = ctdb->vnn_map->generation;
+	hdr->srcnode      = ctdb->vnn;
+
+	return hdr;	
 }
 
 /*
@@ -732,16 +760,10 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
-	r = ctdbd_allocate_pkt(client, len);
-	talloc_set_name_const(r, "reply_control packet");
+	r = ctdbd_allocate_pkt(ctdb, client, CTDB_REPLY_CONTROL, len, 
+			       struct ctdb_reply_control);
+	CTDB_NO_MEMORY_VOID(ctdb, r);
 
-	memset(r, 0, offsetof(struct ctdb_reply_control, data));
-
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REPLY_CONTROL;
 	r->hdr.reqid     = state->reqid;
 	r->status        = status;
 	r->datalen       = data.dsize;

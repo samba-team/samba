@@ -120,18 +120,11 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	}
 
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdb->methods->allocate_pkt(ctdb, len);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_MESSAGE, len,
+				    struct ctdb_req_message);
 	CTDB_NO_MEMORY(ctdb, r);
-	talloc_set_name_const(r, "req_message packet");
 
-	r->hdr.length    = len;
-	r->hdr.ctdb_magic = CTDB_MAGIC;
-	r->hdr.ctdb_version = CTDB_VERSION;
-	r->hdr.generation= ctdb->vnn_map->generation;
-	r->hdr.operation = CTDB_REQ_MESSAGE;
 	r->hdr.destnode  = vnn;
-	r->hdr.srcnode   = ctdb->vnn;
-	r->hdr.reqid     = 0;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
