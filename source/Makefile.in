@@ -1799,6 +1799,7 @@ python_install: $(PYTHON_OBJ)
 
 python_clean:
 	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
+	@-rm -rf build/
 
 # revert to the previously installed version
 revert:
@@ -1990,6 +1991,7 @@ realclean: clean delheaders
 
 distclean: realclean
 	-rm -f include/stamp-h
+	-rm -f smbadduser
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
