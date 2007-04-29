@@ -29,7 +29,7 @@ sub provision($$$)
 
 	die ("$ENV{WINTESTCONF} could not be read.") if (! -r $ENV{WINTESTCONF});
 
-	$ENV{WINTEST_DIR}="$ENV{SRCDIR}/script/tests/win";
+	$ENV{WINTEST_DIR}="$ENV{SRCDIR}/selftest/win";
 }
 
 sub setup_env($$)
