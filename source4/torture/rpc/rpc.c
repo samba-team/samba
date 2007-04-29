@@ -175,7 +175,6 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_atsvc());
 	torture_suite_add_suite(suite, torture_rpc_wkssvc());
 	torture_suite_add_suite(suite, torture_rpc_handles());
-//	torture_suite_add_suite(suite, torture_rpc_disconnect());
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
 	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
