@@ -276,4 +276,16 @@ int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_c
  */
 int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t from_vnn);
 
+
+#define CTDB_RECOVERY_NORMAL		0
+#define CTDB_RECOVERY_ACTIVE		1
+/*
+  get the recovery mode of a remote node
+ */
+int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode);
+/*
+  set the recovery mode of a remote node
+ */
+int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
+
 #endif

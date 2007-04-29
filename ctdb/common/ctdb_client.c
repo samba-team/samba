@@ -794,6 +794,53 @@ int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 }
 
 /*
+  get the recovery mode of a remote node
+ */
+int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECMODE, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		return -1;
+	}
+
+	*recmode = ((uint32_t *)outdata.dptr)[0];
+
+	return 0;
+}
+
+/*
+  set the recovery mode of a remote node
+ */
+int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&recmode;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_RECMODE, data, 
+			   ctdb, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   get a list of databases off a remote node
  */
 int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap)

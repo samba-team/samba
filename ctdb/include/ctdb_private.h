@@ -173,6 +173,7 @@ struct ctdb_vnn_map {
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
+	uint32_t recovery_mode;
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
@@ -258,7 +259,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GET_KEYS,
 		    CTDB_CONTROL_SET_DMASTER,
 		    CTDB_CONTROL_CLEAR_DB,
-		    CTDB_CONTROL_PULL_DB};
+		    CTDB_CONTROL_PULL_DB,
+		    CTDB_CONTROL_GET_RECMODE,
+		    CTDB_CONTROL_SET_RECMODE};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 

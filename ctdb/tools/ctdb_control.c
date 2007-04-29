@@ -46,6 +46,8 @@ static void usage(void)
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
 	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
 	printf("  pulldb <vnn> <dbid> <from vnn>     pull a db from a remote node\n");
+	printf("  getrecmode <vnn>                   get recovery mode\n");
+	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
 	exit(1);
 }
 
@@ -157,6 +159,56 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
 	}
+	return 0;
+}
+
+/*
+  display recovery mode of a remote node
+ */
+static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmode;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_getrecmode(ctdb, vnn, &recmode);
+	if (ret != 0) {
+		printf("Unable to get recmode from node %u\n", vnn);
+		return ret;
+	}
+	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
+
+	return 0;
+}
+
+/*
+  set recovery mode of a remote node
+ */
+static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmode;
+	int ret;
+
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	recmode = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_setrecmode(ctdb, vnn, recmode);
+	if (ret != 0) {
+		printf("Unable to set recmode on node %u\n", vnn);
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -504,6 +556,10 @@ int main(int argc, const char *argv[])
 		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "pulldb") == 0) {
 		ret = control_pulldb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getrecmode") == 0) {
+		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "setrecmode") == 0) {
+		ret = control_setrecmode(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debug") == 0) {
