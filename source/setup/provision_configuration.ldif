@@ -95,7 +95,6 @@ showInAdvancedViewOnly: TRUE
 systemFlags: 33554432
 objectCategory: CN=NTDS-DSA,${SCHEMADN}
 dMDLocation: ${SCHEMADN}
-objectGUID: ${INVOCATIONID}
 invocationId: ${INVOCATIONID}
 msDS-Behavior-Version: 2
 
