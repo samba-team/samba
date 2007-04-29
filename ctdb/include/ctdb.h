@@ -266,4 +266,9 @@ int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t l
  */
 int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
 
+/*
+  delete all records from a tdb
+ */
+int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
+
 #endif

@@ -44,6 +44,7 @@ static void usage(void)
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
 	printf("  getkeys <vnn> <dbid>               lists all keys in a remote tdb\n");
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
+	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
 	exit(1);
 }
 
@@ -305,7 +306,7 @@ static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **
 	uint32_t vnn, dbid, dmaster;
 	int ret;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		usage();
 	}
 
@@ -316,6 +317,29 @@ static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **
 	ret = ctdb_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
 	if (ret != 0) {
 		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
+		return ret;
+	}
+	return 0;
+}
+
+/*
+  clears a database
+ */
+static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbid    = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_cleardb(ctdb, vnn, ctdb, dbid);
+	if (ret != 0) {
+		printf("Unable to clear db for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
 	}
 	return 0;
@@ -451,6 +475,8 @@ int main(int argc, const char *argv[])
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setdmaster") == 0) {
 		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "cleardb") == 0) {
+		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debug") == 0) {

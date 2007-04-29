@@ -43,6 +43,19 @@ struct ctdb_control_state {
  } while (0)
 
 
+static int traverse_cleardb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	int ret;
+
+
+	ret = tdb_delete(tdb, key);
+	if (ret) {
+		DEBUG(0,(__location__ "failed to delete tdb record\n"));
+		return ret;
+	}
+	return 0;
+}
+
 static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	uint32_t *dmaster = (uint32_t *)p;
@@ -237,7 +250,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_KEYS: {
 		uint32_t dbid;
 		struct ctdb_db_context *ctdb_db;
-		struct tdb_wrap *db;
 		struct getkeys_params params;
 
 		dbid = *((uint32_t *)(&indata.dptr[0]));
@@ -251,17 +263,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
 		*((uint32_t *)(&outdata->dptr[0]))=0;
 
-		db = tdb_wrap_open(NULL, ctdb_db->db_path, 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (db == NULL) {
-			DEBUG(0,(__location__ " failed to open db\n"));
-			return -1;
-		}
-
 		params.ctdb_db = ctdb_db;
 		params.outdata = outdata;
-		tdb_traverse(db->tdb, traverse_getkeys, &params);
+		tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_getkeys, &params);
 
-		talloc_free(db);
 
 		return 0;
 	}
@@ -269,7 +274,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SET_DMASTER: {
 		uint32_t dbid, dmaster;
 		struct ctdb_db_context *ctdb_db;
-		struct tdb_wrap *db;
 
 		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
 		ctdb_db = find_ctdb_db(ctdb, dbid);
@@ -283,15 +287,26 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		outdata->dsize = 0;
 		outdata->dptr = NULL;
 
-		db = tdb_wrap_open(NULL, ctdb_db->db_path, 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (db == NULL) {
-			DEBUG(0,(__location__ " failed to open db\n"));
+		tdb_traverse(ctdb_db->ltdb->tdb, traverse_setdmaster, &dmaster);
+
+		return 0;
+	}
+
+	case CTDB_CONTROL_CLEAR_DB: {
+		uint32_t dbid;
+		struct ctdb_db_context *ctdb_db;
+
+		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
+		ctdb_db = find_ctdb_db(ctdb, dbid);
+		if (!ctdb_db) {
+			DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
 			return -1;
 		}
 
-		tdb_traverse(db->tdb, traverse_setdmaster, &dmaster);
+		outdata->dsize = 0;
+		outdata->dptr = NULL;
 
-		talloc_free(db);
+		tdb_traverse(ctdb_db->ltdb->tdb, traverse_cleardb, NULL);
 
 		return 0;
 	}
