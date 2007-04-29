@@ -71,7 +71,10 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 	for (i=0;i<torture_numops;i++) {
 		uint_t n = (uint_t)random()%10;
 		if (i % 10 == 0) {
-			torture_comment(tctx, "%d\r", i); fflush(stdout);
+			if (torture_setting_bool(tctx, "progress", true)) {
+				torture_comment(tctx, "%d\r", i);
+				fflush(stdout);
+			}
 		}
 		asprintf(&fname, "\\torture.%u", n);
 
@@ -162,8 +165,10 @@ BOOL run_pipe_number(struct torture_context *tctx,
 			break;
 		}
 		num_pipes++;
-		torture_comment(tctx, "%d\r", num_pipes);
-		fflush(stdout);
+		if (torture_setting_bool(tctx, "progress", true)) {
+			torture_comment(tctx, "%d\r", num_pipes);
+			fflush(stdout);
+		}
 	}
 
 	torture_comment(tctx, "pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
@@ -192,8 +197,10 @@ BOOL torture_holdcon(struct torture_context *tctx)
 		if (!torture_open_connection(&cli[i], i)) {
 			return False;
 		}
-		torture_comment(tctx, "opened %d connections\r", i);
-		fflush(stdout);
+		if (torture_setting_bool(tctx, "progress", true)) {
+			torture_comment(tctx, "opened %d connections\r", i);
+			fflush(stdout);
+		}
 	}
 
 	torture_comment(tctx, "\nStarting pings\n");
@@ -273,7 +280,10 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 			break;
 		}
 		free(fname);
-		torture_comment(tctx, "%6d\r", i);
+		if (torture_setting_bool(tctx, "progress", true)) {
+			torture_comment(tctx, "%6d\r", i);
+			fflush(stdout);
+		}
 	}
 	torture_comment(tctx, "%6d\n", i);
 	i--;
@@ -304,7 +314,10 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 		}
 		free(fname);
 
-		torture_comment(tctx, "%6d %6d\r", i, maxfid-i);
+		if (torture_setting_bool(tctx, "progress", true)) {
+			torture_comment(tctx, "%6d %6d\r", i, maxfid-i);
+			fflush(stdout);
+		}
 	}
 	torture_comment(tctx, "%6d\n", 0);
 

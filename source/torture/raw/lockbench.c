@@ -171,8 +171,11 @@ BOOL torture_bench_lock(struct torture_context *torture)
 		for (i=0;i<nprocs;i++) {
 			total += state[i].count;
 		}
-		printf("%.2f ops/second\r", total/timeval_elapsed(&tv));
-		fflush(stdout);
+
+		if (torture_setting_bool(torture, "progress", true)) {
+			printf("%.2f ops/second\r", total/timeval_elapsed(&tv));
+			fflush(stdout);
+		}
 	}
 
 	printf("%.2f ops/second\n", total/timeval_elapsed(&tv));

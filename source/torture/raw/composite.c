@@ -87,8 +87,10 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
 		event_loop_once(cli->transport->socket->event.ctx);
-		printf("count=%d\r", *count);
-		fflush(stdout);
+		if (lp_parm_bool(-1, "torture", "progress", true)) {
+			printf("count=%d\r", *count);
+			fflush(stdout);
+		}
 	}
 	printf("count=%d\n", *count);
 	
@@ -175,8 +177,10 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	while (*count != torture_numops) {
 		event_loop_once(event_ctx);
-		printf("count=%d\r", *count);
-		fflush(stdout);
+		if (lp_parm_bool(-1, "torture", "progress", true)) {
+			printf("count=%d\r", *count);
+			fflush(stdout);
+		}
 	}
 	printf("count=%d\n", *count);
 
@@ -293,8 +297,10 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
 		event_loop_once(event_ctx);
-		printf("count=%d\r", *count);
-		fflush(stdout);
+		if (lp_parm_bool(-1, "torture", "progress", true)) {
+			printf("count=%d\r", *count);
+			fflush(stdout);
+		}
 	}
 	printf("count=%d\n", *count);
 
@@ -358,8 +364,10 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	while (*count < torture_numops) {
 		event_loop_once(event_ctx);
-		printf("count=%d\r", *count);
-		fflush(stdout);
+		if (lp_parm_bool(-1, "torture", "progress", true)) {
+			printf("count=%d\r", *count);
+			fflush(stdout);
+		}
 	}
 	printf("count=%d\n", *count);
 

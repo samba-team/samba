@@ -567,7 +567,9 @@ static BOOL rw_torture2(struct torture_context *tctx,
 	{
 		size_t buf_size = ((uint_t)random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
-			torture_comment(tctx, "%d\r", i); fflush(stdout);
+			if (torture_setting_bool(tctx, "progress", true)) {
+				torture_comment(tctx, "%d\r", i); fflush(stdout);
+			}
 		}
 
 		generate_random_buffer(buf, buf_size);
