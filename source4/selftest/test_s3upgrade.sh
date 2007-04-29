@@ -16,7 +16,7 @@ export PATH
 mkdir -p $PREFIX
 rm -f $PREFIX/*
 
-. script/tests/test_functions.sh
+. selftest/test_functions.sh
 
 plantest "parse samba3" none bin/smbscript ../testdata/samba3/verify $CONFIGURATION ../testdata/samba3
 #plantest "upgrade" none bin/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf

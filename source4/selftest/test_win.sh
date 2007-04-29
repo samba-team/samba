@@ -7,7 +7,7 @@
 # Copyright Brad Henry <brad@samba.org> 2006
 # Released under the GNU GPL v2 or later.
 
-. script/tests/test_functions.sh
+. selftest/test_functions.sh
 
 export SMBTORTURE_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl VM_CFG_PATH`
 if [ -z $SMBTORTURE_REMOTE_HOST ]; then

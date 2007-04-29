@@ -21,10 +21,10 @@
        exit 1
  fi
 
- export WINTEST_DIR=$SRCDIR/script/tests/win
+ export WINTEST_DIR=$SRCDIR/selftest/win
  export TMPDIR=$TMPDIR
  export NETBIOSNAME=$NETBIOSNAME
 
  . $WINTESTCONF
 
- $SRCDIR/script/tests/test_win.sh
+ $SRCDIR/selftest/test_win.sh

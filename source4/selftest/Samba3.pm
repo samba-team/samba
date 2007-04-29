@@ -187,8 +187,8 @@ sub provision($$)
 	my $username = `PATH=/usr/ucb:$ENV{PATH} whoami`;
 	my $password = "test";
 
-	my $srcdir="$RealBin/../..";
-	my $scriptdir="$srcdir/script/tests";
+	my $srcdir="$RealBin/..";
+	my $scriptdir="$srcdir/selftest";
 	my $prefix_abs = abs_path($prefix);
 	my $shrdir="$prefix_abs/tmp";
 	my $libdir="$prefix_abs/lib";
