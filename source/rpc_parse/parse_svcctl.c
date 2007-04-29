@@ -829,10 +829,14 @@ BOOL svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BU
 	if ( !prs_uint32("num_actions", ps, depth, &fa->num_actions) )
 		return False;
 
-	if ( UNMARSHALLING(ps) && fa->num_actions ) {
-		if ( !(fa->actions = TALLOC_ARRAY( get_talloc_ctx(), SC_ACTION, fa->num_actions )) ) {
-			DEBUG(0,("svcctl_io_service_fa: talloc() failure!\n"));
-			return False;
+	if ( UNMARSHALLING(ps)) {
+		if (fa->num_actions) {
+			if ( !(fa->actions = TALLOC_ARRAY( get_talloc_ctx(), SC_ACTION, fa->num_actions )) ) {
+				DEBUG(0,("svcctl_io_service_fa: talloc() failure!\n"));
+				return False;
+			}
+		} else {
+			fa->actions = NULL;
 		}
 	}
 
