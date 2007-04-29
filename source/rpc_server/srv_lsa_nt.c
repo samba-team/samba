@@ -1502,7 +1502,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		(*sids).ptr_sid[j] = 1;
 	}
 
-	SAFE_FREE(sid_list);
+	talloc_free(sid_list);
 
 	init_lsa_r_enum_accounts(r_u, num_entries);
 
