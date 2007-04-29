@@ -211,11 +211,14 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	dfs3->num_stores = j->referral_count;
     
 	/* also enumerate the stores */
-	dfs3->stores = TALLOC_ARRAY(mem_ctx, struct dfs_StorageInfo, j->referral_count);
-	if (!dfs3->stores)
-		return False;
-
-	memset(dfs3->stores, '\0', j->referral_count * sizeof(struct dfs_StorageInfo));
+	if (j->referral_count) {
+		dfs3->stores = TALLOC_ARRAY(mem_ctx, struct dfs_StorageInfo, j->referral_count);
+		if (!dfs3->stores)
+			return False;
+		memset(dfs3->stores, '\0', j->referral_count * sizeof(struct dfs_StorageInfo));
+	} else {
+		dfs3->stores = NULL;
+	}
 
 	for(ii=0;ii<j->referral_count;ii++) {
 		char* p; 
@@ -262,20 +265,32 @@ WERROR _dfs_Enum(pipes_struct *p, struct dfs_Enum *r)
 	/* Create the return array */
 	switch (r->in.level) {
 	case 1:
-		if ((r->out.info->e.info1->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info1, num_jn)) == NULL) {
-			return WERR_NOMEM;
+		if (num_jn) {
+			if ((r->out.info->e.info1->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info1, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+		} else {
+			r->out.info->e.info1->s = NULL;
 		}
 		r->out.info->e.info1->count = num_jn;
 		break;
 	case 2:
-		if ((r->out.info->e.info2->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info2, num_jn)) == NULL) {
-			return WERR_NOMEM;
+		if (num_jn) {
+			if ((r->out.info->e.info2->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info2, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+		} else {
+			r->out.info->e.info2->s = NULL;
 		}
 		r->out.info->e.info2->count = num_jn;
 		break;
 	case 3:
-		if ((r->out.info->e.info3->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info3, num_jn)) == NULL) {
-			return WERR_NOMEM;
+		if (num_jn) {
+			if ((r->out.info->e.info3->s = TALLOC_ARRAY(p->mem_ctx, struct dfs_Info3, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+		} else {
+			r->out.info->e.info3->s = NULL;
 		}
 		r->out.info->e.info3->count = num_jn;
 		break;
@@ -301,7 +316,7 @@ WERROR _dfs_Enum(pipes_struct *p, struct dfs_Enum *r)
   
 	return WERR_OK;
 }
-      
+
 WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 {
 	int consumedcnt = sizeof(pstring);
