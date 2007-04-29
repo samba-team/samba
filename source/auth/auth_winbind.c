@@ -210,8 +210,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		network_info->nt.length = user_info->password.response.nt.length;
 		network_info->nt.data	= user_info->password.response.nt.data;
 
-		network_info->nt.length = user_info->password.response.lanman.length;
-		network_info->nt.data	= user_info->password.response.lanman.data;
+		network_info->lm.length = user_info->password.response.lanman.length;
+		network_info->lm.data	= user_info->password.response.lanman.data;
 
 		identity_info = &network_info->identity_info;
 		s->req.in.logon_level	= 2;
@@ -226,6 +226,9 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	identity_info->workstation.string	= user_info->workstation_name;
 
 	s->req.in.validation_level	= 3;
+
+	NDR_PRINT_IN_DEBUG(winbind_SamLogon, &s->req);
+
 	status = IRPC_CALL(ctx->auth_ctx->msg_ctx, winbind_servers[0],
 			   winbind, WINBIND_SAMLOGON,
 			   &s->req, s);
