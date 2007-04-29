@@ -18,7 +18,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
+    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER_IP[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
    done
  done
 done
