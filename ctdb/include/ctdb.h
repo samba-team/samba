@@ -239,7 +239,8 @@ struct ctdb_node_map {
 	uint32_t num;
 	struct ctdb_node_and_flags *nodes;
 };
-int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap);
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap);
 
 struct ctdb_key_list {
 	uint32_t num;
@@ -287,5 +288,10 @@ int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recm
   set the recovery mode of a remote node
  */
 int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
+
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+				   uint32_t *num_nodes);
+
+int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
 #endif

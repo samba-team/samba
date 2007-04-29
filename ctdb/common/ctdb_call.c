@@ -162,22 +162,18 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
   send a redirect reply
 */
 static void ctdb_call_send_redirect(struct ctdb_context *ctdb, 
+				    TDB_DATA key,
 				    struct ctdb_req_call *c, 
 				    struct ctdb_ltdb_header *header)
 {
-	struct ctdb_reply_redirect *r;
-
-	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_REDIRECT, sizeof(*r), 
-				    struct ctdb_reply_redirect);
-	CTDB_NO_MEMORY_FATAL(ctdb, r);
-
-	r->hdr.destnode  = c->hdr.srcnode;
-	r->hdr.reqid     = c->hdr.reqid;
-	r->dmaster       = header->dmaster;
-
-	ctdb_queue_packet(ctdb, &r->hdr);
-
-	talloc_free(r);
+	
+	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
+	if (ctdb->vnn == lmaster) {
+		c->hdr.destnode = header->dmaster;
+	} else {
+		c->hdr.destnode = lmaster;
+	}
+	ctdb_queue_packet(ctdb, &c->hdr);
 }
 
 
@@ -438,8 +434,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* if we are not the dmaster, then send a redirect to the
 	   requesting node */
 	if (header.dmaster != ctdb->vnn) {
-		ctdb_call_send_redirect(ctdb, c, &header);
 		talloc_free(data.dptr);
+		ctdb_call_send_redirect(ctdb, call.key, c, &header);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
 		return;
 	}
@@ -595,49 +591,11 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 
 /*
-  called when a CTDB_REPLY_REDIRECT packet comes in
-
-  This packet arrives when we have sent a CTDB_REQ_CALL request and
-  the node that received it is not the dmaster for the given key. We
-  are given a hint as to what node to try next.
-*/
-void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_redirect *c = (struct ctdb_reply_redirect *)hdr;
-	struct ctdb_call_state *state;
-
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
-	if (state == NULL) {
-		return;
-	}
-
-	if (hdr->reqid != state->reqid) {
-		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned dmaster reply with reqid:%d\n",hdr->reqid));
-		return;
-	}
-
-	/* don't allow for too many redirects */
-	if ((++state->redirect_count) % CTDB_MAX_REDIRECT == 0) {
-		c->dmaster = ctdb_lmaster(ctdb, &state->call.key);
-		if (state->redirect_count > ctdb->status.max_redirect_count) {
-			ctdb->status.max_redirect_count = state->redirect_count;
-		}
-	}
-
-	/* send it off again */
-	state->node = ctdb->nodes[c->dmaster];
-	state->c->hdr.destnode = c->dmaster;
-
-	ctdb_queue_packet(ctdb, &state->c->hdr);
-}
-
-/*
   destroy a ctdb_call
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
-	ctdb_reqid_remove(state->node->ctdb, state->reqid);
+	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
 	return 0;
 }
 
@@ -651,7 +609,7 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
 	DEBUG(0,(__location__ " call timeout for reqid %d\n", state->c->hdr.reqid));
 	state->state = CTDB_CALL_ERROR;
-	ctdb_set_error(state->node->ctdb, "ctdb_call %u timed out",
+	ctdb_set_error(state->ctdb_db->ctdb, "ctdb_call %u timed out",
 		       state->c->hdr.reqid);
 	if (state->async.fn) {
 		state->async.fn(state);
@@ -692,7 +650,6 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	talloc_steal(state, data->dptr);
 
 	state->state = CTDB_CALL_DONE;
-	state->node = ctdb->nodes[ctdb->vnn];
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
@@ -729,12 +686,14 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 					   struct ctdb_req_call);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 	state->c->hdr.destnode  = header->dmaster;
-	/*
-	   always sending the remote call straight to the lmaster
+
+#if 0
+	/*always sending the remote call straight to the lmaster
 	   improved performance slightly in some tests.
 	   worth investigating further in the future
-	state->c->hdr.destnode  = ctdb_lmaster(ctdb_db->ctdb, &(call->key));
 	*/
+	state->c->hdr.destnode  = ctdb_lmaster(ctdb_db->ctdb, &(call->key));
+#endif
 
 
 	/* this limits us to 16k outstanding messages - not unreasonable */
@@ -751,7 +710,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->call.call_data.dptr = &state->c->data[call->key.dsize];
 	state->call.key.dptr       = &state->c->data[0];
 
-	state->node   = ctdb->nodes[header->dmaster];
 	state->state  = CTDB_CALL_WAIT;
 	state->header = *header;
 	state->ctdb_db = ctdb_db;
@@ -774,16 +732,16 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	while (state->state < CTDB_CALL_DONE) {
-		event_loop_once(state->node->ctdb->ev);
+		event_loop_once(state->ctdb_db->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
-		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
+		ctdb_set_error(state->ctdb_db->ctdb, "%s", state->errmsg);
 		talloc_free(state);
 		return -1;
 	}
 
 	if (state->call.reply_data.dsize) {
-		call->reply_data.dptr = talloc_memdup(state->node->ctdb,
+		call->reply_data.dptr = talloc_memdup(state->ctdb_db->ctdb,
 						      state->call.reply_data.dptr,
 						      state->call.reply_data.dsize);
 		call->reply_data.dsize = state->call.reply_data.dsize;

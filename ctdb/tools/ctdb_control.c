@@ -35,8 +35,9 @@ static void usage(void)
 	printf("\nControls:\n");
 	printf("  ping\n");
 	printf("  process-exists <vnn:pid>           see if a process exists\n");
-	printf("  status <vnn>                       show ctdb status on a node\n");
-	printf("  debug <vnn> <level>                set ctdb debug level on a node\n");
+	printf("  status <vnn|all>                   show ctdb status on a node\n");
+	printf("  statusreset <vnn|all>              reset status on a node\n");
+	printf("  debug <vnn|all> <level>            set ctdb debug level on a node\n");
 	printf("  debuglevel                         display ctdb debug levels\n");
 	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
@@ -95,20 +96,58 @@ static void show_status(struct ctdb_status *s)
 	printf(" node_packets_recv       %u\n", s->node_packets_recv);
 	printf("   req_call              %u\n", s->count.req_call);
 	printf("   reply_call            %u\n", s->count.reply_call);
-	printf("   reply_redirect        %u\n", s->count.reply_redirect);
 	printf("   req_dmaster           %u\n", s->count.req_dmaster);
 	printf("   reply_dmaster         %u\n", s->count.reply_dmaster);
 	printf("   reply_error           %u\n", s->count.reply_error);
-	printf("   reply_redirect        %u\n", s->count.reply_redirect);
 	printf("   req_message           %u\n", s->count.req_message);
 	printf("   req_finished          %u\n", s->count.req_finished);
 	printf(" total_calls             %u\n", s->total_calls);
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
-	printf(" max_redirect_count      %u\n", s->max_redirect_count);
 	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
 	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
+}
+
+/*
+  display remote ctdb status combined from all nodes
+ */
+static int control_status_all(struct ctdb_context *ctdb)
+{
+	int ret, i;
+	struct ctdb_status status;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	
+	ZERO_STRUCT(status);
+
+	for (i=0;i<num_nodes;i++) {
+		struct ctdb_status s1;
+		int j;
+		uint32_t *v1 = (uint32_t *)&s1;
+		uint32_t *v2 = (uint32_t *)&status;
+		uint32_t num_ints = 
+			offsetof(struct ctdb_status, __last_counter) / sizeof(uint32_t);
+		ret = ctdb_status(ctdb, nodes[i], &s1);
+		if (ret != 0) {
+			printf("Unable to get status from node %u\n", nodes[i]);
+			return ret;
+		}
+		for (j=0;j<num_ints;j++) {
+			v2[j] += v1[j];
+		}
+		status.max_call_latency = 
+			MAX(status.max_call_latency, s1.max_call_latency);
+		status.max_lockwait_latency = 
+			MAX(status.max_lockwait_latency, s1.max_lockwait_latency);
+	}
+	talloc_free(nodes);
+	printf("Gathered status for %u nodes\n", num_nodes);
+	show_status(&status);
+	return 0;
 }
 
 /*
@@ -123,6 +162,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		usage();
 	}
 
+	if (strcmp(argv[0], "all") == 0) {
+		return control_status_all(ctdb);
+	}
+
 	vnn = strtoul(argv[0], NULL, 0);
 
 	ret = ctdb_status(ctdb, vnn, &status);
@@ -131,6 +174,56 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 	show_status(&status);
+	return 0;
+}
+
+
+/*
+  reset status on all nodes
+ */
+static int control_status_reset_all(struct ctdb_context *ctdb)
+{
+	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	
+	for (i=0;i<num_nodes;i++) {
+		ret = ctdb_status_reset(ctdb, nodes[i]);
+		if (ret != 0) {
+			printf("Unable to reset status on node %u\n", nodes[i]);
+			return ret;
+		}
+	}
+	talloc_free(nodes);
+	return 0;
+}
+
+
+/*
+  reset remote ctdb status
+ */
+static int control_status_reset(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int ret;
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") == 0) {
+		return control_status_reset_all(ctdb);
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_status_reset(ctdb, vnn);
+	if (ret != 0) {
+		printf("Unable to reset status on node %u\n", vnn);
+		return ret;
+	}
 	return 0;
 }
 
@@ -303,7 +396,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 	vnn = strtoul(argv[0], NULL, 0);
 
 	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
-	ret = ctdb_getnodemap(ctdb, vnn, nodemap);
+	ret = ctdb_getnodemap(ctdb, vnn, nodemap, nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		talloc_free(nodemap);
@@ -428,17 +521,23 @@ static int control_pulldb(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+
+	for (i=0;i<num_nodes;i++) {
 		struct timeval tv = timeval_current();
-		ret = ctdb_ping(ctdb, i);
-		if (ret != 0) {
-			printf("Unable to get ping response from node %u\n", i);
+		ret = ctdb_ping(ctdb, nodes[i]);
+		if (ret == -1) {
+			printf("Unable to get ping response from node %u\n", nodes[i]);
 		} else {
-			printf("response from %u time=%.6f sec\n", 
-			       i, timeval_elapsed(&tv));
+			printf("response from %u time=%.6f sec  (%d clients)\n", 
+			       nodes[i], timeval_elapsed(&tv), ret);
 		}
 	}
+	talloc_free(nodes);
 	return 0;
 }
 
@@ -449,16 +548,23 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+
+	for (i=0;i<num_nodes;i++) {
 		uint32_t level;
-		ret = ctdb_get_debuglevel(ctdb, i, &level);
+		ret = ctdb_get_debuglevel(ctdb, nodes[i], &level);
 		if (ret != 0) {
-			printf("Unable to get debuglevel response from node %u\n", i);
+			printf("Unable to get debuglevel response from node %u\n", 
+				nodes[i]);
 		} else {
-			printf("Node %u is at debug level %u\n", i, level);
+			printf("Node %u is at debug level %u\n", nodes[i], level);
 		}
 	}
+	talloc_free(nodes);
 	return 0;
 }
 
@@ -468,19 +574,36 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t vnn, level;
+	uint32_t vnn, level, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
 
 	if (argc < 2) {
 		usage();
 	}
 
-	vnn   = strtoul(argv[0], NULL, 0);
 	level = strtoul(argv[1], NULL, 0);
 
-	ret = ctdb_set_debuglevel(ctdb, vnn, level);
-	if (ret != 0) {
-		printf("Unable to set debug level on node %u\n", vnn);
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_set_debuglevel(ctdb, vnn, level);
+		if (ret != 0) {
+			printf("Unable to set debug level on node %u\n", vnn);
+		}
+		
+		return 0;
 	}
+
+	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		ret = ctdb_set_debuglevel(ctdb, nodes[i], level);
+		if (ret != 0) {
+			printf("Unable to set debug level on node %u\n", nodes[i]);
+			break;
+		}
+	}
+	talloc_free(nodes);
 	return 0;
 }
 
@@ -540,6 +663,8 @@ int main(int argc, const char *argv[])
 		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "status") == 0) {
 		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "statusreset") == 0) {
+		ret = control_status_reset(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getvnnmap") == 0) {
 		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getdbmap") == 0) {

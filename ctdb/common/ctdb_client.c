@@ -879,13 +879,15 @@ int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid
 /*
   get a list of nodes (vnn and flags ) from a remote node
  */
-int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_node_map *nodemap)
+int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap)
 {
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t i, res;
 
 	ZERO_STRUCT(data);
+	ZERO_STRUCT(*nodemap);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_NODEMAP, data, 
 			   ctdb, &outdata, &res);
@@ -895,15 +897,9 @@ int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_no
 	}
 
 	nodemap->num = ((uint32_t *)outdata.dptr)[0];
-	if (nodemap->nodes) {
-		talloc_free(nodemap->nodes);
-		nodemap->nodes=NULL;
-	}
-	nodemap->nodes=talloc_array(nodemap, struct ctdb_node_and_flags, nodemap->num);
-	if (!nodemap->nodes) {
-		DEBUG(0,(__location__ " failed to talloc nodemap\n"));
-		return -1;
-	}
+	nodemap->nodes=talloc_array(mem_ctx, struct ctdb_node_and_flags, nodemap->num);
+	CTDB_NO_MEMORY(ctdb, nodemap->nodes);
+
 	for (i=0;i<nodemap->num;i++) {
 		nodemap->nodes[i].vnn = ((uint32_t *)outdata.dptr)[2*i+1];
 		nodemap->nodes[i].flags = ((uint32_t *)outdata.dptr)[2*i+2];
@@ -1083,7 +1079,7 @@ int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ct
 }
 
 /*
-  ping a node
+  ping a node, return number of clients connected
  */
 int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 {
@@ -1093,10 +1089,10 @@ int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_PING, data, NULL, NULL, &res);
-	if (ret != 0 || res != 0) {
+	if (ret != 0) {
 		return -1;
 	}
-	return 0;
+	return res;
 }
 
 /*
@@ -1201,6 +1197,66 @@ int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t l
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_DEBUG, data, 
 			   NULL, NULL, &res);
 	if (ret != 0 || res != 0) {
+		return -1;
+	}
+	return 0;
+}
+
+
+/*
+  get a list of connected nodes
+ */
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+				   uint32_t *num_nodes)
+{
+	struct ctdb_node_map *map;
+	int ret, i;
+	uint32_t *nodes;
+
+	*num_nodes = 0;
+
+	map = talloc(mem_ctx, struct ctdb_node_map);
+	CTDB_NO_MEMORY_VOID(ctdb, map);
+
+	ret = ctdb_getnodemap(ctdb, CTDB_CURRENT_NODE, map, map);
+	if (ret != 0) {
+		talloc_free(map);
+		return NULL;
+	}
+
+	nodes = talloc_array(mem_ctx, uint32_t, map->num);
+	if (nodes == NULL) {
+		talloc_free(map);
+		return NULL;
+	}
+
+	for (i=0;i<map->num;i++) {
+		if (map->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+			nodes[*num_nodes] = map->nodes[i].vnn;
+			(*num_nodes)++;
+		}
+	}
+
+	talloc_free(map);
+	return nodes;
+}
+
+
+/*
+  reset remote status
+ */
+int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_STATUS_RESET, data, 
+			   NULL, NULL, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for reset status failed\n"));
 		return -1;
 	}
 	return 0;

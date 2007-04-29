@@ -160,6 +160,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_STATUS_RESET: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		ZERO_STRUCT(ctdb->status);
+		return 0;
+	}
+
 	case CTDB_CONTROL_GETVNNMAP: {
 		uint32_t i, len;
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -377,7 +383,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
-		return 0;
+		return ctdb->num_clients;
 
 	case CTDB_CONTROL_GETDBPATH: {
 		uint32_t db_id;

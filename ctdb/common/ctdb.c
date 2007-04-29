@@ -105,6 +105,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 
 	if (ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;
+		node->flags |= NODE_FLAGS_CONNECTED;
 	}
 
 	ctdb->num_nodes++;
@@ -276,11 +277,6 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	case CTDB_REPLY_ERROR:
 		ctdb->status.count.reply_error++;
 		ctdb_reply_error(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_REDIRECT:
-		ctdb->status.count.reply_redirect++;
-		ctdb_reply_redirect(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_DMASTER:
