@@ -845,3 +845,250 @@ NTSTATUS libnet_DomainClose(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	c = libnet_DomainClose_send(ctx, io, NULL);
 	return libnet_DomainClose_recv(c, ctx, mem_ctx, io);
 }
+
+
+struct domain_list_state {	
+	struct libnet_context *ctx;
+	struct libnet_RpcConnect rpcconn;
+	struct samr_Connect samrconn;
+	struct samr_EnumDomains enumdom;
+	const char *hostname;
+	struct policy_handle connect_handle;
+	int buf_size;
+	struct domainlist *domains;
+	uint32_t resume_handle;
+	uint32_t count;
+
+	void (*monitor_fn)(struct monitor_msg*);
+};
+
+
+static void continue_rpc_connect(struct composite_context *c);
+static void continue_samr_connect(struct rpc_request *c);
+static void continue_samr_enum_domains(struct rpc_request *req);
+
+static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_list_state *s);
+
+
+/*
+  Stage 1: Receive connected rpc pipe and send connection
+  request to SAMR service
+*/
+static void continue_rpc_connect(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct domain_list_state *s;
+	struct rpc_request *samrconn_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_list_state);
+	
+	c->status = libnet_RpcConnect_recv(ctx, s->ctx, c, &s->rpcconn);
+	if (!composite_is_ok(c)) return;
+
+	s->samrconn.in.system_name     = 0;
+	s->samrconn.in.access_mask     = SEC_GENERIC_READ;     /* should be enough */
+	s->samrconn.out.connect_handle = &s->connect_handle;
+
+	samrconn_req = dcerpc_samr_Connect_send(s->ctx->samr.pipe, c, &s->samrconn);
+	if (composite_nomem(samrconn_req, c)) return;
+
+	composite_continue_rpc(c, samrconn_req, continue_samr_connect, c);
+}
+
+
+/*
+  Stage 2: Receive policy handle to the connected SAMR service and issue
+  a request to enumerate domain databases available
+*/
+static void continue_samr_connect(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct domain_list_state *s;
+	struct rpc_request *enumdom_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_list_state);
+	
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	s->enumdom.in.connect_handle = &s->connect_handle;
+	s->enumdom.in.resume_handle  = &s->resume_handle;
+	s->enumdom.in.buf_size       = s->buf_size;
+	s->enumdom.out.resume_handle = &s->resume_handle;
+
+	enumdom_req = dcerpc_samr_EnumDomains_send(s->ctx->samr.pipe, c, &s->enumdom);
+	if (composite_nomem(enumdom_req, c)) return;
+
+	composite_continue_rpc(c, enumdom_req, continue_samr_enum_domains, c);
+}
+
+
+/*
+  Stage 3: Receive domain names available and repeat the request
+  enumeration is not complete yet
+*/
+static void continue_samr_enum_domains(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct domain_list_state *s;
+	struct rpc_request *enumdom_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct domain_list_state);
+	
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (NT_STATUS_IS_OK(s->enumdom.out.result)) {
+
+		s->domains = get_domain_list(c, s);
+		composite_done(c);
+
+	} else if (NT_STATUS_EQUAL(s->enumdom.out.result, STATUS_MORE_ENTRIES)) {
+		
+		s->domains = get_domain_list(c, s);
+		
+		s->enumdom.in.connect_handle = &s->connect_handle;
+		s->enumdom.in.resume_handle  = &s->resume_handle;
+		s->enumdom.in.buf_size       = s->buf_size;
+		s->enumdom.out.resume_handle = &s->resume_handle;
+
+		enumdom_req = dcerpc_samr_EnumDomains_send(s->ctx->samr.pipe, c, &s->enumdom);
+		if (composite_nomem(enumdom_req, c)) return;
+
+		composite_continue_rpc(c, enumdom_req, continue_samr_enum_domains, c);
+
+	} else {
+		composite_error(c, s->enumdom.out.result);
+	}
+}
+
+
+/*
+  Utility function to copy domain names from result of samr_EnumDomains call
+*/
+static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_list_state *s)
+{
+	int i;
+	if (mem_ctx == NULL || s == NULL) return NULL;
+
+	/* number of entries returned (domains enumerated) */
+	s->count = s->enumdom.out.num_entries;
+	
+	/* copy domain names returned from samr_EnumDomains call */
+	s->domains = talloc_array(mem_ctx, struct domainlist, s->enumdom.out.num_entries);
+	for (i = 0; i < s->enumdom.out.num_entries; i++)
+	{
+		/* strdup name as a child of allocated array to make it follow the array
+		   in case of talloc_steal or talloc_free */
+		s->domains[i].name = talloc_strdup(s->domains,
+						   s->enumdom.out.sam->entries[i].name.string);
+		s->domains[i].sid  = NULL;  /* this is to be filled out later */
+	}
+
+	return s->domains;
+}
+
+
+/**
+ * Sends a request to list domains on given host
+ *
+ * @param ctx initalised libnet context
+ * @param mem_ctx memory context
+ * @param io arguments and results of the call
+ * @param monitor pointer to monitor function that is passed monitor messages
+ */
+
+struct composite_context* libnet_DomainList_send(struct libnet_context *ctx,
+						 TALLOC_CTX *mem_ctx,
+						 struct libnet_DomainList *io,
+						 void (*monitor)(struct monitor_msg*))
+{
+	struct composite_context *c;
+	struct domain_list_state *s;
+	struct composite_context *rpcconn_req;
+
+	/* composite context and state structure allocation */
+	c = composite_create(ctx, ctx->event_ctx);
+	if (c == NULL) return c;
+
+	s = talloc_zero(c, struct domain_list_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
+	s->monitor_fn   = monitor;
+
+	s->ctx      = ctx;
+	s->hostname = talloc_strdup(c, io->in.hostname);
+	if (composite_nomem(s->hostname, c)) return c;
+
+	/* set the default buffer size if not stated explicitly */
+	s->buf_size = (io->in.buf_size == 0) ? 512 : io->in.buf_size;
+
+	/* prepare rpc connect call */
+	s->rpcconn.level           = LIBNET_RPC_CONNECT_SERVER;
+	s->rpcconn.in.name         = s->hostname;
+	s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
+
+	rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
+	if (composite_nomem(rpcconn_req, c)) return c;
+
+	composite_continue(c, rpcconn_req, continue_rpc_connect, c);
+	return c;
+}
+
+
+/**
+ * Receive result of domain list request
+ *
+ * @param c composite context returned by DomainList_send function
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of the call
+ * @param io results and arguments of the call
+ */
+
+NTSTATUS libnet_DomainList_recv(struct composite_context *c, struct libnet_context *ctx,
+				TALLOC_CTX *mem_ctx, struct libnet_DomainList *io)
+{
+	NTSTATUS status;
+	struct domain_list_state *s;
+
+	status = composite_wait(c);
+
+	s = talloc_get_type(c->private_data, struct domain_list_state);
+
+	if (NT_STATUS_IS_OK(status) && ctx && mem_ctx && io) {
+		/* fetch the results to be returned by io structure */
+		io->out.count        = s->count;
+		io->out.domains      = talloc_steal(mem_ctx, s->domains);
+		io->out.error_string = talloc_asprintf(mem_ctx, "Success");
+
+	} else if (!NT_STATUS_IS_OK(status)) {
+		/* there was an error, so return description of the status code */
+		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
+	}
+
+	talloc_free(c);
+	return status;
+}
+
+
+/**
+ * Synchronous version of DomainList call
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
+
+NTSTATUS libnet_DomainList(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			   struct libnet_DomainList *io)
+{
+	struct composite_context *c;
+
+	c = libnet_DomainList_send(ctx, mem_ctx, io, NULL);
+	return libnet_DomainList_recv(c, ctx, mem_ctx, io);
+}

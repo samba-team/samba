@@ -47,3 +47,21 @@ struct libnet_DomainClose {
 		const char *error_string;
 	} out;
 };
+
+
+struct libnet_DomainList {
+	struct {
+		const char *hostname;
+		const int buf_size;
+	} in;
+	struct {
+		int count;
+		
+		struct domainlist {
+			const char *sid;
+			const char *name;
+		} *domains;
+
+		const char *error_string;
+	} out;
+};
