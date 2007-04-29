@@ -311,6 +311,49 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_PULL_DB: {
+		uint32_t dbid, from_vnn;
+		struct ctdb_db_context *ctdb_db;
+		struct ctdb_key_list keys;
+		int i, ret;
+
+		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
+		ctdb_db = find_ctdb_db(ctdb, dbid);
+		if (!ctdb_db) {
+			DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
+			return -1;
+		}
+
+		from_vnn = ((uint32_t *)(&indata.dptr[0]))[1];
+
+		outdata->dsize = 0;
+		outdata->dptr = NULL;
+
+		ret = ctdb_getkeys(ctdb, from_vnn, dbid, outdata, &keys);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to pull keys from node %u\n", from_vnn));
+			return -1;
+		}
+		
+		for(i=0;i<keys.num;i++){
+			ret = ctdb_ltdb_lock(ctdb_db, keys.keys[i]);
+			if (ret != 0) {
+				DEBUG(0, (__location__ "Unable to lock db\n"));
+				ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
+				return -1;
+			}
+			ret = ctdb_ltdb_store(ctdb_db, keys.keys[i], &keys.headers[i], keys.data[i]);
+			if (ret != 0) {
+				DEBUG(0, (__location__ "Unable to store record\n"));
+				ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
+				return -1;
+			}
+			ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
+		}
+
+		return 0;
+	}
+
 	case CTDB_CONTROL_CONFIG: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		outdata->dptr = (uint8_t *)ctdb;

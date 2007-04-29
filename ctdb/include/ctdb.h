@@ -271,4 +271,9 @@ int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *me
  */
 int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
 
+/*
+  pull a db from a remote node
+ */
+int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t from_vnn);
+
 #endif

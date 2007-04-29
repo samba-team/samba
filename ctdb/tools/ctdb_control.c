@@ -45,6 +45,7 @@ static void usage(void)
 	printf("  getkeys <vnn> <dbid>               lists all keys in a remote tdb\n");
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
 	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
+	printf("  pulldb <vnn> <dbid> <from vnn>     pull a db from a remote node\n");
 	exit(1);
 }
 
@@ -346,6 +347,30 @@ static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **arg
 }
 
 /*
+  pull all records from a remote database to the local node
+ */
+static int control_pulldb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid, fromvnn;
+	int ret;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbid    = strtoul(argv[1], NULL, 0);
+	fromvnn = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_pulldb(ctdb, vnn, ctdb, dbid, fromvnn);
+	if (ret != 0) {
+		printf("Unable to pull db for node %u db:0x%08x\n", vnn, dbid);
+		return ret;
+	}
+	return 0;
+}
+
+/*
   ping all node
  */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -477,6 +502,8 @@ int main(int argc, const char *argv[])
 		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "cleardb") == 0) {
 		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "pulldb") == 0) {
+		ret = control_pulldb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debug") == 0) {
