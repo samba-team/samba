@@ -24,6 +24,7 @@
 #include "popt.h"
 #include "system/wait.h"
 #include "cmdline.h"
+#include "../include/ctdb_private.h"
 
 static void block_signal(int signum)
 {
@@ -82,6 +83,13 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	/* useful default logfile */
+	if (ctdb->logfile == NULL) {
+		char *name = talloc_asprintf(ctdb, "%s/log.ctdb.%u", VARDIR, ctdb->vnn);
+		ctdb_set_logfile(ctdb, name);
+		talloc_free(name);
+	}
 
 	/* attach to the list of databases */
 	s = talloc_strdup(ctdb, db_list);

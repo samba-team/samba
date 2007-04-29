@@ -35,6 +35,27 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 	return 0;
 }
 
+/*
+  choose the logfile location
+*/
+int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
+{
+	ctdb->logfile = talloc_strdup(ctdb, logfile);
+	if (ctdb->logfile != NULL) {
+		int fd;
+		close(1);
+		fd = open(ctdb->logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
+		if (fd == -1) {
+			abort();
+		}
+		if (fd != 1) {
+			dup2(fd, 1);
+			close(fd);
+		}
+	}
+	return 0;
+}
+
 
 /*
   set some ctdb flags

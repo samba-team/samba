@@ -259,4 +259,6 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 
 int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
+int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
+
 #endif

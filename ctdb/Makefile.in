@@ -7,6 +7,7 @@ datarootdir = @datarootdir@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
+localstatedir = @localstatedir@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
@@ -14,7 +15,7 @@ EXTRA_OBJ=@EXTRA_OBJ@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
-	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
+	-DVARDIR=\"$(localstatedir)\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt @INFINIBAND_LIBS@
 
