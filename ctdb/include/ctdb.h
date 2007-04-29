@@ -213,11 +213,11 @@ struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 
 struct ctdb_status;
-int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
+int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
 
 struct ctdb_vnn_map;
-int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
-int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
+int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
 
 /* table that contains a list of all dbids on a node
  */
@@ -225,7 +225,7 @@ struct ctdb_dbid_map {
 	uint32_t num;
 	uint32_t *dbids;
 };
-int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap);
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap);
 
 
 /* table that contains a list of all nodes a ctdb knows about and their 
@@ -239,43 +239,40 @@ struct ctdb_node_map {
 	uint32_t num;
 	struct ctdb_node_and_flags *nodes;
 };
-int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap);
 
 struct ctdb_key_list {
+	uint32_t dbid;
 	uint32_t num;
 	TDB_DATA *keys;
 	struct ctdb_ltdb_header *headers;
 	uint32_t *lmasters;
 	TDB_DATA *data;
 };
-int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
+int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx);
 
-int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
+int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 
-int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
+int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 
-int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode);
+int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode);
 
-int ctdb_get_config(struct ctdb_context *ctdb);
+int ctdb_ctrl_get_config(struct ctdb_context *ctdb);
 
-int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
-int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
+int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
+int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
 
 /*
   change dmaster for all keys in the database to the new value
  */
-int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
+int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
 
 /*
   delete all records from a tdb
  */
-int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
-
-/*
-  pull a db from a remote node
- */
-int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t from_vnn);
+int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
 
 
 #define CTDB_RECOVERY_NORMAL		0
@@ -283,11 +280,11 @@ int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ct
 /*
   get the recovery mode of a remote node
  */
-int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode);
 /*
   set the recovery mode of a remote node
  */
-int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
+int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
 
 uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes);

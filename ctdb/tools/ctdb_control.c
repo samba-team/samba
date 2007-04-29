@@ -43,10 +43,10 @@ static void usage(void)
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
-	printf("  getkeys <vnn> <dbid>               lists all keys in a remote tdb\n");
+	printf("  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n");
+	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
 	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
-	printf("  pulldb <vnn> <dbid> <from vnn>     pull a db from a remote node\n");
 	printf("  getrecmode <vnn>                   get recovery mode\n");
 	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
 	exit(1);
@@ -68,7 +68,7 @@ static int control_process_exists(struct ctdb_context *ctdb, int argc, const cha
 		return -1;
 	}
 
-	ret = ctdb_process_exists(ctdb, vnn, pid);
+	ret = ctdb_ctrl_process_exists(ctdb, vnn, pid);
 	if (ret == 0) {
 		printf("%u:%u exists\n", vnn, pid);
 	} else {
@@ -131,7 +131,7 @@ static int control_status_all(struct ctdb_context *ctdb)
 		uint32_t *v2 = (uint32_t *)&status;
 		uint32_t num_ints = 
 			offsetof(struct ctdb_status, __last_counter) / sizeof(uint32_t);
-		ret = ctdb_status(ctdb, nodes[i], &s1);
+		ret = ctdb_ctrl_status(ctdb, nodes[i], &s1);
 		if (ret != 0) {
 			printf("Unable to get status from node %u\n", nodes[i]);
 			return ret;
@@ -168,7 +168,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_status(ctdb, vnn, &status);
+	ret = ctdb_ctrl_status(ctdb, vnn, &status);
 	if (ret != 0) {
 		printf("Unable to get status from node %u\n", vnn);
 		return ret;
@@ -242,7 +242,7 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	vnn = strtoul(argv[0], NULL, 0);
 
 	vnnmap = talloc_zero(ctdb, struct ctdb_vnn_map);
-	ret = ctdb_getvnnmap(ctdb, vnn, vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, vnn, vnnmap);
 	if (ret != 0) {
 		printf("Unable to get vnnmap from node %u\n", vnn);
 		return ret;
@@ -270,7 +270,7 @@ static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn     = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_getrecmode(ctdb, vnn, &recmode);
+	ret = ctdb_ctrl_getrecmode(ctdb, vnn, &recmode);
 	if (ret != 0) {
 		printf("Unable to get recmode from node %u\n", vnn);
 		return ret;
@@ -296,7 +296,7 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	vnn     = strtoul(argv[0], NULL, 0);
 	recmode = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_setrecmode(ctdb, vnn, recmode);
+	ret = ctdb_ctrl_setrecmode(ctdb, vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
 		return ret;
@@ -308,7 +308,7 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 /*
   display remote list of keys for a tdb
  */
-static int control_getkeys(struct ctdb_context *ctdb, int argc, const char **argv)
+static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn, dbid;
 	int i, j, ret;
@@ -323,12 +323,12 @@ static int control_getkeys(struct ctdb_context *ctdb, int argc, const char **arg
 	dbid = strtoul(argv[1], NULL, 0);
 
 	mem_ctx = talloc_new(ctdb);
-	ret = ctdb_getkeys(ctdb, vnn, dbid, mem_ctx, &keys);
+	ret = ctdb_ctrl_pulldb(ctdb, vnn, dbid, mem_ctx, &keys);
 	if (ret != 0) {
 		printf("Unable to get keys from node %u\n", vnn);
 		return ret;
 	}
-	printf("Number of keys:%d\n",keys.num);
+	printf("Number of keys:%d in dbid:0x%08x\n",keys.num,keys.dbid);
 	for(i=0;i<keys.num;i++){
 		printf("key:");
 		for(j=0;j<keys.keys[i].dsize;j++){
@@ -340,6 +340,34 @@ static int control_getkeys(struct ctdb_context *ctdb, int argc, const char **arg
 			printf("%02x",keys.data[i].dptr[j]);
 		}
 		printf("\n");
+	}
+
+	talloc_free(mem_ctx);
+	return 0;
+}
+
+/*
+  copy a db from one node to another
+ */
+static int control_cpdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t fromvnn, tovnn, dbid;
+	int ret;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	fromvnn  = strtoul(argv[0], NULL, 0);
+	tovnn    = strtoul(argv[1], NULL, 0);
+	dbid     = strtoul(argv[2], NULL, 0);
+
+	mem_ctx = talloc_new(ctdb);
+	ret = ctdb_ctrl_copydb(ctdb, fromvnn, tovnn, dbid, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to copy db from node %u to node %u\n", fromvnn, tovnn);
+		return ret;
 	}
 
 	talloc_free(mem_ctx);
@@ -362,7 +390,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	vnn = strtoul(argv[0], NULL, 0);
 
 	dbmap = talloc_zero(ctdb, struct ctdb_dbid_map);
-	ret = ctdb_getdbmap(ctdb, vnn, dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, vnn, dbmap);
 	if (ret != 0) {
 		printf("Unable to get dbids from node %u\n", vnn);
 		talloc_free(dbmap);
@@ -373,7 +401,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
 
-		ctdb_getdbpath(ctdb, dbmap->dbids[i], dbmap, &path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], dbmap, &path);
 		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 	talloc_free(dbmap);
@@ -396,7 +424,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 	vnn = strtoul(argv[0], NULL, 0);
 
 	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
-	ret = ctdb_getnodemap(ctdb, vnn, nodemap, nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, vnn, nodemap, nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		talloc_free(nodemap);
@@ -436,7 +464,7 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}
 
-	ret = ctdb_setvnnmap(ctdb, vnn, vnnmap);
+	ret = ctdb_ctrl_setvnnmap(ctdb, vnn, vnnmap);
 	if (ret != 0) {
 		printf("Unable to set vnnmap for node %u\n", vnn);
 		return ret;
@@ -460,7 +488,7 @@ static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **
 	dbid    = strtoul(argv[1], NULL, 0);
 	dmaster = strtoul(argv[2], NULL, 0);
 
-	ret = ctdb_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
+	ret = ctdb_ctrl_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
 	if (ret != 0) {
 		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
@@ -483,33 +511,9 @@ static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **arg
 	vnn     = strtoul(argv[0], NULL, 0);
 	dbid    = strtoul(argv[1], NULL, 0);
 
-	ret = ctdb_cleardb(ctdb, vnn, ctdb, dbid);
+	ret = ctdb_ctrl_cleardb(ctdb, vnn, ctdb, dbid);
 	if (ret != 0) {
 		printf("Unable to clear db for node %u db:0x%08x\n", vnn, dbid);
-		return ret;
-	}
-	return 0;
-}
-
-/*
-  pull all records from a remote database to the local node
- */
-static int control_pulldb(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t vnn, dbid, fromvnn;
-	int ret;
-
-	if (argc < 3) {
-		usage();
-	}
-
-	vnn     = strtoul(argv[0], NULL, 0);
-	dbid    = strtoul(argv[1], NULL, 0);
-	fromvnn = strtoul(argv[2], NULL, 0);
-
-	ret = ctdb_pulldb(ctdb, vnn, ctdb, dbid, fromvnn);
-	if (ret != 0) {
-		printf("Unable to pull db for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
 	}
 	return 0;
@@ -529,7 +533,7 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=0;i<num_nodes;i++) {
 		struct timeval tv = timeval_current();
-		ret = ctdb_ping(ctdb, nodes[i]);
+		ret = ctdb_ctrl_ping(ctdb, nodes[i]);
 		if (ret == -1) {
 			printf("Unable to get ping response from node %u\n", nodes[i]);
 		} else {
@@ -556,7 +560,7 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 
 	for (i=0;i<num_nodes;i++) {
 		uint32_t level;
-		ret = ctdb_get_debuglevel(ctdb, nodes[i], &level);
+		ret = ctdb_ctrl_get_debuglevel(ctdb, nodes[i], &level);
 		if (ret != 0) {
 			printf("Unable to get debuglevel response from node %u\n", 
 				nodes[i]);
@@ -586,7 +590,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	if (strcmp(argv[0], "all") != 0) {
 		vnn = strtoul(argv[0], NULL, 0);
-		ret = ctdb_set_debuglevel(ctdb, vnn, level);
+		ret = ctdb_ctrl_set_debuglevel(ctdb, vnn, level);
 		if (ret != 0) {
 			printf("Unable to set debug level on node %u\n", vnn);
 		}
@@ -597,7 +601,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	for (i=0;i<num_nodes;i++) {
-		ret = ctdb_set_debuglevel(ctdb, nodes[i], level);
+		ret = ctdb_ctrl_set_debuglevel(ctdb, nodes[i], level);
 		if (ret != 0) {
 			printf("Unable to set debug level on node %u\n", nodes[i]);
 			break;
@@ -671,16 +675,16 @@ int main(int argc, const char *argv[])
 		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getnodemap") == 0) {
 		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getkeys") == 0) {
-		ret = control_getkeys(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "catdb") == 0) {
+		ret = control_catdb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "cpdb") == 0) {
+		ret = control_cpdb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setdmaster") == 0) {
 		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "cleardb") == 0) {
 		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "pulldb") == 0) {
-		ret = control_pulldb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getrecmode") == 0) {
 		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setrecmode") == 0) {

@@ -99,8 +99,8 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 	ptr=outdata->dptr=talloc_realloc_size(outdata, outdata->dptr, len);
 	ptr+=outdata->dsize;
 	outdata->dsize=len;
-	/* number of records is stored as the first 4 bytes */
-	(*((uint32_t *)(&outdata->dptr[0])))++;
+	/* number of records is stored as the second 4 bytes */
+	((uint32_t *)(&outdata->dptr[0]))[1]++;
 
 	*((uint32_t *)ptr)=ctdb_lmaster(ctdb_db->ctdb, &key);
 	ptr+=4;
@@ -253,7 +253,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_GET_KEYS: {
+	case CTDB_CONTROL_PULL_DB: {
 		uint32_t dbid;
 		struct ctdb_db_context *ctdb_db;
 		struct getkeys_params params;
@@ -265,9 +265,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		outdata->dsize = sizeof(uint32_t);
-		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
-		*((uint32_t *)(&outdata->dptr[0]))=0;
+		outdata->dsize = 2* sizeof(uint32_t);
+		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 2);
+		((uint32_t *)(&outdata->dptr[0]))[0]=dbid;
+		((uint32_t *)(&outdata->dptr[0]))[1]=0;
 
 		params.ctdb_db = ctdb_db;
 		params.outdata = outdata;
@@ -317,11 +318,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_PULL_DB: {
-		uint32_t dbid, from_vnn;
+	case CTDB_CONTROL_PUSH_DB: {
+		uint32_t dbid, num;
 		struct ctdb_db_context *ctdb_db;
-		struct ctdb_key_list keys;
+		unsigned char *ptr;
 		int i, ret;
+		TDB_DATA key, data;
+		struct ctdb_ltdb_header header;
+
+		outdata->dsize = 0;
+		outdata->dptr = NULL;
 
 		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
 		ctdb_db = find_ctdb_db(ctdb, dbid);
@@ -330,31 +336,41 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		from_vnn = ((uint32_t *)(&indata.dptr[0]))[1];
+		num = ((uint32_t *)(&indata.dptr[0]))[1];
 
-		outdata->dsize = 0;
-		outdata->dptr = NULL;
+		ptr=&indata.dptr[8];
+		for(i=0;i<num;i++){
+			/* skip the lmaster*/
+			ptr+=4;
 
-		ret = ctdb_getkeys(ctdb, from_vnn, dbid, outdata, &keys);
-		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to pull keys from node %u\n", from_vnn));
-			return -1;
-		}
-		
-		for(i=0;i<keys.num;i++){
-			ret = ctdb_ltdb_lock(ctdb_db, keys.keys[i]);
+			/* key */
+			key.dsize=*((uint32_t *)ptr);
+			ptr+=4;
+			key.dptr=ptr;
+			ptr+=(key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+			/* header */
+			memcpy(&header, ptr, sizeof(struct ctdb_ltdb_header));
+			ptr+=(sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+			
+			/* data */
+			data.dsize=*((uint32_t *)ptr);
+			ptr+=4;
+			data.dptr=ptr;
+			ptr+=(data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+			ret = ctdb_ltdb_lock(ctdb_db, key);
 			if (ret != 0) {
 				DEBUG(0, (__location__ "Unable to lock db\n"));
-				ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
 				return -1;
 			}
-			ret = ctdb_ltdb_store(ctdb_db, keys.keys[i], &keys.headers[i], keys.data[i]);
+			ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
 			if (ret != 0) {
 				DEBUG(0, (__location__ "Unable to store record\n"));
-				ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
+				ctdb_ltdb_unlock(ctdb_db, key);
 				return -1;
 			}
-			ctdb_ltdb_unlock(ctdb_db, keys.keys[i]);
+			ctdb_ltdb_unlock(ctdb_db, key);
 		}
 
 		return 0;

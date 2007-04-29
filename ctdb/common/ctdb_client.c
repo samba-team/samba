@@ -461,7 +461,7 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	ctdb_daemon_connect_wait(ctdb);
 
 	/* get other config variables */
-	ctdb_get_config(ctdb);
+	ctdb_ctrl_get_config(ctdb);
 }
 
 /*
@@ -711,7 +711,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 /*
   a process exists call. Returns 0 if process exists, -1 otherwise
  */
-int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
+int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
 {
 	int ret;
 	TDB_DATA data;
@@ -734,7 +734,7 @@ int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
 /*
   get remote status
  */
-int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
+int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
 {
 	int ret;
 	TDB_DATA data;
@@ -764,7 +764,7 @@ int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status
 /*
   get vnn map from a remote node
  */
-int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -796,7 +796,7 @@ int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 /*
   get the recovery mode of a remote node
  */
-int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode)
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -819,7 +819,7 @@ int ctdb_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recm
 /*
   set the recovery mode of a remote node
  */
-int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode)
+int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -843,7 +843,7 @@ int ctdb_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmo
 /*
   get a list of databases off a remote node
  */
-int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap)
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -879,7 +879,7 @@ int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid
 /*
   get a list of nodes (vnn and flags ) from a remote node
  */
-int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap)
 {
 	int ret;
@@ -911,7 +911,7 @@ int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode,
 /*
   set vnn map on a node
  */
-int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
+int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
 {
 	int ret;
 	TDB_DATA *data, outdata;
@@ -940,9 +940,9 @@ int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 }
 
 /*
-  get all keys for a specific database
+  get all keys and records for a specific database
  */
-int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys)
+int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys)
 {
 	int i, ret;
 	TDB_DATA indata, outdata;
@@ -953,22 +953,23 @@ int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TA
 	indata.dptr = (unsigned char *)&dbid;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_KEYS, indata, 
+			   CTDB_CONTROL_PULL_DB, indata, 
 			   mem_ctx, &outdata, &res);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getkeys failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
 		return -1;
 	}
 
 
-	keys->num= *((uint32_t *)(&outdata.dptr[0]));
-	keys->keys=talloc_array(mem_ctx, TDB_DATA, keys->num);
+	keys->dbid   = ((uint32_t *)(&outdata.dptr[0]))[0];
+	keys->num    = ((uint32_t *)(&outdata.dptr[0]))[1];
+	keys->keys   =talloc_array(mem_ctx, TDB_DATA, keys->num);
 	keys->headers=talloc_array(mem_ctx, struct ctdb_ltdb_header, keys->num);
 	keys->lmasters=talloc_array(mem_ctx, uint32_t, keys->num);
 	keys->data=talloc_array(mem_ctx, TDB_DATA, keys->num);
 
 	/* loop over all key/data pairs */
-	ptr=&outdata.dptr[4];
+	ptr=&outdata.dptr[8];
 	for(i=0;i<keys->num;i++){
 		uint32_t len;
 		TDB_DATA *key, *data;
@@ -1002,9 +1003,40 @@ int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TA
 }
 
 /*
+  copy a tdb from one node to another node
+ */
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx)
+{
+	int ret;
+	TDB_DATA indata, outdata;
+	int32_t res;
+
+	indata.dsize = sizeof(uint32_t);
+	indata.dptr = (unsigned char *)&dbid;
+
+	ret = ctdb_control(ctdb, sourcenode, 0, 
+			   CTDB_CONTROL_PULL_DB, indata, 
+			   mem_ctx, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
+		return -1;
+	}
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_PUSH_DB, outdata, 
+			   mem_ctx, NULL, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for pushdb failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   change dmaster for all keys in the database to the new value
  */
-int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster)
+int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster)
 {
 	int ret;
 	TDB_DATA indata, outdata;
@@ -1030,7 +1062,7 @@ int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *me
 /*
   delete all records from a tdb
  */
-int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid)
+int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid)
 {
 	int ret;
 	TDB_DATA indata, outdata;
@@ -1053,35 +1085,9 @@ int ctdb_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_c
 }
 
 /*
-  pull a db from a remote node
- */
-int ctdb_pulldb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t from_vnn)
-{
-	int ret;
-	TDB_DATA indata, outdata;
-	int32_t res;
-
-	indata.dsize = 2*sizeof(uint32_t);
-	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
-
-	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
-	((uint32_t *)(&indata.dptr[0]))[1] = from_vnn;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_PULL_DB, indata, 
-			   mem_ctx, &outdata, &res);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
   ping a node, return number of clients connected
  */
-int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
+int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode)
 {
 	int ret;
 	int32_t res;
@@ -1098,7 +1104,7 @@ int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 /*
   get ctdb config
  */
-int ctdb_get_config(struct ctdb_context *ctdb)
+int ctdb_ctrl_get_config(struct ctdb_context *ctdb)
 {
 	int ret;
 	int32_t res;
@@ -1130,7 +1136,7 @@ int ctdb_get_config(struct ctdb_context *ctdb)
 /*
   find the real path to a ltdb 
  */
-int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, 
+int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, 
 		   const char **path)
 {
 	int ret;
@@ -1160,7 +1166,7 @@ int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx
 /*
   get debug level on a node
  */
-int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level)
+int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level)
 {
 	int ret;
 	int32_t res;
@@ -1185,7 +1191,7 @@ int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *
 /*
   set debug level on a node
  */
-int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level)
+int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level)
 {
 	int ret;
 	int32_t res;
@@ -1218,7 +1224,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 	map = talloc(mem_ctx, struct ctdb_node_map);
 	CTDB_NO_MEMORY_VOID(ctdb, map);
 
-	ret = ctdb_getnodemap(ctdb, CTDB_CURRENT_NODE, map, map);
+	ret = ctdb_ctrl_getnodemap(ctdb, CTDB_CURRENT_NODE, map, map);
 	if (ret != 0) {
 		talloc_free(map);
 		return NULL;
