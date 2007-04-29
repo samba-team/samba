@@ -334,9 +334,13 @@ BOOL ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_I
 		return False;
 
 	if ( UNMARSHALLING(ps) ) {
-		r_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, r_u->buffer_size );
-		if (!r_u->buffer) {
-			return False;
+		if (r_u->buffer_size) {
+			r_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, r_u->buffer_size );
+			if (!r_u->buffer) {
+				return False;
+			}
+		} else {
+			r_u->buffer = NULL;
 		}
 	}
 

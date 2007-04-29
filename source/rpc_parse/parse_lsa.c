@@ -573,14 +573,17 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
 			return;
 		}
 
-		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO,
+		if (out->count) {
+			out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO,
 						      out->count );
-		
-		if ( !out->domlist->domains ) {
-			out->status = NT_STATUS_NO_MEMORY;
-			return;
+			if ( !out->domlist->domains ) {
+				out->status = NT_STATUS_NO_MEMORY;
+				return;
+			}
+		} else {		
+			out->domlist->domains = NULL;
 		}
-		
+	
 		out->domlist->count = out->count;
 		
 		/* initialize the list of domains and their sid */
