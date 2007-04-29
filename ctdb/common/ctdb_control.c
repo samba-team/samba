@@ -43,6 +43,22 @@ struct ctdb_control_state {
  } while (0)
 
 
+static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	uint32_t *dmaster = (uint32_t *)p;
+	struct ctdb_ltdb_header *header = (struct ctdb_ltdb_header *)data.dptr;
+	int ret;
+
+	header->dmaster = *dmaster;
+
+	ret = tdb_store(tdb, key, data, TDB_REPLACE);
+	if (ret) {
+		DEBUG(0,(__location__ "failed to write tdb data back  ret:%d\n",ret));
+		return ret;
+	}
+	return 0;
+}
+
 struct getkeys_params {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA *outdata;
@@ -54,7 +70,7 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 	TDB_DATA *outdata = talloc_get_type(params->outdata, TDB_DATA);
 	struct ctdb_db_context *ctdb_db = talloc_get_type(params->ctdb_db, struct ctdb_db_context);
 	unsigned char *ptr;
-	int len, ret;
+	int len;
 
 	len=outdata->dsize;
 	len+=4; /*lmaster*/
@@ -244,6 +260,36 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		params.ctdb_db = ctdb_db;
 		params.outdata = outdata;
 		tdb_traverse(db->tdb, traverse_getkeys, &params);
+
+		talloc_free(db);
+
+		return 0;
+	}
+
+	case CTDB_CONTROL_SET_DMASTER: {
+		uint32_t dbid, dmaster;
+		struct ctdb_db_context *ctdb_db;
+		struct tdb_wrap *db;
+
+		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
+		ctdb_db = find_ctdb_db(ctdb, dbid);
+		if (!ctdb_db) {
+			DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
+			return -1;
+		}
+
+		dmaster = ((uint32_t *)(&indata.dptr[0]))[1];
+
+		outdata->dsize = 0;
+		outdata->dptr = NULL;
+
+		db = tdb_wrap_open(NULL, ctdb_db->db_path, 0, TDB_DEFAULT, O_RDONLY, 0);
+		if (db == NULL) {
+			DEBUG(0,(__location__ " failed to open db\n"));
+			return -1;
+		}
+
+		tdb_traverse(db->tdb, traverse_setdmaster, &dmaster);
 
 		talloc_free(db);
 

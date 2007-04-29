@@ -261,4 +261,9 @@ int ctdb_get_config(struct ctdb_context *ctdb);
 int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
 int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
 
+/*
+  change dmaster for all keys in the database to the new value
+ */
+int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
+
 #endif

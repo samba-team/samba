@@ -43,6 +43,7 @@ static void usage(void)
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
 	printf("  getkeys <vnn> <dbid>               lists all keys in a remote tdb\n");
+	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
 	exit(1);
 }
 
@@ -297,6 +298,30 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  set the dmaster for all records in a database
+ */
+static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid, dmaster;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbid    = strtoul(argv[1], NULL, 0);
+	dmaster = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
+	if (ret != 0) {
+		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
+		return ret;
+	}
+	return 0;
+}
+
+/*
   ping all node
  */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -424,6 +449,8 @@ int main(int argc, const char *argv[])
 		ret = control_getkeys(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "setdmaster") == 0) {
+		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debug") == 0) {

@@ -959,6 +959,32 @@ int ctdb_getkeys(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TA
 }
 
 /*
+  change dmaster for all keys in the database to the new value
+ */
+int ctdb_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster)
+{
+	int ret;
+	TDB_DATA indata, outdata;
+	int32_t res;
+
+	indata.dsize = 2*sizeof(uint32_t);
+	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
+
+	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
+	((uint32_t *)(&indata.dptr[0]))[1] = dmaster;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_DMASTER, indata, 
+			   mem_ctx, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for setdmaster failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   ping a node
  */
 int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
