@@ -18,18 +18,20 @@ RAW-SCAN-EAMAX
 SMB2-LOCK
 SMB2-NOTIFY
 SMB2-SCAN
-ntvfs/cifs RAW-NOTIFY
 ntvfs/cifs BASE-CHARSET
 ntvfs/cifs BASE-DEFER_OPEN
 ntvfs/cifs BASE-DELAYWRITE
-ntvfs/cifs RAW-COMPOSITE
-ntvfs/cifs RAW-OPLOCK
 ntvfs/cifs BASE-IOMETER
 ntvfs/cifs BASE-SAMBA3ERROR
 ntvfs/cifs BASE-CASETABLE
 ntvfs/cifs BASE-NTTRANS
 ntvfs/cifs BASE-BENCH-HOLDCON
 ntvfs/cifs BASE-SCAN-MAXFID
+ntvfs/cifs BASE-UTABLE
+ntvfs/cifs BASE-SMB
+ntvfs/cifs RAW-COMPOSITE
+ntvfs/cifs RAW-OPLOCK
+ntvfs/cifs RAW-NOTIFY
 ntvfs/cifs RAW-BENCH-OPLOCK
 ntvfs/cifs RAW-SAMBA3HIDE
 ntvfs/cifs RAW-SAMBA3CLOSEERR
