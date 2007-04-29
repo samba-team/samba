@@ -77,7 +77,7 @@ difference is that we will need to run these tests as root. To run the
 Windows tests in the build farm, a .fns file will need to be created for
 your new host that exports a WINTESTCONF environment variable pointing to a
 config file used by 'make wintest'. An example of this config file can be
-found at source/script/tests/win/test_win.conf in the Samba 4 source tree. 
+found at source/selftest/win/test_win.conf in the Samba 4 source tree. 
 
 I've also included the bnhtest.fns file that I'm using for my build farm host
 below, as an example. It was modified from generic.fns.

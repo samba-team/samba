@@ -27,4 +27,4 @@ clean::
 # Swig testing
 
 swigtest: swig
-	./script/tests/test_swig.sh
+	./selftest/test_swig.sh

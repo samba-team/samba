@@ -283,7 +283,7 @@ realdistclean: distclean removebackup
 
 check:: test
 
-SELFTEST = $(PERL) $(srcdir)/script/tests/selftest.pl --prefix=${selftest_prefix} \
+SELFTEST = $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/samba4-knownfail \
     --skip=$(srcdir)/samba4-skip \

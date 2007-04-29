@@ -470,7 +470,7 @@ unless (defined($ENV{VALGRIND})) {
 	$ENV{MALLOC_CHECK_} = 2;
 }
 
-my $old_pwd = "$RealBin/../..";
+my $old_pwd = "$RealBin/..";
 
 # Backwards compatibility:
 if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
@@ -644,7 +644,7 @@ print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 
 my @todo = ();
 
-my $testsdir = "$srcdir/script/tests";
+my $testsdir = "$srcdir/selftest";
 $ENV{CONFIGURATION} = "--configfile=$conffile";
 
 

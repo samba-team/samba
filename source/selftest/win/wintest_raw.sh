@@ -1,8 +1,8 @@
 #!/bin/sh
 
-. script/tests/test_functions.sh
+. selftest/test_functions.sh
 
-. script/tests/win/wintest_functions.sh
+. selftest/win/wintest_functions.sh
 
 # This variable is defined in the per-hosts .fns file.
 . $WINTESTCONF

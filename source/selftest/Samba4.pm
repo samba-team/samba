@@ -460,7 +460,7 @@ sub provision($$$$$$)
 	my $dnsname = "samba.example.com";
 	my $basedn = "dc=samba,dc=example,dc=com";
 	my $root = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
-	my $srcdir="$RealBin/../..";
+	my $srcdir="$RealBin/..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
 	my $tmpdir = "$prefix_abs/tmp";
