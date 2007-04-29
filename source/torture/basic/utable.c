@@ -74,7 +74,10 @@ bool torture_utable(struct torture_context *tctx,
 		smbcli_unlink(cli->tree, fname);
 
 		if (c % 100 == 0) {
-			torture_comment(tctx, "%d (%d/%d)\r", c, chars_allowed, alt_allowed);
+			if (torture_setting_bool(tctx, "progress", true)) {
+				torture_comment(tctx, "%d (%d/%d)\r", c, chars_allowed, alt_allowed);
+				fflush(stdout);
+			}
 		}
 	}
 	torture_comment(tctx, "%d (%d/%d)\n", c, chars_allowed, alt_allowed);

@@ -1402,8 +1402,10 @@ static const struct {
 
 static void progress_bar(struct torture_context *tctx, uint_t i, uint_t total)
 {
-	torture_comment(tctx, "%5d/%5d\r", i, total);
-	fflush(stdout);
+	if (torture_setting_bool(tctx, "progress", true)) {
+		torture_comment(tctx, "%5d/%5d\r", i, total);
+		fflush(stdout);
+	}
 }
 
 /*

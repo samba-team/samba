@@ -184,8 +184,10 @@ BOOL torture_mangle(struct torture_context *torture,
 			break;
 		}
 		if (total && total % 100 == 0) {
-			printf("collisions %u/%u  - %.2f%%   (%u failures)\r",
-			       collisions, total, (100.0*collisions) / total, failures);
+			if (torture_setting_bool(torture, "progress", true)) {
+				printf("collisions %u/%u  - %.2f%%   (%u failures)\r",
+				       collisions, total, (100.0*collisions) / total, failures);
+			}
 		}
 	}
 

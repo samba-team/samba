@@ -78,9 +78,12 @@ static bool bench_namequery(struct torture_context *tctx)
 			req->async.private = result;
 			num_sent++;
 			if (num_sent % 1000 == 0) {
-				torture_comment(tctx, "%.1f queries per second (%d failures)  \r", 
-				       result->num_pass / timeval_elapsed(&tv),
-				       result->num_fail);
+				if (torture_setting_bool(tctx, "progress", true)) {
+					torture_comment(tctx, "%.1f queries per second (%d failures)  \r", 
+					       result->num_pass / timeval_elapsed(&tv),
+					       result->num_fail);
+					fflush(stdout);
+				}
 			}
 		}
 
