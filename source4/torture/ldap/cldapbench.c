@@ -76,9 +76,12 @@ static BOOL bench_cldap(TALLOC_CTX *mem_ctx, const char *address)
 			req->async.fn = request_handler;
 			num_sent++;
 			if (num_sent % 50 == 0) {
-				printf("%.1f queries per second (%d failures)  \r", 
-				       state->pass_count / timeval_elapsed(&tv),
-				       state->fail_count);
+				if (lp_parm_bool(-1, "torture", "progress", true)) {
+					printf("%.1f queries per second (%d failures)  \r", 
+					       state->pass_count / timeval_elapsed(&tv),
+					       state->fail_count);
+					fflush(stdout);
+				}
 			}
 		}
 

@@ -254,9 +254,12 @@ static bool bench_wins(struct torture_context *tctx)
 			generate_request(nbtsock, state, num_sent % state->num_names);
 			num_sent++;
 			if (num_sent % 50 == 0) {
-				torture_comment(tctx, "%.1f queries per second (%d failures)  \r", 
-				       state->pass_count / timeval_elapsed(&tv),
-				       state->fail_count);
+				if (torture_setting_bool(tctx, "progress", true)) {
+					torture_comment(tctx, "%.1f queries per second (%d failures)  \r", 
+					       state->pass_count / timeval_elapsed(&tv),
+					       state->fail_count);
+					fflush(stdout);
+				}
 			}
 		}
 

@@ -827,7 +827,10 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 			CHECK_STATUS(torture, status, NT_STATUS_OK);
 			count++;
 		}
-		torture_comment(torture, "%.2f ops/second\r", count/timeval_elapsed(&tv));
+
+		if (torture_setting_bool(torture, "progress", true)) {
+			torture_comment(torture, "%.2f ops/second\r", count/timeval_elapsed(&tv));
+		}
 	}
 
 	torture_comment(torture, "%.2f ops/second\n", count/timeval_elapsed(&tv));

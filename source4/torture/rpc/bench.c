@@ -82,8 +82,10 @@ static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		talloc_free(tmp_ctx);
 		count++;
 		if (count % 50 == 0) {
-			printf("%.1f queries per second  \r", 
-			       count / timeval_elapsed(&tv));
+			if (lp_parm_bool(-1, "torture", "progress", true)) {
+				printf("%.1f queries per second  \r", 
+				       count / timeval_elapsed(&tv));
+			}
 		}
 	}
 
