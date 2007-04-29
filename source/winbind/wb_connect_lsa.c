@@ -55,11 +55,8 @@ struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct init_lsa_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, tree->session->transport->socket->event.ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(result, struct init_lsa_state);
 	if (state == NULL) goto failed;
@@ -237,11 +234,8 @@ struct composite_context *wb_connect_lsa_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct connect_lsa_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, tree->session->transport->socket->event.ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(result, struct connect_lsa_state);
 	if (state == NULL) goto failed;

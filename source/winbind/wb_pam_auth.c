@@ -267,6 +267,8 @@ static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 	composite_done(state->ctx);
 }
 
+/* Having received a NTLM authentication reply, parse out the useful
+ * reply data for the caller */
 NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 				   TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *info3,
@@ -288,25 +290,8 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_cmd_pam_auth_crap(TALLOC_CTX *mem_ctx,
-			      struct wbsrv_service *service,
-			      uint32_t logon_parameters,
-			      const char *domain, const char *user,
-			      const char *workstation,
-			      DATA_BLOB chal, DATA_BLOB nt_resp,
-			      DATA_BLOB lm_resp,
-			      DATA_BLOB *info3,
-			      struct netr_UserSessionKey *user_session_key,
-			      struct netr_LMSessionKey *lm_key,
-			      char **unix_username)
-{
-	struct composite_context *c =
-		wb_cmd_pam_auth_crap_send(mem_ctx, service, logon_parameters, 
-					  domain, user, workstation,
-					  chal, nt_resp, lm_resp);
-	return wb_cmd_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
-					 lm_key, unix_username);
-}
+/* Handle plaintext authentication, by encrypting the password and
+ * then sending via the NTLM calls */
 
 struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 					       struct wbsrv_service *service,
@@ -371,18 +356,9 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c)
 {
-	struct pam_auth_crap_state *state =
-		talloc_get_type(c->private_data, struct pam_auth_crap_state);
-	NTSTATUS status = composite_wait(c);
-	talloc_free(state);
-	return status;
-}
-
-NTSTATUS wb_cmd_pam_auth(TALLOC_CTX *mem_ctx, struct wbsrv_service *service,
-			 const char *domain, const char *user,
-			 const char *password)
-{
-	struct composite_context *c =
-		wb_cmd_pam_auth_send(mem_ctx, service, domain, user, password);
-	return wb_cmd_pam_auth_recv(c);
+       struct pam_auth_crap_state *state =
+               talloc_get_type(c->private_data, struct pam_auth_crap_state);
+       NTSTATUS status = composite_wait(c);
+       talloc_free(state);
+       return status;
 }

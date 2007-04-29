@@ -33,7 +33,6 @@ interface winbind
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative,
-		[in,out] uint32 flags
+		[out] uint8 authoritative
 	);
 }
