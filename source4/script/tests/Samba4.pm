@@ -449,18 +449,17 @@ moduleload	syncprov
 	return ($slapd_conf, $pidfile);
 }
 
-sub provision($$$$$)
+sub provision($$$$$$)
 {
-	my ($self, $prefix, $server_role, $domain, $netbiosname, $swiface) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
 
 	my $smbd_loglevel = 1;
 	my $username = "administrator";
+	my $domain = "SAMBADOMAIN";
 	my $realm = "SAMBA.EXAMPLE.COM";
 	my $dnsname = "samba.example.com";
 	my $basedn = "dc=samba,dc=example,dc=com";
-	my $password = "penguin";
 	my $root = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
-	my $server = "localhost";
 	my $srcdir="$RealBin/../..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
@@ -490,7 +489,7 @@ sub provision($$$$$)
 	print CONFFILE "
 [global]
 	netbios name = $netbiosname
-	netbios aliases = $server
+	netbios aliases = $netbiosalias
 	workgroup = $domain
 	realm = $realm
 	private dir = $privatedir
@@ -616,10 +615,10 @@ sub provision($$$$$)
 	my $ret = {
 		KRB5_CONFIG => $krb5_config,
 		PIDDIR => $piddir,
-		SERVER => $server,
+		SERVER => $netbiosname,
 		SERVER_IP => $ifaceipv4,
 		NETBIOSNAME => $netbiosname,
-		NETBIOSALIAS => $server,
+		NETBIOSALIAS => $netbiosalias,
 		LDAP_URI => $ldap_uri,
 		DOMAIN => $domain,
 		USERNAME => $username,
@@ -662,8 +661,12 @@ sub provision_member($$$)
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING MEMBER...";
 
-	my $ret = $self->provision($prefix, "member server", "SAMBADOMAIN", 
-		"localmember", 3);
+	my $ret = $self->provision($prefix,
+				   "member server",
+				   "localmember3",
+				   "localmember",
+				   3,
+				   "localmemberpass");
 
 	$ret or die("Unable to provision");
 
@@ -688,8 +691,12 @@ sub provision_dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC...";
-	my $ret = $self->provision($prefix, "domain controller", "SAMBADOMAIN", 
-		"localtest", 1);
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "localdc1",
+				   "localdc",
+				   1,
+				   "localdcpass");
 
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
