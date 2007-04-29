@@ -78,7 +78,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned reply with reqid:%d\n",hdr->reqid));
+		DEBUG(0, ("Dropped client call reply with reqid:%d\n",hdr->reqid));
 		return;
 	}
 
@@ -414,7 +414,6 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	CTDB_NO_MEMORY(ctdb, r);
 
 	r->hdr.destnode  = vnn;
-	r->hdr.srcnode   = ctdb->vnn;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -674,7 +673,6 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;
-	c->hdr.srcnode      = ctdb->vnn;
 	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
 	c->srvid            = srvid;

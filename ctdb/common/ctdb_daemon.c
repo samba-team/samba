@@ -673,6 +673,48 @@ int ctdb_start(struct ctdb_context *ctdb)
 	return 0;
 }
 
+
+/*
+  start the protocol going as a daemon
+*/
+int ctdb_start_daemon(struct ctdb_context *ctdb)
+{
+	int res;
+	struct fd_event *fde;
+	const char *domain_socket_name;
+
+	/* get rid of any old sockets */
+	unlink(ctdb->daemon.name);
+
+	/* create a unix domain stream socket to listen to */
+	res = ux_socket_bind(ctdb);
+	if (res!=0) {
+		DEBUG(0,(__location__ " Failed to open CTDB unix domain socket\n"));
+		exit(10);
+	}
+
+	if (fork()) {
+		return 0;
+	}
+
+	tdb_reopen_all(False);
+
+	setsid();
+	block_signal(SIGPIPE);
+	block_signal(SIGCHLD);
+
+	/* ensure the socket is deleted on exit of the daemon */
+	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
+	talloc_set_destructor(domain_socket_name, unlink_destructor);	
+
+	ctdb->ev = event_context_init(NULL);
+	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, 
+			   ctdb_accept_client, ctdb);
+	ctdb_main_loop(ctdb);
+
+	return 0;
+}
+
 /*
   allocate a packet for use in client<->daemon communication
  */
@@ -685,6 +727,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	int size;
 	struct ctdb_req_header *hdr;
 	size = ((length+1)+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
+
 	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
 	if (hdr == NULL) {
 		DEBUG(0,("Unable to allocate packet for operation %u of length %u\n",
@@ -692,11 +735,12 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 		return NULL;
 	}
 	talloc_set_name_const(hdr, type);
-	memset(hdr, 0, slength);
+	memset(hdr, 0, size);
 	hdr->operation    = operation;
-	hdr->length       = length;
+	hdr->length       = size;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
+	hdr->srcnode      = ctdb->vnn;
 	if (ctdb->vnn_map) {
 		hdr->generation = ctdb->vnn_map->generation;
 	}
@@ -724,9 +768,9 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 		return NULL;
 	}
 	talloc_set_name_const(hdr, type);
-	memset(hdr, 0, slength);
+	memset(hdr, 0, size);
 	hdr->operation    = operation;
-	hdr->length       = length;
+	hdr->length       = size;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
 	hdr->generation   = ctdb->vnn_map->generation;

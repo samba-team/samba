@@ -195,6 +195,7 @@ struct ctdb_context {
 	struct ctdb_status status;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
+	struct idr_fake *fidr;
 };
 
 struct ctdb_db_context {
@@ -266,7 +267,6 @@ struct ctdb_call_state {
 	struct ctdb_db_context *ctdb_db;
 	const char *errmsg;
 	struct ctdb_call call;
-	struct ctdb_ltdb_header header;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -347,6 +347,7 @@ struct ctdb_reply_error {
 struct ctdb_req_dmaster {
 	struct ctdb_req_header hdr;
 	uint32_t db_id;
+	uint64_t rsn;
 	uint32_t dmaster;
 	uint32_t keylen;
 	uint32_t datalen;
@@ -355,6 +356,9 @@ struct ctdb_req_dmaster {
 
 struct ctdb_reply_dmaster {
 	struct ctdb_req_header hdr;
+	uint32_t db_id;
+	uint64_t rsn;
+	uint32_t keylen;
 	uint32_t datalen;
 	uint8_t  data[1];
 };

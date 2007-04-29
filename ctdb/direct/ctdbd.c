@@ -56,7 +56,6 @@ int main(int argc, const char *argv[])
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
 	poptContext pc;
 	struct event_context *ev;
 
@@ -91,22 +90,13 @@ int main(int argc, const char *argv[])
 		ctdb_db = ctdb_attach(ctdb, tok, TDB_DEFAULT, 
 				      O_RDWR|O_CREAT|O_TRUNC, 0666);
 		if (!ctdb_db) {
-			printf("ctdb_attach to '%s'failed - %s\n", tok, 
-			       ctdb_errstr(ctdb));
+			DEBUG(0,("ctdb_attach to '%s'failed - %s\n", tok, 
+				 ctdb_errstr(ctdb)));
 			exit(1);
 		}
-		printf("Attached to database '%s'\n", tok);
+		DEBUG(1, ("Attached to database '%s'\n", tok));
 	}
 
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
-
-/*	event_loop_wait(ev);*/
-	while (1) {
-		event_loop_once(ev);
-	}
-
-	/* shut it down */
-	talloc_free(ev);
-	return 0;
+	/* start the protocol running (as a child) */
+	return ctdb_start_daemon(ctdb);
 }
