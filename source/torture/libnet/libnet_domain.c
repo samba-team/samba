@@ -312,7 +312,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 {
 	BOOL ret = True;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx=NULL;
+	TALLOC_CTX *mem_ctx = NULL;
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
@@ -340,7 +340,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
 	status = dcerpc_pipe_connect(mem_ctx, &p, bindstr, &dcerpc_table_samr,
-				     cmdline_credentials, NULL);
+				     ctx->cred, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to connect to server %s: %s\n", bindstr,
 			 nt_errstr(status));
@@ -361,7 +361,8 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	ctx->samr.access_mask = access_mask;
 	ctx->samr.handle      = h;
 	/* we have to use pipe's event context, otherwise the call will
-	   hang indefinately */
+	   hang indefinitely - this wouldn't be the case if pipe was opened
+	   by means of libnet call */
 	ctx->event_ctx       = p->conn->event_ctx;
 
 	ZERO_STRUCT(r);
@@ -375,6 +376,59 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	}
 
 done:
+	talloc_free(mem_ctx);
+	talloc_free(ctx);
+	return ret;
+}
+
+
+BOOL torture_domain_list(struct torture_context *torture)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	const char *bindstr;
+	struct dcerpc_binding *binding;
+	struct libnet_context *ctx;
+	struct libnet_DomainList r;
+	int i;
+
+	bindstr = torture_setting_string(torture, "binding", NULL);
+	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to parse binding string\n");
+		return False;
+	}
+
+	ctx = libnet_context_init(NULL);
+	if (ctx == NULL) {
+		d_printf("failed to create libnet context\n");
+		ret = False;
+		goto done;
+	}
+
+	ctx->cred = cmdline_credentials;
+	
+	mem_ctx = talloc_init("torture_domain_close_samr");
+
+	ZERO_STRUCT(r);
+	r.in.hostname = binding->host;
+
+	status = libnet_DomainList(ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto done;
+	}
+
+	d_printf("Received list or domains:\n");
+	
+	for (i = 0; i < r.out.count; i++) {
+		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
+	}
+
+done:
+	d_printf("\nStatus: %s\n", nt_errstr(status));
+
 	talloc_free(mem_ctx);
 	talloc_free(ctx);
 	return ret;

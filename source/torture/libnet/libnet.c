@@ -52,6 +52,7 @@ NTSTATUS torture_net_init(void)
 	torture_suite_add_simple_test(suite, "API-DOMOPENSAMR", torture_domain_open_samr);
 	torture_suite_add_simple_test(suite, "API-DOMCLOSESAMR", torture_domain_close_samr);
 	torture_suite_add_simple_test(suite, "API-BECOME-DC", torture_net_become_dc);
+	torture_suite_add_simple_test(suite, "API-DOMLIST", torture_domain_list);
 
 	suite->description = talloc_strdup(suite, "libnet convenience interface tests");
 
