@@ -160,7 +160,6 @@ NTSTATUS wb_sam_logon_recv(struct composite_context *c,
 		talloc_steal(mem_ctx, s->r_mem_ctx);
 		req->out.validation	= s->r.out.validation;
 		req->out.authoritative	= 1;
-		req->out.flags		= 0;
 	}
 
 	talloc_free(s);
