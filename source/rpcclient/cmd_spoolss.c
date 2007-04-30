@@ -2027,15 +2027,23 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		UNISTR2 data;
 		init_unistr2(&data, argv[4], UNI_STR_TERMINATE);
 		value.size = data.uni_str_len * 2;
-		value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer,
+		if (value.size) {
+			value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer,
 						      value.size);
+		} else {
+			value.data_p = NULL;
+		}
 		break;
 	}
 	case REG_DWORD: {
 		uint32 data = strtoul(argv[4], NULL, 10);
 		value.size = sizeof(data);
-		value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, &data,
+		if (sizeof(data)) {
+			value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, &data,
 						      sizeof(data));
+		} else {
+			value.data_p = NULL;
+		}
 		break;
 	}
 	case REG_BINARY: {

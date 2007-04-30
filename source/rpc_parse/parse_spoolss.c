@@ -5251,9 +5251,13 @@ BOOL make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16
 
 	buf5->buf_len = len;
 	if (src) {
-		if((buf5->buffer=(uint16*)TALLOC_MEMDUP(mem_ctx, src, sizeof(uint16)*len)) == NULL) {
-			DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
-			return False;
+		if (len) {
+			if((buf5->buffer=(uint16*)TALLOC_MEMDUP(mem_ctx, src, sizeof(uint16)*len)) == NULL) {
+				DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
+				return False;
+			}
+		} else {
+			buf5->buffer = NULL;
 		}
 	} else {
 		buf5->buffer=NULL;
