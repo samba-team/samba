@@ -227,8 +227,6 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	s->req.in.validation_level	= 3;
 
-	NDR_PRINT_IN_DEBUG(winbind_SamLogon, &s->req);
-
 	status = IRPC_CALL(ctx->auth_ctx->msg_ctx, winbind_servers[0],
 			   winbind, WINBIND_SAMLOGON,
 			   &s->req, s);
