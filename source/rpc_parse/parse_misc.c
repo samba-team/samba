@@ -496,11 +496,15 @@ void init_unistr(UNISTR *str, const char *buf)
 		
 	len = strlen(buf) + 1;
 
-	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
-	if (str->buffer == NULL)
-		smb_panic("init_unistr: malloc fail\n");
+	if (len) {
+		str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
+		if (str->buffer == NULL)
+			smb_panic("init_unistr: malloc fail\n");
 
-	rpcstr_push(str->buffer, buf, len*sizeof(uint16), STR_TERMINATE);
+		rpcstr_push(str->buffer, buf, len*sizeof(uint16), STR_TERMINATE);
+	} else {
+		str->buffer = NULL;
+	}
 }
 
 /*******************************************************************
@@ -703,15 +707,18 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 	   (the the length of the source string) to prevent
 	   reallocation of memory. */
 	if (str->buffer == NULL) {
-   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_max_len);
-		if ((str->buffer == NULL)) {
-			smb_panic("copy_unistr2: talloc fail\n");
-			return;
+		if (str->uni_max_len) {
+	   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_max_len);
+			if ((str->buffer == NULL)) {
+				smb_panic("copy_unistr2: talloc fail\n");
+				return;
+			}
+			/* copy the string */
+			memcpy(str->buffer, from->buffer, str->uni_max_len*sizeof(uint16));
+		} else {
+			str->buffer = NULL;
 		}
 	}
-
-	/* copy the string */
-	memcpy(str->buffer, from->buffer, str->uni_max_len*sizeof(uint16));
 }
 
 /*******************************************************************
@@ -799,7 +806,9 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		len = strlen(buf) + 1;
 		if ( flags == UNI_STR_DBLTERMINATE )
 			len++;
-	} else {
+	}
+
+	if (buf == NULL || len == 0) {
 		/* no buffer -- nothing to do */
 		str->uni_max_len = 0;
 		str->offset = 0;
@@ -887,10 +896,14 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 	str->offset = 0;
 	str->uni_str_len = len;
 
-	str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
-	if (str->buffer == NULL) {
-		smb_panic("init_unistr2_w: talloc fail\n");
-		return;
+	if (len + 1) {
+		str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
+		if (str->buffer == NULL) {
+			smb_panic("init_unistr2_w: talloc fail\n");
+			return;
+		}
+	} else {
+		str->buffer = NULL;
 	}
 	
 	/*
@@ -903,7 +916,9 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 	/* Yes, this is a strncpy( foo, bar, strlen(bar)) - but as
            long as the buffer above is talloc()ed correctly then this
            is the correct thing to do */
-	strncpy_w(str->buffer, buf, len + 1);
+	if (len+1) {
+		strncpy_w(str->buffer, buf, len + 1);
+	}
 }
 
 /*******************************************************************
@@ -937,10 +952,14 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 	to->uni_str_len = i;
 
 	/* allocate the space and copy the string buffer */
-	to->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, i);
-	if (to->buffer == NULL)
-		smb_panic("init_unistr2_from_unistr: malloc fail\n");
-	memcpy(to->buffer, from->buffer, i*sizeof(uint16));
+	if (i) {
+		to->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, i);
+		if (to->buffer == NULL)
+			smb_panic("init_unistr2_from_unistr: malloc fail\n");
+		memcpy(to->buffer, from->buffer, i*sizeof(uint16));
+	} else {
+		to->buffer = NULL;
+	}
 	return;
 }
 
@@ -1136,12 +1155,13 @@ BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRA
 	if(!prs_uint32("count", ps, depth, &array->count))
 		return False;
 
-	if ( array->count == 0 ) 
-		return True;
-	
 	if (UNMARSHALLING(ps)) {
-		if ( !(array->strings = TALLOC_ZERO_ARRAY( get_talloc_ctx(), UNISTR4, array->count)) )
-			return False;
+		if (array->count) {
+			if ( !(array->strings = TALLOC_ZERO_ARRAY( get_talloc_ctx(), UNISTR4, array->count)) )
+				return False;
+		} else {
+			array->strings = NULL;
+		}
 	}
 	
 	/* write the headers and then the actual string buffer */
@@ -1169,13 +1189,14 @@ BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **string
 
 	array->count = count;
 
-	if ( array->count == 0 )
-		return True;
-
 	/* allocate memory for the array of UNISTR4 objects */
 
-	if ( !(array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR4, count )) )
-		return False;
+	if (array->count) {
+		if ( !(array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR4, count )) )
+			return False;
+	} else {
+		array->strings = NULL;
+	}
 
 	for ( i=0; i<count; i++ ) 
 		init_unistr4( &array->strings[i], strings[i], UNI_STR_TERMINATE );
@@ -1724,11 +1745,15 @@ void init_unistr3(UNISTR3 *str, const char *buf)
 
 	str->uni_str_len = strlen(buf) + 1;
 
-	str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_str_len);
-	if (str->str.buffer == NULL)
-		smb_panic("init_unistr3: malloc fail\n");
+	if (str->uni_str_len) {
+		str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_str_len);
+		if (str->str.buffer == NULL)
+			smb_panic("init_unistr3: malloc fail\n");
 
-	rpcstr_push((char *)str->str.buffer, buf, str->uni_str_len * sizeof(uint16), STR_TERMINATE);
+		rpcstr_push((char *)str->str.buffer, buf, str->uni_str_len * sizeof(uint16), STR_TERMINATE);
+	} else {
+		str->str.buffer = NULL;
+	}
 }
 
 /*******************************************************************
