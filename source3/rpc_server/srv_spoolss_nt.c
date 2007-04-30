@@ -2495,9 +2495,8 @@ done:
 				if ( printer ) 
 					free_a_printer( &printer, 2 );
 				return WERR_NOMEM;
-		} 
-		} 
-		else {
+			} 
+		} else {
 			*data = NULL;
 		}
 	}
