@@ -534,7 +534,7 @@ sub provision($$$$$$)
 	read only = no
 	ntvfs handler = simple
 
-[cifsposixtestshare]
+[cifsposix]
 	copy = simple
 	ntvfs handler = cifsposix   
 ";
