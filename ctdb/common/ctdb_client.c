@@ -647,7 +647,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
   send a ctdb control message
  */
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
-		 uint32_t opcode, TDB_DATA data, 
+		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status)
 {
 	struct ctdb_client_control_state *state;
@@ -675,6 +675,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	c->hdr.destnode     = destnode;
 	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
+	c->flags            = flags;
 	c->srvid            = srvid;
 	c->datalen          = data.dsize;
 	if (data.dsize) {
@@ -685,6 +686,11 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	if (ret != 0) {
 		talloc_free(state);
 		return -1;
+	}
+
+	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
+		talloc_free(state);
+		return 0;
 	}
 
 	/* semi-async operation */
@@ -719,7 +725,7 @@ int ctdb_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid)
 	data.dsize = sizeof(pid);
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_PROCESS_EXISTS, data, 
+			   CTDB_CONTROL_PROCESS_EXISTS, 0, data, 
 			   NULL, NULL, &status);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " ctdb_control for process_exists failed\n"));
@@ -740,7 +746,7 @@ int ctdb_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_STATUS, data, 
+			   CTDB_CONTROL_STATUS, 0, data, 
 			   ctdb, &data, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for status failed\n"));
@@ -770,7 +776,7 @@ int ctdb_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GETVNNMAP, data, 
+			   CTDB_CONTROL_GETVNNMAP, 0, data, 
 			   ctdb, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
@@ -802,7 +808,7 @@ int ctdb_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_DBMAP, data, 
+			   CTDB_CONTROL_GET_DBMAP, 0, data, 
 			   ctdb, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
@@ -840,7 +846,7 @@ int ctdb_getnodemap(struct ctdb_context *ctdb, uint32_t destnode,
 	ZERO_STRUCT(data);
 	ZERO_STRUCT(*nodemap);
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_NODEMAP, data, 
+			   CTDB_CONTROL_GET_NODEMAP, 0, data, 
 			   ctdb, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
@@ -879,7 +885,7 @@ int ctdb_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn
 	}
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_SETVNNMAP, *data, 
+			   CTDB_CONTROL_SETVNNMAP, 0, *data, 
 			   ctdb, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for setvnnmap failed\n"));
@@ -900,7 +906,8 @@ int ctdb_ping(struct ctdb_context *ctdb, uint32_t destnode)
 	TDB_DATA data;
 
 	ZERO_STRUCT(data);
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_PING, data, NULL, NULL, &res);
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_PING, 0, 
+			   data, NULL, NULL, &res);
 	if (ret != 0) {
 		return -1;
 	}
@@ -918,8 +925,8 @@ int ctdb_get_config(struct ctdb_context *ctdb)
 	struct ctdb_context c;
 
 	ZERO_STRUCT(data);
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_CONFIG, data, 
-			   ctdb, &data, &res);
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_CONFIG, 0,
+			   data, ctdb, &data, &res);
 	if (ret != 0 || res != 0) {
 		return -1;
 	}
@@ -953,7 +960,7 @@ int ctdb_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx
 	data.dsize = sizeof(dbid);
 
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
-			   CTDB_CONTROL_GETDBPATH, data, 
+			   CTDB_CONTROL_GETDBPATH, 0, data, 
 			   mem_ctx, &data, &res);
 	if (ret != 0 || res != 0) {
 		return -1;
@@ -979,7 +986,7 @@ int ctdb_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *
 	TDB_DATA data;
 
 	ZERO_STRUCT(data);
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DEBUG, data, 
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DEBUG, 0, data, 
 			   ctdb, &data, &res);
 	if (ret != 0 || res != 0) {
 		return -1;
@@ -1006,7 +1013,7 @@ int ctdb_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t l
 	data.dptr = (uint8_t *)&level;
 	data.dsize = sizeof(level);
 
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_DEBUG, data, 
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_DEBUG, 0, data, 
 			   NULL, NULL, &res);
 	if (ret != 0 || res != 0) {
 		return -1;
@@ -1065,11 +1072,97 @@ int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode)
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_STATUS_RESET, data, 
+			   CTDB_CONTROL_STATUS_RESET, 0, data, 
 			   NULL, NULL, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for reset status failed\n"));
 		return -1;
 	}
+	return 0;
+}
+
+
+/*
+  attach to a specific database - client call
+*/
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
+{
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA data;
+	int ret;
+	int32_t res;
+
+	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
+	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db);
+
+	ctdb_db->ctdb = ctdb;
+	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
+	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
+
+	data.dptr = discard_const(name);
+	data.dsize = strlen(name)+1;
+
+	/* tell ctdb daemon to attach */
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_DB_ATTACH,
+			   0, data, ctdb_db, &data, &res);
+	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Failed to attach to database '%s'\n", name));
+		talloc_free(ctdb_db);
+		return NULL;
+	}
+	
+	ctdb_db->db_id = *(uint32_t *)data.dptr;
+
+	ret = ctdb_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
+	if (ret != 0) {
+		DEBUG(0,("Failed to get dbpath for database '%s'\n", name));
+		talloc_free(ctdb_db);
+		return NULL;
+	}
+
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 0, O_RDWR, 0);
+	if (ctdb_db->ltdb == NULL) {
+		ctdb_set_error(ctdb, "Failed to open tdb '%s'\n", ctdb_db->db_path);
+		talloc_free(ctdb_db);
+		return NULL;
+	}
+
+	DLIST_ADD(ctdb->db_list, ctdb_db);
+
+	return ctdb_db;
+}
+
+
+/*
+  setup a call for a database
+ */
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
+{
+	TDB_DATA data;
+	int32_t status;
+	struct ctdb_control_set_call c;
+	int ret;
+	struct ctdb_registered_call *call;
+
+	c.db_id = ctdb_db->db_id;
+	c.fn    = fn;
+	c.id    = id;
+
+	data.dptr = (uint8_t *)&c;
+	data.dsize = sizeof(c);
+
+	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_SET_CALL, 0,
+			   data, NULL, NULL, &status);
+	if (ret != 0 || status != 0) {
+		DEBUG(0,("ctdb_set_call failed for call %u\n", id));
+		return -1;
+	}
+
+	/* also register locally */
+	call = talloc(ctdb_db, struct ctdb_registered_call);
+	call->fn = fn;
+	call->id = id;
+
+	DLIST_ADD(ctdb_db->calls, call);	
 	return 0;
 }

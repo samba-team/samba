@@ -184,22 +184,6 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
 	return 0;
 }
-
-/*
-  add a node to the list of active nodes
-*/
-int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id)
-{
-	struct ctdb_registered_call *call;
-
-	call = talloc(ctdb_db, struct ctdb_registered_call);
-	call->fn = fn;
-	call->id = id;
-
-	DLIST_ADD(ctdb_db->calls, call);	
-	return 0;
-}
-
 /*
   return the vnn of this node
 */
@@ -420,12 +404,31 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 #endif
 }
 
+
+/*
+  broadcast a packet to all nodes
+*/
+static void ctdb_broadcast_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	int i;
+	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
+		hdr->destnode = ctdb->nodes[i]->vnn;
+		ctdb_queue_packet(ctdb, hdr);
+	}
+}
+
 /*
   queue a packet or die
 */
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
+
+	if (hdr->destnode == CTDB_BROADCAST_VNN) {
+		ctdb_broadcast_packet(ctdb, hdr);
+		return;
+	}
+
 	ctdb->status.node_packets_sent++;
 
 	if (!ctdb_validate_vnn(ctdb, hdr->destnode)) {

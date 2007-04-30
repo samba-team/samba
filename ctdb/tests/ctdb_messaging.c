@@ -96,15 +96,15 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	/* start the protocol running */
+	ret = ctdb_start(ctdb);
+
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	ctdb_db = ctdb_attach(ctdb, "test.tdb");
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
-
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
 
 	srvid = -1;
 	for (i=0;i<num_clients-1;i++) {

@@ -195,21 +195,15 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	/* start the protocol running */
+	ret = ctdb_start(ctdb);
+
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	ctdb_db = ctdb_attach(ctdb, "test.tdb");
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
-
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
-
-#if 0
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
-	ctdb_connect_wait(ctdb);
-#endif
 
 	/*
 	   start two child processes

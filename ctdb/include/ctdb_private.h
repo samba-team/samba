@@ -254,7 +254,19 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_SET_DEBUG,
 		    CTDB_CONTROL_GET_DBMAP,
 		    CTDB_CONTROL_GET_NODEMAP,
-		    CTDB_CONTROL_STATUS_RESET};
+		    CTDB_CONTROL_STATUS_RESET,
+		    CTDB_CONTROL_DB_ATTACH,
+		    CTDB_CONTROL_SET_CALL};
+
+/*
+  structure passed in set_call control
+ */
+struct ctdb_control_set_call {
+	uint32_t db_id;
+	ctdb_fn_t fn;
+	uint32_t id;
+};
+
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
@@ -409,6 +421,8 @@ struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
 	uint64_t srvid;
+#define CTDB_CTRL_FLAG_NOREPLY 1
+	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
 };
@@ -429,6 +443,7 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
 uint32_t ctdb_hash(const TDB_DATA *key);
+uint32_t ctdb_hash_string(const char *str);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -586,8 +601,15 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint64_t srvid, uint32_t opcode, TDB_DATA data,
+			     uint64_t srvid, uint32_t opcode, uint32_t flags,
+			     TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data);
+
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
+			       TDB_DATA *outdata);
+
+int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
+			 ctdb_fn_t fn, int id);
 
 #endif

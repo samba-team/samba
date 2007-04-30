@@ -45,13 +45,10 @@ static void block_signal(int signum)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
-	const char *db_list = "test.tdb";
-	char *s, *tok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
-		{ "dblist", 0, POPT_ARG_STRING, &db_list, 0, "list of databases", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -90,20 +87,6 @@ int main(int argc, const char *argv[])
 					     VARDIR, ctdb->vnn);
 		ctdb_set_logfile(ctdb, name);
 		talloc_free(name);
-	}
-
-	/* attach to the list of databases */
-	s = talloc_strdup(ctdb, db_list);
-	for (tok=strtok(s, ", "); tok; tok=strtok(NULL, ", ")) {
-		struct ctdb_db_context *ctdb_db;
-		ctdb_db = ctdb_attach(ctdb, tok, TDB_DEFAULT, 
-				      O_RDWR|O_CREAT|O_TRUNC, 0666);
-		if (!ctdb_db) {
-			DEBUG(0,("ctdb_attach to '%s'failed - %s\n", tok, 
-				 ctdb_errstr(ctdb)));
-			exit(1);
-		}
-		DEBUG(1, ("Attached to database '%s'\n", tok));
 	}
 
 	/* start the protocol running (as a child) */

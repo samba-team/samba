@@ -129,27 +129,7 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	if (vnn != CTDB_BROADCAST_VNN) {
-		ctdb_queue_packet(ctdb, &r->hdr);
-	} else {
-		struct ctdb_node *node;
-		int i;
-
-		/* this was a broadcast message
-		   loop over all other nodes and send them each a copy
-		*/
-		for (i=0; i<ctdb_get_num_nodes(ctdb); i++) {
-			node=ctdb->nodes[i];
-
-			/* we do not send the message to ourself */
-			if (node && node->vnn!=ctdb->vnn) {
-				r->hdr.destnode = node->vnn;
-				ctdb_queue_packet(ctdb, &r->hdr);
-			}
-		}
-		/* also make sure to dispatch the message locally */
-		ctdb_dispatch_message(ctdb, srvid, data);
-	}
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 	return 0;

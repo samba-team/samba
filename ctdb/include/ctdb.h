@@ -112,8 +112,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb);
 /*
   attach to a ctdb database
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-				    int open_flags, mode_t mode);
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name);
 
 /*
   find an attached ctdb_db handle given a name
@@ -131,7 +130,7 @@ typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 /*
   setup a ctdb call function
 */
-int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id);
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 
 
 

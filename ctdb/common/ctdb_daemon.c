@@ -848,10 +848,33 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 	res = ctdb_daemon_send_control(client->ctdb, c->hdr.destnode,
-				       c->srvid, c->opcode, data, daemon_control_callback,
+				       c->srvid, c->opcode, c->flags,
+				       data, daemon_control_callback,
 				       state);
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to send control to remote node %u\n",
 			 c->hdr.destnode));
 	}
+}
+
+/*
+  register a call function
+*/
+int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
+			 ctdb_fn_t fn, int id)
+{
+	struct ctdb_registered_call *call;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		return -1;
+	}
+
+	call = talloc(ctdb_db, struct ctdb_registered_call);
+	call->fn = fn;
+	call->id = id;
+
+	DLIST_ADD(ctdb_db->calls, call);	
+	return 0;
 }
