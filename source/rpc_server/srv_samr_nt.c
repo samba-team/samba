@@ -3954,10 +3954,14 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
-	
-	if ((num_members!=0) && (attr==NULL))
-		return NT_STATUS_NO_MEMORY;
+	if (num_members) {
+		attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
+		if (attr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		attr = NULL;
+	}
 	
 	for (i=0; i<num_members; i++)
 		attr[i] = SID_NAME_USER;
