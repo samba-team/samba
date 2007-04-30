@@ -586,7 +586,7 @@ sub provision($$$$$$)
 
 #Ensure the config file is valid before we start
 	if (system("$self->{bindir}/testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
-		system("$self->{bindir}/testparm $configuration >&2");
+		system("$self->{bindir}/testparm -v --suppress-prompt $configuration >&2");
 		die("Failed to create a valid smb.conf configuration!");
 	}
 
