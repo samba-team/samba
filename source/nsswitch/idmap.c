@@ -1026,9 +1026,15 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 
 	/* split list per domain */
 
-	dom_ids = TALLOC_ZERO_ARRAY(ctx, struct id_map **, num_domains);
-	IDMAP_CHECK_ALLOC(dom_ids);
-	counters = TALLOC_ZERO_ARRAY(ctx, int, num_domains);
+	if (num_domains) {
+		dom_ids = TALLOC_ZERO_ARRAY(ctx, struct id_map **, num_domains);
+		IDMAP_CHECK_ALLOC(dom_ids);
+		counters = TALLOC_ZERO_ARRAY(ctx, int, num_domains);
+		IDMAP_CHECK_ALLOC(counters);
+	} else {
+		dom_ids = NULL;
+		counters = NULL;
+	}
 
 	/* partition the requests by domain */
 
