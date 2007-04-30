@@ -670,7 +670,13 @@ sub provision_member($$$)
 
 	$ret or die("Unable to provision");
 
-	system("$self->{bindir}/net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}") == 0 or die("Join failed");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$self->{bindir}/net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
 
 	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
 	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
