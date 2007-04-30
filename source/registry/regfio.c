@@ -1823,8 +1823,12 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		memcpy( nk->subkeys.header, "lf", REC_HDR_SIZE );
 		
 		nk->subkeys.num_keys = nk->num_subkeys;
-		if ( !(nk->subkeys.hashes = TALLOC_ZERO_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
-			return NULL;
+		if (nk->subkeys.num_keys) {
+			if ( !(nk->subkeys.hashes = TALLOC_ZERO_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
+				return NULL;
+		} else {
+			nk->subkeys.hashes = NULL;
+		}
 		nk->subkey_index = 0;
 
 		/* update the max_bytes_subkey{name,classname} fields */

@@ -961,16 +961,21 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	   the problem is that the members are in the form of distinguised names
 	*/
 
-	(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
-	(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
-	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
+	if (num_members) {
+		(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
+		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
+		(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
 
-	if ((num_members != 0) &&
-	    ((members == NULL) || (*sid_mem == NULL) ||
-	     (*name_types == NULL) || (*names == NULL))) {
-		DEBUG(1, ("talloc failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+		if ((members == NULL) || (*sid_mem == NULL) ||
+		     (*name_types == NULL) || (*names == NULL)) {
+			DEBUG(1, ("talloc failed\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		(*sid_mem) = NULL;
+		(*name_types) = NULL;
+		(*names) = NULL;
 	}
  
 	for (i=0;i<num_members;i++) {

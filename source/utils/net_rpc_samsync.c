@@ -670,10 +670,14 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members)) == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		talloc_free(t);
-		return NT_STATUS_NO_MEMORY;
+	if (delta->num_members) {
+		if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members)) == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			talloc_free(t);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		nt_members = NULL;
 	}
 
 	for (i=0; i<delta->num_members; i++) {
