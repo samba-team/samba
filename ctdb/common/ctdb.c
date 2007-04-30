@@ -86,11 +86,7 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
 {
-	if (dir == NULL) {
-		ctdb->db_directory = talloc_asprintf(ctdb, "ctdb-%u", ctdb_get_vnn(ctdb));
-	} else {
-		ctdb->db_directory = talloc_strdup(ctdb, dir);
-	}
+	ctdb->db_directory = talloc_strdup(ctdb, dir);
 	if (ctdb->db_directory == NULL) {
 		return -1;
 	}
@@ -124,7 +120,8 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	   will change! */
 	node->vnn = ctdb->num_nodes;
 
-	if (ctdb_same_address(&ctdb->address, &node->address)) {
+	if (ctdb->address.address &&
+	    ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;
 		node->flags |= NODE_FLAGS_CONNECTED;
 	}

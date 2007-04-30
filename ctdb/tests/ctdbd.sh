@@ -3,8 +3,8 @@
 killall -q ctdbd
 
 echo "Starting 2 ctdb daemons"
-bin/ctdbd --nlist direct/nodes.txt --listen 127.0.0.2:9001
-bin/ctdbd --nlist direct/nodes.txt --listen 127.0.0.1:9001
+bin/ctdbd --nlist direct/nodes.txt
+bin/ctdbd --nlist direct/nodes.txt
 
 echo "Testing ping"
 bin/ctdb_control ping || exit 1

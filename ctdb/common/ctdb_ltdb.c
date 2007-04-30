@@ -301,6 +301,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
 		if (strcmp(db_name, tmp_db->db_name) == 0) {
 			/* this is not an error */
+			outdata->dptr  = (uint8_t *)&tmp_db->db_id;
+			outdata->dsize = sizeof(tmp_db->db_id);
 			return 0;
 		}
 	}
@@ -327,6 +329,10 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		}
 	}
 
+	if (ctdb->db_directory == NULL) {
+		ctdb->db_directory = VARDIR "/ctdb";
+	}
+
 	/* make sure the db directory exists */
 	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
 		DEBUG(0,(__location__ " Unable to create ctdb directory '%s'\n", 
@@ -336,8 +342,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	/* open the database */
-	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s", 
-					   ctdb->db_directory, db_name);
+	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
+					   ctdb->db_directory, 
+					   db_name, ctdb->vnn);
 
 	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 
 				      TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0666);
@@ -364,6 +371,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
 				 CTDB_CONTROL_DB_ATTACH, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
+
+	DEBUG(0,("Attached to database '%s'\n", ctdb_db->db_path));
 
 	/* success */
 	return 0;

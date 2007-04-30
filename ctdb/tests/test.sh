@@ -18,7 +18,7 @@ done
 killall -9 ctdb_test
 echo "Trying $NUMNODES nodes"
 for i in `seq 1 $NUMNODES`; do
-  $VALGRIND bin/ctdb_test --nlist nodes.txt --listen 127.0.0.$i:9001 --socket /tmp/ctdb.127.0.0.$i $* &
+  $VALGRIND bin/ctdb_test --nlist nodes.txt --socket /tmp/ctdb.127.0.0.$i $* &
 done
 
 wait
