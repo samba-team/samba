@@ -1106,9 +1106,13 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		}
 
 		/* Now allocate space for them. */
-		*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
-		if (*ppsids == NULL)
-			return 0;
+		if (count) {
+			*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
+			if (*ppsids == NULL)
+				return 0;
+		} else {
+			*ppsids = NULL;
+		}
 
 		sids = *ppsids;
 
@@ -1590,9 +1594,13 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	usr->gids = TALLOC_ZERO_ARRAY(ctx,DOM_GID,num_groups);
-	if (usr->gids == NULL && num_groups>0)
-		return;
+	if (num_groups) {
+		usr->gids = TALLOC_ZERO_ARRAY(ctx,DOM_GID,num_groups);
+		if (usr->gids == NULL)
+	 		return;
+	} else {
+		usr->gids = NULL;
+	}
 
 	for (i = 0; i < num_groups; i++) 
 		usr->gids[i] = gids[i];	
