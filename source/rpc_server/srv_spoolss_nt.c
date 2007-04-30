@@ -723,14 +723,17 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 	}
 
 	data->notify_data.data.length = prs_offset(&ps);
-	data->notify_data.data.string = (uint16 *)
-		TALLOC(mem_ctx, prs_offset(&ps));
-	if (!data->notify_data.data.string) {
-		prs_mem_free(&ps);
-		return;
+	if (prs_offset(&ps)) {
+		data->notify_data.data.string = (uint16 *)
+			TALLOC(mem_ctx, prs_offset(&ps));
+		if (!data->notify_data.data.string) {
+			prs_mem_free(&ps);
+			return;
+		}
+		prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-
-	prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
 
 	prs_mem_free(&ps);
 }
@@ -2708,14 +2711,17 @@ void spoolss_notify_server_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->servername, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
-	}
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
 	
-	memcpy(data->notify_data.data.string, temp, len);
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
+	}
 }
 
 /*******************************************************************
@@ -2743,14 +2749,16 @@ void spoolss_notify_printer_name(int snum,
 	len = rpcstr_push(temp, p, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2769,14 +2777,17 @@ void spoolss_notify_share_name(int snum,
 	len = rpcstr_push(temp, lp_servicename(snum), sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
 	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2797,14 +2808,18 @@ void spoolss_notify_port_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->portname, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2824,14 +2839,18 @@ void spoolss_notify_driver_name(int snum,
 	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2853,14 +2872,18 @@ void spoolss_notify_comment(int snum,
 		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2880,14 +2903,18 @@ void spoolss_notify_location(int snum,
 	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2922,14 +2949,18 @@ void spoolss_notify_sepfile(int snum,
 	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2949,14 +2980,18 @@ void spoolss_notify_print_processor(int snum,
 	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -2976,14 +3011,18 @@ void spoolss_notify_parameters(int snum,
 	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -3003,14 +3042,18 @@ void spoolss_notify_datatype(int snum,
 	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -3163,14 +3206,18 @@ static void spoolss_notify_username(int snum,
 	len = rpcstr_push(temp, queue->fs_user, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -3203,14 +3250,18 @@ static void spoolss_notify_job_name(int snum,
 	len = rpcstr_push(temp, queue->fs_file, sizeof(temp)-2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -3253,14 +3304,18 @@ static void spoolss_notify_job_status_string(int snum,
 	len = rpcstr_push(temp, p, sizeof(temp) - 2, STR_TERMINATE);
 
 	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
+	if (len) {
+		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
 	
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
+		if (!data->notify_data.data.string) {
+			data->notify_data.data.length = 0;
+			return;
+		}
+	
+		memcpy(data->notify_data.data.string, temp, len);
+	} else {
+		data->notify_data.data.string = NULL;
 	}
-	
-	memcpy(data->notify_data.data.string, temp, len);
 }
 
 /*******************************************************************
@@ -8119,13 +8174,17 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 		*out_max_value_len=(in_value_len/sizeof(uint16));
 		
-		if((*out_value=(uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
-		{
-			result = WERR_NOMEM;
-			goto done;
+		if (in_value_len) {
+			if((*out_value=(uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
+			{
+				result = WERR_NOMEM;
+				goto done;
+			}
+			*out_value_len = (uint32)rpcstr_push((char *)*out_value, "", in_value_len, 0);
+		} else {
+			*out_value=NULL;
+			*out_value_len = 0;
 		}
-
-		*out_value_len = (uint32)rpcstr_push((char *)*out_value, "", in_value_len, 0);
 
 		/* the data is counted in bytes */
 		
@@ -8155,13 +8214,18 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	
 		/* name */
 		*out_max_value_len=(in_value_len/sizeof(uint16));
-		if ( (*out_value = (uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
-		{
-			result = WERR_NOMEM;
-			goto done;
-		}
+		if (in_value_len) {
+			if ( (*out_value = (uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
+			{
+				result = WERR_NOMEM;
+				goto done;
+			}
 	
-		*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), (size_t)in_value_len, 0);
+			*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), (size_t)in_value_len, 0);
+		} else {
+			*out_value = NULL;
+			*out_value_len = 0;
+		}
 
 		/* type */
 		
@@ -8176,7 +8240,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 			goto done;
 		}
 		data_len = regval_size(val);
-		if ( *data_out )
+		if ( *data_out && data_len )
 			memcpy( *data_out, regval_data_p(val), data_len );
 		*out_data_len = data_len;
 	}
@@ -9117,10 +9181,9 @@ done:
 				status = WERR_NOMEM;
 				goto done;
 			}
-		} 
-		else {
+		} else {
 			*data = NULL;
-	}
+		}
 	}
 	
 	if ( printer )
