@@ -616,10 +616,14 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	uid_to_sid(&owner_sid, sbuf.st_uid);
 	gid_to_sid(&group_sid, sbuf.st_gid);
 
-	nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
+	if (num_aces) {
+		nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
 
-	if (nt_ace_list == NULL)
-		return 0;
+		if (nt_ace_list == NULL)
+			return 0;
+	} else {
+		nt_ace_list = NULL;
+	}
 
 	afs_ace = afs_acl->acelist;
 	good_aces = 0;

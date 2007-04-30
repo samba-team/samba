@@ -203,11 +203,15 @@ int cac_LsaGetNamesFromSids( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	if ( NT_STATUS_IS_OK( hnd->status ) ) {
 		/*this is the easy part, just make the out.sids array */
-		sids_out = TALLOC_ARRAY( mem_ctx, CacSidInfo, num_sids );
-		if ( !sids_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+		if (num_sids) {
+			sids_out = TALLOC_ARRAY( mem_ctx, CacSidInfo, num_sids );
+			if ( !sids_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			sids_out = NULL;
 		}
 
 		for ( i = 0; i < num_sids; i++ ) {
@@ -232,22 +236,29 @@ int cac_LsaGetNamesFromSids( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			return CAC_FAILURE;
 		}
 
-		sids_out =
-			TALLOC_ARRAY( mem_ctx, CacSidInfo,
+		if ( num_sids - num_unknown) {
+			sids_out =
+				TALLOC_ARRAY( mem_ctx, CacSidInfo,
 				      ( num_sids - num_unknown ) );
-		if ( !sids_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+			if ( !sids_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			sids_out = NULL;
 		}
 
-		unknown_out = TALLOC_ARRAY( mem_ctx, DOM_SID, num_unknown );
-		if ( !unknown_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+		if (num_unknown) {
+			unknown_out = TALLOC_ARRAY( mem_ctx, DOM_SID, num_unknown );
+			if ( !unknown_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			unknown_out = NULL;
 		}
-
 		found_idx = unknown_idx = 0;
 
 		/*now we can actually do the real work */
@@ -330,11 +341,15 @@ int cac_LsaGetSidsFromNames( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	if ( NT_STATUS_IS_OK( hnd->status ) ) {
 		/*this is the easy part, just make the out.sids array */
-		sids_out = TALLOC_ARRAY( mem_ctx, CacSidInfo, num_names );
-		if ( !sids_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+		if (num_names) {
+			sids_out = TALLOC_ARRAY( mem_ctx, CacSidInfo, num_names );
+			if ( !sids_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			sids_out = NULL;
 		}
 
 		for ( i = 0; i < num_names; i++ ) {
@@ -360,20 +375,28 @@ int cac_LsaGetSidsFromNames( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			return CAC_FAILURE;
 		}
 
-		sids_out =
-			TALLOC_ARRAY( mem_ctx, CacSidInfo,
+		if (num_names - num_unknown) {
+			sids_out =
+				TALLOC_ARRAY( mem_ctx, CacSidInfo,
 				      ( num_names - num_unknown ) );
-		if ( !sids_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+			if ( !sids_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			sids_out = NULL;
 		}
 
-		unknown_out = TALLOC_ARRAY( mem_ctx, char *, num_unknown );
-		if ( !unknown_out ) {
-			errno = ENOMEM;
-			hnd->status = NT_STATUS_NO_MEMORY;
-			return CAC_FAILURE;
+		if (num_unknown) {
+			unknown_out = TALLOC_ARRAY( mem_ctx, char *, num_unknown );
+			if ( !unknown_out ) {
+				errno = ENOMEM;
+				hnd->status = NT_STATUS_NO_MEMORY;
+				return CAC_FAILURE;
+			}
+		} else {
+			unknown_out = NULL;
 		}
 
 		unknown_idx = found_idx = 0;

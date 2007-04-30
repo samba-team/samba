@@ -2225,10 +2225,14 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	for (i=0; values[i]; i++)
 		/* nop */ ;
 
-	(*sids) = TALLOC_ARRAY(mem_ctx, DOM_SID, i);
-	if (!(*sids)) {
-		ldap_value_free_len(values);
-		return 0;
+	if (i) {
+		(*sids) = TALLOC_ARRAY(mem_ctx, DOM_SID, i);
+		if (!(*sids)) {
+			ldap_value_free_len(values);
+			return 0;
+		}
+	} else {
+		(*sids) = NULL;
 	}
 
 	count = 0;

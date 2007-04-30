@@ -299,12 +299,16 @@ REG_VALUE_DATA *cac_MakeRegValueData( TALLOC_CTX * mem_ctx, uint32 data_type,
 				break;
 		}
 
-		strings = TALLOC_ARRAY( mem_ctx, char *, num_strings );
+		if (num_strings) {
+			strings = TALLOC_ARRAY( mem_ctx, char *, num_strings );
 
-		if ( !strings ) {
-			errno = ENOMEM;
-			TALLOC_FREE( data );
-			break;
+			if ( !strings ) {
+				errno = ENOMEM;
+				TALLOC_FREE( data );
+				break;
+			}
+		} else {
+			strings = NULL;
 		}
 
 		if ( num_strings == 0 )	/*then our work here is done */

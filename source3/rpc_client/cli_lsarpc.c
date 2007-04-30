@@ -179,22 +179,28 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
-		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	if (num_sids) {
+		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
-	if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
-		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+		if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
-	if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
-		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		(*domains) = NULL;
+		(*names) = NULL;
+		(*types) = NULL;
 	}
 		
 	for (i = 0; i < num_sids; i++) {
@@ -281,24 +287,32 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!((*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_names)))) {
-		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
-		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	if (dom_names != NULL) {
-		*dom_names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
-		if (*dom_names == NULL) {
+	if (num_names) {
+		if (!((*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_names)))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
+		}
+
+		if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (dom_names != NULL) {
+			*dom_names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+			if (*dom_names == NULL) {
+				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
+	} else {
+		*sids = NULL;
+		*types = NULL;
+		if (dom_names != NULL) {
+			*dom_names = NULL;
 		}
 	}
 
@@ -744,22 +758,28 @@ NTSTATUS rpccli_lsa_enum_privilege(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*enum_context = r.enum_context;
 	*count = r.count;
 
-	if (!((*privs_name = TALLOC_ARRAY(mem_ctx, char *, r.count)))) {
-		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	if (r.count) {
+		if (!((*privs_name = TALLOC_ARRAY(mem_ctx, char *, r.count)))) {
+			DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 
-	if (!((*privs_high = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
-		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+		if (!((*privs_high = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
+			DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 
-	if (!((*privs_low = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
-		DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+		if (!((*privs_low = TALLOC_ARRAY(mem_ctx, uint32, r.count)))) {
+			DEBUG(0, ("(cli_lsa_enum_privilege): out of memory\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	} else {
+		*privs_name = NULL;
+		*privs_high = NULL;
+		*privs_low = NULL;
 	}
 
 	for (i = 0; i < r.count; i++) {

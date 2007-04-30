@@ -234,9 +234,13 @@ DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 
 	if (!ERR_DNS_IS_OK(buf.error)) goto error;
 
-	if (!(tkey->key = TALLOC_ARRAY(tkey, uint8, tkey->key_length))) {
-		buf.error = ERROR_DNS_NO_MEMORY;
-		goto error;
+	if (tkey->key_length) {
+		if (!(tkey->key = TALLOC_ARRAY(tkey, uint8, tkey->key_length))) {
+			buf.error = ERROR_DNS_NO_MEMORY;
+			goto error;
+		}
+	} else {
+		tkey->key = NULL;
 	}
 
 	dns_unmarshall_buffer(&buf, tkey->key, tkey->key_length);

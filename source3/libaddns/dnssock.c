@@ -264,9 +264,13 @@ static DNS_ERROR dns_receive_tcp(TALLOC_CTX *mem_ctx,
 
 	buf->size = ntohs(len);
 
-	if (!(buf->data = TALLOC_ARRAY(buf, uint8, buf->size))) {
-		TALLOC_FREE(buf);
-		return ERROR_DNS_NO_MEMORY;
+	if (buf->size) {
+		if (!(buf->data = TALLOC_ARRAY(buf, uint8, buf->size))) {
+			TALLOC_FREE(buf);
+			return ERROR_DNS_NO_MEMORY;
+		}
+	} else {
+		buf->data = NULL;
 	}
 
 	err = read_all(conn->s, buf->data, buf->size);
