@@ -18,11 +18,20 @@ SLAPD = @SLAPD@
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
+TALLOC_LIBS = @TALLOC_LIBS@
+TALLOC_CFLAGS = @TALLOC_CFLAGS@
+
+TDB_LIBS = @TDB_LIBS@
+TDB_CFLAGS = @TDB_CFLAGS@
+
+POPT_LIBS = @POPT_LIBS@
+POPT_CFLAGS = @POPT_CFLAGS@
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       @POPT_CFLAGS@ -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
+       $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ @POPT_LIBS@
+LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \

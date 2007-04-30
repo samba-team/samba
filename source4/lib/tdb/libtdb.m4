@@ -17,6 +17,9 @@ TDBOBJ="$TDBOBJ common/freelist.o common/freelistcheck.o common/io.o common/lock
 AC_SUBST(TDBOBJ)
 AC_SUBST(LIBREPLACEOBJ)
 
+TDB_CFLAGS="-I$tdbdir/include"
+AC_SUBST(TDB_CFLAGS)
+
 AC_CHECK_FUNCS(mmap pread pwrite getpagesize utime)
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)
 
