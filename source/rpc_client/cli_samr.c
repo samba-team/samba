@@ -536,10 +536,14 @@ NTSTATUS rpccli_samr_query_useraliases(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	sid_ptrs = TALLOC_ARRAY(mem_ctx, uint32, num_sids);
-	if (sid_ptrs == NULL)
-		return NT_STATUS_NO_MEMORY;
-
+	if (num_sids) {
+		sid_ptrs = TALLOC_ARRAY(mem_ctx, uint32, num_sids);
+		if (sid_ptrs == NULL)
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		sid_ptrs = NULL;
+	}
+	
 	for (i=0; i<num_sids; i++)
 		sid_ptrs[i] = 1;
 

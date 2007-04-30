@@ -480,8 +480,12 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 	the_acl = parent_ctr->dacl;
 
-	if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
-		return NULL;
+	if (the_acl->num_aces) {
+		if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
+			return NULL;
+	} else {
+		new_ace_list = NULL;
+	}
 
 	for (i = 0; i < the_acl->num_aces; i++) {
 		SEC_ACE *ace = &the_acl->aces[i];

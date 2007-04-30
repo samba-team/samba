@@ -719,10 +719,14 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 	if ( !old_la )
 		return NT_STATUS_OK;
 
-	*new_la = TALLOC_ARRAY(mem_ctx, LUID_ATTR, count);
-	if ( !*new_la ) {
-		DEBUG(0,("dup_luid_attr: failed to alloc new LUID_ATTR array [%d]\n", count));
-		return NT_STATUS_NO_MEMORY;
+	if (count) {
+		*new_la = TALLOC_ARRAY(mem_ctx, LUID_ATTR, count);
+		if ( !*new_la ) {
+			DEBUG(0,("dup_luid_attr: failed to alloc new LUID_ATTR array [%d]\n", count));
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		*new_la = NULL;
 	}
 
 	for (i=0; i<count; i++) {

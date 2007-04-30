@@ -39,11 +39,15 @@ static BOOL decode_printer_info_0(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_0  *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_0, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_0, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -66,11 +70,15 @@ static BOOL decode_printer_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_1  *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_1, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_1, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -93,11 +101,15 @@ static BOOL decode_printer_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_2  *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_2, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_2, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -122,11 +134,15 @@ static BOOL decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_3  *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_3, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_3, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -150,11 +166,15 @@ static BOOL decode_printer_info_7(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PRINTER_INFO_7  *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_7, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_7, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -178,11 +198,15 @@ static BOOL decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PORT_INFO_1 *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PORT_INFO_1));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PORT_INFO_1));
 
 	prs_set_offset(&buffer->prs, 0);
 
@@ -205,11 +229,15 @@ static BOOL decode_port_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	PORT_INFO_2 *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(PORT_INFO_2));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(PORT_INFO_2));
 
 	prs_set_offset(&buffer->prs, 0);
 
@@ -232,11 +260,15 @@ static BOOL decode_printer_driver_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	DRIVER_INFO_1 *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_1, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_1, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -259,11 +291,15 @@ static BOOL decode_printer_driver_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	DRIVER_INFO_2 *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_2, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_2, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -286,11 +322,15 @@ static BOOL decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 	DRIVER_INFO_3 *inf;
 
-	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_3, returned);
-	if (!inf) {
-		return False;
+	if (returned) {
+		inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_3, returned);
+		if (!inf) {
+			return False;
+		}
+		memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
+	} else {
+		inf = NULL;
 	}
-	memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
 
@@ -337,9 +377,13 @@ static BOOL decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 {
 	uint32 i;
 
-	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
-	if (*jobs == NULL) {
-		return False;
+	if (num_jobs) {
+		*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
+		if (*jobs == NULL) {
+			return False;
+		}
+	} else {
+		*jobs = NULL;
 	}
 	prs_set_offset(&buffer->prs,0);
 
@@ -360,9 +404,13 @@ static BOOL decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 {
 	uint32 i;
 
-	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
-	if (*jobs == NULL) {
-		return False;
+	if (num_jobs) {
+		*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
+		if (*jobs == NULL) {
+			return False;
+		}
+	} else {
+		*jobs = NULL;
 	}
 	prs_set_offset(&buffer->prs,0);
 
@@ -383,10 +431,15 @@ static BOOL decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 {
 	int i;
 
-	*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
-	if (*forms == NULL) {
-		return False;
+	if (num_forms) {
+		*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
+		if (*forms == NULL) {
+			return False;
+		}
+	} else {
+		*forms = NULL;
 	}
+
 	prs_set_offset(&buffer->prs,0);
 
 	for (i = 0; i < num_forms; i++) {

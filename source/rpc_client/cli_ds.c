@@ -98,10 +98,14 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 		int i;
 	
 		*num_domains = r.num_domains;
-		*trusts = TALLOC_ARRAY(mem_ctx, struct ds_domain_trust, r.num_domains);
+		if (r.num_domains) {
+			*trusts = TALLOC_ARRAY(mem_ctx, struct ds_domain_trust, r.num_domains);
 
-		if (*trusts == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			if (*trusts == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			*trusts = NULL;
 		}
 
 		for ( i=0; i< *num_domains; i++ ) {
