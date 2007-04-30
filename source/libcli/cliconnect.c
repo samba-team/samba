@@ -224,6 +224,9 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	if (p && *p) {
 		*sharename = talloc_strdup(mem_ctx, p);
 		terminate_path_at_separator(*sharename);
+	} else {
+		*sharename = talloc_strdup(mem_ctx, 
+					   lp_parm_string(-1, "torture", "share"));
 	}
 
 	if (*hostname && *sharename) {
