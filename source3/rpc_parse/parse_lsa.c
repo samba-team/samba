@@ -740,9 +740,13 @@ static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *p
 			return False;
 
 		if (UNMARSHALLING(ps)) {
-			d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
-			if (!d_q->auditsettings) {
-				return False;
+			if (d_q->count2) {
+				d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
+				if (!d_q->auditsettings) {
+					return False;
+				}
+			} else {
+				d_q->auditsettings = NULL;
 			}
 		}
 
@@ -1121,16 +1125,16 @@ static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
 
 	/* Allocate memory for sids and sid pointers */
 
-	if (num_entries == 0) return;
+	if (num_entries) {
+		if ((sen->ptr_sid = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_entries )) == NULL) {
+			DEBUG(3, ("init_lsa_sid_enum(): out of memory for ptr_sid\n"));
+			return;
+		}
 
-	if ((sen->ptr_sid = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_entries )) == NULL) {
-		DEBUG(3, ("init_lsa_sid_enum(): out of memory for ptr_sid\n"));
-		return;
-	}
-
-	if ((sen->sid = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID2, num_entries)) == NULL) {
-		DEBUG(3, ("init_lsa_sid_enum(): out of memory for sids\n"));
-		return;
+		if ((sen->sid = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID2, num_entries)) == NULL) {
+			DEBUG(3, ("init_lsa_sid_enum(): out of memory for sids\n"));
+			return;
+		}
 	}
 
 	/* Copy across SIDs and SID pointers */
@@ -1566,14 +1570,19 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	q_l->num_entries2 = num_names;
 	q_l->lookup_level = 1;
 
-	if ((q_l->uni_name = TALLOC_ZERO_ARRAY(mem_ctx, UNISTR2, num_names)) == NULL) {
-		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
-		return;
-	}
+	if (num_names) {
+		if ((q_l->uni_name = TALLOC_ZERO_ARRAY(mem_ctx, UNISTR2, num_names)) == NULL) {
+			DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
+			return;
+		}
 
-	if ((q_l->hdr_name = TALLOC_ZERO_ARRAY(mem_ctx, UNIHDR, num_names)) == NULL) {
-		DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
-		return;
+		if ((q_l->hdr_name = TALLOC_ZERO_ARRAY(mem_ctx, UNIHDR, num_names)) == NULL) {
+			DEBUG(3, ("init_q_lookup_names(): out of memory\n"));
+			return;
+		}
+	} else {
+		q_l->uni_name = NULL;
+		q_l->hdr_name = NULL;
 	}
 
 	for (i = 0; i < num_names; i++) {
