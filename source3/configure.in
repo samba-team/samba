@@ -602,10 +602,16 @@ m4_include(m4/check_gnu_make.m4)
 m4_include(m4/depend.m4)
 
 # Using the dependency files requires GNU make until someone adds support
-# for Makefile includes for other make implementations.
+# for Makefile includes for other make implementations. Note that
+# CHECK_GNU_MAKE() can find a non-default make.
 CHECK_GNU_MAKE()
-if test "x$_cv_gnu_make_command" != "x" ; then
+if test "x$_cv_gnu_make_command" != "x" -a \
+    x`which make` = x`which "$_cv_gnu_make_command"` ; then
     AC_SUBST(MAKE, $_cv_gnu_make_command)
+else
+    # If GNU make is not the default, don't enable GNU-isms because we can't
+    # guarantee that GNU make will actually be the make that is invoked.
+    ifGNUmake='#'
 fi
 
 AM_DEP_TRACK()
