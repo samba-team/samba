@@ -12,11 +12,14 @@ done
 if test x"$tallocdir" = "x"; then
    AC_MSG_ERROR([cannot find talloc source in $tallocpaths])
 fi
-TALLOCOBJ="talloc.o"
-AC_SUBST(TALLOCOBJ)
+TALLOC_OBJ="talloc.o"
+AC_SUBST(TALLOC_OBJ)
 
 TALLOC_CFLAGS="-I$tallocdir"
 AC_SUBST(TALLOC_CFLAGS)
+
+TALLOC_LIBS=""
+AC_SUBST(TALLOC_LIBS)
 
 AC_CHECK_SIZEOF(size_t,cross)
 AC_CHECK_SIZEOF(void *,cross)

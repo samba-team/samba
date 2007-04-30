@@ -171,3 +171,12 @@ source/torture/ndr/proto.h
 source/bin/modules/*
 source/tests
 source/torture/unix/proto.h
+source/lib/tdb/bin/tdbtool
+source/lib/tdb/bin/tdbtorture
+source/lib/talloc/testsuite
+source/lib/talloc/talloc.3.html
+source/lib/ldb/tests/tmp
+source/lib/ldb/man/*.html
+source/lib/ldb/lib
+source/lib/ldb/examples/ldbreader
+source/lib/ldb/examples/ldifreader
