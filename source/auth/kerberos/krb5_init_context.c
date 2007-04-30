@@ -258,7 +258,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		case PF_INET:
 			name = "ipv4";
 			break;
-#ifdef HAVE_SOCKET_IPV6
+#ifdef HAVE_IPV6
 		case PF_INET6:
 			name = "ipv6";
 			break;
