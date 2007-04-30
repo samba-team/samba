@@ -713,9 +713,13 @@ CacService *cac_MakeServiceArray( TALLOC_CTX * mem_ctx,
 	if ( !mem_ctx || !svc )
 		return NULL;
 
-	services = TALLOC_ZERO_ARRAY( mem_ctx, CacService, num_services );
-	if ( !services )
-		return NULL;
+	if (num_services) {
+		services = TALLOC_ZERO_ARRAY( mem_ctx, CacService, num_services );
+		if ( !services )
+			return NULL;
+	} else {
+		services = NULL;
+	}
 
 	for ( i = 0; i < num_services; i++ ) {
 		services[i].service_name =

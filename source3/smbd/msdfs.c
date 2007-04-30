@@ -264,10 +264,14 @@ static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
 
 	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
 
-	reflist = *preflist = TALLOC_ZERO_ARRAY(ctx, struct referral, count);
-	if(reflist == NULL) {
-		DEBUG(0,("parse_msdfs_symlink: talloc failed!\n"));
-		return False;
+	if (count) {
+		reflist = *preflist = TALLOC_ZERO_ARRAY(ctx, struct referral, count);
+		if(reflist == NULL) {
+			DEBUG(0,("parse_msdfs_symlink: talloc failed!\n"));
+			return False;
+		}
+	} else {
+		reflist = *preflist = NULL;
 	}
 	
 	for(i=0;i<count;i++) {

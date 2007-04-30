@@ -122,8 +122,12 @@ NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32
 
 	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
-	if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
-		return NT_STATUS_NO_MEMORY;
+	if (*num) {
+		if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		pp_new[0] = NULL;
+	}
 
 	for (i = 0; i < *num; i ++) {
 		if (sid_compare(&old[i].trustee, sid) != 0)
