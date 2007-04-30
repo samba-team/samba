@@ -134,6 +134,7 @@ my $ldap = undef;
 my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
+my $opt_no_lazy_setup = undef;
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -454,6 +455,7 @@ my $result = GetOptions (
 		'testenv' => \$opt_testenv,
 		'ldap:s' => \$ldap,
 		'analyse-cmd=s' => \$opt_analyse_cmd,
+		'no-lazy-setup' => \$opt_no_lazy_setup,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 	    );
@@ -647,6 +649,7 @@ my @todo = ();
 my $testsdir = "$srcdir/selftest";
 $ENV{CONFIGURATION} = "--configfile=$conffile";
 
+my %required_envs = ();
 
 if ($opt_quick) {
 	open(IN, "$testsdir/tests_quick.sh|");
@@ -661,8 +664,10 @@ while (<IN>) {
 		$env =~ s/\n//g;
 		my $cmdline = <IN>;
 		$cmdline =~ s/\n//g;
-		push (@todo, [$name, $env, $cmdline]) 
-			if (not defined($tests) or $name =~ /$tests/);
+		if (not defined($tests) or $name =~ /$tests/) {
+			$required_envs{$env} = 1;
+			push (@todo, [$name, $env, $cmdline]);
+		}
 	} else {
 		print;
 	}
@@ -775,6 +780,10 @@ if ($from_build_farm) {
 	$msg_ops = $buildfarm_msg_ops;
 } else {
 	$msg_ops = $plain_msg_ops;
+}
+
+if ($opt_no_lazy_setup) {
+	setup_env($_) foreach (keys %required_envs);
 }
 
 if ($opt_testenv) {
