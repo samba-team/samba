@@ -1776,11 +1776,15 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	*num_aliases = centry_uint32(centry);
 	*alias_rids = NULL;
 
-	(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
+	if (*num_aliases) {
+		(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
 
-	if ((*num_aliases != 0) && ((*alias_rids) == NULL)) {
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
+		if ((*alias_rids) == NULL) {
+			centry_free(centry);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		(*alias_rids) = NULL;
 	}
 
 	for (i=0; i<(*num_aliases); i++)
@@ -1942,13 +1946,19 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
  
 	*num_domains = centry_uint32(centry);
 	
-	(*names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-	(*alt_names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-	(*dom_sids) 	= TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
+	if (*num_domains) {
+		(*names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+		(*alt_names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+		(*dom_sids) 	= TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
  
-	if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
-		smb_panic("trusted_domains out of memory");
- 	}
+		if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
+			smb_panic("trusted_domains out of memory");
+ 		}
+	} else {
+		(*names) = NULL;
+		(*alt_names) = NULL;
+		(*dom_sids) = NULL;
+	}
  
 	for (i=0; i<(*num_domains); i++) {
 		(*names)[i] = centry_string(centry, mem_ctx);

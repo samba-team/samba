@@ -403,13 +403,19 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		return nt_status;
 	}
 
-	*names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-	*alt_names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-	*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
+	if (*num_domains) {
+		*names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+		*alt_names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+		*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
 
-	if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		*names = NULL;
+		*alt_names = NULL;
+		*dom_sids = NULL;
 	}
 
 	for (i=0; i<*num_domains; i++) {
