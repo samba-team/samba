@@ -20,18 +20,21 @@ TESTS=test-tdb.sh @TESTS@
 
 TALLOC_LIBS = @TALLOC_LIBS@
 TALLOC_CFLAGS = @TALLOC_CFLAGS@
+TALLOC_OBJ = @TALLOC_OBJ@
 
 TDB_LIBS = @TDB_LIBS@
 TDB_CFLAGS = @TDB_CFLAGS@
+TDB_OBJ = @TDB_OBJ@
 
 POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
+POPT_OBJ = @POPT_OBJ@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS)
+LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TDB_LIBS)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
@@ -54,7 +57,7 @@ NSSDIR=nssldb
 NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
 NSS_LIB = lib/libnss_ldb.so.2
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) @TDBOBJ@ @TALLOCOBJ@ @POPTOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 LDB_LIB = lib/libldb.a
 
@@ -92,7 +95,7 @@ lib/libldb.a: $(OBJS)
 	ar -rv $@ $(OBJS)
 	@-ranlib $@
 
-lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS)
+lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
 	$(CC) -shared -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
