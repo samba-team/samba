@@ -15,6 +15,9 @@ fi
 TALLOCOBJ="talloc.o"
 AC_SUBST(TALLOCOBJ)
 
+TALLOC_CFLAGS="-I$tallocdir"
+AC_SUBST(TALLOC_CFLAGS)
+
 AC_CHECK_SIZEOF(size_t,cross)
 AC_CHECK_SIZEOF(void *,cross)
 
