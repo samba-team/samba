@@ -2327,7 +2327,11 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 
 					value.type = REG_SZ;
 					value.size = data.uni_str_len * 2;
-					value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+					if (value.size) {
+						value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+					} else {
+						value.data_p = NULL;
+					}
 
 					if (opt_verbose) 
 						display_reg_value(subkey, value);

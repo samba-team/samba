@@ -264,13 +264,16 @@ REG_VALUE_DATA *cac_MakeRegValueData( TALLOC_CTX * mem_ctx, uint32 data_type,
 
 		data->reg_binary.data_length = size;
 
-		data->reg_binary.data =
-			( uint8 * ) TALLOC_MEMDUP( mem_ctx, buf.buffer,
-						   size );
-		if ( !data->reg_binary.data ) {
-			TALLOC_FREE( data );
-			errno = ENOMEM;
-			data = NULL;
+		if (size) {
+			data->reg_binary.data =
+				( uint8 * ) TALLOC_MEMDUP( mem_ctx, buf.buffer, size );
+			if ( !data->reg_binary.data ) {
+				TALLOC_FREE( data );
+				errno = ENOMEM;
+				data = NULL;
+			}
+		} else {
+			data->reg_binary.data = NULL;
 		}
 		break;
 

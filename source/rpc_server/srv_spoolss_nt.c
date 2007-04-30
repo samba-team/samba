@@ -1408,11 +1408,15 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 			return NULL;
 	}
 
-	d->dev_private = (uint8 *)TALLOC_MEMDUP(ctx, devmode->dev_private,
+	if (devmode->driverextra) {
+		d->dev_private = (uint8 *)TALLOC_MEMDUP(ctx, devmode->dev_private,
 						devmode->driverextra);
-	if (!d->dev_private) {
-		return NULL;
-	}	
+		if (!d->dev_private) {
+			return NULL;
+		}	
+	} else {
+		d->dev_private = NULL;
+	}
 	return d;
 }
 
