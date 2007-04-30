@@ -11,3 +11,10 @@ The following environments are currently available:
 	 * DOMAIN
 	 * REALM
 	 * SERVER
+ - member: Domain controller and member server that is joined to it set up. The
+   following environment variables will be set:
+     * USERNAME
+	 * PASSWORD
+	 * DOMAIN
+	 * REALM
+	 * SERVER (contains the name of the member server)
