@@ -75,11 +75,11 @@ static int do_global_checks(void)
  int main(int argc, const char *argv[])
 {
 	int s;
-	static BOOL silent_mode = False;
+	static int silent_mode = 0;
 	int ret = 0;
 	poptContext pc;
 /*
-	static BOOL show_all_parameters = False;
+	static int show_all_parameters = 0;
 	static char *new_local_machine = NULL;
 */
 	static const char *section_name = NULL;
@@ -90,7 +90,7 @@ static int do_global_checks(void)
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"suppress-prompt", '\0', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
+		{"suppress-prompt", 0, POPT_ARG_NONE, &silent_mode, 1, "Suppress prompt for enter"},
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 /*
   We need support for smb.conf macros before this will work again 
@@ -98,7 +98,7 @@ static int do_global_checks(void)
 */
 /*
   These are harder to do with the new code structure
-		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
+		{"show-all-parameters", '\0', POPT_ARG_NONE, &show_all_parameters, 1, "Show the parameters, type, possible values" },
 */
 		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
