@@ -11,9 +11,9 @@ srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
-.PHONY: test
+.PHONY: test all showflags install installcheck clean distclean realdistclean
 
-CFLAGS=-I. -I@libreplacedir@ @CFLAGS@
+CFLAGS=-I. @CFLAGS@
 
 OBJS = @LIBREPLACEOBJ@
 

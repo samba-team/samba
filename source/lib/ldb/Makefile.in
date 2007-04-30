@@ -28,7 +28,7 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
+       $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS)
