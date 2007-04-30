@@ -206,14 +206,18 @@ static BOOL smbacl4_nfs42win(SMB4ACL_T *acl, /* in */
 	if (aclint==NULL)
 		return False;
 
-	nt_ace_list = (SEC_ACE *)TALLOC_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
-	if (nt_ace_list==NULL)
-	{
-		DEBUG(10, ("talloc error"));
-		errno = ENOMEM;
-		return False;
+	if (aclint->naces) {
+		nt_ace_list = (SEC_ACE *)TALLOC_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
+		if (nt_ace_list==NULL)
+		{
+			DEBUG(10, ("talloc error"));
+			errno = ENOMEM;
+			return False;
+		}
+		memset(nt_ace_list, 0, aclint->naces * sizeof(SEC_ACE));
+	} else {
+		nt_ace_list = NULL;
 	}
-	memset(nt_ace_list, 0, aclint->naces * sizeof(SEC_ACE));
 
 	for (aceint=aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
 		SEC_ACCESS mask;
