@@ -12,7 +12,7 @@ this carefully, as talloc has changed a lot. With 3.0.20 (or 3.0.14?) the
 Samba4 talloc has been ported back to Samba3, so this guide applies to both.
 
 The new talloc is a hierarchical, reference counted memory pool system
-with destructors. Quite a mounthful really, but not too bad once you
+with destructors. Quite a mouthful really, but not too bad once you
 get used to it.
 
 Perhaps the biggest change from Samba3 is that there is no distinction

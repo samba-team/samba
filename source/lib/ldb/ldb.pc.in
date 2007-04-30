@@ -6,7 +6,7 @@ modulesdir=@modulesdir@
 
 Name: ldb
 Description: An LDAP-like embedded database
-Version: 4.0
+Version: @PACKAGE_VERSION@
 Requires.private: tdb
 Requires: talloc
 Libs: -L${libdir} -lldb

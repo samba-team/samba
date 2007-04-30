@@ -17,7 +17,7 @@ EXTRA_TARGETS = @DOC_TARGET@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
 
-LIBOBJ = @TALLOCOBJ@ @LIBREPLACEOBJ@
+LIBOBJ = @TALLOC_OBJ@ @LIBREPLACEOBJ@
 
 all: showflags libtalloc.a testsuite $(EXTRA_TARGETS)
 
@@ -34,13 +34,13 @@ libtalloc.a: $(LIBOBJ)
 	@-ranlib $@
 
 install: all 
-	${INSTALLCMD} -d $(DESTDIR)${libdir}
-	${INSTALLCMD} -d $(DESTDIR)${libdir}/pkgconfig
+	${INSTALLCMD} -d $(DESTDIR)$(libdir)
+	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
-	if [ -f talloc.3 ];then ${INSTALLCMD} -d $(DESTDIR)${mandir}/man3; fi
+	if [ -f talloc.3 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man3; fi
 	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(DESTDIR)$(mandir)/man3; fi
 
 doc: talloc.3 talloc.3.html
