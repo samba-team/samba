@@ -537,9 +537,13 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 
 	num_pids = data.dsize / 8;
 
-	if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
-		ret = False;
-		goto done;
+	if (num_pids) {
+		if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
+			ret = False;
+			goto done;
+		}
+	} else {
+		pid_list = NULL;
 	}
 
 	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)

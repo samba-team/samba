@@ -165,11 +165,16 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 
 	*domain_name = talloc_strdup(mem_ctx, response.data.domain_name);
 
-	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+	if (num_rids) {
+		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
-	if ((*names == NULL) || (*types == NULL)) {
-		goto fail;
+		if ((*names == NULL) || (*types == NULL)) {
+			goto fail;
+		}
+	} else {
+		*names = NULL;
+		*types = NULL;
 	}
 
 	p = (char *)response.extra_data.data;
