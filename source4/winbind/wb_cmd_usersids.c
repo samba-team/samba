@@ -57,11 +57,9 @@ struct composite_context *wb_cmd_usersids_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct cmd_usersids_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
+
+	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = service->task->event_ctx;
 
 	state = talloc(result, struct cmd_usersids_state);
 	if (state == NULL) goto failed;

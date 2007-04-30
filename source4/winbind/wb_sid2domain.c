@@ -64,11 +64,8 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct sid2domain_state *state;
 
-	result = talloc_zero(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = service->task->event_ctx;
 
 	state = talloc(result, struct sid2domain_state);
 	if (state == NULL) goto failed;
