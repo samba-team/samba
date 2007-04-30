@@ -55,7 +55,6 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 {
 	DEBUG(0,("ctdb fatal error: %s\n", msg));
-	fprintf(stderr, "ctdb fatal error: '%s'\n", msg);
 	abort();
 }
 
