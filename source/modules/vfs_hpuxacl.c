@@ -124,7 +124,7 @@ static BOOL hpux_acl_check(HPUX_ACL_T hpux_acl, int count);
 /* aclsort (internal) and helpers: */
 static BOOL hpux_acl_sort(HPUX_ACL_T acl, int count);
 static int hpux_internal_aclsort(int acl_count, int calclass, HPUX_ACL_T aclp);
-static int hpux_count_obj(int acl_count, HPUX_ACL_T aclp, 
+static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp, 
 		struct hpux_acl_types *acl_type_count);
 static void hpux_swap_acl_entries(HPUX_ACE_T *aclp0, HPUX_ACE_T *aclp1);
 static BOOL hpux_prohibited_duplicate_type(int acl_type);
