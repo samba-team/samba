@@ -71,11 +71,8 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct pam_auth_crap_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = service->task->event_ctx;
 
 	state = talloc(result, struct pam_auth_crap_state);
 	if (state == NULL) goto failed;

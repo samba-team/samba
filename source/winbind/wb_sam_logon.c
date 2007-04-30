@@ -73,7 +73,7 @@ struct composite_context *wb_sam_logon_send(TALLOC_CTX *mem_ctx,
 }
 
 /*
-    Finish the connection to the DC
+    Having finished making the connection to the DC
     Send of a SamLogon request to authenticate a user.
 */
 static void wb_sam_logon_recv_domain(struct composite_context *creq)

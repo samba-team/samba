@@ -60,8 +60,8 @@ struct composite_context *wb_get_schannel_creds_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *c, *creq;
 	struct get_schannel_creds_state *state;
 
-	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) return NULL;
+	c = composite_create(mem_ctx, ev);
+	if (c == NULL) goto failed;
 
 	state = talloc(c, struct get_schannel_creds_state);
 	if (state == NULL) {
@@ -69,9 +69,7 @@ struct composite_context *wb_get_schannel_creds_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = state;
-	c->event_ctx = ev;
 
 	state->wks_creds = wks_creds;
 
@@ -268,11 +266,8 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 	struct lsa_lookupsids_state *state;
 	int i;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, lsa_pipe->conn->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = lsa_pipe->conn->event_ctx;
 
 	state = talloc(result, struct lsa_lookupsids_state);
 	if (state == NULL) goto failed;
@@ -428,11 +423,8 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 	struct lsa_String *lsa_names;
 	int i;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, lsa_pipe->conn->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = lsa_pipe->conn->event_ctx;
 
 	state = talloc(result, struct lsa_lookupnames_state);
 	if (state == NULL) goto failed;
@@ -563,11 +555,8 @@ static void cmd_checkmachacc_recv_init(struct composite_context *ctx);
 	struct cmd_checkmachacc_state *state;
 	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
-	result = talloc(call, struct composite_context);
+	result = composite_create(mem_ctx, call->event_ctx;
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = call->event_ctx;
 
 	state = talloc(result, struct cmd_checkmachacc_state);
 	if (state == NULL) goto failed;
@@ -641,11 +630,8 @@ struct composite_context *wb_samr_userdomgroups_send(TALLOC_CTX *mem_ctx,
 	struct rpc_request *req;
 	struct samr_getuserdomgroups_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = composite_create(mem_ctx, samr_pipe->conn->event_ctx);
 	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = samr_pipe->conn->event_ctx;
 
 	state = talloc(result, struct samr_getuserdomgroups_state);
 	if (state == NULL) goto failed;
