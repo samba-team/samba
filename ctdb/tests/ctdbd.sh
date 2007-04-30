@@ -23,8 +23,12 @@ bin/ctdb_control debuglevel || exit 1
 
 echo "Testing map calls"
 bin/ctdb_control getvnnmap 0 || exit 1
+
+echo "Attaching to some databases"
+bin/ctdb_control attach test1.tdb || exit 1
+bin/ctdb_control attach test2.tdb || exit 1
+
+echo "Testing getdbmap"
 bin/ctdb_control getdbmap 0 || exit 1
 
 killall -q ctdbd
-
-

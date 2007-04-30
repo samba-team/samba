@@ -436,6 +436,28 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+
+/*
+  attach to a database
+ */
+static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	if (argc < 1) {
+		usage();
+	}
+	db_name = argv[0];
+
+	ctdb_db = ctdb_attach(ctdb, db_name);
+	if (ctdb_db == NULL) {
+		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   main program
 */
@@ -508,6 +530,8 @@ int main(int argc, const char *argv[])
 		ret = control_debug(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debuglevel") == 0) {
 		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "attach") == 0) {
+		ret = control_attach(ctdb, extra_argc-1, extra_argv+1);
 	} else {
 		printf("Unknown control '%s'\n", control);
 		exit(1);
