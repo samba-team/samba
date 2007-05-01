@@ -773,7 +773,14 @@ failed:
 */
 static int irpc_destructor(struct irpc_request *irpc)
 {
-	idr_remove(irpc->msg_ctx->idr, irpc->callid);
+	if (irpc->callid != -1) {
+		idr_remove(irpc->msg_ctx->idr, irpc->callid);
+		irpc->callid = -1;
+	}
+
+	if (irpc->reject_free) {
+		return -1;
+	}
 	return 0;
 }
 
@@ -866,11 +873,16 @@ NTSTATUS irpc_call_recv(struct irpc_request *irpc)
 
 	NT_STATUS_HAVE_NO_MEMORY(irpc);
 
+	irpc->reject_free = true;
+
 	while (!irpc->done) {
 		if (event_loop_once(irpc->msg_ctx->event.ev) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 	}
+
+	irpc->reject_free = false;
+
 	status = irpc->status;
 	talloc_free(irpc);
 	return status;

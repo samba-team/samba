@@ -69,6 +69,7 @@ struct irpc_request {
 	void *r;
 	NTSTATUS status;
 	BOOL done;
+	BOOL reject_free;
 	TALLOC_CTX *mem_ctx;
 	struct {
 		void (*fn)(struct irpc_request *);
