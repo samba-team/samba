@@ -142,10 +142,6 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 			printf("Event loop failed!\n");
 			break;
 		}
-
-		if (LogLevel > 9) {
-			talloc_report_null_full();
-		}
 	}
 
 	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());

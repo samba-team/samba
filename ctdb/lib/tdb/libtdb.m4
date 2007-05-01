@@ -12,10 +12,16 @@ done
 if test x"$tdbdir" = "x"; then
    AC_MSG_ERROR([cannot find tdb source in $tdbpaths])
 fi
-TDBOBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
-TDBOBJ="$TDBOBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
-AC_SUBST(TDBOBJ)
+TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
+TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
+AC_SUBST(TDB_OBJ)
 AC_SUBST(LIBREPLACEOBJ)
+
+TDB_LIBS=""
+AC_SUBST(TDB_LIBS)
+
+TDB_CFLAGS="-I$tdbdir/include"
+AC_SUBST(TDB_CFLAGS)
 
 AC_CHECK_FUNCS(mmap pread pwrite getpagesize utime)
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)

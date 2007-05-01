@@ -26,16 +26,22 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+
 /* this is only needed for compatibility with the old talloc */
 typedef void TALLOC_CTX;
 
 /*
   this uses a little trick to allow __LINE__ to be stringified
 */
-#define _STRING_LINE_(s)    #s
-#define _STRING_LINE2_(s)   _STRING_LINE_(s)
-#define __LINESTR__       _STRING_LINE2_(__LINE__)
-#define __location__ __FILE__ ":" __LINESTR__
+#ifndef __location__
+#define __TALLOC_STRING_LINE1__(s)    #s
+#define __TALLOC_STRING_LINE2__(s)   __TALLOC_STRING_LINE1__(s)
+#define __TALLOC_STRING_LINE3__  __TALLOC_STRING_LINE2__(__LINE__)
+#define __location__ __FILE__ ":" __TALLOC_STRING_LINE3__
+#endif
 
 #ifndef TALLOC_DEPRECATED
 #define TALLOC_DEPRECATED 0
@@ -142,7 +148,6 @@ void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f
 void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
 void talloc_enable_null_tracking(void);
-void talloc_report_null_full(void);
 void talloc_disable_null_tracking(void);
 void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
@@ -166,4 +171,3 @@ void talloc_show_parents(const void *context, FILE *file);
 int talloc_is_parent(const void *context, const void *ptr);
 
 #endif
-

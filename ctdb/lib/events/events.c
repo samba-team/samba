@@ -57,6 +57,70 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
+#include "lib/util/dlinklist.h"
+#if _SAMBA_BUILD_
+#include "build.h"
+#endif
+
+struct event_ops_list {
+	struct event_ops_list *next, *prev;
+	const char *name;
+	const struct event_ops *ops;
+};
+
+/* list of registered event backends */
+static struct event_ops_list *event_backends;
+
+/*
+  register an events backend
+*/
+bool event_register_backend(const char *name, const struct event_ops *ops)
+{
+	struct event_ops_list *e;
+	e = talloc(talloc_autofree_context(), struct event_ops_list);
+	if (e == NULL) return False;
+	e->name = name;
+	e->ops = ops;
+	DLIST_ADD(event_backends, e);
+	return True;
+}
+
+/*
+  initialise backends if not already done
+*/
+static void event_backend_init(void)
+{
+#if _SAMBA_BUILD_
+	init_module_fn static_init[] = STATIC_LIBEVENTS_MODULES;
+	init_module_fn *shared_init;
+	if (event_backends) return;
+	shared_init = load_samba_modules(NULL, "LIBEVENTS");
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+#else
+	bool events_standard_init(void);
+	events_standard_init();
+#endif
+}
+
+/*
+  list available backends
+*/
+const char **event_backend_list(TALLOC_CTX *mem_ctx)
+{
+	const char **list = NULL;
+	struct event_ops_list *e;
+
+	event_backend_init();
+
+	for (e=event_backends;e;e=e->next) {
+		list = str_list_add(list, e->name);
+	}
+
+	talloc_steal(mem_ctx, list);
+
+	return list;
+}
 
 /*
   create a event_context structure for a specific implemementation.
@@ -69,7 +133,8 @@
 
   NOTE: use event_context_init() inside of samba!
 */
-struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, const struct event_ops *ops, void *private_data)
+static struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, 
+						    const struct event_ops *ops)
 {
 	struct event_context *ev;
 	int ret;
@@ -79,7 +144,7 @@ struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, const struct e
 
 	ev->ops = ops;
 
-	ret = ev->ops->context_init(ev, private_data);
+	ret = ev->ops->context_init(ev);
 	if (ret != 0) {
 		talloc_free(ev);
 		return NULL;
@@ -93,10 +158,38 @@ struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, const struct e
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
+struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct event_ops_list *e;
+
+	event_backend_init();
+
+#if _SAMBA_BUILD_
+	if (name == NULL) {
+		name = lp_parm_string(-1, "event", "backend");
+	}
+#endif
+	if (name == NULL) {
+		name = "standard";
+	}
+
+	for (e=event_backends;e;e=e->next) {
+		if (strcmp(name, e->name) == 0) {
+			return event_context_init_ops(mem_ctx, e->ops);
+		}
+	}
+	return NULL;
+}
+
+
+/*
+  create a event_context structure. This must be the first events
+  call, and all subsequent calls pass this event_context as the first
+  element. Event handlers also receive this as their first argument.
+*/
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
-	const struct event_ops *ops = event_standard_get_ops();
-	return event_context_init_ops(mem_ctx, ops, NULL);
+	return event_context_init_byname(mem_ctx, NULL);
 }
 
 /*
@@ -108,6 +201,19 @@ struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 			      void *private_data)
 {
 	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data);
+}
+
+/*
+  add a disk aio event
+*/
+struct aio_event *event_add_aio(struct event_context *ev,
+				TALLOC_CTX *mem_ctx,
+				struct iocb *iocb,
+				event_aio_handler_t handler,
+				void *private_data)
+{
+	if (ev->ops->add_aio == NULL) return NULL;
+	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data);
 }
 
 /*
@@ -141,6 +247,22 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 }
 
 /*
+  add a signal event
+
+  sa_flags are flags to sigaction(2)
+
+  return NULL on failure
+*/
+struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
+				      int signum,
+				      int sa_flags,
+				      event_signal_handler_t handler, 
+				      void *private_data)
+{
+	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data);
+}
+
+/*
   do a single event loop using the events defined in ev 
 */
 _PUBLIC_ int event_loop_once(struct event_context *ev)
@@ -168,7 +290,7 @@ int event_loop_wait(struct event_context *ev)
 struct event_context *event_context_find(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
-	if (ev == NULL) {
+	if (ev == NULL) {		
 		ev = event_context_init(mem_ctx);
 	}
 	return ev;

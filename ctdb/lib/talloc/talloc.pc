@@ -5,6 +5,7 @@ includedir=${prefix}/include
 
 Name: talloc
 Description: A hierarchical pool based memory system with destructors
+Requires.private: 
 Version: 0.0.1
 Libs: -L${libdir} -ltalloc
 Libs.private: -lreplace 
