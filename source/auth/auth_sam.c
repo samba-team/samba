@@ -112,7 +112,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	}
 
 	ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
-				  "(nCName=%s)", ldb_dn_alloc_linearized(msgs_tmp, domain_dn));
+				  "(nCName=%s)", ldb_dn_get_linearized(domain_dn));
 	if (ret_domain == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
