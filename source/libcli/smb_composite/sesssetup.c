@@ -38,6 +38,16 @@ struct sesssetup_state {
 	struct smbcli_request *req;
 };
 
+static int sesssetup_state_destructor(struct sesssetup_state *state)
+{
+	if (state->req) {
+		talloc_free(state->req);
+		state->req = NULL;
+	}
+
+	return 0;
+}
+
 static NTSTATUS session_setup_old(struct composite_context *c,
 				  struct smbcli_session *session, 
 				  struct smb_composite_sesssetup *io,
@@ -75,6 +85,7 @@ static void request_handler(struct smbcli_request *req)
 	NTSTATUS session_key_err, nt_status;
 
 	c->status = smb_raw_sesssetup_recv(req, state, &state->setup);
+	state->req = NULL;
 
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
@@ -90,8 +101,7 @@ static void request_handler(struct smbcli_request *req)
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
 					c->status = nt_status;
-					state->req->async.fn = request_handler;
-					state->req->async.private = c;
+					composite_continue_smb(c, state->req, request_handler, c);
 					return;
 				}
 			}
@@ -109,8 +119,7 @@ static void request_handler(struct smbcli_request *req)
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
 					c->status = nt_status;
-					state->req->async.fn = request_handler;
-					state->req->async.private = c;
+					composite_continue_smb(c, state->req, request_handler, c);
 					return;
 				}
 			}
@@ -128,8 +137,7 @@ static void request_handler(struct smbcli_request *req)
 								      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
 					c->status = nt_status;
-					state->req->async.fn = request_handler;
-					state->req->async.private = c;
+					composite_continue_smb(c, state->req, request_handler, c);
 					return;
 				}
 			}
@@ -158,7 +166,7 @@ static void request_handler(struct smbcli_request *req)
 		} else {
 			state->setup.spnego.in.secblob = data_blob(NULL, 0);
 		}
-			
+
 		/* we need to do another round of session setup. We keep going until both sides
 		   are happy */
 		session_key_err = gensec_session_key(session->gensec, &session_key);
@@ -176,8 +184,7 @@ static void request_handler(struct smbcli_request *req)
 			session->vuid = state->io->out.vuid;
 			state->req = smb_raw_sesssetup_send(session, &state->setup);
 			session->vuid = vuid;
-			state->req->async.fn = request_handler;
-			state->req->async.private = c;
+			composite_continue_smb(c, state->req, request_handler, c);
 			return;
 		}
 		break;
@@ -196,14 +203,12 @@ static void request_handler(struct smbcli_request *req)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_DONE;
-	} else {
-		c->state = COMPOSITE_STATE_ERROR;
+	if (!NT_STATUS_IS_OK(c->status)) {
+		composite_error(c, c->status);
+		return;
 	}
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
+
+	composite_done(c);
 }
 
 
@@ -457,20 +462,16 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	struct sesssetup_state *state;
 	NTSTATUS status;
 
-	c = talloc_zero(session, struct composite_context);
+	c = composite_create(session, session->transport->socket->event.ctx);
 	if (c == NULL) return NULL;
 
-	state = talloc(c, struct sesssetup_state);
-	if (state == NULL) {
-		talloc_free(c);
-		return NULL;
-	}
+	state = talloc_zero(c, struct sesssetup_state);
+	if (composite_nomem(state, c)) return c;
+	c->private_data = state;
 
 	state->io = io;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = state;
-	c->event_ctx = session->transport->socket->event.ctx;
+	talloc_set_destructor(state, sesssetup_state_destructor);
 
 	/* no session setup at all in earliest protocol varients */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
@@ -491,13 +492,11 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || 
 	    NT_STATUS_IS_OK(status)) {
-		state->req->async.fn = request_handler;
-		state->req->async.private = c;
+		composite_continue_smb(c, state->req, request_handler, c);	
 		return c;
 	}
 
-	c->state = COMPOSITE_STATE_ERROR;
-	c->status = status;
+	composite_error(c, status);
 	return c;
 }
 
