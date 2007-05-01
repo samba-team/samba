@@ -39,7 +39,7 @@ struct search_private {
  Interpret a long filename structure.
 ****************************************************************************/
 static BOOL interpret_long_filename(enum smb_search_data_level level,
-				    union smb_search_data *info,
+				    const union smb_search_data *info,
 				    struct clilist_file_info *finfo)
 {
 	struct clilist_file_info finfo2;
@@ -73,7 +73,7 @@ static BOOL interpret_long_filename(enum smb_search_data_level level,
 }
 
 /* callback function used for trans2 search */
-static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
+static BOOL smbcli_list_new_callback(void *private, const union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	struct clilist_file_info *tdl;
@@ -204,7 +204,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
  The length of the structure is returned.
 ****************************************************************************/
 static BOOL interpret_short_filename(enum smb_search_data_level level,
-				     union smb_search_data *info,
+				     const union smb_search_data *info,
 				     struct clilist_file_info *finfo)
 {
 	struct clilist_file_info finfo2;
@@ -230,7 +230,7 @@ static BOOL interpret_short_filename(enum smb_search_data_level level,
 }
 
 /* callback function used for smb_search */
-static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
+static BOOL smbcli_list_old_callback(void *private, const union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	struct clilist_file_info *tdl;
