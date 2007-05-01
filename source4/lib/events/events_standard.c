@@ -180,9 +180,9 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *f
 
 static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde)
 {
-	BOOL got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	BOOL want_read = (fde->flags & EVENT_FD_READ);
-	BOOL want_write= (fde->flags & EVENT_FD_WRITE);
+	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
+	bool want_read = (fde->flags & EVENT_FD_READ);
+	bool want_write= (fde->flags & EVENT_FD_WRITE);
 
 	if (std_ev->epoll_fd == -1) return;
 
@@ -549,7 +549,17 @@ static const struct event_ops std_event_ops = {
 };
 
 
-NTSTATUS events_standard_init(void)
+bool events_standard_init(void)
 {
 	return event_register_backend("standard", &std_event_ops);
 }
+
+#if _SAMBA_BUILD_
+NTSTATUS s4_events_standard_init(void)
+{
+	if (!events_standard_init()) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+#endif
