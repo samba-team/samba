@@ -69,6 +69,10 @@ static void popt_common_callback(poptContext con,
 
 		/* and logging */
 		setup_logging(pname, DEBUG_STDOUT);
+
+		if (getenv("SMB_CONF_PATH")) {
+			lp_set_cmdline("config file", getenv("SMB_CONF_PATH"));
+		}
 		return;
 	}
 
