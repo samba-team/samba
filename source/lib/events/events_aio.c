@@ -165,9 +165,9 @@ static void epoll_mod_event(struct aio_event_context *aio_ev, struct fd_event *f
 
 static void epoll_change_event(struct aio_event_context *aio_ev, struct fd_event *fde)
 {
-	BOOL got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	BOOL want_read = (fde->flags & EVENT_FD_READ);
-	BOOL want_write= (fde->flags & EVENT_FD_WRITE);
+	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
+	bool want_read = (fde->flags & EVENT_FD_READ);
+	bool want_write= (fde->flags & EVENT_FD_WRITE);
 
 	if (aio_ev->epoll_fd == -1) return;
 
@@ -512,7 +512,17 @@ static const struct event_ops aio_event_ops = {
 	.loop_wait	= aio_event_loop_wait,
 };
 
-NTSTATUS events_aio_init(void)
+bool events_aio_init(void)
 {
 	return event_register_backend("aio", &aio_event_ops);
 }
+
+#if _SAMBA_BUILD_
+NTSTATUS s4_events_aio_init(void)
+{
+	if (!events_aio_init()) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+#endif

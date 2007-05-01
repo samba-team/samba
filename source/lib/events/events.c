@@ -58,7 +58,9 @@
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
 #include "lib/util/dlinklist.h"
+#if _SAMBA_BUILD_
 #include "build.h"
+#endif
 
 struct event_ops_list {
 	struct event_ops_list *next, *prev;
@@ -72,15 +74,15 @@ static struct event_ops_list *event_backends;
 /*
   register an events backend
 */
-NTSTATUS event_register_backend(const char *name, const struct event_ops *ops)
+bool event_register_backend(const char *name, const struct event_ops *ops)
 {
 	struct event_ops_list *e;
 	e = talloc(talloc_autofree_context(), struct event_ops_list);
-	NT_STATUS_HAVE_NO_MEMORY(e);
+	if (e == NULL) return False;
 	e->name = name;
 	e->ops = ops;
 	DLIST_ADD(event_backends, e);
-	return NT_STATUS_OK;
+	return True;
 }
 
 /*
@@ -88,12 +90,17 @@ NTSTATUS event_register_backend(const char *name, const struct event_ops *ops)
 */
 static void event_backend_init(void)
 {
+#if _SAMBA_BUILD_
 	init_module_fn static_init[] = STATIC_LIBEVENTS_MODULES;
 	init_module_fn *shared_init;
 	if (event_backends) return;
 	shared_init = load_samba_modules(NULL, "LIBEVENTS");
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
+#else
+	bool events_standard_init(void);
+	events_standard_init();
+#endif
 }
 
 /*

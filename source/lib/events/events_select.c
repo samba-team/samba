@@ -291,7 +291,17 @@ static const struct event_ops select_event_ops = {
 	.loop_wait	= select_event_loop_wait,
 };
 
-NTSTATUS events_select_init(void)
+bool events_select_init(void)
 {
 	return event_register_backend("select", &select_event_ops);
 }
+
+#if _SAMBA_BUILD_
+NTSTATUS s4_events_select_init(void)
+{
+	if (!events_select_init()) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+#endif

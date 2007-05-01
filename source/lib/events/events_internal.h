@@ -113,7 +113,7 @@ struct event_context {
 };
 
 
-NTSTATUS event_register_backend(const char *name, const struct event_ops *ops);
+bool event_register_backend(const char *name, const struct event_ops *ops);
 
 struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
 					   struct timeval, event_timed_handler_t, void *);

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/select.h"
+#include "system/wait.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
