@@ -99,6 +99,7 @@ static void show_status(struct ctdb_status *s)
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
+	printf(" max_hop_count           %u\n", s->max_hop_count);
 	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
 	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
 }
@@ -133,6 +134,8 @@ static int control_status_all(struct ctdb_context *ctdb)
 		for (j=0;j<num_ints;j++) {
 			v2[j] += v1[j];
 		}
+		status.max_hop_count = 
+			MAX(status.max_hop_count, s1.max_hop_count);
 		status.max_call_latency = 
 			MAX(status.max_call_latency, s1.max_call_latency);
 		status.max_lockwait_latency = 

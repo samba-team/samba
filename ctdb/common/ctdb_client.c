@@ -333,6 +333,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	c->flags         = call->flags;
 	c->db_id         = ctdb_db->db_id;
 	c->callid        = call->call_id;
+	c->hopcount      = 0;
 	c->keylen        = call->key.dsize;
 	c->calldatalen   = call->call_data.dsize;
 	memcpy(&c->data[0], call->key.dptr, call->key.dsize);

@@ -170,9 +170,12 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
 	if (ctdb->vnn == lmaster) {
 		c->hdr.destnode = header->dmaster;
-	} else {
+	} else if ((c->hopcount % CTDB_MAX_REDIRECT_COUNT) == 0) {
 		c->hdr.destnode = lmaster;
+	} else {
+		c->hdr.destnode = header->dmaster;
 	}
+	c->hopcount++;
 	ctdb_queue_packet(ctdb, &c->hdr);
 }
 
@@ -449,6 +452,10 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
+	if (c->hopcount > ctdb->status.max_hop_count) {
+		ctdb->status.max_hop_count = c->hopcount;
+	}
+
 	/* if this nodes has done enough consecutive calls on the same record
 	   then give them the record
 	   or if the node requested an immediate migration
@@ -704,6 +711,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->c->flags         = call->flags;
 	state->c->db_id         = ctdb_db->db_id;
 	state->c->callid        = call->call_id;
+	state->c->hopcount      = 0;
 	state->c->keylen        = call->key.dsize;
 	state->c->calldatalen   = call->call_data.dsize;
 	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);

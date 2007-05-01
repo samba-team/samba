@@ -35,6 +35,7 @@
 #define CTDB_CURRENT_NODE  0xF0000001
 #define CTDB_BROADCAST_VNN 0xF0000002
 
+#define CTDB_MAX_REDIRECT_COUNT 3
 
 /*
   an installed ctdb remote call
@@ -157,6 +158,7 @@ struct ctdb_status {
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t __last_counter; /* hack for control_status_all */
+	uint32_t max_hop_count;
 	double max_call_latency;
 	double max_lockwait_latency;
 };
@@ -338,6 +340,7 @@ struct ctdb_req_call {
 	uint32_t flags;
 	uint32_t db_id;
 	uint32_t callid;
+	uint32_t hopcount;
 	uint32_t keylen;
 	uint32_t calldatalen;
 	uint8_t data[1]; /* key[] followed by calldata[] */

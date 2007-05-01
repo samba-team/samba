@@ -372,7 +372,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 				 CTDB_CONTROL_DB_ATTACH, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
-	DEBUG(0,("Attached to database '%s'\n", ctdb_db->db_path));
+	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));
 
 	/* success */
 	return 0;
