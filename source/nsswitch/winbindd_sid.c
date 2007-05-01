@@ -270,7 +270,7 @@ static void sid2gid_lookupsid_recv( void *private_data, BOOL success,
 	DOM_SID sid;
 
 	if (!success) {
-		DEBUG(5, ("sid2gid_lookupsid_recv: Could not convert get sid type for %s\n",
+		DEBUG(5, ("sid2gid_lookupsid_recv: Could not get sid type for %s\n",
 			  state->request.data.sid));
 		request_error(state);
 		return;
