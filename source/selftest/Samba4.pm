@@ -599,7 +599,7 @@ sub provision($$$$$$)
 		die("Failed to create a valid smb.conf configuration!");
 	}
 
-	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i ^$netbiosname ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration!");
+	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration!");
 
 	my @provision_options = ($configuration);
 	push (@provision_options, "--host-name=$netbiosname");
