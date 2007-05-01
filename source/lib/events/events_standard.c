@@ -380,7 +380,8 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->additional_data	= NULL;
 
 	DLIST_ADD(std_ev->fd_events, fde);
-	if (fde->fd > std_ev->maxfd) {
+	if ((std_ev->maxfd != EVENT_INVALID_MAXFD)
+	    && (fde->fd > std_ev->maxfd)) {
 		std_ev->maxfd = fde->fd;
 	}
 	talloc_set_destructor(fde, std_event_fd_destructor);
