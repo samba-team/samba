@@ -485,6 +485,14 @@ sub provision($$$$$$)
 	mkdir($_, 0777) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
 		$tmpdir);
 
+	my $auth_methods = "anonymous sam_ignoredomain";
+	$auth_methods = "anonymous sam winbind" if $server_role eq "member server";
+
+	my $localdomain = $domain;
+	$localdomain = $netbiosname if $server_role eq "member server";
+	my $localrealm = $realm;
+	$localrealm = $netbiosname if $server_role eq "member server";
+
 	open(CONFFILE, ">$conffile");
 	print CONFFILE "
 [global]
@@ -505,6 +513,7 @@ sub provision($$$$$$)
 	panic action = $srcdir/script/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
 	server role = $server_role
+	auth methods = $auth_methods
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false
@@ -596,8 +605,8 @@ sub provision($$$$$$)
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
 	push (@provision_options, "--quiet");
-	push (@provision_options, "--domain $domain");
-	push (@provision_options, "--realm $realm");
+	push (@provision_options, "--domain $localdomain");
+	push (@provision_options, "--realm $localrealm");
 	push (@provision_options, "--adminpass $password");
 	push (@provision_options, "--krbtgtpass krbtgt$password");
 	push (@provision_options, "--machinepass machine$password");
