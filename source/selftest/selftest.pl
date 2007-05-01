@@ -647,6 +647,7 @@ print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
 my @todo = ();
 
 my $testsdir = "$srcdir/selftest";
+$ENV{SMB_CONF_PATH} = "$conffile";
 $ENV{CONFIGURATION} = "--configfile=$conffile";
 
 my %required_envs = ();
