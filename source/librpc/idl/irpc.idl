@@ -43,7 +43,7 @@ import "security.idl", "nbt.idl";
 		hyper release_count;
 	} nbtd_statistics;
 
-	typedef union {
+	typedef [switch_type(nbtd_info_level)] union {
 		[case(NBTD_INFO_STATISTICS)] nbtd_statistics *stats;
 	} nbtd_info;
 
@@ -114,7 +114,7 @@ import "security.idl", "nbt.idl";
 		[size_is(num_tcons)] smbsrv_tcon_info *tcons;
 	} smbsrv_tcons;
 
-	typedef union {
+	typedef [switch_type(smbsrv_info_level)] union {
 		[case(SMBSRV_INFO_SESSIONS)] smbsrv_sessions sessions;
 		[case(SMBSRV_INFO_TCONS)]    smbsrv_tcons    tcons;
 	} smbsrv_info;
