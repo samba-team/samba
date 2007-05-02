@@ -217,7 +217,7 @@ int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_s
 
 struct ctdb_vnn_map;
 int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
-int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap);
+int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
 
 /* table that contains a list of all dbids on a node
  */
@@ -225,7 +225,7 @@ struct ctdb_dbid_map {
 	uint32_t num;
 	uint32_t *dbids;
 };
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap);
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *dbmap);
 
 
 /* table that contains a list of all nodes a ctdb knows about and their 
@@ -250,8 +250,8 @@ struct ctdb_key_list {
 	uint32_t *lmasters;
 	TDB_DATA *data;
 };
-int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx);
+int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx);
 
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 

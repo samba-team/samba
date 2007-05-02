@@ -75,6 +75,7 @@ static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA d
 struct getkeys_params {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA *outdata;
+	uint32_t lmaster;
 };
 
 static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
@@ -84,6 +85,17 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 	struct ctdb_db_context *ctdb_db = talloc_get_type(params->ctdb_db, struct ctdb_db_context);
 	unsigned char *ptr;
 	int len;
+	uint32_t lmaster;
+
+	lmaster = ctdb_lmaster(ctdb_db->ctdb, &key);
+
+	/* only include this record if the lmaster matches or if
+	   the wildcard lmaster (-1) was specified.
+	*/
+	if((lmaster!=CTDB_LMASTER_ANY)
+	&& (lmaster!=params->lmaster) ){
+		return 0;
+	}
 
 	len=outdata->dsize;
 	len+=4; /*lmaster*/
@@ -102,7 +114,7 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 	/* number of records is stored as the second 4 bytes */
 	((uint32_t *)(&outdata->dptr[0]))[1]++;
 
-	*((uint32_t *)ptr)=ctdb_lmaster(ctdb_db->ctdb, &key);
+	*((uint32_t *)ptr)=lmaster;
 	ptr+=4;
 
 	*((uint32_t *)ptr)=key.dsize;
@@ -254,16 +266,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_PULL_DB: {
-		uint32_t dbid;
+		uint32_t dbid, lmaster;
 		struct ctdb_db_context *ctdb_db;
 		struct getkeys_params params;
 
-		dbid = *((uint32_t *)(&indata.dptr[0]));
+		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
 		ctdb_db = find_ctdb_db(ctdb, dbid);
 		if (!ctdb_db) {
 			DEBUG(0,(__location__ " Unknown db\n"));
 			return -1;
 		}
+
+		lmaster = ((uint32_t *)(&indata.dptr[0]))[1];
 
 		outdata->dsize = 2* sizeof(uint32_t);
 		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 2);
@@ -272,6 +286,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 		params.ctdb_db = ctdb_db;
 		params.outdata = outdata;
+		params.lmaster = lmaster;
 		tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_getkeys, &params);
 
 
@@ -324,7 +339,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		unsigned char *ptr;
 		int i, ret;
 		TDB_DATA key, data;
-		struct ctdb_ltdb_header header;
+		struct ctdb_ltdb_header *hdr, header;
 
 		outdata->dsize = 0;
 		outdata->dptr = NULL;
@@ -350,7 +365,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			ptr+=(key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
 
 			/* header */
-			memcpy(&header, ptr, sizeof(struct ctdb_ltdb_header));
+			hdr = (struct ctdb_ltdb_header *)ptr;
 			ptr+=(sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
 			
 			/* data */
@@ -364,11 +379,19 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 				DEBUG(0, (__location__ "Unable to lock db\n"));
 				return -1;
 			}
-			ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+			ret = ctdb_ltdb_fetch(ctdb_db, key, &header, outdata, NULL);
 			if (ret != 0) {
-				DEBUG(0, (__location__ "Unable to store record\n"));
+				DEBUG(0, (__location__ "Unable to fetch record\n"));
 				ctdb_ltdb_unlock(ctdb_db, key);
 				return -1;
+			}
+			if (header.rsn > hdr->rsn) {
+				ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
+				if (ret != 0) {
+					DEBUG(0, (__location__ "Unable to store record\n"));
+					ctdb_ltdb_unlock(ctdb_db, key);
+					return -1;
+				}
 			}
 			ctdb_ltdb_unlock(ctdb_db, key);
 		}

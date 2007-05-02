@@ -263,6 +263,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
+#define CTDB_LMASTER_ANY	0xffffffff
+
 /*
   state of a in-progress ctdb call
 */

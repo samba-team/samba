@@ -843,7 +843,7 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t 
 /*
   get a list of databases off a remote node
  */
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_dbid_map *dbmap)
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *dbmap)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -852,18 +852,14 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_DBMAP, data, 
-			   ctdb, &outdata, &res);
+			   mem_ctx, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
 		return -1;
 	}
 
 	dbmap->num = ((uint32_t *)outdata.dptr)[0];
-	if (dbmap->dbids) {
-		talloc_free(dbmap->dbids);
-		dbmap->dbids=NULL;
-	}
-	dbmap->dbids=talloc_array(dbmap, uint32_t, dbmap->num);
+	dbmap->dbids=talloc_array(mem_ctx, uint32_t, dbmap->num);
 	if (!dbmap->dbids) {
 		DEBUG(0,(__location__ " failed to talloc dbmap\n"));
 		return -1;
@@ -911,13 +907,13 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode,
 /*
   set vnn map on a node
  */
-int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_vnn_map *vnnmap)
+int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap)
 {
 	int ret;
 	TDB_DATA *data, outdata;
 	int32_t i, res;
 
-	data = talloc_zero(ctdb, TDB_DATA);
+	data = talloc_zero(mem_ctx, TDB_DATA);
 	data->dsize = (vnnmap->size+2)*sizeof(uint32_t);
 	data->dptr = (unsigned char *)talloc_array(data, uint32_t, vnnmap->size+2);
 
@@ -929,7 +925,7 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctd
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_SETVNNMAP, *data, 
-			   ctdb, &outdata, &res);
+			   mem_ctx, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for setvnnmap failed\n"));
 		return -1;
@@ -942,15 +938,18 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, struct ctd
 /*
   get all keys and records for a specific database
  */
-int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys)
+int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys)
 {
 	int i, ret;
 	TDB_DATA indata, outdata;
 	int32_t res;
 	unsigned char *ptr;
 
-	indata.dsize = sizeof(uint32_t);
-	indata.dptr = (unsigned char *)&dbid;
+	indata.dsize = 2*sizeof(uint32_t);
+	indata.dptr  = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
+
+	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
+	((uint32_t *)(&indata.dptr[0]))[1] = lmaster;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_PULL_DB, indata, 
@@ -1005,14 +1004,17 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 /*
   copy a tdb from one node to another node
  */
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx)
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx)
 {
 	int ret;
 	TDB_DATA indata, outdata;
 	int32_t res;
 
-	indata.dsize = sizeof(uint32_t);
-	indata.dptr = (unsigned char *)&dbid;
+	indata.dsize = 2*sizeof(uint32_t);
+	indata.dptr  = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
+
+	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
+	((uint32_t *)(&indata.dptr[0]))[1] = lmaster;
 
 	ret = ctdb_control(ctdb, sourcenode, 0, 
 			   CTDB_CONTROL_PULL_DB, indata, 
