@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
 
@@ -43,6 +44,7 @@ static void usage(void)
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
+	printf("  createdb <vnn> <dbname>            create a database\n");
 	printf("  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n");
 	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
@@ -711,6 +713,37 @@ static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **arg
 }
 
 /*
+  create a database
+ */
+static int control_createdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	const char *dbname;
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbname  = argv[1];
+
+	/* tell ctdb daemon to attach */
+	data.dptr = discard_const(dbname);
+	data.dsize = strlen(dbname)+1;
+	ret = ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DB_ATTACH,
+			   0, data, ctdb, &data, &res);
+	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Failed to attach to database '%s'\n", dbname));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   ping all node
  */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -898,6 +931,8 @@ int main(int argc, const char *argv[])
 		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "cleardb") == 0) {
 		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "createdb") == 0) {
+		ret = control_createdb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getrecmode") == 0) {
 		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setrecmode") == 0) {
