@@ -653,7 +653,7 @@ int ctdb_start(struct ctdb_context *ctdb)
 		close(fd[0]);
 		close(ctdb->daemon.sd);
 		ctdb->daemon.sd = -1;
-		ctdb_get_config(ctdb);
+		ctdb_ctrl_get_config(ctdb);
 		return 0;
 	}
 

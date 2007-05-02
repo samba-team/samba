@@ -147,7 +147,7 @@ XXX table for the daemons.
 		exit(1);
 	}
 	ctdb->vnn_map->generation = 1;
-	ctdb->vnn_map->size = 1024;
+	ctdb->vnn_map->size = ctdb->num_nodes;
 	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
 	if (ctdb->vnn_map->map == NULL) {
 		DEBUG(0,(__location__ " Unable to allocate vnn_map->map structure\n"));
@@ -192,7 +192,7 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 	}
 
 	/* get our config */
-	ret = ctdb_get_config(ctdb);
+	ret = ctdb_ctrl_get_config(ctdb);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to get ctdb config\n"));
 		talloc_free(ctdb);

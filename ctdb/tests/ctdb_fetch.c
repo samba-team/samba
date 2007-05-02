@@ -243,6 +243,10 @@ int main(int argc, const char *argv[])
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
+#if 1 
+/* to keep the cluster up so one can play with it using the controls */ 
+sleep(9999999);
+#endif
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_shutdown(ctdb);
 

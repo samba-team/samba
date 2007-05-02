@@ -138,7 +138,7 @@ int main(int argc, const char *argv[])
 	ctdb_connect_wait(ctdb);
 
 	/* find the full path to the database file */
-	ctdb_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &path);
+	ctdb_ctrl_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &path);
 	printf("path to database:[%s]\n",path);
 
 	ZERO_STRUCT(call);

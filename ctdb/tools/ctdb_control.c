@@ -43,6 +43,13 @@ static void usage(void)
 	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
 	printf("  getdbmap <vnn>                     lists databases on a node\n");
 	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
+	printf("  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n");
+	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
+	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
+	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
+	printf("  getrecmode <vnn>                   get recovery mode\n");
+	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
+	printf("  recover <vnn>                      recover the cluster\n");
 	exit(1);
 }
 
@@ -62,7 +69,7 @@ static int control_process_exists(struct ctdb_context *ctdb, int argc, const cha
 		return -1;
 	}
 
-	ret = ctdb_process_exists(ctdb, vnn, pid);
+	ret = ctdb_ctrl_process_exists(ctdb, vnn, pid);
 	if (ret == 0) {
 		printf("%u:%u exists\n", vnn, pid);
 	} else {
@@ -126,7 +133,7 @@ static int control_status_all(struct ctdb_context *ctdb)
 		uint32_t *v2 = (uint32_t *)&status;
 		uint32_t num_ints = 
 			offsetof(struct ctdb_status, __last_counter) / sizeof(uint32_t);
-		ret = ctdb_status(ctdb, nodes[i], &s1);
+		ret = ctdb_ctrl_status(ctdb, nodes[i], &s1);
 		if (ret != 0) {
 			printf("Unable to get status from node %u\n", nodes[i]);
 			return ret;
@@ -165,7 +172,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_status(ctdb, vnn, &status);
+	ret = ctdb_ctrl_status(ctdb, vnn, &status);
 	if (ret != 0) {
 		printf("Unable to get status from node %u\n", vnn);
 		return ret;
@@ -224,6 +231,195 @@ static int control_status_reset(struct ctdb_context *ctdb, int argc, const char 
 	return 0;
 }
 
+
+/*
+  perform a samba3 style recovery
+ */
+static int control_recover(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, num_nodes, generation, dmaster;
+	struct ctdb_vnn_map vnnmap;
+	struct ctdb_node_map nodemap;
+	int i, j, ret;
+	struct ctdb_dbid_map dbmap;
+
+	if (argc < 1) {
+		usage();
+	}
+
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	printf("recover ctdb from node %d\n", vnn);
+
+	/* 1: find a list of all nodes */
+	printf("\n1: fetching list of nodes\n");
+	ret = ctdb_ctrl_getnodemap(ctdb, vnn, ctdb, &nodemap);
+	if (ret != 0) {
+		printf("Unable to get nodemap from node %u\n", vnn);
+		return ret;
+	}
+
+	/* 2: count the active nodes */
+	printf("\n2: count number of active nodes\n");
+	num_nodes = 0;
+	for (i=0; i<nodemap.num; i++) {
+		if (nodemap.nodes[i].flags&NODE_FLAGS_CONNECTED) {
+			num_nodes++;
+		}
+	}
+	printf("number of active nodes:%d\n",num_nodes);
+
+	/* 3: go to all active nodes and activate recovery mode */
+	printf("\n3: set recovery mode for all active nodes\n");
+	for (j=0; j<nodemap.num; j++) {
+		/* dont change it for nodes that are unavailable */
+		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		printf("setting node %d to recovery mode\n",nodemap.nodes[j].vnn);
+		ret = ctdb_ctrl_setrecmode(ctdb, nodemap.nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
+		if (ret != 0) {
+			printf("Unable to set recmode on node %u\n", nodemap.nodes[j].vnn);
+			return ret;
+		}
+	}
+	
+	/* 4: get a list of all databases */
+	printf("\n4: getting list of databases to recover\n");
+	ret = ctdb_ctrl_getdbmap(ctdb, vnn, ctdb, &dbmap);
+	if (ret != 0) {
+		printf("Unable to get dbids from node %u\n", vnn);
+		return ret;
+	}
+	for (i=0;i<dbmap.num;i++) {
+		const char *path;
+
+		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
+	}
+
+	/* 5: pull all records from all other nodes across to this node
+	      (this merges based on rsn internally)
+	*/
+	printf("\n5: merge all records from remote nodes\n");
+	for (i=0;i<dbmap.num;i++) {
+		printf("recovering database 0x%08x\n",dbmap.dbids[i]);
+		for (j=0; j<nodemap.num; j++) {
+			/* we dont need to merge with ourselves */
+			if (nodemap.nodes[j].vnn == vnn) {
+				continue;
+			}
+			/* dont merge from nodes that are unavailable */
+			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+				continue;
+			}
+
+			printf("merging all records from node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, nodemap.nodes[j].vnn, vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			if (ret != 0) {
+				printf("Unable to copy db from node %u to node %u\n", nodemap.nodes[j].vnn, vnn);
+				return ret;
+			}
+		}
+	}
+
+	/* 6: update dmaster to point to this node for all databases/nodes */
+	printf("\n6: repoint dmaster to the recovery node\n");
+	dmaster = vnn;
+	printf("new dmaster is %d\n", dmaster);
+	for (i=0;i<dbmap.num;i++) {
+		for (j=0; j<nodemap.num; j++) {
+			/* dont repoint nodes that are unavailable */
+			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+				continue;
+			}
+
+			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap.nodes[j].vnn,dbmap.dbids[i]);
+			ret = ctdb_ctrl_setdmaster(ctdb, nodemap.nodes[j].vnn, ctdb, dbmap.dbids[i], dmaster);
+			if (ret != 0) {
+				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
+				return ret;
+			}
+		}
+	}
+
+	/* 7: push all records out to the nodes again */
+	printf("\n7: push all records to remote nodes\n");
+	for (i=0;i<dbmap.num;i++) {
+		printf("distributing new database 0x%08x\n",dbmap.dbids[i]);
+		for (j=0; j<nodemap.num; j++) {
+			/* we dont need to push to ourselves */
+			if (nodemap.nodes[j].vnn == vnn) {
+				continue;
+			}
+			/* dont push to nodes that are unavailable */
+			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+				continue;
+			}
+
+			printf("pushing all records to node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap.nodes[j].vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			if (ret != 0) {
+				printf("Unable to copy db from node %u to node %u\n", vnn, nodemap.nodes[j].vnn);
+				return ret;
+			}
+		}
+	}
+				
+	/* 8: build a new vnn map */
+	printf("\n8: build a new vnn map with a new generation id\n");
+	generation = random();
+	vnnmap.generation = generation;
+	vnnmap.size = num_nodes;
+	vnnmap.map = talloc_array(ctdb, uint32_t, num_nodes);
+	for (i=j=0;i<nodemap.num;i++) {
+		if (nodemap.nodes[i].flags&NODE_FLAGS_CONNECTED) {
+			vnnmap.map[j++]=nodemap.nodes[i].vnn;
+		}
+	}
+	printf("Generation:%d\n",vnnmap.generation);
+	printf("Size:%d\n",vnnmap.size);
+	for(i=0;i<vnnmap.size;i++){
+		printf("hash:%d lmaster:%d\n",i,vnnmap.map[i]);
+	}
+
+	/* 9: push the new vnn map out to all the nodes */
+	printf("\n9: distribute the new vnn map\n");
+	for (j=0; j<nodemap.num; j++) {
+		/* dont push to nodes that are unavailable */
+		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		printf("setting new vnn map on node %d\n",nodemap.nodes[j].vnn);
+		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap.nodes[j].vnn, ctdb, &vnnmap);
+		if (ret != 0) {
+			printf("Unable to set vnnmap for node %u\n", vnn);
+			return ret;
+		}
+	}
+
+	/* 10: disable recovery mode */
+	printf("\n10: restore recovery mode back to normal\n");
+	for (j=0; j<nodemap.num; j++) {
+		/* dont push to nodes that are unavailable */
+		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		printf("changing recovery mode back to normal for node %d\n",nodemap.nodes[j].vnn);
+		ret = ctdb_ctrl_setrecmode(ctdb, nodemap.nodes[j].vnn, CTDB_RECOVERY_NORMAL);
+		if (ret != 0) {
+			printf("Unable to set recmode on node %u\n", nodemap.nodes[j].vnn);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
 /*
   display remote ctdb vnn map
  */
@@ -239,7 +435,7 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	vnn = strtoul(argv[0], NULL, 0);
 
 	vnnmap = talloc_zero(ctdb, struct ctdb_vnn_map);
-	ret = ctdb_getvnnmap(ctdb, vnn, vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, vnn, vnnmap);
 	if (ret != 0) {
 		printf("Unable to get vnnmap from node %u\n", vnn);
 		return ret;
@@ -253,13 +449,132 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  display recovery mode of a remote node
+ */
+static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmode;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getrecmode(ctdb, vnn, &recmode);
+	if (ret != 0) {
+		printf("Unable to get recmode from node %u\n", vnn);
+		return ret;
+	}
+	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
+
+	return 0;
+}
+
+/*
+  set recovery mode of a remote node
+ */
+static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmode;
+	int ret;
+
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	recmode = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_setrecmode(ctdb, vnn, recmode);
+	if (ret != 0) {
+		printf("Unable to set recmode on node %u\n", vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  display remote list of keys for a tdb
+ */
+static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	int i, j, ret;
+	struct ctdb_key_list keys;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn  = strtoul(argv[0], NULL, 0);
+	dbid = strtoul(argv[1], NULL, 0);
+
+	mem_ctx = talloc_new(ctdb);
+	ret = ctdb_ctrl_pulldb(ctdb, vnn, dbid, CTDB_LMASTER_ANY, mem_ctx, &keys);
+	if (ret != 0) {
+		printf("Unable to get keys from node %u\n", vnn);
+		return ret;
+	}
+	printf("Number of keys:%d in dbid:0x%08x\n",keys.num,keys.dbid);
+	for(i=0;i<keys.num;i++){
+		printf("key:");
+		for(j=0;j<keys.keys[i].dsize;j++){
+			printf("%02x",keys.keys[i].dptr[j]);
+		}
+		printf(" lmaster:%d rsn:%llu dmaster:%d laccessor:%d lacount:%d",keys.lmasters[i],keys.headers[i].rsn,keys.headers[i].dmaster,keys.headers[i].laccessor,keys.headers[i].lacount);
+		printf(" data:");	
+		for(j=0;j<keys.data[i].dsize;j++){
+			printf("%02x",keys.data[i].dptr[j]);
+		}
+		printf("\n");
+	}
+
+	talloc_free(mem_ctx);
+	return 0;
+}
+
+/*
+  copy a db from one node to another
+ */
+static int control_cpdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t fromvnn, tovnn, dbid;
+	int ret;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	fromvnn  = strtoul(argv[0], NULL, 0);
+	tovnn    = strtoul(argv[1], NULL, 0);
+	dbid     = strtoul(argv[2], NULL, 0);
+
+	mem_ctx = talloc_new(ctdb);
+	ret = ctdb_ctrl_copydb(ctdb, fromvnn, tovnn, dbid, CTDB_LMASTER_ANY, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to copy db from node %u to node %u\n", fromvnn, tovnn);
+		return ret;
+	}
+
+	talloc_free(mem_ctx);
+	return 0;
+}
+
+/*
   display a list of the databases on a remote ctdb
  */
 static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
 	int i, ret;
-	struct ctdb_dbid_map *dbmap;
+	struct ctdb_dbid_map dbmap;
 
 	if (argc < 1) {
 		usage();
@@ -267,22 +582,20 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	dbmap = talloc_zero(ctdb, struct ctdb_dbid_map);
-	ret = ctdb_getdbmap(ctdb, vnn, dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, vnn, ctdb, &dbmap);
 	if (ret != 0) {
 		printf("Unable to get dbids from node %u\n", vnn);
-		talloc_free(dbmap);
 		return ret;
 	}
 
-	printf("Number of databases:%d\n", dbmap->num);
-	for(i=0;i<dbmap->num;i++){
+	printf("Number of databases:%d\n", dbmap.num);
+	for(i=0;i<dbmap.num;i++){
 		const char *path;
 
-		ctdb_getdbpath(ctdb, dbmap->dbids[i], dbmap, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
 	}
-	talloc_free(dbmap);
+
 	return 0;
 }
 
@@ -302,7 +615,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 	vnn = strtoul(argv[0], NULL, 0);
 
 	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
-	ret = ctdb_getnodemap(ctdb, vnn, nodemap, nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, vnn, nodemap, nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		talloc_free(nodemap);
@@ -311,7 +624,10 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		printf("vnn:%d %s\n", nodemap->nodes[i].vnn, nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?"UNAVAILABLE":"CONNECTED");
+		printf("vnn:%d %s%s\n", nodemap->nodes[i].vnn,
+			nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?
+				"CONNECTED":"UNAVAILABLE",
+			nodemap->nodes[i].vnn==vnn?" (THIS NODE)":"");
 	}
 	talloc_free(nodemap);
 	return 0;
@@ -339,9 +655,56 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}
 
-	ret = ctdb_setvnnmap(ctdb, vnn, vnnmap);
+	ret = ctdb_ctrl_setvnnmap(ctdb, vnn, ctdb, vnnmap);
 	if (ret != 0) {
 		printf("Unable to set vnnmap for node %u\n", vnn);
+		return ret;
+	}
+	return 0;
+}
+
+/*
+  set the dmaster for all records in a database
+ */
+static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid, dmaster;
+	int ret;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbid    = strtoul(argv[1], NULL, 0);
+	dmaster = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_ctrl_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
+	if (ret != 0) {
+		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
+		return ret;
+	}
+	return 0;
+}
+
+/*
+  clears a database
+ */
+static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbid    = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_cleardb(ctdb, vnn, ctdb, dbid);
+	if (ret != 0) {
+		printf("Unable to clear db for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
 	}
 	return 0;
@@ -361,7 +724,7 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=0;i<num_nodes;i++) {
 		struct timeval tv = timeval_current();
-		ret = ctdb_ping(ctdb, nodes[i]);
+		ret = ctdb_ctrl_ping(ctdb, nodes[i]);
 		if (ret == -1) {
 			printf("Unable to get ping response from node %u\n", nodes[i]);
 		} else {
@@ -388,7 +751,7 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 
 	for (i=0;i<num_nodes;i++) {
 		uint32_t level;
-		ret = ctdb_get_debuglevel(ctdb, nodes[i], &level);
+		ret = ctdb_ctrl_get_debuglevel(ctdb, nodes[i], &level);
 		if (ret != 0) {
 			printf("Unable to get debuglevel response from node %u\n", 
 				nodes[i]);
@@ -418,7 +781,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	if (strcmp(argv[0], "all") != 0) {
 		vnn = strtoul(argv[0], NULL, 0);
-		ret = ctdb_set_debuglevel(ctdb, vnn, level);
+		ret = ctdb_ctrl_set_debuglevel(ctdb, vnn, level);
 		if (ret != 0) {
 			printf("Unable to set debug level on node %u\n", vnn);
 		}
@@ -429,7 +792,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	for (i=0;i<num_nodes;i++) {
-		ret = ctdb_set_debuglevel(ctdb, nodes[i], level);
+		ret = ctdb_ctrl_set_debuglevel(ctdb, nodes[i], level);
 		if (ret != 0) {
 			printf("Unable to set debug level on node %u\n", nodes[i]);
 			break;
@@ -525,14 +888,28 @@ int main(int argc, const char *argv[])
 		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "getnodemap") == 0) {
 		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "catdb") == 0) {
+		ret = control_catdb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "cpdb") == 0) {
+		ret = control_cpdb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "setdmaster") == 0) {
+		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "cleardb") == 0) {
+		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "getrecmode") == 0) {
+		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "setrecmode") == 0) {
+		ret = control_setrecmode(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "ping") == 0) {
 		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debug") == 0) {
 		ret = control_debug(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "debuglevel") == 0) {
 		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "recover") == 0) {
+		ret = control_recover(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "attach") == 0) {
 		ret = control_attach(ctdb, extra_argc-1, extra_argv+1);
 	} else {

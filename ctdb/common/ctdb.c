@@ -255,6 +255,18 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 				hdr->generation));
 			break;
 		}
+		/* if we are in recovery mode we discard all traffic
+		   until the cluster has recovered.
+		*/
+		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+			DEBUG(0,(__location__ " ctdb request %d of type"
+				" %d length %d from node %d to %d"
+				" while we are in recovery mode\n", 
+				hdr->reqid, hdr->operation, hdr->length, 
+				 hdr->srcnode, hdr->destnode));
+			break;
+		}
+
 		ctdb->status.count.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
@@ -462,6 +474,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 
 	ctdb = talloc_zero(ev, struct ctdb_context);
 	ctdb->ev = ev;
+	ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
 	ctdb->upcalls = &ctdb_upcalls;
 	ctdb->idr = idr_init(ctdb);
 	ctdb->max_lacount = CTDB_DEFAULT_MAX_LACOUNT;
