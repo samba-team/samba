@@ -218,7 +218,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	/* don't do DNS lookups of any kind, it might/will fail for a netbios name */
-	ret = gsskrb5_set_dns_canonicalize(FALSE);
+	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(-1, "krb5", "set_dns_canonicalize", false));
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: gsskrb5_set_dns_canonicalize failed\n"));
 		talloc_free(gensec_gssapi_state);
