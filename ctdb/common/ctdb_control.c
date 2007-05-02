@@ -385,7 +385,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 				ctdb_ltdb_unlock(ctdb_db, key);
 				return -1;
 			}
-			if (header.rsn > hdr->rsn) {
+			if (header.rsn < hdr->rsn) {
 				ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 				if (ret != 0) {
 					DEBUG(0, (__location__ "Unable to store record\n"));
