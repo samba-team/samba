@@ -839,10 +839,33 @@ int main(int argc, const char *argv[])
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
+	int ret, i;
 	poptContext pc;
 	struct event_context *ev;
 	const char *control;
+	static struct {
+		const char *name;
+		int (*fn)(struct ctdb_context *, int, const char **);
+	} commands[] = {
+		{ "process-exists", control_process_exists },
+		{ "status", control_status },
+		{ "statusreset", control_status_reset },
+		{ "getvnnmap", control_getvnnmap },
+		{ "getdbmap", control_getdbmap },
+		{ "getnodemap", control_getnodemap },
+		{ "catdb", control_catdb },
+		{ "cpdb", control_cpdb },
+		{ "setvnnmap", control_setvnnmap },
+		{ "setdmaster", control_setdmaster },
+		{ "cleardb", control_cleardb },
+		{ "getrecmode", control_getrecmode },
+		{ "setrecmode", control_setrecmode },
+		{ "ping", control_ping },
+		{ "debug", control_debug },
+		{ "debuglevel", control_debuglevel },
+		{ "recover", control_recover },
+		{ "attach", control_attach },
+	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -877,43 +900,14 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	if (strcmp(control, "process-exists") == 0) {
-		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "status") == 0) {
-		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "statusreset") == 0) {
-		ret = control_status_reset(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getvnnmap") == 0) {
-		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getdbmap") == 0) {
-		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getnodemap") == 0) {
-		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "catdb") == 0) {
-		ret = control_catdb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "cpdb") == 0) {
-		ret = control_cpdb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setvnnmap") == 0) {
-		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setdmaster") == 0) {
-		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "cleardb") == 0) {
-		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getrecmode") == 0) {
-		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setrecmode") == 0) {
-		ret = control_setrecmode(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "ping") == 0) {
-		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "debug") == 0) {
-		ret = control_debug(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "debuglevel") == 0) {
-		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "recover") == 0) {
-		ret = control_recover(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "attach") == 0) {
-		ret = control_attach(ctdb, extra_argc-1, extra_argv+1);
-	} else {
+	for (i=0;i<ARRAY_SIZE(commands);i++) {
+		if (strcmp(control, commands[i].name) == 0) {
+			ret = commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+			break;
+		}
+	}
+
+	if (i == ARRAY_SIZE(commands)) {
 		printf("Unknown control '%s'\n", control);
 		exit(1);
 	}
