@@ -20,7 +20,7 @@
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/time.h"
-#include "talloc/talloc.h"
+#include "talloc.h"
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_private.h"
