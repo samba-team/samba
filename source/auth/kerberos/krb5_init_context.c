@@ -473,7 +473,8 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	/* Set options in kerberos */
 
-	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context, FALSE);
+	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context,
+					   lp_parm_bool(-1, "krb5", "set_dns_canonicalize", false));
 
 	return 0;
 }
