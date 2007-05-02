@@ -91,20 +91,20 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 	/* only include this record if the lmaster matches or if
 	   the wildcard lmaster (-1) was specified.
 	*/
-	if((lmaster!=CTDB_LMASTER_ANY)
-	&& (lmaster!=params->lmaster) ){
+	if((params->lmaster!=CTDB_LMASTER_ANY)
+	&& (params->lmaster!=lmaster) ){
 		return 0;
 	}
 
 	len=outdata->dsize;
 	len+=4; /*lmaster*/
 	len+=4; /*key len*/
+	len+=4; /*data len */
 	len+=key.dsize;
 	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
 	len+=sizeof(struct ctdb_ltdb_header);
 	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-	len+=4; /*data len */
-	len+=data.dsize;
+	len+=(data.dsize-sizeof(struct ctdb_ltdb_header));
 	len=(len+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
 
 	ptr=outdata->dptr=talloc_realloc_size(outdata, outdata->dptr, len);
@@ -115,19 +115,21 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 
 	*((uint32_t *)ptr)=lmaster;
 	ptr+=4;
-
 	*((uint32_t *)ptr)=key.dsize;
 	ptr+=4;
-	memcpy(ptr, key.dptr, key.dsize);
-	ptr+= (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
-	memcpy(ptr, data.dptr, sizeof(struct ctdb_ltdb_header));
-	ptr+=(sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
 	*((uint32_t *)ptr)=data.dsize-sizeof(struct ctdb_ltdb_header);
 	ptr+=4;
+
+	ptr = outdata->dptr+(((ptr-outdata->dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
+	memcpy(ptr, key.dptr, key.dsize);
+	ptr += key.dsize;
+
+	ptr = outdata->dptr+(((ptr-outdata->dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
+	memcpy(ptr, data.dptr, sizeof(struct ctdb_ltdb_header));
+	ptr += sizeof(struct ctdb_ltdb_header);
+
+	ptr = outdata->dptr+(((ptr-outdata->dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 	memcpy(ptr, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
-	ptr+= (data.dsize-sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
 
 	return 0;
 }
@@ -355,23 +357,32 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ptr=&indata.dptr[8];
 		for(i=0;i<num;i++){
 			/* skip the lmaster*/
-			ptr+=4;
+			ptr += 4;
+
+			/* keylength  */
+			key.dsize = *((uint32_t *)ptr);
+			ptr += 4;
+
+			/* data length */
+			data.dsize = *((uint32_t *)ptr);
+			ptr += 4;
 
 			/* key */
-			key.dsize=*((uint32_t *)ptr);
-			ptr+=4;
-			key.dptr=ptr;
-			ptr+=(key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
+			ptr = indata.dptr+(((ptr-indata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
+			key.dptr = ptr;
+			ptr += key.dsize;
+			
 			/* header */
+			ptr = indata.dptr+(((ptr-indata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 			hdr = (struct ctdb_ltdb_header *)ptr;
-			ptr+=(sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+			ptr += sizeof(struct ctdb_ltdb_header);
 			
 			/* data */
-			data.dsize=*((uint32_t *)ptr);
-			ptr+=4;
+			ptr = indata.dptr+(((ptr-indata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 			data.dptr=ptr;
-			ptr+=(data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+			ptr += data.dsize;
+
+			ptr = indata.dptr+(((ptr-indata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 
 			ret = ctdb_ltdb_lock(ctdb_db, key);
 			if (ret != 0) {
@@ -394,6 +405,60 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			}
 			ctdb_ltdb_unlock(ctdb_db, key);
 		}
+
+		return 0;
+	}
+
+	case CTDB_CONTROL_WRITE_RECORD: {
+		uint32_t dbid;
+		struct ctdb_db_context *ctdb_db;
+		unsigned char *ptr;
+		TDB_DATA key, data;
+		struct ctdb_ltdb_header header;
+		int ret;
+
+		outdata->dsize = 0;
+		outdata->dptr = NULL;
+
+		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
+		ctdb_db = find_ctdb_db(ctdb, dbid);
+		if (!ctdb_db) {
+			DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
+			return -1;
+		}
+
+		ptr = &indata.dptr[4];
+
+		key.dsize = *((uint32_t *)(ptr));
+		ptr += 4;
+		key.dptr = ptr;
+		ptr += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+		data.dsize = *((uint32_t *)(ptr));
+		ptr += 4;
+		data.dptr = ptr;
+		ptr += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+		ret = ctdb_ltdb_lock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to lock db\n"));
+			return -1;
+		}
+		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, outdata, NULL);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to fetch record\n"));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			return -1;
+		}
+		header.rsn++;
+
+		ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to store record\n"));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			return -1;
+		}
+		ctdb_ltdb_unlock(ctdb_db, key);
 
 		return 0;
 	}
@@ -440,10 +505,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_db_attach(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_CALL: {
-		struct ctdb_control_set_call *c = 
+		struct ctdb_control_set_call *sc = 
 			(struct ctdb_control_set_call *)indata.dptr;
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_call));
-		return ctdb_daemon_set_call(ctdb, c->db_id, c->fn, c->id);
+		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
 	}
 
 	default:

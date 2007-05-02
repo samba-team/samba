@@ -265,7 +265,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_SET_RECMODE,
 		    CTDB_CONTROL_STATUS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
-		    CTDB_CONTROL_SET_CALL};
+		    CTDB_CONTROL_SET_CALL,
+		    CTDB_CONTROL_WRITE_RECORD};
 
 /*
   structure passed in set_call control

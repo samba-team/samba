@@ -8,30 +8,35 @@ bin/ctdbd --nlist direct/4nodes.txt
 bin/ctdbd --nlist direct/4nodes.txt
 bin/ctdbd --nlist direct/4nodes.txt
 
-echo "Testing ping"
-bin/ctdb_control ping || exit 1
-
-echo "Testing status"
-bin/ctdb_control status all || exit 1
-
-echo "Testing statusreset"
-bin/ctdb_control statusreset all || exit 1
-
-echo "Testing debug"
-bin/ctdb_control debug all 5 || exit 1
-bin/ctdb_control debuglevel || exit 1
-bin/ctdb_control debug all 0 || exit 1
-bin/ctdb_control debuglevel || exit 1
-
-echo "Testing map calls"
-bin/ctdb_control getvnnmap 0 || exit 1
-
 echo "Attaching to some databases"
-bin/ctdb_control attach test1.tdb || exit 1
-bin/ctdb_control attach test2.tdb || exit 1
+bin/ctdb_control --socket=/tmp/ctdb.socket attach test1.tdb || exit 1
+bin/ctdb_control --socket=/tmp/ctdb.socket attach test2.tdb || exit 1
+bin/ctdb_control --socket=/tmp/ctdb.socket attach test3.tdb || exit 1
+bin/ctdb_control --socket=/tmp/ctdb.socket attach test4.tdb || exit 1
 
-echo "Testing getdbmap"
-bin/ctdb_control getdbmap 0 || exit 1
+echo "Clearing all databases to make sure they are all empty"
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+	seq 0 3 | while read NODE; do
+		bin/ctdb_control --socket=/tmp/ctdb.socket cleardb $NODE $DB
+	done
+done
+
+
+echo
+echo
+echo "Printing all databases on all nodes. they should all be empty"
+echo "============================================================="
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+	seq 0 3 | while read NODE; do
+		echo "Content of DB:$DB NODE:$NODE :"
+		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $NODE $DB
+	done
+done
+
+
+echo
+echo
+echo "Populating the databases"
 
 #leave the ctdb daemons running
 #killall -q ctdbd

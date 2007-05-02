@@ -49,6 +49,7 @@ static void usage(void)
 	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
 	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
 	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
+	printf("  writerecord <vnn> <dbid> <key> <data>\n");
 	printf("  getrecmode <vnn>                   get recovery mode\n");
 	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
 	printf("  recover <vnn>                      recover the cluster\n");
@@ -666,6 +667,35 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  write a record to a remote tdb
+ */
+static int control_writerecord(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	TDB_DATA key, data;
+	int ret;
+
+	if (argc < 4) {
+		usage();
+	}
+
+	vnn  = strtoul(argv[0], NULL, 0);
+	dbid = strtoul(argv[1], NULL, 0);
+
+	key.dptr  = discard_const(argv[2]);
+	key.dsize = strlen((const char *)(key.dptr));
+	data.dptr  = discard_const(argv[3]);
+	data.dsize = strlen((const char *)(data.dptr));
+
+	ret = ctdb_ctrl_write_record(ctdb, vnn, ctdb, dbid, key, data);
+	if (ret != 0) {
+		printf("Unable to set vnnmap for node %u\n", vnn);
+		return ret;
+	}
+	return 0;
+}
+
+/*
   set the dmaster for all records in a database
  */
 static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -927,6 +957,10 @@ int main(int argc, const char *argv[])
 		ret = control_cpdb(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setvnnmap") == 0) {
 		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "setvnnmap") == 0) {
+		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "writerecord") == 0) {
+		ret = control_writerecord(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "setdmaster") == 0) {
 		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "cleardb") == 0) {
