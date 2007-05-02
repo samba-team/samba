@@ -37,7 +37,7 @@ if test x"$INCLUDED_POPT" != x"no"; then
         if test x"$poptdir" = "x"; then
 		AC_MSG_ERROR([cannot find popt source in $poptpaths])
 	fi
-	POPTOBJ="popt.o findme.o poptconfig.o popthelp.o poptparse.o"
-	AC_SUBST(POPTOBJ)
+	POPT_OBJ="popt.o findme.o poptconfig.o popthelp.o poptparse.o"
+	AC_SUBST(POPT_OBJ)
 	AC_CHECK_HEADERS([float.h alloca.h])
 fi

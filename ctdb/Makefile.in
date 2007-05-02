@@ -8,16 +8,20 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 localstatedir = @localstatedir@
-VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@
+VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
 builddir = @builddir@
 EXTRA_OBJ=@EXTRA_OBJ@
 
+POPT_LIBS = @POPT_LIBS@
+POPT_CFLAGS = @POPT_CFLAGS@
+POPT_OBJ = @POPT_OBJ@
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
-	-DVARDIR=\"$(localstatedir)\" -DUSE_MMAP=1 @CFLAGS@
+	-DVARDIR=\"$(localstatedir)\" -DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
-LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt @INFINIBAND_LIBS@
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 
 EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o \
 	lib/events/events_signal.o lib/events/events_timed.o
@@ -32,7 +36,7 @@ CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o \
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
-CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
+CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ) $(UTIL_OBJ)
 
