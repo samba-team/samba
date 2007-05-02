@@ -121,12 +121,6 @@ test: all
 valgrindtest: all
 	VALGRIND="valgrind -q --trace-children=yes" tests/run_tests.sh
 
-test:
-	tests/run_tests.sh
-
-valgrindtest:
-	VALGRIND="valgrind -q --trace-children=yes" tests/run_tests.sh
-
 
 realdistclean: distclean
 	rm -f configure config.h.in

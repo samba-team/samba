@@ -50,6 +50,15 @@ static int ctdb_null_func(struct ctdb_call_info *call)
 	return 0;
 }
 
+/*
+  this is a plain fetch procedure that all databases support
+*/
+static int ctdb_fetch_func(struct ctdb_call_info *call)
+{
+	call->reply_data = &call->record_data;
+	return 0;
+}
+
 
 /*
   return the lmaster given a key
@@ -363,6 +372,17 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_null_func, CTDB_NULL_FUNC);
 	if (ret != 0) {
 		DEBUG(0,("Failed to setup null function for '%s'\n", ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
+	/* 
+	   all databases support the "fetch" function. we need this
+	   for efficient Samba3 ctdb fetch
+	*/
+	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_fetch_func, CTDB_FETCH_FUNC);
+	if (ret != 0) {
+		DEBUG(0,("Failed to setup fetch function for '%s'\n", ctdb_db->db_name));
 		talloc_free(ctdb_db);
 		return -1;
 	}

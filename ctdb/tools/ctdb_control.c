@@ -32,27 +32,29 @@
  */
 static void usage(void)
 {
-	printf("Usage: ctdb_control [options] <control>\n");
-	printf("\nControls:\n");
-	printf("  ping\n");
-	printf("  process-exists <vnn:pid>           see if a process exists\n");
-	printf("  status <vnn|all>                   show ctdb status on a node\n");
-	printf("  statusreset <vnn|all>              reset status on a node\n");
-	printf("  debug <vnn|all> <level>            set ctdb debug level on a node\n");
-	printf("  debuglevel                         display ctdb debug levels\n");
-	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
-	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
-	printf("  getdbmap <vnn>                     lists databases on a node\n");
-	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
-	printf("  createdb <vnn> <dbname>            create a database\n");
-	printf("  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n");
-	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
-	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
-	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
-	printf("  writerecord <vnn> <dbid> <key> <data>\n");
-	printf("  getrecmode <vnn>                   get recovery mode\n");
-	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
-	printf("  recover <vnn>                      recover the cluster\n");
+	printf(
+		"Usage: ctdb_control [options] <control>\n"
+		"\nControls:\n"
+		"  ping\n"
+		"  process-exists <vnn:pid>           see if a process exists\n"
+		"  status <vnn|all>                   show ctdb status on a node\n"
+		"  statusreset <vnn|all>              reset status on a node\n"
+		"  debug <vnn|all> <level>            set ctdb debug level on a node\n"
+		"  debuglevel                         display ctdb debug levels\n"
+		"  getvnnmap <vnn>                    display ctdb vnnmap\n"
+		"  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n"
+		"  getdbmap <vnn>                     lists databases on a node\n"
+		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
+		"  createdb <vnn> <dbname>            create a database\n"
+		"  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n"
+		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
+		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
+		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
+		"  getrecmode <vnn>                   get recovery mode\n"
+		"  setrecmode <vnn> <mode>            set recovery mode\n"
+		"  writerecord <vnn> <dbid> <key> <data>\n"
+		"  recover <vnn>                      recover the cluster\n"
+		"  attach <dbname>                    attach a database\n");
 	exit(1);
 }
 
@@ -901,10 +903,35 @@ int main(int argc, const char *argv[])
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
+	int ret, i;
 	poptContext pc;
 	struct event_context *ev;
 	const char *control;
+	static struct {
+		const char *name;
+		int (*fn)(struct ctdb_context *, int, const char **);
+	} commands[] = {
+		{ "process-exists", control_process_exists },
+		{ "status", control_status },
+		{ "statusreset", control_status_reset },
+		{ "getvnnmap", control_getvnnmap },
+		{ "getdbmap", control_getdbmap },
+		{ "getnodemap", control_getnodemap },
+		{ "catdb", control_catdb },
+		{ "cpdb", control_cpdb },
+		{ "setvnnmap", control_setvnnmap },
+		{ "setdmaster", control_setdmaster },
+		{ "createdb", control_createdb },
+		{ "cleardb", control_cleardb },
+		{ "getrecmode", control_getrecmode },
+		{ "setrecmode", control_setrecmode },
+		{ "ping", control_ping },
+		{ "debug", control_debug },
+		{ "debuglevel", control_debuglevel },
+		{ "recover", control_recover },
+		{ "writerecord", control_writerecord },
+		{ "attach", control_attach },
+	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -939,49 +966,14 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	if (strcmp(control, "process-exists") == 0) {
-		ret = control_process_exists(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "status") == 0) {
-		ret = control_status(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "statusreset") == 0) {
-		ret = control_status_reset(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getvnnmap") == 0) {
-		ret = control_getvnnmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getdbmap") == 0) {
-		ret = control_getdbmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getnodemap") == 0) {
-		ret = control_getnodemap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "catdb") == 0) {
-		ret = control_catdb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "cpdb") == 0) {
-		ret = control_cpdb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setvnnmap") == 0) {
-		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setvnnmap") == 0) {
-		ret = control_setvnnmap(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "writerecord") == 0) {
-		ret = control_writerecord(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setdmaster") == 0) {
-		ret = control_setdmaster(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "cleardb") == 0) {
-		ret = control_cleardb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "createdb") == 0) {
-		ret = control_createdb(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "getrecmode") == 0) {
-		ret = control_getrecmode(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "setrecmode") == 0) {
-		ret = control_setrecmode(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "ping") == 0) {
-		ret = control_ping(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "debug") == 0) {
-		ret = control_debug(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "debuglevel") == 0) {
-		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "recover") == 0) {
-		ret = control_recover(ctdb, extra_argc-1, extra_argv+1);
-	} else if (strcmp(control, "attach") == 0) {
-		ret = control_attach(ctdb, extra_argc-1, extra_argv+1);
-	} else {
+	for (i=0;i<ARRAY_SIZE(commands);i++) {
+		if (strcmp(control, commands[i].name) == 0) {
+			ret = commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+			break;
+		}
+	}
+
+	if (i == ARRAY_SIZE(commands)) {
 		printf("Unknown control '%s'\n", control);
 		exit(1);
 	}
