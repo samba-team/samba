@@ -30,6 +30,10 @@
 	the user who has mounted a filesystem is allowed to unmount it again.  
 	For root it is not necessary to use smbumount. The normal umount 
 	program works perfectly well.</para>  
+
+	<para>WARNING: <command>smbumount</command> is deprecated and not
+        maintained any longer. <command>umount.cifs</command> 
+        should be used instead of <command>smbumount</command>.</para>
 </refsect1>
 
 <refsect1>
