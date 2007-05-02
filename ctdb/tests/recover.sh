@@ -37,6 +37,55 @@ done
 echo
 echo
 echo "Populating the databases"
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 0 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket setdmaster 0 0x220c2a7b 1
+
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 1 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 1 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket setdmaster 1 0x220c2a7b 2
+
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 2 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 2 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 2 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket setdmaster 2 0x220c2a7b 3
+
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 3 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 3 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 3 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket writerecord 3 0x220c2a7b testkey1 testdata1
+./bin/ctdb_control --socket=/tmp/ctdb.socket setdmaster 3 0x220c2a7b 3
+
+
+echo
+echo
+echo "Printing all databases on all nodes. there should be a record there"
+echo "============================================================="
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+	seq 0 3 | while read NODE; do
+		echo "Content of DB:$DB NODE:$NODE :"
+		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $NODE $DB
+	done
+done
+
+echo
+echo
+echo "Recovery the cluster"
+echo "===================="
+./bin/ctdb_control --socket=/tmp/ctdb.socket recover 0 0x220c2a7b
+
+echo
+echo
+echo "Printing all databases on all nodes."
+echo "The databases should be the same now on all nodes"
+echo "and the record will have been migrated to node 0"
+echo "================================================="
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+	seq 0 3 | while read NODE; do
+		echo "Content of DB:$DB NODE:$NODE :"
+		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $NODE $DB
+	done
+done
+
 
 #leave the ctdb daemons running
 #killall -q ctdbd
