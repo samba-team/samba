@@ -221,7 +221,7 @@ static uint32 centry_uint32(struct cache_entry *centry)
 {
 	uint32 ret;
 
-	if (centry_check_bytes(centry, 4)) {
+	if (!centry_check_bytes(centry, 4)) {
 		smb_panic_fn("centry_uint32");
 		return (uint32)-1;
 	}
@@ -236,7 +236,7 @@ static uint32 centry_uint32(struct cache_entry *centry)
 static uint16 centry_uint16(struct cache_entry *centry)
 {
 	uint16 ret;
-	if (centry_check_bytes(centry, 2)) {
+	if (!centry_check_bytes(centry, 2)) {
 		smb_panic_fn("centry_uint16");
 		return (uint16)-1;
 	}
@@ -251,7 +251,7 @@ static uint16 centry_uint16(struct cache_entry *centry)
 static uint8 centry_uint8(struct cache_entry *centry)
 {
 	uint8 ret;
-	if (centry_check_bytes(centry, 1)) {
+	if (!centry_check_bytes(centry, 1)) {
 		smb_panic_fn("centry_uint8");
 		return (uint8)-1;
 	}
@@ -266,7 +266,7 @@ static uint8 centry_uint8(struct cache_entry *centry)
 static NTTIME centry_nttime(struct cache_entry *centry)
 {
 	NTTIME ret;
-	if (centry_check_bytes(centry, 8)) {
+	if (!centry_check_bytes(centry, 8)) {
 		smb_panic_fn("centry_nttime");
 		return (NTTIME)-1;
 	}
@@ -300,7 +300,7 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (centry_check_bytes(centry, (size_t)len)) {
+	if (!centry_check_bytes(centry, (size_t)len)) {
 		smb_panic_fn("centry_string");
 		return NULL;
 	}
@@ -332,7 +332,7 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (centry_check_bytes(centry, 16)) {
+	if (!centry_check_bytes(centry, 16)) {
 		return NULL;
 	}
 
