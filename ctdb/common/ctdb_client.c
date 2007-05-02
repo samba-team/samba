@@ -975,32 +975,34 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	/* loop over all key/data pairs */
 	ptr=&outdata.dptr[8];
 	for(i=0;i<keys->num;i++){
-		uint32_t len;
 		TDB_DATA *key, *data;
 
-		keys->lmasters[i]= *((uint32_t *)ptr);
-		ptr+=4;
+		keys->lmasters[i] = *((uint32_t *)ptr);
+		ptr += 4;
 
-		key=&keys->keys[i];
-		key->dsize= *((uint32_t *)ptr);
-		ptr+=4;
-		key->dptr=talloc_size(mem_ctx, key->dsize);
+		key = &keys->keys[i];
+		key->dsize = *((uint32_t *)ptr);
+		key->dptr = talloc_size(mem_ctx, key->dsize);
+		ptr += 4;
+
+		data = &keys->data[i];
+		data->dsize = *((uint32_t *)ptr);
+		data->dptr = talloc_size(mem_ctx, data->dsize);
+		ptr += 4;
+
+		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 		memcpy(key->dptr, ptr, key->dsize);
-		len = (key->dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-		ptr+=len;
+		ptr += key->dsize;
 
+		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 		memcpy(&keys->headers[i], ptr, sizeof(struct ctdb_ltdb_header));
-		len = (sizeof(struct ctdb_ltdb_header)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-		ptr+=len;
+		ptr += sizeof(struct ctdb_ltdb_header);
 
-		data=&keys->data[i];
-		data->dsize= *((uint32_t *)ptr);
-		ptr+=4;
-		data->dptr=talloc_size(mem_ctx, data->dsize);
+		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 		memcpy(data->dptr, ptr, data->dsize);
-		len = (data->dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-		ptr+=len;
+		ptr += data->dsize;
 
+		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
 	}
 
 	return 0;
@@ -1085,6 +1087,46 @@ int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *
 			   mem_ctx, &outdata, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for cleardb failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data)
+{
+	int ret, len;
+	TDB_DATA indata, outdata;
+	int32_t res;
+	unsigned char *ptr;
+
+	len =  4; /* dbid */
+	len += 4; /* keylen */
+	len += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+	len += 4; /* datalen */
+	len += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	indata.dsize = len;
+	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint8_t, len);
+	ptr = indata.dptr;
+	*((uint32_t *)ptr) = dbid;
+	ptr += 4;
+
+	*((uint32_t *)ptr) = key.dsize;
+	ptr += 4;
+	memcpy(ptr, key.dptr, key.dsize);
+	ptr += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	*((uint32_t *)ptr) = data.dsize;
+	ptr += 4;
+	memcpy(ptr, data.dptr, data.dsize);
+	ptr += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_WRITE_RECORD, 0, indata, 
+			   mem_ctx, &outdata, &res);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for write record failed\n"));
 		return -1;
 	}
 

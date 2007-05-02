@@ -266,7 +266,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_SET_RECMODE,
 		    CTDB_CONTROL_STATUS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
-		    CTDB_CONTROL_SET_CALL};
+		    CTDB_CONTROL_SET_CALL,
+		    CTDB_CONTROL_WRITE_RECORD};
 
 /*
   structure passed in set_call control
@@ -623,5 +624,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);
+
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
+		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status);
 
 #endif

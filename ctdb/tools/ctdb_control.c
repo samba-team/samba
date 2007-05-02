@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
 
@@ -44,12 +45,14 @@ static void usage(void)
 		"  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n"
 		"  getdbmap <vnn>                     lists databases on a node\n"
 		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
+		"  createdb <vnn> <dbname>            create a database\n"
 		"  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n"
 		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
 		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
 		"  getrecmode <vnn>                   get recovery mode\n"
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
+		"  writerecord <vnn> <dbid> <key> <data>\n"
 		"  recover <vnn>                      recover the cluster\n"
 		"  attach <dbname>                    attach a database\n");
 	exit(1);
@@ -666,6 +669,35 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  write a record to a remote tdb
+ */
+static int control_writerecord(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, dbid;
+	TDB_DATA key, data;
+	int ret;
+
+	if (argc < 4) {
+		usage();
+	}
+
+	vnn  = strtoul(argv[0], NULL, 0);
+	dbid = strtoul(argv[1], NULL, 0);
+
+	key.dptr  = discard_const(argv[2]);
+	key.dsize = strlen((const char *)(key.dptr));
+	data.dptr  = discard_const(argv[3]);
+	data.dsize = strlen((const char *)(data.dptr));
+
+	ret = ctdb_ctrl_write_record(ctdb, vnn, ctdb, dbid, key, data);
+	if (ret != 0) {
+		printf("Unable to set vnnmap for node %u\n", vnn);
+		return ret;
+	}
+	return 0;
+}
+
+/*
   set the dmaster for all records in a database
  */
 static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -709,6 +741,37 @@ static int control_cleardb(struct ctdb_context *ctdb, int argc, const char **arg
 		printf("Unable to clear db for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
 	}
+	return 0;
+}
+
+/*
+  create a database
+ */
+static int control_createdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	const char *dbname;
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	dbname  = argv[1];
+
+	/* tell ctdb daemon to attach */
+	data.dptr = discard_const(dbname);
+	data.dsize = strlen(dbname)+1;
+	ret = ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DB_ATTACH,
+			   0, data, ctdb, &data, &res);
+	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Failed to attach to database '%s'\n", dbname));
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -858,6 +921,7 @@ int main(int argc, const char *argv[])
 		{ "cpdb", control_cpdb },
 		{ "setvnnmap", control_setvnnmap },
 		{ "setdmaster", control_setdmaster },
+		{ "createdb", control_createdb },
 		{ "cleardb", control_cleardb },
 		{ "getrecmode", control_getrecmode },
 		{ "setrecmode", control_setrecmode },
@@ -865,6 +929,7 @@ int main(int argc, const char *argv[])
 		{ "debug", control_debug },
 		{ "debuglevel", control_debuglevel },
 		{ "recover", control_recover },
+		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
 	};
 
