@@ -49,7 +49,7 @@ static void usage(void)
 	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
 	printf("  getrecmode <vnn>                   get recovery mode\n");
 	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
-	printf("  recover                            recover the cluster\n");
+	printf("  recover <vnn>                      recover the cluster\n");
 	exit(1);
 }
 
@@ -240,9 +240,14 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	int i, j, ret;
 	struct ctdb_dbid_map dbmap;
 
-	vnn = ctdb_get_vnn(ctdb);
-	printf("recover\n");
-	printf("this vnn:%d\n",vnn);
+	if (argc < 1) {
+		usage();
+	}
+
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	printf("recover ctdb from node %d\n", vnn);
 
 	/* 1: find a list of all nodes */
 	printf("\n1: fetching list of nodes\n");
