@@ -810,7 +810,7 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
-	r = ctdbd_allocate_pkt(ctdb, client, CTDB_REPLY_CONTROL, len, 
+	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len, 
 			       struct ctdb_reply_control);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
 
