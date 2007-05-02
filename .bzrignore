@@ -180,3 +180,5 @@ source/lib/ldb/man/*.html
 source/lib/ldb/lib
 source/lib/ldb/examples/ldbreader
 source/lib/ldb/examples/ldifreader
+source/lib/tdb/bin/tdbbackup
+source/lib/tdb/bin/tdbdump
