@@ -36,6 +36,7 @@ static struct {
 	int self_connect;
 	const char *db_dir;
 	int torture;
+	const char *logfile;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
@@ -43,7 +44,8 @@ static struct {
 	.socketname = CTDB_PATH,
 	.self_connect = 0,
 	.db_dir = NULL,
-	.torture = 0
+	.torture = 0,
+	.logfile = NULL
 };
 
 
@@ -56,6 +58,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
 	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
+	{ "logfile", 0, POPT_ARG_STRING, &ctdb_cmdline.logfile, 0, "log file location", "filename" },
 	{ NULL }
 };
 
@@ -68,8 +71,8 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	struct ctdb_context *ctdb;
 	int i, ret;
 
-	if (ctdb_cmdline.nlist == NULL || ctdb_cmdline.myaddress == NULL) {
-		printf("You must provide a node list with --nlist and an address with --listen\n");
+	if (ctdb_cmdline.nlist == NULL) {
+		printf("You must provide a node list with --nlist\n");
 		exit(1);
 	}
 
@@ -77,6 +80,12 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
+		exit(1);
+	}
+
+	ret = ctdb_set_logfile(ctdb, ctdb_cmdline.logfile);
+	if (ret == -1) {
+		printf("ctdb_set_logfile failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
@@ -94,10 +103,12 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	}
 
 	/* tell ctdb what address to listen on */
-	ret = ctdb_set_address(ctdb, ctdb_cmdline.myaddress);
-	if (ret == -1) {
-		printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	if (ctdb_cmdline.myaddress) {
+		ret = ctdb_set_address(ctdb, ctdb_cmdline.myaddress);
+		if (ret == -1) {
+			printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
+			exit(1);
+		}
 	}
 
 	/* tell ctdb the socket address */
@@ -114,10 +125,12 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		exit(1);
 	}
 
-	ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
-	if (ret == -1) {
-		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	if (ctdb_cmdline.db_dir) {
+		ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
+		if (ret == -1) {
+			printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
+			exit(1);
+		}
 	}
 
 	/* initialize the vnn mapping table */

@@ -79,6 +79,29 @@
 #include <stddef.h>
 #endif
 
+/**
+  this is a warning hack. The idea is to use this everywhere that we
+  get the "discarding const" warning from gcc. That doesn't actually
+  fix the problem of course, but it means that when we do get to
+  cleaning them up we can do it by searching the code for
+  discard_const.
+
+  It also means that other error types aren't as swamped by the noise
+  of hundreds of const warnings, so we are more likely to notice when
+  we get new errors.
+
+  Please only add more uses of this macro when you find it
+  _really_ hard to fix const warnings. Our aim is to eventually use
+  this function in only a very few places.
+
+  Also, please call this via the discard_const_p() macro interface, as that
+  makes the return type safe.
+*/
+#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+
+/** Type-safe version of discard_const */
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -137,7 +160,16 @@ size_t rep_strnlen(const char *s, size_t n);
 
 #ifndef HAVE_SETENV
 #define setenv rep_setenv
-int rep_setenv(const char *name, const char *value, int overwrite); 
+int rep_setenv(const char *name, const char *value, int overwrite);
+#else
+#ifndef HAVE_SETENV_DECL
+int setenv(const char *name, const char *value, int overwrite);
+#endif
+#endif
+
+#ifndef HAVE_UNSETENV
+#define unsetenv rep_unsetenv
+int rep_unsetenv(const char *name); 
 #endif
 
 #ifndef HAVE_SETEUID
@@ -275,6 +307,12 @@ void rep_vsyslog (int facility_priority, const char *format, va_list arglist) PR
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
 
+#ifdef REPLACE_STRPTIME
+#define strptime rep_strptime
+struct tm;
+char *rep_strptime(const char *buf, const char *format, struct tm *tm);
+#endif
+
 /* Load header file for dynamic linking stuff */
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -400,6 +438,47 @@ typedef int bool;
 #ifndef __STRING
 #define __STRING(x)    #x
 #endif
+
+#ifndef _STRINGSTRING
+#define __STRINGSTRING(x) __STRING(x)
+#endif
+
+#ifndef __LINESTR__
+#define __LINESTR__ __STRINGSTRING(__LINE__)
+#endif
+
+#ifndef __location__
+#define __location__ __FILE__ ":" __LINESTR__
+#endif
+
+/** 
+ * zero a structure 
+ */
+#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+
+/** 
+ * zero a structure given a pointer to the structure 
+ */
+#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
+
+/** 
+ * zero a structure given a pointer to the structure - no zero check 
+ */
+#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
+
+/* zero an array - note that sizeof(array) must work - ie. it must not be a
+   pointer */
+#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
+
+/**
+ * work out how many elements there are in a static array 
+ */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
+/** 
+ * pointer difference macro 
+ */
+#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
 #if MMAP_BLACKLIST
 #undef HAVE_MMAP

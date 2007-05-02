@@ -55,7 +55,6 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 {
 	DEBUG(0,("ctdb fatal error: %s\n", msg));
-	fprintf(stderr, "ctdb fatal error: '%s'\n", msg);
 	abort();
 }
 
@@ -104,6 +103,17 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 }
 
 /*
+  hash function for a string
+*/
+uint32_t ctdb_hash_string(const char *str)
+{
+	TDB_DATA data;
+	data.dptr = (uint8_t *)discard_const(str);
+	data.dsize = strlen(str)+1;
+	return ctdb_hash(&data);
+}
+
+/*
   a type checking varient of idr_find
  */
 static void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
@@ -129,6 +139,51 @@ void ctdb_latency(double *latency, struct timeval t)
 	}
 }
 
+#if 0
+struct idr_fake {
+	uint32_t size;
+	void **ptrs;
+};
+
+static void idr_fake_init(struct ctdb_context *ctdb)
+{
+	if (ctdb->fidr) return;
+	ctdb->fidr = talloc(ctdb, struct idr_fake);
+	ctdb->fidr->size = 0x10000;
+	ctdb->fidr->ptrs = talloc_zero_array(ctdb->fidr, void *, 
+						 ctdb->fidr->size);
+}
+
+uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
+{
+	uint32_t i;
+	idr_fake_init(ctdb);
+	for (i=0;i<ctdb->fidr->size;i++) {
+		if (ctdb->fidr->ptrs[i] == NULL) {
+			ctdb->fidr->ptrs[i] = state;
+			return i;
+		}
+	}
+	return (uint32_t)-1;
+}
+
+void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location)
+{
+	idr_fake_init(ctdb);
+	if (ctdb->fidr->ptrs[reqid] == NULL) {
+		DEBUG(0,("bad fidr id %u\n", reqid));
+	}
+	return ctdb->fidr->ptrs[reqid];
+}
+
+
+void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
+{
+	idr_fake_init(ctdb);
+	ctdb->fidr->ptrs[reqid] = NULL;
+}
+
+#else
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
 	uint32_t id;
@@ -161,3 +216,4 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 	}
 }
 
+#endif

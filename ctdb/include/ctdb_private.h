@@ -35,6 +35,7 @@
 #define CTDB_CURRENT_NODE  0xF0000001
 #define CTDB_BROADCAST_VNN 0xF0000002
 
+#define CTDB_MAX_REDIRECT_COUNT 3
 
 /*
   an installed ctdb remote call
@@ -157,6 +158,7 @@ struct ctdb_status {
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t __last_counter; /* hack for control_status_all */
+	uint32_t max_hop_count;
 	double max_call_latency;
 	double max_lockwait_latency;
 };
@@ -177,6 +179,7 @@ struct ctdb_context {
 	const char *name;
 	const char *db_directory;
 	const char *transport;
+	const char *logfile;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
@@ -196,6 +199,7 @@ struct ctdb_context {
 	struct ctdb_status status;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
+	struct idr_fake *fidr;
 };
 
 struct ctdb_db_context {
@@ -259,7 +263,20 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_PUSH_DB,
 		    CTDB_CONTROL_GET_RECMODE,
 		    CTDB_CONTROL_SET_RECMODE,
-		    CTDB_CONTROL_STATUS_RESET};
+		    CTDB_CONTROL_STATUS_RESET,
+		    CTDB_CONTROL_DB_ATTACH,
+		    CTDB_CONTROL_SET_CALL};
+
+/*
+  structure passed in set_call control
+ */
+struct ctdb_control_set_call {
+	uint32_t db_id;
+	ctdb_fn_t fn;
+	uint32_t id;
+};
+
+>>>>>>> MERGE-SOURCE
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
@@ -275,7 +292,6 @@ struct ctdb_call_state {
 	struct ctdb_db_context *ctdb_db;
 	const char *errmsg;
 	struct ctdb_call call;
-	struct ctdb_ltdb_header header;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -334,6 +350,7 @@ struct ctdb_req_call {
 	uint32_t flags;
 	uint32_t db_id;
 	uint32_t callid;
+	uint32_t hopcount;
 	uint32_t keylen;
 	uint32_t calldatalen;
 	uint8_t data[1]; /* key[] followed by calldata[] */
@@ -356,6 +373,7 @@ struct ctdb_reply_error {
 struct ctdb_req_dmaster {
 	struct ctdb_req_header hdr;
 	uint32_t db_id;
+	uint64_t rsn;
 	uint32_t dmaster;
 	uint32_t keylen;
 	uint32_t datalen;
@@ -364,6 +382,9 @@ struct ctdb_req_dmaster {
 
 struct ctdb_reply_dmaster {
 	struct ctdb_req_header hdr;
+	uint32_t db_id;
+	uint64_t rsn;
+	uint32_t keylen;
 	uint32_t datalen;
 	uint8_t  data[1];
 };
@@ -413,6 +434,8 @@ struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
 	uint64_t srvid;
+#define CTDB_CTRL_FLAG_NOREPLY 1
+	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
 };
@@ -433,6 +456,7 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
 uint32_t ctdb_hash(const TDB_DATA *key);
+uint32_t ctdb_hash_string(const char *str);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -590,8 +614,15 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint64_t srvid, uint32_t opcode, TDB_DATA data,
+			     uint64_t srvid, uint32_t opcode, uint32_t flags,
+			     TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data);
+
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
+			       TDB_DATA *outdata);
+
+int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
+			 ctdb_fn_t fn, int id);
 
 #endif

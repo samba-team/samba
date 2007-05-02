@@ -35,6 +35,27 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 	return 0;
 }
 
+/*
+  choose the logfile location
+*/
+int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
+{
+	ctdb->logfile = talloc_strdup(ctdb, logfile);
+	if (ctdb->logfile != NULL) {
+		int fd;
+		close(1);
+		fd = open(ctdb->logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
+		if (fd == -1) {
+			abort();
+		}
+		if (fd != 1) {
+			dup2(fd, 1);
+			close(fd);
+		}
+	}
+	return 0;
+}
+
 
 /*
   set some ctdb flags
@@ -65,11 +86,7 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
 {
-	if (dir == NULL) {
-		ctdb->db_directory = talloc_asprintf(ctdb, "ctdb-%u", ctdb_get_vnn(ctdb));
-	} else {
-		ctdb->db_directory = talloc_strdup(ctdb, dir);
-	}
+	ctdb->db_directory = talloc_strdup(ctdb, dir);
 	if (ctdb->db_directory == NULL) {
 		return -1;
 	}
@@ -103,7 +120,8 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	   will change! */
 	node->vnn = ctdb->num_nodes;
 
-	if (ctdb_same_address(&ctdb->address, &node->address)) {
+	if (ctdb->address.address &&
+	    ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;
 		node->flags |= NODE_FLAGS_CONNECTED;
 	}
@@ -163,22 +181,6 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
 	return 0;
 }
-
-/*
-  add a node to the list of active nodes
-*/
-int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id)
-{
-	struct ctdb_registered_call *call;
-
-	call = talloc(ctdb_db, struct ctdb_registered_call);
-	call->fn = fn;
-	call->id = id;
-
-	DLIST_ADD(ctdb_db->calls, call);	
-	return 0;
-}
-
 /*
   return the vnn of this node
 */
@@ -411,12 +413,31 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 #endif
 }
 
+
+/*
+  broadcast a packet to all nodes
+*/
+static void ctdb_broadcast_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	int i;
+	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
+		hdr->destnode = ctdb->nodes[i]->vnn;
+		ctdb_queue_packet(ctdb, hdr);
+	}
+}
+
 /*
   queue a packet or die
 */
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_node *node;
+
+	if (hdr->destnode == CTDB_BROADCAST_VNN) {
+		ctdb_broadcast_packet(ctdb, hdr);
+		return;
+	}
+
 	ctdb->status.node_packets_sent++;
 
 	if (!ctdb_validate_vnn(ctdb, hdr->destnode)) {

@@ -107,12 +107,12 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
+int ctdb_start_daemon(struct ctdb_context *ctdb);
 
 /*
   attach to a ctdb database
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-				    int open_flags, mode_t mode);
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name);
 
 /*
   find an attached ctdb_db handle given a name
@@ -130,7 +130,7 @@ typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 /*
   setup a ctdb call function
 */
-int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, int id);
+int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 
 
 
@@ -290,5 +290,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 				   uint32_t *num_nodes);
 
 int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
+
+int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
 
 #endif

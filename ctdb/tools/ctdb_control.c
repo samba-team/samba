@@ -106,6 +106,7 @@ static void show_status(struct ctdb_status *s)
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
+	printf(" max_hop_count           %u\n", s->max_hop_count);
 	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
 	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
 }
@@ -140,6 +141,8 @@ static int control_status_all(struct ctdb_context *ctdb)
 		for (j=0;j<num_ints;j++) {
 			v2[j] += v1[j];
 		}
+		status.max_hop_count = 
+			MAX(status.max_hop_count, s1.max_hop_count);
 		status.max_call_latency = 
 			MAX(status.max_call_latency, s1.max_call_latency);
 		status.max_lockwait_latency = 
@@ -799,6 +802,28 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+
+/*
+  attach to a database
+ */
+static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	if (argc < 1) {
+		usage();
+	}
+	db_name = argv[0];
+
+	ctdb_db = ctdb_attach(ctdb, db_name);
+	if (ctdb_db == NULL) {
+		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   main program
 */
@@ -885,6 +910,8 @@ int main(int argc, const char *argv[])
 		ret = control_debuglevel(ctdb, extra_argc-1, extra_argv+1);
 	} else if (strcmp(control, "recover") == 0) {
 		ret = control_recover(ctdb, extra_argc-1, extra_argv+1);
+	} else if (strcmp(control, "attach") == 0) {
+		ret = control_attach(ctdb, extra_argc-1, extra_argv+1);
 	} else {
 		printf("Unknown control '%s'\n", control);
 		exit(1);

@@ -24,6 +24,7 @@
 #include "popt.h"
 #include "system/wait.h"
 #include "cmdline.h"
+#include "../include/ctdb_private.h"
 
 static void block_signal(int signum)
 {
@@ -44,19 +45,15 @@ static void block_signal(int signum)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
-	const char *db_list = "test.tdb";
-	char *s, *tok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
-		{ "dblist", 0, POPT_ARG_STRING, &db_list, 0, "list of databases", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
 	poptContext pc;
 	struct event_context *ev;
 
@@ -84,29 +81,14 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_init(ev);
 
-	/* attach to the list of databases */
-	s = talloc_strdup(ctdb, db_list);
-	for (tok=strtok(s, ", "); tok; tok=strtok(NULL, ", ")) {
-		struct ctdb_db_context *ctdb_db;
-		ctdb_db = ctdb_attach(ctdb, tok, TDB_DEFAULT, 
-				      O_RDWR|O_CREAT|O_TRUNC, 0666);
-		if (!ctdb_db) {
-			printf("ctdb_attach to '%s'failed - %s\n", tok, 
-			       ctdb_errstr(ctdb));
-			exit(1);
-		}
-		printf("Attached to database '%s'\n", tok);
+	/* useful default logfile */
+	if (ctdb->logfile == NULL) {
+		char *name = talloc_asprintf(ctdb, "%s/log.ctdb.vnn%u", 
+					     VARDIR, ctdb->vnn);
+		ctdb_set_logfile(ctdb, name);
+		talloc_free(name);
 	}
 
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
-
-/*	event_loop_wait(ev);*/
-	while (1) {
-		event_loop_once(ev);
-	}
-
-	/* shut it down */
-	talloc_free(ev);
-	return 0;
+	/* start the protocol running (as a child) */
+	return ctdb_start_daemon(ctdb);
 }

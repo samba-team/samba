@@ -61,8 +61,11 @@ AC_FUNC_MEMCMP
 
 AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer lstat getpgrp)
 
-AC_CHECK_HEADERS(stdbool.h sys/select.h)
+AC_CHECK_HEADERS(stdbool.h stdint.h sys/select.h)
 AC_CHECK_HEADERS(setjmp.h)
+
+LIBREPLACE_PROVIDE_HEADER([stdint.h])
+LIBREPLACE_PROVIDE_HEADER([stdbool.h])
 
 AC_CHECK_TYPE(bool, 
 [AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
@@ -147,7 +150,7 @@ AC_TRY_COMPILE([
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
-AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
+AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -260,7 +263,10 @@ AC_CHECK_HEADERS([sys/param.h limits.h])
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
-AC_CHECK_FUNCS(strnlen setenv)
+AC_HAVE_DECL(setenv, [#include <stdlib.h>])
+AC_CHECK_FUNCS(setenv unsetenv)
+
+AC_CHECK_FUNCS(strnlen)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
 # this test disabled as we don't actually need __VA_ARGS__ yet
@@ -323,12 +329,12 @@ m4_include(system/config.m4)
 
 m4_include(dlfcn.m4)
 m4_include(getpass.m4)
+m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)
 m4_include(repdir.m4)
 
-AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
-			   [AC_MSG_ERROR([Required function not found])])
+AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
@@ -348,6 +354,7 @@ AC_LIBREPLACE_LOCATION_CHECKS
 AC_LIBREPLACE_CC_CHECKS
 AC_LIBREPLACE_BROKEN_CHECKS
 AC__LIBREPLACE_ALL_CHECKS_END
+CFLAGS="$CFLAGS -I$libreplacedir"
 ])
 
 m4_include(libreplace_cc.m4)

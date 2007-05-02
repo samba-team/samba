@@ -205,6 +205,87 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 
 /*
+  automatically find which address to listen on
+*/
+static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
+{
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+						struct ctdb_tcp);
+        struct sockaddr_in sock;
+	int lock_fd, i;
+	const char *lock_path = "/tmp/.ctdb_socket_lock";
+	struct flock lock;
+
+	/* in order to ensure that we don't get two nodes with the
+	   same adddress, we must make the bind() and listen() calls
+	   atomic. The SO_REUSEADDR setsockopt only prevents double
+	   binds if the first socket is in LISTEN state  */
+	lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
+	if (lock_fd == -1) {
+		DEBUG(0,("Unable to open %s\n", lock_path));
+		return -1;
+	}
+
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	if (fcntl(lock_fd, F_SETLKW, &lock) != 0) {
+		DEBUG(0,("Unable to lock %s\n", lock_path));
+		close(lock_fd);
+		return -1;
+	}
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		sock.sin_port = htons(ctdb->nodes[i]->address.port);
+		sock.sin_family = PF_INET;
+		if (ctdb_tcp_get_address(ctdb, ctdb->nodes[i]->address.address, 
+					 &sock.sin_addr) != 0) {
+			continue;
+		}
+		
+		if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, 
+			 sizeof(sock)) == 0) {
+			break;
+		}
+	}
+	
+	if (i == ctdb->num_nodes) {
+		DEBUG(0,("Unable to bind to any of the node addresses - giving up\n"));
+		goto failed;
+	}
+	ctdb->address = ctdb->nodes[i]->address;
+	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
+				     ctdb->address.address, 
+				     ctdb->address.port);
+	ctdb->vnn = ctdb->nodes[i]->vnn;
+	ctdb->nodes[i]->flags |= NODE_FLAGS_CONNECTED;
+	DEBUG(1,("ctdb chose network address %s:%u vnn %u\n", 
+		 ctdb->address.address, 
+		 ctdb->address.port, 
+		 ctdb->vnn));
+
+	if (listen(ctcp->listen_fd, 10) == -1) {
+		goto failed;
+	}
+
+	event_add_fd(ctdb->ev, ctdb, ctcp->listen_fd, EVENT_FD_READ, 
+		     ctdb_listen_event, ctdb);	
+
+	close(lock_fd);
+	return 0;
+	
+failed:
+	close(lock_fd);
+	close(ctcp->listen_fd);
+	ctcp->listen_fd = -1;
+	return -1;
+}
+
+
+/*
   listen on our own address
 */
 int ctdb_tcp_listen(struct ctdb_context *ctdb)
@@ -214,37 +295,44 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
         struct sockaddr_in sock;
 	int one = 1;
 
-        sock.sin_port = htons(ctdb->address.port);
-        sock.sin_family = PF_INET;
-	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock.sin_addr) != 0) {
+	ctcp->listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (ctcp->listen_fd == -1) {
+		ctdb_set_error(ctdb, "socket failed\n");
 		return -1;
 	}
 
-        ctcp->listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (ctcp->listen_fd == -1) {
-		ctdb_set_error(ctdb, "socket failed\n");
-		return -1;
-        }
-
         setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 
-        if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sizeof(sock)) != 0) {
-		ctdb_set_error(ctdb, "bind failed\n");
-		close(ctcp->listen_fd);
-		ctcp->listen_fd = -1;
-                return -1;
-        }
+	/* we can either auto-bind to the first available address, or we can
+	   use a specified address */
+	if (!ctdb->address.address) {
+		return ctdb_tcp_listen_automatic(ctdb);
+	}
+
+	sock.sin_port = htons(ctdb->address.port);
+	sock.sin_family = PF_INET;
+	
+	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, 
+				 &sock.sin_addr) != 0) {
+		goto failed;
+	}
+	
+	if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sizeof(sock)) != 0) {
+		goto failed;
+	}
 
 	if (listen(ctcp->listen_fd, 10) == -1) {
-		ctdb_set_error(ctdb, "listen failed\n");
-		close(ctcp->listen_fd);
-		ctcp->listen_fd = -1;
-		return -1;
+		goto failed;
 	}
 
 	event_add_fd(ctdb->ev, ctdb, ctcp->listen_fd, EVENT_FD_READ, 
 		     ctdb_listen_event, ctdb);	
 
 	return 0;
+
+failed:
+	close(ctcp->listen_fd);
+	ctcp->listen_fd = -1;
+	return -1;
 }
 

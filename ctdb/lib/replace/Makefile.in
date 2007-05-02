@@ -11,9 +11,9 @@ srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
-.PHONY: test
+.PHONY: test all showflags install installcheck clean distclean realdistclean
 
-CFLAGS=-I. -I@libreplacedir@ @CFLAGS@
+CFLAGS=-I. @CFLAGS@
 
 OBJS = @LIBREPLACEOBJ@
 
@@ -37,7 +37,7 @@ test: all
 
 installcheck: install test
 
-TEST_OBJS = test/testsuite.o test/os2_delete.o
+TEST_OBJS = test/testsuite.o test/os2_delete.o test/strptime.o
 
 testsuite: libreplace.a $(TEST_OBJS)
 	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace

@@ -64,8 +64,10 @@ static void queue_io_read(struct ctdb_queue *queue)
 	ssize_t nread;
 	uint8_t *data, *data_base;
 
-	if (ioctl(queue->fd, FIONREAD, &num_ready) != 0 ||
-	    num_ready == 0) {
+	if (ioctl(queue->fd, FIONREAD, &num_ready) != 0) {
+		return;
+	}
+	if (num_ready == 0) {
 		/* the descriptor has been closed */
 		goto failed;
 	}
@@ -75,11 +77,14 @@ static void queue_io_read(struct ctdb_queue *queue)
 						  num_ready + queue->partial.length);
 
 	if (queue->partial.data == NULL) {
+		DEBUG(0,("read error alloc failed for %u\n", 
+			 num_ready + queue->partial.length));
 		goto failed;
 	}
 
 	nread = read(queue->fd, queue->partial.data + queue->partial.length, num_ready);
 	if (nread <= 0) {
+		DEBUG(0,("read error nread=%d\n", nread));
 		goto failed;
 	}
 
@@ -106,6 +111,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 		len = *(uint32_t *)data;
 		d2 = talloc_memdup(queue, data, len);
 		if (d2 == NULL) {
+			DEBUG(0,("read error memdup failed for %u\n", len));
 			/* sigh */
 			goto failed;
 		}
@@ -122,6 +128,8 @@ static void queue_io_read(struct ctdb_queue *queue)
 		} else {
 			queue->partial.data = talloc_memdup(queue, data, nread);
 			if (queue->partial.data == NULL) {
+				DEBUG(0,("read error memdup partial failed for %u\n", 
+					 nread));
 				goto failed;
 			}
 			queue->partial.length = nread;
@@ -155,8 +163,11 @@ static void queue_io_write(struct ctdb_queue *queue)
 	while (queue->out_queue) {
 		struct ctdb_queue_pkt *pkt = queue->out_queue;
 		ssize_t n;
-
-		n = write(queue->fd, pkt->data, pkt->length);
+		if (queue->ctdb->flags & CTDB_FLAG_TORTURE) {
+			n = write(queue->fd, pkt->data, 1);
+		} else {
+			n = write(queue->fd, pkt->data, pkt->length);
+		}
 
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 
@@ -213,7 +224,8 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	
 	/* if the queue is empty then try an immediate write, avoiding
 	   queue overhead. This relies on non-blocking sockets */
-	if (queue->out_queue == NULL && queue->fd != -1) {
+	if (queue->out_queue == NULL && queue->fd != -1 &&
+	    !(queue->ctdb->flags & CTDB_FLAG_TORTURE)) {
 		ssize_t n = write(queue->fd, data, length2);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 

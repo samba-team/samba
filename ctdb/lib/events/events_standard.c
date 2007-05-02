@@ -42,9 +42,6 @@ struct std_event_context {
 	/* list of filedescriptor events */
 	struct fd_event *fd_events;
 
-	/* list of timed events */
-	struct timed_event *timed_events;
-
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
 
@@ -62,8 +59,6 @@ struct std_event_context {
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
 };
-
-static void std_event_loop_timer(struct std_event_context *std_ev);
 
 /* use epoll if it is available */
 #if WITH_EPOLL
@@ -103,9 +98,8 @@ static int epoll_ctx_destructor(struct std_event_context *std_ev)
 /*
  init the epoll fd
 */
-static void epoll_init_ctx(struct std_event_context *std_ev, BOOL try_epoll)
+static void epoll_init_ctx(struct std_event_context *std_ev)
 {
-	if (!try_epoll)	return;
 	std_ev->epoll_fd = epoll_create(64);
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
@@ -186,9 +180,9 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *f
 
 static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde)
 {
-	BOOL got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	BOOL want_read = (fde->flags & EVENT_FD_READ);
-	BOOL want_write= (fde->flags & EVENT_FD_WRITE);
+	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
+	bool want_read = (fde->flags & EVENT_FD_READ);
+	bool want_write= (fde->flags & EVENT_FD_WRITE);
 
 	if (std_ev->epoll_fd == -1) return;
 
@@ -225,7 +219,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	int ret, i;
 #define MAXEVENTS 8
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = std_ev->destruction_count;
+	uint32_t destruction_count = ++std_ev->destruction_count;
 	int timeout = -1;
 
 	if (std_ev->epoll_fd == -1) return -1;
@@ -235,7 +229,18 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
+	if (epoll_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(epoll_ev->ev)) {
+		return 0;
+	}
+
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
+
+	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
+		if (common_event_check_signal(epoll_ev->ev)) {
+			return 0;
+		}
+	}
 
 	if (ret == -1 && errno != EINTR) {
 		epoll_fallback_to_select(std_ev, "epoll_wait() failed");
@@ -243,7 +248,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	}
 
 	if (ret == 0 && tvalp) {
-		std_event_loop_timer(std_ev);
+		common_event_loop_timer(std_ev->ev);
 		return 0;
 	}
 
@@ -283,7 +288,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	return 0;
 }
 #else
-#define epoll_init_ctx(std_ev,try_epoll) if (try_epoll) {/* fix unused variable warning*/}
+#define epoll_init_ctx(std_ev) 
 #define epoll_add_event(std_ev,fde)
 #define epoll_del_event(std_ev,fde)
 #define epoll_change_event(std_ev,fde)
@@ -293,18 +298,16 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 /*
   create a std_event_context structure.
 */
-static int std_event_context_init(struct event_context *ev, void *private_data)
+static int std_event_context_init(struct event_context *ev)
 {
 	struct std_event_context *std_ev;
-	BOOL *_try_epoll = private_data;
-	BOOL try_epoll = (_try_epoll == NULL ? True : *_try_epoll);
 
 	std_ev = talloc_zero(ev, struct std_event_context);
 	if (!std_ev) return -1;
 	std_ev->ev = ev;
 	std_ev->epoll_fd = -1;
 
-	epoll_init_ctx(std_ev, try_epoll);
+	epoll_init_ctx(std_ev);
 
 	ev->additional_data = std_ev;
 	return 0;
@@ -377,7 +380,8 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->additional_data	= NULL;
 
 	DLIST_ADD(std_ev->fd_events, fde);
-	if (fde->fd > std_ev->maxfd) {
+	if ((std_ev->maxfd != EVENT_INVALID_MAXFD)
+	    && (fde->fd > std_ev->maxfd)) {
 		std_ev->maxfd = fde->fd;
 	}
 	talloc_set_destructor(fde, std_event_fd_destructor);
@@ -415,93 +419,6 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 }
 
 /*
-  destroy a timed event
-*/
-static int std_event_timed_destructor(struct timed_event *te)
-{
-	struct std_event_context *std_ev = talloc_get_type(te->event_ctx->additional_data,
-							   struct std_event_context);
-	DLIST_REMOVE(std_ev->timed_events, te);
-	return 0;
-}
-
-static int std_event_timed_deny_destructor(struct timed_event *te)
-{
-	return -1;
-}
-
-/*
-  add a timed event
-  return NULL on failure (memory allocation error)
-*/
-static struct timed_event *std_event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
-					       struct timeval next_event, 
-					       event_timed_handler_t handler, 
-					       void *private_data) 
-{
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
-	struct timed_event *te, *last_te, *cur_te;
-
-	te = talloc(mem_ctx?mem_ctx:ev, struct timed_event);
-	if (te == NULL) return NULL;
-
-	te->event_ctx		= ev;
-	te->next_event		= next_event;
-	te->handler		= handler;
-	te->private_data	= private_data;
-	te->additional_data	= NULL;
-
-	/* keep the list ordered */
-	last_te = NULL;
-	for (cur_te = std_ev->timed_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->next_event) &&
-		    timeval_compare(&te->next_event,
-				    &cur_te->next_event) < 0) {
-			break;
-		}
-
-		last_te = cur_te;
-	}
-
-	DLIST_ADD_AFTER(std_ev->timed_events, te, last_te);
-
-	talloc_set_destructor(te, std_event_timed_destructor);
-
-	return te;
-}
-
-/*
-  a timer has gone off - call it
-*/
-static void std_event_loop_timer(struct std_event_context *std_ev)
-{
-	struct timeval t = timeval_current();
-	struct timed_event *te = std_ev->timed_events;
-
-	if (te == NULL) {
-		return;
-	}
-
-	/* deny the handler to free the event */
-	talloc_set_destructor(te, std_event_timed_deny_destructor);
-
-	/* We need to remove the timer from the list before calling the
-	 * handler because in a semi-async inner event loop called from the
-	 * handler we don't want to come across this event again -- vl */
-	DLIST_REMOVE(std_ev->timed_events, te);
-
-	te->handler(std_ev->ev, te, t, te->private_data);
-
-	/* The destructor isn't necessary anymore, we've already removed the
-	 * event from the list. */
-	talloc_set_destructor(te, NULL);
-
-	talloc_free(te);
-}
-
-/*
   event loop handling using select()
 */
 static int std_event_loop_select(struct std_event_context *std_ev, struct timeval *tvalp)
@@ -509,7 +426,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	fd_set r_fds, w_fds;
 	struct fd_event *fde;
 	int selrtn;
-	uint32_t destruction_count = std_ev->destruction_count;
+	uint32_t destruction_count = ++std_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (std_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -529,7 +446,18 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		}
 	}
 
+	if (std_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(std_ev->ev)) {
+		return 0;
+	}
+
 	selrtn = select(std_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+
+	if (selrtn == -1 && errno == EINTR && 
+	    std_ev->ev->num_signal_handlers) {
+		common_event_check_signal(std_ev->ev);
+		return 0;
+	}
 
 	if (selrtn == -1 && errno == EBADF) {
 		/* the socket is dead! this should never
@@ -543,7 +471,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	}
 
 	if (selrtn == 0 && tvalp) {
-		std_event_loop_timer(std_ev);
+		common_event_loop_timer(std_ev->ev);
 		return 0;
 	}
 
@@ -577,19 +505,11 @@ static int std_event_loop_once(struct event_context *ev)
 		 					   struct std_event_context);
 	struct timeval tval;
 
-	/* work out the right timeout for all timed events */
-	if (std_ev->timed_events) {
-		struct timeval t = timeval_current();
-		tval = timeval_until(&t, &std_ev->timed_events->next_event);
-		if (timeval_is_zero(&tval)) {
-			std_event_loop_timer(std_ev);
-			return 0;
-		}
-	} else {
-		/* have a default tick time of 30 seconds. This guarantees
-		   that code that uses its own timeout checking will be
-		   able to proceeed eventually */
-		tval = timeval_set(30, 0);
+	tval = common_event_loop_delay(ev);
+
+	if (timeval_is_zero(&tval)) {
+		common_event_loop_timer(ev);
+		return 0;
 	}
 
 	if (epoll_event_loop(std_ev, &tval) == 0) {
@@ -622,12 +542,24 @@ static const struct event_ops std_event_ops = {
 	.add_fd		= std_event_add_fd,
 	.get_fd_flags	= std_event_get_fd_flags,
 	.set_fd_flags	= std_event_set_fd_flags,
-	.add_timed	= std_event_add_timed,
+	.add_timed	= common_event_add_timed,
+	.add_signal	= common_event_add_signal,
 	.loop_once	= std_event_loop_once,
 	.loop_wait	= std_event_loop_wait,
 };
 
-const struct event_ops *event_standard_get_ops(void)
+
+bool events_standard_init(void)
 {
-	return &std_event_ops;
+	return event_register_backend("standard", &std_event_ops);
 }
+
+#if _SAMBA_BUILD_
+NTSTATUS s4_events_standard_init(void)
+{
+	if (!events_standard_init()) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+#endif

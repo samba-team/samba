@@ -52,74 +52,6 @@ static int ctdb_null_func(struct ctdb_call_info *call)
 
 
 /*
-  attach to a specific database
-*/
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-				    int open_flags, mode_t mode)
-{
-	struct ctdb_db_context *ctdb_db, *tmp_db;
-	TDB_DATA data;
-	int ret;
-
-	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
-	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db);
-
-	ctdb_db->ctdb = ctdb;
-	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
-	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
-
-	data.dptr = discard_const(name);
-	data.dsize = strlen(name);
-	ctdb_db->db_id = ctdb_hash(&data);
-
-	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
-		if (tmp_db->db_id == ctdb_db->db_id) {
-			ctdb_set_error(ctdb, "CTDB database hash collission '%s' : '%s'",
-					name, tmp_db->db_name);
-			talloc_free(ctdb_db);
-			return NULL;
-		}
-	}
-
-	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
-		DEBUG(0,(__location__ " Unable to create ctdb directory '%s'\n", 
-			 ctdb->db_directory));
-		talloc_free(ctdb_db);
-		return NULL;
-	}
-
-	/* add the node id to the database name, so when we run on loopback
-	   we don't conflict in the local filesystem */
-	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s", ctdb->db_directory, name);
-
-	/* when we have a separate daemon this will need to be a real
-	   file, not a TDB_INTERNAL, so the parent can access it to
-	   for ltdb bypass */
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 
-				      TDB_CLEAR_IF_FIRST, open_flags, mode);
-	if (ctdb_db->ltdb == NULL) {
-		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
-		talloc_free(ctdb_db);
-		return NULL;
-	}
-
-
-	/* 
-	   all databases support the "null" function. we need this in
-	   order to do forced migration of records
-	 */
-	ret = ctdb_set_call(ctdb_db, ctdb_null_func, CTDB_NULL_FUNC);
-	if (ret != 0) {
-		talloc_free(ctdb_db);
-		return NULL;
-	}
-
-	DLIST_ADD(ctdb->db_list, ctdb_db);
-
-	return ctdb_db;
-}
-
-/*
   return the lmaster given a key
 */
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key)
@@ -353,3 +285,96 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 	}
 	return ret;
 }
+
+
+/*
+  a client has asked to attach a new database
+ */
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       TDB_DATA *outdata)
+{
+	const char *db_name = (const char *)indata.dptr;
+	struct ctdb_db_context *ctdb_db, *tmp_db;
+	int ret;
+
+	/* see if we already have this name */
+	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
+		if (strcmp(db_name, tmp_db->db_name) == 0) {
+			/* this is not an error */
+			outdata->dptr  = (uint8_t *)&tmp_db->db_id;
+			outdata->dsize = sizeof(tmp_db->db_id);
+			return 0;
+		}
+	}
+
+	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
+	CTDB_NO_MEMORY(ctdb, ctdb_db);
+
+	ctdb_db->ctdb = ctdb;
+	ctdb_db->db_name = talloc_strdup(ctdb_db, db_name);
+	CTDB_NO_MEMORY(ctdb, ctdb_db->db_name);
+
+	ctdb_db->db_id = ctdb_hash(&indata);
+
+	outdata->dptr  = (uint8_t *)&ctdb_db->db_id;
+	outdata->dsize = sizeof(ctdb_db->db_id);
+
+	/* check for hash collisions */
+	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
+		if (tmp_db->db_id == ctdb_db->db_id) {
+			DEBUG(0,("db_id 0x%x hash collision. name1='%s' name2='%s'\n",
+				 db_name, tmp_db->db_name));
+			talloc_free(ctdb_db);
+			return -1;
+		}
+	}
+
+	if (ctdb->db_directory == NULL) {
+		ctdb->db_directory = VARDIR "/ctdb";
+	}
+
+	/* make sure the db directory exists */
+	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
+		DEBUG(0,(__location__ " Unable to create ctdb directory '%s'\n", 
+			 ctdb->db_directory));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
+	/* open the database */
+	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
+					   ctdb->db_directory, 
+					   db_name, ctdb->vnn);
+
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 
+				      TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0666);
+	if (ctdb_db->ltdb == NULL) {
+		DEBUG(0,("Failed to open tdb '%s'\n", ctdb_db->db_path));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+	
+	DLIST_ADD(ctdb->db_list, ctdb_db);
+
+	/* 
+	   all databases support the "null" function. we need this in
+	   order to do forced migration of records
+	*/
+	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_null_func, CTDB_NULL_FUNC);
+	if (ret != 0) {
+		DEBUG(0,("Failed to setup null function for '%s'\n", ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+	
+	/* tell all the other nodes about this database */
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
+				 CTDB_CONTROL_DB_ATTACH, CTDB_CTRL_FLAG_NOREPLY,
+				 indata, NULL, NULL);
+
+	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));
+
+	/* success */
+	return 0;
+}
+
