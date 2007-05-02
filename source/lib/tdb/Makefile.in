@@ -19,8 +19,8 @@ EXEEXT = @EXEEXT@
 
 .PHONY: test
 
-PROGS = bin/tdbtool$(EXEEXT) bin/tdbtorture$(EXEEXT)
-PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
+PROGS = bin/tdbtool$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
+PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbtorture$(EXEEXT)
 ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
 
 TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
