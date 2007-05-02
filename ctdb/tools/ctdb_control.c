@@ -624,10 +624,10 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		printf("vnn:%d %s\n", nodemap->nodes[i].vnn,
-			nodemap->nodes[i].vnn==vnn?"THIS NODE": 
+		printf("vnn:%d %s%s\n", nodemap->nodes[i].vnn,
 			nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?
-				"CONNECTED":"UNAVAILABLE");
+				"CONNECTED":"UNAVAILABLE",
+			nodemap->nodes[i].vnn==vnn?" (THIS NODE)":"");
 	}
 	talloc_free(nodemap);
 	return 0;
