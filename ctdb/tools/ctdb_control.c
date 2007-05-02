@@ -50,7 +50,8 @@ static void usage(void)
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
 		"  getrecmode <vnn>                   get recovery mode\n"
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
-		"  recover <vnn>                      recover the cluster\n");
+		"  recover <vnn>                      recover the cluster\n"
+		"  attach <dbname>                    attach a database\n");
 	exit(1);
 }
 
