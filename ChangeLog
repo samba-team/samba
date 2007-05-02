@@ -1,4 +1,17 @@
+2007-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/dbinfo.c (hdb_get_dbinfo) If there are no database
+	specified, create one and let it use the defaults.
+	
 2007-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/hdb/test_dbinfo.c: test acl file
+
+	* lib/hdb/test_dbinfo.c: test acl file
+
+	* lib/hdb/dbinfo.c: add acl file
+
+	* etc: ignore Makefile.in
 
 	* Makefile.am: SUBDIRS += etc
 
