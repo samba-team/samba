@@ -1,0 +1,4 @@
+m4_include(pkg.m4)
+TALLOC_OBJ=""
+AC_SUBST(TALLOC_OBJ)
+PKG_CHECK_MODULES(TALLOC, talloc)
