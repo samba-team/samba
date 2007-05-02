@@ -1030,7 +1030,7 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t de
 	}
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_PUSH_DB, outdata, 
+			   CTDB_CONTROL_PUSH_DB, 0, outdata, 
 			   mem_ctx, NULL, &res);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for pushdb failed\n"));
@@ -1308,7 +1308,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	
 	ctdb_db->db_id = *(uint32_t *)data.dptr;
 
-	ret = ctdb_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
+	ret = ctdb_ctrl_getdbpath(ctdb, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
 		DEBUG(0,("Failed to get dbpath for database '%s'\n", name));
 		talloc_free(ctdb_db);
