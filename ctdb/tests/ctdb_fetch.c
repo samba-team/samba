@@ -243,7 +243,6 @@ int main(int argc, const char *argv[])
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
 
-sleep(999999);
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_shutdown(ctdb);
 
