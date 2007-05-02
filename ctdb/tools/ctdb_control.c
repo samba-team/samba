@@ -31,25 +31,26 @@
  */
 static void usage(void)
 {
-	printf("Usage: ctdb_control [options] <control>\n");
-	printf("\nControls:\n");
-	printf("  ping\n");
-	printf("  process-exists <vnn:pid>           see if a process exists\n");
-	printf("  status <vnn|all>                   show ctdb status on a node\n");
-	printf("  statusreset <vnn|all>              reset status on a node\n");
-	printf("  debug <vnn|all> <level>            set ctdb debug level on a node\n");
-	printf("  debuglevel                         display ctdb debug levels\n");
-	printf("  getvnnmap <vnn>                    display ctdb vnnmap\n");
-	printf("  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n");
-	printf("  getdbmap <vnn>                     lists databases on a node\n");
-	printf("  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n");
-	printf("  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n");
-	printf("  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n");
-	printf("  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n");
-	printf("  cleardb <vnn> <dbid>               deletes all records in a db\n");
-	printf("  getrecmode <vnn>                   get recovery mode\n");
-	printf("  setrecmode <vnn> <mode>            set recovery mode\n");
-	printf("  recover <vnn>                      recover the cluster\n");
+	printf(
+		"Usage: ctdb_control [options] <control>\n"
+		"\nControls:\n"
+		"  ping\n"
+		"  process-exists <vnn:pid>           see if a process exists\n"
+		"  status <vnn|all>                   show ctdb status on a node\n"
+		"  statusreset <vnn|all>              reset status on a node\n"
+		"  debug <vnn|all> <level>            set ctdb debug level on a node\n"
+		"  debuglevel                         display ctdb debug levels\n"
+		"  getvnnmap <vnn>                    display ctdb vnnmap\n"
+		"  setvnnmap <vnn> <generation> <numslots> <lmaster>*\n"
+		"  getdbmap <vnn>                     lists databases on a node\n"
+		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
+		"  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n"
+		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
+		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
+		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
+		"  getrecmode <vnn>                   get recovery mode\n"
+		"  setrecmode <vnn> <mode>            set recovery mode\n"
+		"  recover <vnn>                      recover the cluster\n");
 	exit(1);
 }
 
