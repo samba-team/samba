@@ -30,7 +30,11 @@
 	the <citerefentry><refentrytitle>mount</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> command when using the 
 	"-t smbfs" option. This command only works in Linux, and the kernel must
-	support the smbfs filesystem. </para>
+	support the smbfs filesystem.</para>
+
+	<para>WARNING: <command>smbmount</command> is deprecated and not
+	maintained any longer. <command>mount.cifs</command> (mount -t cifs)
+	should be used instead of <command>smbmount</command>.</para>
 
 	<para>Options to <command>smbmount</command> are specified as a comma-separated
 	list of key=value pairs. It is possible to send options other
