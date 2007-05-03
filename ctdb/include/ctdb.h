@@ -201,7 +201,9 @@ struct ctdb_status;
 int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
 
 struct ctdb_vnn_map;
-int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, 
+		struct timeval timeout, uint32_t destnode, 
+		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
 int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
 
 /* table that contains a list of all dbids on a node

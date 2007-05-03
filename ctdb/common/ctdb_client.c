@@ -791,7 +791,7 @@ int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_s
 /*
   get vnn map from a remote node
  */
-int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -800,16 +800,12 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GETVNNMAP, 0, data, 
-			   ctdb, &outdata, &res, NULL);
+			   ctdb, &outdata, &res, &timeout);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
 		return -1;
 	}
 
-	if (*vnnmap) {
-		talloc_free(*vnnmap);
-		*vnnmap=NULL;
-	}
 	*vnnmap = (struct ctdb_vnn_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		    
 	return 0;
@@ -910,10 +906,6 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (*nodemap) {
-		talloc_free(*nodemap);
-		*nodemap = NULL;
-	}
 	*nodemap = (struct ctdb_node_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		    
 	return 0;

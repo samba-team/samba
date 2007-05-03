@@ -445,7 +445,7 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getvnnmap(ctdb, vnn, ctdb, &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &vnnmap);
 	if (ret != 0) {
 		printf("Unable to get vnnmap from node %u\n", vnn);
 		return ret;

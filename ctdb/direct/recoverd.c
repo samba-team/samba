@@ -45,15 +45,23 @@ void timeout_func(struct event_context *ev, struct timed_event *te,
 	timed_out = 1;
 }
 
+void do_recovery(struct ctdb_context *ctdb, struct event_context *ev)
+{
+	printf("we need to do recovery !!!\n");
+}
 
 void recoverd(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	uint32_t vnn;
+	uint32_t vnn, num_active;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
-	int ret;
+	struct ctdb_node_map *remote_nodemap=NULL;
+	struct ctdb_vnn_map *vnnmap=NULL;
+	struct ctdb_vnn_map *remote_vnnmap=NULL;
+	int i, j, ret;
 	
 again:
+	printf("check if we need to do recovery\n");
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
 		mem_ctx = NULL;
@@ -75,7 +83,6 @@ again:
 
 	/* get our vnn number */
 	vnn = ctdb_get_vnn(ctdb);  
-printf("our node number is :%d\n",vnn);
 
 	/* get number of nodes */
 	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &nodemap);
@@ -83,6 +90,130 @@ printf("our node number is :%d\n",vnn);
 		printf("Unable to get nodemap from node %u\n", vnn);
 		goto again;
 	}
+
+	/* count how many active nodes there are */
+	num_active = 0;
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
+			num_active++;
+		}
+	}
+
+
+	/* get the nodemap for all active remote nodes and verify
+	   they are the same as for this node
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+		if (nodemap->nodes[j].vnn == vnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_nodemap);
+		if (ret != 0) {
+			printf("Unable to get nodemap from remote node %u\n", nodemap->nodes[j].vnn);
+			goto again;
+		}
+
+		/* if the nodes disagree on how many nodes there are
+		   then this is a good reason to try recovery
+		 */
+		if (remote_nodemap->num != nodemap->num) {
+			printf("Remote node:%d has different node count. %d vs %d of the local node\n", nodemap->nodes[j].vnn, remote_nodemap->num, nodemap->num);
+			do_recovery(ctdb, ev);
+			goto again;
+		}
+
+		/* if the nodes disagree on which nodes exist and are
+		   active, then that is also a good reason to do recovery
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if ((remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn)
+			||  (remote_nodemap->nodes[i].flags != nodemap->nodes[i].flags)) {
+				printf("Remote node:%d has different nodemap.\n", nodemap->nodes[j].vnn);
+				do_recovery(ctdb, ev);
+				goto again;
+			}
+		}
+
+	}
+
+	/* get the vnnmap */
+	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &vnnmap);
+	if (ret != 0) {
+		printf("Unable to get vnnmap from node %u\n", vnn);
+		goto again;
+	}
+
+	/* there better be the same number of lmasters in the vnn map
+	   as there are active nodes or well have to do a recovery
+	 */
+	if (vnnmap->size != num_active) {
+		printf("The vnnmap count is different from the number of active nodes. %d vs %d\n", vnnmap->size, num_active);
+		do_recovery(ctdb, ev);
+		goto again;
+	}
+
+	/* verify that all active nodes in the nodemap also exist in 
+	   the vnnmap.
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+		if (nodemap->nodes[j].vnn == vnn) {
+			continue;
+		}
+
+		for (i=0; i<vnnmap->size; i++) {
+			if (vnnmap->map[i] == nodemap->nodes[j].vnn) {
+				break;
+			}
+		}
+		if (i==vnnmap->size) {
+			printf("Node %d is active in the nodemap but did not exist in the vnnmap\n", nodemap->nodes[j].vnn);
+			do_recovery(ctdb, ev);
+			goto again;
+		}
+	}
+
+	
+	/* verify that all other nodes have the same vnnmap */
+	for (j=0; j<nodemap->num; j++) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+		if (nodemap->nodes[j].vnn == vnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_vnnmap);
+		if (ret != 0) {
+			printf("Unable to get vnnmap from remote node %u\n", nodemap->nodes[j].vnn);
+			goto again;
+		}
+
+		/* verify the vnnmap size is the same */
+		if (vnnmap->size != remote_vnnmap->size) {
+			printf("Remote node %d has different size of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->size, vnnmap->size);
+			do_recovery(ctdb, ev);
+			goto again;
+		}
+
+		/* verify the vnnmap is the same */
+		for (i=0;i<vnnmap->size;i++) {
+			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
+				printf("Remote node %d has different vnnmap.\n", nodemap->nodes[j].vnn);
+				do_recovery(ctdb, ev);
+				goto again;
+			}
+		}
+	}
+
+	printf("no we did not need to do recovery\n");
+	goto again;
 
 }
 
