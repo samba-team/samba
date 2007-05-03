@@ -156,7 +156,7 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	notify->seqnum = seqnum;
 
 	talloc_free(notify->array);
-	notify->array = talloc_zero(notify, struct notify_array);
+	notify->array = TALLOC_ZERO_P(notify, struct notify_array);
 	NT_STATUS_HAVE_NO_MEMORY(notify->array);
 
 	dbuf = tdb_fetch_bystring(notify->w->tdb, NOTIFY_KEY);
@@ -385,7 +385,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 
 	depth = count_chars(e.path, '/');
 
-	listel = talloc_zero(notify, struct notify_list);
+	listel = TALLOC_ZERO_P(notify, struct notify_list);
 	if (listel == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

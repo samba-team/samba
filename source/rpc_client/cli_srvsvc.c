@@ -545,11 +545,15 @@ WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	switch(file_level) {
 	case 3:
-		if ( (ctr->file.info3 = TALLOC_ARRAY(mem_ctx, FILE_INFO_3, ctr->num_entries)) == NULL ) {
-			return WERR_NOMEM;
-		}
+		if (ctr->num_entries) {
+			if ( (ctr->file.info3 = TALLOC_ARRAY(mem_ctx, FILE_INFO_3, ctr->num_entries)) == NULL ) {
+				return WERR_NOMEM;
+			}
 
-		memset(ctr->file.info3, 0, sizeof(FILE_INFO_3) * ctr->num_entries);
+			memset(ctr->file.info3, 0, sizeof(FILE_INFO_3) * ctr->num_entries);
+		} else {
+			ctr->file.info3 = NULL;
+		}
 
 		for (i = 0; i < r.ctr.num_entries; i++) {
 			FILE_INFO_3 *info3 = &ctr->file.info3[i];

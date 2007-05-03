@@ -447,11 +447,16 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 {
 	int i;
 
-	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+	if (num_rids) {
+		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
-	if ((*names == NULL) || (*types == NULL)) {
-		return False;
+		if ((*names == NULL) || (*types == NULL)) {
+			return False;
+		}
+	} else {
+		*names = NULL;
+		*types = NULL;
 	}
 
 	if (sid_check_is_domain(domain_sid)) {
@@ -679,7 +684,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_name_info *name_infos;
-	struct lsa_dom_info *dom_infos;
+	struct lsa_dom_info *dom_infos = NULL;
 
 	int i, j;
 
@@ -688,10 +693,19 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_infos = TALLOC_ARRAY(mem_ctx, struct lsa_name_info, num_sids);
+	if (num_sids) {
+		name_infos = TALLOC_ARRAY(mem_ctx, struct lsa_name_info, num_sids);
+		if (name_infos == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	} else {
+		name_infos = NULL;
+	}
+
 	dom_infos = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_dom_info,
 				      MAX_REF_DOMAINS);
-	if ((name_infos == NULL) || (dom_infos == NULL)) {
+	if (dom_infos == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -825,9 +839,13 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			break;
 		}
 
-		if (!(rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs))) {
-			result = NT_STATUS_NO_MEMORY;
-			goto fail;
+		if (dom->num_idxs) {
+			if (!(rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs))) {
+				result = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+		} else {
+			rids = NULL;
 		}
 
 		for (j=0; j<dom->num_idxs; j++) {

@@ -258,26 +258,32 @@ int cac_RegEnumKeys( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
    /**the only way to know how many keys to expect is to assume max_keys keys will be found*/
-	key_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
-	if ( !key_names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
+	if (op->in.max_keys) {
+		key_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
+		if ( !key_names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	class_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
-	if ( !class_names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( key_names_out );
-		return CAC_FAILURE;
-	}
+		class_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
+		if ( !class_names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( key_names_out );
+			return CAC_FAILURE;
+		}
 
-	mod_times_out = TALLOC_ARRAY( mem_ctx, time_t, op->in.max_keys );
-	if ( !mod_times_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( key_names_out );
-		TALLOC_FREE( class_names_out );
+		mod_times_out = TALLOC_ARRAY( mem_ctx, time_t, op->in.max_keys );
+		if ( !mod_times_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( key_names_out );
+			TALLOC_FREE( class_names_out );
 
-		return CAC_FAILURE;
+			return CAC_FAILURE;
+		}
+	} else {
+		key_names_out = NULL;
+		class_names_out = NULL;
+		mod_times_out = NULL;
 	}
 
 	resume_idx = op->out.resume_idx;
@@ -611,7 +617,7 @@ int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	} else if ( class_len != 0 && class_name_out[class_len - 1] != '\0' ) {
 		/*then we need to add a '\0' */
 		op->out.class_name =
-			talloc_size( mem_ctx,
+			TALLOC_SIZE( mem_ctx,
 				     sizeof( char ) * ( class_len + 1 ) );
 
 		memcpy( op->out.class_name, class_name_out, class_len );
@@ -734,27 +740,33 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	/*we need to assume that the max number of values will be enumerated */
-	types_out =
-		( uint32 * ) talloc_array( mem_ctx, int, op->in.max_values );
-	if ( !types_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
+	if (op->in.max_values) {
+		types_out =
+			( uint32 * ) TALLOC_ARRAY( mem_ctx, int, op->in.max_values );
+		if ( !types_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	values_out =
-		talloc_array( mem_ctx, REG_VALUE_DATA *, op->in.max_values );
-	if ( !values_out ) {
-		TALLOC_FREE( types_out );
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
+		values_out =
+			TALLOC_ARRAY( mem_ctx, REG_VALUE_DATA *, op->in.max_values );
+		if ( !values_out ) {
+			TALLOC_FREE( types_out );
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	val_names_out = talloc_array( mem_ctx, char *, op->in.max_values );
-	if ( !val_names_out ) {
-		TALLOC_FREE( types_out );
-		TALLOC_FREE( values_out );
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
+		val_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_values );
+		if ( !val_names_out ) {
+			TALLOC_FREE( types_out );
+			TALLOC_FREE( values_out );
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+	} else {
+		types_out = NULL;
+		values_out = NULL;
+		val_names_out = NULL;
 	}
 
 	resume_idx = op->out.resume_idx;

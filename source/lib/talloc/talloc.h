@@ -167,4 +167,3 @@ void talloc_show_parents(const void *context, FILE *file);
 int talloc_is_parent(const void *context, const void *ptr);
 
 #endif
-

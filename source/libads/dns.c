@@ -283,9 +283,13 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		
 		buf_len = resp_len * sizeof(uint8);
 
-		if ( (buffer = TALLOC_ARRAY(ctx, uint8, buf_len)) == NULL ) {
-			DEBUG(0,("ads_dns_lookup_srv: talloc() failed!\n"));
-			return NT_STATUS_NO_MEMORY;
+		if (buf_len) {
+			if ( (buffer = TALLOC_ARRAY(ctx, uint8, buf_len)) == NULL ) {
+				DEBUG(0,("ads_dns_lookup_srv: talloc() failed!\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			buffer = NULL;
 		}
 
 		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
@@ -351,10 +355,14 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	DEBUG(4,("ads_dns_lookup_srv: %d records returned in the answer section.\n", 
 		answer_count));
 		
-	if ( (dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
-		DEBUG(0,("ads_dns_lookup_srv: talloc() failure for %d char*'s\n", 
-			answer_count));
-		return NT_STATUS_NO_MEMORY;
+	if (answer_count) {
+		if ( (dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
+			DEBUG(0,("ads_dns_lookup_srv: talloc() failure for %d char*'s\n", 
+				answer_count));
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		dcs = NULL;
 	}
 
 	/* now skip the header */
@@ -499,10 +507,14 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	DEBUG(4,("ads_dns_lookup_ns: %d records returned in the answer section.\n", 
 		answer_count));
 		
-	if ( (nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns, answer_count)) == NULL ) {
-		DEBUG(0,("ads_dns_lookup_ns: talloc() failure for %d char*'s\n", 
-			answer_count));
-		return NT_STATUS_NO_MEMORY;
+	if (answer_count) {
+		if ( (nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns, answer_count)) == NULL ) {
+			DEBUG(0,("ads_dns_lookup_ns: talloc() failure for %d char*'s\n", 
+				answer_count));
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		nsarray = NULL;
 	}
 
 	/* now skip the header */

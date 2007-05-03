@@ -360,7 +360,7 @@ NTSTATUS idmap_init(void)
 		}
 		/* init domain */
 		
-		dom = talloc_zero(idmap_ctx, struct idmap_domain);
+		dom = TALLOC_ZERO_P(idmap_ctx, struct idmap_domain);
 		IDMAP_CHECK_ALLOC(dom);
 
 		dom->name = talloc_strdup(dom, dom_list[i]);
@@ -464,7 +464,7 @@ NTSTATUS idmap_init(void)
 	    ( ! pri_dom_is_in_list) &&
 	    lp_winbind_trusted_domains_only()) {
 
-		dom = talloc_zero(idmap_ctx, struct idmap_domain);
+		dom = TALLOC_ZERO_P(idmap_ctx, struct idmap_domain);
 		IDMAP_CHECK_ALLOC(dom);
 
 		dom->name = talloc_strdup(dom, lp_workgroup());
@@ -515,7 +515,7 @@ NTSTATUS idmap_init(void)
 	}
 
 	/**** automatically add idmap_passdb backend ****/
-	dom = talloc_zero(idmap_ctx, struct idmap_domain);
+	dom = TALLOC_ZERO_P(idmap_ctx, struct idmap_domain);
 	IDMAP_CHECK_ALLOC(dom);
 
 	dom->name = talloc_strdup(dom, get_global_sam_name());
@@ -607,7 +607,7 @@ NTSTATUS idmap_init(void)
 
 	if ( alloc_backend ) {
 		
-		idmap_alloc_ctx = talloc_zero(idmap_ctx, struct idmap_alloc_context);
+		idmap_alloc_ctx = TALLOC_ZERO_P(idmap_ctx, struct idmap_alloc_context);
 		IDMAP_CHECK_ALLOC(idmap_alloc_ctx);
 
 		idmap_alloc_ctx->methods = get_alloc_methods(alloc_backends, alloc_backend);
@@ -1026,9 +1026,15 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 
 	/* split list per domain */
 
-	dom_ids = talloc_zero_array(ctx, struct id_map **, num_domains);
-	IDMAP_CHECK_ALLOC(dom_ids);
-	counters = talloc_zero_array(ctx, int, num_domains);
+	if (num_domains) {
+		dom_ids = TALLOC_ZERO_ARRAY(ctx, struct id_map **, num_domains);
+		IDMAP_CHECK_ALLOC(dom_ids);
+		counters = TALLOC_ZERO_ARRAY(ctx, int, num_domains);
+		IDMAP_CHECK_ALLOC(counters);
+	} else {
+		dom_ids = NULL;
+		counters = NULL;
+	}
 
 	/* partition the requests by domain */
 
@@ -1143,7 +1149,7 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 			if ( ! bids) {
 				/* alloc space for ids to be resolved by backends (realloc ten by ten) */
-				bids = talloc_array(ctx, struct id_map *, 10);
+				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
 				if ( ! bids) {
 					DEBUG(1, ("Out of memory!\n"));
 					talloc_free(ctx);
@@ -1248,7 +1254,7 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 			if ( ! bids) {
 				/* alloc space for ids to be resolved
 				   by backends (realloc ten by ten) */
-				bids = talloc_array(ctx, struct id_map *, 10);
+				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
 				if ( ! bids) {
 					DEBUG(1, ("Out of memory!\n"));
 					talloc_free(ctx);

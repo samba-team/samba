@@ -176,7 +176,7 @@ DOM_SID *cac_get_domain_sid( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	if ( !fs.out.domain_sid )
 		return NULL;
 
-	sid = ( DOM_SID * ) talloc_memdup( mem_ctx,
+	sid = ( DOM_SID * ) TALLOC_MEMDUP( mem_ctx,
 					   &( fs.out.domain_sid->sid ),
 					   sizeof( DOM_SID ) );
 
@@ -557,10 +557,14 @@ int cac_SamGetNamesFromRids( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	     && !NT_STATUS_EQUAL( hnd->status, STATUS_SOME_UNMAPPED ) )
 		return CAC_FAILURE;
 
-	map_out = TALLOC_ARRAY( mem_ctx, CacLookupRidsRecord, num_names_out );
-	if ( !map_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
+	if (num_names_out) {
+		map_out = TALLOC_ARRAY( mem_ctx, CacLookupRidsRecord, num_names_out );
+		if ( !map_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+	} else {
+		map_out = NULL;
 	}
 
 	for ( i = 0; i < num_names_out; i++ ) {
@@ -643,10 +647,14 @@ int cac_SamGetRidsFromNames( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	     && !NT_STATUS_EQUAL( hnd->status, STATUS_SOME_UNMAPPED ) )
 		return CAC_FAILURE;
 
-	map_out = TALLOC_ARRAY( mem_ctx, CacLookupRidsRecord, num_rids_out );
-	if ( !map_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
+	if (num_rids_out) {
+		map_out = TALLOC_ARRAY( mem_ctx, CacLookupRidsRecord, num_rids_out );
+		if ( !map_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+	} else {
+		map_out = NULL;
 	}
 
 	for ( i = 0; i < num_rids_out; i++ ) {
@@ -718,16 +726,20 @@ int cac_SamGetGroupsForUser( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 
 
-	rids_out = talloc_array( mem_ctx, uint32, num_groups_out );
-	if ( !rids_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
-
-	attr_out = talloc_array( mem_ctx, uint32, num_groups_out );
-	if ( !attr_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
+	if (num_groups_out) {
+		rids_out = TALLOC_ARRAY( mem_ctx, uint32, num_groups_out );
+		if ( !rids_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+		attr_out = TALLOC_ARRAY( mem_ctx, uint32, num_groups_out );
+		if ( !attr_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+	} else {
+		rids_out = NULL;
+		attr_out = NULL;
 	}
 
 	for ( i = 0; i < num_groups_out; i++ ) {
@@ -1153,28 +1165,34 @@ int cac_SamEnumGroups( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	names_out = talloc_array( mem_ctx, char *, num_groups_out );
-	if ( !names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		return CAC_FAILURE;
-	}
+	if (num_groups_out) {
+		names_out = TALLOC_ARRAY( mem_ctx, char *, num_groups_out );
+		if ( !names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			return CAC_FAILURE;
+		}
 
-	desc_out = talloc_array( mem_ctx, char *, num_groups_out );
-	if ( !desc_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		TALLOC_FREE( names_out );
-		return CAC_FAILURE;
-	}
+		desc_out = TALLOC_ARRAY( mem_ctx, char *, num_groups_out );
+		if ( !desc_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			TALLOC_FREE( names_out );
+			return CAC_FAILURE;
+		}
 
-	rids_out = talloc_array( mem_ctx, uint32, num_groups_out );
-	if ( !rids_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		TALLOC_FREE( names_out );
-		TALLOC_FREE( desc_out );
-		return CAC_FAILURE;
+		rids_out = TALLOC_ARRAY( mem_ctx, uint32, num_groups_out );
+		if ( !rids_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			TALLOC_FREE( names_out );
+			TALLOC_FREE( desc_out );
+			return CAC_FAILURE;
+		}
+	} else {
+		names_out = NULL;
+		desc_out = NULL;
+		rids_out = NULL;
 	}
 
 	for ( i = 0; i < num_groups_out; i++ ) {
@@ -1256,28 +1274,34 @@ int cac_SamEnumAliases( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	     NT_STATUS_V( STATUS_MORE_ENTRIES ) )
 		return CAC_FAILURE;
 
-	names_out = talloc_array( mem_ctx, char *, num_als_out );
-	if ( !names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		return CAC_FAILURE;
-	}
+	if (num_als_out) {
+		names_out = TALLOC_ARRAY( mem_ctx, char *, num_als_out );
+		if ( !names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			return CAC_FAILURE;
+		}
 
-	desc_out = talloc_array( mem_ctx, char *, num_als_out );
-	if ( !desc_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		TALLOC_FREE( names_out );
-		return CAC_FAILURE;
-	}
+		desc_out = TALLOC_ARRAY( mem_ctx, char *, num_als_out );
+		if ( !desc_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			TALLOC_FREE( names_out );
+			return CAC_FAILURE;
+		}
 
-	rids_out = talloc_array( mem_ctx, uint32, num_als_out );
-	if ( !rids_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( acct_buf );
-		TALLOC_FREE( names_out );
-		TALLOC_FREE( desc_out );
-		return CAC_FAILURE;
+		rids_out = TALLOC_ARRAY( mem_ctx, uint32, num_als_out );
+		if ( !rids_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( acct_buf );
+			TALLOC_FREE( names_out );
+			TALLOC_FREE( desc_out );
+			return CAC_FAILURE;
+		}
+	} else {
+		names_out = NULL;
+		desc_out = NULL;
+		rids_out = NULL;
 	}
 
 	for ( i = 0; i < num_als_out; i++ ) {

@@ -47,18 +47,25 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 
 	gp_ext->num_exts = i;
 	
-	gp_ext->extensions = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-	gp_ext->extensions_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-	gp_ext->snapins = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-	gp_ext->snapins_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-
-	gp_ext->gp_extension = talloc_strdup(mem_ctx, extension_raw);
+	if (gp_ext->num_exts) {
+		gp_ext->extensions = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
+		gp_ext->extensions_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
+		gp_ext->snapins = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
+		gp_ext->snapins_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
+	} else {
+		gp_ext->extensions = NULL;
+		gp_ext->extensions_guid = NULL;
+		gp_ext->snapins = NULL;
+		gp_ext->snapins_guid = NULL;
+	}
 
 	if (gp_ext->extensions == NULL || gp_ext->extensions_guid == NULL || 
 	    gp_ext->snapins == NULL || gp_ext->snapins_guid == NULL || 
 	    gp_ext->gp_extension == NULL) {
 		goto parse_error;
 	}
+
+	gp_ext->gp_extension = talloc_strdup(mem_ctx, extension_raw);
 
 	for (i = 0; ext_list[i] != NULL; i++) {
 
@@ -161,8 +168,13 @@ ADS_STATUS ads_parse_gplink(TALLOC_CTX *mem_ctx,
 	gp_link->gp_opts = options;
 	gp_link->num_links = i;
 	
-	gp_link->link_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_link->num_links);
-	gp_link->link_opts = TALLOC_ZERO_ARRAY(mem_ctx, uint32, gp_link->num_links);
+	if (gp_link->num_links) {
+		gp_link->link_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_link->num_links);
+		gp_link->link_opts = TALLOC_ZERO_ARRAY(mem_ctx, uint32, gp_link->num_links);
+	} else {
+		gp_link->link_names = NULL;
+		gp_link->link_opts = NULL;
+	}
 	
 	gp_link->gp_link = talloc_strdup(mem_ctx, gp_link_raw);
 

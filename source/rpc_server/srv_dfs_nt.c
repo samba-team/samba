@@ -233,14 +233,18 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, NETDF
 	init_unistr2(&dfs3->comment, j->comment, UNI_STR_TERMINATE);
 	dfs3->state = 1;
 	dfs3->num_stores = dfs3->size_stores = j->referral_count;
-	dfs3->ptr0_stores = 1;
     
 	/* also enumerate the stores */
-	dfs3->stores = TALLOC_ARRAY(ctx, NETDFS_DFS_STORAGEINFO, j->referral_count);
-	if (!dfs3->stores)
-		return False;
-
-	memset(dfs3->stores, '\0', j->referral_count * sizeof(NETDFS_DFS_STORAGEINFO));
+	if (j->referral_count) {
+		dfs3->stores = TALLOC_ARRAY(ctx, NETDFS_DFS_STORAGEINFO, j->referral_count);
+		if (!dfs3->stores)
+			return False;
+		memset(dfs3->stores, '\0', j->referral_count * sizeof(NETDFS_DFS_STORAGEINFO));
+		dfs3->ptr0_stores = 1;
+	} else {
+		dfs3->stores = NULL;
+		dfs3->ptr0_stores = 0;
+	}
 
 	for(ii=0;ii<j->referral_count;ii++) {
 		char* p; 
@@ -294,28 +298,34 @@ WERROR _dfs_Enum(pipes_struct *p, NETDFS_Q_DFS_ENUM *q_u, NETDFS_R_DFS_ENUM *r_u
 	/* Create the return array */
 	switch (level) {
 	case 1:
-		if ((r_u->info.e.u.info1.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO1, num_jn)) == NULL) {
-			return WERR_NOMEM;
-		}
 		r_u->info.e.u.info1.count = num_jn;
-		r_u->info.e.u.info1.ptr0_s = 1;
-		r_u->info.e.u.info1.size_s = num_jn;
+		if (num_jn) {
+			if ((r_u->info.e.u.info1.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO1, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+			r_u->info.e.u.info1.ptr0_s = 1;
+			r_u->info.e.u.info1.size_s = num_jn;
+		}
 		break;
 	case 2:
-		if ((r_u->info.e.u.info2.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO2, num_jn)) == NULL) {
-			return WERR_NOMEM;
-		}
 		r_u->info.e.u.info2.count = num_jn;
-		r_u->info.e.u.info2.ptr0_s = 1;
-		r_u->info.e.u.info2.size_s = num_jn;
+		if (num_jn) {
+			if ((r_u->info.e.u.info2.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO2, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+			r_u->info.e.u.info2.ptr0_s = 1;
+			r_u->info.e.u.info2.size_s = num_jn;
+		}
 		break;
 	case 3:
-		if ((r_u->info.e.u.info3.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO3, num_jn)) == NULL) {
-			return WERR_NOMEM;
-		}
 		r_u->info.e.u.info3.count = num_jn;
-		r_u->info.e.u.info3.ptr0_s = 1;
-		r_u->info.e.u.info3.size_s = num_jn;
+		if (num_jn) {
+			if ((r_u->info.e.u.info3.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO3, num_jn)) == NULL) {
+				return WERR_NOMEM;
+			}
+			r_u->info.e.u.info3.ptr0_s = 1;
+			r_u->info.e.u.info3.size_s = num_jn;
+		}
 		break;
 	default:
 		return WERR_INVALID_PARAM;

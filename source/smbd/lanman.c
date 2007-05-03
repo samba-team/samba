@@ -4189,7 +4189,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	struct pack_desc desc;
-	struct sessionid *session_list;
+	struct sessionid *session_list = NULL;
 	int i, num_sessions;
 
 	if (!str1 || !str2 || !p) {
@@ -4217,6 +4217,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
 		if (!*rdata) {
+			SAFE_FREE(session_list);
 			return False;
 		}
 	}
@@ -4225,6 +4226,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	desc.buflen = mdrcnt;
 	desc.format = str2;
 	if (!init_package(&desc,num_sessions,0)) {
+		SAFE_FREE(session_list);
 		return False;
 	}
 
@@ -4245,6 +4247,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 	if (!*rparam) {
+		SAFE_FREE(session_list);
 		return False;
 	}
 	SSVALS(*rparam,0,desc.errcode);
@@ -4253,6 +4256,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 
 	DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
 
+	SAFE_FREE(session_list);
 	return True;
 }
 

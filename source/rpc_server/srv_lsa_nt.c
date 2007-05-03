@@ -1069,7 +1069,18 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
+	if (!ref) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (num_entries) {
+		rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
+		if (!rids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		rids = NULL;
+	}
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -1081,9 +1092,6 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
-
-	if (!ref || !rids)
-		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
 	become_root(); /* lookup_name can require root privs */
@@ -1131,12 +1139,21 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
-	rids2 = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
-
-	if ((ref == NULL) || (rids == NULL) || (rids2 == NULL)) {
+	if (ref == NULL) {
 		r_u->status = NT_STATUS_NO_MEMORY;
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (num_entries) {
+		rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
+		rids2 = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
+		if ((rids == NULL) || (rids2 == NULL)) {
+			r_u->status = NT_STATUS_NO_MEMORY;
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		rids = NULL;
+		rids2 = NULL;
 	}
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
@@ -1203,7 +1220,17 @@ NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOO
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-	trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
+	if (ref == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (num_entries) {
+		trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
+		if (!trans_sids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		trans_sids = NULL;
+	}
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -1214,10 +1241,6 @@ NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOO
 	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto done;
-	}
-
-	if (!ref || !trans_sids) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* set up the LSA Lookup SIDs response */
@@ -1271,10 +1294,17 @@ NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOO
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-	trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
-
-	if (!ref || !trans_sids) {
+	if (!ref) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (num_entries) {
+		trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
+		if (!trans_sids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		trans_sids = NULL;
 	}
 
 	/* set up the LSA Lookup SIDs response */
@@ -1387,8 +1417,12 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
-		return NT_STATUS_NO_MEMORY;
+	if (num_privs) {
+		if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		entries = NULL;
+	}
 
 	for (i = 0; i < num_privs; i++) {
 		if( i < enum_context) {
@@ -1492,12 +1526,17 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
 
-	sids->ptr_sid = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_entries-q_u->enum_context);
-	sids->sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_entries-q_u->enum_context);
+	if (num_entries-q_u->enum_context) {
+		sids->ptr_sid = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_entries-q_u->enum_context);
+		sids->sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_entries-q_u->enum_context);
 
-	if (sids->ptr_sid==NULL || sids->sid==NULL) {
-		SAFE_FREE(sid_list);
-		return NT_STATUS_NO_MEMORY;
+		if (sids->ptr_sid==NULL || sids->sid==NULL) {
+			SAFE_FREE(sid_list);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		sids->ptr_sid = NULL;
+		sids->sid = NULL;
 	}
 
 	for (i = q_u->enum_context, j = 0; i < num_entries; i++, j++) {
@@ -1505,7 +1544,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		(*sids).ptr_sid[j] = 1;
 	}
 
-	SAFE_FREE(sid_list);
+	talloc_free(sid_list);
 
 	init_lsa_r_enum_accounts(r_u, num_entries);
 

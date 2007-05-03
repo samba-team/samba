@@ -222,7 +222,7 @@ static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 	if ( from->len ) {
 		to->notify.data = (char *)TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
 		if ( !to->notify.data ) {
-			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
+			DEBUG(0,("copy_notify2_msg: TALLOC_MEMDUP() of size [%d] failed!\n", from->len ));
 			return False;
 		}
 	}
@@ -537,9 +537,13 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 
 	num_pids = data.dsize / 8;
 
-	if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
-		ret = False;
-		goto done;
+	if (num_pids) {
+		if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
+			ret = False;
+			goto done;
+		}
+	} else {
+		pid_list = NULL;
 	}
 
 	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)

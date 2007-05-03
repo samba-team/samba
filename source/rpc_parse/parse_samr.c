@@ -4175,7 +4175,11 @@ void init_samr_q_lookup_rids(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_RIDS * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_rids2 = num_rids;
-	q_u->rid = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids );
+	if (num_rids) {
+		q_u->rid = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids );
+	} else {
+		q_u->rid = NULL;
+	}
 	if (q_u->rid == NULL) {
 		q_u->num_rids1 = 0;
 		q_u->num_rids2 = 0;
@@ -4814,11 +4818,16 @@ NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 	q_u->ptr = 0;
 	q_u->num_names2 = num_names;
 
-	if (!(q_u->hdr_name = TALLOC_ZERO_ARRAY(ctx, UNIHDR, num_names)))
-		return NT_STATUS_NO_MEMORY;
+	if (num_names) {
+		if (!(q_u->hdr_name = TALLOC_ZERO_ARRAY(ctx, UNIHDR, num_names)))
+			return NT_STATUS_NO_MEMORY;
 
-	if (!(q_u->uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_names)))
-		return NT_STATUS_NO_MEMORY;
+		if (!(q_u->uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_names)))
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		q_u->hdr_name = NULL;
+		q_u->uni_name = NULL;
+	}
 
 	for (i = 0; i < num_names; i++) {
 		init_unistr2(&q_u->uni_name[i], name[i], UNI_FLAGS_NONE);	/* unicode string for machine account */
@@ -4903,10 +4912,15 @@ NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 		r_u->ptr_rids = 1;
 		r_u->num_rids2 = num_rids;
 
-		if (!(r_u->rids = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
-			return NT_STATUS_NO_MEMORY;
-		if (!(r_u->types = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
-			return NT_STATUS_NO_MEMORY;
+		if (num_rids) {
+			if (!(r_u->rids = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
+				return NT_STATUS_NO_MEMORY;
+			if (!(r_u->types = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
+				return NT_STATUS_NO_MEMORY;
+		} else {
+			r_u->rids = NULL;
+			r_u->types = NULL;
+		}
 
 		if (!r_u->rids || !r_u->types)
 			goto empty;

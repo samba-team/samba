@@ -235,7 +235,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	e0 = e = (struct inotify_event *)talloc_size(in, bufsize);
+	e0 = e = (struct inotify_event *)TALLOC_SIZE(in, bufsize);
 	if (e == NULL) return;
 
 	if (read(in->fd, e0, bufsize) != bufsize) {

@@ -1022,9 +1022,13 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		}
 
 		/* Now allocate space for them. */
-		*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
-		if (*ppsids == NULL)
-			return 0;
+		if (count) {
+			*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
+			if (*ppsids == NULL)
+				return 0;
+		} else {
+			*ppsids = NULL;
+		}
 
 		sids = *ppsids;
 
@@ -1506,9 +1510,13 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	usr->gids = TALLOC_ZERO_ARRAY(ctx,DOM_GID,num_groups);
-	if (usr->gids == NULL && num_groups>0)
-		return;
+	if (num_groups) {
+		usr->gids = TALLOC_ZERO_ARRAY(ctx,DOM_GID,num_groups);
+		if (usr->gids == NULL)
+	 		return;
+	} else {
+		usr->gids = NULL;
+	}
 
 	for (i = 0; i < num_groups; i++) 
 		usr->gids[i] = gids[i];	
@@ -2467,13 +2475,19 @@ static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * inf
 			return False;
 		}
 
-                info->rids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members2);
+		if (UNMARSHALLING(ps)) {
+			if (info->num_members2) {
+				info->rids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members2);
 
-                if (info->rids == NULL) {
-                        DEBUG(0, ("out of memory allocating %d rids\n",
-                                  info->num_members2));
-                        return False;
-                }
+				if (info->rids == NULL) {
+					DEBUG(0, ("out of memory allocating %d rids\n",
+						info->num_members2));
+					return False;
+				}
+			} else {
+				info->rids = NULL;
+			}
+		}
 
 		for (i = 0; i < info->num_members2; i++)
 		{
@@ -2494,13 +2508,19 @@ static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * inf
 			return False;
 		}
 
-                info->attribs = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members3);
+		if (UNMARSHALLING(ps)) {
+			if (info->num_members3) {
+				info->attribs = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_members3);
 
-                if (info->attribs == NULL) {
-                        DEBUG(0, ("out of memory allocating %d attribs\n",
-                                  info->num_members3));
-                        return False;
-                }
+				if (info->attribs == NULL) {
+					DEBUG(0, ("out of memory allocating %d attribs\n",
+						info->num_members3));
+					return False;
+				}
+			} else {
+				info->attribs = NULL;
+			}
+		}	
 
 		for (i = 0; i < info->num_members3; i++)
 		{
@@ -2580,13 +2600,19 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 			return False;
 		}
 
-                info->ptr_sids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_sids);
+		if (UNMARSHALLING(ps)) {
+			if (info->num_sids) {
+				info->ptr_sids = TALLOC_ARRAY(ps->mem_ctx, uint32, info->num_sids);
                 
-                if (info->ptr_sids == NULL) {
-                        DEBUG(0, ("out of memory allocating %d ptr_sids\n",
-                                  info->num_sids));
-                        return False;
-                }
+				if (info->ptr_sids == NULL) {
+					DEBUG(0, ("out of memory allocating %d ptr_sids\n",
+						info->num_sids));
+					return False;
+				}
+			} else {
+				info->ptr_sids = NULL;
+			}
+		}
 
 		for (i = 0; i < info->num_sids; i++)
 		{
@@ -2595,13 +2621,19 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
                                 return False;
 		}
 
-                info->sids = TALLOC_ARRAY(ps->mem_ctx, DOM_SID2, info->num_sids);
+		if (UNMARSHALLING(ps)) {
+			if (info->num_sids) {
+				info->sids = TALLOC_ARRAY(ps->mem_ctx, DOM_SID2, info->num_sids);
 
-                if (info->sids == NULL) {
-                        DEBUG(0, ("error allocating %d sids\n",
-                                  info->num_sids));
-                        return False;
-                }
+				if (info->sids == NULL) {
+					DEBUG(0, ("error allocating %d sids\n",
+						info->num_sids));
+					return False;
+				}
+			} else {
+				info->sids = NULL;
+			}
+		}
 
 		for (i = 0; i < info->num_sids; i++)
 		{
@@ -2911,7 +2943,16 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
                 return False;
 
-	info->attributes = TALLOC_ARRAY(ps->mem_ctx, uint32, info->attribute_count);
+	if (UNMARSHALLING(ps)) {
+		if (info->attribute_count) {
+			info->attributes = TALLOC_ARRAY(ps->mem_ctx, uint32, info->attribute_count);
+			if (!info->attributes) {
+				return False;
+			}
+		} else {
+			info->attributes = NULL;
+		}
+	}
 
 	for (i=0; i<info->attribute_count; i++)
 		if(!prs_uint32("attributes", ps, depth, &info->attributes[i]))
@@ -2920,8 +2961,21 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_uint32("privlist_count", ps, depth, &info->privlist_count))
                 return False;
 
-	info->hdr_privslist = TALLOC_ARRAY(ps->mem_ctx, UNIHDR, info->privlist_count);
-	info->uni_privslist = TALLOC_ARRAY(ps->mem_ctx, UNISTR2, info->privlist_count);
+	if (UNMARSHALLING(ps)) {
+		if (info->privlist_count) {
+			info->hdr_privslist = TALLOC_ARRAY(ps->mem_ctx, UNIHDR, info->privlist_count);
+			info->uni_privslist = TALLOC_ARRAY(ps->mem_ctx, UNISTR2, info->privlist_count);
+			if (!info->hdr_privslist) {
+				return False;
+			}
+			if (!info->uni_privslist) {
+				return False;
+			}
+		} else {
+			info->hdr_privslist = NULL;
+			info->uni_privslist = NULL;
+		}
+	}
 
 	for (i=0; i<info->privlist_count; i++)
 		if(!smb_io_unihdr("hdr_privslist", &info->hdr_privslist[i], ps, depth))
@@ -3051,15 +3105,19 @@ BOOL net_io_r_sam_sync(const char *desc,
 				return False;
 			}
 
-                        if (r_s->num_deltas2 > 0) {
-                                r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas2);
-                                if (r_s->hdr_deltas == NULL) {
-                                        DEBUG(0, ("error tallocating memory "
-                                                  "for %d delta headers\n", 
-                                                  r_s->num_deltas2));
-                                        return False;
-                                }
-                        }
+			if (UNMARSHALLING(ps)) {
+	                        if (r_s->num_deltas2) {
+					r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas2);
+					if (r_s->hdr_deltas == NULL) {
+						DEBUG(0, ("error tallocating memory "
+							"for %d delta headers\n", 
+							r_s->num_deltas2));
+						return False;
+					}
+				} else {
+					r_s->hdr_deltas = NULL;
+				}
+			}
 
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
@@ -3069,15 +3127,19 @@ BOOL net_io_r_sam_sync(const char *desc,
                                         return False;
 			}
 
-                        if (r_s->num_deltas2 > 0) {
-                                r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas2);
-                                if (r_s->deltas == NULL) {
-                                        DEBUG(0, ("error tallocating memory "
-                                                  "for %d deltas\n", 
-                                                  r_s->num_deltas2));
-                                        return False;
-                                }
-                        }
+			if (UNMARSHALLING(ps)) {
+				if (r_s->num_deltas2) {
+					r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas2);
+					if (r_s->deltas == NULL) {
+						DEBUG(0, ("error tallocating memory "
+							"for %d deltas\n", 
+							r_s->num_deltas2));
+						return False;
+					}
+				} else {
+					r_s->deltas = NULL;
+				}
+			}
 
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
@@ -3180,15 +3242,19 @@ BOOL net_io_r_sam_deltas(const char *desc,
 
 		if (r_s->ptr_deltas != 0)
 		{
-                        if (r_s->num_deltas > 0) {
-                                r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas);
-                                if (r_s->hdr_deltas == NULL) {
-                                        DEBUG(0, ("error tallocating memory "
-                                                  "for %d delta headers\n", 
-                                                  r_s->num_deltas));
-                                        return False;
-                                }
-                        }
+			if (UNMARSHALLING(ps)) {
+	                        if (r_s->num_deltas) {
+					r_s->hdr_deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_HDR, r_s->num_deltas);
+					if (r_s->hdr_deltas == NULL) {
+						DEBUG(0, ("error tallocating memory "
+							"for %d delta headers\n", 
+							r_s->num_deltas));
+						return False;
+					}
+				} else {
+					r_s->hdr_deltas = NULL;
+				}
+			}
 
 			for (i = 0; i < r_s->num_deltas; i++)
 			{
@@ -3196,15 +3262,19 @@ BOOL net_io_r_sam_deltas(const char *desc,
                                                       ps, depth);
 			}
                         
-                        if (r_s->num_deltas > 0) {
-                                r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas);
-                                if (r_s->deltas == NULL) {
-                                        DEBUG(0, ("error tallocating memory "
-                                                  "for %d deltas\n", 
-                                                  r_s->num_deltas));
-                                        return False;
-                                }
-                        }
+			if (UNMARSHALLING(ps)) {
+				if (r_s->num_deltas) {
+					r_s->deltas = TALLOC_ARRAY(ps->mem_ctx, SAM_DELTA_CTR, r_s->num_deltas);
+					if (r_s->deltas == NULL) {
+						DEBUG(0, ("error tallocating memory "
+							"for %d deltas\n", 
+							r_s->num_deltas));
+						return False;
+					}
+				} else {
+					r_s->deltas = NULL;
+				}
+			}
 
 			for (i = 0; i < r_s->num_deltas; i++)
 			{

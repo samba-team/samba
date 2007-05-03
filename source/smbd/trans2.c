@@ -3377,7 +3377,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 
 			/* Copy the lock range data. */
-			lock_data = (char *)talloc_memdup(
+			lock_data = (char *)TALLOC_MEMDUP(
 				data_ctx, pdata, total_data);
 			if (!lock_data) {
 				talloc_destroy(data_ctx);
@@ -3718,7 +3718,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 				SOFF_T(pdata,8,file_size);
 				SOFF_T(pdata,16,allocation_size);
-				SIVAL(pdata,20,0); /* ??? */
 				data_size = 24 + byte_len;
 			}
 			break;

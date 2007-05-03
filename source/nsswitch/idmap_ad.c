@@ -167,7 +167,7 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 	const char *range = NULL;
 	const char *schema_mode = NULL;	
 
-	if ( (ctx = talloc_zero(dom, struct idmap_ad_context)) == NULL ) {
+	if ( (ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -1413,6 +1413,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			if (non_mappable_sid(&psa->trustee)) {
 				DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
 					sid_to_string(str, &psa->trustee) ));
+				SAFE_FREE(current_ace);
 				continue;
 			}
 

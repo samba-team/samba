@@ -700,9 +700,13 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 		}
 	}
 
-	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
-	if (sid2 == NULL)
-		return NT_STATUS_NO_MEMORY;
+	if (num_sids) {
+		sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
+		if (sid2 == NULL)
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		sid2 = NULL;
+	}
 
 	for (i=0; i<num_sids; i++) {
 		sid_copy(&sid2[i].sid, &sids[i]);
@@ -1665,11 +1669,15 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	/* Look up names */
 
 	num_names = argc - 2;
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (num_names) {
+		if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
+			rpccli_samr_close(cli, mem_ctx, &domain_pol);
+			rpccli_samr_close(cli, mem_ctx, &connect_pol);
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		names = NULL;
 	}
 
 	for (i = 0; i < argc - 2; i++)
@@ -1736,12 +1744,15 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	/* Look up rids */
 
 	num_rids = argc - 2;
-	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
-	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (num_rids) {
+		if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+			rpccli_samr_close(cli, mem_ctx, &domain_pol);
+			rpccli_samr_close(cli, mem_ctx, &connect_pol);
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		rids = NULL;
 	}
 
 	for (i = 0; i < argc - 2; i++)

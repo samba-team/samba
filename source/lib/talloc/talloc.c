@@ -1086,7 +1086,6 @@ void *_talloc_zero(const void *ctx, size_t size, const char *name)
 	return p;
 }
 
-
 /*
   memdup with a talloc. 
 */
@@ -1291,7 +1290,6 @@ void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const 
 	}
 	return _talloc_zero(ctx, el_size * count, name);
 }
-
 
 /*
   realloc an array, checking for integer overflow in the array size

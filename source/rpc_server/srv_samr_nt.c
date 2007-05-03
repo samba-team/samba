@@ -869,7 +869,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
 	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_entries);
 
 	if (sam == NULL || uni_name == NULL) {
-		DEBUG(0, ("make_user_sam_entry_list: talloc_zero failed!\n"));
+		DEBUG(0, ("make_user_sam_entry_list: TALLOC_ZERO failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -964,6 +964,7 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	if (num_account == 0) {
 		DEBUG(5, ("_samr_enum_dom_users: enumeration handle over "
 			  "total entries\n"));
+		init_samr_r_enum_dom_users(r_u, q_u->start_idx, 0);
 		return NT_STATUS_OK;
 	}
 
@@ -1723,7 +1724,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
-	int num_rids = q_u->num_rids1;
+	int num_rids = (int)q_u->num_rids1;
 	uint32 acc_granted;
 	int i;
 	
@@ -1741,12 +1742,18 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum lsa_SidType, num_rids);
-	wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
+	if (num_rids) {
+		names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
+		attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum lsa_SidType, num_rids);
+		wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
 
-	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL)))
-		return NT_STATUS_NO_MEMORY;
+		if ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL))
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		names = NULL;
+		attrs = NULL;
+		wire_attrs = NULL;
+	}
 
 	become_root();  /* lookup_sid can require root privs */
 	r_u->status = pdb_lookup_rids(&pol_sid, num_rids, q_u->rid,
@@ -3818,10 +3825,14 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	    !sid_check_is_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, q_u->num_sids1);
+	if (q_u->num_sids1) {
+		members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, q_u->num_sids1);
 
-	if (members == NULL)
-		return NT_STATUS_NO_MEMORY;
+		if (members == NULL)
+			return NT_STATUS_NO_MEMORY;
+	} else {
+		members = NULL;
+	}
 
 	for (i=0; i<q_u->num_sids1; i++)
 		sid_copy(&members[i], &q_u->sid[i].sid);
@@ -3879,10 +3890,14 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		return status;
 	}
 
-	sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
-	if (num_sids!=0 && sid == NULL) {
-		SAFE_FREE(sids);
-		return NT_STATUS_NO_MEMORY;
+	if (num_sids) {
+		sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
+		if (sid == NULL) {
+			SAFE_FREE(sids);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		sid = NULL;
 	}
 
 	for (i = 0; i < num_sids; i++) {
@@ -3939,10 +3954,14 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
-	
-	if ((num_members!=0) && (attr==NULL))
-		return NT_STATUS_NO_MEMORY;
+	if (num_members) {
+		attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
+		if (attr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		attr = NULL;
+	}
 	
 	for (i=0; i<num_members; i++)
 		attr[i] = SID_NAME_USER;

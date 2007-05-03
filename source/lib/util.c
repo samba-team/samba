@@ -921,6 +921,9 @@ BOOL yesno(char *p)
 
 void *malloc_(size_t size)
 {
+	if (size == 0) {
+		return NULL;
+	}
 #undef malloc
 	return malloc(size);
 #define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
@@ -932,6 +935,9 @@ void *malloc_(size_t size)
 
 static void *calloc_(size_t count, size_t size)
 {
+	if (size == 0 || count == 0) {
+		return NULL;
+	}
 #undef calloc
 	return calloc(count, size);
 #define calloc(n,s) __ERROR_DONT_USE_CALLOC_DIRECTLY
@@ -960,6 +966,9 @@ void *malloc_array(size_t el_size, unsigned int count)
 		return NULL;
 	}
 
+	if (el_size == 0 || count == 0) {
+		return NULL;
+	}
 #if defined(PARANOID_MALLOC_CHECKER)
 	return malloc_(el_size*count);
 #else
@@ -987,6 +996,9 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count)
 void *calloc_array(size_t size, size_t nmemb)
 {
 	if (nmemb >= MAX_ALLOC_SIZE/size) {
+		return NULL;
+	}
+	if (size == 0 || nmemb == 0) {
 		return NULL;
 	}
 #if defined(PARANOID_MALLOC_CHECKER)
@@ -3194,4 +3206,103 @@ int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 		return failval;
 	}
 	return IVAL(ptr,off);
+}
+
+/****************************************************************
+ talloc wrapper functions that guarentee a null pointer return
+ if size == 0.
+****************************************************************/
+
+#ifndef MAX_TALLOC_SIZE
+#define MAX_TALLOC_SIZE 0x10000000
+#endif
+
+/*
+ *    talloc and zero memory.
+ *    - returns NULL if size is zero.
+ */
+
+void *_talloc_zero_zeronull(const void *ctx, size_t size, const char *name)
+{
+	void *p;
+
+	if (size == 0) {
+		return NULL;
+	}
+
+	p = talloc_named_const(ctx, size, name);
+
+	if (p) {
+		memset(p, '\0', size);
+	}
+
+	return p;
+}
+
+/*
+ *   memdup with a talloc.
+ *   - returns NULL if size is zero.
+ */
+
+void *_talloc_memdup_zeronull(const void *t, const void *p, size_t size, const char *name)
+{
+	void *newp;
+
+	if (size == 0) {
+		return NULL;
+	}
+
+	newp = talloc_named_const(t, size, name);
+	if (newp) {
+		memcpy(newp, p, size);
+	}
+
+	return newp;
+}
+
+/*
+ *   alloc an array, checking for integer overflow in the array size.
+ *   - returns NULL if count or el_size are zero.
+ */
+
+void *_talloc_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name)
+{
+	if (count >= MAX_TALLOC_SIZE/el_size) {
+		return NULL;
+	}
+
+	if (el_size == 0 || count == 0) {
+		return NULL;
+	}
+
+	return talloc_named_const(ctx, el_size * count, name);
+}
+
+/*
+ *   alloc an zero array, checking for integer overflow in the array size
+ *   - returns NULL if count or el_size are zero.
+ */
+
+void *_talloc_zero_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name)
+{
+	if (count >= MAX_TALLOC_SIZE/el_size) {
+		return NULL;
+	}
+
+	if (el_size == 0 || count == 0) {
+		return NULL;
+	}
+
+	return _talloc_zero(ctx, el_size * count, name);
+}
+
+/*
+ *   Talloc wrapper that returns NULL if size == 0.
+ */
+void *talloc_zeronull(const void *context, size_t size, const char *name)
+{
+	if (size == 0) {
+		return NULL;
+	}
+	return talloc_named_const(context, size, name);
 }

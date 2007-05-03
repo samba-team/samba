@@ -342,9 +342,13 @@ NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 
 	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
 
-	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_rids);
-	if (sids == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (num_rids) {
+		sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_rids);
+		if (sids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		sids = NULL;
 	}
 
 	for (i=0; i<num_rids; i++) {
@@ -418,7 +422,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		user_info->shell = NULL;
 		user_info->primary_gid = (gid_t)-1;
 						
-		SAFE_FREE(user);
+		TALLOC_FREE(user);
 				
 		return NT_STATUS_OK;
 	}
@@ -560,10 +564,13 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 		DEBUG(10,("rpc: lookup_useraliases: entering query %d for %d sids\n", 
 			num_queries, num_query_sids));	
 
-
-		query_sids = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_query_sids);
-		if (query_sids == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (num_query_sids) {
+			query_sids = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_query_sids);
+			if (query_sids == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			query_sids = NULL;
 		}
 
 		for (i=0; i<num_query_sids; i++) {

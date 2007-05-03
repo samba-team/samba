@@ -1179,11 +1179,15 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
-		if (group_sids == NULL) {
-			DEBUG(1, ("talloc_array failed\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+		if (num_group_sids) {
+			group_sids = TALLOC_ARRAY(tmp_ctx, DOM_SID, num_group_sids);
+			if (group_sids == NULL) {
+				DEBUG(1, ("TALLOC_ARRAY failed\n"));
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		} else {
+			group_sids = NULL;
 		}
 
 		for (i=0; i<num_group_sids; i++) {
@@ -1209,9 +1213,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		uint32 dummy;
 
 		num_group_sids = 1;
-		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
+		group_sids = TALLOC_ARRAY(tmp_ctx, DOM_SID, num_group_sids);
 		if (group_sids == NULL) {
-			DEBUG(1, ("talloc_array failed\n"));
+			DEBUG(1, ("TALLOC_ARRAY failed\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
@@ -1462,7 +1466,7 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 	dst->gid = src->gid;
 	dst->n_groups = src->n_groups;
 	if (src->n_groups != 0) {
-		dst->groups = (gid_t *)talloc_memdup(
+		dst->groups = (gid_t *)TALLOC_MEMDUP(
 			dst, src->groups, sizeof(gid_t)*dst->n_groups);
 	} else {
 		dst->groups = NULL;
@@ -2027,11 +2031,11 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 	ZERO_STRUCTP(token);
 
 	if (ptoken->user_sids && ptoken->num_sids) {
-		token->user_sids = (DOM_SID *)talloc_memdup(
+		token->user_sids = (DOM_SID *)TALLOC_MEMDUP(
 			token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
 
 		if (token->user_sids == NULL) {
-			DEBUG(0, ("talloc_memdup failed\n"));
+			DEBUG(0, ("TALLOC_MEMDUP failed\n"));
 			TALLOC_FREE(token);
 			return NULL;
 		}
