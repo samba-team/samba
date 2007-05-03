@@ -194,10 +194,13 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	data = tdb_fetch( netsamlogon_tdb, key );
 	
 	if ( data.dptr ) {
-		
-		if ( (user = SMB_MALLOC_P(NET_USER_INFO_3)) == NULL )
+
+
+		user = TALLOC_ZERO_P(mem_ctx, NET_USER_INFO_3);
+		if (user == NULL) {
 			return NULL;
-			
+		}
+
 		prs_init( &ps, 0, mem_ctx, UNMARSHALL );
 		prs_give_memory( &ps, data.dptr, data.dsize, True );
 		
@@ -249,7 +252,6 @@ BOOL netsamlogon_cache_have(const DOM_SID *user_sid)
 	result = (user != NULL);
 
 	talloc_destroy(mem_ctx);
-	SAFE_FREE(user);
 
 	return result;
 }

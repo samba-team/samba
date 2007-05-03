@@ -422,7 +422,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		user_info->shell = NULL;
 		user_info->primary_gid = (gid_t)-1;
 						
-		SAFE_FREE(user);
+		TALLOC_FREE(user);
 				
 		return NT_STATUS_OK;
 	}

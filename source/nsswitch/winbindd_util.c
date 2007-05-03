@@ -1040,7 +1040,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	}
 
 	if (info3->num_groups == 0) {
-		SAFE_FREE(info3);
+		TALLOC_FREE(info3);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -1048,7 +1048,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
 	
 	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
-		SAFE_FREE(info3);
+		TALLOC_FREE(info3);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1058,12 +1058,12 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 
 		if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
 				 &num_groups)) {
-			SAFE_FREE(info3);
+			TALLOC_FREE(info3);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	SAFE_FREE(info3);
+	TALLOC_FREE(info3);
 	*p_num_groups = num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 	
