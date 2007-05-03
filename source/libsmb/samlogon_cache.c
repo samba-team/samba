@@ -193,7 +193,6 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	
 	if ( data.dptr ) {
 
-
 		user = TALLOC_ZERO_P(mem_ctx, NET_USER_INFO_3);
 		if (user == NULL) {
 			return NULL;
@@ -204,12 +203,12 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 		
 		if ( !prs_uint32( "timestamp", &ps, 0, &t ) ) {
 			prs_mem_free( &ps );
-			SAFE_FREE(user);
+			TALLOC_FREE(user);
 			return False;
 		}
 		
 		if ( !net_io_user_info3("", user, &ps, 0, 3, 0) ) {
-			SAFE_FREE( user );
+			TALLOC_FREE( user );
 		}
 			
 		prs_mem_free( &ps );
@@ -228,7 +227,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 		if ( (time_diff < 0 ) || (time_diff > lp_winbind_cache_time()) ) {
 			DEBUG(10,("netsamlogon_cache_get: cache entry expired \n"));
 			tdb_delete( netsamlogon_tdb, key );
-			SAFE_FREE( user );
+			TALLOC_FREE( user );
 		}
 #endif
 	}
