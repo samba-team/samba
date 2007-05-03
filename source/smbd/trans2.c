@@ -2219,12 +2219,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	return(-1);
 }
 
-unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16])
-{
-	E_md4hash(lp_servicename(SNUM(conn)),objid);
-	return objid;
-}
-
 /****************************************************************************
  Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
@@ -2332,8 +2326,6 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
-				FILE_SUPPORTS_OBJECT_IDS|
-				FILE_UNICODE_ON_DISK|
 				quota_flag); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
@@ -2515,12 +2507,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		}
 #endif /* HAVE_SYS_QUOTAS */
 		case SMB_FS_OBJECTID_INFORMATION:
-		{
-			unsigned char objid[16];
-			memcpy(pdata,create_volume_objectid(conn, objid),16);
 			data_len = 64;
 			break;
-		}
 
 		/*
 		 * Query the version and capabilities of the CIFS UNIX extensions
@@ -3154,68 +3142,6 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 }
 
 /****************************************************************************
- Reply to a TRANSACT2_QFILEINFO on a PIPE !
-****************************************************************************/
-
-static int call_trans2qpipeinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					unsigned int tran_call,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
-{
-	char *params = *pparams;
-	char *pdata = *ppdata;
-	unsigned int data_size = 0;
-	unsigned int param_size = 2;
-	uint16 info_level;
-	smb_np_struct *p_pipe = NULL;
-
-	if (!params) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
-	if (total_params < 4) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
-	p_pipe = get_rpc_pipe_p(params,0);
-	if (p_pipe == NULL) {
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-	}
-
-	info_level = SVAL(params,2);
-
-	*pparams = (char *)SMB_REALLOC(*pparams,2);
-	if (*pparams == NULL) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-	params = *pparams;
-	SSVAL(params,0,0);
-	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
-	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size); 
-	if (*ppdata == NULL ) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-	pdata = *ppdata;
-
-	switch (info_level) {
-		case SMB_FILE_STANDARD_INFORMATION:
-			memset(pdata,24,0);
-			SOFF_T(pdata,0,4096LL);
-			SIVAL(pdata,16,1);
-			SIVAL(pdata,20,1);
-			data_size = 24;
-			break;
-
-		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
-	}
-
-	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
-
-	return(-1);
-}
-
-/****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
  file name or file id).
 ****************************************************************************/
@@ -3258,20 +3184,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	if (tran_call == TRANSACT2_QFILEINFO) {
 		if (total_params < 4) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-		}
-
-		if (IS_IPC(conn)) {
-			return call_trans2qpipeinfo(conn,
-							inbuf,
-							outbuf,
-							length,
-							bufsize,
-							tran_call,
-							pparams,
-							total_params,
-							ppdata,
-							total_data,
-							max_data_bytes);
 		}
 
 		fsp = file_fsp(params,0);
@@ -6562,8 +6474,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 
 	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
-            && (tran_call != TRANSACT2_GET_DFS_REFERRAL)
-            && (tran_call != TRANSACT2_QFILEINFO)) {
+            && (tran_call != TRANSACT2_GET_DFS_REFERRAL)) {
 		END_PROFILE(SMBtrans2);
 		return ERROR_DOS(ERRSRV,ERRaccess);
 	}

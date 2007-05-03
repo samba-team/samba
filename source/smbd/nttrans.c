@@ -2279,29 +2279,15 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 				0);
 		return -1;
 	
-	case FSCTL_CREATE_OR_GET_OBJECT_ID:
-	{
-		unsigned char objid[16];
-
-		/* This should return the object-id on this file.
- 		 * I think I'll make this be the inode+dev. JRA.
+	case FSCTL_0x000900C0:
+		/* pretend this succeeded - don't know what this really is
+		   but works ok like this --metze
 		 */
 
-		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
-
-		data_count = 64;
-		pdata = nttrans_realloc(ppdata, data_count);
-		if (pdata == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}		
-		SINO_T_VAL(pdata,0,fsp->inode);
-		SDEV_T_VAL(pdata,8,fsp->dev);
-		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
-		SINO_T_VAL(pdata,32,fsp->inode);
-		SDEV_T_VAL(pdata,40,fsp->dev);
-		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, pdata, data_count);
+		DEBUG(10,("FSCTL_0x000900C0: called on FID[0x%04X](but not implemented)\n",fidnum));
+		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
+				0);
 		return -1;
-	}
 
 	case FSCTL_GET_REPARSE_POINT:
 		/* pretend this fail - my winXP does it like this
@@ -2309,7 +2295,9 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+				NULL, 0, NULL, 0);
+		return -1;
 
 	case FSCTL_SET_REPARSE_POINT:
 		/* pretend this fail - I'm assuming this because of the FSCTL_GET_REPARSE_POINT case.
@@ -2317,7 +2305,9 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+				NULL, 0, NULL, 0);
+		return -1;
 			
 	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
 	{
