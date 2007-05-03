@@ -710,7 +710,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	/* semi-async operation */
 	timed_out = 0;
 	if (timeout) {
-		event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(1, 0), timeout_func, &timed_out);
+		event_add_timed(ctdb->ev, mem_ctx, *timeout, timeout_func, &timed_out);
 	}
 	while ((state->state == CTDB_CALL_WAIT)
 	&&	(timed_out == 0) ){
