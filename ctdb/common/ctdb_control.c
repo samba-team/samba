@@ -326,59 +326,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_WRITE_RECORD: {
-		uint32_t dbid;
-		struct ctdb_db_context *ctdb_db;
-		unsigned char *ptr;
-		TDB_DATA key, data;
-		struct ctdb_ltdb_header header;
-		int ret;
-
-		outdata->dsize = 0;
-		outdata->dptr = NULL;
-
-		dbid = ((uint32_t *)(&indata.dptr[0]))[0];
-		ctdb_db = find_ctdb_db(ctdb, dbid);
-		if (!ctdb_db) {
-			DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
-			return -1;
-		}
-
-		ptr = &indata.dptr[4];
-
-		key.dsize = *((uint32_t *)(ptr));
-		ptr += 4;
-		key.dptr = ptr;
-		ptr += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
-		data.dsize = *((uint32_t *)(ptr));
-		ptr += 4;
-		data.dptr = ptr;
-		ptr += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
-		ret = ctdb_ltdb_lock(ctdb_db, key);
-		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to lock db\n"));
-			return -1;
-		}
-		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, outdata, NULL);
-		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to fetch record\n"));
-			ctdb_ltdb_unlock(ctdb_db, key);
-			return -1;
-		}
-		header.rsn++;
-
-		ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
-		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to store record\n"));
-			ctdb_ltdb_unlock(ctdb_db, key);
-			return -1;
-		}
-		ctdb_ltdb_unlock(ctdb_db, key);
-
-		return 0;
-	}
+	case CTDB_CONTROL_WRITE_RECORD:
+		return ctdb_control_writerecord(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_SET_RECMODE: {
 		ctdb->recovery_mode = ((uint32_t *)(&indata.dptr[0]))[0];

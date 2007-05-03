@@ -1074,32 +1074,22 @@ int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *
 
 int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data)
 {
-	int ret, len;
+	struct ctdb_write_record *wr;
 	TDB_DATA indata, outdata;
 	int32_t res;
-	unsigned char *ptr;
+	int ret, len;
 
-	len =  4; /* dbid */
-	len += 4; /* keylen */
-	len += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-	len += 4; /* datalen */
-	len += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+	len = offsetof(struct ctdb_write_record, blob)+key.dsize+data.dsize;
+	wr = (struct ctdb_write_record *)talloc_zero_size(mem_ctx, len);
+	wr->dbid    = dbid;
+	wr->keylen  = key.dsize;
+	wr->datalen = data.dsize;
+	memcpy(&wr->blob[0], &key.dptr[0], key.dsize);
+	memcpy(&wr->blob[key.dsize], &data.dptr[0], data.dsize);
+
 
 	indata.dsize = len;
-	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint8_t, len);
-	ptr = indata.dptr;
-	*((uint32_t *)ptr) = dbid;
-	ptr += 4;
-
-	*((uint32_t *)ptr) = key.dsize;
-	ptr += 4;
-	memcpy(ptr, key.dptr, key.dsize);
-	ptr += (key.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
-
-	*((uint32_t *)ptr) = data.dsize;
-	ptr += 4;
-	memcpy(ptr, data.dptr, data.dsize);
-	ptr += (data.dsize+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1);
+	indata.dptr = (unsigned char *)wr;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_WRITE_RECORD, 0, indata, 
