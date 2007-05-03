@@ -157,6 +157,7 @@ struct ctdb_status {
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
+	uint32_t traverse_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t __last_counter; /* hack for control_status_all */
 	uint32_t max_hop_count;

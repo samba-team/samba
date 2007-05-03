@@ -110,6 +110,7 @@ static void show_status(struct ctdb_status *s)
 	printf(" total_calls             %u\n", s->total_calls);
 	printf(" pending_calls           %u\n", s->pending_calls);
 	printf(" lockwait_calls          %u\n", s->lockwait_calls);
+	printf(" traverse_calls          %u\n", s->traverse_calls);
 	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
 	printf(" max_hop_count           %u\n", s->max_hop_count);
 	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);

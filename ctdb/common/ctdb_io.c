@@ -214,9 +214,13 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	struct ctdb_queue_pkt *pkt;
 	uint32_t length2;
 
-	/* enforce the length and alignment rules from the tcp packet allocator */
-	length2 = (length+(queue->alignment-1)) & ~(queue->alignment-1);
-	*(uint32_t *)data = length2;
+	if (queue->alignment) {
+		/* enforce the length and alignment rules from the tcp packet allocator */
+		length2 = (length+(queue->alignment-1)) & ~(queue->alignment-1);
+		*(uint32_t *)data = length2;
+	} else {
+		length2 = length;
+	}
 
 	if (length2 != length) {
 		memset(data+length, 0, length2-length);
