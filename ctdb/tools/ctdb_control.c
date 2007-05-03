@@ -243,7 +243,7 @@ static int control_status_reset(struct ctdb_context *ctdb, int argc, const char 
 static int control_recover(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn, num_nodes, generation, dmaster;
-	struct ctdb_vnn_map vnnmap;
+	struct ctdb_vnn_map *vnnmap;
 	struct ctdb_node_map nodemap;
 	int i, j, ret;
 	struct ctdb_dbid_map dbmap;
@@ -375,19 +375,24 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 				
 	/* 8: build a new vnn map */
 	printf("\n8: build a new vnn map with a new generation id\n");
+	
+	vnnmap = talloc_zero_size(ctdb, offsetof(struct ctdb_vnn_map, map) + 4*num_nodes);
+	if (vnnmap == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
+		exit(1);
+	}
 	generation = random();
-	vnnmap.generation = generation;
-	vnnmap.size = num_nodes;
-	vnnmap.map = talloc_array(ctdb, uint32_t, num_nodes);
+	vnnmap->generation = generation;
+	vnnmap->size = num_nodes;
 	for (i=j=0;i<nodemap.num;i++) {
 		if (nodemap.nodes[i].flags&NODE_FLAGS_CONNECTED) {
-			vnnmap.map[j++]=nodemap.nodes[i].vnn;
+			vnnmap->map[j++]=nodemap.nodes[i].vnn;
 		}
 	}
-	printf("Generation:%d\n",vnnmap.generation);
-	printf("Size:%d\n",vnnmap.size);
-	for(i=0;i<vnnmap.size;i++){
-		printf("hash:%d lmaster:%d\n",i,vnnmap.map[i]);
+	printf("Generation:%d\n",vnnmap->generation);
+	printf("Size:%d\n",vnnmap->size);
+	for(i=0;i<vnnmap->size;i++){
+		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
 	}
 
 	/* 9: push the new vnn map out to all the nodes */
@@ -399,7 +404,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 		printf("setting new vnn map on node %d\n",nodemap.nodes[j].vnn);
-		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap.nodes[j].vnn, ctdb, &vnnmap);
+		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap.nodes[j].vnn, ctdb, vnnmap);
 		if (ret != 0) {
 			printf("Unable to set vnnmap for node %u\n", vnn);
 			return ret;
@@ -432,15 +437,14 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 {
 	uint32_t vnn;
 	int i, ret;
-	struct ctdb_vnn_map *vnnmap;
+	struct ctdb_vnn_map *vnnmap=NULL;
 	if (argc < 1) {
 		usage();
 	}
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	vnnmap = talloc_zero(ctdb, struct ctdb_vnn_map);
-	ret = ctdb_ctrl_getvnnmap(ctdb, vnn, vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, vnn, ctdb, &vnnmap);
 	if (ret != 0) {
 		printf("Unable to get vnnmap from node %u\n", vnn);
 		return ret;
@@ -643,19 +647,24 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
  */
 static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t vnn;
+	uint32_t vnn, num_nodes, generation;
 	struct ctdb_vnn_map *vnnmap;
 	int i, ret;
 	if (argc < 3) {
 		usage();
 	}
 
-	vnn = strtoul(argv[0], NULL, 0);
+	vnn        = strtoul(argv[0], NULL, 0);
+	generation = strtoul(argv[1], NULL, 0);
+	num_nodes  = strtoul(argv[2], NULL, 0);
 
-	vnnmap = talloc_zero(ctdb, struct ctdb_vnn_map);
-	vnnmap->generation = strtoul(argv[1], NULL, 0);
-	vnnmap->size = strtoul(argv[2], NULL, 0);
-	vnnmap->map = talloc_array(vnnmap, uint32_t, vnnmap->size);
+	vnnmap = talloc_zero_size(ctdb, offsetof(struct ctdb_vnn_map, map) + 4*num_nodes);
+	if (vnnmap == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
+		exit(1);
+	}
+	vnnmap->generation = generation;
+	vnnmap->size       = num_nodes;
 	for (i=0;i<vnnmap->size;i++) {
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}

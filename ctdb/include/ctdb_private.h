@@ -169,7 +169,7 @@ struct ctdb_status {
 struct ctdb_vnn_map {
 	uint32_t generation;
 	uint32_t size;
-	uint32_t *map;
+	uint32_t map[1];
 };
 
 /* main state of the ctdb daemon */
@@ -628,5 +628,19 @@ int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status);
+
+
+
+
+#define CHECK_CONTROL_DATA_SIZE(size) do { \
+ if (indata.dsize != size) { \
+	 DEBUG(0,(__location__ " Invalid data size in opcode %u. Got %u expected %u\n", \
+		  opcode, indata.dsize, size));				\
+	 return -1; \
+ } \
+ } while (0)
+
+int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 
 #endif

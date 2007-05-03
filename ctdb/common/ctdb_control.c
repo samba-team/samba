@@ -34,14 +34,6 @@ struct ctdb_control_state {
 	void *private_data;
 };
 
-#define CHECK_CONTROL_DATA_SIZE(size) do { \
- if (indata.dsize != size) { \
-	 DEBUG(0,(__location__ " Invalid data size in opcode %u. Got %u expected %u\n", \
-		  opcode, indata.dsize, size));				\
-	 return -1; \
- } \
- } while (0)
-
 static int traverse_cleardb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	int ret;
@@ -179,21 +171,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_GETVNNMAP: {
-		uint32_t i, len;
-		CHECK_CONTROL_DATA_SIZE(0);
-		len = 2+ctdb->vnn_map->size;
-		outdata->dsize = 4*len;
-		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, len);
-		
-		((uint32_t *)outdata->dptr)[0] = ctdb->vnn_map->generation;
-		((uint32_t *)outdata->dptr)[1] = ctdb->vnn_map->size;
-		for (i=0;i<ctdb->vnn_map->size;i++) {
-			((uint32_t *)outdata->dptr)[i+2] = ctdb->vnn_map->map[i];
-		}
-
-		return 0;
-	}
+	case CTDB_CONTROL_GETVNNMAP:
+		return ctdb_control_getvnnmap(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_GET_DBMAP: {
 		uint32_t i, len;
@@ -245,26 +224,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_SETVNNMAP: {
-		uint32_t *ptr, i;
-		
-		ptr = (uint32_t *)(&indata.dptr[0]);
-		ctdb->vnn_map->generation = ptr[0];
-		ctdb->vnn_map->size = ptr[1];
-		if (ctdb->vnn_map->map) {
-			talloc_free(ctdb->vnn_map->map);
-			ctdb->vnn_map->map = NULL;
-		}
-		ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
-		if (ctdb->vnn_map->map == NULL) {
-			DEBUG(0,(__location__ " Unable to allocate vnn_map->map structure\n"));
-			exit(1);
-		}
-		for (i=0;i<ctdb->vnn_map->size;i++) {
-			ctdb->vnn_map->map[i] = ptr[i+2];
-		}
-		return 0;
-	}
+	case CTDB_CONTROL_SETVNNMAP:
+		return ctdb_control_setvnnmap(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_PULL_DB: {
 		uint32_t dbid, lmaster;
