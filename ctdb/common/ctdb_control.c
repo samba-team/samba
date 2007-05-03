@@ -131,7 +131,7 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
  */
 static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb, 
 				     uint32_t opcode, TDB_DATA indata,
-				     TDB_DATA *outdata)
+				     TDB_DATA *outdata, uint32_t srcnode)
 {
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
@@ -377,6 +377,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
 	}
 
+	case CTDB_CONTROL_TRAVERSE_START:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
+		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode);
+
+	case CTDB_CONTROL_TRAVERSE_ALL:
+		return ctdb_control_traverse_all(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_TRAVERSE_DATA:
+		return ctdb_control_traverse_data(ctdb, indata, outdata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -398,7 +408,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dsize = c->datalen;
 
 	outdata = talloc_zero(c, TDB_DATA);
-	status = ctdb_control_dispatch(ctdb, c->opcode, data, outdata);
+	status = ctdb_control_dispatch(ctdb, c->opcode, data, outdata, hdr->srcnode);
 
 	/* some controls send no reply */
 	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {

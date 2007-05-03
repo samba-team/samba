@@ -282,4 +282,6 @@ int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
 
+int ctdb_list_keys(struct ctdb_db_context *ctdb_db, FILE *f);
+
 #endif

@@ -211,7 +211,6 @@ struct ctdb_context {
 	struct ctdb_status status;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
-	struct idr_fake *fidr;
 };
 
 struct ctdb_db_context {
@@ -278,7 +277,12 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_STATUS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
 		    CTDB_CONTROL_SET_CALL,
-		    CTDB_CONTROL_WRITE_RECORD};
+		    CTDB_CONTROL_WRITE_RECORD,
+		    CTDB_CONTROL_TRAVERSE_START,
+		    CTDB_CONTROL_TRAVERSE_ALL,
+		    CTDB_CONTROL_TRAVERSE_DATA,
+};
+
 
 /*
   structure passed in set_call control
@@ -656,5 +660,32 @@ int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA 
 int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
+
+
+struct ctdb_traverse_start {
+	uint32_t db_id;
+	uint32_t reqid;
+	uint64_t srvid;
+};
+
+/*
+  structure used to pass the data between the child and parent
+ */
+struct ctdb_traverse_data {
+	uint32_t length;
+	uint32_t reqid;
+	uint32_t keylen;
+	uint32_t datalen;
+	uint8_t  data[1];
+};
+				   
+
+int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
+				    TDB_DATA *outdata, uint32_t srcnode);
+int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
+int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
+
+int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data);
+
 
 #endif
