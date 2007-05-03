@@ -2577,7 +2577,7 @@ static int add_a_service(const service *pservice, const char *name)
 }
 
 /***************************************************************************
-  Convert a string to uppercase and remove whitespaces.
+  Canonicalize by converting to lowercase.
 ***************************************************************************/
 
 static char *canonicalize_servicename(const char *src)
