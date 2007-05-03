@@ -843,30 +843,26 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t 
 /*
   get a list of databases off a remote node
  */
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *dbmap)
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap)
 {
 	int ret;
 	TDB_DATA data, outdata;
-	int32_t i, res;
+	int32_t res;
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_DBMAP, 0, data, 
 			   ctdb, &outdata, &res);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for getdbmap failed\n"));
 		return -1;
 	}
 
-	dbmap->num = ((uint32_t *)outdata.dptr)[0];
-	dbmap->dbids=talloc_array(mem_ctx, uint32_t, dbmap->num);
-	if (!dbmap->dbids) {
-		DEBUG(0,(__location__ " failed to talloc dbmap\n"));
-		return -1;
+	if (*dbmap) {
+		talloc_free(*dbmap);
+		*dbmap = NULL;
 	}
-	for (i=0;i<dbmap->num;i++) {
-		dbmap->dbids[i] = ((uint32_t *)outdata.dptr)[i+1];
-	}
+	*dbmap = (struct ctdb_dbid_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		    
 	return 0;
 }

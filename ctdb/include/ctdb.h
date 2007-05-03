@@ -208,9 +208,9 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX
  */
 struct ctdb_dbid_map {
 	uint32_t num;
-	uint32_t *dbids;
+	uint32_t dbids[1];
 };
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *dbmap);
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
 
 
 /* table that contains a list of all nodes a ctdb knows about and their 

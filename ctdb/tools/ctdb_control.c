@@ -246,7 +246,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	struct ctdb_vnn_map *vnnmap;
 	struct ctdb_node_map nodemap;
 	int i, j, ret;
-	struct ctdb_dbid_map dbmap;
+	struct ctdb_dbid_map *dbmap=NULL;
 
 	if (argc < 1) {
 		usage();
@@ -298,19 +298,19 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		printf("Unable to get dbids from node %u\n", vnn);
 		return ret;
 	}
-	for (i=0;i<dbmap.num;i++) {
+	for (i=0;i<dbmap->num;i++) {
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
 	/* 5: pull all records from all other nodes across to this node
 	      (this merges based on rsn internally)
 	*/
 	printf("\n5: merge all records from remote nodes\n");
-	for (i=0;i<dbmap.num;i++) {
-		printf("recovering database 0x%08x\n",dbmap.dbids[i]);
+	for (i=0;i<dbmap->num;i++) {
+		printf("recovering database 0x%08x\n",dbmap->dbids[i]);
 		for (j=0; j<nodemap.num; j++) {
 			/* we dont need to merge with ourselves */
 			if (nodemap.nodes[j].vnn == vnn) {
@@ -321,8 +321,8 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 				continue;
 			}
 
-			printf("merging all records from node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, nodemap.nodes[j].vnn, vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			printf("merging all records from node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap->dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, nodemap.nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
 				printf("Unable to copy db from node %u to node %u\n", nodemap.nodes[j].vnn, vnn);
 				return ret;
@@ -334,17 +334,17 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	printf("\n6: repoint dmaster to the recovery node\n");
 	dmaster = vnn;
 	printf("new dmaster is %d\n", dmaster);
-	for (i=0;i<dbmap.num;i++) {
+	for (i=0;i<dbmap->num;i++) {
 		for (j=0; j<nodemap.num; j++) {
 			/* dont repoint nodes that are unavailable */
 			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 				continue;
 			}
 
-			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap.nodes[j].vnn,dbmap.dbids[i]);
-			ret = ctdb_ctrl_setdmaster(ctdb, nodemap.nodes[j].vnn, ctdb, dbmap.dbids[i], dmaster);
+			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap.nodes[j].vnn,dbmap->dbids[i]);
+			ret = ctdb_ctrl_setdmaster(ctdb, nodemap.nodes[j].vnn, ctdb, dbmap->dbids[i], dmaster);
 			if (ret != 0) {
-				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
+				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap.nodes[j].vnn, dbmap->dbids[i]);
 				return ret;
 			}
 		}
@@ -352,8 +352,8 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 7: push all records out to the nodes again */
 	printf("\n7: push all records to remote nodes\n");
-	for (i=0;i<dbmap.num;i++) {
-		printf("distributing new database 0x%08x\n",dbmap.dbids[i]);
+	for (i=0;i<dbmap->num;i++) {
+		printf("distributing new database 0x%08x\n",dbmap->dbids[i]);
 		for (j=0; j<nodemap.num; j++) {
 			/* we dont need to push to ourselves */
 			if (nodemap.nodes[j].vnn == vnn) {
@@ -364,8 +364,8 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 				continue;
 			}
 
-			printf("pushing all records to node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap.nodes[j].vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			printf("pushing all records to node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap->dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap.nodes[j].vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
 				printf("Unable to copy db from node %u to node %u\n", vnn, nodemap.nodes[j].vnn);
 				return ret;
@@ -583,7 +583,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	uint32_t vnn;
 	int i, ret;
-	struct ctdb_dbid_map dbmap;
+	struct ctdb_dbid_map *dbmap=NULL;
 
 	if (argc < 1) {
 		usage();
@@ -597,12 +597,12 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		return ret;
 	}
 
-	printf("Number of databases:%d\n", dbmap.num);
-	for(i=0;i<dbmap.num;i++){
+	printf("Number of databases:%d\n", dbmap->num);
+	for(i=0;i<dbmap->num;i++){
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
 	return 0;

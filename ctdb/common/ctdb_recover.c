@@ -52,3 +52,33 @@ ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 	return 0;
 }
 
+int 
+ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	uint32_t i, len;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_dbid_map *dbid_map;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	len = 0;
+	for(ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next){
+		len++;
+	}
+
+
+	outdata->dsize = offsetof(struct ctdb_dbid_map, dbids) + 4*len;
+	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
+	if (!outdata->dptr) {
+		DEBUG(0, (__location__ "Failed to allocate dbmap array\n"));
+		exit(1);
+	}
+
+	dbid_map = (struct ctdb_dbid_map *)outdata->dptr;
+	dbid_map->num = len;
+	for(i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
+		dbid_map->dbids[i] = ctdb_db->db_id;
+	}
+
+	return 0;
+}
