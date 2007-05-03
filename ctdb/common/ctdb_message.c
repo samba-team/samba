@@ -32,7 +32,7 @@
 /*
   this dispatches the messages to the registered ctdb message handler
 */
-static int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data)
+int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_message_list *ml;
 
