@@ -536,6 +536,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 	int32 cur = 0;
 	DATA_BLOB send_blob = data_blob(NULL, 0);
 	int32 max_blob_size = 0;
+	DATA_BLOB receive_blob = data_blob(NULL, 0);
 
 	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
 		DEBUG(0,("cli_session_setup_blob: cli->max_xmit too small "
@@ -575,7 +576,8 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 			return False;
 		}
 
-		cli_session_setup_blob_receive(cli);
+		receive_blob = cli_session_setup_blob_receive(cli);
+		data_blob_free(&receive_blob);
 
 		if (cli_is_error(cli) &&
 				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
