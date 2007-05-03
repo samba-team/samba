@@ -245,9 +245,9 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	uint32_t vnn, num_nodes, generation, dmaster;
 	struct ctdb_vnn_map *vnnmap;
-	struct ctdb_node_map nodemap;
+	struct ctdb_node_map *nodemap=NULL;
 	int i, j, ret;
-	struct ctdb_dbid_map dbmap;
+	struct ctdb_dbid_map *dbmap=NULL;
 
 	if (argc < 1) {
 		usage();
@@ -269,8 +269,8 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	/* 2: count the active nodes */
 	printf("\n2: count number of active nodes\n");
 	num_nodes = 0;
-	for (i=0; i<nodemap.num; i++) {
-		if (nodemap.nodes[i].flags&NODE_FLAGS_CONNECTED) {
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
 			num_nodes++;
 		}
 	}
@@ -278,16 +278,16 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 3: go to all active nodes and activate recovery mode */
 	printf("\n3: set recovery mode for all active nodes\n");
-	for (j=0; j<nodemap.num; j++) {
+	for (j=0; j<nodemap->num; j++) {
 		/* dont change it for nodes that are unavailable */
-		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 			continue;
 		}
 
-		printf("setting node %d to recovery mode\n",nodemap.nodes[j].vnn);
-		ret = ctdb_ctrl_setrecmode(ctdb, nodemap.nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
+		printf("setting node %d to recovery mode\n",nodemap->nodes[j].vnn);
+		ret = ctdb_ctrl_setrecmode(ctdb, nodemap->nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
 		if (ret != 0) {
-			printf("Unable to set recmode on node %u\n", nodemap.nodes[j].vnn);
+			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
 			return ret;
 		}
 	}
@@ -299,33 +299,33 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		printf("Unable to get dbids from node %u\n", vnn);
 		return ret;
 	}
-	for (i=0;i<dbmap.num;i++) {
+	for (i=0;i<dbmap->num;i++) {
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
 	/* 5: pull all records from all other nodes across to this node
 	      (this merges based on rsn internally)
 	*/
 	printf("\n5: merge all records from remote nodes\n");
-	for (i=0;i<dbmap.num;i++) {
-		printf("recovering database 0x%08x\n",dbmap.dbids[i]);
-		for (j=0; j<nodemap.num; j++) {
+	for (i=0;i<dbmap->num;i++) {
+		printf("recovering database 0x%08x\n",dbmap->dbids[i]);
+		for (j=0; j<nodemap->num; j++) {
 			/* we dont need to merge with ourselves */
-			if (nodemap.nodes[j].vnn == vnn) {
+			if (nodemap->nodes[j].vnn == vnn) {
 				continue;
 			}
 			/* dont merge from nodes that are unavailable */
-			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 				continue;
 			}
 
-			printf("merging all records from node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, nodemap.nodes[j].vnn, vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			printf("merging all records from node %d for database 0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
-				printf("Unable to copy db from node %u to node %u\n", nodemap.nodes[j].vnn, vnn);
+				printf("Unable to copy db from node %u to node %u\n", nodemap->nodes[j].vnn, vnn);
 				return ret;
 			}
 		}
@@ -335,17 +335,17 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	printf("\n6: repoint dmaster to the recovery node\n");
 	dmaster = vnn;
 	printf("new dmaster is %d\n", dmaster);
-	for (i=0;i<dbmap.num;i++) {
-		for (j=0; j<nodemap.num; j++) {
+	for (i=0;i<dbmap->num;i++) {
+		for (j=0; j<nodemap->num; j++) {
 			/* dont repoint nodes that are unavailable */
-			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 				continue;
 			}
 
-			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap.nodes[j].vnn,dbmap.dbids[i]);
-			ret = ctdb_ctrl_setdmaster(ctdb, nodemap.nodes[j].vnn, ctdb, dbmap.dbids[i], dmaster);
+			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap->nodes[j].vnn,dbmap->dbids[i]);
+			ret = ctdb_ctrl_setdmaster(ctdb, nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], dmaster);
 			if (ret != 0) {
-				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
+				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
 				return ret;
 			}
 		}
@@ -353,22 +353,22 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 7: push all records out to the nodes again */
 	printf("\n7: push all records to remote nodes\n");
-	for (i=0;i<dbmap.num;i++) {
-		printf("distributing new database 0x%08x\n",dbmap.dbids[i]);
-		for (j=0; j<nodemap.num; j++) {
+	for (i=0;i<dbmap->num;i++) {
+		printf("distributing new database 0x%08x\n",dbmap->dbids[i]);
+		for (j=0; j<nodemap->num; j++) {
 			/* we dont need to push to ourselves */
-			if (nodemap.nodes[j].vnn == vnn) {
+			if (nodemap->nodes[j].vnn == vnn) {
 				continue;
 			}
 			/* dont push to nodes that are unavailable */
-			if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 				continue;
 			}
 
-			printf("pushing all records to node %d for database 0x%08x\n", nodemap.nodes[j].vnn, dbmap.dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap.nodes[j].vnn, dbmap.dbids[i], CTDB_LMASTER_ANY, ctdb);
+			printf("pushing all records to node %d for database 0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
+			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap->nodes[j].vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
-				printf("Unable to copy db from node %u to node %u\n", vnn, nodemap.nodes[j].vnn);
+				printf("Unable to copy db from node %u to node %u\n", vnn, nodemap->nodes[j].vnn);
 				return ret;
 			}
 		}
@@ -385,9 +385,9 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	generation = random();
 	vnnmap->generation = generation;
 	vnnmap->size = num_nodes;
-	for (i=j=0;i<nodemap.num;i++) {
-		if (nodemap.nodes[i].flags&NODE_FLAGS_CONNECTED) {
-			vnnmap->map[j++]=nodemap.nodes[i].vnn;
+	for (i=j=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
+			vnnmap->map[j++]=nodemap->nodes[i].vnn;
 		}
 	}
 	printf("Generation:%d\n",vnnmap->generation);
@@ -398,14 +398,14 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 9: push the new vnn map out to all the nodes */
 	printf("\n9: distribute the new vnn map\n");
-	for (j=0; j<nodemap.num; j++) {
+	for (j=0; j<nodemap->num; j++) {
 		/* dont push to nodes that are unavailable */
-		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 			continue;
 		}
 
-		printf("setting new vnn map on node %d\n",nodemap.nodes[j].vnn);
-		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap.nodes[j].vnn, ctdb, vnnmap);
+		printf("setting new vnn map on node %d\n",nodemap->nodes[j].vnn);
+		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap->nodes[j].vnn, ctdb, vnnmap);
 		if (ret != 0) {
 			printf("Unable to set vnnmap for node %u\n", vnn);
 			return ret;
@@ -414,16 +414,16 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 10: disable recovery mode */
 	printf("\n10: restore recovery mode back to normal\n");
-	for (j=0; j<nodemap.num; j++) {
+	for (j=0; j<nodemap->num; j++) {
 		/* dont push to nodes that are unavailable */
-		if (!(nodemap.nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 			continue;
 		}
 
-		printf("changing recovery mode back to normal for node %d\n",nodemap.nodes[j].vnn);
-		ret = ctdb_ctrl_setrecmode(ctdb, nodemap.nodes[j].vnn, CTDB_RECOVERY_NORMAL);
+		printf("changing recovery mode back to normal for node %d\n",nodemap->nodes[j].vnn);
+		ret = ctdb_ctrl_setrecmode(ctdb, nodemap->nodes[j].vnn, CTDB_RECOVERY_NORMAL);
 		if (ret != 0) {
-			printf("Unable to set recmode on node %u\n", nodemap.nodes[j].vnn);
+			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
 			return ret;
 		}
 	}
@@ -584,7 +584,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	uint32_t vnn;
 	int i, ret;
-	struct ctdb_dbid_map dbmap;
+	struct ctdb_dbid_map *dbmap=NULL;
 
 	if (argc < 1) {
 		usage();
@@ -598,12 +598,12 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		return ret;
 	}
 
-	printf("Number of databases:%d\n", dbmap.num);
-	for(i=0;i<dbmap.num;i++){
+	printf("Number of databases:%d\n", dbmap->num);
+	for(i=0;i<dbmap->num;i++){
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap.dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap.dbids[i], path);
+		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
 	return 0;
@@ -616,7 +616,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 {
 	uint32_t vnn;
 	int i, ret;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map *nodemap=NULL;
 
 	if (argc < 1) {
 		usage();
@@ -624,11 +624,9 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	nodemap = talloc_zero(ctdb, struct ctdb_node_map);
-	ret = ctdb_ctrl_getnodemap(ctdb, vnn, nodemap, nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, vnn, ctdb, &nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
-		talloc_free(nodemap);
 		return ret;
 	}
 
@@ -639,7 +637,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 				"CONNECTED":"UNAVAILABLE",
 			nodemap->nodes[i].vnn==vnn?" (THIS NODE)":"");
 	}
-	talloc_free(nodemap);
+
 	return 0;
 }
 

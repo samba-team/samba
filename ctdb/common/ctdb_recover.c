@@ -52,3 +52,60 @@ ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 	return 0;
 }
 
+int 
+ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	uint32_t i, len;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_dbid_map *dbid_map;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	len = 0;
+	for(ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next){
+		len++;
+	}
+
+
+	outdata->dsize = offsetof(struct ctdb_dbid_map, dbids) + 4*len;
+	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
+	if (!outdata->dptr) {
+		DEBUG(0, (__location__ "Failed to allocate dbmap array\n"));
+		exit(1);
+	}
+
+	dbid_map = (struct ctdb_dbid_map *)outdata->dptr;
+	dbid_map->num = len;
+	for(i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
+		dbid_map->dbids[i] = ctdb_db->db_id;
+	}
+
+	return 0;
+}
+
+int 
+ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	uint32_t i, num_nodes;
+	struct ctdb_node_map *node_map;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	num_nodes = ctdb_get_num_nodes(ctdb);
+
+	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
+	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
+	if (!outdata->dptr) {
+		DEBUG(0, (__location__ "Failed to allocate nodemap array\n"));
+		exit(1);
+	}
+
+	node_map = (struct ctdb_node_map *)outdata->dptr;
+	node_map->num = num_nodes;
+	for (i=0; i<num_nodes; i++) {
+		node_map->nodes[i].vnn   = ctdb->nodes[i]->vnn;
+		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
+	}
+
+	return 0;
+}
