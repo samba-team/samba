@@ -893,8 +893,9 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX 
 /*
   get a list of nodes (vnn and flags ) from a remote node
  */
-int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, 
+		struct timeval timeout, uint32_t destnode, 
+		TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -903,7 +904,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode,
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_NODEMAP, 0, data, 
-			   ctdb, &outdata, &res, NULL);
+			   ctdb, &outdata, &res, &timeout);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
 		return -1;
@@ -1253,8 +1254,10 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 /*
   get a list of connected nodes
  */
-uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-				   uint32_t *num_nodes)
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, 
+				struct timeval timeout,
+				TALLOC_CTX *mem_ctx,
+				uint32_t *num_nodes)
 {
 	struct ctdb_node_map *map=NULL;
 	int ret, i;
@@ -1262,7 +1265,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 
 	*num_nodes = 0;
 
-	ret = ctdb_ctrl_getnodemap(ctdb, CTDB_CURRENT_NODE, mem_ctx, &map);
+	ret = ctdb_ctrl_getnodemap(ctdb, timeout, CTDB_CURRENT_NODE, mem_ctx, &map);
 	if (ret != 0) {
 		return NULL;
 	}

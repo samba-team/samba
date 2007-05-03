@@ -127,7 +127,7 @@ static int control_status_all(struct ctdb_context *ctdb)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	
 	ZERO_STRUCT(status);
@@ -197,7 +197,7 @@ static int control_status_reset_all(struct ctdb_context *ctdb)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	
 	for (i=0;i<num_nodes;i++) {
@@ -260,7 +260,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 
 	/* 1: find a list of all nodes */
 	printf("\n1: fetching list of nodes\n");
-	ret = ctdb_ctrl_getnodemap(ctdb, vnn, ctdb, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		return ret;
@@ -624,7 +624,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getnodemap(ctdb, vnn, ctdb, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		return ret;
@@ -795,7 +795,7 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 
 	for (i=0;i<num_nodes;i++) {
@@ -822,7 +822,7 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 
 	for (i=0;i<num_nodes;i++) {
@@ -865,7 +865,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 		return 0;
 	}
 
-	nodes = ctdb_get_connected_nodes(ctdb, ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	for (i=0;i<num_nodes;i++) {
 		ret = ctdb_ctrl_set_debuglevel(ctdb, nodes[i], level);

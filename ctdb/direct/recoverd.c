@@ -26,7 +26,7 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
-static int timeout = 0;
+static int timed_out = 0;
 
 /*
   show usage message
@@ -42,7 +42,7 @@ static void usage(void)
 void timeout_func(struct event_context *ev, struct timed_event *te, 
 	struct timeval t, void *private_data)
 {
-	timeout = 1;
+	timed_out = 1;
 }
 
 
@@ -50,6 +50,8 @@ void recoverd(struct ctdb_context *ctdb, struct event_context *ev)
 {
 	uint32_t vnn;
 	TALLOC_CTX *mem_ctx=NULL;
+	struct ctdb_node_map *nodemap=NULL;
+	int ret;
 	
 again:
 	if (mem_ctx) {
@@ -64,9 +66,9 @@ again:
 
 
 	/* we only check for recovery once every second */
-	timeout = 0;
+	timed_out = 0;
 	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(1, 0), timeout_func, ctdb);
-	while (!timeout) {
+	while (!timed_out) {
 		event_loop_once(ev);
 	}
 
@@ -76,6 +78,11 @@ again:
 printf("our node number is :%d\n",vnn);
 
 	/* get number of nodes */
+	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &nodemap);
+	if (ret != 0) {
+		printf("Unable to get nodemap from node %u\n", vnn);
+		goto again;
+	}
 
 }
 

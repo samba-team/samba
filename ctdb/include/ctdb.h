@@ -224,7 +224,8 @@ struct ctdb_node_map {
 	uint32_t num;
 	struct ctdb_node_and_flags nodes[1];
 };
-int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, 
+		    struct timeval timeout, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
 struct ctdb_key_list {
@@ -275,7 +276,9 @@ int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t 
  */
 int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
 
-uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, 
+				   struct timeval timeout, 
+				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes);
 
 int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
