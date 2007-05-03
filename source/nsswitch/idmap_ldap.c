@@ -80,11 +80,17 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	tmp = lp_parm_const_string(-1, config_option, "ldap_user_dn", NULL);
 
 	if ( tmp ) {
-		secret = idmap_fetch_secret("ldap", false, dom->name, tmp);
+		if (!dom) {
+			/* only the alloc backend is allowed to pass in a NULL dom */
+			secret = idmap_fetch_secret("ldap", true, NULL, tmp);
+		} else {
+			secret = idmap_fetch_secret("ldap", false, dom->name, tmp);
+		} 
+
 		if (!secret) {
 			DEBUG(0, ("get_credentials: Unable to fetch "
 				  "auth credentials for %s in %s\n",
-				  tmp, dom->name));
+				  tmp, (dom==NULL)?"ALLOC":dom->name));
 			ret = NT_STATUS_ACCESS_DENIED;
 			goto done;
 		} 		
