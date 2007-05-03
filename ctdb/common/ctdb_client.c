@@ -872,14 +872,13 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX 
   get a list of nodes (vnn and flags ) from a remote node
  */
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap)
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
 {
 	int ret;
 	TDB_DATA data, outdata;
-	int32_t i, res;
+	int32_t res;
 
 	ZERO_STRUCT(data);
-	ZERO_STRUCT(*nodemap);
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_NODEMAP, 0, data, 
 			   ctdb, &outdata, &res);
@@ -888,14 +887,11 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
-	nodemap->num = ((uint32_t *)outdata.dptr)[0];
-	nodemap->nodes=talloc_array(mem_ctx, struct ctdb_node_and_flags, nodemap->num);
-	CTDB_NO_MEMORY(ctdb, nodemap->nodes);
-
-	for (i=0;i<nodemap->num;i++) {
-		nodemap->nodes[i].vnn = ((uint32_t *)outdata.dptr)[2*i+1];
-		nodemap->nodes[i].flags = ((uint32_t *)outdata.dptr)[2*i+2];
+	if (*nodemap) {
+		talloc_free(*nodemap);
+		*nodemap = NULL;
 	}
+	*nodemap = (struct ctdb_node_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		    
 	return 0;
 }
@@ -1248,24 +1244,19 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes)
 {
-	struct ctdb_node_map *map;
+	struct ctdb_node_map *map=NULL;
 	int ret, i;
 	uint32_t *nodes;
 
 	*num_nodes = 0;
 
-	map = talloc(mem_ctx, struct ctdb_node_map);
-	CTDB_NO_MEMORY_VOID(ctdb, map);
-
-	ret = ctdb_ctrl_getnodemap(ctdb, CTDB_CURRENT_NODE, map, map);
+	ret = ctdb_ctrl_getnodemap(ctdb, CTDB_CURRENT_NODE, mem_ctx, &map);
 	if (ret != 0) {
-		talloc_free(map);
 		return NULL;
 	}
 
 	nodes = talloc_array(mem_ctx, uint32_t, map->num);
 	if (nodes == NULL) {
-		talloc_free(map);
 		return NULL;
 	}
 
@@ -1276,7 +1267,6 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 		}
 	}
 
-	talloc_free(map);
 	return nodes;
 }
 

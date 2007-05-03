@@ -222,10 +222,10 @@ struct ctdb_node_and_flags {
 };
 struct ctdb_node_map {
 	uint32_t num;
-	struct ctdb_node_and_flags *nodes;
+	struct ctdb_node_and_flags nodes[1];
 };
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, uint32_t destnode, 
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map *nodemap);
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
 struct ctdb_key_list {
 	uint32_t dbid;
