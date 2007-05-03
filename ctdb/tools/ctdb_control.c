@@ -762,6 +762,7 @@ static int control_createdb(struct ctdb_context *ctdb, int argc, const char **ar
 	int ret;
 	int32_t res;
 	TDB_DATA data;
+	struct timeval timeout;
 
 	if (argc < 2) {
 		usage();
@@ -773,8 +774,10 @@ static int control_createdb(struct ctdb_context *ctdb, int argc, const char **ar
 	/* tell ctdb daemon to attach */
 	data.dptr = discard_const(dbname);
 	data.dsize = strlen(dbname)+1;
+	timeout = timeval_current_ofs(1, 0);
 	ret = ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DB_ATTACH,
-			   0, data, ctdb, &data, &res);
+			   0, data, ctdb, &data, &res, 
+			   &timeout);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Failed to attach to database '%s'\n", dbname));
 		return -1;

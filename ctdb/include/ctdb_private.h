@@ -642,7 +642,8 @@ int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status);
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		 struct timeval *timeout);
 
 
 
