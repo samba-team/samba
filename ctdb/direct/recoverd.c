@@ -180,7 +180,9 @@ again:
 	}
 
 	
-	/* verify that all other nodes have the same vnnmap */
+	/* verify that all other nodes have the same vnnmap
+	   and are from the same generation
+	 */
 	for (j=0; j<nodemap->num; j++) {
 		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 			continue;
@@ -192,6 +194,13 @@ again:
 		ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_vnnmap);
 		if (ret != 0) {
 			printf("Unable to get vnnmap from remote node %u\n", nodemap->nodes[j].vnn);
+			goto again;
+		}
+
+		/* verify the vnnmap generation is the same */
+		if (vnnmap->generation != remote_vnnmap->generation) {
+			printf("Remote node %d has different generation of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->generation, vnnmap->generation);
+			do_recovery(ctdb, ev);
 			goto again;
 		}
 
