@@ -649,3 +649,11 @@ int tdb_get_flags(struct tdb_context *tdb)
 	return tdb->flags;
 }
 
+
+/*
+  enable sequence number handling on an open tdb
+*/
+void tdb_enable_seqnum(struct tdb_context *tdb)
+{
+	tdb->flags |= TDB_SEQNUM;
+}
