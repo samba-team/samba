@@ -273,6 +273,11 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: sids to unix ids\n", (unsigned long)state->pid));
 
+	if (state->request.extra_len == 0) {
+		DEBUG(0, ("Invalid buffer size!\n"));
+		return WINBINDD_ERROR;
+	}
+
 	sids = (DOM_SID *)state->request.extra_data.data;
 	num = state->request.extra_len / sizeof(DOM_SID);
 
