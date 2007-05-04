@@ -46,7 +46,7 @@ static void usage(void)
 		"  getdbmap <vnn>                     lists databases on a node\n"
 		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
 		"  createdb <vnn> <dbname>            create a database\n"
-		"  catdb <dbid>                       lists all keys/data in a db\n"
+		"  catdb <dbname>                     lists all keys/data in a db\n"
 		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
 		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
@@ -512,7 +512,7 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
  */
 static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t dbid;
+	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
 	int ret;
 
@@ -520,11 +520,10 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	dbid = strtoul(argv[0], NULL, 0);
-	
-	ctdb_db = find_ctdb_db(ctdb, dbid);
+	db_name = argv[0];
+	ctdb_db = ctdb_attach(ctdb, db_name);
 	if (ctdb_db == NULL) {
-		printf("Unable to find database 0x%x\n", dbid);
+		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
 		return -1;
 	}
 
@@ -533,6 +532,8 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		printf("Unable to dump database\n");
 		return -1;
 	}
+
+	talloc_free(ctdb_db);
 
 	printf("Dumped %d records\n", ret);
 	return 0;
