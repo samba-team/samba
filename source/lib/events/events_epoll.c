@@ -233,7 +233,8 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (ret == 0 && tvalp) {
-		common_event_loop_timer(epoll_ev->ev);
+		/* we don't care about a possible delay here */
+		common_event_loop_timer_delay(epoll_ev->ev);
 		return 0;
 	}
 
@@ -376,10 +377,8 @@ static int epoll_event_loop_once(struct event_context *ev)
 		 					   struct epoll_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_delay(ev);
-
+	tval = common_event_loop_timer_delay(ev);
 	if (timeval_is_zero(&tval)) {
-		common_event_loop_timer(ev);
 		return 0;
 	}
 

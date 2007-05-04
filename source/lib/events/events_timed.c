@@ -68,9 +68,7 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 	last_te = NULL;
 	for (cur_te = ev->timed_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->next_event) &&
-		    timeval_compare(&te->next_event,
-				    &cur_te->next_event) < 0) {
+		if (timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
 			break;
 		}
 
@@ -85,16 +83,46 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 }
 
 /*
-  a timer has gone off - call it
+  do a single event loop using the events defined in ev
+
+  return the delay untill the next timed event,
+  or zero if a timed event was triggered
 */
-void common_event_loop_timer(struct event_context *ev)
+struct timeval common_event_loop_timer_delay(struct event_context *ev)
 {
-	struct timeval t = timeval_current();
+	struct timeval current_time = timeval_zero();
 	struct timed_event *te = ev->timed_events;
 
-	if (te == NULL) {
-		return;
+	if (!te) {
+		/* have a default tick time of 30 seconds. This guarantees
+		   that code that uses its own timeout checking will be
+		   able to proceeed eventually */
+		return timeval_set(30, 0);
 	}
+
+	/*
+	 * work out the right timeout for the next timed event
+	 *
+	 * avoid the syscall to gettimeofday() if the timed event should
+	 * be triggered directly
+	 *
+	 * if there's a delay till the next timed event, we're done
+	 * with just returning the delay
+	 */
+	if (!timeval_is_zero(&te->next_event)) {
+		struct timeval delay;
+
+		current_time = timeval_current();
+
+		delay = timeval_until(&current_time, &te->next_event);
+		if (!timeval_is_zero(&delay)) {
+			return delay;
+		}
+	}
+
+	/*
+	 * ok, we have a timed event that we'll process ...
+	 */
 
 	/* deny the handler to free the event */
 	talloc_set_destructor(te, common_event_timed_deny_destructor);
@@ -104,33 +132,21 @@ void common_event_loop_timer(struct event_context *ev)
 	 * handler we don't want to come across this event again -- vl */
 	DLIST_REMOVE(ev->timed_events, te);
 
-	te->handler(ev, te, t, te->private_data);
+	/*
+	 * If the timed event was registered for a zero current_time,
+	 * then we pass a zero timeval here too! To avoid the
+	 * overhead of gettimeofday() calls.
+	 *
+	 * otherwise we pass the current time
+	 */
+	te->handler(ev, te, current_time, te->private_data);
 
 	/* The destructor isn't necessary anymore, we've already removed the
 	 * event from the list. */
 	talloc_set_destructor(te, NULL);
 
 	talloc_free(te);
-}
 
-/*
-  do a single event loop using the events defined in ev 
-*/
-struct timeval common_event_loop_delay(struct event_context *ev)
-{
-	struct timeval tval;
-
-	/* work out the right timeout for all timed events */
-	if (ev->timed_events) {
-		struct timeval t = timeval_current();
-		tval = timeval_until(&t, &ev->timed_events->next_event);
-	} else {
-		/* have a default tick time of 30 seconds. This guarantees
-		   that code that uses its own timeout checking will be
-		   able to proceeed eventually */
-		tval = timeval_set(30, 0);
-	}
-	
-	return tval;
+	return timeval_zero();
 }
 

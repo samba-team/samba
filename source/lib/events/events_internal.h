@@ -117,8 +117,7 @@ bool event_register_backend(const char *name, const struct event_ops *ops);
 
 struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
 					   struct timeval, event_timed_handler_t, void *);
-void common_event_loop_timer(struct event_context *);
-struct timeval common_event_loop_delay(struct event_context *);
+struct timeval common_event_loop_timer_delay(struct event_context *);
 
 struct signal_event *common_event_add_signal(struct event_context *ev, 
 					     TALLOC_CTX *mem_ctx,
