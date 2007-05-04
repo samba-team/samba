@@ -55,6 +55,127 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
+static BOOL smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx, 
+				    DATA_BLOB *edata_blob, 
+				    KRB5_EDATA_NTSTATUS *edata)
+{
+	BOOL ret = False;
+	prs_struct ps;
+
+	if (!mem_ctx || !edata_blob || !edata) 
+		return False;
+
+	if (!prs_init(&ps, edata_blob->length, mem_ctx, UNMARSHALL))
+		return False;
+
+	if (!prs_copy_data_in(&ps, (char *)edata_blob->data, edata_blob->length))
+		goto out;
+
+	prs_set_offset(&ps, 0);
+
+	if (!prs_ntstatus("ntstatus", &ps, 1, &edata->ntstatus))
+		goto out;
+
+	if (!prs_uint32("unknown1", &ps, 1, &edata->unknown1))
+		goto out;
+
+	if (!prs_uint32("unknown2", &ps, 1, &edata->unknown2)) /* only seen 00000001 here */
+		goto out;
+
+	ret = True;
+ out:
+	prs_mem_free(&ps);
+
+	return ret;
+}
+
+ static BOOL smb_krb5_get_ntstatus_from_krb5_error(krb5_error *error,
+						   NTSTATUS *nt_status)
+{
+	DATA_BLOB edata;
+	DATA_BLOB unwrapped_edata;
+	TALLOC_CTX *mem_ctx;
+	KRB5_EDATA_NTSTATUS parsed_edata;
+
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
+	edata = data_blob(error->e_data->data, error->e_data->length);
+#else
+	edata = data_blob(error->e_data.data, error->e_data.length);
+#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
+
+#ifdef DEVELOPER
+	dump_data(10, edata.data, edata.length);
+#endif /* DEVELOPER */
+
+	mem_ctx = talloc_init("smb_krb5_get_ntstatus_from_krb5_error");
+	if (mem_ctx == NULL) {
+		data_blob_free(&edata);
+		return False;
+	}
+
+	if (!unwrap_edata_ntstatus(mem_ctx, &edata, &unwrapped_edata)) {
+		data_blob_free(&edata);
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	data_blob_free(&edata);
+
+	if (!smb_krb5_err_io_nstatus(mem_ctx, &unwrapped_edata, &parsed_edata)) {
+		data_blob_free(&unwrapped_edata);
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	data_blob_free(&unwrapped_edata);
+
+	if (nt_status) {
+		*nt_status = parsed_edata.ntstatus;
+	}
+
+	TALLOC_FREE(mem_ctx);
+
+	return True;
+}
+
+ static BOOL smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(krb5_context ctx, 
+ 								  krb5_get_init_creds_opt *opt, 
+								  NTSTATUS *nt_status)
+{
+	BOOL ret = False;
+	krb5_error *error = NULL;
+
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR
+	ret = krb5_get_init_creds_opt_get_error(ctx, opt, &error);
+	if (ret) {
+		DEBUG(1,("krb5_get_init_creds_opt_get_error gave: %s\n", 
+			error_message(ret)));
+		return False;
+	}
+#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR */
+
+	if (!error) {
+		DEBUG(1,("no krb5_error\n"));
+		return False;
+	}
+
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
+	if (!error->e_data) {
+#else
+	if (error->e_data.data == NULL) {
+#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
+		DEBUG(1,("no edata in krb5_error\n")); 
+		krb5_free_error(ctx, error);
+		return False;
+	}
+
+	ret = smb_krb5_get_ntstatus_from_krb5_error(error, nt_status);
+
+	krb5_free_error(ctx, error);
+
+	return ret;
+}
+
 /*
   simulate a kinit, putting the tgt in the given cache location. If cache_name == NULL
   place in default cache location.
