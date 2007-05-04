@@ -73,14 +73,16 @@ int kerberos_kinit_password_ext(const char *principal,
 	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
 	krb5_ccache cc = NULL;
-	krb5_principal me;
+	krb5_principal me = NULL;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt *opt = NULL;
 	smb_krb5_addresses *addr = NULL;
 
+	ZERO_STRUCT(my_creds);
+
 	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
-		return code;
+		goto out;
 
 	if (time_offset != 0) {
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
@@ -91,21 +93,15 @@ int kerberos_kinit_password_ext(const char *principal,
 			getenv("KRB5_CONFIG")));
 
 	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
-		krb5_free_context(ctx);
-		return code;
+		goto out;
 	}
 	
 	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
-		krb5_cc_close(ctx, cc);
-		krb5_free_context(ctx);	
-		return code;
+		goto out;
 	}
 
-	code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt);
-	if (code) {
-		krb5_cc_close(ctx, cc);
-		krb5_free_context(ctx);	
-		return code;
+	if ((code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt))) {
+		goto out;
 	}
 
 	krb5_get_init_creds_opt_set_renew_life(opt, renewable_time);
@@ -117,55 +113,29 @@ int kerberos_kinit_password_ext(const char *principal,
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
 	if (request_pac) {
-		code = krb5_get_init_creds_opt_set_pac_request(ctx, opt, (krb5_boolean)request_pac);
-		if (code) {
-			krb5_cc_close(ctx, cc);
-			krb5_free_principal(ctx, me);
-			krb5_free_context(ctx);
-			return code;
+		if ((code = krb5_get_init_creds_opt_set_pac_request(ctx, opt, (krb5_boolean)request_pac))) {
+			goto out;
 		}
 	}
 #endif
 	if (add_netbios_addr) {
-		code = smb_krb5_gen_netbios_krb5_address(&addr);
-		if (code) {
-			krb5_cc_close(ctx, cc);
-			krb5_free_principal(ctx, me);
-			krb5_free_context(ctx);		
-			return code;	
+		if ((code = smb_krb5_gen_netbios_krb5_address(&addr))) {
+			goto out;
 		}
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, NULL, 0, NULL, opt)))
-	{
-		smb_krb5_get_init_creds_opt_free(ctx, opt);
-		smb_krb5_free_addresses(ctx, addr);
-		krb5_cc_close(ctx, cc);
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);
-		return code;
+						 kerb_prompter, NULL, 0, NULL, opt))) {
+		goto out;
 	}
 
-	smb_krb5_get_init_creds_opt_free(ctx, opt);
-
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
-		smb_krb5_free_addresses(ctx, addr);
-		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_cc_close(ctx, cc);
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
-		return code;
+		goto out;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		krb5_cc_close(ctx, cc);
-		smb_krb5_free_addresses(ctx, addr);
-		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
-		krb5_free_context(ctx);		
-		return code;
+		goto out;
 	}
 
 	if (expire_time) {
@@ -175,14 +145,24 @@ int kerberos_kinit_password_ext(const char *principal,
 	if (renew_till_time) {
 		*renew_till_time = (time_t) my_creds.times.renew_till;
 	}
-
-	krb5_cc_close(ctx, cc);
-	smb_krb5_free_addresses(ctx, addr);
+ out:
 	krb5_free_cred_contents(ctx, &my_creds);
-	krb5_free_principal(ctx, me);
-	krb5_free_context(ctx);		
-	
-	return 0;
+	if (me) {
+		krb5_free_principal(ctx, me);
+	}
+	if (addr) {
+		smb_krb5_free_addresses(ctx, addr);
+	}
+ 	if (opt) {
+		smb_krb5_get_init_creds_opt_free(ctx, opt);
+	}
+	if (cc) {
+		krb5_cc_close(ctx, cc);
+	}
+	if (ctx) {
+		krb5_free_context(ctx);
+	}
+	return code;
 }
 
 
