@@ -48,9 +48,7 @@ TESTS=""
 EXTRA_OBJ=""
 
 m4_include(libpopt.m4)
-PKG_CHECK_MODULES(TALLOC, talloc >= 1.0)
 m4_include(libtalloc.m4)
-PKG_CHECK_MODULES(TDB, tdb >= 1.1.0)
 m4_include(libtdb.m4)
 
 m4_include(ldap.m4)
