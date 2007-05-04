@@ -37,6 +37,7 @@
 #define CTDB_BROADCAST_VNN 0xF0000002
 
 #define CTDB_MAX_REDIRECT_COUNT 3
+#define CTDB_DEFAULT_SEQNUM_FREQUENCY 1
 
 /*
   an installed ctdb remote call
@@ -210,6 +211,7 @@ struct ctdb_context {
 	struct ctdb_status status;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
+	uint32_t seqnum_frequency;
 };
 
 struct ctdb_db_context {
@@ -220,6 +222,7 @@ struct ctdb_db_context {
 	const char *db_path;
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
+	uint32_t seqnum;
 };
 
 
@@ -283,6 +286,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_REGISTER_SRVID,
 		    CTDB_CONTROL_DEREGISTER_SRVID,
 		    CTDB_CONTROL_ENABLE_SEQNUM,
+		    CTDB_CONTROL_UPDATE_SEQNUM,
+		    CTDB_CONTROL_SET_SEQNUM_FREQUENCY,
 };
 
 
@@ -688,5 +693,9 @@ int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA da
 int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
 int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data);
 int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
+
+int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
+int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
+int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
 
 #endif
