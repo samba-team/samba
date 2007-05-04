@@ -826,7 +826,11 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 	*pp_mapped_count = 0;
 	*pp_ref = NULL;
 	*pp_names = NULL;
-	
+
+	if (num_sids == 0) {
+		return NT_STATUS_OK;
+	}
+
 	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM2);
 	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
@@ -846,12 +850,10 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 		return status;
 	}
 
-	if (num_sids > 0) {
-		names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME2, num_sids);
-		names->uni_name = TALLOC_ARRAY(names, UNISTR2, num_sids);
-		if ((names->name == NULL) || (names->uni_name == NULL)) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME2, num_sids);
+	names->uni_name = TALLOC_ARRAY(names, UNISTR2, num_sids);
+	if ((names->name == NULL) || (names->uni_name == NULL)) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<MAX_REF_DOMAINS; i++) {

@@ -209,8 +209,12 @@ WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX
 		return out.status;
 		
 	/* pull out the data */
-	if ( !(services = TALLOC_ARRAY( mem_ctx, ENUM_SERVICES_STATUS, out.returned )) ) 
-		return WERR_NOMEM;
+	if (out.returned) {
+		if ( !(services = TALLOC_ARRAY( mem_ctx, ENUM_SERVICES_STATUS, out.returned )) ) 
+			return WERR_NOMEM;
+	} else {
+		services = NULL;
+	}
 		
 	for ( i=0; i<out.returned; i++ ) {
 		svcctl_io_enum_services_status( "", &services[i], &out.buffer, 0 );
