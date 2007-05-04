@@ -530,12 +530,17 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
  Allocate the RPC_DATA_BLOB memory.
 ********************************************************************/
 
-size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
+static void create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
-	str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
-	if (str->buffer == NULL)
-		smb_panic("create_rpc_blob: talloc fail\n");
-	return len;
+	if (len) {
+		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
+		if (str->buffer == NULL)
+			smb_panic("create_rpc_blob: talloc fail\n");
+		str->buf_len = len;
+	} else {
+		str->buffer = NULL;
+		str->buf_len = 0;
+	}
 }
 
 /*******************************************************************
@@ -547,7 +552,7 @@ void init_rpc_blob_uint32(RPC_DATA_BLOB *str, uint32 val)
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_len = create_rpc_blob(str, sizeof(uint32));
+	create_rpc_blob(str, sizeof(uint32));
 	SIVAL(str->buffer, 0, val);
 }
 
@@ -560,9 +565,10 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_len = create_rpc_blob(str, len*2);
-	rpcstr_push(str->buffer, buf, (size_t)str->buf_len, STR_TERMINATE);
-	
+	if (len) {
+		create_rpc_blob(str, len*2);
+		rpcstr_push(str->buffer, buf, (size_t)str->buf_len, STR_TERMINATE);
+	}
 }
 
 /*******************************************************************
@@ -572,8 +578,10 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
-	str->buf_len = create_rpc_blob(str, strlen(buf));
-	str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
+	if (buf && *buf) {
+		create_rpc_blob(str, strlen(buf));
+		str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
+	}
 }
 
 /*******************************************************************
@@ -585,8 +593,8 @@ void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len)
 	ZERO_STRUCTP(str);
 
 	/* max buffer size (allocated size) */
-	if (buf != NULL) {
-		len = create_rpc_blob(str, len);
+	if (buf != NULL && len) {
+		create_rpc_blob(str, len);
 		memcpy(str->buffer, buf, len);
 	}
 	str->buf_len = len;
