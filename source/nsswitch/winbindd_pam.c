@@ -564,12 +564,12 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					       cc, 
 					       True,
 					       True,
-					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
+					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+					       &result);
 
 	if (krb5_ret) {
 		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 
 			principal_s, error_message(krb5_ret), krb5_ret));
-		result = krb5_to_nt_status(krb5_ret);
 		goto failed;
 	}
 

@@ -189,7 +189,8 @@ int kerberos_kinit_password_ext(const char *principal,
 				const char *cache_name,
 				BOOL request_pac,
 				BOOL add_netbios_addr,
-				time_t renewable_time)
+				time_t renewable_time,
+				NTSTATUS *ntstatus)
 {
 	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
@@ -267,6 +268,29 @@ int kerberos_kinit_password_ext(const char *principal,
 		*renew_till_time = (time_t) my_creds.times.renew_till;
 	}
  out:
+	if (ntstatus) {
+
+		NTSTATUS status;
+
+		/* fast path */
+		if (code == 0) {
+			*ntstatus = NT_STATUS_OK;
+			goto cleanup;
+		}
+
+		/* try to get ntstatus code out of krb5_error when we have it
+		 * inside the krb5_get_init_creds_opt - gd */
+
+		if (opt && smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(ctx, opt, &status)) {
+			*ntstatus = status;
+			goto cleanup;
+		}
+
+		/* fall back to self-made-mapping */
+		*ntstatus = krb5_to_nt_status(code);
+	}
+
+ cleanup:
 	krb5_free_cred_contents(ctx, &my_creds);
 	if (me) {
 		krb5_free_principal(ctx, me);
@@ -321,7 +345,8 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	
 	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable);
+			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable, 
+			NULL);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
@@ -580,7 +605,8 @@ int kerberos_kinit_password(const char *principal,
 					   cache_name,
 					   False,
 					   False,
-					   0);
+					   0,
+					   NULL);
 }
 
 /************************************************************************
