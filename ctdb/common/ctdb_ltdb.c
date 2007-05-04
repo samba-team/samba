@@ -389,7 +389,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
-				 CTDB_CONTROL_DB_ATTACH, CTDB_CTRL_FLAG_NOREPLY,
+				 CTDB_CONTROL_DB_ATTACH, 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
 	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));

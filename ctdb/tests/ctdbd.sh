@@ -8,6 +8,7 @@ $VALGRIND bin/ctdbd --nlist direct/nodes.txt
 
 echo "Testing ping"
 $VALGRIND bin/ctdb_control ping || exit 1
+exit 0
 
 echo "Testing status"
 $VALGRIND bin/ctdb_control status all || exit 1

@@ -264,7 +264,7 @@ struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context
 
 	/* tell all the nodes in the cluster to start sending records to this node */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0, CTDB_CONTROL_TRAVERSE_ALL,
-				       CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
 		talloc_free(state);
 		return NULL;
@@ -300,7 +300,7 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 	data.dsize = d->length;
 
 	ret = ctdb_daemon_send_control(state->ctdb, state->srcnode, 0, CTDB_CONTROL_TRAVERSE_DATA,
-				       CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(0,("Failed to send traverse data\n"));
 	}

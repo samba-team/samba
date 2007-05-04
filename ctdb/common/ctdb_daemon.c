@@ -36,8 +36,8 @@ struct ctdb_client {
 	struct ctdb_context *ctdb;
 	int fd;
 	struct ctdb_queue *queue;
+	uint32_t client_id;
 };
-
 
 
 static void daemon_incoming_packet(void *, uint8_t *, uint32_t );
@@ -134,20 +134,35 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
   this is called when the ctdb daemon received a ctdb request to 
   set the srvid from the client
  */
-static void daemon_request_register_message_handler(struct ctdb_client *client, 
-						    struct ctdb_req_register *c)
+int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
 {
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
 	int res;
-	res = ctdb_register_message_handler(client->ctdb, client, 
-					    c->srvid, daemon_message_handler, 
-					    client);
-	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
-			 c->srvid));
-	} else {
-		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", 
-			 c->srvid));
+	if (client == NULL) {
+		DEBUG(0,("Bad client_id in daemon_request_register_message_handler\n"));
+		return -1;
 	}
+	res = ctdb_register_message_handler(ctdb, client, srvid, daemon_message_handler, client);
+	if (res != 0) {
+		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", srvid));
+	} else {
+		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", srvid));
+	}
+	return res;
+}
+
+/*
+  this is called when the ctdb daemon received a ctdb request to 
+  remove a srvid from the client
+ */
+int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
+{
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	if (client == NULL) {
+		DEBUG(0,("Bad client_id in daemon_request_deregister_message_handler\n"));
+		return -1;
+	}
+	return ctdb_deregister_message_handler(ctdb, srvid, client);
 }
 
 
@@ -232,6 +247,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
 {
+	ctdb_reqid_remove(client->ctdb, client->client_id);
 	client->ctdb->num_clients--;
 	close(client->fd);
 	client->fd = -1;
@@ -448,12 +464,6 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
 		break;
 
-	case CTDB_REQ_REGISTER:
-		ctdb->status.client.req_register++;
-		daemon_request_register_message_handler(client, 
-							(struct ctdb_req_register *)hdr);
-		break;
-
 	case CTDB_REQ_MESSAGE:
 		ctdb->status.client.req_message++;
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
@@ -548,6 +558,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	client = talloc_zero(ctdb, struct ctdb_client);
 	client->ctdb = ctdb;
 	client->fd = fd;
+	client->client_id = ctdb_reqid_new(ctdb, client);
 	ctdb->num_clients++;
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
@@ -854,7 +865,8 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 	res = ctdb_daemon_send_control(client->ctdb, c->hdr.destnode,
-				       c->srvid, c->opcode, c->flags,
+				       c->srvid, c->opcode, client->client_id,
+				       c->flags,
 				       data, daemon_control_callback,
 				       state);
 	if (res != 0) {

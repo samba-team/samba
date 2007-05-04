@@ -45,7 +45,6 @@ int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA da
 	return 0;
 }
 
-
 /*
   called when a CTDB_REQ_MESSAGE packet comes in
 */
@@ -169,4 +168,21 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 	talloc_set_destructor(m, message_handler_destructor);
 
 	return 0;
+}
+
+
+/*
+  setup handler for receipt of ctdb messages from ctdb_send_message()
+*/
+int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+{
+	struct ctdb_message_list *m;
+
+	for (m=ctdb->message_list;m;m=m->next) {
+		if (m->srvid == srvid && m->message_private == private_data) {
+			talloc_free(m);
+			return 0;
+		}
+	}
+	return -1;
 }
