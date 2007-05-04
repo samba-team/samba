@@ -149,7 +149,6 @@ struct ctdb_status {
 		uint32_t req_call;
 		uint32_t req_message;
 		uint32_t req_finished;
-		uint32_t req_register;
 		uint32_t req_connect_wait;
 		uint32_t req_shutdown;
 		uint32_t req_control;
@@ -281,6 +280,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_TRAVERSE_START,
 		    CTDB_CONTROL_TRAVERSE_ALL,
 		    CTDB_CONTROL_TRAVERSE_DATA,
+		    CTDB_CONTROL_REGISTER_SRVID,
+		    CTDB_CONTROL_DEREGISTER_SRVID,
 };
 
 
@@ -337,8 +338,7 @@ enum ctdb_operation {
 	CTDB_REPLY_CONTROL,
 	
 	/* only used on the domain socket */
-	CTDB_REQ_REGISTER       = 1000,     
-	CTDB_REQ_CONNECT_WAIT,
+	CTDB_REQ_CONNECT_WAIT   = 1000,
 	CTDB_REPLY_CONNECT_WAIT,
 	CTDB_REQ_SHUTDOWN
 };
@@ -404,11 +404,6 @@ struct ctdb_reply_dmaster {
 	uint8_t  data[1];
 };
 
-struct ctdb_req_register {
-	struct ctdb_req_header hdr;
-	uint64_t srvid;
-};
-
 struct ctdb_req_message {
 	struct ctdb_req_header hdr;
 	uint64_t srvid;
@@ -449,6 +444,7 @@ struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
 	uint64_t srvid;
+	uint32_t client_id;
 #define CTDB_CTRL_FLAG_NOREPLY 1
 	uint32_t flags;
 	uint32_t datalen;
@@ -629,7 +625,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint64_t srvid, uint32_t opcode, uint32_t flags,
+			     uint64_t srvid, uint32_t opcode, uint32_t client_id, uint32_t flags,
 			     TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data);
@@ -688,5 +684,8 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 
 int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data);
 
+int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
+int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data);
+int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
 
 #endif

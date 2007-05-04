@@ -94,7 +94,6 @@ static void show_status(struct ctdb_status *s)
 	printf("   req_call              %u\n", s->client.req_call);
 	printf("   req_message           %u\n", s->client.req_message);
 	printf("   req_finished          %u\n", s->client.req_finished);
-	printf("   req_register          %u\n", s->client.req_register);
 	printf("   req_connect_wait      %u\n", s->client.req_connect_wait);
 	printf("   req_shutdown          %u\n", s->client.req_shutdown);
 	printf("   req_control           %u\n", s->client.req_control);

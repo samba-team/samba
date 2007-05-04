@@ -376,27 +376,38 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     void *private_data)
 				    
 {
-	struct ctdb_req_register *c;
 	int res;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb);
+	int32_t status;
+	
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_REGISTER_SRVID, 0, 
+			   tdb_null, NULL, NULL, &status, NULL);
+	if (res != 0 || status != 0) {
+		DEBUG(0,("Failed to register srvid %llu\n", (unsigned long long)srvid));
+		return -1;
 	}
 
-	c = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_REGISTER, sizeof(*c), 
-			       struct ctdb_req_register);
-	CTDB_NO_MEMORY(ctdb, c);
-	c->srvid            = srvid;
-
-	res = ctdb_client_queue_pkt(ctdb, &c->hdr);
-	talloc_free(c);
-	if (res != 0) {
-		return res;
-	}
-
-	/* also need to register the handler with our ctdb structure */
+	/* also need to register the handler with our own ctdb structure */
 	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
+}
+
+/*
+  tell the daemon we no longer want a srvid
+*/
+int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+{
+	int res;
+	int32_t status;
+	
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_DEREGISTER_SRVID, 0, 
+			   tdb_null, NULL, NULL, &status, NULL);
+	if (res != 0 || status != 0) {
+		DEBUG(0,("Failed to deregister srvid %llu\n", (unsigned long long)srvid));
+		return -1;
+	}
+
+	/* also need to register the handler with our own ctdb structure */
+	ctdb_deregister_message_handler(ctdb, srvid, private_data);
+	return 0;
 }
 
 
@@ -689,6 +700,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	c->hdr.destnode     = destnode;
 	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
+	c->client_id        = 0;
 	c->flags            = flags;
 	c->srvid            = srvid;
 	c->datalen          = data.dsize;
@@ -1491,6 +1503,12 @@ int ctdb_list_keys(struct ctdb_db_context *ctdb_db, FILE *f)
 
 	while (!state.done) {
 		event_loop_once(ctdb_db->ctdb->ev);
+	}
+
+	ret = ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
+	if (ret != 0) {
+		DEBUG(0,("Failed to remove list keys handler\n"));
+		return -1;
 	}
 
 	return state.count;

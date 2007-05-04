@@ -130,7 +130,9 @@ static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
   process a control request
  */
 static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb, 
-				     uint32_t opcode, TDB_DATA indata,
+				     uint32_t opcode, 
+				     uint64_t srvid, uint32_t client_id,
+				     TDB_DATA indata,
 				     TDB_DATA *outdata, uint32_t srcnode)
 {
 	switch (opcode) {
@@ -387,6 +389,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TRAVERSE_DATA:
 		return ctdb_control_traverse_data(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_REGISTER_SRVID:
+		return daemon_register_message_handler(ctdb, client_id, srvid);
+
+	case CTDB_CONTROL_DEREGISTER_SRVID:
+		return daemon_deregister_message_handler(ctdb, client_id, srvid);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -408,7 +416,8 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	data.dsize = c->datalen;
 
 	outdata = talloc_zero(c, TDB_DATA);
-	status = ctdb_control_dispatch(ctdb, c->opcode, data, outdata, hdr->srcnode);
+	status = ctdb_control_dispatch(ctdb, c->opcode, c->srvid, c->client_id,
+				       data, outdata, hdr->srcnode);
 
 	/* some controls send no reply */
 	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
@@ -471,7 +480,8 @@ static int ctdb_control_destructor(struct ctdb_control_state *state)
   send a control message to a node
  */
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint64_t srvid, uint32_t opcode, uint32_t flags,
+			     uint64_t srvid, uint32_t opcode, uint32_t client_id,
+			     uint32_t flags,
 			     TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data)
@@ -504,6 +514,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	c->hdr.destnode     = destnode;
 	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
+	c->client_id        = client_id;
 	c->flags            = flags;
 	c->srvid            = srvid;
 	c->datalen          = data.dsize;

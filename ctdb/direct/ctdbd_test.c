@@ -51,22 +51,6 @@ static int ux_socket_connect(const char *name)
 	return fd;
 }
 
-void register_pid_with_daemon(int fd, int pid)
-{
-	struct ctdb_req_register r;
-
-	bzero(&r, sizeof(r));
-	r.hdr.length       = sizeof(r);
-	r.hdr.ctdb_magic   = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
-	r.hdr.generation   = 1;
-	r.hdr.operation    = CTDB_REQ_REGISTER;
-	r.srvid            = pid;
-
-	/* XXX must deal with partial writes here */
-	write(fd, &r, sizeof(r));
-}
-
 /* send a command to the cluster to wait until all nodes are connected
    and the cluster is fully operational
  */
@@ -257,13 +241,6 @@ int main(int argc, const char *argv[])
 		printf("failed to open domain socket\n");
 		exit(10);
 	}
-
-
-	/* register our local server id with the daemon so that it knows
-	   where to send messages addressed to our local pid.
-	 */
-	pid=getpid();
-	register_pid_with_daemon(fd, pid);
 
 
 	/* do a connect wait to ensure that all nodes in the cluster are up 
