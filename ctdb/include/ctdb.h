@@ -287,6 +287,9 @@ int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
 
-int ctdb_list_keys(struct ctdb_db_context *ctdb_db, FILE *f);
+typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, void *);
+int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);
+
+int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
 
 #endif
