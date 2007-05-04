@@ -57,15 +57,13 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	struct composite_context *pipe_connect_req;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) return NULL;
+	c = composite_create(ctx, ctx->event_ctx);
+	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct rpc_connect_srv_state);
 	if (composite_nomem(s, c)) return c;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = ctx->event_ctx;
 
 	s->ctx = ctx;
 	s->r = *r;
@@ -218,15 +216,13 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 	struct composite_context *lookup_dc_req;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) return NULL;
+	c = composite_create(ctx, ctx->event_ctx);
+	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct rpc_connect_dc_state);
 	if (composite_nomem(s, c)) return c;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = ctx->event_ctx;
 
 	s->ctx = ctx;
 	s->r   = *r;
@@ -433,15 +429,13 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	struct rpc_connect_dci_state *s;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) return NULL;
+	c = composite_create(ctx, ctx->event_ctx);
+	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct rpc_connect_dci_state);
 	if (composite_nomem(s, c)) return c;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = ctx->event_ctx;
 
 	s->ctx = ctx;
 	s->r   = *r;
