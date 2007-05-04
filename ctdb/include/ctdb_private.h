@@ -173,6 +173,16 @@ struct ctdb_vnn_map {
 	uint32_t map[1];
 };
 
+/* a structure that contains the elements required for the write record
+   control
+*/
+struct ctdb_write_record {
+	uint32_t dbid;
+	uint32_t keylen;
+	uint32_t datalen;
+	unsigned char blob[1];
+};
+	
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -632,7 +642,8 @@ int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status);
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		 struct timeval *timeout);
 
 
 
@@ -649,6 +660,7 @@ int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA 
 int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 
 
 struct ctdb_traverse_start {

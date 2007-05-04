@@ -109,3 +109,54 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 
 	return 0;
 }
+
+int 
+ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	struct ctdb_write_record *wr;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_ltdb_header header;
+	TDB_DATA key, data;
+	int ret;
+
+	outdata->dsize = 0;
+	outdata->dptr = NULL;
+
+	wr = (struct ctdb_write_record *)indata.dptr;
+
+	ctdb_db = find_ctdb_db(ctdb, wr->dbid);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n", wr->dbid));
+		return -1;
+	}
+
+	key.dsize  = wr->keylen;
+	key.dptr   = (unsigned char *)talloc_memdup(outdata, &wr->blob[0], wr->keylen);
+
+	data.dsize = wr->datalen;
+	data.dptr  = (unsigned char *)talloc_memdup(outdata, &wr->blob[wr->keylen], wr->datalen);
+
+
+	ret = ctdb_ltdb_lock(ctdb_db, key);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "Unable to lock db\n"));
+		return -1;
+	}
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, outdata, NULL);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "Unable to fetch record\n"));
+		ctdb_ltdb_unlock(ctdb_db, key);
+		return -1;
+	}
+	header.rsn++;
+
+	ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "Unable to store record\n"));
+		ctdb_ltdb_unlock(ctdb_db, key);
+		return -1;
+	}
+	ctdb_ltdb_unlock(ctdb_db, key);
+
+	return 0;
+}
