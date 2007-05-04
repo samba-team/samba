@@ -511,7 +511,7 @@ static int test_inet_ntoa(void)
 		       "\tptr: %p - %p = %d != %d\n" \
 		       "]\n", \
 		       __STRING(func), __location__, __STRING(func), \
-		       str, diff, base, res, _v, _ep, _p, diff - (_ep - _p), diff); \
+		       str, diff, base, res, _v, _ep, _p, (int)(diff - (_ep - _p)), diff); \
 		return false; \
 	} \
 } while (0)
