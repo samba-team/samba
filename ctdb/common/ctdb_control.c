@@ -356,6 +356,19 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb->num_clients;
 
+	case CTDB_CONTROL_GET_DBNAME: {
+		uint32_t db_id;
+		struct ctdb_db_context *ctdb_db;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
+		db_id = *(uint32_t *)indata.dptr;
+		ctdb_db = find_ctdb_db(ctdb, db_id);
+		if (ctdb_db == NULL) return -1;
+		outdata->dptr = discard_const(ctdb_db->db_name);
+		outdata->dsize = strlen(ctdb_db->db_name)+1;
+		return 0;
+	}
+
 	case CTDB_CONTROL_GETDBPATH: {
 		uint32_t db_id;
 		struct ctdb_db_context *ctdb_db;

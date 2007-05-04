@@ -284,7 +284,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 		printf("setting node %d to recovery mode\n",nodemap->nodes[j].vnn);
-		ret = ctdb_ctrl_setrecmode(ctdb, nodemap->nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
+		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
 		if (ret != 0) {
 			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
 			return ret;
@@ -293,7 +293,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	
 	/* 4: get a list of all databases */
 	printf("\n4: getting list of databases to recover\n");
-	ret = ctdb_ctrl_getdbmap(ctdb, vnn, ctdb, &dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &dbmap);
 	if (ret != 0) {
 		printf("Unable to get dbids from node %u\n", vnn);
 		return ret;
@@ -301,7 +301,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	for (i=0;i<dbmap->num;i++) {
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
 		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
@@ -322,7 +322,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 			}
 
 			printf("merging all records from node %d for database 0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
+			ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
 				printf("Unable to copy db from node %u to node %u\n", nodemap->nodes[j].vnn, vnn);
 				return ret;
@@ -342,7 +342,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 			}
 
 			printf("setting dmaster to %d for node %d db 0x%08x\n",dmaster,nodemap->nodes[j].vnn,dbmap->dbids[i]);
-			ret = ctdb_ctrl_setdmaster(ctdb, nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], dmaster);
+			ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], dmaster);
 			if (ret != 0) {
 				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
 				return ret;
@@ -365,7 +365,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 			}
 
 			printf("pushing all records to node %d for database 0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
-			ret = ctdb_ctrl_copydb(ctdb, vnn, nodemap->nodes[j].vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
+			ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(1, 0), vnn, nodemap->nodes[j].vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, ctdb);
 			if (ret != 0) {
 				printf("Unable to copy db from node %u to node %u\n", vnn, nodemap->nodes[j].vnn);
 				return ret;
@@ -404,7 +404,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 		printf("setting new vnn map on node %d\n",nodemap->nodes[j].vnn);
-		ret = ctdb_ctrl_setvnnmap(ctdb, nodemap->nodes[j].vnn, ctdb, vnnmap);
+		ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, ctdb, vnnmap);
 		if (ret != 0) {
 			printf("Unable to set vnnmap for node %u\n", vnn);
 			return ret;
@@ -420,7 +420,7 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 		printf("changing recovery mode back to normal for node %d\n",nodemap->nodes[j].vnn);
-		ret = ctdb_ctrl_setrecmode(ctdb, nodemap->nodes[j].vnn, CTDB_RECOVERY_NORMAL);
+		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, CTDB_RECOVERY_NORMAL);
 		if (ret != 0) {
 			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
 			return ret;
@@ -472,7 +472,7 @@ static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn     = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmode(ctdb, vnn, &recmode);
+	ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), vnn, &recmode);
 	if (ret != 0) {
 		printf("Unable to get recmode from node %u\n", vnn);
 		return ret;
@@ -498,7 +498,7 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	vnn     = strtoul(argv[0], NULL, 0);
 	recmode = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_setrecmode(ctdb, vnn, recmode);
+	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
 		return ret;
@@ -566,7 +566,7 @@ static int control_cpdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	dbid     = strtoul(argv[2], NULL, 0);
 
 	mem_ctx = talloc_new(ctdb);
-	ret = ctdb_ctrl_copydb(ctdb, fromvnn, tovnn, dbid, CTDB_LMASTER_ANY, mem_ctx);
+	ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(1, 0), fromvnn, tovnn, dbid, CTDB_LMASTER_ANY, mem_ctx);
 	if (ret != 0) {
 		printf("Unable to copy db from node %u to node %u\n", fromvnn, tovnn);
 		return ret;
@@ -591,7 +591,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getdbmap(ctdb, vnn, ctdb, &dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &dbmap);
 	if (ret != 0) {
 		printf("Unable to get dbids from node %u\n", vnn);
 		return ret;
@@ -601,7 +601,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
 
-		ctdb_ctrl_getdbpath(ctdb, dbmap->dbids[i], ctdb, &path);
+		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
 		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
 	}
 
@@ -667,7 +667,7 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}
 
-	ret = ctdb_ctrl_setvnnmap(ctdb, vnn, ctdb, vnnmap);
+	ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, vnnmap);
 	if (ret != 0) {
 		printf("Unable to set vnnmap for node %u\n", vnn);
 		return ret;
@@ -720,7 +720,7 @@ static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **
 	dbid    = strtoul(argv[1], NULL, 0);
 	dmaster = strtoul(argv[2], NULL, 0);
 
-	ret = ctdb_ctrl_setdmaster(ctdb, vnn, ctdb, dbid, dmaster);
+	ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, dbid, dmaster);
 	if (ret != 0) {
 		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
