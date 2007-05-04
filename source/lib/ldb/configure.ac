@@ -11,7 +11,7 @@ AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
-AC_INIT(ldb, 1.0)
+AC_INIT(ldb, 0.9.0)
 AC_CONFIG_SRCDIR([common/ldb.c])
 
 AC_LIBREPLACE_ALL_CHECKS
@@ -48,7 +48,9 @@ TESTS=""
 EXTRA_OBJ=""
 
 m4_include(libpopt.m4)
+PKG_CHECK_MODULES(TALLOC, talloc >= 1.0)
 m4_include(libtalloc.m4)
+PKG_CHECK_MODULES(TDB, tdb >= 1.1.0)
 m4_include(libtdb.m4)
 
 m4_include(ldap.m4)
