@@ -204,7 +204,9 @@ struct ctdb_vnn_map;
 int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
 		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
-int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
+int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb,
+		struct timeval timeout, uint32_t destnode, 
+		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
 
 /* table that contains a list of all dbids on a node
  */
@@ -212,7 +214,9 @@ struct ctdb_dbid_map {
 	uint32_t num;
 	uint32_t dbids[1];
 };
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t destnode, 
+	TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
 
 
 /* table that contains a list of all nodes a ctdb knows about and their 
@@ -239,9 +243,14 @@ struct ctdb_key_list {
 	TDB_DATA *data;
 };
 int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb, uint32_t sourcenode, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx);
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t sourcenode, 
+	uint32_t destnode, uint32_t dbid, uint32_t lmaster, 
+	TALLOC_CTX *mem_ctx);
 
-int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
+int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
+int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **name);
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name);
 
 int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 
@@ -255,7 +264,9 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 /*
   change dmaster for all keys in the database to the new value
  */
-int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
+int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t destnode, 
+	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
 
 /*
   delete all records from a tdb
@@ -272,11 +283,11 @@ int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_
 /*
   get the recovery mode of a remote node
  */
-int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmode);
 /*
   set the recovery mode of a remote node
  */
-int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, uint32_t destnode, uint32_t recmode);
+int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmode);
 
 uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, 
 				   struct timeval timeout, 
