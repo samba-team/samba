@@ -163,6 +163,7 @@ enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 	map.sid = &sid;
 	map.xid.id = state->request.data.dual_idmapset.id;
 	map.xid.type = state->request.data.dual_idmapset.type;
+	map.status = ID_MAPPED;
 
 	result = idmap_set_mapping(&map);
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
