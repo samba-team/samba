@@ -135,7 +135,8 @@ case "$host_os" in
 		fi
 		;;
 	*osf*)
-		BLDSHARED="true"
+		# disabled because tru64 fails to link libtorture.so
+		BLDSHARED="false"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC"
 		;;
