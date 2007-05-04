@@ -55,7 +55,8 @@
 /* 
    basic testing of change notify on directories
 */
-static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2, 
+			    TALLOC_CTX *mem_ctx)
 {
 	BOOL ret = True;
 	NTSTATUS status;
@@ -110,7 +111,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing notify mkdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
-	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -122,7 +123,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing notify rmdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
-	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -132,10 +133,10 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing notify mkdir - rmdir - mkdir - rmdir\n");
 
-	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
-	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
-	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
-	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -174,11 +175,14 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
+	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistant.txt");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 	/* (1st unlink) as the 2nd notify directly returns,
 	   this unlink is only seen by the 1st notify and 
 	   the 3rd notify (later) */
 	printf("testing notify on unlink for the first file\n");
-	status = smbcli_unlink(cli->tree, BASEDIR "\\test0.txt");
+	status = smbcli_unlink(cli2->tree, BASEDIR "\\test0.txt");
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* receive the reply from the 2nd notify */
@@ -186,24 +190,27 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	CHECK_VAL(notify.nttrans.out.num_changes, count);
-	for (i=1;i<notify.nttrans.out.num_changes;i++) {
+	for (i=1;i<count;i++) {
 		CHECK_VAL(notify.nttrans.out.changes[i].action, NOTIFY_ACTION_ADDED);
 	}
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
 
-	/* and now from the 1st notify */
+	printf("and now from the 1st notify\n");
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
 
-	/* (3rd notify) this notify will only see the 1st unlink */
+	printf("(3rd notify) this notify will only see the 1st unlink\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
+
+	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistant.txt");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	printf("testing notify on wildcard unlink for %d files\n", count-1);
 	/* (2nd unlink) do a wildcard unlink */
-	status = smbcli_unlink(cli->tree, BASEDIR "\\test*.txt");
+	status = smbcli_unlink(cli2->tree, BASEDIR "\\test*.txt");
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* receive the 3rd notify */
@@ -1149,11 +1156,14 @@ done:
 */
 BOOL torture_raw_notify(struct torture_context *torture)
 {
-	struct smbcli_state *cli;
+	struct smbcli_state *cli, *cli2;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 		
 	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+	if (!torture_open_connection(&cli2, 0)) {
 		return False;
 	}
 
@@ -1163,7 +1173,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 		return False;
 	}
 
-	ret &= test_notify_dir(cli, mem_ctx);
+	ret &= test_notify_dir(cli, cli2, mem_ctx);
 	ret &= test_notify_mask(cli, mem_ctx);
 	ret &= test_notify_recursive(cli, mem_ctx);
 	ret &= test_notify_file(cli, mem_ctx);
@@ -1177,6 +1187,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);
+	torture_close_connection(cli2);
 	talloc_free(mem_ctx);
 	return ret;
 }
