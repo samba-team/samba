@@ -46,7 +46,7 @@ static void usage(void)
 		"  getdbmap <vnn>                     lists databases on a node\n"
 		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
 		"  createdb <vnn> <dbname>            create a database\n"
-		"  catdb <vnn> <dbid>                 lists all keys in a remote tdb\n"
+		"  catdb <dbname>                     lists all keys/data in a db\n"
 		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
 		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
@@ -508,43 +508,34 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 }
 
 /*
-  display remote list of keys for a tdb
+  display remote list of keys/data for a db
  */
 static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t vnn, dbid;
-	int i, j, ret;
-	struct ctdb_key_list keys;
-	TALLOC_CTX *mem_ctx;
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	int ret;
 
-	if (argc < 2) {
+	if (argc < 1) {
 		usage();
 	}
 
-	vnn  = strtoul(argv[0], NULL, 0);
-	dbid = strtoul(argv[1], NULL, 0);
-
-	mem_ctx = talloc_new(ctdb);
-	ret = ctdb_ctrl_pulldb(ctdb, vnn, dbid, CTDB_LMASTER_ANY, mem_ctx, &keys);
-	if (ret != 0) {
-		printf("Unable to get keys from node %u\n", vnn);
-		return ret;
-	}
-	printf("Number of keys:%d in dbid:0x%08x\n",keys.num,keys.dbid);
-	for(i=0;i<keys.num;i++){
-		printf("key:");
-		for(j=0;j<keys.keys[i].dsize;j++){
-			printf("%02x",keys.keys[i].dptr[j]);
-		}
-		printf(" lmaster:%d rsn:%llu dmaster:%d laccessor:%d lacount:%d",keys.lmasters[i],keys.headers[i].rsn,keys.headers[i].dmaster,keys.headers[i].laccessor,keys.headers[i].lacount);
-		printf(" data:");	
-		for(j=0;j<keys.data[i].dsize;j++){
-			printf("%02x",keys.data[i].dptr[j]);
-		}
-		printf("\n");
+	db_name = argv[0];
+	ctdb_db = ctdb_attach(ctdb, db_name);
+	if (ctdb_db == NULL) {
+		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
+		return -1;
 	}
 
-	talloc_free(mem_ctx);
+	ret = ctdb_dump_db(ctdb_db, stdout);
+	if (ret == -1) {
+		printf("Unable to dump database\n");
+		return -1;
+	}
+
+	talloc_free(ctdb_db);
+
+	printf("Dumped %d records\n", ret);
 	return 0;
 }
 

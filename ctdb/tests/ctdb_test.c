@@ -176,7 +176,7 @@ int main(int argc, const char *argv[])
 	}
 	talloc_free(call.reply_data.dptr);
 
-	ctdb_list_keys(ctdb_db, stdout);
+	ctdb_dump_db(ctdb_db, stdout);
 
 	/* go into a wait loop to allow other nodes to complete */
 	ctdb_shutdown(ctdb);

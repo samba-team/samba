@@ -1446,55 +1446,26 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
 }
 
 
-/*
-  start a cluster wide traverse. each record is sent as a message to
-  the given srvid
- */
-int ctdb_traverse_all(struct ctdb_db_context *ctdb_db, uint64_t srvid)
-{
-	TDB_DATA data;
-	struct ctdb_traverse_start t;
-	int32_t status;
-	int ret;
-
-	t.db_id = ctdb_db->db_id;
-	t.srvid = srvid;
-	t.reqid = 0;
-
-	data.dptr = (uint8_t *)&t;
-	data.dsize = sizeof(t);
-
-	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_TRAVERSE_START, 0,
-			   data, NULL, NULL, &status, NULL);
-	if (ret != 0 || status != 0) {
-		DEBUG(0,("ctdb_traverse_all failed\n"));
-		return -1;
-	}
-
-	return 0;	
-}
-
-struct list_keys_state {
-	FILE *f;
+struct traverse_state {
 	bool done;
 	uint32_t count;
+	ctdb_traverse_func fn;
+	void *private_data;
 };
 
 /*
-  called on each key during a list_keys
+  called on each key during a ctdb_traverse
  */
-static void list_keys_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			      TDB_DATA data, void *p)
+static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data, void *p)
 {
-	struct list_keys_state *state = (struct list_keys_state *)p;
+	struct traverse_state *state = (struct traverse_state *)p;
 	struct ctdb_traverse_data *d = (struct ctdb_traverse_data *)data.dptr;
 	TDB_DATA key;
-	char *keystr, *datastr;
-	struct ctdb_ltdb_header *h;
 
 	if (data.dsize < sizeof(uint32_t) ||
 	    d->length != data.dsize) {
-		DEBUG(0,("Bad data size %u in list_keys_handler\n", data.dsize));
+		DEBUG(0,("Bad data size %u in traverse_handler\n", data.dsize));
+		state->done = True;
 		return;
 	}
 
@@ -1509,46 +1480,52 @@ static void list_keys_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	h = (struct ctdb_ltdb_header *)data.dptr;
-	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(0,("Bad ctdb ltdb header in list_keys_handler\n"));
-		return;
+	if (state->fn(ctdb, key, data, state->private_data) != 0) {
+		state->done = True;
 	}
-	
-
-	keystr  = hex_encode(ctdb, key.dptr, key.dsize);
-	datastr = hex_encode(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
-
-	fprintf(state->f, "dmaster: %u\n", h->dmaster);
-	fprintf(state->f, "rsn: %llu\n", (unsigned long long)h->rsn);
-	fprintf(state->f, "key: %s\ndata: %s\n", keystr, datastr);
-
-	talloc_free(keystr);
-	talloc_free(datastr);
 
 	state->count++;
 }
 
+
 /*
-  convenience function to list all keys to stdout
+  start a cluster wide traverse, calling the supplied fn on each record
+  return the number of records traversed, or -1 on error
  */
-int ctdb_list_keys(struct ctdb_db_context *ctdb_db, FILE *f)
+int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data)
 {
+	TDB_DATA data;
+	struct ctdb_traverse_start t;
+	int32_t status;
 	int ret;
 	uint64_t srvid = (getpid() | 0xFLL<<60);
-	struct list_keys_state state;
+	struct traverse_state state;
 
-	state.f = f;
 	state.done = False;
 	state.count = 0;
+	state.private_data = private_data;
+	state.fn = fn;
 
-	ret = ctdb_set_message_handler(ctdb_db->ctdb, srvid, list_keys_handler, &state);
+	ret = ctdb_set_message_handler(ctdb_db->ctdb, srvid, traverse_handler, &state);
 	if (ret != 0) {
-		DEBUG(0,("Failed to setup list keys handler\n"));
+		DEBUG(0,("Failed to setup traverse handler\n"));
 		return -1;
 	}
 
-	ret = ctdb_traverse_all(ctdb_db, srvid);
+	t.db_id = ctdb_db->db_id;
+	t.srvid = srvid;
+	t.reqid = 0;
+
+	data.dptr = (uint8_t *)&t;
+	data.dsize = sizeof(t);
+
+	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_TRAVERSE_START, 0,
+			   data, NULL, NULL, &status, NULL);
+	if (ret != 0 || status != 0) {
+		DEBUG(0,("ctdb_traverse_all failed\n"));
+		ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
+		return -1;
+	}
 
 	while (!state.done) {
 		event_loop_once(ctdb_db->ctdb->ev);
@@ -1556,9 +1533,39 @@ int ctdb_list_keys(struct ctdb_db_context *ctdb_db, FILE *f)
 
 	ret = ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
 	if (ret != 0) {
-		DEBUG(0,("Failed to remove list keys handler\n"));
+		DEBUG(0,("Failed to remove ctdb_traverse handler\n"));
 		return -1;
 	}
 
 	return state.count;
 }
+
+/*
+  called on each key during a catdb
+ */
+static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	FILE *f = (FILE *)p;
+	char *keystr, *datastr;
+	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
+
+	keystr  = hex_encode(ctdb, key.dptr, key.dsize);
+	datastr = hex_encode(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
+
+	fprintf(f, "dmaster: %u\n", h->dmaster);
+	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
+	fprintf(f, "key: %s\ndata: %s\n", keystr, datastr);
+
+	talloc_free(keystr);
+	talloc_free(datastr);
+	return 0;
+}
+
+/*
+  convenience function to list all keys to stdout
+ */
+int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f)
+{
+	return ctdb_traverse(ctdb_db, dumpdb_fn, f);
+}
+
