@@ -530,6 +530,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->upcalls = &ctdb_upcalls;
 	ctdb->idr = idr_init(ctdb);
 	ctdb->max_lacount = CTDB_DEFAULT_MAX_LACOUNT;
+	ctdb->seqnum_frequency = CTDB_DEFAULT_SEQNUM_FREQUENCY;
 
 	return ctdb;
 }

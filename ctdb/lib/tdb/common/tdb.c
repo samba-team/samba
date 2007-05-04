@@ -31,18 +31,14 @@
 TDB_DATA tdb_null;
 
 /*
-  increment the tdb sequence number if the tdb has been opened using
+  non-blocking increment of the tdb sequence number if the tdb has been opened using
   the TDB_SEQNUM flag
 */
-static void tdb_increment_seqnum(struct tdb_context *tdb)
+void tdb_increment_seqnum_nonblock(struct tdb_context *tdb)
 {
 	tdb_off_t seqnum=0;
 	
 	if (!(tdb->flags & TDB_SEQNUM)) {
-		return;
-	}
-
-	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1, 1) != 0) {
 		return;
 	}
 
@@ -52,6 +48,23 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
 	seqnum++;
 	tdb_ofs_write(tdb, TDB_SEQNUM_OFS, &seqnum);
+}
+
+/*
+  increment the tdb sequence number if the tdb has been opened using
+  the TDB_SEQNUM flag
+*/
+static void tdb_increment_seqnum(struct tdb_context *tdb)
+{
+	if (!(tdb->flags & TDB_SEQNUM)) {
+		return;
+	}
+
+	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1, 1) != 0) {
+		return;
+	}
+
+	tdb_increment_seqnum_nonblock(tdb);
 
 	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1, 1);
 }
@@ -649,3 +662,11 @@ int tdb_get_flags(struct tdb_context *tdb)
 	return tdb->flags;
 }
 
+
+/*
+  enable sequence number handling on an open tdb
+*/
+void tdb_enable_seqnum(struct tdb_context *tdb)
+{
+	tdb->flags |= TDB_SEQNUM;
+}

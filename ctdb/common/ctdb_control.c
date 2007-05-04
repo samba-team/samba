@@ -408,6 +408,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DEREGISTER_SRVID:
 		return daemon_deregister_message_handler(ctdb, client_id, srvid);
 
+	case CTDB_CONTROL_ENABLE_SEQNUM:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_ltdb_enable_seqnum(ctdb, *(uint32_t *)indata.dptr);
+
+	case CTDB_CONTROL_UPDATE_SEQNUM:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		return ctdb_ltdb_update_seqnum(ctdb, *(uint32_t *)indata.dptr, srcnode);
+
+	case CTDB_CONTROL_SET_SEQNUM_FREQUENCY:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		return ctdb_ltdb_set_seqnum_frequency(ctdb, *(uint32_t *)indata.dptr);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

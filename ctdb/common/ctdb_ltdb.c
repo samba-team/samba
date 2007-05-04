@@ -398,3 +398,78 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	return 0;
 }
 
+/*
+  called when a broadcast seqnum update comes in
+ */
+int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode)
+{
+	struct ctdb_db_context *ctdb_db;
+	if (srcnode == ctdb->vnn) {
+		/* don't update ourselves! */
+		return 0;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_update_seqnum\n"));
+		return -1;
+	}
+
+	tdb_increment_seqnum_nonblock(ctdb_db->ltdb->tdb);
+	ctdb_db->seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);
+	return 0;
+}
+
+/*
+  timer to check for seqnum changes in a ltdb and propogate them
+ */
+static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *p)
+{
+	struct ctdb_db_context *ctdb_db = talloc_get_type(p, struct ctdb_db_context);
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	uint32_t new_seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);
+	if (new_seqnum != ctdb_db->seqnum) {
+		/* something has changed - propogate it */
+		TDB_DATA data;
+		data.dptr = (uint8_t *)&ctdb_db->db_id;
+		data.dsize = sizeof(uint32_t);
+		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
+					 CTDB_CONTROL_UPDATE_SEQNUM, 0, CTDB_CTRL_FLAG_NOREPLY,
+					 data, NULL, NULL);		
+	}
+	ctdb_db->seqnum = new_seqnum;
+
+	/* setup a new timer */
+	event_add_timed(ctdb->ev, ctdb_db, timeval_current_ofs(ctdb->seqnum_frequency, 0),
+			ctdb_ltdb_seqnum_check, ctdb_db);
+}
+
+/*
+  enable seqnum handling on this db
+ */
+int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
+{
+	struct ctdb_db_context *ctdb_db;
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_enable_seqnum\n"));
+		return -1;
+	}
+
+	event_add_timed(ctdb->ev, ctdb_db, timeval_current_ofs(ctdb->seqnum_frequency, 0),
+			ctdb_ltdb_seqnum_check, ctdb_db);
+
+	tdb_enable_seqnum(ctdb_db->ltdb->tdb);
+	ctdb_db->seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);
+	return 0;
+}
+
+/*
+  enable seqnum handling on this db
+ */
+int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency)
+{
+	ctdb->seqnum_frequency = frequency;
+	return 0;
+}
