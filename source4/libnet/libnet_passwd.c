@@ -644,6 +644,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	r2.samr_handle.in.newpassword	= r->samr.in.newpassword;
 	r2.samr_handle.in.user_handle   = &u_handle;
 	r2.samr_handle.in.dcerpc_pipe   = c.out.dcerpc_pipe;
+	r2.samr_handle.in.info21	= NULL;
 
 	status = libnet_SetPassword(ctx, mem_ctx, &r2);
 
