@@ -67,8 +67,6 @@ bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e 
 	done
 done
 
-exit
-
 echo
 echo
 echo "killing off node #0"
