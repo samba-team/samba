@@ -135,6 +135,7 @@ static void show_status(struct ctdb_status *s)
 		STATUS_FIELD(lockwait_calls),
 		STATUS_FIELD(traverse_calls),
 		STATUS_FIELD(pending_lockwait_calls),
+		STATUS_FIELD(memory_used),
 		STATUS_FIELD(max_hop_count),
 	};
 	printf("CTDB version %u\n", CTDB_VERSION);

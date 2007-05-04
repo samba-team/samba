@@ -158,6 +158,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_STATUS: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->status.controls.status++;
+		ctdb->status.memory_used = talloc_total_size(ctdb);
 		outdata->dptr = (uint8_t *)&ctdb->status;
 		outdata->dsize = sizeof(ctdb->status);
 		return 0;
@@ -499,8 +500,11 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
+	/* make state a child of the packet, so it goes away when the packet
+	   is freed. */
+	talloc_steal(hdr, state);
+
 	state->callback(ctdb, c->status, data, state->private_data);
-	talloc_free(state);
 }
 
 static int ctdb_control_destructor(struct ctdb_control_state *state)
@@ -528,7 +532,9 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
-	state = talloc(ctdb, struct ctdb_control_state);
+	/* the state is made a child of private_data if possible. This means any reply
+	   will be discarded if the private_data goes away */
+	state = talloc(private_data?private_data:ctdb, struct ctdb_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->reqid = ctdb_reqid_new(ctdb, state);
