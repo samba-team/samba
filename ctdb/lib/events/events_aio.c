@@ -250,7 +250,8 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 	}
 
 	if (ret == 0 && tvalp) {
-		common_event_loop_timer(aio_ev->ev);
+		/* we don't care about a possible delay here */
+		common_event_loop_timer_delay(aio_ev->ev);
 		return 0;
 	}
 
@@ -360,6 +361,11 @@ static int aio_event_fd_destructor(struct fd_event *fde)
 
 	epoll_del_event(aio_ev, fde);
 
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
+
 	return 0;
 }
 
@@ -431,10 +437,8 @@ static int aio_event_loop_once(struct event_context *ev)
 		 					   struct aio_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_delay(ev);
-
+	tval = common_event_loop_timer_delay(ev);
 	if (timeval_is_zero(&tval)) {
-		common_event_loop_timer(ev);
 		return 0;
 	}
 

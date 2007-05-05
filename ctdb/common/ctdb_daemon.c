@@ -249,8 +249,6 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 {
 	ctdb_reqid_remove(client->ctdb, client->client_id);
 	client->ctdb->status.num_clients--;
-	close(client->fd);
-	client->fd = -1;
 	return 0;
 }
 
@@ -678,8 +676,8 @@ int ctdb_start(struct ctdb_context *ctdb)
 
 
 	ctdb->ev = event_context_init(NULL);
-	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ, ctdb_read_from_parent, &fd[0]);
-	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, ctdb_accept_client, ctdb);
+	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, ctdb_read_from_parent, &fd[0]);
+	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, ctdb_accept_client, ctdb);
 	ctdb_main_loop(ctdb);
 
 	return 0;
@@ -720,7 +718,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb)
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);
-	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ, 
+	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
 	ctdb_main_loop(ctdb);
 

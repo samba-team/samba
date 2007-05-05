@@ -37,6 +37,7 @@ static struct {
 	const char *db_dir;
 	int torture;
 	const char *logfile;
+	const char *events;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
@@ -45,11 +46,26 @@ static struct {
 	.self_connect = 0,
 	.db_dir = NULL,
 	.torture = 0,
-	.logfile = NULL
+	.logfile = NULL,
 };
+
+enum {OPT_EVENTSYSTEM=1};
+
+static void ctdb_cmdline_callback(poptContext con, 
+				  enum poptCallbackReason reason,
+				  const struct poptOption *opt,
+				  const char *arg, const void *data)
+{
+	switch (opt->val) {
+	case OPT_EVENTSYSTEM:
+		event_set_default_backend(arg);
+		break;
+	}
+}
 
 
 struct poptOption popt_ctdb_cmdline[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)ctdb_cmdline_callback },	
 	{ "nlist", 0, POPT_ARG_STRING, &ctdb_cmdline.nlist, 0, "node list file", "filename" },
 	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
 	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
@@ -59,6 +75,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ "logfile", 0, POPT_ARG_STRING, &ctdb_cmdline.logfile, 0, "log file location", "filename" },
+	{ "events", 0, POPT_ARG_STRING, NULL, OPT_EVENTSYSTEM, "event system", NULL },
 	{ NULL }
 };
 

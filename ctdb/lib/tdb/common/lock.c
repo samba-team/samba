@@ -28,6 +28,8 @@
 
 #include "tdb_private.h"
 
+#define TDB_MARK_LOCK 0x80000000
+
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset.
 
@@ -109,6 +111,9 @@ static int _tdb_lock(struct tdb_context *tdb, int list, int ltype, int op)
 {
 	struct tdb_lock_type *new_lck;
 	int i;
+	bool mark_lock = ((ltype & TDB_MARK_LOCK) == TDB_MARK_LOCK);
+
+	ltype &= ~TDB_MARK_LOCK;
 
 	/* a global lock allows us to avoid per chain locks */
 	if (tdb->global_lock.count && 
@@ -158,7 +163,8 @@ static int _tdb_lock(struct tdb_context *tdb, int list, int ltype, int op)
 
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
-	if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype, op,
+	if (!mark_lock &&
+	    tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list, ltype, op,
 				     0, 1)) {
 		return -1;
 	}
@@ -200,6 +206,9 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 	int ret = -1;
 	int i;
 	struct tdb_lock_type *lck = NULL;
+	bool mark_lock = ((ltype & TDB_MARK_LOCK) == TDB_MARK_LOCK);
+
+	ltype &= ~TDB_MARK_LOCK;
 
 	/* a global lock allows us to avoid per chain locks */
 	if (tdb->global_lock.count && 
@@ -244,8 +253,12 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 	 * anyway.
 	 */
 
-	ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK,
-				       F_SETLKW, 0, 1);
+	if (mark_lock) {
+		ret = 0;
+	} else {
+		ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK,
+					       F_SETLKW, 0, 1);
+	}
 	tdb->num_locks--;
 
 	/*
@@ -374,6 +387,18 @@ int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key)
 int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key)
 {
 	return tdb_lock_nonblock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK);
+}
+
+/* mark a chain as locked without actually locking it. Warning! use with great caution! */
+int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key)
+{
+	return tdb_lock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK | TDB_MARK_LOCK);
+}
+
+/* unmark a chain as locked without actually locking it. Warning! use with great caution! */
+int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key)
+{
+	return tdb_unlock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK | TDB_MARK_LOCK);
 }
 
 int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key)

@@ -7,6 +7,8 @@ IPATHS="-I libreplace -I lib/replace -I ../libreplace -I ../replace"
 IPATHS="$IPATHS -I lib/talloc -I talloc -I ../talloc"
 IPATHS="$IPATHS -I lib/tdb -I tdb -I ../tdb"
 IPATHS="$IPATHS -I lib/popt -I popt -I ../popt"
+IPATHS="$IPATHS -I lib/events"
+
 autoheader $IPATHS || exit 1
 autoconf $IPATHS || exit 1
 
