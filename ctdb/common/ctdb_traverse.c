@@ -74,7 +74,6 @@ static void ctdb_traverse_local_handler(uint8_t *rawdata, size_t length, void *p
  */
 static int traverse_local_destructor(struct ctdb_traverse_local_handle *h)
 {
-	close(h->fd[0]);
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
 	return 0;

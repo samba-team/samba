@@ -273,7 +273,7 @@ int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 	queue->fde = NULL;
 
 	if (fd != -1) {
-		queue->fde = event_add_fd(queue->ctdb->ev, queue, fd, EVENT_FD_READ, 
+		queue->fde = event_add_fd(queue->ctdb->ev, queue, fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 					  queue_io_handler, queue);
 		if (queue->fde == NULL) {
 			return -1;

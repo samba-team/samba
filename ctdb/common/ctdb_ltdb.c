@@ -193,7 +193,6 @@ static void lock_fetch_callback(void *p)
 {
 	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
 	state->recv_pkt(state->recv_context, (uint8_t *)state->hdr, state->hdr->length);
-	talloc_free(state);
 	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
 }
 
@@ -252,7 +251,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 		return 0;
 	}
 
-	state = talloc(ctdb_db, struct lock_fetch_state);
+	state = talloc(hdr, struct lock_fetch_state);
 	state->ctdb = ctdb_db->ctdb;
 	state->hdr = hdr;
 	state->recv_pkt = recv_pkt;
