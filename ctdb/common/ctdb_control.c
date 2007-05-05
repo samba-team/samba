@@ -164,6 +164,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_DUMP_MEMORY: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		talloc_report_full(ctdb, stdout);
+		return 0;
+	}
+
 	case CTDB_CONTROL_STATUS_RESET: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		ZERO_STRUCT(ctdb->status);

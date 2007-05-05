@@ -935,6 +935,28 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  dump memory usage
+ */
+static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+
+	uint32_t vnn;
+	if (argc < 1) {
+		usage();
+	}
+	if (strcmp(argv[0], "all") == 0) {
+		vnn = CTDB_BROADCAST_VNN;
+	} else {
+		vnn = strtoul(argv[0], NULL, 0);
+	}
+
+	ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DUMP_MEMORY,
+		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL);
+
+	return 0;
+}
+
+/*
   main program
 */
 int main(int argc, const char *argv[])
@@ -976,6 +998,7 @@ int main(int argc, const char *argv[])
 		{ "recover", control_recover },
 		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
+		{ "dumpmemory", control_dumpmemory },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
