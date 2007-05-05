@@ -1569,3 +1569,26 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f)
 	return ctdb_traverse(ctdb_db, dumpdb_fn, f);
 }
 
+/*
+  get the pid of a ctdb daemon
+ */
+int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_PID, 0, data, 
+			   ctdb, &outdata, &res, &timeout);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		return -1;
+	}
+
+	*pid = ((uint32_t *)outdata.dptr)[0];
+
+	return 0;
+}
+

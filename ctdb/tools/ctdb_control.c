@@ -54,7 +54,9 @@ static void usage(void)
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
 		"  writerecord <vnn> <dbid> <key> <data>\n"
 		"  recover <vnn>                      recover the cluster\n"
-		"  attach <dbname>                    attach a database\n");
+		"  attach <dbname>                    attach a database\n"
+		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+	);
 	exit(1);
 }
 
@@ -499,6 +501,31 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n",i,vnnmap->map[i]);
 	}
+	return 0;
+}
+
+/*
+  display pid of a ctdb daemon
+ */
+static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, pid;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getpid(ctdb, timeval_current_ofs(1, 0), vnn, &pid);
+	if (ret != 0) {
+		printf("Unable to get daemon pid from node %u\n", vnn);
+		return ret;
+	}
+	printf("Pid:%d\n",pid);
+
 	return 0;
 }
 
@@ -1000,6 +1027,7 @@ int main(int argc, const char *argv[])
 		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
+		{ "getpid", control_getpid },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);

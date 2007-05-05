@@ -348,6 +348,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_GET_PID: {
+		outdata->dsize = sizeof(uint32_t);
+		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
+		*((uint32_t *)(&outdata->dptr[0])) = (uint32_t)getpid();
+
+		return 0;
+	}
+
 	case CTDB_CONTROL_CONFIG: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->status.controls.get_config++;

@@ -303,4 +303,9 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
 
+/*
+  get the pid of a ctdb daemon
+ */
+int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
+
 #endif

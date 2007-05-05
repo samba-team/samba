@@ -71,7 +71,7 @@ echo
 echo
 echo "killing off node #0"
 echo "==================="
-CTDBPID=`ps aux | grep ctdbd | grep -v grep | head -1 | sed -e "s/^[^ ]* *//" -e "s/ .*$//"`
+CTDBPID=`./bin/ctdb_control getpid 0 | sed -e "s/Pid://"`
 kill $CTDBPID
 sleep 1
 
