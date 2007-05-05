@@ -33,10 +33,10 @@
  */
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 #include "system/locale.h"
-#include "ldb/tools/cmdline.h"
-#include "ldb/tools/convert.h"
+#include "tools/cmdline.h"
+#include "tools/convert.h"
 
 struct schema_conv {
 	int count;
