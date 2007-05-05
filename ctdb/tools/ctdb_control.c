@@ -945,7 +945,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 	if (strcmp(argv[0], "all") == 0) {
-		vnn = CTDB_BROADCAST_VNN;
+		vnn = CTDB_BROADCAST_ALL;
 	} else {
 		vnn = strtoul(argv[0], NULL, 0);
 	}

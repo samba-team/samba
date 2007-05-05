@@ -263,7 +263,7 @@ struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context
 	data.dsize = sizeof(r);
 
 	/* tell all the nodes in the cluster to start sending records to this node */
-	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0, CTDB_CONTROL_TRAVERSE_ALL,
+	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, CTDB_CONTROL_TRAVERSE_ALL,
 				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
 		talloc_free(state);

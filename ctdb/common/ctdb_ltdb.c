@@ -388,7 +388,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 	
 	/* tell all the other nodes about this database */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0,
 				 CTDB_CONTROL_DB_ATTACH, 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
@@ -434,7 +434,7 @@ static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event 
 		TDB_DATA data;
 		data.dptr = (uint8_t *)&ctdb_db->db_id;
 		data.dsize = sizeof(uint32_t);
-		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNN, 0,
+		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0,
 					 CTDB_CONTROL_UPDATE_SEQNUM, 0, CTDB_CTRL_FLAG_NOREPLY,
 					 data, NULL, NULL);		
 	}
