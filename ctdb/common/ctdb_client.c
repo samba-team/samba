@@ -678,7 +678,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	struct ctdb_req_control *c;
 	size_t len;
 	int ret;
-	uint32_t timed_out;
+	static uint32_t timed_out;
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
