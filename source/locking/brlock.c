@@ -317,7 +317,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
@@ -362,7 +362,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 
 	memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
 	br_lck->num_locks += 1;
-	br_lck->lock_data = (void *)locks;
+	br_lck->lock_data = locks;
 	br_lck->modified = True;
 
 	return NT_STATUS_OK;
@@ -588,7 +588,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			const struct lock_struct *plock)
 {
 	unsigned int i, count;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
 	BOOL signal_pending_read = False;
@@ -686,7 +686,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	}
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
-	br_lck->lock_data = (void *)tp;
+	br_lck->lock_data = tp;
 	locks = tp;
 	br_lck->modified = True;
 
@@ -770,7 +770,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
 
 #if ZERO_ZERO
@@ -873,7 +873,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 {
 	unsigned int i, j, count;
 	struct lock_struct *tp;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	BOOL overlap_found = False;
 
 	/* No zero-zero locks for POSIX. */
@@ -1006,7 +1006,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	locks = tp;
-	br_lck->lock_data = (void *)tp;
+	br_lck->lock_data = tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -1078,7 +1078,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	BOOL ret = True;
 	unsigned int i;
 	struct lock_struct lock;
-	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = smbpid;
@@ -1135,7 +1135,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	struct lock_struct lock;
-	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = *psmbpid;
@@ -1201,7 +1201,7 @@ BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
 		enum brl_flavour lock_flav)
 {
 	unsigned int i;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	struct lock_context context;
 
 	context.smbpid = smbpid;
@@ -1251,7 +1251,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	int fnum = fsp->fnum;
 	unsigned int i, j, dcount=0;
 	int num_deleted_windows_locks = 0;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	struct process_id pid = procid_self();
 	BOOL unlock_individually = False;
 
@@ -1586,7 +1586,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
 	data = tdb_fetch(tdb, key);
-	br_lck->lock_data = (void *)data.dptr;
+	br_lck->lock_data = (struct lock_struct *)data.dptr;
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
 
 	if (!fsp->lockdb_clean) {
@@ -1595,21 +1595,12 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		/* Go through and ensure all entries exist - remove any that don't. */
 		/* Makes the lockdb self cleaning at low cost. */
 
-		struct lock_struct *locks =
-			(struct lock_struct *)br_lck->lock_data;
-
-		if (!validate_lock_entries(&br_lck->num_locks, &locks)) {
+		if (!validate_lock_entries(&br_lck->num_locks,
+					   &br_lck->lock_data)) {
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
-
-		/*
-		 * validate_lock_entries might have changed locks. We can't
-		 * use a direct pointer here because otherwise gcc warnes
-		 * about strict aliasing rules being violated.
-		 */
-		br_lck->lock_data = locks;
 
 		/* Mark the lockdb as "clean" as seen from this open file. */
 		fsp->lockdb_clean = True;
@@ -1617,7 +1608,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
-		struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+		struct lock_struct *locks = br_lck->lock_data;
 		DEBUG(10,("brl_get_locks_internal: %u current locks on dev=%.0f, inode=%.0f\n",
 			br_lck->num_locks,
 			(double)fsp->dev, (double)fsp->inode ));
