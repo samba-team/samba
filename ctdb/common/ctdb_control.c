@@ -533,7 +533,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	struct ctdb_control_state *state;
 	size_t len;
 
-	if (destnode == CTDB_BROADCAST_VNN && !(flags & CTDB_CTRL_FLAG_NOREPLY)) {
+	if (((destnode == CTDB_BROADCAST_VNNMAP) || (destnode == CTDB_BROADCAST_VNNMAP)) && !(flags & CTDB_CTRL_FLAG_NOREPLY)) {
 		DEBUG(0,("Attempt to broadcast control without NOREPLY\n"));
 		return -1;
 	}
