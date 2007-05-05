@@ -359,7 +359,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->status.controls.ping++;
-		return ctdb->num_clients;
+		return ctdb->status.num_clients;
 
 	case CTDB_CONTROL_GET_DBNAME: {
 		uint32_t db_id;

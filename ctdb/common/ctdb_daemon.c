@@ -248,7 +248,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 static int ctdb_client_destructor(struct ctdb_client *client)
 {
 	ctdb_reqid_remove(client->ctdb, client->client_id);
-	client->ctdb->num_clients--;
+	client->ctdb->status.num_clients--;
 	close(client->fd);
 	client->fd = -1;
 	return 0;
@@ -559,7 +559,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	client->ctdb = ctdb;
 	client->fd = fd;
 	client->client_id = ctdb_reqid_new(ctdb, client);
-	ctdb->num_clients++;
+	ctdb->status.num_clients++;
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
 					 ctdb_daemon_read_cb, client);
