@@ -1202,10 +1202,9 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	/* work out the new size for the in buffer. */
 	new_size = size - (inbuf2 - inbuf);
 	if (new_size < 0) {
-		DEBUG(0,("chain_reply: chain packet size incorrect (orig size = %d, "
-			"offset = %d)\n",
-			size,
-			(inbuf2 - inbuf) ));
+		DEBUG(0,("chain_reply: chain packet size incorrect "
+			 "(orig size = %d, offset = %d)\n",
+			 size, (int)(inbuf2 - inbuf) ));
 		exit_server_cleanly("Bad chained packet");
 		return(-1);
 	}
