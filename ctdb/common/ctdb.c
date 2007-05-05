@@ -267,17 +267,17 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 			break;
 		}
 
-		ctdb->status.count.req_call++;
+		ctdb->status.node.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CALL:
-		ctdb->status.count.reply_call++;
+		ctdb->status.node.reply_call++;
 		ctdb_reply_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_ERROR:
-		ctdb->status.count.reply_error++;
+		ctdb->status.node.reply_error++;
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
@@ -308,7 +308,7 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 			break;
 		}
 
-		ctdb->status.count.req_dmaster++;
+		ctdb->status.node.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
@@ -339,27 +339,27 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 			break;
 		}
 
-		ctdb->status.count.reply_dmaster++;
+		ctdb->status.node.reply_dmaster++;
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
-		ctdb->status.count.req_message++;
+		ctdb->status.node.req_message++;
 		ctdb_request_message(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_FINISHED:
-		ctdb->status.count.req_finished++;
+		ctdb->status.node.req_finished++;
 		ctdb_request_finished(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
-		ctdb->status.count.req_control++;
+		ctdb->status.node.req_control++;
 		ctdb_request_control(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CONTROL:
-		ctdb->status.count.reply_control++;
+		ctdb->status.node.reply_control++;
 		ctdb_reply_control(ctdb, hdr);
 		break;
 

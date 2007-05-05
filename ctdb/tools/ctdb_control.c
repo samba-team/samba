@@ -88,32 +88,76 @@ static int control_process_exists(struct ctdb_context *ctdb, int argc, const cha
  */
 static void show_status(struct ctdb_status *s)
 {
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	int i;
+	const char *prefix=NULL;
+	size_t preflen=0;
+	const struct {
+		const char *name;
+		uint32_t offset;
+	} fields[] = {
+#define STATUS_FIELD(n) { #n, offsetof(struct ctdb_status, n) }
+		STATUS_FIELD(client_packets_sent),
+		STATUS_FIELD(client_packets_recv),
+		STATUS_FIELD(node_packets_sent),
+		STATUS_FIELD(node_packets_recv),
+		STATUS_FIELD(node.req_call),
+		STATUS_FIELD(node.reply_call),
+		STATUS_FIELD(node.req_dmaster),
+		STATUS_FIELD(node.reply_dmaster),
+		STATUS_FIELD(node.reply_error),
+		STATUS_FIELD(node.req_message),
+		STATUS_FIELD(node.req_finished),
+		STATUS_FIELD(node.req_control),
+		STATUS_FIELD(node.reply_control),
+		STATUS_FIELD(client.req_call),
+		STATUS_FIELD(client.req_message),
+		STATUS_FIELD(client.req_finished),
+		STATUS_FIELD(client.req_connect_wait),
+		STATUS_FIELD(client.req_shutdown),
+		STATUS_FIELD(client.req_control),
+		STATUS_FIELD(controls.status),
+		STATUS_FIELD(controls.get_config),
+		STATUS_FIELD(controls.ping),
+		STATUS_FIELD(controls.attach),
+		STATUS_FIELD(controls.set_call),
+		STATUS_FIELD(controls.process_exists),
+		STATUS_FIELD(controls.traverse_start),
+		STATUS_FIELD(controls.traverse_all),
+		STATUS_FIELD(controls.traverse_data),
+		STATUS_FIELD(controls.update_seqnum),
+		STATUS_FIELD(controls.enable_seqnum),
+		STATUS_FIELD(controls.set_seqnum_frequency),
+		STATUS_FIELD(controls.register_srvid),
+		STATUS_FIELD(controls.deregister_srvid),
+		STATUS_FIELD(total_calls),
+		STATUS_FIELD(pending_calls),
+		STATUS_FIELD(lockwait_calls),
+		STATUS_FIELD(traverse_calls),
+		STATUS_FIELD(pending_lockwait_calls),
+		STATUS_FIELD(memory_used),
+		STATUS_FIELD(max_hop_count),
+	};
 	printf("CTDB version %u\n", CTDB_VERSION);
-	printf(" client_packets_sent     %u\n", s->client_packets_sent);
-	printf(" client_packets_recv     %u\n", s->client_packets_recv);
-	printf("   req_call              %u\n", s->client.req_call);
-	printf("   req_message           %u\n", s->client.req_message);
-	printf("   req_finished          %u\n", s->client.req_finished);
-	printf("   req_connect_wait      %u\n", s->client.req_connect_wait);
-	printf("   req_shutdown          %u\n", s->client.req_shutdown);
-	printf("   req_control           %u\n", s->client.req_control);
-	printf(" node_packets_sent       %u\n", s->node_packets_sent);
-	printf(" node_packets_recv       %u\n", s->node_packets_recv);
-	printf("   req_call              %u\n", s->count.req_call);
-	printf("   reply_call            %u\n", s->count.reply_call);
-	printf("   req_dmaster           %u\n", s->count.req_dmaster);
-	printf("   reply_dmaster         %u\n", s->count.reply_dmaster);
-	printf("   reply_error           %u\n", s->count.reply_error);
-	printf("   req_message           %u\n", s->count.req_message);
-	printf("   req_finished          %u\n", s->count.req_finished);
-	printf(" total_calls             %u\n", s->total_calls);
-	printf(" pending_calls           %u\n", s->pending_calls);
-	printf(" lockwait_calls          %u\n", s->lockwait_calls);
-	printf(" traverse_calls          %u\n", s->traverse_calls);
-	printf(" pending_lockwait_calls  %u\n", s->pending_lockwait_calls);
-	printf(" max_hop_count           %u\n", s->max_hop_count);
-	printf(" max_call_latency        %.6f sec\n", s->max_call_latency);
-	printf(" max_lockwait_latency    %.6f sec\n", s->max_lockwait_latency);
+	for (i=0;i<ARRAY_SIZE(fields);i++) {
+		if (strchr(fields[i].name, '.')) {
+			preflen = strcspn(fields[i].name, ".")+1;
+			if (!prefix || strncmp(prefix, fields[i].name, preflen) != 0) {
+				prefix = fields[i].name;
+				printf(" %*.*s\n", preflen-1, preflen-1, fields[i].name);
+			}
+		} else {
+			preflen = 0;
+		}
+		printf(" %*s%-22s%*s%10u\n", 
+		       preflen?4:0, "",
+		       fields[i].name+preflen, 
+		       preflen?0:4, "",
+		       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
+	}
+	printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
+	printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
+	talloc_free(tmp_ctx);
 }
 
 /*
@@ -891,6 +935,28 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  dump memory usage
+ */
+static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+
+	uint32_t vnn;
+	if (argc < 1) {
+		usage();
+	}
+	if (strcmp(argv[0], "all") == 0) {
+		vnn = CTDB_BROADCAST_VNN;
+	} else {
+		vnn = strtoul(argv[0], NULL, 0);
+	}
+
+	ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DUMP_MEMORY,
+		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL);
+
+	return 0;
+}
+
+/*
   main program
 */
 int main(int argc, const char *argv[])
@@ -932,6 +998,7 @@ int main(int argc, const char *argv[])
 		{ "recover", control_recover },
 		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
+		{ "dumpmemory", control_dumpmemory },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);

@@ -145,7 +145,7 @@ struct ctdb_status {
 		uint32_t req_finished;
 		uint32_t req_control;
 		uint32_t reply_control;
-	} count;
+	} node;
 	struct {
 		uint32_t req_call;
 		uint32_t req_message;
@@ -154,11 +154,28 @@ struct ctdb_status {
 		uint32_t req_shutdown;
 		uint32_t req_control;
 	} client;
+	struct {
+		uint32_t status;
+		uint32_t get_config;
+		uint32_t ping;
+		uint32_t attach;
+		uint32_t set_call;
+		uint32_t process_exists;
+		uint32_t traverse_start;
+		uint32_t traverse_all;
+		uint32_t traverse_data;
+		uint32_t update_seqnum;
+		uint32_t enable_seqnum;
+		uint32_t set_seqnum_frequency;
+		uint32_t register_srvid;
+		uint32_t deregister_srvid;
+	} controls;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
 	uint32_t traverse_calls;
 	uint32_t pending_lockwait_calls;
+	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_status_all */
 	uint32_t max_hop_count;
 	double max_call_latency;
@@ -289,6 +306,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_ENABLE_SEQNUM,
 		    CTDB_CONTROL_UPDATE_SEQNUM,
 		    CTDB_CONTROL_SET_SEQNUM_FREQUENCY,
+		    CTDB_CONTROL_DUMP_MEMORY,
 };
 
 

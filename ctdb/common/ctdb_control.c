@@ -137,14 +137,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 {
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
-		pid_t pid;
-		int32_t ret;
-		CHECK_CONTROL_DATA_SIZE(sizeof(pid));
-		pid = *(pid_t *)indata.dptr;
-		ret = kill(pid, 0);
-		DEBUG(5,("process_exists on %u:%u gave %d\n", 
-			 ctdb->vnn, pid, ret));
-		return ret;
+		CHECK_CONTROL_DATA_SIZE(sizeof(pid_t));
+		ctdb->status.controls.process_exists++;
+		return kill(*(pid_t *)indata.dptr, 0);
 	}
 
 	case CTDB_CONTROL_SET_DEBUG: {
@@ -162,8 +157,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_STATUS: {
 		CHECK_CONTROL_DATA_SIZE(0);
+		ctdb->status.controls.status++;
+		ctdb->status.memory_used = talloc_total_size(ctdb);
 		outdata->dptr = (uint8_t *)&ctdb->status;
 		outdata->dsize = sizeof(ctdb->status);
+		return 0;
+	}
+
+	case CTDB_CONTROL_DUMP_MEMORY: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		talloc_report_full(ctdb, stdout);
 		return 0;
 	}
 
@@ -347,6 +350,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_CONFIG: {
 		CHECK_CONTROL_DATA_SIZE(0);
+		ctdb->status.controls.get_config++;
 		outdata->dptr = (uint8_t *)ctdb;
 		outdata->dsize = sizeof(*ctdb);
 		return 0;
@@ -354,6 +358,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
+		ctdb->status.controls.ping++;
 		return ctdb->num_clients;
 
 	case CTDB_CONTROL_GET_DBNAME: {
@@ -383,40 +388,50 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
+		ctdb->status.controls.attach++;
 		return ctdb_control_db_attach(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_CALL: {
 		struct ctdb_control_set_call *sc = 
 			(struct ctdb_control_set_call *)indata.dptr;
+		ctdb->status.controls.set_call++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_call));
 		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
 	}
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
+		ctdb->status.controls.traverse_start++;
 		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode);
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
+		ctdb->status.controls.traverse_all++;
 		return ctdb_control_traverse_all(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
+		ctdb->status.controls.traverse_data++;
 		return ctdb_control_traverse_data(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_REGISTER_SRVID:
+		ctdb->status.controls.register_srvid++;
 		return daemon_register_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_DEREGISTER_SRVID:
+		ctdb->status.controls.deregister_srvid++;
 		return daemon_deregister_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
+		ctdb->status.controls.enable_seqnum++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_ltdb_enable_seqnum(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
+		ctdb->status.controls.update_seqnum++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_update_seqnum(ctdb, *(uint32_t *)indata.dptr, srcnode);
 
 	case CTDB_CONTROL_SET_SEQNUM_FREQUENCY:
+		ctdb->status.controls.set_seqnum_frequency++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_set_seqnum_frequency(ctdb, *(uint32_t *)indata.dptr);
 
@@ -491,8 +506,11 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
+	/* make state a child of the packet, so it goes away when the packet
+	   is freed. */
+	talloc_steal(hdr, state);
+
 	state->callback(ctdb, c->status, data, state->private_data);
-	talloc_free(state);
 }
 
 static int ctdb_control_destructor(struct ctdb_control_state *state)
@@ -520,7 +538,9 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
-	state = talloc(ctdb, struct ctdb_control_state);
+	/* the state is made a child of private_data if possible. This means any reply
+	   will be discarded if the private_data goes away */
+	state = talloc(private_data?private_data:ctdb, struct ctdb_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->reqid = ctdb_reqid_new(ctdb, state);
