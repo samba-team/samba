@@ -46,7 +46,7 @@ static void usage(void)
 		"  getdbmap <vnn>                     lists databases on a node\n"
 		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
 		"  createdb <vnn> <dbname>            create a database\n"
-		"  catdb <dbname>                     lists all keys/data in a db\n"
+		"  catdb <dbname> [vnn]               lists all keys/data in a db\n"
 		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
 		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
@@ -347,9 +347,11 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	}
 	for (i=0;i<dbmap->num;i++) {
 		const char *path;
+		const char *name;
 
 		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
+		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
 	/* 5: pull all records from all other nodes across to this node
@@ -586,6 +588,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
+	uint32_t vnn;
 	int ret;
 
 	if (argc < 1) {
@@ -599,12 +602,35 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = ctdb_dump_db(ctdb_db, stdout);
-	if (ret == -1) {
-		printf("Unable to dump database\n");
-		return -1;
-	}
+	if (argc==1) {
+		/* traverse and dump the cluster tdb */
+		ret = ctdb_dump_db(ctdb_db, stdout);
+		if (ret == -1) {
+			printf("Unable to dump database\n");
+			return -1;
+		}
+	} else {
+		struct ctdb_key_list keys;
+		int i;
 
+		/* dump only the local tdb of a specific node */
+		vnn     = strtoul(argv[1], NULL, 0);
+		ret = ctdb_ctrl_pulldb(ctdb, vnn, ctdb_db->db_id, CTDB_LMASTER_ANY, ctdb, &keys);
+		if (ret == -1) {
+			printf("Unable to pull remote database\n");
+			return -1;
+		}
+		for(i=0;i<keys.num;i++){
+			char *keystr, *datastr;
+
+			keystr  = hex_encode(ctdb, keys.keys[i].dptr, keys.keys[i].dsize);
+			datastr = hex_encode(ctdb, keys.data[i].dptr, keys.data[i].dsize);
+
+			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", keys.headers[i].rsn, keys.lmasters[i], keys.headers[i].dmaster, keystr, datastr); 
+			ret++;
+		}
+	}
+	
 	talloc_free(ctdb_db);
 
 	printf("Dumped %d records\n", ret);
@@ -663,9 +689,11 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	printf("Number of databases:%d\n", dbmap->num);
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
+		const char *name;
 
 		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
+		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
 	return 0;

@@ -26,13 +26,12 @@ echo
 echo
 echo "Printing all databases on all nodes. they should all be empty"
 echo "============================================================="
-bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^.*name://" -e "s/ .*$//" | while read DBNAME; do
 	seq 0 3 | while read NODE; do
-		echo "Content of DB:$DB NODE:$NODE :"
-		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $NODE $DB
+		echo "Content of DBNAME:$DBNAME NODE:$NODE :"
+		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $DBNAME $NODE
 	done
 done
-
 
 echo
 echo
@@ -60,10 +59,10 @@ echo
 echo
 echo "Printing all databases on all nodes. there should be a record there"
 echo "============================================================="
-bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^dbid://" -e "s/ .*$//" | while read DB; do
+bin/ctdb_control --socket=/tmp/ctdb.socket getdbmap 0 | egrep "^dbid:" | sed -e "s/^.*name://" -e "s/ .*$//" | while read DBNAME; do
 	seq 0 3 | while read NODE; do
-		echo "Content of DB:$DB NODE:$NODE :"
-		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $NODE $DB
+		echo "Content of DBNAME:$DBNAME NODE:$NODE :"
+		bin/ctdb_control --socket=/tmp/ctdb.socket catdb $DBNAME $NODE
 	done
 done
 
@@ -88,14 +87,18 @@ echo "The databases should be the same now on all nodes"
 echo "and the record will have been migrated to node 0"
 echo "================================================="
 echo "Node 1:"
-bin/ctdb_control --socket=/tmp/ctdb.socket catdb 1 0x220c2a7b
+bin/ctdb_control --socket=/tmp/ctdb.socket catdb test4.tdb 1
 echo "Node 2:"
-bin/ctdb_control --socket=/tmp/ctdb.socket catdb 2 0x220c2a7b
+bin/ctdb_control --socket=/tmp/ctdb.socket catdb test4.tdb 2
 echo "Node 3:"
-bin/ctdb_control --socket=/tmp/ctdb.socket catdb 3 0x220c2a7b
+bin/ctdb_control --socket=/tmp/ctdb.socket catdb test4.tdb 3
 echo "nodemap:"
 bin/ctdb_control --socket=/tmp/ctdb.socket getnodemap 3
 
+echo
+echo
+echo "Traverse the cluster and dump the database"
+bin/ctdb_control --socket=/tmp/ctdb.socket catdb test4.tdb
 
 
 #leave the ctdb daemons running   so one can look at the box in more detail
