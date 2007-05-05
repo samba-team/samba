@@ -1,13 +1,17 @@
 #!/bin/sh
 
 killall -q ctdbd
+killall -q recoverd
 
 echo "Starting 4 ctdb daemons"
 bin/ctdbd --nlist direct/4nodes.txt
 bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.2:9001 --socket=/tmp/ctdb.socket.127.0.0.2
 bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.3:9001 --socket=/tmp/ctdb.socket.127.0.0.3
 bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.4:9001 --socket=/tmp/ctdb.socket.127.0.0.4
+echo "Starting one recovery daemon on node 0"
+bin/recoverd --socket=/tmp/ctdb.socket >/dev/null 2>/dev/null &
 
+echo
 echo "Attaching to some databases"
 bin/ctdb_control attach test1.tdb || exit 1
 bin/ctdb_control attach test2.tdb || exit 1
@@ -74,11 +78,12 @@ CTDBPID=`./bin/ctdb_control getpid 2 | sed -e "s/Pid://"`
 kill $CTDBPID
 sleep 1
 
+
 echo
 echo
-echo "Recovery the cluster"
-echo "===================="
-./bin/ctdb_control recover 0 0x220c2a7b
+echo "wait 3 seconds to let the recovery daemon do its job"
+echo "===================================================="
+sleep 3
 
 echo
 echo
