@@ -57,7 +57,7 @@ struct byte_range_lock {
 	BOOL modified;
 	BOOL read_only;
 	struct lock_key key;
-	void *lock_data;
+	struct lock_struct *lock_data;
 };
 
 #define BRLOCK_FN_CAST() \
