@@ -32,9 +32,8 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
-#include "ldb/tools/cmdline.h"
+#include "ldb_includes.h"
+#include "tools/cmdline.h"
 
 static struct timeval tp1,tp2;
 static struct ldb_cmdline *options;

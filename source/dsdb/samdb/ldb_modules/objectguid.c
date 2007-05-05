@@ -35,7 +35,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb/include/ldb_includes.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
 static struct ldb_message_element *objectguid_find_attribute(const struct ldb_message *msg, const char *name)

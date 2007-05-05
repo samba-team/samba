@@ -33,8 +33,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /*
   check if the scope matches in a search result

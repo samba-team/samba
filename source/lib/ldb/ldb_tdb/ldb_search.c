@@ -32,10 +32,9 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
-#include "ldb/ldb_tdb/ldb_tdb.h"
+#include "ldb_tdb.h"
 
 /*
   add one element to a message

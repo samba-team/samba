@@ -32,8 +32,7 @@
  *  Author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /* check if a control with the specified "oid" exist and return it */
 /* returns NULL if not found */

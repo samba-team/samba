@@ -39,8 +39,7 @@
  *    author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 #define LDAP_DEPRECATED 1
 #include <ldap.h>
