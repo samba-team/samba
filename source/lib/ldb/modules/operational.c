@@ -74,8 +74,7 @@
   modifiersName: not supported by w2k3?
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /*
   construct a canonical name from a message

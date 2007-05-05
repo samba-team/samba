@@ -22,10 +22,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
-#include "ldb/ldb_tdb/ldb_tdb.h"
+#include "ldb_tdb.h"
 
 /*
   the purpose of this code is to work around the braindead posix locking

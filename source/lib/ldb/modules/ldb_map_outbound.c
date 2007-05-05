@@ -24,11 +24,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
-#include "ldb/modules/ldb_map.h"
-#include "ldb/modules/ldb_map_private.h"
+#include "ldb_map.h"
+#include "ldb_map_private.h"
 
 
 /* Mapping attributes
@@ -488,10 +487,10 @@ static int map_reply_remote(struct map_context *ac, struct ldb_reply *ares)
  * =================== */
 
 /* Check whether a parse tree can safely be split in two. */
-static BOOL ldb_parse_tree_check_splittable(const struct ldb_parse_tree *tree)
+static bool ldb_parse_tree_check_splittable(const struct ldb_parse_tree *tree)
 {
 	const struct ldb_parse_tree *subtree = tree;
-	BOOL negate = False;
+	bool negate = false;
 
 	while (subtree) {
 		switch (subtree->operation) {
@@ -507,11 +506,11 @@ static BOOL ldb_parse_tree_check_splittable(const struct ldb_parse_tree *tree)
 			return negate;	/* if negate: True */
 
 		default:
-			return True;	/* simple parse tree */
+			return true;	/* simple parse tree */
 		}
 	}
 
-	return True;			/* no parse tree */
+	return true;			/* no parse tree */
 }
 
 /* Collect a list of attributes required to match a given parse tree. */

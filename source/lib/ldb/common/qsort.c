@@ -25,8 +25,7 @@
  * Simo Sorce <idra@samba.org>		2005
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)						      \

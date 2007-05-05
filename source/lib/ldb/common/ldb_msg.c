@@ -32,8 +32,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /*
   create a new ldb_message in a given memory context (NULL for top level)

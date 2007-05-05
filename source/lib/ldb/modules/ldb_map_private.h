@@ -68,9 +68,9 @@ struct ldb_handle *map_init_handle(struct ldb_request *req, struct ldb_module *m
 
 int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *request);
 
-BOOL map_check_local_db(struct ldb_module *module);
-BOOL map_attr_check_remote(const struct ldb_map_context *data, const char *attr);
-BOOL ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn);
+bool map_check_local_db(struct ldb_module *module);
+bool map_attr_check_remote(const struct ldb_map_context *data, const char *attr);
+bool ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn);
 
 const struct ldb_map_attribute *map_attr_find_local(const struct ldb_map_context *data, const char *name);
 const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_context *data, const char *name);

@@ -33,10 +33,10 @@
  *  Author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 #if (_SAMBA_BUILD_ >= 4)
+#include "includes.h"
 #include "build.h"
 #include "dynconfig.h"
 #endif

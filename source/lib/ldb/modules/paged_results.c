@@ -33,8 +33,7 @@
  *  Author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 struct message_store {
 	/* keep the whole ldb_reply as an optimization

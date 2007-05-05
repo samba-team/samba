@@ -32,8 +32,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /*
   this allows the user to choose their own debug function

@@ -2,6 +2,7 @@
 # Start MODULE ldb_asq
 [MODULE::ldb_asq]
 PRIVATE_DEPENDENCIES = LIBTALLOC
+CFLAGS = -Ilib/ldb/include
 INIT_FUNCTION = ldb_asq_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
@@ -13,6 +14,7 @@ OBJ_FILES = \
 # Start MODULE ldb_server_sort
 [MODULE::ldb_server_sort]
 PRIVATE_DEPENDENCIES = LIBTALLOC
+CFLAGS = -Ilib/ldb/include
 INIT_FUNCTION = ldb_sort_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
@@ -24,6 +26,7 @@ OBJ_FILES = \
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_results]
 INIT_FUNCTION = ldb_paged_results_init
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = ldb
 OBJ_FILES = \
@@ -35,6 +38,7 @@ OBJ_FILES = \
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_searches]
 INIT_FUNCTION = ldb_paged_searches_init
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = ldb
 OBJ_FILES = \
@@ -46,6 +50,7 @@ OBJ_FILES = \
 # Start MODULE ldb_operational
 [MODULE::ldb_operational]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_operational_init
 OBJ_FILES = \
@@ -57,6 +62,7 @@ OBJ_FILES = \
 # Start MODULE ldb_objectclass
 [MODULE::ldb_objectclass]
 INIT_FUNCTION = ldb_objectclass_init
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = ldb
 OBJ_FILES = \
@@ -68,6 +74,7 @@ OBJ_FILES = \
 # Start MODULE ldb_rdn_name
 [MODULE::ldb_rdn_name]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_rdn_name_init
 OBJ_FILES = \
@@ -79,6 +86,7 @@ OBJ_FILES = \
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBCLI_LDAP
 INIT_FUNCTION = ldb_ildap_init
 ALIASES = ldapi ldaps ldap
@@ -91,6 +99,7 @@ OBJ_FILES = \
 # Start MODULE ldb_map
 [MODULE::ldb_map]
 PRIVATE_DEPENDENCIES = LIBTALLOC
+CFLAGS = -Ilib/ldb/include -Ilib/ldb/modules
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/ldb_map_inbound.o \
@@ -103,6 +112,7 @@ OBJ_FILES = \
 # Start MODULE ldb_skel
 [MODULE::ldb_skel]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_skel_init
 OBJ_FILES = modules/skel.o
@@ -113,6 +123,7 @@ OBJ_FILES = modules/skel.o
 # Start MODULE ldb_sqlite3
 [MODULE::ldb_sqlite3]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTALLOC
 INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
@@ -124,6 +135,7 @@ OBJ_FILES = \
 # Start MODULE ldb_tdb
 [MODULE::ldb_tdb]
 SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_tdb
 INIT_FUNCTION = ldb_tdb_init
 OBJ_FILES = \
 		ldb_tdb/ldb_tdb.o \
@@ -139,13 +151,14 @@ PRIVATE_DEPENDENCIES = \
 
 ./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
 	@echo Compiling $<
-	@$(CC) -Iinclude $(CFLAGS) -Ilib/replace -Ilib/talloc -Ilib/ldb $(PICFLAG) -DLDBMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
+	@$(CC) -Iinclude $(CFLAGS) -Ilib/replace -Ilib/talloc -Ilib/ldb/include $(PICFLAG) -DLDBMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
 
 ################################################
 # Start SUBSYSTEM ldb
 [LIBRARY::ldb]
 VERSION = 0.0.1
 SO_VERSION = 0
+CFLAGS = -Ilib/ldb/include
 DESCRIPTION = LDAP-like embedded database library
 INIT_FUNCTION_TYPE = int (*) (void)
 OBJ_FILES = \
@@ -177,6 +190,7 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 PRIVATE_DEPENDENCIES = ldb
+CFLAGS = -Ilib/ldb/include
 PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
 PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB
 OBJ_FILES = \

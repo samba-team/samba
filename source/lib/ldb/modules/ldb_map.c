@@ -34,11 +34,14 @@
  *  Author: Jelmer Vernooij, Martin Kuehl
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
-#include "ldb/modules/ldb_map.h"
-#include "ldb/modules/ldb_map_private.h"
+#include "ldb_map.h"
+#include "ldb_map_private.h"
+
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
 
 /* Description of the provided ldb requests:
  - special attribute 'isMapped'
@@ -170,15 +173,15 @@ struct ldb_handle *map_init_handle(struct ldb_request *req, struct ldb_module *m
  * ========================================= */
 
 /* Check whether any data should be stored in the local partition. */
-BOOL map_check_local_db(struct ldb_module *module)
+bool map_check_local_db(struct ldb_module *module)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 
 	if (!data->remote_base_dn || !data->local_base_dn) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /* Copy a DN with the base DN of the local partition. */
@@ -386,18 +389,18 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
  * ================== */
 
 /* Check whether an attribute will be mapped into the remote partition. */
-BOOL map_attr_check_remote(const struct ldb_map_context *data, const char *attr)
+bool map_attr_check_remote(const struct ldb_map_context *data, const char *attr)
 {
 	const struct ldb_map_attribute *map = map_attr_find_local(data, attr);
 
 	if (map == NULL) {
-		return False;
+		return false;
 	}
 	if (map->type == MAP_IGNORE) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /* Map an attribute name into the remote partition. */
@@ -489,12 +492,12 @@ struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx,
  * =========== */
 
 /* Check whether a DN is below the local baseDN. */
-BOOL ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn)
+bool ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 
 	if (!data->local_base_dn) {
-		return True;
+		return true;
 	}
 
 	return ldb_dn_compare_base(data->local_base_dn, dn) == 0;
@@ -736,7 +739,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 {
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
-	BOOL found_extensibleObject = False;
+	bool found_extensibleObject = false;
 	int i;
 
 	/* Find old local objectClass */
@@ -768,7 +771,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	for (i = 0; i < el->num_values - 1; i++) {
 		el->values[i] = map_objectclass_convert_local(module, el->values, &oc->values[i]);
 		if (ldb_attr_cmp((char *)el->values[i].data, "extensibleObject") == 0) {
-			found_extensibleObject = True;
+			found_extensibleObject = true;
 		}
 	}
 

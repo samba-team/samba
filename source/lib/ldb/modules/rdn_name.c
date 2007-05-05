@@ -37,8 +37,7 @@
  *      Simo Sorce Mar 2006
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
 {

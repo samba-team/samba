@@ -32,10 +32,9 @@
  *  Author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
-#include "ldb/tools/cmdline.h"
-#include "ldb/tools/convert.h"
+#include "ldb_includes.h"
+#include "tools/cmdline.h"
+#include "tools/convert.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1

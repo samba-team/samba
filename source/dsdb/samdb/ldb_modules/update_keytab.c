@@ -29,7 +29,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb/include/ldb_includes.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"

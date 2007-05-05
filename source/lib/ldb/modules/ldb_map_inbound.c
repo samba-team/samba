@@ -23,11 +23,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
-#include "ldb/modules/ldb_map.h"
-#include "ldb/modules/ldb_map_private.h"
+#include "ldb_map.h"
+#include "ldb_map_private.h"
 
 
 /* Mapping message elements
@@ -137,10 +136,10 @@ local:
  * ================ */
 
 /* Check whether a message will be (partially) mapped into the remote partition. */
-static BOOL ldb_msg_check_remote(struct ldb_module *module, const struct ldb_message *msg)
+static bool ldb_msg_check_remote(struct ldb_module *module, const struct ldb_message *msg)
 {
 	const struct ldb_map_context *data = map_get_context(module);
-	BOOL ret;
+	bool ret;
 	int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -150,7 +149,7 @@ static BOOL ldb_msg_check_remote(struct ldb_module *module, const struct ldb_mes
 		}
 	}
 
-	return False;
+	return false;
 }
 
 /* Split message elements that stay in the local partition from those

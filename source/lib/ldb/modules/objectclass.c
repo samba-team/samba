@@ -33,8 +33,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 struct oc_context {
 

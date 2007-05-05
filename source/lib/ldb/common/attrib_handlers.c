@@ -26,10 +26,9 @@
   see rfc2252
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 #include "system/locale.h"
-#include "ldb/include/ldb_handlers.h"
+#include "ldb_handlers.h"
 
 /*
   default handler that just copies a ldb_val.

@@ -31,9 +31,9 @@ It lists / dumps the records in a LDB database to standard output.
 
 */
 
-#include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
+#include "ldb_includes.h"
+#include "ldb.h"
+#include "ldb_errors.h"
 
 /*
   ldb_ldif_write takes a function pointer to a custom output
