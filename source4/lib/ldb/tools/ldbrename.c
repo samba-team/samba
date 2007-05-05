@@ -34,9 +34,8 @@
  *  Author: Stefan Metzmacher
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
-#include "ldb/tools/cmdline.h"
+#include "ldb_includes.h"
+#include "tools/cmdline.h"
 
 static void usage(void)
 {

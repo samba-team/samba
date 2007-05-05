@@ -29,8 +29,7 @@
   message matching logic generic
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /*
   add a attribute to the ldb_schema

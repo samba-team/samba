@@ -34,7 +34,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 #define PS_DEFAULT_PAGE_SIZE 500
 /* 500 objects per query seem to be a decent compromise

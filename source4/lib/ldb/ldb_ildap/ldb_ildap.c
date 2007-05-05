@@ -43,7 +43,7 @@
 
 
 #include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 #include "lib/events/events.h"
 #include "libcli/ldap/ldap.h"

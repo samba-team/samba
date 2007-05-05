@@ -32,9 +32,8 @@
  *  Author: Andrew Tridgell
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
-#include "ldb/tools/cmdline.h"
+#include "ldb_includes.h"
+#include "tools/cmdline.h"
 
 static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn)
 {

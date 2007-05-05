@@ -32,8 +32,7 @@
  *  Author: Simo Sorce
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 struct opaque {
 	struct ldb_context *ldb;

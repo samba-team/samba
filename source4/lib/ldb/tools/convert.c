@@ -23,8 +23,7 @@
 */
 
 #include "convert.h"
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 /* Shared map for converting syntax between formats */
 static const struct syntax_map syntax_map[] = {
