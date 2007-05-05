@@ -45,6 +45,27 @@ static void timeout_func(struct event_context *ev, struct timed_event *te,
 	timed_out = 1;
 }
 
+static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
+{
+	int j, ret;
+
+	/* set recovery mode to active on all nodes */
+	for (j=0; j<nodemap->num; j++) {
+		/* dont change it for nodes that are unavailable */
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, rec_mode);
+		if (ret != 0) {
+			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -78,18 +99,12 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 
 	/* set recovery mode to active on all nodes */
-	for (j=0; j<nodemap->num; j++) {
-		/* dont change it for nodes that are unavailable */
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, CTDB_RECOVERY_ACTIVE);
-		if (ret != 0) {
-			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
-			return -1;
-		}
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	if (ret!=0) {
+		printf("Unable to set recovery mode to active on cluster\n");
+		return -1;
 	}
+
 
 	/* get a list of all databases */
 	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &dbmap);
@@ -329,17 +344,10 @@ printf("checking node %d\n",nodemap->nodes[j].vnn);
 
 
 	/* disable recovery mode */
-	for (j=0; j<nodemap->num; j++) {
-		/* dont push to nodes that are unavailable */
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, CTDB_RECOVERY_NORMAL);
-		if (ret != 0) {
-			printf("Unable to set recmode on node %u\n", nodemap->nodes[j].vnn);
-			return -1;
-		}
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
+	if (ret!=0) {
+		printf("Unable to set recovery mode to normal on cluster\n");
+		return -1;
 	}
 
 
