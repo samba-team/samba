@@ -71,6 +71,8 @@ struct event_ops_list {
 /* list of registered event backends */
 static struct event_ops_list *event_backends;
 
+static char *event_default_backend = NULL;
+
 /*
   register an events backend
 */
@@ -83,6 +85,15 @@ bool event_register_backend(const char *name, const struct event_ops *ops)
 	e->ops = ops;
 	DLIST_ADD(event_backends, e);
 	return True;
+}
+
+/*
+  set the default event backend
+ */
+void event_set_default_backend(const char *backend)
+{
+	if (event_default_backend) free(event_default_backend);
+	event_default_backend = strdup(backend);
 }
 
 /*
@@ -99,7 +110,15 @@ static void event_backend_init(void)
 	run_init_functions(shared_init);
 #else
 	bool events_standard_init(void);
+	bool events_select_init(void);
+	events_select_init();
 	events_standard_init();
+#if HAVE_EVENTS_EPOLL
+	{
+		bool events_epoll_init(void);
+		events_epoll_init();
+	}
+#endif
 #endif
 }
 
@@ -170,6 +189,9 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 	}
 #endif
 	if (name == NULL) {
+		name = event_default_backend;
+	}
+	if (name == NULL) {
 		name = "standard";
 	}
 
@@ -195,6 +217,9 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 /*
   add a fd based event
   return NULL on failure (memory allocation error)
+
+  if flags contains EVENT_FD_AUTOCLOSE then the fd will be closed when
+  the returned fd_event context is freed
 */
 struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags, event_fd_handler_t handler,
