@@ -201,6 +201,7 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
+CFLAGS = -Ilib/ldb
 OBJ_FILES= \
 		tools/cmdline.o
 PUBLIC_DEPENDENCIES = ldb LIBPOPT
