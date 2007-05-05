@@ -1130,7 +1130,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 		wks_name = get_myname();
 	}
 
-	mem_ctx = talloc_init("torture_bind_authcontext");
+	mem_ctx = talloc_init("torture_netlogon_samba3");
 
 	if (mem_ctx == NULL) {
 		d_printf("talloc_init failed\n");
