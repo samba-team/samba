@@ -44,11 +44,11 @@ static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
 	struct smb2_private *smb = c->transport.private;
 
-	smb->dead = true;
-
 	if (smb->dead) {
 		return;
 	}
+
+	smb->dead = true;
 
 	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
