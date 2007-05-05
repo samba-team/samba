@@ -22,11 +22,11 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
-#include "ldb/tools/cmdline.h"
+#include "ldb_includes.h"
+#include "tools/cmdline.h"
 
 #if (_SAMBA_BUILD_ >= 4)
+#include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/samba/ldif_handlers.h"
 #include "auth/gensec/gensec.h"
