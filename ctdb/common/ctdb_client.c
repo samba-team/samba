@@ -843,12 +843,12 @@ int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMODE, 0, data, 
 			   ctdb, &outdata, &res, &timeout);
-	if (ret != 0 || res != 0) {
+	if (ret != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
 		return -1;
 	}
 
-	*recmode = ((uint32_t *)outdata.dptr)[0];
+	*recmode = res;
 
 	return 0;
 }
@@ -1589,12 +1589,12 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_PID, 0, data, 
 			   ctdb, &outdata, &res, &timeout);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getpid failed\n"));
 		return -1;
 	}
 
-	*pid = ((uint32_t *)outdata.dptr)[0];
+	*pid = res;
 
 	return 0;
 }
