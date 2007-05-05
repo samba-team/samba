@@ -342,16 +342,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_GET_RECMODE: {
 		outdata->dsize = sizeof(uint32_t);
-		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
-		*((uint32_t *)(&outdata->dptr[0])) = ctdb->recovery_mode;
+		outdata->dptr  = (unsigned char *)&ctdb->recovery_mode;
 
 		return 0;
 	}
 
 	case CTDB_CONTROL_GET_PID: {
+		static uint32_t pid;
+
+		pid = getpid();
 		outdata->dsize = sizeof(uint32_t);
-		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
-		*((uint32_t *)(&outdata->dptr[0])) = (uint32_t)getpid();
+		outdata->dptr = (unsigned char *)&pid;
 
 		return 0;
 	}
