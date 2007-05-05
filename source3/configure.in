@@ -5925,10 +5925,6 @@ AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 AC_SUBST(NSSSONAMEVERSIONSUFFIX)
 
-if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
-	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
-fi
-
 AC_SUBST(SMB_KRB5_LOCATOR)
 
 # Check the setting of --with-winbind
@@ -5961,6 +5957,10 @@ fi
 if test x"$HAVE_WINBIND" = x"no"; then
 	WINBIND_NSS=""
 	WINBIND_WINS_NSS=""
+fi
+
+if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
+	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
 fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
