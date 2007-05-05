@@ -163,12 +163,12 @@ valgrindtest: all
 installcheck: install test
 
 install: all
-	mkdir -p $(includedir) $(libdir)/pkgconfig $(libdir) $(bindir)
-	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(includedir)
-	cp $(LDB_LIB) $(libdir)
-	cp $(BINS) $(bindir)
-	cp ldb.pc $(libdir)/pkgconfig
-	$(srcdir)/docs/installdocs.sh $(mandir)
+	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir)/pkgconfig $(DESTDIR)$(libdir) $(bindir)
+	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
+	cp $(LDB_LIB) $(DESTDIR)$(libdir)
+	cp $(BINS) $(DESTDIR)$(bindir)
+	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(srcdir)/docs/installdocs.sh $(DESTDIR)$(mandir)
 
 gcov:
 	$(GCOV) -po ldb_sqlite3 $(srcdir)/ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
