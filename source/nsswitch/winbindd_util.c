@@ -725,23 +725,16 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
  * are set, otherwise False.
  **/
 BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
+				 struct winbindd_domain *domain,
 				 DOM_SID *sid,
 				 char **dom_name,
 				 char **name,
 				 enum lsa_SidType *type)
 {
 	NTSTATUS result;
-	struct winbindd_domain *domain;
 
 	*dom_name = NULL;
 	*name = NULL;
-
-	domain = find_lookup_domain_from_sid(sid);
-
-	if (!domain) {
-		DEBUG(1,("Can't find domain from sid\n"));
-		return False;
-	}
 
 	/* Lookup name */
 
