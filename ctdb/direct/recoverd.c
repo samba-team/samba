@@ -422,9 +422,12 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	return 0;
 }
 
-void recoverd(struct ctdb_context *ctdb, struct event_context *ev)
+
+
+
+void monitor_cluster(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	uint32_t vnn, num_active;
+	uint32_t vnn, num_active, recmode;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -455,6 +458,15 @@ again:
 	/* get our vnn number */
 	vnn = ctdb_get_vnn(ctdb);  
 
+
+	/* get the vnnmap */
+	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &vnnmap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "Unable to get vnnmap from node %u\n", vnn));
+		goto again;
+	}
+
+
 	/* get number of nodes */
 	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &nodemap);
 	if (ret != 0) {
@@ -462,11 +474,33 @@ again:
 		goto again;
 	}
 
+
 	/* count how many active nodes there are */
 	num_active = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
 			num_active++;
+		}
+	}
+
+
+	/* verify that all active nodes are in normal mode 
+	   and not in recovery mode 
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), vnn, &recmode);
+		if (ret != 0) {
+			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
+			goto again;
+		}
+		if (recmode!=CTDB_RECOVERY_NORMAL) {
+			DEBUG(0, (__location__ "Node:%d was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
+			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			goto again;
 		}
 	}
 
@@ -511,12 +545,6 @@ again:
 
 	}
 
-	/* get the vnnmap */
-	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &vnnmap);
-	if (ret != 0) {
-		DEBUG(0, (__location__ "Unable to get vnnmap from node %u\n", vnn));
-		goto again;
-	}
 
 	/* there better be the same number of lmasters in the vnn map
 	   as there are active nodes or well have to do a recovery
@@ -649,7 +677,7 @@ int main(int argc, const char *argv[])
 	}
 
 
-	recoverd(ctdb, ev);
+	monitor_cluster(ctdb, ev);
 
 	return ret;
 }
