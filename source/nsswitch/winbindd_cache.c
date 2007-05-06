@@ -4,7 +4,7 @@
    Winbind cache backend functions
 
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Gerald Carter   2003
+   Copyright (C) Gerald Carter   2003-2007
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Guenther Deschner 2005
    
@@ -3327,6 +3327,468 @@ int winbindd_validate_cache(void)
 
 	return ret;
 }
+
+/*********************************************************************
+ ********************************************************************/
+
+static BOOL add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
+				       struct winbindd_tdc_domain **domains, 
+				       size_t *num_domains )
+{
+	struct winbindd_tdc_domain *list = NULL;
+	size_t idx;
+	int i;
+	BOOL set_only = False;	
+	
+	/* don't allow duplicates */
+
+	idx = *num_domains;
+	list = *domains;
+	
+	for ( i=0; i< (*num_domains); i++ ) {
+		if ( strequal( new_dom->name, list[i].domain_name ) ) {
+			DEBUG(10,("add_wbdomain_to_tdc_array: Found existing record for %s\n",
+				  new_dom->name));
+			idx = i;
+			set_only = True;
+			
+			break;
+		}
+	}
+
+	if ( !set_only ) {
+		if ( !*domains ) {
+			list = TALLOC_ARRAY( NULL, struct winbindd_tdc_domain, 1 );
+			idx = 0;
+		} else {
+			list = TALLOC_REALLOC_ARRAY( *domains, *domains, 
+						     struct winbindd_tdc_domain,  
+						     (*num_domains)+1);
+			idx = *num_domains;		
+		}
+
+		ZERO_STRUCT( list[idx] );
+	}
+
+	if ( !list )
+		return False;
+
+	list[idx].domain_name = talloc_strdup( list, new_dom->name );
+	list[idx].dns_name = talloc_strdup( list, new_dom->alt_name );
+
+	if ( !is_null_sid( &new_dom->sid ) )
+		sid_copy( &list[idx].sid, &new_dom->sid );
+
+	if ( new_dom->domain_flags != 0x0 )
+		list[idx].trust_flags = new_dom->domain_flags;	
+
+	if ( new_dom->domain_type != 0x0 )
+		list[idx].trust_type = new_dom->domain_type;
+
+	if ( new_dom->domain_trust_attribs != 0x0 )
+		list[idx].trust_attribs = new_dom->domain_trust_attribs;
+	
+	if ( !set_only ) {
+		*domains = list;
+		*num_domains = idx + 1;	
+	}
+
+	return True;	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+static TDB_DATA make_tdc_key( const char *domain_name )
+{
+	char *keystr = NULL;
+	TDB_DATA key = { NULL, 0 };
+	
+	if ( !domain_name ) {
+		DEBUG(5,("make_tdc_key: Keyname workgroup is NULL!\n"));
+		return key;
+	}
+	       
+		
+	asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name );
+	key.dptr = (unsigned char*)keystr;
+	key.dsize = strlen_m(keystr) + 1;
+	
+	return key;	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+static int pack_tdc_domains( struct winbindd_tdc_domain *domains, 
+			     size_t num_domains,
+			     unsigned char **buf )
+{
+        unsigned char *buffer = NULL;
+	int len = 0;
+	int buflen = 0;
+	int i = 0;
+
+	DEBUG(10,("pack_tdc_domains: Packing %d trusted domains\n",
+		  (int)num_domains));
+	
+	buflen = 0;
+	
+ again: 
+	len = 0;
+	
+	/* Store the number of array items first */
+	len += tdb_pack( buffer+len, buflen-len, "d", 
+			 num_domains );
+
+	/* now pack each domain trust record */
+	for ( i=0; i<num_domains; i++ ) {
+
+		if ( buflen > 0 ) {
+			DEBUG(10,("pack_tdc_domains: Packing domain %s (%s)\n",
+				  domains[i].domain_name,
+				  domains[i].dns_name ? domains[i].dns_name : "UNKNOWN" ));
+		}
+		
+		len += tdb_pack( buffer+len, buflen-len, "fffddd",
+				 domains[i].domain_name,
+				 domains[i].dns_name,
+				 sid_string_static(&domains[i].sid),
+				 domains[i].trust_flags,
+				 domains[i].trust_attribs,
+				 domains[i].trust_type );
+	}
+
+	if ( buflen < len ) {
+		if ( (buffer = SMB_MALLOC_ARRAY(unsigned char, len)) == NULL ) {
+			DEBUG(0,("pack_tdc_domains: failed to alloc buffer!\n"));
+			buflen = -1;
+			goto done;
+		}
+		buflen = len;
+		goto again;
+	}
+
+	*buf = buffer;	
+	
+ done:	
+	return buflen;	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+static size_t unpack_tdc_domains( unsigned char *buf, int buflen, 
+				  struct winbindd_tdc_domain **domains )
+{
+	fstring domain_name, dns_name, sid_string;	
+	uint32 type, attribs, flags;
+	int num_domains;
+	int len = 0;
+	int i;
+	struct winbindd_tdc_domain *list = NULL;
+
+	/* get the number of domains */
+	len += tdb_unpack( buf+len, buflen-len, "d", &num_domains);
+	if ( len == -1 ) {
+		DEBUG(5,("unpack_tdc_domains: Failed to unpack domain array\n"));		
+		return 0;
+	}
+
+	list = TALLOC_ARRAY( NULL, struct winbindd_tdc_domain, num_domains );
+	if ( !list ) {
+		DEBUG(0,("unpack_tdc_domains: Failed to talloc() domain list!\n"));
+		return 0;		
+	}
+	
+	for ( i=0; i<num_domains; i++ ) {
+		len += tdb_unpack( buf+len, buflen-len, "fffddd",
+				   domain_name,
+				   dns_name,
+				   sid_string,
+				   &flags,
+				   &attribs,
+				   &type );
+
+		if ( len == -1 ) {
+			DEBUG(5,("unpack_tdc_domains: Failed to unpack domain array\n"));
+			TALLOC_FREE( list );			
+			return 0;
+		}
+
+		DEBUG(11,("unpack_tdc_domains: Unpacking domain %s (%s) "
+			  "SID %s, flags = 0x%x, attribs = 0x%x, type = 0x%x\n",
+			  domain_name, dns_name, sid_string,
+			  flags, attribs, type));
+		
+		list[i].domain_name = talloc_strdup( list, domain_name );
+		list[i].dns_name = talloc_strdup( list, dns_name );
+		if ( !string_to_sid( &(list[i].sid), sid_string ) ) {			
+			DEBUG(10,("unpack_tdc_domains: no SID for domain %s\n",
+				  domain_name));
+		}
+		list[i].trust_flags = flags;
+		list[i].trust_attribs = attribs;
+		list[i].trust_type = type;
+	}
+
+	*domains = list;
+	
+	return num_domains;
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+static BOOL wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t num_domains )
+{
+	TDB_DATA key = make_tdc_key( lp_workgroup() );	 
+	TDB_DATA data = { NULL, 0 };
+	int ret;
+	
+	if ( !key.dptr )
+		return False;
+	
+	/* See if we were asked to delete the cache entry */
+
+	if ( !domains ) {
+		ret = tdb_delete( wcache->tdb, key );
+		goto done;
+	}
+	
+	data.dsize = pack_tdc_domains( domains, num_domains, &data.dptr );
+	
+	if ( !data.dptr ) {
+		ret = -1;
+		goto done;
+	}
+		
+	ret = tdb_store( wcache->tdb, key, data, 0 );
+
+ done:
+	SAFE_FREE( data.dptr );
+	SAFE_FREE( key.dptr );
+	
+	return ( ret != -1 );	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+BOOL wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_domains )
+{
+	TDB_DATA key = make_tdc_key( lp_workgroup() );
+	TDB_DATA data = { NULL, 0 };
+
+	*domains = NULL;	
+	*num_domains = 0;	
+
+	if ( !key.dptr )
+		return False;
+	
+	data = tdb_fetch( wcache->tdb, key );
+
+	SAFE_FREE( key.dptr );
+	
+	if ( !data.dptr ) 
+		return False;
+	
+	*num_domains = unpack_tdc_domains( data.dptr, data.dsize, domains );
+
+	SAFE_FREE( data.dptr );
+	
+	if ( !*domains )
+		return False;
+
+	return True;	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+BOOL wcache_tdc_add_domain( struct winbindd_domain *domain )
+{
+	struct winbindd_tdc_domain *dom_list = NULL;
+	size_t num_domains = 0;
+	BOOL ret = False;	
+
+	DEBUG(10,("wcache_tdc_add_domain: Adding domain %s (%s), SID %s, "
+		  "flags = 0x%x, attributes = 0x%x, type = 0x%x\n",
+		  domain->name, domain->alt_name, 
+		  sid_string_static(&domain->sid),
+		  domain->domain_flags,
+		  domain->domain_trust_attribs,
+		  domain->domain_type));	
+	
+	if ( !init_wcache() ) {
+		return False;
+	}
+	
+	/* fetch the list */
+
+	wcache_tdc_fetch_list( &dom_list, &num_domains );
+	
+	/* add the new domain */
+
+	if ( !add_wbdomain_to_tdc_array( domain, &dom_list, &num_domains ) ) {
+		goto done;		
+	}	
+
+	/* pack the domain */
+
+	if ( !wcache_tdc_store_list( dom_list, num_domains ) ) {
+		goto done;		
+	}
+	
+	/* Success */
+
+	ret = True;	
+ done:
+	TALLOC_FREE( dom_list );
+	
+	return ret;	
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const char *name )
+{
+	struct winbindd_tdc_domain *dom_list = NULL;
+	size_t num_domains = 0;
+	int i;
+	struct winbindd_tdc_domain *d = NULL;	
+
+	DEBUG(10,("wcache_tdc_fetch_domain: Searching for domain %s\n", name));
+
+	if ( !init_wcache() ) {
+		return False;
+	}
+	
+	/* fetch the list */
+
+	wcache_tdc_fetch_list( &dom_list, &num_domains );
+	
+	for ( i=0; i<num_domains; i++ ) {
+		if ( strequal(name, dom_list[i].domain_name) ||
+		     strequal(name, dom_list[i].dns_name) )
+		{
+			DEBUG(10,("wcache_tdc_fetch_domain: Found domain %s\n",
+				  name));
+			
+			d = TALLOC_P( ctx, struct winbindd_tdc_domain );
+			if ( !d )
+				break;			
+			
+			d->domain_name = talloc_strdup( d, dom_list[i].domain_name );
+			d->dns_name = talloc_strdup( d, dom_list[i].dns_name );
+			sid_copy( &d->sid, &dom_list[i].sid );
+			d->trust_flags   = dom_list[i].trust_flags;
+			d->trust_type    = dom_list[i].trust_type;
+			d->trust_attribs = dom_list[i].trust_attribs;
+
+			break;
+		}
+	}
+
+        TALLOC_FREE( dom_list );
+	
+	return d;	
+}
+
+
+/*********************************************************************
+ ********************************************************************/
+
+void wcache_tdc_clear( void )
+{
+	if ( !init_wcache() )
+		return;
+
+	wcache_tdc_store_list( NULL, 0 );
+	
+	return;	
+}
+
+
+/*********************************************************************
+ ********************************************************************/
+
+static void wcache_save_user_pwinfo(struct winbindd_domain *domain, 
+				    NTSTATUS status,
+				    const DOM_SID *user_sid,
+				    const char *homedir,
+				    const char *shell,
+				    const char *gecos,
+				    uint32 gid)
+{
+	struct cache_entry *centry;
+
+	if ( (centry = centry_start(domain, status)) == NULL )
+		return;
+
+	centry_put_string( centry, homedir );
+	centry_put_string( centry, shell );
+	centry_put_string( centry, gecos );
+	centry_put_uint32( centry, gid );
+	
+	centry_end(centry, "NSS/PWINFO/%s", sid_string_static(user_sid) );
+
+	DEBUG(10,("wcache_save_user_pwinfo: %s\n", sid_string_static(user_sid) ));
+
+	centry_free(centry);
+}
+
+NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
+			      const DOM_SID *user_sid,
+			      TALLOC_CTX *ctx,
+			      ADS_STRUCT *ads, LDAPMessage *msg,
+			      char **homedir, char **shell, char **gecos,
+			      gid_t *p_gid)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS nt_status;
+
+	if (!cache->tdb)
+		goto do_query;
+
+	centry = wcache_fetch(cache, domain, "NSS/PWINFO/%s", sid_string_static(user_sid));	
+	
+	if (!centry)
+		goto do_query;
+
+	*homedir = centry_string( centry, ctx );
+	*shell   = centry_string( centry, ctx );
+	*gecos   = centry_string( centry, ctx );
+	*p_gid   = centry_uint32( centry );	
+
+	centry_free(centry);
+
+	DEBUG(10,("nss_get_info_cached: [Cached] - user_sid %s\n",
+		  sid_string_static(user_sid)));
+
+	return NT_STATUS_OK;
+
+do_query:
+	
+	nt_status = nss_get_info( domain->name, user_sid, ctx, ads, msg, 
+				  homedir, shell, gecos, p_gid );
+
+	if ( NT_STATUS_IS_OK(nt_status) ) {
+		wcache_save_user_pwinfo( domain, nt_status, user_sid,
+					 *homedir, *shell, *gecos, *p_gid );
+	}	
+
+	if ( NT_STATUS_EQUAL( nt_status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND ) ) {
+		DEBUG(5,("nss_get_info_cached: Setting domain %s offline\n",
+			 domain->name ));
+		set_domain_offline( domain );
+	}
+
+	return nt_status;	
+}
+
 
 /* the cache backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {

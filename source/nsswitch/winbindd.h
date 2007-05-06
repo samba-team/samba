@@ -157,6 +157,9 @@ struct winbindd_domain {
 	fstring alt_name;                      /* alt Domain name (if any) */
 	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
+	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */	
+	uint32 domain_type;                    /* Domain type from rpc_ds.h */	
+	uint32 domain_trust_attribs;           /* Trust attribs from rpc_ds.h */
 	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
@@ -331,6 +334,18 @@ struct winbindd_idmap_methods {
   /* Called to dump backend status */
   void (*status)(void);
 };
+
+/* Data structures for dealing with the trusted domain cache */
+
+struct winbindd_tdc_domain {
+	const char *domain_name;
+	const char *dns_name;
+        DOM_SID sid;
+	uint32 trust_flags;
+	uint32 trust_attribs;
+	uint32 trust_type;
+};
+
 
 #include "nsswitch/winbindd_proto.h"
 
