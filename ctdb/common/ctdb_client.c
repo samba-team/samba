@@ -678,7 +678,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	struct ctdb_req_control *c;
 	size_t len;
 	int ret;
-	static uint32_t timed_out;
+	uint32_t timed_out;
 	struct timed_event *te=NULL;
 
 	/* if the domain socket is not yet open, open it */
@@ -733,12 +733,10 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		talloc_free(state);
 		return -1;
 	}
-#if 0
+
 	if ((timed_out==0) && te) {
-/*why does this call here block forever?*/
 		talloc_free(te);
 	}
-#endif
 
 	if (outdata) {
 		*outdata = state->outdata;
