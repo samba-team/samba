@@ -246,8 +246,9 @@ static void check_domain_online_handler(struct event_context *ctx,
         struct winbindd_domain *domain =
                 (struct winbindd_domain *)private_data;
 
-	DEBUG(10,("check_domain_online_handler: called for domain %s\n",
-		domain->name ));
+	DEBUG(10,("check_domain_online_handler: called for domain "
+		  "%s (online = %s)\n", domain->name, 
+		  domain->online ? "True" : "False" ));
 
 	if (domain->check_online_event) {
 		TALLOC_FREE(domain->check_online_event);
@@ -349,6 +350,23 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	DEBUG(10,("set_domain_offline: added event handler for domain %s\n",
 		domain->name ));
+
+	/* Send an offline message to the idmap child when our
+	   primary domain goes offline */
+
+	if ( domain->primary ) {
+		struct winbindd_child *idmap = idmap_child();
+		
+		if ( idmap->pid != 0 ) {
+			message_send_pid(pid_to_procid(idmap->pid), 
+					 MSG_WINBIND_OFFLINE, 
+					 domain->name, 
+					 strlen(domain->name)+1, 
+					 False);
+		}			
+	}
+
+	return;	
 }
 
 /****************************************************************
@@ -409,6 +427,23 @@ static void set_domain_online(struct winbindd_domain *domain)
 	message_deregister(MSG_WINBIND_FAILED_TO_GO_ONLINE);
 
 	domain->online = True;
+
+	/* Send an online message to the idmap child when our
+	   primary domain comes online */
+
+	if ( domain->primary ) {
+		struct winbindd_child *idmap = idmap_child();
+		
+		if ( idmap->pid != 0 ) {
+			message_send_pid(pid_to_procid(idmap->pid), 
+					 MSG_WINBIND_ONLINE, 
+					 domain->name, 
+					 strlen(domain->name)+1, 
+					 False);
+		}			
+	}
+
+	return;	
 }
 
 /****************************************************************
