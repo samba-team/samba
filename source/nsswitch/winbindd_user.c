@@ -105,9 +105,7 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	safe_strcpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
 
-	/* Home directory and shell - use template config parameters.  The
-	   defaults are /tmp for the home directory and /bin/false for
-	   shell. */
+	/* Home directory and shell */
 	
 	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
 			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
