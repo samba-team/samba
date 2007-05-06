@@ -461,7 +461,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	uint32 user_rid;
 	NET_USER_INFO_3 *user;
 
 	DEBUG(3,("ads: query_user\n"));
@@ -478,7 +477,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			sid_string_static(sid)));
 
-		sid_compose(&info->user_sid, &domain->sid, user_rid);
+		sid_compose(&info->user_sid, &domain->sid, user->user_rid);
 		sid_compose(&info->group_sid, &domain->sid, user->group_rid);
 				
 		info->acct_name = unistr2_tdup(mem_ctx, &user->uni_user_name);
