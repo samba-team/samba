@@ -57,6 +57,10 @@ struct ctdb_call_info {
    a message handler ID meaning "give me all messages"
  */
 #define CTDB_SRVID_ALL (~(uint64_t)0)
+/*
+  srvid type : RECOVERY
+*/
+#define CTDB_SRVTYPE_RECOVERY	0x64766372
 
 struct event_context;
 

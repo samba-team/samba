@@ -66,6 +66,27 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	return 0;
 }
 
+static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn)
+{
+	int j, ret;
+
+	/* set recovery master to vnn on all nodes */
+	for (j=0; j<nodemap->num; j++) {
+		/* dont change it for nodes that are unavailable */
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, vnn);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to set recmaster on node %u\n", nodemap->nodes[j].vnn));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, db, ret;
@@ -410,6 +431,14 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	}
 
 
+	/* update recmaster to point to us for all nodes */
+	ret = set_recovery_master(ctdb, nodemap, vnn);
+	if (ret!=0) {
+		DEBUG(0, (__location__ "Unable to set recovery master\n"));
+		return -1;
+	}
+
+
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
 	if (ret!=0) {
@@ -423,11 +452,111 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 }
 
 
+struct election_message {
+	uint32_t vnn;
+};
+
+static int send_election_request(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn)
+{
+	int ret;
+	TDB_DATA election_data;
+	struct election_message emsg;
+	uint64_t srvid;
+	
+	srvid = CTDB_SRVTYPE_RECOVERY;
+	srvid <<= 32;
+
+	emsg.vnn = vnn;
+
+	election_data.dsize = sizeof(struct election_message);
+	election_data.dptr  = (unsigned char *)&emsg;
+
+
+	/* first we assume we will win the election and set 
+	   recoverymaster to be ourself on the current node
+	 */
+	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, vnn);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "failed to send recmaster election request"));
+		return -1;
+	}
+
+
+	/* send an election message to all active nodes */
+	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
+
+	return 0;
+}
+
+
+/*
+  handler for recovery master elections
+*/
+static void election_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				 TDB_DATA data, void *private_data)
+{
+	int ret;
+	struct election_message *em = (struct election_message *)data.dptr;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(ctdb);
+
+	if (em->vnn==ctdb_get_vnn(ctdb)) {
+		talloc_free(mem_ctx);
+		return;
+	}
+		
+	/* someone called an election. check their election data
+	   and if we disagree and we would rather be the elected node, 
+	   send a new election message to all other nodes
+	 */
+	/* for now we just check the vnn number and allow the lowest
+	   vnn number to become recovery master
+	 */
+	if (em->vnn > ctdb_get_vnn(ctdb)) {
+		ret = send_election_request(ctdb, mem_ctx, ctdb_get_vnn(ctdb));
+		if (ret!=0) {
+			DEBUG(0, (__location__ "failed to initiate recmaster election"));
+		}
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	/* ok, let that guy become recmaster then */
+	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), ctdb_get_vnn(ctdb), em->vnn);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "failed to send recmaster election request"));
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	talloc_free(mem_ctx);
+	return;
+}
+
+
+static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn, struct ctdb_node_map *nodemap)
+{
+	int ret;
+	
+	ret = send_election_request(ctdb, mem_ctx, vnn);
+	if (ret!=0) {
+		DEBUG(0, (__location__ "failed to initiate recmaster election"));
+		return;
+	}
+
+	/* wait for one second to collect all responses */
+	timed_out = 0;
+	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(1, 0), timeout_func, ctdb);
+	while (!timed_out) {
+		event_loop_once(ctdb->ev);
+	}
+}
 
 
 void monitor_cluster(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	uint32_t vnn, num_active, recmode;
+	uint32_t vnn, num_active, recmode, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -436,7 +565,6 @@ void monitor_cluster(struct ctdb_context *ctdb, struct event_context *ev)
 	int i, j, ret;
 	
 again:
-	printf("check if we need to do recovery\n");
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
 		mem_ctx = NULL;
@@ -480,6 +608,58 @@ again:
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
 			num_active++;
+		}
+	}
+
+
+	/* check which node is the recovery master */
+	ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(0, (__location__ "Unable to get recmaster from node %u\n", vnn));
+		goto again;
+	}
+	
+
+	/* verify that the recmaster node is still active */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].vnn==recmaster) {
+			break;
+		}
+	}	
+	if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].vnn));
+		force_election(ctdb, mem_ctx, vnn, nodemap);
+		goto again;
+	}
+	
+
+	/* if we are not the recmaster then we do not need to check
+	   if recovery is needed
+	 */
+	if (vnn!=recmaster) {
+		goto again;
+	}
+
+
+	/* verify that all active nodes agree that we are the recmaster */
+	for (j=0; j<nodemap->num; j++) {
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+		if (nodemap->nodes[j].vnn == vnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to get recmaster from node %u\n", vnn));
+			goto again;
+		}
+
+		if (recmaster!=vnn) {
+			DEBUG(0, ("Node %d does not agree we are the recmaster. Force reelection\n", nodemap->nodes[j].vnn));
+			force_election(ctdb, mem_ctx, vnn, nodemap);
+			goto again;
 		}
 	}
 
@@ -620,7 +800,6 @@ again:
 		}
 	}
 
-	printf("no we did not need to do recovery\n");
 	goto again;
 
 }
@@ -642,6 +821,7 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
+	uint64_t srvid;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -675,6 +855,12 @@ int main(int argc, const char *argv[])
 		DEBUG(0, (__location__ "Failed to init ctdb\n"));
 		exit(1);
 	}
+
+
+	/* register a message port for recovery elections */
+	srvid = CTDB_SRVTYPE_RECOVERY;
+	srvid <<= 32;
+	ctdb_set_message_handler(ctdb, srvid, election_handler, NULL);
 
 
 	monitor_cluster(ctdb, ev);

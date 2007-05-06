@@ -52,6 +52,8 @@ static void usage(void)
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
 		"  getrecmode <vnn>                   get recovery mode\n"
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
+		"  getrecmaster <vnn>                 get recovery master\n"
+		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
 		"  writerecord <vnn> <dbid> <key> <data>\n"
 		"  recover <vnn>                      recover the cluster\n"
 		"  attach <dbname>                    attach a database\n"
@@ -570,11 +572,61 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	vnn     = strtoul(argv[0], NULL, 0);
-	recmode = strtoul(argv[0], NULL, 0);
+	recmode = strtoul(argv[1], NULL, 0);
 
 	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  display recovery master of a remote node
+ */
+static int control_getrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmaster;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+	if (ret != 0) {
+		printf("Unable to get recmaster from node %u\n", vnn);
+		return ret;
+	}
+	printf("Recovery master:%d\n",recmaster);
+
+	return 0;
+}
+
+/*
+  set recovery master of a remote node
+ */
+static int control_setrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmaster;
+	int ret;
+
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn       = strtoul(argv[0], NULL, 0);
+	recmaster = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, recmaster);
+	if (ret != 0) {
+		printf("Unable to set recmaster on node %u\n", vnn);
 		return ret;
 	}
 
@@ -1048,6 +1100,8 @@ int main(int argc, const char *argv[])
 		{ "cleardb", control_cleardb },
 		{ "getrecmode", control_getrecmode },
 		{ "setrecmode", control_setrecmode },
+		{ "getrecmaster", control_getrecmaster },
+		{ "setrecmaster", control_setrecmaster },
 		{ "ping", control_ping },
 		{ "debug", control_debug },
 		{ "debuglevel", control_debuglevel },
