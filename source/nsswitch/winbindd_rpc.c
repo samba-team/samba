@@ -828,7 +828,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		return NT_STATUS_NO_MEMORY;
 
 #ifdef HAVE_LDAP
-	if ( domain->native_mode ) 
+	if ( domain->active_directory ) 
 	{
 		int res;
 

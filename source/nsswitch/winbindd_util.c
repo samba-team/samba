@@ -1233,3 +1233,33 @@ void ws_name_return( char *name, char replace )
 
 	return;	
 }
+
+/*********************************************************************
+ ********************************************************************/
+
+BOOL winbindd_can_contact_domain( struct winbindd_domain *domain )
+{
+	/* We can contact the domain if it is our primary domain */
+
+	if ( domain->primary )
+		return True;
+
+	/* Can always contact a domain that is in out forest */
+
+	if ( domain->domain_flags & DS_DOMAIN_IN_FOREST )
+		return True;	
+
+	/* We cannot contact the domain if it is running AD and
+	   we have no inbound trust */
+
+	if ( domain->active_directory && 
+	     ((domain->domain_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND) ) 
+	{
+		return False;
+	}
+	
+	/* Assume everything else is ok (probably not true but what
+	   can you do?) */
+	
+	return True;	
+}
