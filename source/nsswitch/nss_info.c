@@ -190,10 +190,11 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
 		nss_domain->backend = nss_backend;
 		nss_domain->domain  = talloc_strdup( nss_domain, domain );
 
-		status = nss_domain->backend->methods->init( nss_domain );
-		if ( NT_STATUS_IS_OK( status ) ) {
+		/* Try to init and ave the result */
+
+		nss_domain->init_status = nss_domain->backend->methods->init( nss_domain );
 			DLIST_ADD( nss_domain_list, nss_domain );
-		} else {
+		if ( !NT_STATUS_IS_OK(nss_domain->init_status) ) {			
 			DEBUG(0,("nss_init: Failed to init backend for %s domain!\n", 
 				 nss_domain->domain));
 		}
@@ -246,6 +247,10 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 		}
 		
 		p = nss_domain_list;		
+	}
+
+	if ( !NT_STATUS_IS_OK( p->init_status ) ) {
+	       p->init_status = p->backend->methods->init( p );
 	}
 
 	return p;
