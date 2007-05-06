@@ -275,7 +275,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	DEBUG(3,("ads: enum_dom_groups\n"));
 
 	/* only grab domain local groups for our domain */
-	if ( domain->native_mode && strequal(lp_realm(), domain->alt_name)  ) {
+	if ( domain->active_directory && strequal(lp_realm(), domain->alt_name)  ) {
 		enum_dom_local_groups = True;
 	}
 
