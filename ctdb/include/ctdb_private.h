@@ -234,6 +234,7 @@ struct ctdb_context {
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
 	uint32_t seqnum_frequency;
+	uint32_t recovery_master;
 };
 
 struct ctdb_db_context {
@@ -312,6 +313,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_UPDATE_SEQNUM,
 		    CTDB_CONTROL_SET_SEQNUM_FREQUENCY,
 		    CTDB_CONTROL_DUMP_MEMORY,
+		    CTDB_CONTROL_GET_PID,
+		    CTDB_CONTROL_GET_RECMASTER,
+		    CTDB_CONTROL_SET_RECMASTER,
 };
 
 

@@ -341,11 +341,21 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_GET_RECMODE: {
-		outdata->dsize = sizeof(uint32_t);
-		outdata->dptr = (unsigned char *)talloc_array(outdata, uint32_t, 1);
-		*((uint32_t *)(&outdata->dptr[0])) = ctdb->recovery_mode;
+		return ctdb->recovery_mode;
+	}
+
+	case CTDB_CONTROL_SET_RECMASTER: {
+		ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
 
 		return 0;
+	}
+
+	case CTDB_CONTROL_GET_RECMASTER: {
+		return ctdb->recovery_master;
+	}
+
+	case CTDB_CONTROL_GET_PID: {
+		return getpid();
 	}
 
 	case CTDB_CONTROL_CONFIG: {

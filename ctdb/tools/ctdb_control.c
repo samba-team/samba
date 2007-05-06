@@ -46,15 +46,19 @@ static void usage(void)
 		"  getdbmap <vnn>                     lists databases on a node\n"
 		"  getnodemap <vnn>                   lists nodes known to a ctdb daemon\n"
 		"  createdb <vnn> <dbname>            create a database\n"
-		"  catdb <dbname>                     lists all keys/data in a db\n"
+		"  catdb <dbname> [vnn]               lists all keys/data in a db\n"
 		"  cpdb <fromvnn> <tovnn> <dbid>      lists all keys in a remote tdb\n"
 		"  setdmaster <vnn> <dbid> <dmaster>  sets new dmaster for all records in the database\n"
 		"  cleardb <vnn> <dbid>               deletes all records in a db\n"
 		"  getrecmode <vnn>                   get recovery mode\n"
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
+		"  getrecmaster <vnn>                 get recovery master\n"
+		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
 		"  writerecord <vnn> <dbid> <key> <data>\n"
 		"  recover <vnn>                      recover the cluster\n"
-		"  attach <dbname>                    attach a database\n");
+		"  attach <dbname>                    attach a database\n"
+		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+	);
 	exit(1);
 }
 
@@ -345,9 +349,11 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	}
 	for (i=0;i<dbmap->num;i++) {
 		const char *path;
+		const char *name;
 
 		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
+		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
 	/* 5: pull all records from all other nodes across to this node
@@ -503,6 +509,31 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  display pid of a ctdb daemon
+ */
+static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, pid;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getpid(ctdb, timeval_current_ofs(1, 0), vnn, &pid);
+	if (ret != 0) {
+		printf("Unable to get daemon pid from node %u\n", vnn);
+		return ret;
+	}
+	printf("Pid:%d\n",pid);
+
+	return 0;
+}
+
+/*
   display recovery mode of a remote node
  */
 static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -541,11 +572,61 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	vnn     = strtoul(argv[0], NULL, 0);
-	recmode = strtoul(argv[0], NULL, 0);
+	recmode = strtoul(argv[1], NULL, 0);
 
 	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  display recovery master of a remote node
+ */
+static int control_getrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmaster;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+	if (ret != 0) {
+		printf("Unable to get recmaster from node %u\n", vnn);
+		return ret;
+	}
+	printf("Recovery master:%d\n",recmaster);
+
+	return 0;
+}
+
+/*
+  set recovery master of a remote node
+ */
+static int control_setrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, recmaster;
+	int ret;
+
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn       = strtoul(argv[0], NULL, 0);
+	recmaster = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, recmaster);
+	if (ret != 0) {
+		printf("Unable to set recmaster on node %u\n", vnn);
 		return ret;
 	}
 
@@ -559,6 +640,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
+	uint32_t vnn;
 	int ret;
 
 	if (argc < 1) {
@@ -572,12 +654,35 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = ctdb_dump_db(ctdb_db, stdout);
-	if (ret == -1) {
-		printf("Unable to dump database\n");
-		return -1;
-	}
+	if (argc==1) {
+		/* traverse and dump the cluster tdb */
+		ret = ctdb_dump_db(ctdb_db, stdout);
+		if (ret == -1) {
+			printf("Unable to dump database\n");
+			return -1;
+		}
+	} else {
+		struct ctdb_key_list keys;
+		int i;
 
+		/* dump only the local tdb of a specific node */
+		vnn     = strtoul(argv[1], NULL, 0);
+		ret = ctdb_ctrl_pulldb(ctdb, vnn, ctdb_db->db_id, CTDB_LMASTER_ANY, ctdb, &keys);
+		if (ret == -1) {
+			printf("Unable to pull remote database\n");
+			return -1;
+		}
+		for(i=0;i<keys.num;i++){
+			char *keystr, *datastr;
+
+			keystr  = hex_encode(ctdb, keys.keys[i].dptr, keys.keys[i].dsize);
+			datastr = hex_encode(ctdb, keys.data[i].dptr, keys.data[i].dsize);
+
+			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", keys.headers[i].rsn, keys.lmasters[i], keys.headers[i].dmaster, keystr, datastr); 
+			ret++;
+		}
+	}
+	
 	talloc_free(ctdb_db);
 
 	printf("Dumped %d records\n", ret);
@@ -636,9 +741,11 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	printf("Number of databases:%d\n", dbmap->num);
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
+		const char *name;
 
 		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
-		printf("dbid:0x%08x path:%s\n", dbmap->dbids[i], path);
+		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
+		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
 	return 0;
@@ -993,6 +1100,8 @@ int main(int argc, const char *argv[])
 		{ "cleardb", control_cleardb },
 		{ "getrecmode", control_getrecmode },
 		{ "setrecmode", control_setrecmode },
+		{ "getrecmaster", control_getrecmaster },
+		{ "setrecmaster", control_setrecmaster },
 		{ "ping", control_ping },
 		{ "debug", control_debug },
 		{ "debuglevel", control_debuglevel },
@@ -1000,6 +1109,7 @@ int main(int argc, const char *argv[])
 		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
+		{ "getpid", control_getpid },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);

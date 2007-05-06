@@ -722,7 +722,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	/* semi-async operation */
 	timed_out = 0;
 	if (timeout) {
-		event_add_timed(ctdb->ev, mem_ctx, *timeout, timeout_func, &timed_out);
+		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
 	}
 	while ((state->state == CTDB_CALL_WAIT)
 	&&	(timed_out == 0) ){
@@ -732,7 +732,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		talloc_free(state);
 		return -1;
 	}
-	
+
 	if (outdata) {
 		*outdata = state->outdata;
 		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
@@ -836,12 +836,12 @@ int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMODE, 0, data, 
 			   ctdb, &outdata, &res, &timeout);
-	if (ret != 0 || res != 0) {
+	if (ret != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
 		return -1;
 	}
 
-	*recmode = ((uint32_t *)outdata.dptr)[0];
+	*recmode = res;
 
 	return 0;
 }
@@ -869,6 +869,54 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 
 	return 0;
 }
+
+/*
+  get the recovery master of a remote node
+ */
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmaster)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECMASTER, 0, data, 
+			   ctdb, &outdata, &res, &timeout);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getrecmaster failed\n"));
+		return -1;
+	}
+
+	*recmaster = res;
+
+	return 0;
+}
+
+/*
+  set the recovery master of a remote node
+ */
+int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmaster)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&recmaster;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_RECMASTER, 0, data, 
+			   ctdb, &outdata, &res, &timeout);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
 
 /*
   get a list of databases off a remote node
@@ -1567,5 +1615,28 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f)
 {
 	return ctdb_traverse(ctdb_db, dumpdb_fn, f);
+}
+
+/*
+  get the pid of a ctdb daemon
+ */
+int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_PID, 0, data, 
+			   ctdb, &outdata, &res, &timeout);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getpid failed\n"));
+		return -1;
+	}
+
+	*pid = res;
+
+	return 0;
 }
 

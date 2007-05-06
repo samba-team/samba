@@ -57,6 +57,10 @@ struct ctdb_call_info {
    a message handler ID meaning "give me all messages"
  */
 #define CTDB_SRVID_ALL (~(uint64_t)0)
+/*
+  srvid type : RECOVERY
+*/
+#define CTDB_SRVTYPE_RECOVERY	0x64766372
 
 struct event_context;
 
@@ -289,6 +293,15 @@ int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
  */
 int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmode);
 
+/*
+  get the recovery master of a remote node
+ */
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
+/*
+  set the recovery master of a remote node
+ */
+int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmaster);
+
 uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, 
 				   struct timeval timeout, 
 				   TALLOC_CTX *mem_ctx,
@@ -302,5 +315,10 @@ typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, voi
 int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);
 
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
+
+/*
+  get the pid of a ctdb daemon
+ */
+int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
 
 #endif
