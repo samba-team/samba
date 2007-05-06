@@ -153,8 +153,8 @@ struct winbindd_child {
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
-	fstring name;                          /* Domain name */	
-	fstring alt_name;                      /* alt Domain name (if any) */
+	fstring name;                          /* Domain name (NetBIOS) */
+	fstring alt_name;                      /* alt Domain name, if any (FQDN for ADS) */
 	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
 	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */	
