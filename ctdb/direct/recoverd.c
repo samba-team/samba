@@ -260,6 +260,28 @@ static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_
 }
 
 
+static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_vnn_map *vnnmap, TALLOC_CTX *mem_ctx)
+{
+	int j, ret;
+
+	/* push the new vnn map out to all the nodes */
+	for (j=0; j<nodemap->num; j++) {
+		/* dont push to nodes that are unavailable */
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, vnnmap);
+		if (ret != 0) {
+			printf("Unable to set vnnmap for node %u\n", vnn);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -379,18 +401,12 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	}
 
 
-	/* push the new vnn map out to all the nodes */
-	for (j=0; j<nodemap->num; j++) {
-		/* dont push to nodes that are unavailable */
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-			continue;
-		}
 
-		ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, vnnmap);
-		if (ret != 0) {
-			printf("Unable to set vnnmap for node %u\n", vnn);
-			return -1;
-		}
+	/* update to the new vnnmap on all nodes */
+	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, vnn, vnnmap, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to update vnnmap on all nodes\n");
+		return -1;
 	}
 
 
