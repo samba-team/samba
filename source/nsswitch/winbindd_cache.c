@@ -449,6 +449,10 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	time_t t = time(NULL);
 	unsigned cache_time = lp_winbind_cache_time();
 
+	if ( IS_DOMAIN_OFFLINE(domain) ) {
+		return;
+	}
+	
 	get_cache( domain );
 
 #if 0	/* JERRY -- disable as the default cache time is now 5 minutes */
@@ -823,8 +827,8 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	fstrcpy(uname, name);
 	strupper_m(uname);
 	centry_end(centry, "NS/%s/%s", domain_name, uname);
-	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s\n", domain_name, uname,
-		  sid_string_static(sid)));
+	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s (%s)\n", domain_name, uname,
+		  sid_string_static(sid), nt_errstr(status)));
 	centry_free(centry);
 }
 
@@ -847,7 +851,8 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 		centry_put_string(centry, name);
 	}
 	centry_end(centry, "SN/%s", sid_to_string(sid_string, sid));
-	DEBUG(10,("wcache_save_sid_to_name: %s -> %s\n", sid_string, name));
+	DEBUG(10,("wcache_save_sid_to_name: %s -> %s (%s)\n", sid_string, 
+		  name, nt_errstr(status)));
 	centry_free(centry);
 }
 
@@ -1730,6 +1735,9 @@ do_query:
 
 	status = domain->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
 
+	if ( NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED) )
+		goto skip_save;
+	
 	/* and save it */
 	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
