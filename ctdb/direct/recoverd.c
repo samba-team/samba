@@ -179,6 +179,37 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 	return 0;
 }
 
+
+static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+{
+	int i, j, ret;
+
+	/* pull all records from all other nodes across onto this node
+	   (this merges based on rsn)
+	*/
+	for (i=0;i<dbmap->num;i++) {
+		for (j=0; j<nodemap->num; j++) {
+			/* we dont need to merge with ourselves */
+			if (nodemap->nodes[j].vnn == vnn) {
+				continue;
+			}
+			/* dont merge from nodes that are unavailable */
+			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+				continue;
+			}
+			ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(2, 0), nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
+			if (ret != 0) {
+				printf("Unable to copy db from node %u to node %u\n", nodemap->nodes[j].vnn, vnn);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -239,7 +270,7 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	/* verify that we have all the databases any other node has */
 	ret = create_missing_local_databases(ctdb, nodemap, vnn, &dbmap, mem_ctx);
 	if (ret != 0) {
-		printf("Unable to create missing remote databases\n");
+		printf("Unable to create missing local databases\n");
 		return -1;
 	}
 
@@ -253,26 +284,15 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	}
 
 
-	/* pull all records from all other nodes across to this node
-	   (this merges based on rsn)
-	*/
-	for (i=0;i<dbmap->num;i++) {
-		for (j=0; j<nodemap->num; j++) {
-			/* we dont need to merge with ourselves */
-			if (nodemap->nodes[j].vnn == vnn) {
-				continue;
-			}
-			/* dont merge from nodes that are unavailable */
-			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-				continue;
-			}
-			ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(2, 0), nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
-			if (ret != 0) {
-				printf("Unable to copy db from node %u to node %u\n", nodemap->nodes[j].vnn, vnn);
-				return -1;
-			}
-		}
+
+	/* pull all remote databases onto the local node */
+	ret = pull_all_remote_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to pull remote databases\n");
+		return -1;
 	}
+
+
 
 
 	/* update dmaster to point to this node for all databases/nodes */
