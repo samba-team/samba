@@ -1450,7 +1450,12 @@ static int net_ads_join_usage(int argc, const char **argv)
 	d_printf("                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n");
 	d_printf("                      E.g. \"createcomputer=Computers/Servers/Unix\"\n");
 	d_printf("                      NB: A backslash '\\' is used as escape at multiple levels and may\n");
-	d_printf("                          need to be doubled or even quadrupled.  It is not used as a separator");
+	d_printf("                          need to be doubled or even quadrupled.  It is not used as a separator.\n");
+	d_printf("   osName=string      Set the operatingSystem attribute during the join.\n");
+	d_printf("   osVer=string       Set the operatingSystemVersion attribute during the join.\n");
+	d_printf("                      NB: osName and osVer must be specified together for either to take effect.\n");
+	d_printf("                          Also, the operatingSystemService attribute is also set when along with\n");
+	d_printf("                          the two other attributes.\n");
 
 	return -1;
 }
