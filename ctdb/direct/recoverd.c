@@ -386,7 +386,7 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 
 
-	/* build a new vnn map */
+	/* build a new vnn map with all the currently active nodes */
 	vnnmap = talloc_zero_size(mem_ctx, offsetof(struct ctdb_vnn_map, map) + 4*num_active);
 	if (vnnmap == NULL) {
 		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
