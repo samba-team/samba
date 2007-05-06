@@ -679,7 +679,6 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	size_t len;
 	int ret;
 	uint32_t timed_out;
-	struct timed_event *te=NULL;
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
@@ -723,7 +722,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	/* semi-async operation */
 	timed_out = 0;
 	if (timeout) {
-		te=event_add_timed(ctdb->ev, mem_ctx, *timeout, timeout_func, &timed_out);
+		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
 	}
 	while ((state->state == CTDB_CALL_WAIT)
 	&&	(timed_out == 0) ){
@@ -732,10 +731,6 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	if (timed_out) {
 		talloc_free(state);
 		return -1;
-	}
-
-	if ((timed_out==0) && te) {
-		talloc_free(te);
 	}
 
 	if (outdata) {
