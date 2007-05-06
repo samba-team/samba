@@ -928,6 +928,30 @@ static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *usern
 }
 
 /**
+ * Send PAM_ERROR_MSG for krb5 errors.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param username User in PAM request.
+ * @param info3_user_flgs Info3 flags containing logon type bits.
+ *
+ * @return void.
+ */
+
+static void _pam_warn_krb5_failure(pam_handle_t *pamh, int ctrl, const char *username, uint32 info3_user_flgs)
+{
+	if (PAM_WB_KRB5_CLOCK_SKEW(info3_user_flgs)) {
+		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
+			     "Failed to establish your Kerberos Ticket cache "
+			     "due time differences\n" 
+			     "with the domain controller.  "
+			     "Please verify the system time.\n");		
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
+			"User %s: Clock skew when getting Krb5 TGT\n", username);
+	}
+}
+
+/**
  * Compose Password Restriction String for a PAM_ERROR_MSG conversation.
  *
  * @param response The struct winbindd_response.
@@ -1124,6 +1148,9 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		/* inform about logon type */
 		_pam_warn_logon_type(pamh, ctrl, user, response.data.auth.info3.user_flgs);
+
+		/* inform about krb5 failures */
+		_pam_warn_krb5_failure(pamh, ctrl, user, response.data.auth.info3.user_flgs);
 
 		/* set some info3 info for other modules in the stack */
 		_pam_set_data_info3(pamh, ctrl, &response);
