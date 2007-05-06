@@ -153,7 +153,8 @@ retry:
 	/* No session already defined. */
 	if (dmapi_session == DM_NO_SESSION) {
 		err = dm_create_session(DM_NO_SESSION,
-					CONST_DISCARD(DMAPI_SESSION_NAME),
+					CONST_DISCARD(char *,
+						      DMAPI_SESSION_NAME),
 					&dmapi_session);
 		if (err < 0) {
 			DEBUGADD(DMAPI_TRACE,
