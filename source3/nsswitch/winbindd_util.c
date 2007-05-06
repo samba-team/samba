@@ -112,23 +112,41 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	   init_domain_list() and we'll get stuck in a loop. */
 	for (domain = _domain_list; domain; domain = domain->next) {
 		if (strequal(domain_name, domain->name) ||
-		    strequal(domain_name, domain->alt_name)) {
-			return domain;
+		    strequal(domain_name, domain->alt_name)) 
+		{
+			break;			
 		}
-		if (alternative_name && *alternative_name) {
+
+		if (alternative_name && *alternative_name) 
+		{
 			if (strequal(alternative_name, domain->name) ||
-			    strequal(alternative_name, domain->alt_name)) {
-				return domain;
+			    strequal(alternative_name, domain->alt_name)) 
+			{
+				break;				
 			}
 		}
-		if (sid) {
+
+		if (sid) 
+		{
 			if (is_null_sid(sid)) {
+				continue;				
+			}
 				
-			} else if (sid_equal(sid, &domain->sid)) {
-				return domain;
+			if (sid_equal(sid, &domain->sid)) {
+				break;				
 			}
 		}
 	}
+        
+	/* See if we found a match.  Check if we need to update the
+	   SID. */
+
+	if ( domain ) {
+		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
+			sid_copy( &domain->sid, sid );
+
+		return domain;		
+	}	
         
 	/* Create new domain entry */
 
@@ -165,6 +183,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
         
+	wcache_tdc_add_domain( domain );
+        
 	DEBUG(2,("Added domain %s %s %s\n", 
 		 domain->name, domain->alt_name,
 		 &domain->sid?sid_string_static(&domain->sid):""));
@@ -178,16 +198,21 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 struct trustdom_state {
 	TALLOC_CTX *mem_ctx;
+	BOOL primary;	
+	BOOL forest_root;	
 	struct winbindd_response *response;
 };
 
 static void trustdom_recv(void *private_data, BOOL success);
+static void rescan_forest_root_trusts( void );
+static void rescan_forest_trusts( void );
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
+	uint32 fr_flags = (DS_DOMAIN_TREE_ROOT|DS_DOMAIN_IN_FOREST);	
 
 	struct trustdom_state *state;
 
@@ -209,6 +234,11 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 
 	state->mem_ctx = mem_ctx;
 	state->response = response;
+
+	/* Flags used to know how to continue the forest trust search */
+
+	state->primary = domain->primary;
+	state->forest_root = ((domain->domain_flags & fr_flags) == fr_flags );
 
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
@@ -235,6 +265,8 @@ static void trustdom_recv(void *private_data, BOOL success)
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
 		DOM_SID sid;
+		struct winbindd_domain *domain;
+		char *alternate_name = NULL;
 
 		alt_name = strchr(p, '\\');
 		if (alt_name == NULL) {
@@ -268,15 +300,21 @@ static void trustdom_recv(void *private_data, BOOL success)
 			}			
 		}
 
-		if (find_domain_from_name_noinit(p) == NULL) {
-			struct winbindd_domain *domain;
-			char *alternate_name = NULL;
-			
 			/* use the real alt_name if we have one, else pass in NULL */
 
 			if ( !strequal( alt_name, "(null)" ) )
 				alternate_name = alt_name;
 
+		/* If we have an existing domain structure, calling
+ 		   add_trusted_domain() will update the SID if
+ 		   necessary.  This is important because we need the
+ 		   SID for sibling domains */
+
+		if ( find_domain_from_name_noinit(p) != NULL ) {
+			domain = add_trusted_domain(p, alternate_name,
+						    &cache_methods,
+						    &sid);
+		} else {
 			domain = add_trusted_domain(p, alternate_name,
 						    &cache_methods,
 						    &sid);
@@ -288,12 +326,160 @@ static void trustdom_recv(void *private_data, BOOL success)
 	}
 
 	SAFE_FREE(response->extra_data.data);
+
+	/* 
+	   Cases to consider when scanning trusts:
+	   (a) we are calling from a child domain (primary && !forest_root)
+	   (b) we are calling from the root of the forest (primary && forest_root)
+	   (c) we are calling from a trusted forest domain (!primary
+	       && !forest_root)
+	*/
+
+	if ( state->primary ) {
+		/* If this is our primary domain and we are not the in the
+		   forest root, we have to scan the root trusts first */
+
+		if ( !state->forest_root )
+			rescan_forest_root_trusts();
+		else
+			rescan_forest_trusts();
+
+	} else if ( state->forest_root ) {
+		/* Once we have done root forest trust search, we can
+		   go on to search thing trusted forests */
+
+		rescan_forest_trusts();
+	}
+	
 	talloc_destroy(state->mem_ctx);
+	
+	return;
 }
 
 /********************************************************************
- Periodically we need to refresh the trusted domain cache for smbd 
+ Scan the trusts of our forest root
 ********************************************************************/
+
+static void rescan_forest_root_trusts( void )
+{
+	struct winbindd_tdc_domain *dom_list = NULL;
+        size_t num_trusts = 0;
+	int i;	
+
+	/* The only transitive trusts supported by Windows 2003 AD are
+	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
+	   first two are handled in forest and listed by
+	   DsEnumerateDomainTrusts().  Forest trusts are not so we
+	   have to do that ourselves. */
+
+	if ( !wcache_tdc_fetch_list( &dom_list, &num_trusts ) )
+		return;
+
+	for ( i=0; i<num_trusts; i++ ) {
+		struct winbindd_domain *d = NULL;
+
+		/* Find the forest root.  Don't necessarily trust 
+		   the domain_list() as our primary domain may not 
+		   have been initialized. */
+
+		if ( !(dom_list[i].trust_flags & DS_DOMAIN_TREE_ROOT) )	{
+			continue;			
+		}
+	
+		/* Here's the forest root */
+
+		d = find_domain_from_name_noinit( dom_list[i].domain_name );
+
+		if ( !d ) {
+			d = add_trusted_domain( dom_list[i].domain_name,
+						dom_list[i].dns_name,
+						&cache_methods,
+						&dom_list[i].sid );
+		}
+
+       		DEBUG(10,("rescan_forest_root_trusts: Following trust path "
+			  "for domain tree root %s (%s)\n",
+	       		  d->name, d->alt_name ));
+
+		d->domain_flags = dom_list[i].trust_flags;
+		d->domain_type  = dom_list[i].trust_type;		
+		d->domain_trust_attribs = dom_list[i].trust_attribs;		
+		
+		add_trusted_domains( d );
+
+		break;		
+	}
+
+	TALLOC_FREE( dom_list );
+
+	return;
+}
+
+/********************************************************************
+ scan the transitive forest trists (not our own)
+********************************************************************/
+
+
+static void rescan_forest_trusts( void )
+{
+	struct winbindd_domain *d = NULL;
+	struct winbindd_tdc_domain *dom_list = NULL;
+        size_t num_trusts = 0;
+	int i;	
+
+	/* The only transitive trusts supported by Windows 2003 AD are
+	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
+	   first two are handled in forest and listed by
+	   DsEnumerateDomainTrusts().  Forest trusts are not so we
+	   have to do that ourselves. */
+
+	if ( !wcache_tdc_fetch_list( &dom_list, &num_trusts ) )
+		return;
+
+	for ( i=0; i<num_trusts; i++ ) {
+		uint32 flags   = dom_list[i].trust_flags;
+		uint32 type    = dom_list[i].trust_type;
+		uint32 attribs = dom_list[i].trust_attribs;
+		
+		d = find_domain_from_name_noinit( dom_list[i].domain_name );
+
+		/* ignore our primary and internal domains */
+
+		if ( d && (d->internal || d->primary ) )
+			continue;		
+		
+		if ( (flags & DS_DOMAIN_DIRECT_INBOUND) &&
+		     (type == DS_DOMAIN_TRUST_TYPE_UPLEVEL) &&
+		     (attribs == DS_DOMAIN_TRUST_ATTRIB_FOREST_TRANSITIVE) )
+		{
+			/* add the trusted domain if we don't know
+			   about it */
+
+			if ( !d ) {
+				d = add_trusted_domain( dom_list[i].domain_name,
+							dom_list[i].dns_name,
+							&cache_methods,
+							&dom_list[i].sid );
+			}
+			
+			DEBUG(10,("Following trust path for domain %s (%s)\n",
+				  d->name, d->alt_name ));
+			add_trusted_domains( d );
+		}
+	}
+
+	TALLOC_FREE( dom_list );
+
+	return;	
+}
+
+/*********************************************************************
+ The process of updating the trusted domain list is a three step
+ async process:
+ (a) ask our domain
+ (b) ask the root domain in our forest
+ (c) ask the a DC in any Win2003 trusted forests
+*********************************************************************/
 
 void rescan_trusted_domains( void )
 {
@@ -305,7 +491,12 @@ void rescan_trusted_domains( void )
 	    ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
-	/* this will only add new domains we didn't already know about */
+	/* clear the TRUSTDOM cache first */
+
+	wcache_tdc_clear();
+
+	/* this will only add new domains we didn't already know about
+	   in the domain_list()*/
 	
 	add_trusted_domains( find_our_domain() );
 
