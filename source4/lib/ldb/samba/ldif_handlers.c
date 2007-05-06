@@ -437,7 +437,7 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
 		int ret;
 		uint32_t j;
-		struct ldb_schema_syntax *s = NULL;
+		const struct ldb_schema_syntax *s = NULL;
 
 		for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
 			if (strcmp(samba_attributes[i].syntax, samba_syntaxes[j].name) == 0) {
