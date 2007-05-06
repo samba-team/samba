@@ -34,8 +34,8 @@
  *  Author: Simo Sorce
  */
 
-#include <ctype.h>
 #include "ldb_includes.h"
+#include <ctype.h>
 
 #define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed
 
