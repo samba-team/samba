@@ -797,7 +797,7 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	s->caller_private_data = private_data;	
 
 	do_async_domain(mem_ctx, domain, &request, lookupsid_recv,
-			(void *)cont, private_data);
+			(void *)cont, s);
 }
 
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
