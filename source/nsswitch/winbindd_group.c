@@ -452,21 +452,36 @@ done:
 	return result;
 }
 
+static void winbindd_getgrsid( struct winbindd_cli_state *state, DOM_SID group_sid );
+
+static void getgrnam_recv( void *private_data, BOOL success, const DOM_SID *sid, 
+			   enum lsa_SidType type )
+{
+	struct winbindd_cli_state *state = (struct winbindd_cli_state*)private_data;
+	
+	if (!success) {
+		DEBUG(5,("getgrnam_recv: lookupname failed!\n"));
+		request_error(state);
+		return;
+	}
+
+ 	if ( !(type == SID_NAME_DOM_GRP) || (type == SID_NAME_ALIAS) ) {
+		DEBUG(5,("getgrnam_recv: not a group!\n"));
+		request_error(state);
+		return;
+	}	
+
+	winbindd_getgrsid( state, *sid );
+}
+
+	
 /* Return a group structure from a group name */
 
 void winbindd_getgrnam(struct winbindd_cli_state *state)
 {
-	DOM_SID group_sid, tmp_sid;
-	uint32 grp_rid;
 	struct winbindd_domain *domain;
-	enum lsa_SidType name_type;
 	fstring name_domain, name_group;
-	char *tmp, *gr_mem;
-	size_t gr_mem_len;
-	size_t num_gr_mem;
-	gid_t gid;
-	union unid_t id;
-	NTSTATUS status;
+	char *tmp;
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -510,152 +525,137 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	ws_name_replace( name_group, WB_REPLACE_CHAR );
         
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, domain->name,
-					 name_group, &group_sid, &name_type)) {
-		DEBUG(1, ("group %s in domain %s does not exist\n", 
-			  name_group, name_domain));
-		request_error(state);
-		return;
+	winbindd_lookupname_async( state->mem_ctx, domain->name, name_group,
+				   getgrnam_recv, state );
 	}
 
-	if ( !((name_type==SID_NAME_DOM_GRP) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->primary) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->internal) ||
-	       ((name_type==SID_NAME_WKN_GRP) && domain->internal)) )
+struct getgrsid_state {
+	struct winbindd_cli_state *state;
+	struct winbindd_domain *domain;
+	char *group_name;
+	enum lsa_SidType group_type;	
+	uid_t gid;
+	DOM_SID group_sid;
+};
+
+static void getgrsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	{
-		DEBUG(1, ("name '%s' is not a local, domain or builtin "
-			  "group: %d\n", name_group, name_type));
-		request_error(state);
+	struct getgrsid_state *s =
+		(struct getgrsid_state *)private_data;
+	struct winbindd_domain *domain;
+	size_t gr_mem_len;
+	size_t num_gr_mem;
+	char *gr_mem;
+	fstring dom_name, group_name;	
+
+	if (!success) {
+		DEBUG(5,("getgrsid_sid2gid_recv: sid2gid failed!\n"));
+		request_error(s->state);
 		return;
 	}
 
-	/* Make sure that the group SID is within the domain of the
-	   original domain */
+	s->gid = gid;
 
-	sid_copy( &tmp_sid, &group_sid );
-	sid_split_rid( &tmp_sid, &grp_rid );
-	if ( !sid_equal( &tmp_sid, &domain->sid ) ) {
-		DEBUG(3,("winbindd_getgrnam: group %s resolves to a SID in the wrong domain [%s]\n", 
-			state->request.data.groupname, sid_string_static(&group_sid)));
-		request_error(state);
+	if ( !parse_domain_user( s->group_name, dom_name, group_name ) ) {
+		DEBUG(5,("getgrsid_sid2gid_recv: parse_domain_user() failed!\n"));
+		request_error(s->state);
 		return;
 	}
 
 	
-
-	/* Try to get the GID */
-
-	status = idmap_sid_to_gid(&group_sid, &gid);
-
-	if (NT_STATUS_IS_OK(status)) {
-		goto got_gid;
-	}
-
-	/* Maybe it's one of our aliases in passdb */
-
-	if (pdb_sid_to_id(&group_sid, &id, &name_type) &&
-	    ((name_type == SID_NAME_ALIAS) ||
-	     (name_type == SID_NAME_WKN_GRP))) {
-		gid = id.gid;
-		goto got_gid;
-	}
-
-	DEBUG(1, ("error converting unix gid to sid\n"));
-	request_error(state);
-	return;
-
- got_gid:
-
-	if (!fill_grent(&state->response.data.gr, name_domain,
-			name_group, gid) ||
-	    !fill_grent_mem(domain, state, &group_sid, name_type,
-			    &num_gr_mem,
-			    &gr_mem, &gr_mem_len)) {
-		request_error(state);
-		return;
-	}
-
-	state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
-
-	/* Group membership lives at start of extra data */
-
-	state->response.data.gr.gr_mem_ofs = 0;
-
-	state->response.length += gr_mem_len;
-	state->response.extra_data.data = gr_mem;
-	request_ok(state);
-}
-
-static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid)
-{
-	struct winbindd_domain *domain;
-	enum lsa_SidType name_type;
-	char *dom_name;
-	char *group_name;
-	size_t gr_mem_len;
-	size_t num_gr_mem;
-	char *gr_mem;
-
-	/* Get name from sid */
-
-	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, &dom_name,
-					 &group_name, &name_type)) {
-		DEBUG(1, ("could not lookup sid\n"));
-		request_error(state);
-		TALLOC_FREE(group_name);
-		TALLOC_FREE(dom_name);
-		return;
-	}
-
 	/* Fill in group structure */
 
-	domain = find_domain_from_sid_noinit(&group_sid);
-
-	if (!domain) {
-		DEBUG(1,("Can't find domain from sid\n"));
-		request_error(state);
-		TALLOC_FREE(group_name);
-		TALLOC_FREE(dom_name);
+	if ( (domain = find_domain_from_name_noinit(dom_name)) == NULL ) {
+		DEBUG(1,("Can't find domain from name (%s)\n", dom_name));
+		request_error(s->state);
 		return;
 	}
 
-	if ( !((name_type==SID_NAME_DOM_GRP) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->primary) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->internal)) )
+	if (!fill_grent(&s->state->response.data.gr, dom_name, group_name, gid) ||
+	    !fill_grent_mem(domain, s->state, &s->group_sid, s->group_type,
+			    &num_gr_mem, &gr_mem, &gr_mem_len)) 
 	{
-		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
-			  group_name, name_type));
-		request_error(state);
-		TALLOC_FREE(group_name);
-		TALLOC_FREE(dom_name);
+		request_error(s->state);
 		return;
 	}
 
-	if (!fill_grent(&state->response.data.gr, dom_name, group_name, 
-			state->request.data.gid) ||
-	    !fill_grent_mem(domain, state, &group_sid, name_type,
-			    &num_gr_mem,
-			    &gr_mem, &gr_mem_len)) {
-		request_error(state);
-		TALLOC_FREE(group_name);
-		TALLOC_FREE(dom_name);
-		return;
-	}
-
-	state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
+	s->state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
 
 	/* Group membership lives at start of extra data */
 
-	state->response.data.gr.gr_mem_ofs = 0;
+	s->state->response.data.gr.gr_mem_ofs = 0;
 
-	state->response.length += gr_mem_len;
-	state->response.extra_data.data = gr_mem;
+	s->state->response.length += gr_mem_len;
+	s->state->response.extra_data.data = gr_mem;
 
-	TALLOC_FREE(group_name);
-	TALLOC_FREE(dom_name);
+	request_ok(s->state);	
+	}
 
-	request_ok(state);
+static void getgrsid_lookupsid_recv( void *private_data, BOOL success,
+				     const char *dom_name, const char *name,
+				     enum lsa_SidType name_type )
+{
+	struct getgrsid_state *s = (struct getgrsid_state *)private_data;
+
+	if (!success) {
+		DEBUG(5,("getgrsid_lookupsid_recv: lookupsid failed!\n"));
+		request_error(s->state);
+		return;
+	}
+
+	/* eitehr it's a domain group, a domain local group, or a
+	   local group in an internal domain */
+
+ 	if ( !( (name_type==SID_NAME_DOM_GRP) ||
+	        ((name_type==SID_NAME_ALIAS) && 
+		 (s->domain->primary || s->domain->internal)) ) )
+	{
+		DEBUG(1, ("name '%s\\%s' is not a local or domain group: %d\n", 
+			  dom_name, name, name_type));
+		request_error(s->state);
+		return;
 }
+
+	if ( (s->group_name = talloc_asprintf( s->state->mem_ctx, 
+					       "%s\\%s", 
+					       dom_name, name )) == NULL )
+{
+		DEBUG(1, ("getgrsid_lookupsid_recv: talloc_asprintf() Failed!\n"));
+		request_error(s->state);
+		return;
+	}
+
+	s->group_type = name_type;
+
+	winbindd_sid2gid_async(s->state->mem_ctx, &s->group_sid,
+			       getgrsid_sid2gid_recv, s);
+	}
+
+static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID group_sid )
+	{
+	struct getgrsid_state *s;
+
+	if ( (s = TALLOC_ZERO_P(state->mem_ctx, struct getgrsid_state)) == NULL ) {
+		DEBUG(0, ("talloc failed\n"));
+		request_error(state);
+		return;
+	}
+
+	s->state = state;
+
+	if ( (s->domain = find_domain_from_sid_noinit(&group_sid)) == NULL ) {
+		DEBUG(3, ("Could not find domain for sid %s\n",
+			  sid_string_static(&group_sid)));
+		request_error(state);
+		return;
+	}
+
+	sid_copy(&s->group_sid, &group_sid);
+
+	winbindd_lookupsid_async( s->state->mem_ctx,  &group_sid, 
+				  getgrsid_lookupsid_recv, s );
+}
+
 
 static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
 {
@@ -668,7 +668,7 @@ static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
 			  (unsigned long)(state->request.data.gid), sid));
 
 		string_to_sid(&group_sid, sid);
-		getgrgid_got_sid(state, group_sid);
+		winbindd_getgrsid(state, group_sid);
 		return;
 	}
 
@@ -679,7 +679,7 @@ static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
 		/* Hey, got an alias */
 		DEBUG(10,("getgrgid_recv: we have an alias with gid %lu and sid %s\n",
 			  (unsigned long)(state->request.data.gid), sid));
-		getgrgid_got_sid(state, group_sid);
+		winbindd_getgrsid(state, group_sid);
 		return;
 	}
 
