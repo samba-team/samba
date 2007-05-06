@@ -30,7 +30,6 @@
 
 #define DS_ENUM_DOM_TRUSTS      0x28
 
-
 /* macros for RPC's */
 
 /* DSROLE_PRIMARY_DOMAIN_INFO_BASIC */
@@ -56,8 +55,6 @@
 #define DS_DOMAIN_FUCNTION_2003_MIXED	1
 #define DS_DOMAIN_FUNCTION_2003		2
 
-
-
 typedef struct
 {
 	uint16		machine_role;
@@ -80,7 +77,6 @@ typedef struct
 /* info levels for ds_getprimdominfo() */
 
 #define DsRolePrimaryDomainInfoBasic		1
-
 
 /* DS_Q_GETPRIMDOMINFO - DsGetPrimaryDomainInformation() request */
 typedef struct 
@@ -139,14 +135,32 @@ typedef struct {
 	
 } DS_DOMAIN_TRUSTS_CTR;
 
+/* Trust flags */
+
 #define DS_DOMAIN_IN_FOREST           0x0001 	/* domains in the forest to which 
 						   we belong; even different domain trees */
 #define DS_DOMAIN_DIRECT_OUTBOUND     0x0002  	/* trusted domains */
-#define DS_DOMAIN_TREE_ROOT           0x0004  	/* root of our forest; also available in
-						   DsRoleGetPrimaryDomainInfo() */
+#define DS_DOMAIN_TREE_ROOT           0x0004  	/* root of a forest */
 #define DS_DOMAIN_PRIMARY             0x0008  	/* our domain */
 #define DS_DOMAIN_NATIVE_MODE         0x0010  	/* native mode AD servers */
 #define DS_DOMAIN_DIRECT_INBOUND      0x0020 	/* trusting domains */
+
+/* Trust types */
+
+#define DS_DOMAIN_TRUST_TYPE_DOWNLEVEL   0x00000001
+#define DS_DOMAIN_TRUST_TYPE_UPLEVEL     0x00000002
+
+/* Trust attributes */
+
+#define DS_DOMAIN_TRUST_ATTRIB_NON_TRANSITIVE         0x00000001
+#define DS_DOMAIN_TRUST_ATTRIB_UPLEVEL_ONLY           0x00000002            
+#define DS_DOMAIN_TRUST_ATTRIB_QUARANTINED_DOMAIN     0x00000004            
+#define DS_DOMAIN_TRUST_ATTRIB_FOREST_TRANSITIVE      0x00000008            
+#define DS_DOMAIN_TRUST_ATTRIB_CROSS_ORG              0x00000010            
+#define DS_DOMAIN_TRUST_ATTRIB_IN_FOREST              0x00000020            
+#define DS_DOMAIN_TRUST_ATTRIB_EXTERNAL               0x00000040            
+
+
 
 /* DS_Q_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() request */
 typedef struct 

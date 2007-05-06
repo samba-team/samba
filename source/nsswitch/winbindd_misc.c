@@ -100,10 +100,41 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
 
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 {
+	struct winbindd_domain *d = NULL;
+	int extra_data_len = 0;
+	char *extra_data = NULL;
+	
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
-	sendto_domain(state, find_our_domain());
+	for ( d=domain_list(); d; d=d->next ) {
+		if ( !extra_data ) {
+			extra_data = talloc_asprintf(state->mem_ctx, "%s\\%s\\%s",
+						     d->name,
+						     d->alt_name ? d->alt_name : d->name,
+						     sid_string_static(&d->sid));
+		} else {
+			extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
+						     extra_data,
+						     d->name,
+						     d->alt_name ? d->alt_name : d->name,
+						     sid_string_static(&d->sid));
+		}
+	}
+	
+	extra_data_len = 0;
+	if (extra_data != NULL) {
+		extra_data_len = strlen(extra_data);
+	}
+
+	if (extra_data_len > 0) {
+		state->response.extra_data.data = SMB_STRDUP(extra_data);
+		state->response.length += extra_data_len+1;
+	}
+
+	TALLOC_FREE( extra_data );	
+
+	request_ok(state);	
 }
 
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,

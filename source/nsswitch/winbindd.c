@@ -1084,6 +1084,10 @@ int main(int argc, char **argv, char **envp)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
+	/* clear the cached list of trusted domains */
+
+	wcache_tdc_clear();	
+	
 	if (!init_domain_list()) {
 		DEBUG(0,("unable to initalize domain list\n"));
 		exit(1);
