@@ -344,6 +344,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb->recovery_mode;
 	}
 
+	case CTDB_CONTROL_SET_RECMASTER: {
+		ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
+
+		return 0;
+	}
+
+	case CTDB_CONTROL_GET_RECMASTER: {
+		return ctdb->recovery_master;
+	}
+
 	case CTDB_CONTROL_GET_PID: {
 		return getpid();
 	}
