@@ -438,7 +438,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			sid_string_static(user_sid)));
 
-		sid_compose(&user_info->user_sid, &domain->sid, user_rid);
+		sid_compose(&user_info->user_sid, &domain->sid, user->user_rid);
 		sid_compose(&user_info->group_sid, &domain->sid,
 			    user->group_rid);
 				
