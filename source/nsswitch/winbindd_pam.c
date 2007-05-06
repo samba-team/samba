@@ -1326,6 +1326,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) 
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS krb5_result = NT_STATUS_OK;	
 	fstring name_domain, name_user;
 	NET_USER_INFO_3 *info3 = NULL;
 	
@@ -1365,6 +1366,9 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	if (domain->online && (state->request.flags & WBFLAG_PAM_KRB5)) {
 	
 		result = winbindd_dual_pam_auth_kerberos(domain, state, &info3);
+		/* save for later */
+		krb5_result = result;
+		
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
@@ -1412,6 +1416,10 @@ sam_logon:
 	
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon succeeded\n"));
+			/* add the Krb5 err if we have one */
+			if ( NT_STATUS_EQUAL(krb5_result, NT_STATUS_TIME_DIFFERENCE_AT_DC ) ) {
+				info3->user_flgs |= LOGON_KRB5_FAIL_CLOCK_SKEW;				
+			}
 			goto process_result;
 		} else {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", nt_errstr(result)));
