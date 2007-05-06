@@ -29,7 +29,10 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.0, [], [
 	m4_include(lib/talloc/libtalloc.m4)
 	SMB_INCLUDE_MK(lib/talloc/config.mk)
 ])
-m4_include(lib/tdb/libtdb.m4)
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0, [], [
+    m4_include(lib/tdb/libtdb.m4)
+    SMB_INCLUDE_MK(lib/tdb/config.mk)
+])
 m4_include(lib/ldb/sqlite3.m4)
 m4_include(lib/ldb/libldb.m4)
 m4_include(lib/tls/config.m4)
