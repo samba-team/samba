@@ -2092,7 +2092,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	if (!get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
+	if (domain->primary && !get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2102,6 +2102,12 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return result;
 	}
 
+	if ( !domain->primary ) {
+		/* Clear the schannel request bit and drop down */
+		neg_flags &= ~NETLOGON_NEG_SCHANNEL;		
+		goto no_schannel;
+	}
+	
 	if (lp_client_schannel() != False) {
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
 	}
@@ -2146,6 +2152,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+ no_schannel:
 	if ((lp_client_schannel() == False) ||
 			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
 		/* We're done - just keep the existing connection to NETLOGON
