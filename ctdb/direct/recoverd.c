@@ -232,6 +232,7 @@ static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctd
 	return 0;
 }
 
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
