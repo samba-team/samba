@@ -26,17 +26,19 @@ m4_include(lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.0,
-			   [samba_cv_internal_talloc=no],
-			   [samba_cv_internal_talloc=yes])
+#SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.0,
+#			   [samba_cv_internal_talloc=no],
+#			   [samba_cv_internal_talloc=yes])
+samba_cv_internal_talloc=yes
 if test x"$samba_cv_internal_talloc" = x"yes"; then
 	m4_include(lib/talloc/libtalloc.m4)
 	SMB_INCLUDE_MK(lib/talloc/config.mk)
 fi
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
-			   [samba_cv_internal_tdb=no],
-			   [samba_cv_internal_tdb=yes])
+#SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
+#			   [samba_cv_internal_tdb=no],
+#			   [samba_cv_internal_tdb=yes])
+samba_cv_internal_tdb=yes
 if test x"$samba_cv_internal_tdb" = x"yes"; then
 	m4_include(lib/tdb/libtdb.m4)
 	SMB_INCLUDE_MK(lib/tdb/config.mk)
