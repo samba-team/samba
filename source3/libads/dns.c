@@ -270,45 +270,76 @@ static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
  Simple wrapper for a DNS query
 *********************************************************************/
 
+#define DNS_FAILED_WAITTIME          30
+
 static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type, 
                               uint8 **buf, int *resp_length )
 {
 	uint8 *buffer = NULL;
 	size_t buf_len;
 	int resp_len = NS_PACKETSZ;	
-	
+	static time_t last_dns_check = 0;
+	static NTSTATUS last_dns_status = NT_STATUS_OK;	
+	time_t now = time(NULL);
+
+	/* Try to prevent bursts of DNS lookups if the server is down */
+
+	/* Protect against large clock changes */
+
+	if ( last_dns_check > now )
+		last_dns_check = 0;
+
+	/* IF we had a DNS timeout or a bad server and we are still 
+	   in the 30 second cache window, just return the previous 
+	   status and save the network timeout. */
+
+	if ( (NT_STATUS_EQUAL(last_dns_status,NT_STATUS_IO_TIMEOUT) ||
+	      NT_STATUS_EQUAL(last_dns_status,NT_STATUS_CONNECTION_REFUSED)) &&
+	     (last_dns_check+DNS_FAILED_WAITTIME) > now ) 
+	{
+		DEBUG(10,("last_dns_check: Returning cached status (%s)\n",
+			  nt_errstr(last_dns_status) ));
+		return last_dns_status;
+	}
+
+	/* Send the Query */
 	do {
 		if ( buffer )
 			TALLOC_FREE( buffer );
 		
 		buf_len = resp_len * sizeof(uint8);
 
-		if (buf_len) {
+		if (buf_len) {			
 			if ( (buffer = TALLOC_ARRAY(ctx, uint8, buf_len)) == NULL ) {
 				DEBUG(0,("ads_dns_lookup_srv: talloc() failed!\n"));
-				return NT_STATUS_NO_MEMORY;
+				last_dns_status = NT_STATUS_NO_MEMORY;
+				last_dns_check = time(NULL);
+				return last_dns_status;	
 			}
-		} else {
-			buffer = NULL;
 		}
 
 		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
 			DEBUG(3,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
 			TALLOC_FREE( buffer );
+			last_dns_status = NT_STATUS_UNSUCCESSFUL;
+			
 			if (errno == ETIMEDOUT) {
-				return NT_STATUS_IO_TIMEOUT;
+				last_dns_status = NT_STATUS_IO_TIMEOUT;				
 			}
 			if (errno == ECONNREFUSED) {
-				return NT_STATUS_CONNECTION_REFUSED;
+				last_dns_status = NT_STATUS_CONNECTION_REFUSED;				
 			}
-			return NT_STATUS_UNSUCCESSFUL;
+			last_dns_check = time(NULL);
+			return last_dns_status;
 		}
 	} while ( buf_len < resp_len && resp_len < MAX_DNS_PACKET_SIZE );
 	
 	*buf = buffer;
 	*resp_length = resp_len;
 
-	return NT_STATUS_OK;
+	last_dns_check = time(NULL);
+	last_dns_status = NT_STATUS_OK;	
+	return last_dns_status;
 }
 
 /*********************************************************************
