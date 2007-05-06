@@ -144,11 +144,11 @@ void schedule_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
-		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
-			(unsigned int)msg_mid ));
+		DEBUG(10, ("schedule_deferred_open_smb_message: [%d] "
+			   "msg_mid = %u\n", i++, (unsigned int)msg_mid ));
 		if (mid == msg_mid) {
-			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
-				mid ));
+			DEBUG(10, ("schedule_deferred_open_smb_message: "
+				   "scheduling mid %u\n", mid));
 			pml->end_time.tv_sec = 0;
 			pml->end_time.tv_usec = 0;
 			DLIST_PROMOTE(deferred_open_queue, pml);
@@ -156,8 +156,8 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		}
 	}
 
-	DEBUG(10,("schedule_deferred_open_smb_message: failed to find message mid %u\n",
-		mid ));
+	DEBUG(10, ("schedule_deferred_open_smb_message: failed to find "
+		   "message mid %u\n", mid ));
 }
 
 /****************************************************************************
