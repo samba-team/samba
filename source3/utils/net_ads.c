@@ -1190,28 +1190,50 @@ done:
 static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 {
 	ADS_STATUS rc = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *dn, *ou_str;
+	char *ou_str = NULL;
+	char *dn = NULL;
 	LDAPMessage *res = NULL;
+	BOOL moved;
 
 	ou_str = ads_ou_string(ads, ou);
-	if ((asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path)) == -1) {
-		SAFE_FREE(ou_str);
-		return ADS_ERROR(LDAP_NO_MEMORY);
+	if (asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path) == -1) {
+		rc = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
 	}
 
 	rc = ads_search_dn(ads, &res, dn, NULL);
-	ads_msgfree(ads, res);
+	if (!ADS_ERR_OK(rc)) {
+		d_fprintf(stderr, "The specified OU does not exist.\n");
+		goto done;
+	}
 
-	if (ADS_ERR_OK(rc)) {
 		/* Attempt to create the machine account and bail if this fails.
 		   Assume that the admin wants exactly what they requested */
 
 		rc = ads_create_machine_acct( ads, global_myname(), dn );
-		if ( rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS ) {
-			rc = ADS_SUCCESS;
+	if (ADS_ERR_OK(rc)) {
+		DEBUG(1, ("machine account created\n"));
+		goto done;
 		}
+	if ( !(rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS) ) {
+		DEBUG(1, ("machine account creation failed\n"));
+		goto done;
 	}
 
+	rc = ads_move_machine_acct(ads, global_myname(), dn, &moved);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1, ("failure to locate/move pre-existing machine account\n"));
+		goto done;
+	}
+
+	if (moved) {
+		d_printf("The machine account was moved into the specified OU.\n");
+	} else {
+		d_printf("The machine account already exists in the specified OU.\n");
+	}
+
+done:
+	ads_msgfree(ads, res);
 	SAFE_FREE( ou_str );
 	SAFE_FREE( dn );
 
@@ -1528,7 +1550,7 @@ int net_ads_join(int argc, const char **argv)
 		status = net_precreate_machine_acct( ads, create_in_ou );
 		if ( !ADS_ERR_OK(status) ) {
 			d_fprintf( stderr, "Failed to pre-create the machine object "
-				"in OU %s.\n", argv[0]);
+				"in OU %s.\n", create_in_ou);
 			DEBUG(1, ("error calling net_precreate_machine_acct: %s\n", 
 				  ads_errstr(status)));
 			nt_status = ads_ntstatus(status);

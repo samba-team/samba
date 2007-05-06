@@ -1688,6 +1688,76 @@ done:
 	return ret;
 }
 
+/**
+ * move a machine account to another OU on the ADS server
+ * @param ads - An intialized ADS_STRUCT
+ * @param machine_name - the NetBIOS machine name of this account.
+ * @param org_unit - The LDAP path in which to place this account
+ * @param moved - whether we moved the machine account (optional)
+ * @return 0 upon success, or non-zero otherwise
+**/
+
+ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
+                                 const char *org_unit, BOOL *moved)
+{
+	ADS_STATUS rc;
+	int ldap_status;
+	LDAPMessage *res = NULL;
+	char *filter = NULL;
+	char *computer_dn = NULL;
+	char *parent_dn;
+	char *computer_rdn = NULL;
+	BOOL need_move = False;
+
+	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
+		rc = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	/* Find pre-existing machine */
+	rc = ads_search(ads, &res, filter, NULL);
+	if (!ADS_ERR_OK(rc)) {
+		goto done;
+	}
+
+	computer_dn = ads_get_dn(ads, res);
+	if (!computer_dn) {
+		rc = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	parent_dn = ads_parent_dn(computer_dn);
+	if (strequal(parent_dn, org_unit)) {
+		goto done;
+	}
+
+	need_move = True;
+
+	if (asprintf(&computer_rdn, "CN=%s", machine_name) == -1) {
+		rc = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	ldap_status = ldap_rename2_s(ads->ld, computer_dn, computer_rdn, org_unit, 1);
+	rc = ADS_ERROR(ldap_status);
+
+done:
+	ads_msgfree(ads, res);
+	SAFE_FREE(filter);
+	SAFE_FREE(computer_dn);
+	SAFE_FREE(computer_rdn);
+
+	if (!ADS_ERR_OK(rc)) {
+		need_move = False;
+	}
+
+	if (moved) {
+		*moved = need_move;
+	}
+
+	return rc;
+}
+
 /*
   dump a binary result from ldap
 */
