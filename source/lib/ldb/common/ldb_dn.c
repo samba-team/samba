@@ -292,6 +292,12 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				/* first char */
 				trim = false;
 
+				if (!isascii(*p)) {
+					/* attr names must be ascii only */
+					dn->invalid = true;
+					goto failed;
+				}
+
 				if (isdigit(*p)) {
 					is_oid = true;
 				} else
@@ -336,6 +342,12 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				p++;
 				continue;
+			}
+
+			if (!isascii(*p)) {
+				/* attr names must be ascii only */
+				dn->invalid = true;
+				goto failed;
 			}
 
 			if (is_oid && ( ! (isdigit(*p) || (*p == '.')))) {
