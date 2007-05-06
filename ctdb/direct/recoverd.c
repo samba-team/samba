@@ -210,6 +210,28 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 
 
 
+static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+{
+	int i, j, ret;
+
+	/* update dmaster to point to this node for all databases/nodes */
+	for (i=0;i<dbmap->num;i++) {
+		for (j=0; j<nodemap->num; j++) {
+			/* dont repoint nodes that are unavailable */
+			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+				continue;
+			}
+			ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], vnn);
+			if (ret != 0) {
+				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -295,20 +317,16 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 
 
-	/* update dmaster to point to this node for all databases/nodes */
-	for (i=0;i<dbmap->num;i++) {
-		for (j=0; j<nodemap->num; j++) {
-			/* dont repoint nodes that are unavailable */
-			if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-				continue;
-			}
-			ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], vnn);
-			if (ret != 0) {
-				printf("Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]);
-				return -1;
-			}
-		}
+	/* repoint all local and remote database records to the local
+	   node as being dmaster
+	 */
+	ret = update_dmaster_on_all_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to update dmaster on all databases\n");
+		return -1;
 	}
+
+
 
 
 	/* push all records out to the nodes again */
