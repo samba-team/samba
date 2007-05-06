@@ -189,8 +189,7 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 ################################################
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
-PRIVATE_DEPENDENCIES = ldb
-CFLAGS = -Ilib/ldb/include
+PUBLIC_DEPENDENCIES = ldb
 PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
 PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB
 OBJ_FILES = \
