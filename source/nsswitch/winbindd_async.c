@@ -1494,6 +1494,12 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
+	if (response->result != WINBINDD_OK) {
+                DEBUG(5, ("query_user returned an error\n"));
+		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
+		return;
+	}
+
 	cont(private_data, True, response->data.user_info.acct_name,
 	     response->data.user_info.full_name,
 	     response->data.user_info.homedir,

@@ -312,6 +312,12 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	SAM_UNK_INFO_1 password_policy;
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(5,("fillup_password_policy: No inbound trust to "
+			 "contact domain %s\n", domain->name));		
+		return NT_STATUS_NOT_SUPPORTED;
+	}	
+
 	methods = domain->methods;
 
 	status = methods->password_policy(domain, state->mem_ctx, &password_policy);

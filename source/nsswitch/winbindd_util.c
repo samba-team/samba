@@ -563,11 +563,11 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	state->continuation = continuation;
 	state->private_data = private_data;
 
-	if (IS_DC || domain->primary) {
+	if (IS_DC || domain->primary || domain->internal ) {
 		/* The primary domain has to find the DC name itself */
 		request->cmd = WINBINDD_INIT_CONNECTION;
 		fstrcpy(request->domain_name, domain->name);
-		request->data.init_conn.is_primary = True;
+		request->data.init_conn.is_primary = domain->internal ? False : True;
 		fstrcpy(request->data.init_conn.dcname, "");
 		async_request(mem_ctx, &domain->child, request, response,
 			      init_child_recv, state);
@@ -581,7 +581,6 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	fstrcpy(request->domain_name, domain->name);
 
 	request_domain = find_our_domain();
-	
 	async_domain_request(mem_ctx, request_domain, request, response,
 			     init_child_getdc_recv, state);
 	return WINBINDD_PENDING;
@@ -735,6 +734,44 @@ BOOL init_domain_list(void)
 	setup_domain_child(domain, &domain->child, NULL);
 
 	return True;
+}
+
+void check_domain_trusted( const char *name, const DOM_SID *user_sid )
+{
+	struct winbindd_domain *domain;	
+	DOM_SID dom_sid;
+	uint32 rid;
+	
+	domain = find_domain_from_name_noinit( name );
+	if ( domain )
+		return;	
+	
+	sid_copy( &dom_sid, user_sid );		
+	if ( !sid_split_rid( &dom_sid, &rid ) )
+		return;
+	
+	/* add the newly discovered trusted domain */
+
+	domain = add_trusted_domain( name, NULL, &cache_methods, 
+				     &dom_sid);
+
+	if ( !domain )
+		return;
+
+	/* assume this is a trust from a one-way transitive 
+	   forest trust */
+
+	domain->active_directory = True;
+	domain->domain_flags = DS_DOMAIN_DIRECT_OUTBOUND;
+	domain->domain_type  = DS_DOMAIN_TRUST_TYPE_UPLEVEL;
+	domain->internal = False;
+	domain->online = True;	
+
+	setup_domain_child(domain, &domain->child, NULL);
+
+	wcache_tdc_add_domain( domain );
+
+	return;	
 }
 
 /** 
