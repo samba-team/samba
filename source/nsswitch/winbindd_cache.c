@@ -1999,6 +1999,10 @@ do_query:
 		status = NT_STATUS_OK;
 	}
 
+
+#if 0    /* Disabled as we want the trust dom list to be managed by
+	    the main parent and always to make the query.  --jerry */
+
 	/* and save it */
 	refresh_sequence_number(domain, False);
  
@@ -2019,6 +2023,8 @@ do_query:
  	centry_free(centry);
  
 skip_save:
+#endif
+
  	return status;
 }	
 
