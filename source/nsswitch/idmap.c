@@ -282,8 +282,18 @@ NTSTATUS idmap_init(void)
 	if ( !NT_STATUS_IS_OK(ret) )
 		return ret;
 
-	if (NT_STATUS_IS_OK(idmap_init_status))
+	if (NT_STATUS_IS_OK(idmap_init_status)) {		
 		return NT_STATUS_OK;
+	}
+	
+	/* We can't reliably call intialization code here unless 
+	   we are online.  But return NT_STATUS_OK so the upper 
+	   level code doesn't abort idmap lookups. */
+
+	if ( get_global_winbindd_state_offline() ) {
+		idmap_init_status = NT_STATUS_FILE_IS_OFFLINE;
+		return NT_STATUS_OK;
+	}
 
 	static_init_idmap;
 
@@ -1114,6 +1124,7 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 	struct id_map **bids;
 	int i, bi;
 	int bn = 0;
+	struct winbindd_domain *our_domain = find_our_domain();	
 
 	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
 		return ret;
@@ -1179,6 +1190,11 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bi) {
+		/* Only do query if we are online */
+		if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+			ret = NT_STATUS_FILE_IS_OFFLINE;
+			goto done;
+		}
 
 		ret = idmap_backends_unixids_to_sids(bids);
 		IDMAP_CHECK_RET(ret);
@@ -1218,6 +1234,7 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 	struct id_map **bids;
 	int i, bi;
 	int bn = 0;
+	struct winbindd_domain *our_domain = find_our_domain();	
 
 	if (! NT_STATUS_IS_OK(ret = idmap_init())) {
 		return ret;
@@ -1284,6 +1301,11 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 	/* let's see if there is any id mapping to be retieved from the backends */
 	if (bids) {
+		/* Only do query if we are online */
+		if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+			ret = NT_STATUS_FILE_IS_OFFLINE;
+			goto done;
+		}
 		
 		ret = idmap_backends_sids_to_unixids(bids);
 		IDMAP_CHECK_RET(ret);

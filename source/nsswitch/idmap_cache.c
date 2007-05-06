@@ -182,42 +182,6 @@ done:
 	return ret;
 }
 
-NTSTATUS idmap_cache_del(struct idmap_cache_ctx *cache, const struct id_map *id)
-{
-	NTSTATUS ret;
-	char *sidkey = NULL;
-	char *idkey = NULL;
-
-	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
-	if (!NT_STATUS_IS_OK(ret)) return ret;
-
-	ret = idmap_cache_build_idkey(cache, &idkey, id);
-	if (!NT_STATUS_IS_OK(ret)) {
-		goto done;
-	}
-
-	/* delete SID */
-
-	DEBUG(10, ("Deleting cache entry (key = %s)\n", sidkey));
-
-	if (tdb_delete_bystring(cache->tdb, sidkey) != 0) {
-		DEBUG(3, ("Failed to delete cache entry!\n"));
-	}
-
-	/* delete ID */
-
-	DEBUG(10, ("Deleting cache entry (key = %s)\n", idkey));
-
-	if (tdb_delete_bystring(cache->tdb, idkey) != 0) {
-		DEBUG(3, ("Failed to delete cache entry!\n"));
-	}
-
-done:
-	talloc_free(sidkey);
-	talloc_free(idkey);
-	return ret;
-}
-
 NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
@@ -365,9 +329,11 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
 	TDB_DATA databuf;
-	time_t t, now;
+	time_t t;
 	char *sidkey;
 	char *endptr;
+	struct winbindd_domain *our_domain = find_our_domain();	
+	time_t now = time(NULL);	
 
 	/* make sure it is marked as not mapped by default */
 	id->status = ID_UNKNOWN;
@@ -392,8 +358,6 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		goto done;
 	}
 
-	now = time(NULL);
-
 	/* check it is not negative */
 	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
 
@@ -413,26 +377,40 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 		/* here ret == NT_STATUS_OK and id->status = ID_MAPPED */
 
 		if (t <= now) {
-	
-			/* we have it, but it is expired */
-			id->status = ID_EXPIRED;
+			/* If we've been told to be offline - stay in 
+			   that state... */
+			if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+				DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+				goto done;				
+			}
 				
 			/* We're expired, set an error code
 			   for upper layer */
 			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
-	} else {
+
+		goto done;		
+	}
+
+	/* Was a negative cache hit */
+
+	/* Ignore the negative cache when offline */
+
+	if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+		DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+		goto done;
+	}
+
+
+	/* Check for valid or expired cache hits */
 		if (t <= now) {
-			/* We're expired, delete the NEGATIVE entry and return
-			   not mapped */
-			tdb_delete_bystring(cache->tdb, sidkey);
+		/* We're expired. Return not mapped */
 			ret = NT_STATUS_NONE_MAPPED;
 		} else {
 			/* this is not mapped as it was a negative cache hit */
 			id->status = ID_UNMAPPED;
 			ret = NT_STATUS_OK;
 		}
-	}
 	
 done:
 	SAFE_FREE(databuf.dptr);
@@ -459,9 +437,11 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
 	TDB_DATA databuf;
-	time_t t, now;
+	time_t t;
 	char *idkey;
 	char *endptr;
+	struct winbindd_domain *our_domain = find_our_domain();	
+	time_t now = time(NULL);	
 
 	/* make sure it is marked as unknown by default */
 	id->status = ID_UNKNOWN;
@@ -486,8 +466,6 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		goto done;
 	}
 
-	now = time(NULL);
-
 	/* check it is not negative */
 	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
 		
@@ -507,26 +485,43 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 		/* here ret == NT_STATUS_OK and id->mapped = ID_MAPPED */
 
 		if (t <= now) {
-
-			/* we have it, but it is expired */
-			id->status = ID_EXPIRED;
+			/* If we've been told to be offline - stay in
+			   that state... */
+			if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+				DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+				goto done;
+			}
 
 			/* We're expired, set an error code
 			   for upper layer */
 			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
-	} else {
+
+		goto done;
+	}
+	
+	/* Was a negative cache hit */
+
+	/* Ignore the negative cache when offline */
+
+	if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+		DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+		ret = NT_STATUS_NONE_MAPPED;
+		
+		goto done;
+	}
+
+	/* Process the negative cache hit */
+
 		if (t <= now) {
-			/* We're expired, delete the NEGATIVE entry and return
-			   not mapped */
-			tdb_delete_bystring(cache->tdb, idkey);
+		/* We're expired.  Return not mapped */
 			ret = NT_STATUS_NONE_MAPPED;
 		} else {
-			/* this is not mapped as it was a negative cache hit */
+		/* this is not mapped is it was a negative cache hit */
 			id->status = ID_UNMAPPED;
 			ret = NT_STATUS_OK;
 		}
-	}
+
 done:
 	SAFE_FREE(databuf.dptr);
 	talloc_free(idkey);
