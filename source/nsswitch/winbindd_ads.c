@@ -168,6 +168,12 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads: query_user_list\n"));
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("query_user_list: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
+
 	ads = ads_cached_connection(domain);
 	
 	if (!ads) {
@@ -213,7 +219,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		name = ads_pull_username(ads, mem_ctx, msg);
 
 		if ( ads_pull_sid( ads, msg, "objectSid", &user_sid ) ) {
-			status = nss_get_info( domain->name, &user_sid, mem_ctx, 
+			status = nss_get_info_cached( domain, &user_sid, mem_ctx, 
 					       ads, msg, &homedir, &shell, &gecos,
 					       &primary_gid );
 		}
@@ -273,6 +279,12 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("enum_dom_groups: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
 
 	/* only grab domain local groups for our domain */
 	if ( domain->active_directory && strequal(lp_realm(), domain->alt_name)  ) {
@@ -449,8 +461,63 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	uint32 user_rid;
+	NET_USER_INFO_3 *user;
 
 	DEBUG(3,("ads: query_user\n"));
+
+	info->homedir = NULL;
+	info->shell = NULL;
+	info->primary_gid = (gid_t)-1;
+
+	/* try netsamlogon cache first */
+			
+	if ( (user = netsamlogon_cache_get( mem_ctx, sid )) != NULL ) 
+	{
+				
+		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
+			sid_string_static(sid)));
+
+		sid_compose(&info->user_sid, &domain->sid, user_rid);
+		sid_compose(&info->group_sid, &domain->sid, user->group_rid);
+				
+		info->acct_name = unistr2_tdup(mem_ctx, &user->uni_user_name);
+		info->full_name = unistr2_tdup(mem_ctx, &user->uni_full_name);
+		
+		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
+			      &info->homedir, &info->shell, &info->full_name, 
+			      &info->primary_gid );	
+
+		SAFE_FREE(user);
+				
+		return NT_STATUS_OK;
+	}
+
+	if ( !winbindd_can_contact_domain(domain)) {
+		DEBUG(8,("query_user: No incoming trust from domain %s\n",
+			 domain->name));
+
+		/* We still need to generate some basic information
+		   about the user even if we cannot contact the 
+		   domain.  Most of this stuff we can deduce. */
+
+		sid_copy( &info->user_sid, sid );
+
+		/* Assume "Domain Users" for the primary group */
+
+		sid_compose(&info->group_sid, &domain->sid, DOMAIN_GROUP_RID_USERS );
+
+		/* Try to fill in what the nss_info backend can do */
+
+		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
+			      &info->homedir, &info->shell, &info->full_name, 
+			      &info->primary_gid );
+
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	/* no cache...do the query */
 
 	if ( (ads = ads_cached_connection(domain)) == NULL ) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
@@ -477,9 +544,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
-	info->primary_gid = (gid_t)-1;	
-	nss_get_info( domain->name, sid, mem_ctx, ads, msg, 
-		      &info->homedir, &info->shell, &info->full_name, &info->primary_gid );	
+	nss_get_info_cached( domain, sid, mem_ctx, ads, msg, 
+		      &info->homedir, &info->shell, &info->full_name, 
+		      &info->primary_gid );	
 
 	if (info->full_name == NULL) {
 		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
@@ -524,6 +591,12 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	size_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups_member\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups_members: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
 
 	ads = ads_cached_connection(domain);
 
@@ -619,6 +692,12 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 
 
 	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups_memberof: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
 
 	ads = ads_cached_connection(domain);
 
@@ -724,6 +803,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 					  p_num_groups, user_sids);
 	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
+	}
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups: No incoming trust for domain %s\n",
+			  domain->name));
+
+		/* Tell the cache manager not to remember this one */
+
+		return NT_STATUS_SYNCHRONIZATION_REQUIRED;
 	}
 
 	ads = ads_cached_connection(domain);
@@ -866,6 +954,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	*num_names = 0;
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_groupmem: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
+
 	ads = ads_cached_connection(domain);
 	
 	if (!ads) {
@@ -982,6 +1076,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	DEBUG(3,("ads: fetch sequence_number for %s\n", domain->name));
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("sequence: No incoming trust for domain %s\n",
+			  domain->name));
+		*seq = time(NULL);		
+		return NT_STATUS_OK;
+	}
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	ads = ads_cached_connection(domain);
@@ -1024,7 +1125,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct rpc_pipe_client *cli;
 	uint32                 fr_flags = (DS_DOMAIN_IN_FOREST | DS_DOMAIN_TREE_ROOT);	
 	int ret_count;
-
+	
 	DEBUG(3,("ads: trusted_domains\n"));
 
 	*num_domains = 0;
@@ -1063,7 +1164,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	}
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
-	
+
 		/* Allocate memory for trusted domain names and sids */
 
 		if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, count)) ) {

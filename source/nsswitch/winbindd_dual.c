@@ -653,6 +653,14 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 		TALLOC_FREE(child->lockout_policy_event);
 	}
 
+	if ( !winbindd_can_contact_domain( child->domain ) ) {
+		DEBUG(10,("account_lockout_policy_handler: Removing myself since I "
+			  "do not have an incoming trust to domain %s\n", 
+			  child->domain->name));
+
+		return;		
+	}
+
 	methods = child->domain->methods;
 
 	mem_ctx = talloc_init("account_lockout_policy_handler ctx");

@@ -483,9 +483,17 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 		goto done;	
 
 	/* important! make sure that we know if this is a native 
-	   mode domain or not */
+	   mode domain or not.  And that we can contact it. */
 
-	status = domain->backend->sequence_number(domain, &domain->sequence_number);
+	if ( winbindd_can_contact_domain( domain ) ) {		
+		status = domain->backend->sequence_number(domain, 
+							  &domain->sequence_number);
+	} else {
+		/* just use the current time */
+		status = NT_STATUS_OK;
+		domain->sequence_number = time(NULL);
+	}
+
 
 	/* the above call could have set our domain->backend to NULL when
 	 * coming from offline to online mode, make sure to reinitialize the
@@ -2197,7 +2205,7 @@ void wcache_invalidate_cache(void)
 	}
 }
 
-static BOOL init_wcache(void)
+BOOL init_wcache(void)
 {
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
