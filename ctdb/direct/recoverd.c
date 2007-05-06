@@ -66,6 +66,60 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	return 0;
 }
 
+static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+{
+	int i, j, db, ret;
+	struct ctdb_dbid_map *remote_dbmap;
+
+	/* verify that all other nodes have all our databases */
+	for (j=0; j<nodemap->num; j++) {
+		/* we dont need to ourself ourselves */
+		if (nodemap->nodes[j].vnn == vnn) {
+			continue;
+		}
+		/* dont check nodes that are unavailable */
+		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_dbmap);
+		if (ret != 0) {
+			printf("Unable to get dbids from node %u\n", vnn);
+			return -1;
+		}
+
+		/* step through all local databases */
+		for (db=0; db<dbmap->num;db++) {
+			const char *name;
+
+
+			for (i=0;i<remote_dbmap->num;i++) {
+				if (dbmap->dbids[db] == remote_dbmap->dbids[i]) {
+					break;
+				}
+			}
+			/* the remote node already have this database */
+			if (i!=remote_dbmap->num) {
+				continue;
+			}
+			/* ok so we need to create this database */
+			ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), vnn, dbmap->dbids[db], mem_ctx, &name);
+			if (ret != 0) {
+				printf("Unable to get dbname from node %u\n", vnn);
+				return -1;
+			}
+			ctdb_ctrl_createdb(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, name);
+			if (ret != 0) {
+				printf("Unable to create remote db:%s\n", name);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+
 static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -109,56 +163,17 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	/* get a list of all databases */
 	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &dbmap);
 	if (ret != 0) {
-		printf("Unable to get dbids from node %u\n", vnn);
+		printf("Unable to get dbids from node :%d\n", vnn);
 		return -1;
 	}
 
 	/* verify that all other nodes have all our databases */
-printf("Verify all other nodes have the same databases as we have\n");
-	for (j=0; j<nodemap->num; j++) {
-		/* we dont need to ourself ourselves */
-		if (nodemap->nodes[j].vnn == vnn) {
-			continue;
-		}
-		/* dont check nodes that are unavailable */
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-			continue;
-		}
-printf("checking node %d\n",nodemap->nodes[j].vnn);
-
-		ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_dbmap);
-		if (ret != 0) {
-			printf("Unable to get dbids from node %u\n", vnn);
-			return -1;
-		}
-
-		/* step through all local databases */
-		for (db=0; db<dbmap->num;db++) {
-			const char *name;
-
-
-			for (i=0;i<remote_dbmap->num;i++) {
-				if (dbmap->dbids[db] == remote_dbmap->dbids[i]) {
-					break;
-				}
-			}
-			/* the remote node already have this database */
-			if (i!=remote_dbmap->num) {
-				continue;
-			}
-			/* ok so we need to create this database */
-			ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), vnn, dbmap->dbids[db], mem_ctx, &name);
-			if (ret != 0) {
-				printf("Unable to get dbname from node %u\n", vnn);
-				return -1;
-			}
-			ctdb_ctrl_createdb(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, name);
-			if (ret != 0) {
-				printf("Unable to create remote db:%s\n", name);
-				return -1;
-			}
-		}
+	ret = create_missing_remote_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to create missing remote databases\n");
+		return -1;
 	}
+
 
 	/* verify that we have all database any other node has */
 	for (j=0; j<nodemap->num; j++) {
@@ -213,48 +228,12 @@ printf("checking node %d\n",nodemap->nodes[j].vnn);
 
 
 	/* verify that all other nodes have all our databases */
-	for (j=0; j<nodemap->num; j++) {
-		/* we dont need to ourself ourselves */
-		if (nodemap->nodes[j].vnn == vnn) {
-			continue;
-		}
-		/* dont check nodes that are unavailable */
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, &remote_dbmap);
-		if (ret != 0) {
-			printf("Unable to get dbids from node %u\n", vnn);
-			return -1;
-		}
-
-		/* step through all local databases */
-		for (db=0; db<dbmap->num;db++) {
-			const char *name;
-
-			for (i=0;i<remote_dbmap->num;i++) {
-				if (dbmap->dbids[db] == remote_dbmap->dbids[i]) {
-					break;
-				}
-			}
-			/* the remote node already have this database */
-			if (i!=remote_dbmap->num) {
-				continue;
-			}
-			/* ok so we need to create this database */
-			ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), vnn, dbmap->dbids[db], mem_ctx, &name);
-			if (ret != 0) {
-				printf("Unable to get dbname from node %u\n", vnn);
-				return -1;
-			}
-			ctdb_ctrl_createdb(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, mem_ctx, name);
-			if (ret != 0) {
-				printf("Unable to create remote db:%s\n", name);
-				return -1;
-			}
-		}
+	ret = create_missing_remote_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		printf("Unable to create missing remote databases\n");
+		return -1;
 	}
+
 
 	/* pull all records from all other nodes across to this node
 	   (this merges based on rsn)
