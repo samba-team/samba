@@ -2426,6 +2426,7 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	fstring uname;
+	BOOL original_online_state;	
 
 	domain = find_lookup_domain_from_name(domain_name);
 	if (domain == NULL) {
@@ -2441,7 +2442,14 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 	fstrcpy(uname, name);
 	strupper_m(uname);
 	
+	/* If we are doing a cached logon, temporarily set the domain
+	   offline so the cache won't expire the entry */
+	
+	original_online_state = domain->online;
+	domain->online = False;
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
+	domain->online = original_online_state;
+	
 	if (centry == NULL) {
 		return False;
 	}
