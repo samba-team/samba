@@ -48,6 +48,12 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("query_user_list: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
+
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -140,6 +146,12 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: enum_dom_groups\n"));
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("enum_domain_groups: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
+
 	status = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(status))
 		return status;
@@ -195,6 +207,12 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	*info = NULL;
 
 	DEBUG(3,("rpc: enum_local_groups\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("enum_local_groups: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
 
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
@@ -305,13 +323,20 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 			domain->name ));
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(2,("msrpc_sid_to_name: cm_connect_lsa() failed (%s)\n",
+			 nt_errstr(result)));		
 		return result;
+	}
+	
 
 	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
 					1, sid, &domains, &names, &types);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {		
+		DEBUG(2,("msrpc_sid_to_name: rpccli_lsa_lookup_sids()  failed (%s)\n",
+			 nt_errstr(result)));		
 		return result;
+	}
 
 	*type = (enum lsa_SidType)types[0];
 	*domain_name = domains[0];
@@ -401,6 +426,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 	
+	user_info->homedir = NULL;
+	user_info->shell = NULL;
+	user_info->primary_gid = (gid_t)-1;
+						
 	/* try netsamlogon cache first */
 			
 	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL ) 
@@ -418,12 +447,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		user_info->full_name = unistr2_tdup(mem_ctx,
 						    &user->uni_full_name);
 		
-		user_info->homedir = NULL;
-		user_info->shell = NULL;
-		user_info->primary_gid = (gid_t)-1;
-						
 		TALLOC_FREE(user);
+						
+		return NT_STATUS_OK;
+	}
 				
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("query_user: No incoming trust for domain %s\n",
+			  domain->name));
 		return NT_STATUS_OK;
 	}
 	
@@ -496,6 +527,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups: No incoming trust for domain %s\n",
+			  domain->name));
+
+		/* Tell the cache manager not to remember this one */
+
+		return NT_STATUS_SYNCHRONIZATION_REQUIRED;
+	}
+
 	/* no cache; hit the wire */
 	
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
@@ -551,6 +591,12 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 	*alias_rids = NULL;
 
 	DEBUG(3,("rpc: lookup_useraliases\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("msrpc_lookup_useraliases: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
 
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
@@ -637,6 +683,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	DEBUG(10,("rpc: lookup_groupmem %s sid=%s\n", domain->name,
 		  sid_to_string(sid_string, group_sid)));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_groupmem: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
 
 	if (!sid_peek_check_rid(&domain->sid, group_sid, &group_rid))
 		return NT_STATUS_UNSUCCESSFUL;
@@ -822,6 +874,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("sequence_number: No incoming trust for domain %s\n",
+			  domain->name));
+		*seq = time(NULL);		
+		return NT_STATUS_OK;
+	}
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	if (!(mem_ctx = talloc_init("sequence_number[rpc]")))
@@ -967,6 +1026,12 @@ NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 
 	DEBUG(10,("rpc: fetch lockout policy for %s\n", domain->name));
 
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("msrpc_lockout_policy: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -998,6 +1063,12 @@ NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 	SAM_UNK_CTR ctr;
 
 	DEBUG(10,("rpc: fetch password policy for %s\n", domain->name));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("msrpc_password_policy: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
