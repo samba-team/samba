@@ -1504,6 +1504,106 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 }
 
 /******************************************************************************
+ Set the trust flags (direction and forest location) for a domain
+******************************************************************************/
+
+static BOOL set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
+{
+	struct winbindd_domain *our_domain;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct ds_domain_trust *domains = NULL;
+	int count = 0;
+	int i;
+	uint32 flags = (DS_DOMAIN_IN_FOREST | 
+			DS_DOMAIN_DIRECT_OUTBOUND | 
+			DS_DOMAIN_DIRECT_INBOUND);
+	struct rpc_pipe_client *cli;
+	TALLOC_CTX *mem_ctx = NULL;
+
+	DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s\n", domain->name ));
+	
+	/* Our primary domain doesn't need to worry about trust flags.
+	   Force it to go through the network setup */
+	if ( domain->primary ) {		
+		return False;		
+	}
+	
+	our_domain = find_our_domain();
+	
+	if ( !connection_ok(our_domain) ) {
+		DEBUG(3,("set_dc_type_and_flags_trustinfo: No connection to our domain!\n"));		
+		return False;
+	}
+
+	/* This won't work unless our domain is AD */
+	 
+	if ( !our_domain->active_directory ) {
+		return False;
+	}
+	
+	/* Use DsEnumerateDomainTrusts to get us the trust direction
+	   and type */
+
+	result = cm_connect_netlogon(our_domain, &cli);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5, ("set_dc_type_and_flags_trustinfo: Could not open "
+			  "a connection to %s for PIPE_NETLOGON (%s)\n", 
+			  domain->name, nt_errstr(result)));
+		return False;
+	}
+
+	if ( (mem_ctx = talloc_init("set_dc_type_and_flags_trustinfo")) == NULL ) {
+		DEBUG(0,("set_dc_type_and_flags_trustinfo: talloc_init() failed!\n"));
+		return False;
+	}	
+
+	result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
+					      cli->cli->desthost, 
+					      flags, &domains,
+					      (unsigned int *)&count);
+
+	/* Now find the domain name and get the flags */
+
+	for ( i=0; i<count; i++ ) {
+		if ( strequal( domain->name, domains[i].netbios_domain ) ) {			
+			domain->domain_flags          = domains[i].flags;
+			domain->domain_type           = domains[i].trust_type;
+			domain->domain_trust_attribs  = domains[i].trust_attributes;
+						
+			if ( domain->domain_type == DS_DOMAIN_TRUST_TYPE_UPLEVEL )
+				domain->active_directory = True;
+
+			/* This flag is only set if the domain is *our* 
+			   primary domain and the primary domain is in
+			   native mode */
+
+			domain->native_mode = (domain->domain_flags & DS_DOMAIN_NATIVE_MODE);
+
+			DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s is %sin "
+				  "native mode.\n", domain->name, 
+				  domain->native_mode ? "" : "NOT "));
+
+			DEBUG(5,("set_dc_type_and_flags_trustinfo: domain %s is %s"
+				 "running active directory.\n", domain->name, 
+				 domain->active_directory ? "" : "NOT "));
+
+
+			domain->initialized = True;
+
+			if ( !winbindd_can_contact_domain( domain) )
+				domain->internal = True;
+			
+			break;
+		}		
+	}
+	
+	talloc_destroy( mem_ctx );
+	
+	return domain->initialized;	
+}
+
+/******************************************************************************
  We can 'sense' certain things about the DC by it's replies to certain
  questions.
 
@@ -1511,7 +1611,7 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
  is native mode.
 ******************************************************************************/
 
-static void set_dc_type_and_flags( struct winbindd_domain *domain )
+static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
 	DS_DOMINFO_CTR		ctr;
@@ -1530,13 +1630,13 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		return;
 	}
 
-	DEBUG(5, ("set_dc_type_and_flags: domain %s\n", domain->name ));
+	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC_DS,
 				       &result);
 
 	if (cli == NULL) {
-		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
+		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC_DS on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
 
@@ -1553,7 +1653,7 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 	cli_rpc_pipe_close(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(5, ("set_dc_type_and_flags: rpccli_ds_getprimarydominfo "
+		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
 			  "on domain %s failed: (%s)\n",
 			  domain->name, nt_errstr(result)));
 		return;
@@ -1570,7 +1670,7 @@ no_lsarpc_ds:
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
 
 	if (cli == NULL) {
-		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
+		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
 		cli_rpc_pipe_close(cli);
@@ -1580,7 +1680,7 @@ no_lsarpc_ds:
 	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
 			      domain->name);
 	if (!mem_ctx) {
-		DEBUG(1, ("set_dc_type_and_flags: talloc_init() failed\n"));
+		DEBUG(1, ("set_dc_type_and_flags_connect: talloc_init() failed\n"));
 		cli_rpc_pipe_close(cli);
 		return;
 	}
@@ -1635,10 +1735,10 @@ no_lsarpc_ds:
 	}
 done:
 
-	DEBUG(5, ("set_dc_type_and_flags: domain %s is %sin native mode.\n",
+	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s is %sin native mode.\n",
 		  domain->name, domain->native_mode ? "" : "NOT "));
 
-	DEBUG(5,("set_dc_type_and_flags: domain %s is %srunning active directory.\n",
+	DEBUG(5,("set_dc_type_and_flags_connect: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
 	cli_rpc_pipe_close(cli);
@@ -1647,6 +1747,37 @@ done:
 
 	domain->initialized = True;
 }
+
+/**********************************************************************
+ Set the domain_flags (trust attributes, domain operating modes, etc... 
+***********************************************************************/
+
+static void set_dc_type_and_flags( struct winbindd_domain *domain )
+{
+	/* we always have to contact our primary domain */
+
+	if ( domain->primary ) {
+		DEBUG(10,("set_dc_type_and_flags: setting up flags for "
+			  "primary domain\n"));
+		set_dc_type_and_flags_connect( domain );
+		return;		
+	}
+
+	/* Use our DC to get the information if possible */
+
+	if ( !set_dc_type_and_flags_trustinfo( domain ) ) {
+		/* Otherwise, fallback to contacting the 
+		   domain directly */
+		set_dc_type_and_flags_connect( domain );
+	}
+
+	return;
+}
+
+
+
+/**********************************************************************
+***********************************************************************/
 
 static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 				   struct dcinfo **ppdc)
