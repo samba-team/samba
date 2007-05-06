@@ -1390,7 +1390,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
-			domain->online = False;
+			set_domain_offline( domain );
+			goto cached_logon;			
 		}
 
 		/* there are quite some NT_STATUS errors where there is no
@@ -1430,14 +1431,24 @@ sam_logon:
 				info3->user_flgs |= LOGON_KRB5_FAIL_CLOCK_SKEW;				
 			}
 			goto process_result;
-		} else {
-			DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", nt_errstr(result)));
+		} 
+
+       		DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", 
+			  nt_errstr(result)));
+
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) 
+		{
+			DEBUG(10,("winbindd_dual_pam_auth_samlogon setting domain to offline\n"));
+			set_domain_offline( domain );
+			goto cached_logon;			
+		}
+
 			if (domain->online) {
 				/* We're still online - fail. */
 				goto done;
 			}
-			/* Else drop through and see if we can check offline.... */
-		}
 	}
 
 cached_logon:
@@ -1472,9 +1483,16 @@ process_result:
 		netsamlogon_cache_store(name_user, info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
 
-		/* save name_to_sid info as early as possible */
-		sid_compose(&user_sid, &info3->dom_sid.sid, info3->user_rid);
-		cache_name2sid(domain, name_domain, name_user, SID_NAME_USER, &user_sid);
+		/* save name_to_sid info as early as possible (only if
+		   this is our primary domain so we don't invalidate
+		   the cache entry by storing the seq_num for the wrong
+		   domain). */
+		if ( domain->primary ) {			
+			sid_compose(&user_sid, &info3->dom_sid.sid, 
+				    info3->user_rid);
+			cache_name2sid(domain, name_domain, name_user, 
+				       SID_NAME_USER, &user_sid);
+		}
 		
 		/* Check if the user is in the right group */
 
