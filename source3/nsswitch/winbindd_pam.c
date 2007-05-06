@@ -128,7 +128,11 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	DOM_SID *require_membership_of_sid;
 	size_t num_require_membership_of_sid;
 	DOM_SID *all_sids;
-	size_t num_all_sids = (2 + info3->num_groups2 + info3->num_other_sids);
+	/* UserSID, GroupSID, Grooup2SIDs, OtherSIDs, WellKnownSIDs */
+	size_t num_all_sids = (2 + 
+			       info3->num_groups2 + 
+			       info3->num_other_sids + 
+			       2 );
 	size_t i, j = 0, k;
 	size_t group_sid_length;
 	const char *search_location;
@@ -213,6 +217,11 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	}
 	j++;	
 
+	/* Well-Known SIDs */
+
+	sid_copy( &all_sids[j++], &global_sid_World );
+	sid_copy( &all_sids[j++], &global_sid_Authenticated_Users );
+	
 	for (i = 0; i < info3->num_groups2; i++) {
 	
 		sid_copy(&all_sids[j], &(info3->dom_sid.sid));
