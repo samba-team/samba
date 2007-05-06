@@ -1534,10 +1534,14 @@ process_result:
 
 		result = fillup_password_policy(domain, state);
 
-		if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(result) 
+		    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ) 
+		{
 			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
 			goto done;
 		}
+
+		result = NT_STATUS_OK;		
 
 		if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
 			/* We've been asked to return the unix username, per 
