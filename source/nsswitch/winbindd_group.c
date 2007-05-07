@@ -494,6 +494,9 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	memset(name_group, 0, sizeof(fstring));
 
 	tmp = state->request.data.groupname;
+
+	name_domain[0] = '\0';
+	name_group[0] = '\0';
 	
 	parse_domain_user(tmp, name_domain, name_group);
 
