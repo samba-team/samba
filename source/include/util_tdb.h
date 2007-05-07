@@ -43,7 +43,7 @@ struct tdb_wrap {
 
 TDB_LIST_NODE *tdb_search_keys(struct tdb_context*, const char*);
 void tdb_search_list_free(TDB_LIST_NODE*);
-int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32_t *oldval, int32_t change_val);
+int32 tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32 *oldval, int32 change_val);
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
 int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 				   int timeout);
@@ -51,10 +51,10 @@ void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 					unsigned int timeout);
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
-int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
-int tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value);
-int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v);
-int tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value);
+int32 tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
+int tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32 value);
+int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32 v);
+int tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32 *value);
 int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state);
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags);
@@ -68,7 +68,7 @@ TDB_DATA make_tdb_data(const char *dptr, size_t dsize);
 TDB_DATA string_tdb_data(const char *string);
 int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 		    int flag);
-int tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
+BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
 			      uint32 *oldval, uint32 change_val);
 int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key,
 				unsigned int timeout);
