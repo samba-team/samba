@@ -208,7 +208,6 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	int (*init_fn) (void);
 	char *modulesdir;
 
-#ifdef HAVE_DLOPEN
 	if (getenv("LD_LDB_MODULE_PATH") != NULL) {
 		modulesdir = talloc_strdup(ldb, getenv("LD_LDB_MODULE_PATH"));
 	} else {
@@ -241,10 +240,6 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	talloc_free(path);
 
 	return init_fn();
-#else
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "no dlopen() - not trying to load %s module\n", name);
-	return -1;
-#endif
 }
 
 int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
