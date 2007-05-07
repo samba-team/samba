@@ -65,7 +65,7 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-void msg_pool_usage(int msg_type, struct process_id src_pid,
+void msg_pool_usage(int msg_type, struct server_id src_pid,
 		    void *UNUSED(buf), size_t UNUSED(len),
 		    void *private_data)
 {

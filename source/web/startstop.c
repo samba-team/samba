@@ -121,7 +121,7 @@ void stop_winbindd(void)
 }
 #endif
 /* kill a specified process */
-void kill_pid(struct process_id pid)
+void kill_pid(struct server_id pid)
 {
 	if (geteuid() != 0) return;
 

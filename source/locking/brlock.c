@@ -724,7 +724,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 
 NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct process_id pid,
+		struct server_id pid,
 		br_off start,
 		br_off size, 
 		enum brl_type lock_type,
@@ -1039,7 +1039,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 BOOL brl_unlock(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct process_id pid,
+		struct server_id pid,
 		br_off start,
 		br_off size,
 		enum brl_flavour lock_flav)
@@ -1069,7 +1069,7 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 
 BOOL brl_locktest(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct process_id pid,
+		struct server_id pid,
 		br_off start,
 		br_off size, 
 		enum brl_type lock_type,
@@ -1127,7 +1127,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		uint32 *psmbpid,
-		struct process_id pid,
+		struct server_id pid,
 		br_off *pstart,
 		br_off *psize, 
 		enum brl_type *plock_type,
@@ -1195,7 +1195,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct process_id pid,
+		struct server_id pid,
 		br_off start,
 		br_off size,
 		enum brl_flavour lock_flav)
@@ -1252,7 +1252,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	unsigned int i, j, dcount=0;
 	int num_deleted_windows_locks = 0;
 	struct lock_struct *locks = br_lck->lock_data;
-	struct process_id pid = procid_self();
+	struct server_id pid = procid_self();
 	BOOL unlock_individually = False;
 
 	if(lp_posix_locking(fsp->conn->params)) {

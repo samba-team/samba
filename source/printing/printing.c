@@ -1351,7 +1351,7 @@ static void print_queue_update_with_lock( const char *sharename,
 /****************************************************************************
 this is the receive function of the background lpq updater
 ****************************************************************************/
-static void print_queue_receive(int msg_type, struct process_id src,
+static void print_queue_receive(int msg_type, struct server_id src,
 				void *buf, size_t msglen,
 				void *private_data)
 {

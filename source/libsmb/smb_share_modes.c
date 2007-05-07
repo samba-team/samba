@@ -42,12 +42,12 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx, uint64_t dev,
 				uint64_t ino, const struct smb_share_mode_entry *new_entry,
 				const char *sharepath, const char *filename);
 
-static BOOL sharemodes_procid_equal(const struct process_id *p1, const struct process_id *p2)
+static BOOL sharemodes_procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	return (p1->pid == p2->pid);
 }
 
-static pid_t sharemodes_procid_to_pid(const struct process_id *proc)
+static pid_t sharemodes_procid_to_pid(const struct server_id *proc)
 {
 	return proc->pid;
 }
@@ -211,7 +211,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
 		struct smb_share_mode_entry *sme = &list[list_num];
-		struct process_id pid = share->pid;
+		struct server_id pid = share->pid;
 
 		/* Check this process really exists. */
 		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
@@ -416,7 +416,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	num_share_modes = 0;
 	for (i = 0; i < orig_num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
-		struct process_id pid = share->pid;
+		struct server_id pid = share->pid;
 
 		/* Check this process really exists. */
 		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
@@ -492,7 +492,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
-		struct process_id pid = share->pid;
+		struct server_id pid = share->pid;
 
 		/* Check this process really exists. */
 		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {

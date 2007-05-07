@@ -82,7 +82,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
  Child failed to find DC's. Reschedule check.
 ****************************************************************/
 
-static void msg_failed_to_go_online(int msg_type, struct process_id src,
+static void msg_failed_to_go_online(int msg_type, struct server_id src,
 				    void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
@@ -118,7 +118,7 @@ static void msg_failed_to_go_online(int msg_type, struct process_id src,
  Actually cause a reconnect from a message.
 ****************************************************************/
 
-static void msg_try_to_go_online(int msg_type, struct process_id src,
+static void msg_try_to_go_online(int msg_type, struct server_id src,
 				 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;

@@ -36,7 +36,7 @@ static unsigned long our_dm_mark = 0;
  * usage stats.
  **/
 static void msg_req_dmalloc_mark(int UNUSED(msg_type),
-				 struct process_id UNUSED(src_pid),
+				 struct server_id UNUSED(src_pid),
 				 void *UNUSED(buf), size_t UNUSED(len),
 				 void *private_data)
 {
@@ -51,7 +51,7 @@ static void msg_req_dmalloc_mark(int UNUSED(msg_type),
 
 
 static void msg_req_dmalloc_log_changed(int UNUSED(msg_type),
-					struct process_id UNUSED(src_pid),
+					struct server_id UNUSED(src_pid),
 					void *UNUSED(buf), size_t UNUSED(len),
 					void *private_data)
 {

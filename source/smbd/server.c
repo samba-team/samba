@@ -86,7 +86,7 @@ struct messaging_context *smbd_messaging_context(void)
  What to do when smb.conf is updated.
  ********************************************************************/
 
-static void smb_conf_updated(int msg_type, struct process_id src,
+static void smb_conf_updated(int msg_type, struct server_id src,
 			     void *buf, size_t len, void *private_data)
 {
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
@@ -98,7 +98,7 @@ static void smb_conf_updated(int msg_type, struct process_id src,
  Delete a statcache entry.
  ********************************************************************/
 
-static void smb_stat_cache_delete(int msg_type, struct process_id src,
+static void smb_stat_cache_delete(int msg_type, struct server_id src,
 				  void *buf, size_t len, void *private_data)
 {
 	const char *name = (const char *)buf;
@@ -149,7 +149,7 @@ static void  killkids(void)
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
+static void msg_sam_sync(int UNUSED(msg_type), struct server_id UNUSED(pid),
 			 void *UNUSED(buf), size_t UNUSED(len),
 			 void *private_data)
 {
@@ -161,7 +161,7 @@ static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_repl(int msg_type, struct process_id pid,
+static void msg_sam_repl(int msg_type, struct server_id pid,
 			 void *buf, size_t len, void *private_data)
 {
         uint32 low_serial;
@@ -195,7 +195,7 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
-static void msg_exit_server(int msg_type, struct process_id src,
+static void msg_exit_server(int msg_type, struct server_id src,
 			    void *buf, size_t len, void *private_data)
 {
 	DEBUG(3, ("got a SHUTDOWN message\n"));
@@ -203,7 +203,7 @@ static void msg_exit_server(int msg_type, struct process_id src,
 }
 
 #ifdef DEVELOPER
-static void msg_inject_fault(int msg_type, struct process_id src,
+static void msg_inject_fault(int msg_type, struct server_id src,
 			    void *buf, size_t len, void *private_data)
 {
 	int sig;
@@ -971,7 +971,7 @@ extern void build_options(BOOL screen);
 	}
 	if (profile_level != NULL) {
 		int pl = atoi(profile_level);
-		struct process_id src;
+		struct server_id src;
 
 		DEBUG(1, ("setting profiling level: %s\n",profile_level));
 		src.pid = getpid();

@@ -751,7 +751,7 @@ struct pending_message_list {
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
-	struct process_id pid;
+	struct server_id pid;
 	uint16 op_mid;
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
@@ -771,7 +771,7 @@ struct share_mode_entry {
 /* oplock break message definition - linearization of share_mode_entry.
 
 Offset  Data			length.
-0	struct process_id pid	4
+0	struct server_id pid	4
 4	uint16 op_mid		2
 6	uint16 op_type		2
 8	uint32 access_mask	4
@@ -829,7 +829,7 @@ struct locking_data {
 /* Used to store pipe open records for NetFileEnum() */
 
 struct pipe_open_rec {
-	struct process_id pid;
+	struct server_id pid;
 	uid_t uid;
 	int pnum;
 	fstring name;
@@ -876,14 +876,14 @@ struct pipe_open_rec {
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
-	struct process_id pid;
+	struct server_id pid;
 	int cnum;
 	fstring name;
 };
 
 struct connections_data {
 	int magic;
-	struct process_id pid;
+	struct server_id pid;
 	int cnum;
 	uid_t uid;
 	gid_t gid;

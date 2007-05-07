@@ -1101,7 +1101,7 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  Receive a notify2 message list
  ********************************************************************/
 
-static void receive_notify2_message_list(int msg_type, struct process_id src,
+static void receive_notify2_message_list(int msg_type, struct server_id src,
 					 void *msg, size_t len,
 					 void *private_data)
 {
@@ -1215,7 +1215,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, struct process_id src,
+void do_drv_upgrade_printer(int msg_type, struct server_id src,
 			    void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
@@ -1313,7 +1313,7 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  over all printers, resetting printer data as neessary 
  **********************************************************************/
  
-void reset_all_printerdata(int msg_type, struct process_id src,
+void reset_all_printerdata(int msg_type, struct server_id src,
 			   void *buf, size_t len, void *private_data)
 {
 	fstring drivername;
