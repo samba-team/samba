@@ -498,6 +498,7 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 	DEBUG(4,("wreplsrv_scavenging_run(): start\n"));
 
 	tmp_mem = talloc_new(service);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
 	service->scavenging.processing = True;
 	status = wreplsrv_scavenging_owned_records(service,tmp_mem);
 	service->scavenging.processing = False;
@@ -505,6 +506,7 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	tmp_mem = talloc_new(service);	
+	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
 	service->scavenging.processing = True;
 	status = wreplsrv_scavenging_replica_non_active_records(service, tmp_mem);
 	service->scavenging.processing = False;
@@ -512,6 +514,7 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	tmp_mem = talloc_new(service);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
 	service->scavenging.processing = True;
 	status = wreplsrv_scavenging_replica_active_records(service, tmp_mem);
 	service->scavenging.processing = False;
