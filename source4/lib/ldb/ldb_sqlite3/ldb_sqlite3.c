@@ -33,8 +33,7 @@
  *  Author: Derrell Lipman (based on Andrew Tridgell's LDAP backend)
  */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "ldb_includes.h"
 
 #include <sqlite3.h>
 
