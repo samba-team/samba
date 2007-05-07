@@ -45,6 +45,7 @@ static int nbt_name_request_destructor(struct nbt_name_request *req)
 		req->name_trn_id = 0;
 	}
 	if (req->te) {
+		talloc_free(req->te);
 		req->te = NULL;
 	}
 	if (req->nbtsock->send_queue == NULL) {
@@ -102,6 +103,8 @@ failed:
 	talloc_free(tmp_ctx);
 	if (req->async.fn) {
 		req->async.fn(req);
+	} else if (req->is_reply) {
+		talloc_free(req);
 	}
 	return;
 }
@@ -140,6 +143,8 @@ static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event
 	}
 	if (req->async.fn) {
 		req->async.fn(req);
+	} else if (req->is_reply) {
+		talloc_free(req);
 	}
 }
 
@@ -462,9 +467,7 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 		if (event_loop_once(req->nbtsock->event_ctx) != 0) {
 			req->state = NBT_REQUEST_ERROR;
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-			if (req->async.fn) {
-				req->async.fn(req);
-			}
+			break;
 		}
 	}
 	return req->status;
