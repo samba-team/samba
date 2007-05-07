@@ -133,7 +133,7 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 		return;
 	}
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
+	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		fallback_node_status(state);
 		return;
