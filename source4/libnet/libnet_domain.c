@@ -1013,7 +1013,7 @@ static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_lis
 	int i;
 	if (mem_ctx == NULL || s == NULL) return NULL;
 
-	/* copy domain names returned from samr_EnumDomains call */
+	/* prepare domains array */
 	if (s->domains == NULL) {
 		s->domains = talloc_array(mem_ctx, struct domainlist,
 					  s->enumdom.out.num_entries);
@@ -1022,6 +1022,7 @@ static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_lis
 					    s->count + s->enumdom.out.num_entries);
 	}
 
+	/* copy domain names returned from samr_EnumDomains call */
 	for (i = s->count; i < s->count + s->enumdom.out.num_entries; i++)
 	{
 		struct lsa_String *domain_name = &s->enumdom.out.sam->entries[i - s->count].name;
