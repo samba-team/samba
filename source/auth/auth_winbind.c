@@ -162,16 +162,16 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
 
-	winbind_servers = irpc_servers_byname(ctx->auth_ctx->msg_ctx, "winbind_server");
+	s = talloc(mem_ctx, struct winbind_check_password_state);
+	NT_STATUS_HAVE_NO_MEMORY(s);
+
+	winbind_servers = irpc_servers_byname(ctx->auth_ctx->msg_ctx, s, "winbind_server");
 	if ((winbind_servers == NULL) || (winbind_servers[0].id == 0)) {
 		DEBUG(0, ("Winbind authentication for [%s]\\[%s] failed, " 
 			  "no winbind_server running!\n",
 			  user_info->client.domain_name, user_info->client.account_name));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-
-	s = talloc(mem_ctx, struct winbind_check_password_state);
-	NT_STATUS_HAVE_NO_MEMORY(s);
 
 	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
 		struct netr_PasswordInfo *password_info;

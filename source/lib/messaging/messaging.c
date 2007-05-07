@@ -961,7 +961,8 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 /*
   return a list of server ids for a server name
 */
-struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, 
+struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx,
+				      TALLOC_CTX *mem_ctx,
 				      const char *name)
 {
 	struct tdb_wrap *t;
@@ -985,7 +986,7 @@ struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx,
 		return NULL;
 	}
 	count = rec.dsize / sizeof(struct server_id);
-	ret = talloc_array(msg_ctx, struct server_id, count+1);
+	ret = talloc_array(mem_ctx, struct server_id, count+1);
 	if (ret == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);

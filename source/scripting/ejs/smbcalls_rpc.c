@@ -88,7 +88,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	p->dest_ids = irpc_servers_byname(p->msg_ctx, p->server_name);
+	p->dest_ids = irpc_servers_byname(p->msg_ctx, p, p->server_name);
 	if (p->dest_ids == NULL || p->dest_ids[0].id == 0) {
 		talloc_free(p);
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
