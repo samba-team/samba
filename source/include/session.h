@@ -36,7 +36,7 @@ struct sessionid {
 	fstring remote_machine;
 	fstring id_str;
 	uint32  id_num;
-	uint32  pid;
+	struct server_id pid;
 	fstring ip_addr;
 	time_t connect_start;
 };

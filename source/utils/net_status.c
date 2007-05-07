@@ -31,18 +31,18 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists_by_pid(sessionid.pid)) {
+	if (!process_exists(sessionid.pid)) {
 		return 0;
 	}
 
 	if (*parseable) {
-		d_printf("%d\\%s\\%s\\%s\\%s\n",
-			 (int)sessionid.pid, uidtoname(sessionid.uid),
+		d_printf("%s\\%s\\%s\\%s\\%s\n",
+			 procid_str_static(&sessionid.pid), uidtoname(sessionid.uid),
 			 gidtoname(sessionid.gid), 
 			 sessionid.remote_machine, sessionid.hostname);
 	} else {
-		d_printf("%5d   %-12s  %-12s  %-12s (%s)\n",
-			 (int)sessionid.pid, uidtoname(sessionid.uid),
+		d_printf("%7s   %-12s  %-12s  %-12s (%s)\n",
+			 procid_str_static(&sessionid.pid), uidtoname(sessionid.uid),
 			 gidtoname(sessionid.gid), 
 			 sessionid.remote_machine, sessionid.hostname);
 	}
@@ -102,7 +102,7 @@ static int show_share(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	}
 
 	d_printf("%-10.10s   %s   %-12s  %s",
-	       crec.servicename,procid_str_static(&crec.pid),
+	       crec.servicename, procid_str_static(&crec.pid),
 	       crec.machine,
 	       time_to_asc(crec.start));
 
@@ -125,7 +125,7 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists_by_pid(sessionid.pid)) 
+	if (!process_exists(sessionid.pid)) 
 		return 0;
 
 	ids->num_entries += 1;
@@ -160,7 +160,7 @@ static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	}
 
 	for (i=0; i<ids->num_entries; i++) {
-		struct server_id id = pid_to_procid(ids->entries[i].pid);
+		struct server_id id = ids->entries[i].pid;
 		if (procid_equal(&id, &crec.pid)) {
 			guest = False;
 			break;
