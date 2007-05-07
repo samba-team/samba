@@ -829,7 +829,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_async.o \
 		nsswitch/winbindd_creds.o \
 		nsswitch/winbindd_cred_cache.o \
-		nsswitch/winbindd_ccache_access.o
+		nsswitch/winbindd_ccache_access.o \
+		auth/token_util.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \

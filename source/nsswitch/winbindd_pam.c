@@ -127,17 +127,12 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 {
 	DOM_SID *require_membership_of_sid;
 	size_t num_require_membership_of_sid;
-	DOM_SID *all_sids;
-	/* UserSID, GroupSID, Grooup2SIDs, OtherSIDs, WellKnownSIDs */
-	size_t num_all_sids = (2 + 
-			       info3->num_groups2 + 
-			       info3->num_other_sids + 
-			       2 );
-	size_t i, j = 0, k;
-	size_t group_sid_length;
-	const char *search_location;
-	char *single_group_sid;
-	const char *comma;
+	fstring req_sid;
+	const char *p;
+	DOM_SID sid;
+	size_t i;
+	struct nt_user_token *token;
+	NTSTATUS status;
 
 	/* Parse the 'required group' SID */
 	
@@ -146,93 +141,59 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	num_require_membership_of_sid = 1;
-	group_sid_length = strlen(group_sid);
-	for (i = 0; i < group_sid_length; i++) {
-		if (',' == group_sid[i]) {
-			num_require_membership_of_sid++;
-		}
+	if (!(token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	require_membership_of_sid = TALLOC_ARRAY(mem_ctx, DOM_SID, num_require_membership_of_sid);
-	if (!require_membership_of_sid)
-		return NT_STATUS_NO_MEMORY;
+	num_require_membership_of_sid = 0;
+	require_membership_of_sid = NULL;
 
-	i = 0;
-	search_location = group_sid;
+	p = group_sid;
 
-	if (num_require_membership_of_sid > 1) {
+	while (next_token(&p, req_sid, ",", sizeof(req_sid))) {
+		if (!string_to_sid(&sid, req_sid)) {
+			DEBUG(0, ("check_info3_in_group: could not parse %s "
+				  "as a SID!", req_sid));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
-		/* Allocate the maximum possible size */
-		single_group_sid = TALLOC(mem_ctx, group_sid_length);
-		if (!single_group_sid)
+		if (!add_sid_to_array(mem_ctx, &sid,
+				      &require_membership_of_sid,
+				      &num_require_membership_of_sid)) {
+			DEBUG(0, ("add_sid_to_array failed\n"));
 			return NT_STATUS_NO_MEMORY;
-
-		while ( (comma = strstr(search_location, ",")) != NULL ) {
-
-			strncpy(single_group_sid, search_location, comma - search_location);
-			single_group_sid[comma - search_location] = 0;
-
-			if (!string_to_sid(&require_membership_of_sid[i++], single_group_sid)) {
-				DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
-					  single_group_sid));
-			
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			search_location = comma + 1;
 		}
 	}
 
-	if (!string_to_sid(&require_membership_of_sid[i++], search_location)) {
-		DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
-			  search_location));
-
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	all_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_all_sids);
-	if (!all_sids)
-		return NT_STATUS_NO_MEMORY;
-
-	/* and create (by appending rids) the 'domain' sids */
-	
-	sid_copy(&all_sids[0], &(info3->dom_sid.sid));
-	
-	if (!sid_append_rid(&all_sids[0], info3->user_rid)) {
-		DEBUG(3,("could not append user's primary RID 0x%x\n",
+	if (!sid_compose(&sid, &(info3->dom_sid.sid),
+			 info3->user_rid)
+	    || !add_sid_to_array(mem_ctx, &sid,
+				 &token->user_sids, &token->num_sids)) {
+		DEBUG(3,("could not add user SID from rid 0x%x\n",
 			 info3->user_rid));			
-		
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	j++;
 
-	sid_copy(&all_sids[1], &(info3->dom_sid.sid));
-		
-	if (!sid_append_rid(&all_sids[1], info3->group_rid)) {
+	if (!sid_compose(&sid, &(info3->dom_sid.sid),
+			 info3->group_rid)
+	    || !add_sid_to_array(mem_ctx, &sid, 
+				 &token->user_sids, &token->num_sids)) {
 		DEBUG(3,("could not append additional group rid 0x%x\n",
 			 info3->group_rid));			
 		
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	j++;	
 
-	/* Well-Known SIDs */
-
-	sid_copy( &all_sids[j++], &global_sid_World );
-	sid_copy( &all_sids[j++], &global_sid_Authenticated_Users );
-	
 	for (i = 0; i < info3->num_groups2; i++) {
-	
-		sid_copy(&all_sids[j], &(info3->dom_sid.sid));
-		
-		if (!sid_append_rid(&all_sids[j], info3->gids[i].g_rid)) {
+		if (!sid_compose(&sid, &(info3->dom_sid.sid),
+				 info3->gids[i].g_rid)
+		    || !add_sid_to_array(mem_ctx, &sid,
+					 &token->user_sids, &token->num_sids)) {
 			DEBUG(3,("could not append additional group rid 0x%x\n",
-				info3->gids[i].g_rid));			
-				
+				 info3->gids[i].g_rid));	
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		j++;
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -242,21 +203,32 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->num_other_sids; i++) {
-		sid_copy(&all_sids[info3->num_groups2 + i + 2],
-			 &info3->other_sids[i].sid);
-		j++;
+		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+				      &token->user_sids, &token->num_sids)) {
+			DEBUG(3, ("could not add SID to array: %s\n",
+				  sid_string_static(&info3->other_sids[i].sid)));
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
-	for (i = 0; i < j; i++) {
-		fstring sid1, sid2;
-		DEBUG(10, ("User has SID: %s\n", 
-			   sid_to_string(sid1, &all_sids[i])));
-		for (k = 0; k < num_require_membership_of_sid; k++) {
-			if (sid_equal(&require_membership_of_sid[k], &all_sids[i])) {
-				DEBUG(10, ("SID %s matches %s - user permitted to authenticate!\n", 
-					   sid_to_string(sid1, &require_membership_of_sid[k]), sid_to_string(sid2, &all_sids[i])));
-				return NT_STATUS_OK;
-			}
+	if (!NT_STATUS_IS_OK(status = add_aliases(get_global_sam_sid(),
+						  token))
+	    || !NT_STATUS_IS_OK(status = add_aliases(&global_sid_Builtin,
+						     token))) {
+		DEBUG(3, ("could not add aliases: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	debug_nt_user_token(DBGC_CLASS, 10, token);
+
+	for (i=0; i<num_require_membership_of_sid; i++) {
+		DEBUG(10, ("Checking SID %s\n", sid_string_static(
+				   &require_membership_of_sid[i])));
+		if (nt_token_check_sid(&require_membership_of_sid[i],
+				       token)) {
+			DEBUG(10, ("Access ok\n"));
+			return NT_STATUS_OK;
 		}
 	}
 	
