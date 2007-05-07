@@ -72,7 +72,7 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	inbuf = smb_xmemdup(buf, buf_len);
+	inbuf = (char *)smb_xmemdup(buf, buf_len);
 
 	/* Adjust for the signature. */
 	data_len = buf_len - 8 - NTLMSSP_SIG_SIZE;
@@ -204,7 +204,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	}
 
 	memcpy(buf + 8, out_buf.value, out_buf.length);
-	smb_setlen(out_buf.value, buf, out_buf.length + 4);
+	smb_setlen((char *)out_buf.value, buf, out_buf.length + 4);
 
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
@@ -269,7 +269,7 @@ static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	 * bother :-*(. JRA.
 	 */
 
-	*ppbuf_out = SMB_MALLOC(out_buf.length + 8); /* We know this can't wrap. */
+	*ppbuf_out = (char *)SMB_MALLOC(out_buf.length + 8); /* We know this can't wrap. */
 	if (!*ppbuf_out) {
 		gss_release_buffer(&minor, &out_buf);
 		return NT_STATUS_NO_MEMORY;

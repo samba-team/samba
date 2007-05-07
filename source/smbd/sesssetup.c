@@ -990,8 +990,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid, DATA_BLOB
 	}
 
 	/* We must store this blob until complete. */
-	pad = SMB_MALLOC(sizeof(struct pending_auth_data));
-	if (!pad) {
+	if (!(pad = SMB_MALLOC_P(struct pending_auth_data))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	pad->needed_len = needed_len - pblob->length;

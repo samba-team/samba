@@ -492,8 +492,7 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* Return the context we're using for this encryption state. */
-		*pparam = SMB_MALLOC(2);
-		if (!*pparam) {
+		if (!(*pparam = SMB_MALLOC_ARRAY(unsigned char, 2))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		SSVAL(*pparam,0,partial_srv_trans_enc_ctx->es->enc_ctx_num);
@@ -542,8 +541,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* Return the context we're using for this encryption state. */
-		*pparam = SMB_MALLOC(2);
-		if (!*pparam) {
+		if (!(*pparam = SMB_MALLOC_ARRAY(unsigned char, 2))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		SSVAL(*pparam,0,ec->es->enc_ctx_num);
@@ -593,8 +591,7 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* Return the context we're using for this encryption state. */
-		*pparam = SMB_MALLOC(2);
-		if (!*pparam) {
+		if (!(*pparam = SMB_MALLOC_ARRAY(unsigned char, 2))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		SSVAL(*pparam,0,ec->es->enc_ctx_num);

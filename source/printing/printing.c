@@ -1357,7 +1357,7 @@ static void print_queue_receive(int msg_type, struct server_id src,
 	int printing_type;
 	size_t len;
 
-	len = tdb_unpack( buf, msglen, "fdPP",
+	len = tdb_unpack( (uint8 *)buf, msglen, "fdPP",
 		sharename,
 		&printing_type,
 		lpqcommand,
