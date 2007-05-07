@@ -336,7 +336,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
 	struct notify_change *change, *changes;
-	char *name2;
+	pstring name2;
 
 	if (fsp->notify == NULL) {
 		/*
@@ -345,11 +345,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		return;
 	}
 
-	if (!(name2 = talloc_strdup(fsp->notify, name))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
-			return;
-	}
-
+	pstrcpy(name2, name);
 	string_replace(name2, '/', '\\');
 
 	/*
@@ -363,7 +359,6 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		 * guard against a DoS here.
 		 */
 		TALLOC_FREE(fsp->notify->changes);
-		TALLOC_FREE(name2);
 		fsp->notify->num_changes = -1;
 		return;
 	}
@@ -376,7 +371,6 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		      fsp->notify, fsp->notify->changes,
 		      struct notify_change, fsp->notify->num_changes+1))) {
 		DEBUG(0, ("talloc_realloc failed\n"));
-		TALLOC_FREE(name2);
 		return;
 	}
 
@@ -384,7 +378,11 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	change = &(fsp->notify->changes[fsp->notify->num_changes]);
 
-	change->name = talloc_move(changes, &name2);
+	if (!(change->name = talloc_strdup(changes, name2))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return;
+	}
+
 	change->action = action;
 	fsp->notify->num_changes += 1;
 
@@ -400,7 +398,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		 * We have to send the two rename events in one reply. So hold
 		 * the first part back.
 		 */
-	return;
+		return;
 	}
 
 	/*
