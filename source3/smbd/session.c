@@ -60,7 +60,7 @@ BOOL session_claim(user_struct *vuser)
 	struct sockaddr sa;
 	struct in_addr *client_ip;
 	struct sessionid sessionid;
-	uint32 pid = (uint32)sys_getpid();
+	struct server_id pid = procid_self();
 	fstring keystr;
 	char * hostname;
 	int tdb_store_flag;  /* If using utmp, we do an inital 'lock hold' store,

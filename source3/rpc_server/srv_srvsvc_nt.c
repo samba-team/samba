@@ -43,7 +43,7 @@ struct file_enum_count {
 };
 
 struct sess_file_count {
-	pid_t pid;
+	struct server_id pid;
 	uid_t uid;
 	int count;
 };
@@ -809,7 +809,7 @@ static void sess_file_fn( const struct share_mode_entry *e,
 {
 	struct sess_file_count *sess = (struct sess_file_count *)private_data;
  
-	if ( (procid_to_pid(&e->pid) == sess->pid) && (sess->uid == e->uid) ) {
+	if ( procid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid) ) {
 		sess->count++;
 	}
 	
@@ -819,7 +819,7 @@ static void sess_file_fn( const struct share_mode_entry *e,
 /*******************************************************************
 ********************************************************************/
 
-static int net_count_files( uid_t uid, pid_t pid )
+static int net_count_files( uid_t uid, struct server_id pid )
 {
 	struct sess_file_count s_file_cnt;
 
@@ -1237,7 +1237,7 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 		if ((strequal(session_list[snum].username, r->in.user) || r->in.user[0] == '\0' ) &&
 		     strequal(session_list[snum].remote_machine, machine)) {
 		
-			if (NT_STATUS_IS_OK(message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False)))
+			if (NT_STATUS_IS_OK(message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False)))
 				status = WERR_OK;
 		}
 	}

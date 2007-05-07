@@ -35,7 +35,7 @@
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
-static pid_t		Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
+static struct server_id	Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
 static int		Ucrit_MaxPid=0;                    /* added by OH */
 static unsigned int	Ucrit_IsActive = 0;                /* added by OH */
 
@@ -69,7 +69,7 @@ static unsigned int Ucrit_checkUid(uid_t uid)
 	return 0;
 }
 
-static unsigned int Ucrit_checkPid(pid_t pid)
+static unsigned int Ucrit_checkPid(struct server_id pid)
 {
 	int i;
 	
@@ -77,14 +77,14 @@ static unsigned int Ucrit_checkPid(pid_t pid)
 		return 1;
 	
 	for (i=0;i<Ucrit_MaxPid;i++) {
-		if( pid == Ucrit_pid[i] ) 
+		if (cluster_id_equal(&pid, &Ucrit_pid[i])) 
 			return 1;
 	}
 	
 	return 0;
 }
 
-static BOOL Ucrit_addPid( pid_t pid )
+static BOOL Ucrit_addPid( struct server_id pid )
 {
 	if ( !Ucrit_IsActive )
 		return True;
@@ -119,7 +119,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 	}
 	count++;
 
-	if (Ucrit_checkPid(procid_to_pid(&e->pid))) {
+	if (Ucrit_checkPid(e->pid)) {
 		d_printf("%-11s  ",procid_str_static(&e->pid));
 		d_printf("%-9u  ", (unsigned int)e->uid);
 		switch (map_share_mode_to_deny_mode(e->share_access,
@@ -222,7 +222,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists_by_pid(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
+	if (!process_exists(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
 		return 0;
 	}
 
@@ -231,8 +231,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	fstr_sprintf(uid_str, "%d", sessionid.uid);
 	fstr_sprintf(gid_str, "%d", sessionid.gid);
 
-	d_printf("%5d   %-12s  %-12s  %-12s (%s)\n",
-		 (int)sessionid.pid,
+	d_printf("%s   %-12s  %-12s  %-12s (%s)\n",
+		 procid_str_static(&sessionid.pid),
 		 numeric_only ? uid_str : uidtoname(sessionid.uid),
 		 numeric_only ? gid_str : gidtoname(sessionid.gid), 
 		 sessionid.remote_machine, sessionid.hostname);
