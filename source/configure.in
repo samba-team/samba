@@ -412,6 +412,7 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	    samba_cv_HAVE_Wdeclaration_after_statement=yes,
 	    samba_cv_HAVE_Wdeclaration_after_statement=no,
 	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
+
        ])
        if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
 	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Wdeclaration-after-statement"
@@ -807,11 +808,11 @@ case "$host_os" in
         CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
         AC_TRY_RUN([
 #include <unistd.h>
-main () {
+int main () {
 #if _LFS64_LARGEFILE == 1
-exit(0);
+return 0;
 #else
-exit(1);
+return 1;
 #endif
 }], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no], [SINIX_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
@@ -846,7 +847,7 @@ exit(1);
 #include <sys/utsname.h>
 #include <string.h>
 #include <stdlib.h>
-main() {
+int main() {
 #if _LFS64_LARGEFILE == 1
        struct utsname uts;
        char *release;
@@ -858,9 +859,9 @@ main() {
        int libc_minor = __GLIBC_MINOR__;
 
        if (libc_major < 2)
-              exit(1);
+              return 1;
        if (libc_minor < 2)
-              exit(1);
+              return 1;
 #endif
 
        /* Ensure this is kernel 2.4 or higher */
@@ -871,10 +872,10 @@ main() {
        minor = atoi(strsep(&release, "."));
 
        if (major > 2 || (major == 2 && minor > 3))
-               exit(0);
-       exit(1);
+               return 0;
+       return 1;
 #else
-       exit(1);
+       return 1;
 #endif
 }
 ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
@@ -907,9 +908,9 @@ main() {
 #include <unistd.h>
 main () {
 #if _LFS64_LARGEFILE == 1
-exit(0);
+return 0;
 #else
-exit(1);
+return 1;
 #endif
 }], [GLIBC_LFS_SUPPORT=yes], [GLIBC_LFS_SUPPORT=no], [GLIBC_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
@@ -1161,7 +1162,7 @@ AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 # nothing until kernel 2.1.44! very dumb.
 AC_CACHE_CHECK([for real setresuid],samba_cv_have_setresuid,[
     AC_TRY_RUN([#include <errno.h>
-main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
+int main() { setresuid(1,1,1); setresuid(2,2,2); return errno==EPERM?0:1;}],
 	samba_cv_have_setresuid=yes,samba_cv_have_setresuid=no,samba_cv_have_setresuid=cross)])
 if test x"$samba_cv_have_setresuid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESUID,1,[Whether the system has setresuid])
@@ -1172,7 +1173,7 @@ fi
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
     AC_TRY_RUN([#include <unistd.h>
 #include <errno.h>
-main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
+int main() { errno = 0; setresgid(1,1,1); return errno != 0 ? (errno==EPERM ? 0 : 1) : 0;}],
 	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID,1,[Whether the system has setresgid])
@@ -1332,6 +1333,23 @@ AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
+# Save the original CFLAGS for a few tests that we want to allow
+# implicit declaration warnings without failing the test (in developer mode)
+ac_no_error_on_warning_CFLAGS="${CFLAGS}"
+
+# Since --enable-developer causes warnings to be treated as errors during
+# compilation, we should avoid using features that will fail to compile.
+#
+# We don't want to enable this earlier because the built-in functions such as
+# memset fail to configure properly.
+
+if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes" -a \
+        x"$developer" = xyes; then
+  CFLAGS="${CFLAGS} -Werror-implicit-function-declaration"
+  ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+  ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+fi
+
 echo -n "checking for GPFS GPL libs... "
 save_LIBS="$LIBS"
 LIBS="$LIBS -lgpfs_gpl"
@@ -1467,18 +1485,18 @@ case "$host_os" in
 #include <unistd.h>
 #include <sys/utsname.h>
 
-		    main() {
+		    int main() {
 			   /* glibc up to 2.3 has a broken getgrouplist */
 #if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
 			   int libc_major = __GLIBC__;
 			   int libc_minor = __GLIBC_MINOR__;
 
 			   if (libc_major < 2)
-				  exit(1);
+				  return 1;
 			   if ((libc_major == 2) && (libc_minor <= 3))
-				  exit(1);
+				  return 1;
 #endif
-			   exit(0);
+			   return 0;
 		    }
 
 		],
@@ -1507,7 +1525,7 @@ if test x$ac_cv_func_stat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; exit(stat64(".",&st64));], [ac_cv_func_stat64=yes])
+], [struct stat64 st64; return stat64(".",&st64);], [ac_cv_func_stat64=yes])
   AC_MSG_RESULT([$ac_cv_func_stat64])
   if test x$ac_cv_func_stat64 = xyes ; then
     AC_DEFINE(HAVE_STAT64,1,[Whether stat64() is available])
@@ -1521,7 +1539,7 @@ if test x$ac_cv_func_lstat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; exit(lstat64(".",&st64));], [ac_cv_func_lstat64=yes])
+], [struct stat64 st64; return lstat64(".",&st64);], [ac_cv_func_lstat64=yes])
   AC_MSG_RESULT([$ac_cv_func_lstat64])
   if test x$ac_cv_func_lstat64 = xyes ; then
     AC_DEFINE(HAVE_LSTAT64,[Whether lstat64() is available])
@@ -1535,7 +1553,7 @@ if test x$ac_cv_func_fstat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; exit(fstat64(0,&st64));], [ac_cv_func_fstat64=yes])
+], [struct stat64 st64; return fstat64(0,&st64);], [ac_cv_func_fstat64=yes])
   AC_MSG_RESULT([$ac_cv_func_fstat64])
   if test x$ac_cv_func_fstat64 = xyes ; then
     AC_DEFINE(HAVE_FSTAT64,1,[Whether fstat64() is available])
@@ -2021,7 +2039,7 @@ AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>
-main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
+int main() { long long x = 1000000; x *= x; return ((x/1000000) == 1000000)? 0: 1; }],
 samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
 if test x"$samba_cv_have_longlong" = x"yes"; then
     AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long's])
@@ -2045,7 +2063,7 @@ fi
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
+int main() { return (sizeof(off_t) == 8) ? 0 : 1; }],
 samba_cv_SIZEOF_OFF_T=yes,samba_cv_SIZEOF_OFF_T=no,samba_cv_SIZEOF_OFF_T=cross)])
 if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
     AC_DEFINE(SIZEOF_OFF_T,8,[The size of the 'off_t' type])
@@ -2058,7 +2076,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+int main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
 samba_cv_HAVE_OFF64_T=yes,samba_cv_HAVE_OFF64_T=no,samba_cv_HAVE_OFF64_T=cross)])
 if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
     AC_DEFINE(HAVE_OFF64_T,1,[Whether off64_t is available])
@@ -2071,7 +2089,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
+int main() { return (sizeof(ino_t) == 8) ? 0 : 1; }],
 samba_cv_SIZEOF_INO_T=yes,samba_cv_SIZEOF_INO_T=no,samba_cv_SIZEOF_INO_T=cross)])
 if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
     AC_DEFINE(SIZEOF_INO_T,8,[The size of the 'ino_t' type])
@@ -2084,7 +2102,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+int main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
     AC_DEFINE(HAVE_INO64_T,1,[Whether the 'ino64_t' type is available])
@@ -2097,7 +2115,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(dev_t) == 8) ? 0 : 1); }],
+int main() { return (sizeof(dev_t) == 8) ? 0 : 1; }],
 samba_cv_SIZEOF_DEV_T=yes,samba_cv_SIZEOF_DEV_T=no,samba_cv_SIZEOF_DEV_T=cross)])
 if test x"$samba_cv_SIZEOF_DEV_T" = x"yes"; then
     AC_DEFINE(SIZEOF_DEV_T,8,[The size of the 'dev_t' type])
@@ -2110,7 +2128,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+int main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
 samba_cv_HAVE_DEV64_T=yes,samba_cv_HAVE_DEV64_T=no,samba_cv_HAVE_DEV64_T=cross)])
 if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
     AC_DEFINE(HAVE_DEV64_T,1,[Whether the 'dev64_t' type is available])
@@ -2148,7 +2166,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-main() { dev_t dev; int i = major(dev); return 0; }],
+int main() { dev_t dev; int i = major(dev); return 0; }],
 samba_cv_HAVE_DEVICE_MAJOR_FN=yes,samba_cv_HAVE_DEVICE_MAJOR_FN=no,samba_cv_HAVE_DEVICE_MAJOR_FN=cross)])
 if test x"$samba_cv_HAVE_DEVICE_MAJOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MAJOR_FN,1,[Whether the major macro for dev_t is available])
@@ -2160,7 +2178,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-main() { dev_t dev; int i = minor(dev); return 0; }],
+int main() { dev_t dev; int i = minor(dev); return 0; }],
 samba_cv_HAVE_DEVICE_MINOR_FN=yes,samba_cv_HAVE_DEVICE_MINOR_FN=no,samba_cv_HAVE_DEVICE_MINOR_FN=cross)])
 if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MINOR_FN,1,[Whether the minor macro for dev_t is available])
@@ -2172,7 +2190,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-main() { dev_t dev = makedev(1,2); return 0; }],
+int main() { dev_t dev = makedev(1,2); return 0; }],
 samba_cv_HAVE_MAKEDEV=yes,samba_cv_HAVE_MAKEDEV=no,samba_cv_HAVE_MAKEDEV=cross)])
 if test x"$samba_cv_HAVE_MAKEDEV" = x"yes"; then
     AC_DEFINE(HAVE_MAKEDEV,1,[Whether the macro for makedev is available])
@@ -2180,7 +2198,7 @@ fi
 
 AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
 AC_TRY_RUN([#include <stdio.h>
-main() { char c; c=250; exit((c > 0)?0:1); }],
+int main() { char c; c=250; return (c > 0)?0:1; }],
 samba_cv_HAVE_UNSIGNED_CHAR=yes,samba_cv_HAVE_UNSIGNED_CHAR=no,samba_cv_HAVE_UNSIGNED_CHAR=cross)])
 if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
     AC_DEFINE(HAVE_UNSIGNED_CHAR,1,[Whether the 'unsigned char' type is available])
@@ -2216,7 +2234,7 @@ AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ
 AC_TRY_RUN([
 #include <sys/time.h>
 #include <unistd.h>
-main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
+int main() { struct timeval tv; return gettimeofday(&tv, NULL);}],
            samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,samba_cv_HAVE_GETTIMEOFDAY_TZ=no,samba_cv_HAVE_GETTIMEOFDAY_TZ=cross)])
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
@@ -2270,18 +2288,18 @@ void foo(const char *format, ...) {
        va_start(ap, format);
        len = vsnprintf(buf, 0, format, ap);
        va_end(ap);
-       if (len != 5) exit(1);
+       if (len != 5) return 1;
 
        va_start(ap, format);
        len = vsnprintf(0, 0, format, ap);
        va_end(ap);
-       if (len != 5) exit(1);
+       if (len != 5) return 1;
 
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) return 1;
 
-       exit(0);
+       return 0;
 }
-main() { foo("hello"); }
+int main() { foo("hello"); }
 ],
 samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
 if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
@@ -2291,9 +2309,9 @@ fi
 AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
 AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
-main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
+int main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
-di->d_name[0] == 0) exit(0); exit(1);} ],
+di->d_name[0] == 0) return 0; return 1;} ],
 samba_cv_HAVE_BROKEN_READDIR_NAME=yes,samba_cv_HAVE_BROKEN_READDIR_NAME=no,samba_cv_HAVE_BROKEN_READDIR_NAME=cross)])
 if test x"$samba_cv_HAVE_BROKEN_READDIR_NAME" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_READDIR_NAME,1,[Whether readdir() returns the wrong name offset])
@@ -2302,7 +2320,7 @@ fi
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <utime.h>],
-[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
+[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; return utime("foo.c",&tbuf);],
 samba_cv_HAVE_UTIMBUF=yes,samba_cv_HAVE_UTIMBUF=no,samba_cv_HAVE_UTIMBUF=cross)])
 if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF,1,[Whether struct utimbuf is available])
@@ -2591,7 +2609,7 @@ AC_TRY_RUN([
 #ifndef F_GETLEASE
 #define F_GETLEASE	1025
 #endif
-main() {
+int main() {
        int fd = open("/dev/null", O_RDONLY);
        return fcntl(fd, F_GETLEASE, 0) == -1;
 }
@@ -2609,8 +2627,8 @@ AC_TRY_RUN([
 #ifndef F_NOTIFY
 #define F_NOTIFY 1026
 #endif
-main() {
-       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
+int main() {
+       	return fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0;
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
@@ -2685,8 +2703,8 @@ AC_TRY_RUN([
 #define LOCK_MAND	32
 #define LOCK_READ	64
 #endif
-main() {
-       	exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
+int main() {
+       	return flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0;
 }
 ],
 samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_cv_HAVE_KERNEL_SHARE_MODES=cross)])
@@ -2722,15 +2740,15 @@ if test x"$samba_cv_HAVE_SYS_CAPABILITY_H" = x"yes"; then
 		AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/capability.h>
-main() {
+int main() {
  cap_t cap;
  cap_value_t vals[1];
  if (!(cap = cap_get_proc()))
-   exit(1);
+   return 1;
  vals[0] = CAP_CHOWN;
  cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
- exit(0);
+ return 0;
 }],
 		samba_cv_HAVE_POSIX_CAPABILITIES=yes,
 		samba_cv_HAVE_POSIX_CAPABILITIES=no,
@@ -2852,15 +2870,15 @@ AC_TRY_RUN([#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-main() {
+int main() {
   struct stat st;
   char tpl[20]="/tmp/test.XXXXXX";
   int fd = mkstemp(tpl);
-  if (fd == -1) exit(1);
+  if (fd == -1) return 1;
   unlink(tpl);
-  if (fstat(fd, &st) != 0) exit(1);
-  if ((st.st_mode & 0777) != 0600) exit(1);
-  exit(0);
+  if (fstat(fd, &st) != 0) return 1;
+  if ((st.st_mode & 0777) != 0600) return 1;
+  return 0;
 }],
 samba_cv_HAVE_SECURE_MKSTEMP=yes,
 samba_cv_HAVE_SECURE_MKSTEMP=no,
@@ -3048,11 +3066,11 @@ dnl
 #ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
-main() { struct flock64 fl64;
+int main() { struct flock64 fl64;
 #if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
-exit(0);
+return 0;
 #else
-exit(1);
+return 1;
 #endif
 }],
        samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
@@ -3133,10 +3151,11 @@ fi
 AC_CACHE_CHECK([if the realpath function allows a NULL argument],samba_cv_REALPATH_TAKES_NULL,[
 AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
-main() {
+int main() {
 	char *newpath = realpath("/tmp", NULL);
-	exit ((newpath != NULL) ? 0 : 1);
+	return (newpath != NULL) ? 0 : 1;
 }
 ],
 samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
@@ -3980,7 +3999,7 @@ if test x"$with_ads_support" != x"no"; then
                 samba_cv_HAVE_WRFILE_KEYTAB,[
     AC_TRY_RUN([
 #include<krb5.h>
-  main()
+  int main()
   {
     krb5_context context;
     krb5_keytab keytab;
@@ -4722,6 +4741,8 @@ if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
 AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+SAVE_CFLAGS="$CFLAGS"
+CFLAGS="${ac_no_error_on_warning_CFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4731,6 +4752,7 @@ AC_TRY_COMPILE([
 #include "${srcdir-.}/lib/sysquotas.c"
 ],[],samba_cv_SYSQUOTA_WORKS=yes,samba_cv_SYSQUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
+CFLAGS="$SAVE_CFLAGS"
 ])
 if test x"$samba_cv_SYSQUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
@@ -4769,6 +4791,8 @@ fi
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+SAVE_CFLAGS="$CFLAGS"
+CFLAGS="${ac_no_error_on_warning_CFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4776,6 +4800,7 @@ AC_TRY_COMPILE([
 #include "${srcdir-.}/smbd/quotas.c"
 ],[],samba_cv_QUOTA_WORKS=yes,samba_cv_QUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
+CFLAGS="$SAVE_CFLAGS"
 ])
 if test x"$samba_cv_QUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the old quota support)
@@ -5042,7 +5067,7 @@ if test $space = no; then
   main ()
   {
     struct statvfs64 fsd;
-    exit (statvfs64 (".", &fsd));
+    return statvfs64 (".", &fsd);
   }],
   fu_cv_sys_stat_statvfs64=yes,
   fu_cv_sys_stat_statvfs64=no,
@@ -5095,7 +5120,7 @@ if test $space = no; then
   {
     struct statfs fsd;
     fsd.f_fsize = 0;
-    exit (statfs (".", &fsd, sizeof (struct statfs)));
+    return statfs (".", &fsd, sizeof (struct statfs));
   }],
   fu_cv_sys_stat_statfs3_osf1=yes,
   fu_cv_sys_stat_statfs3_osf1=no,
@@ -5126,7 +5151,7 @@ member (AIX, 4.3BSD)])
   {
   struct statfs fsd;
   fsd.f_bsize = 0;
-  exit (statfs (".", &fsd));
+  return statfs (".", &fsd);
   }],
   fu_cv_sys_stat_statfs2_bsize=yes,
   fu_cv_sys_stat_statfs2_bsize=no,
@@ -5147,7 +5172,7 @@ if test $space = no; then
   main ()
   {
   struct statfs fsd;
-  exit (statfs (".", &fsd, sizeof fsd, 0));
+  return statfs (".", &fsd, sizeof fsd, 0);
   }],
     fu_cv_sys_stat_statfs4=yes,
     fu_cv_sys_stat_statfs4=no,
@@ -5175,7 +5200,7 @@ member (4.4BSD and NetBSD)])
   {
   struct statfs fsd;
   fsd.f_fsize = 0;
-  exit (statfs (".", &fsd));
+  return statfs (".", &fsd);
   }],
   fu_cv_sys_stat_statfs2_fsize=yes,
   fu_cv_sys_stat_statfs2_fsize=no,
@@ -5206,7 +5231,7 @@ if test $space = no; then
   struct fs_data fsd;
   /* Ultrix's statfs returns 1 for success,
      0 for not mounted, -1 for failure.  */
-  exit (statfs (".", &fsd) != 1);
+  return statfs (".", &fsd) != 1;
   }],
   fu_cv_sys_stat_fs_data=yes,
   fu_cv_sys_stat_fs_data=no,
@@ -5801,6 +5826,7 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
 AC_CACHE_CHECK([for Linux readahead],
                 samba_cv_HAVE_LINUX_READAHEAD,[
+
     AC_TRY_LINK([
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
@@ -6364,7 +6390,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 dnl Merge in developer cflags from now on
 if test x"$developer" = x"yes"; then
-    CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+    CFLAGS="${ac_no_error_on_warning_CFLAGS} ${DEVELOPER_CFLAGS}"
 fi
 
 builddir=`pwd`

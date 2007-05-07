@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 		if (fd == -1) {
 			fprintf(stderr,"ERROR: failed to open %s (errno=%d)\n", 
 				DATA, (int)errno);
-			exit(1);
+			return 1;
 		}
 
 		lock.l_type = F_WRLCK;
@@ -74,9 +74,9 @@ int main(int argc, char *argv[])
 		if ((ret == -1) ||
 		    (lock.l_type == F_UNLCK)) {
 			fprintf(stderr,"ERROR: lock test failed (ret=%d errno=%d)\n", ret, (int)errno);
-			exit(1);
+			return 1;
 		} else {
-			exit(0);
+			return 0;
 		}
 	}
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 	if (fd == -1) {
 		fprintf(stderr,"ERROR: failed to open %s (errno=%d)\n", 
 			DATA, (int)errno);
-		exit(1);
+		return 1;
 	}
 
 	lock.l_type = F_WRLCK;
@@ -117,5 +117,5 @@ int main(int argc, char *argv[])
 			status);
 	}
 
-	exit(status);
+	return status;
 }

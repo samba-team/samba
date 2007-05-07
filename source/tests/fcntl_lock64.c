@@ -16,6 +16,10 @@
 #include <sys/fcntl.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include <errno.h>
 
 static int sys_waitpid(pid_t pid,int *status,int options)
@@ -40,7 +44,7 @@ int main(int argc, char *argv[])
 		sleep(2);
 		fd = open64(DATA, O_RDONLY);
 
-		if (fd == -1) exit(1);
+		if (fd == -1) return 1;
 
 		lock.l_type = F_WRLCK;
 		lock.l_whence = SEEK_SET;
@@ -56,10 +60,10 @@ int main(int argc, char *argv[])
 		if ((ret == -1) ||
 		    (lock.l_type == F_UNLCK)) {
 /*            printf("No lock conflict\n"); */
-			exit(1);
+			return 1;
 		} else {
 /*            printf("lock conflict\n"); */
-			exit(0);
+			return 0;
 		}
 	}
 
@@ -92,5 +96,5 @@ int main(int argc, char *argv[])
 
 	unlink(DATA);
 
-	exit(status);
+	return status;
 }

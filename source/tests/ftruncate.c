@@ -21,7 +21,7 @@ main()
 	unlink(DATA);
 
 	if (lseek(fd, 0, SEEK_END) == LEN) {
-		exit(0);
+		return 0;
 	}
-	exit(1);
+	return 1;
 }
