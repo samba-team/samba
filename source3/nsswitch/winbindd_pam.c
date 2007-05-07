@@ -1885,7 +1885,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
 							state->request.data.auth_crap.require_membership_of_sid))) {
-			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
+			DEBUG(3, ("User %s is not in the required group (%s), so "
+				  "crap authentication is rejected\n",
 				  state->request.data.auth_crap.user, 
 				  state->request.data.auth_crap.require_membership_of_sid));
 			goto done;
