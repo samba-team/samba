@@ -11,6 +11,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(HAVE_STDLIB_H)
+#include <stdlib.h>
+#endif
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -26,7 +30,7 @@ main()
 
 	if (sizeof(gid_t) == sizeof(int)) {
 		fprintf(stderr,"gid_t and int are the same size\n");
-		exit(1);
+		return 1;
 	}
 
 	if (ngroups <= 0)
@@ -44,7 +48,7 @@ main()
 
 	if (ngroups == 0) {
 		printf("WARNING: can't determine getgroups return type\n");
-		exit(1);
+		return 1;
 	}
 	
 	cgroups = (char *)igroups;
@@ -52,15 +56,15 @@ main()
 	if (ngroups == 1 && 
 	    cgroups[2] == 0x42 && cgroups[3] == 0x42) {
 		fprintf(stderr,"getgroups returns gid_t\n");
-		exit(1);
+		return 1;
 	}
 	  
 	for (i=0;i<ngroups;i++) {
 		if (igroups[i] == 0x42424242) {
 			fprintf(stderr,"getgroups returns gid_t\n");
-			exit(1);
+			return 1;
 		}
 	}
 
-	exit(0);
+	return 0;
 }
