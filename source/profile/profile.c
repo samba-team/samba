@@ -44,7 +44,7 @@ BOOL do_profile_times = False;
 /****************************************************************************
 Set a profiling level.
 ****************************************************************************/
-void set_profile_level(int level, struct process_id src)
+void set_profile_level(int level, struct server_id src)
 {
 #ifdef WITH_PROFILE
 	switch (level) {
@@ -93,7 +93,8 @@ void set_profile_level(int level, struct process_id src)
 /****************************************************************************
 receive a set profile level message
 ****************************************************************************/
-void profile_message(int msg_type, struct process_id src, void *buf, size_t len, void *private_data)
+void profile_message(int msg_type, struct server_id src, void *buf, size_t len,
+		     void *private_data)
 {
         int level;
 
@@ -104,7 +105,7 @@ void profile_message(int msg_type, struct process_id src, void *buf, size_t len,
 /****************************************************************************
 receive a request profile level message
 ****************************************************************************/
-void reqprofile_message(int msg_type, struct process_id src,
+void reqprofile_message(int msg_type, struct server_id src,
 			void *buf, size_t len, void *private_data)
 {
         int level;

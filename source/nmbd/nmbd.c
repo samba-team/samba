@@ -67,7 +67,7 @@ static void terminate(void)
  Handle a SHUTDOWN message from smbcontrol.
  **************************************************************************** */
 
-static void nmbd_terminate(int msg_type, struct process_id src,
+static void nmbd_terminate(int msg_type, struct server_id src,
 			   void *buf, size_t len, void *private_data)
 {
 	terminate();
@@ -262,7 +262,7 @@ static BOOL reload_nmbd_services(BOOL test)
  * detects that there are no subnets.
  **************************************************************************** */
 
-static void msg_reload_nmbd_services(int msg_type, struct process_id src,
+static void msg_reload_nmbd_services(int msg_type, struct server_id src,
 				     void *buf, size_t len, void *private_data)
 {
 	write_browse_list( 0, True );
@@ -279,7 +279,7 @@ static void msg_reload_nmbd_services(int msg_type, struct process_id src,
 	}
 }
 
-static void msg_nmbd_send_packet(int msg_type, struct process_id src,
+static void msg_nmbd_send_packet(int msg_type, struct server_id src,
 				 void *buf, size_t len, void *private_data)
 {
 	struct packet_struct *p = (struct packet_struct *)buf;

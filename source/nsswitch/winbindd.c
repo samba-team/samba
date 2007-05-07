@@ -171,7 +171,7 @@ static void sigchld_handler(int signum)
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, struct process_id src,
+static void msg_reload_services(int msg_type, struct server_id src,
 				void *buf, size_t len, void *private_data)
 {
         /* Flush various caches */
@@ -180,7 +180,7 @@ static void msg_reload_services(int msg_type, struct process_id src,
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, struct process_id src,
+static void msg_shutdown(int msg_type, struct server_id src,
 			 void *buf, size_t len, void *private_data)
 {
 	do_sigterm = True;

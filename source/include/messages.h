@@ -96,16 +96,8 @@
 #define FLAG_MSG_PRINT_NOTIFY	0x0008
 #define FLAG_MSG_PRINT_GENERAL	0x0010
 
-struct process_id {
-	pid_t pid;
-};
-
-/*
- * Samba4 API compatibility layer
- */
-
 struct server_id {
-	struct process_id id;
+	pid_t pid;
 };
 
 #endif

@@ -160,7 +160,7 @@ static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	}
 
 	for (i=0; i<ids->num_entries; i++) {
-		struct process_id id = pid_to_procid(ids->entries[i].pid);
+		struct server_id id = pid_to_procid(ids->entries[i].pid);
 		if (procid_equal(&id, &crec.pid)) {
 			guest = False;
 			break;
