@@ -263,7 +263,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		name_buf.size = max_valnamelen + 2;
 
 		data_size = max_valbufsize;
-		data = TALLOC(mem_ctx, data_size);
+		data = (uint8 *)TALLOC(mem_ctx, data_size);
 		value_length = 0;
 
 		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,

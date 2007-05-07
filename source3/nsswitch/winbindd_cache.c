@@ -2318,7 +2318,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
-		      make_tdb_data(response->extra_data.data,
+		      make_tdb_data((uint8 *)response->extra_data.data,
 				    response->length - sizeof(*response)),
 		      TDB_REPLACE) == 0)
 		return;
@@ -3193,7 +3193,7 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 			char *keystr;
 			int ret;
 
-			keystr = SMB_MALLOC(kbuf.dsize+1);
+			keystr = SMB_MALLOC_ARRAY(char, kbuf.dsize+1);
 			if (!keystr) {
 				return 1;
 			}
