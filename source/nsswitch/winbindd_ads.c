@@ -487,7 +487,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			      &info->homedir, &info->shell, &info->full_name, 
 			      &info->primary_gid );	
 
-		SAFE_FREE(user);
+		TALLOC_FREE(user);
 				
 		return NT_STATUS_OK;
 	}
