@@ -19,7 +19,7 @@
 # * cracklib (2.8.5) http://sourceforge.net/projects/cracklib
 # * Crypt-Cracklib perlmodule (0.01) http://search.cpan.org/~daniel/
 #
-# Samaple dictionaries:
+# Sample dictionaries:
 #     cracklib-words (1.1) http://sourceforge.net/projects/cracklib
 #     miscfiles (1.4.2) http://directory.fsf.org/miscfiles.html
 #
@@ -35,8 +35,10 @@ use strict;
 use Crypt::Cracklib;
 use Digest::MD5;
 
+# NEED TO CHANGE THESE TO MATCH YOUR SYSTEM
 my $database = '/usr/lib/cracklib_dict';
-my $repeatdb = '/var/heimdal/repeatdb';
+my $historydb = '/var/heimdal/historydb';
+# NEED TO CHANGE THESE TO MATCH YOUR SYSTEM
 
 my %params;
 
@@ -64,10 +66,10 @@ sub check_repeat
 
     my $key=$md5context->hexdigest();
 
-    dbmopen(%DB,$repeatdb,0600) or die "Internal: Could not open $db";
+    dbmopen(%DB,$historydb,0600) or die "Internal: Could not open $historydb";
     $result = "ok" if (!$DB{$key});
     $DB{$key}=scalar(time());
-    dbmclose(%DB) or die "Internal: Could not close $db";
+    dbmclose(%DB) or die "Internal: Could not close $historydb";
     return $result;
 }
 
