@@ -911,7 +911,7 @@ static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
 	DEBUG(4,("late release demand record %s\n",
 		 nbt_name_string(state, &state->replica.name)));
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
+	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -1051,7 +1051,7 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 	talloc_steal(state, replica->owner);
 	talloc_steal(state, replica->addresses);
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
+	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -1113,7 +1113,7 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 	DEBUG(4,("release demand record %s\n",
 		 nbt_name_string(mem_ctx, &replica->name)));
 
-	nbt_servers = irpc_servers_byname(partner->service->task->msg_ctx, "nbt_server");
+	nbt_servers = irpc_servers_byname(partner->service->task->msg_ctx, mem_ctx, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}

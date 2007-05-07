@@ -96,7 +96,7 @@ static void get_dom_info_recv_addrs(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	nbt_servers = irpc_servers_byname(state->service->task->msg_ctx,
-					  "nbt_server");
+					  state, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
 		return;

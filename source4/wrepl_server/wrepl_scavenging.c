@@ -390,7 +390,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	struct verify_state *s;
 	struct server_id *nbt_servers;
 
-	nbt_servers = irpc_servers_byname(service->task->msg_ctx, "nbt_server");
+	nbt_servers = irpc_servers_byname(service->task->msg_ctx, tmp_mem, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
