@@ -196,11 +196,18 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 * returned when a trans2 findfirst/next finishes.
 	 * When setting up an encrypted transport we can also
 	 * see NT_STATUS_MORE_PROCESSING_REQUIRED here.
+         *
+         * Vista returns NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT if the folder
+         * "<share>/Users/All Users" is enumerated.  This is a special pseudo
+         * folder, and the response does not have parameters (nor a parameter
+         * length).
 	 */
 	status = cli_nt_error(cli);
 	
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		if (NT_STATUS_IS_ERR(status) || NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES)) {
+		if (NT_STATUS_IS_ERR(status) ||
+                    NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES) ||
+                    NT_STATUS_EQUAL(status,NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
 			goto out;
 		}
 	}

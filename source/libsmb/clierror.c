@@ -385,6 +385,15 @@ int cli_errno(struct cli_state *cli)
 		return cli_errno_from_nt(status);
         }
 
+        /*
+         * Yuck!  A special case for this Vista error.  Since its high-order
+         * byte isn't 0xc0, it doesn't match cli_is_nt_error() above.
+         */
+        status = cli_nt_error(cli);
+        if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
+            return EACCES;
+        }
+
 	/* for other cases */
 	return EINVAL;
 }
