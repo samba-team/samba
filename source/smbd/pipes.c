@@ -37,7 +37,7 @@
 #define PIPEDB_KEY_FORMAT "PIPE/%s/%u/%d"
 
 struct pipe_dbrec {
-	struct process_id pid;
+	struct server_id pid;
 	int pnum;
 	uid_t uid;
 

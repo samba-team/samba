@@ -73,7 +73,7 @@ static BOOL in_chained_smb(void)
 	return (chain_size != 0);
 }
 
-static void received_unlock_msg(int msg_type, struct process_id src,
+static void received_unlock_msg(int msg_type, struct server_id src,
 				void *buf, size_t len,
 				void *private_data);
 static void process_blocking_lock_queue(void);
@@ -645,7 +645,7 @@ BOOL blocking_lock_was_deferred(int mid)
   Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
 
-static void received_unlock_msg(int msg_type, struct process_id src,
+static void received_unlock_msg(int msg_type, struct server_id src,
 				void *buf, size_t len,
 				void *private_data)
 {
@@ -807,7 +807,7 @@ static void process_blocking_lock_queue(void)
 #define MSG_BLOCKING_LOCK_CANCEL_SIZE (sizeof(blocking_lock_record *) + sizeof(NTSTATUS))
 
 static void process_blocking_lock_cancel_message(int msg_type,
-						 struct process_id src,
+						 struct server_id src,
 						 void *buf, size_t len,
 						 void *private_data)
 {

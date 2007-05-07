@@ -136,7 +136,7 @@ static BOOL try_unlock(struct cli_state *c, int fstype,
 	return False;
 }	
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, 
 		      enum brl_type lock_type,
 		      enum brl_flavour lock_flav,
 		      br_off start, br_off size)

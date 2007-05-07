@@ -28,14 +28,14 @@
 
 PIDMAP {
 	PIDMAP	*next, *prev;
-	struct process_id pid;
+	struct server_id pid;
 	char	*machine;
 };
 
 static PIDMAP	*pidmap;
 static int	PID_or_Machine;		/* 0 = show PID, else show Machine name */
 
-static struct process_id smbd_pid;
+static struct server_id smbd_pid;
 
 /* from 2nd call on, remove old list */
 static void initPid2Machine (void)
@@ -55,7 +55,7 @@ static void initPid2Machine (void)
 }
 
 /* add new PID <-> Machine name mapping */
-static void addPid2Machine (struct process_id pid, char *machine)
+static void addPid2Machine (struct server_id pid, char *machine)
 {
 	/* show machine name rather PID on table "Open Files"? */
 	if (PID_or_Machine) {
@@ -75,7 +75,7 @@ static void addPid2Machine (struct process_id pid, char *machine)
 }
 
 /* lookup PID <-> Machine name mapping */
-static char *mapPid2Machine (struct process_id pid)
+static char *mapPid2Machine (struct server_id pid)
 {
 	static char pidbuf [64];
 	PIDMAP *map;

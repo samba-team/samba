@@ -471,7 +471,7 @@ BOOL debug_parse_levels(const char *params_str)
  Receive a "set debug level" message.
 ****************************************************************************/
 
-static void debug_message(int msg_type, struct process_id src,
+static void debug_message(int msg_type, struct server_id src,
 			  void *buf, size_t len, void *private_data)
 {
 	const char *params_str = (const char *)buf;
@@ -508,7 +508,7 @@ void debug_message_send(pid_t pid, const char *params_str)
  Return current debug level.
 ****************************************************************************/
 
-static void debuglevel_message(int msg_type, struct process_id src,
+static void debuglevel_message(int msg_type, struct server_id src,
 			       void *buf, size_t len, void *private_data)
 {
 	char *message = debug_list_class_names_and_levels();

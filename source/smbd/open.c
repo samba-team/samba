@@ -2247,7 +2247,7 @@ NTSTATUS open_file_stat(connection_struct *conn, const char *fname,
  smbd process.
 ****************************************************************************/
 
-void msg_file_was_renamed(int msg_type, struct process_id src,
+void msg_file_was_renamed(int msg_type, struct server_id src,
 			  void *buf, size_t len, void *private_data)
 {
 	files_struct *fsp;

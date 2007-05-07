@@ -478,7 +478,7 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 
 /* Set our domains as offline and forward the offline message to our children. */
 
-void winbind_msg_offline(int msg_type, struct process_id src,
+void winbind_msg_offline(int msg_type, struct server_id src,
 			 void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
@@ -531,7 +531,7 @@ void winbind_msg_offline(int msg_type, struct process_id src,
 
 /* Set our domains as online and forward the online message to our children. */
 
-void winbind_msg_online(int msg_type, struct process_id src,
+void winbind_msg_online(int msg_type, struct server_id src,
 			void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
@@ -600,7 +600,7 @@ void winbind_msg_online(int msg_type, struct process_id src,
 }
 
 /* Forward the online/offline messages to our children. */
-void winbind_msg_onlinestatus(int msg_type, struct process_id src,
+void winbind_msg_onlinestatus(int msg_type, struct server_id src,
 			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_child *child;
@@ -671,7 +671,7 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 
 /* Deal with a request to go offline. */
 
-static void child_msg_offline(int msg_type, struct process_id src,
+static void child_msg_offline(int msg_type, struct server_id src,
 			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
@@ -703,7 +703,7 @@ static void child_msg_offline(int msg_type, struct process_id src,
 
 /* Deal with a request to go online. */
 
-static void child_msg_online(int msg_type, struct process_id src,
+static void child_msg_online(int msg_type, struct server_id src,
 			     void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
@@ -765,12 +765,12 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	return buf;
 }
 
-static void child_msg_onlinestatus(int msg_type, struct process_id src,
+static void child_msg_onlinestatus(int msg_type, struct server_id src,
 				   void *buf, size_t len, void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message;
-	struct process_id *sender;
+	struct server_id *sender;
 	
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
@@ -778,7 +778,7 @@ static void child_msg_onlinestatus(int msg_type, struct process_id src,
 		return;
 	}
 
-	sender = (struct process_id *)buf;
+	sender = (struct server_id *)buf;
 
 	mem_ctx = talloc_init("winbind_msg_onlinestatus");
 	if (mem_ctx == NULL) {

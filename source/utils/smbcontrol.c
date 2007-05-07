@@ -47,7 +47,7 @@ static int num_replies;		/* Used by message callback fns */
 
 /* Send a message to a destination pid.  Zero means broadcast smbd. */
 
-static BOOL send_message(struct process_id pid, int msg_type,
+static BOOL send_message(struct server_id pid, int msg_type,
 			 const void *buf, int len,
 			 BOOL duplicates)
 {
@@ -99,7 +99,7 @@ static void wait_replies(BOOL multiple_replies)
 
 /* Message handler callback that displays the PID and a string on stdout */
 
-static void print_pid_string_cb(int msg_type, struct process_id pid, void *buf,
+static void print_pid_string_cb(int msg_type, struct server_id pid, void *buf,
 				size_t len, void *private_data)
 {
 	printf("PID %u: %.*s", (unsigned int)procid_to_pid(&pid),
@@ -109,7 +109,7 @@ static void print_pid_string_cb(int msg_type, struct process_id pid, void *buf,
 
 /* Message handler callback that displays a string on stdout */
 
-static void print_string_cb(int msg_type, struct process_id pid,
+static void print_string_cb(int msg_type, struct server_id pid,
 			    void *buf, size_t len, void *private_data)
 {
 	printf("%.*s", (int)len, (const char *)buf);
@@ -118,7 +118,7 @@ static void print_string_cb(int msg_type, struct process_id pid,
 
 /* Send no message.  Useful for testing. */
 
-static BOOL do_noop(const struct process_id pid,
+static BOOL do_noop(const struct server_id pid,
 		    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -133,7 +133,7 @@ static BOOL do_noop(const struct process_id pid,
 
 /* Send a debug string */
 
-static BOOL do_debug(const struct process_id pid,
+static BOOL do_debug(const struct server_id pid,
 		     const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -261,7 +261,7 @@ static int stack_trace_connection(TDB_CONTEXT * tdb, TDB_DATA key,
 	return 0;
 }
 
-static BOOL do_daemon_stack_trace(const struct process_id pid,
+static BOOL do_daemon_stack_trace(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	fprintf(stderr,
@@ -306,7 +306,7 @@ static BOOL do_daemon_stack_trace(const struct process_id pid,
 
 #else /* defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE) */
 
-static BOOL do_daemon_stack_trace(const struct process_id pid,
+static BOOL do_daemon_stack_trace(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	fprintf(stderr,
@@ -318,7 +318,7 @@ static BOOL do_daemon_stack_trace(const struct process_id pid,
 
 /* Inject a fault (fatal signal) into a running smbd */
 
-static BOOL do_inject_fault(const struct process_id pid,
+static BOOL do_inject_fault(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -359,7 +359,7 @@ static BOOL do_inject_fault(const struct process_id pid,
 
 /* Force a browser election */
 
-static BOOL do_election(const struct process_id pid,
+static BOOL do_election(const struct server_id pid,
 			const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -373,7 +373,7 @@ static BOOL do_election(const struct process_id pid,
 
 /* Ping a samba daemon process */
 
-static void pong_cb(int msg_type, struct process_id pid, void *buf,
+static void pong_cb(int msg_type, struct server_id pid, void *buf,
 		    size_t len, void *private_data)
 {
 	char *src_string = procid_str(NULL, &pid);
@@ -382,7 +382,7 @@ static void pong_cb(int msg_type, struct process_id pid, void *buf,
 	num_replies++;
 }
 
-static BOOL do_ping(const struct process_id pid, const int argc, const char **argv)
+static BOOL do_ping(const struct server_id pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> ping\n");
@@ -410,7 +410,7 @@ static BOOL do_ping(const struct process_id pid, const int argc, const char **ar
 
 /* Set profiling options */
 
-static BOOL do_profile(const struct process_id pid,
+static BOOL do_profile(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	int v;
@@ -439,7 +439,7 @@ static BOOL do_profile(const struct process_id pid,
 
 /* Return the profiling level */
 
-static void profilelevel_cb(int msg_type, struct process_id pid, void *buf,
+static void profilelevel_cb(int msg_type, struct server_id pid, void *buf,
 			    size_t len, void *private_data)
 {
 	int level;
@@ -476,7 +476,7 @@ static void profilelevel_cb(int msg_type, struct process_id pid, void *buf,
 	printf("Profiling %s on pid %u\n",s,(unsigned int)procid_to_pid(&pid));
 }
 
-static void profilelevel_rqst(int msg_type, struct process_id pid,
+static void profilelevel_rqst(int msg_type, struct server_id pid,
 			      void *buf, size_t len, void *private_data)
 {
 	int v = 0;
@@ -486,7 +486,7 @@ static void profilelevel_rqst(int msg_type, struct process_id pid,
 	send_message(pid, MSG_PROFILELEVEL, &v, sizeof(int), False);
 }
 
-static BOOL do_profilelevel(const struct process_id pid,
+static BOOL do_profilelevel(const struct server_id pid,
 			    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -516,7 +516,7 @@ static BOOL do_profilelevel(const struct process_id pid,
 
 /* Display debug level settings */
 
-static BOOL do_debuglevel(const struct process_id pid,
+static BOOL do_debuglevel(const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -545,7 +545,7 @@ static BOOL do_debuglevel(const struct process_id pid,
 
 /* Send a print notify message */
 
-static BOOL do_printnotify(const struct process_id pid,
+static BOOL do_printnotify(const struct server_id pid,
 			   const int argc, const char **argv)
 {
 	const char *cmd;
@@ -685,7 +685,7 @@ send:
 
 /* Close a share */
 
-static BOOL do_closeshare(const struct process_id pid,
+static BOOL do_closeshare(const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -700,7 +700,7 @@ static BOOL do_closeshare(const struct process_id pid,
 
 /* Force a SAM synchronisation */
 
-static BOOL do_samsync(const struct process_id pid,
+static BOOL do_samsync(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -714,7 +714,7 @@ static BOOL do_samsync(const struct process_id pid,
 
 /* Force a SAM replication */
 
-static BOOL do_samrepl(const struct process_id pid,
+static BOOL do_samrepl(const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -728,7 +728,7 @@ static BOOL do_samrepl(const struct process_id pid,
 
 /* Display talloc pool usage */
 
-static BOOL do_poolusage(const struct process_id pid,
+static BOOL do_poolusage(const struct server_id pid,
 			 const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -757,7 +757,7 @@ static BOOL do_poolusage(const struct process_id pid,
 
 /* Perform a dmalloc mark */
 
-static BOOL do_dmalloc_mark(const struct process_id pid,
+static BOOL do_dmalloc_mark(const struct server_id pid,
 			    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -771,7 +771,7 @@ static BOOL do_dmalloc_mark(const struct process_id pid,
 
 /* Perform a dmalloc changed */
 
-static BOOL do_dmalloc_changed(const struct process_id pid,
+static BOOL do_dmalloc_changed(const struct server_id pid,
 			       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -786,7 +786,7 @@ static BOOL do_dmalloc_changed(const struct process_id pid,
 
 /* Shutdown a server process */
 
-static BOOL do_shutdown(const struct process_id pid,
+static BOOL do_shutdown(const struct server_id pid,
 			const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -799,7 +799,7 @@ static BOOL do_shutdown(const struct process_id pid,
 
 /* Notify a driver upgrade */
 
-static BOOL do_drvupgrade(const struct process_id pid,
+static BOOL do_drvupgrade(const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -812,7 +812,7 @@ static BOOL do_drvupgrade(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
-static BOOL do_winbind_online(const struct process_id pid,
+static BOOL do_winbind_online(const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
@@ -845,7 +845,7 @@ static BOOL do_winbind_online(const struct process_id pid,
 	return send_message(pid, MSG_WINBIND_ONLINE, NULL, 0, False);
 }
 
-static BOOL do_winbind_offline(const struct process_id pid,
+static BOOL do_winbind_offline(const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
@@ -915,10 +915,10 @@ static BOOL do_winbind_offline(const struct process_id pid,
 	return ret;
 }
 
-static BOOL do_winbind_onlinestatus(const struct process_id pid,
+static BOOL do_winbind_onlinestatus(const struct server_id pid,
 				    const int argc, const char **argv)
 {
-	struct process_id myid;
+	struct server_id myid;
 
 	myid = pid_to_procid(sys_getpid());
 
@@ -945,7 +945,7 @@ static BOOL do_winbind_onlinestatus(const struct process_id pid,
 }
 
 
-static BOOL do_reload_config(const struct process_id pid,
+static BOOL do_reload_config(const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -967,7 +967,7 @@ static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
 }
 
-static BOOL do_nodestatus(const struct process_id pid,
+static BOOL do_nodestatus(const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	struct packet_struct p;
@@ -1007,7 +1007,7 @@ static BOOL do_nodestatus(const struct process_id pid,
 
 static const struct {
 	const char *name;	/* Option name */
-	BOOL (*fn)(const struct process_id pid,
+	BOOL (*fn)(const struct server_id pid,
 		   const int argc, const char **argv);
 	const char *help;	/* Short help text */
 } msg_types[] = {
@@ -1066,9 +1066,9 @@ static void usage(poptContext *pc)
 
 /* Return the pid number for a string destination */
 
-static struct process_id parse_dest(const char *dest)
+static struct server_id parse_dest(const char *dest)
 {
-	struct process_id result = {-1};
+	struct server_id result = {-1};
 	pid_t pid;
 
 	/* Zero is a special return value for broadcast smbd */
@@ -1116,7 +1116,7 @@ static struct process_id parse_dest(const char *dest)
 static BOOL do_command(int argc, const char **argv)
 {
 	const char *dest = argv[0], *command = argv[1];
-	struct process_id pid;
+	struct server_id pid;
 	int i;
 
 	/* Check destination */

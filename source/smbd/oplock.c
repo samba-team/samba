@@ -391,7 +391,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
  the client for LEVEL2.
 *******************************************************************/
 
-static void process_oplock_async_level2_break_message(int msg_type, struct process_id src,
+static void process_oplock_async_level2_break_message(int msg_type, struct server_id src,
 						      void *buf, size_t len,
 						      void *private_data)
 {
@@ -478,7 +478,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
  This handles the generic oplock break message from another smbd.
 *******************************************************************/
 
-static void process_oplock_break_message(int msg_type, struct process_id src,
+static void process_oplock_break_message(int msg_type, struct server_id src,
 					 void *buf, size_t len,
 					 void *private_data)
 {
@@ -587,7 +587,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
  This handles the kernel oplock break message.
 *******************************************************************/
 
-static void process_kernel_oplock_break(int msg_type, struct process_id src,
+static void process_kernel_oplock_break(int msg_type, struct server_id src,
 					void *buf, size_t len,
 					void *private_data)
 {
@@ -679,7 +679,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 	return;
 }
 
-static void process_oplock_break_response(int msg_type, struct process_id src,
+static void process_oplock_break_response(int msg_type, struct server_id src,
 					  void *buf, size_t len,
 					  void *private_data)
 {
@@ -707,7 +707,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	schedule_deferred_open_smb_message(msg.op_mid);
 }
 
-static void process_open_retry_message(int msg_type, struct process_id src,
+static void process_open_retry_message(int msg_type, struct server_id src,
 				       void *buf, size_t len,
 				       void *private_data)
 {
