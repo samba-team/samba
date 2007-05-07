@@ -39,7 +39,7 @@ enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 struct lock_context {
 	uint32 smbpid;
 	uint16 tid;
-	struct process_id pid;
+	struct server_id pid;
 };
 
 /* The key used in the brlock database. */
@@ -61,13 +61,13 @@ struct byte_range_lock {
 };
 
 #define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, \
 				 enum brl_type lock_type, \
 				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 #define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, \
 				 enum brl_type lock_type, \
 				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)

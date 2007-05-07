@@ -57,8 +57,8 @@ static int received_signal;
 struct message_rec {
 	int msg_version;
 	int msg_type;
-	struct process_id dest;
-	struct process_id src;
+	struct server_id dest;
+	struct server_id src;
 	size_t len;
 };
 
@@ -66,7 +66,7 @@ struct message_rec {
 static struct dispatch_fns {
 	struct dispatch_fns *next, *prev;
 	int msg_type;
-	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len,
+	void (*fn)(int msg_type, struct server_id pid, void *buf, size_t len,
 		   void *private_data);
 	void *private_data;
 } *dispatch_fns;
@@ -103,7 +103,7 @@ static void sig_usr1(void)
  A useful function for testing the message system.
 ****************************************************************************/
 
-static void ping_message(int msg_type, struct process_id src,
+static void ping_message(int msg_type, struct server_id src,
 			 void *buf, size_t len, void *private_data)
 {
 	const char *msg = buf ? (const char *)buf : "none";
@@ -152,7 +152,7 @@ BOOL message_init(void)
  Form a static tdb key from a pid.
 ******************************************************************/
 
-static TDB_DATA message_key_pid(struct process_id pid)
+static TDB_DATA message_key_pid(struct server_id pid)
 {
 	static char key[20];
 	TDB_DATA kbuf;
@@ -169,7 +169,7 @@ static TDB_DATA message_key_pid(struct process_id pid)
  then delete its record in the database.
 ****************************************************************************/
 
-static NTSTATUS message_notify(struct process_id procid)
+static NTSTATUS message_notify(struct server_id procid)
 {
 	pid_t pid = procid.pid;
 	int ret;
@@ -229,7 +229,7 @@ static NTSTATUS message_notify(struct process_id procid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
+static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
 					  const void *buf, size_t len,
 					  BOOL duplicates_allowed,
 					  unsigned int timeout)
@@ -365,7 +365,7 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
  Send a message to a particular pid - no timeout.
 ****************************************************************************/
 
-NTSTATUS message_send_pid(struct process_id pid, int msg_type, const void *buf,
+NTSTATUS message_send_pid(struct server_id pid, int msg_type, const void *buf,
 			  size_t len, BOOL duplicates_allowed)
 {
 	return message_send_pid_internal(pid, msg_type, buf, len,
@@ -376,7 +376,7 @@ NTSTATUS message_send_pid(struct process_id pid, int msg_type, const void *buf,
  Send a message to a particular pid, with timeout in seconds.
 ****************************************************************************/
 
-NTSTATUS message_send_pid_with_timeout(struct process_id pid, int msg_type,
+NTSTATUS message_send_pid_with_timeout(struct server_id pid, int msg_type,
 				       const void *buf, size_t len,
 				       BOOL duplicates_allowed, unsigned int timeout)
 {
@@ -388,7 +388,7 @@ NTSTATUS message_send_pid_with_timeout(struct process_id pid, int msg_type,
  Count the messages pending for a particular pid. Expensive....
 ****************************************************************************/
 
-unsigned int messages_pending_for_pid(struct process_id pid)
+unsigned int messages_pending_for_pid(struct server_id pid)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -459,7 +459,7 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 ****************************************************************************/
 
 static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
-			 struct process_id *src, char **buf, size_t *len)
+			 struct server_id *src, char **buf, size_t *len)
 {
 	struct message_rec rec;
 	char *ret_buf = *buf;
@@ -501,7 +501,7 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 void message_dispatch(void)
 {
 	int msg_type;
-	struct process_id src;
+	struct server_id src;
 	char *buf;
 	char *msgs_buf;
 	size_t len, total_len;
@@ -552,7 +552,7 @@ void message_dispatch(void)
 ****************************************************************************/
 
 void message_register(int msg_type, 
-		      void (*fn)(int msg_type, struct process_id pid,
+		      void (*fn)(int msg_type, struct server_id pid,
 				 void *buf, size_t len,
 				 void *private_data),
 		      void *private_data)
@@ -760,7 +760,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	return ctx;
 }
 
-static void messaging_callback(int msg_type, struct process_id pid,
+static void messaging_callback(int msg_type, struct server_id pid,
 			       void *buf, size_t len, void *private_data)
 {
 	struct messaging_context *ctx =	talloc_get_type_abort(
@@ -775,13 +775,11 @@ static void messaging_callback(int msg_type, struct process_id pid,
 
 		if (msg_type == cb->msg_type) {
 			DATA_BLOB blob;
-			struct server_id id;
 
 			blob.data = (uint8 *)buf;
 			blob.length = len;
-			id.id = pid;
 
-			cb->fn(ctx, cb->private_data, msg_type, id, &blob);
+			cb->fn(ctx, cb->private_data, msg_type, pid, &blob);
 		}
 	}
 }
@@ -838,7 +836,7 @@ NTSTATUS messaging_send(struct messaging_context *msg,
 			struct server_id server, 
 			uint32_t msg_type, DATA_BLOB *data)
 {
-	return message_send_pid_internal(server.id, msg_type, data->data,
+	return message_send_pid_internal(server, msg_type, data->data,
 					 data->length, True, 0);
 }
 

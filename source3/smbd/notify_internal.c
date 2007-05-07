@@ -677,7 +677,7 @@ void notify_trigger(struct notify_context *notify,
 
 				DEBUG(10, ("Deleting notify entries for "
 					   "process %s because it's gone\n",
-					   procid_str_static(&e->server.id)));
+					   procid_str_static(&e->server)));
 				notify_remove_all(notify, &server);
 				goto again;
 			}
