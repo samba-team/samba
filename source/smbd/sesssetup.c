@@ -1178,11 +1178,11 @@ static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	struct sessionid *sessionid = (struct sessionid *)dbuf.dptr;
 	const char *ip = (const char *)p;
 
-	if (!process_exists(pid_to_procid(sessionid->pid))) {
+	if (!process_exists(sessionid->pid)) {
 		return 0;
 	}
 
-	if (sessionid->pid == sys_getpid()) {
+	if (procid_is_me(&sessionid->pid)) {
 		return 0;
 	}
 
@@ -1190,7 +1190,7 @@ static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		return 0;
 	}
 
-	message_send_pid(pid_to_procid(sessionid->pid), MSG_SHUTDOWN,
+	message_send_pid(sessionid->pid, MSG_SHUTDOWN,
 			 NULL, 0, True);
 	return 0;
 }
