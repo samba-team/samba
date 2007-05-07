@@ -972,13 +972,18 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 
 	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
+		ret = 0;
 		dest_len = 0;
 	}
 
-	if (dest_len)
-		dest[MIN(ret, dest_len-1)] = 0;
-	else 
+	if (dest_len && ret) {
+		/* Did we already process the terminating zero ? */
+		if (dest[MIN(ret-1, dest_len-1)] != 0) {
+			dest[MIN(ret, dest_len-1)] = 0;
+		}
+	} else  {
 		dest[0] = 0;
+	}
 
 	return src_len;
 }
@@ -1219,10 +1224,14 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (src_len == (size_t)-1)
 		src_len = ret*2;
 		
-	if (dest_len)
-		dest[MIN(ret, dest_len-1)] = 0;
-	else 
+	if (dest_len && ret) {
+		/* Did we already process the terminating zero ? */
+		if (dest[MIN(ret-1, dest_len-1)] != 0) {
+			dest[MIN(ret, dest_len-1)] = 0;
+		}
+	} else {
 		dest[0] = 0;
+	}
 
 	return src_len;
 }
