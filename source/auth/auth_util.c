@@ -430,51 +430,6 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
-/****************************************************************************
- prints a NT_USER_TOKEN to debug output.
-****************************************************************************/
-
-void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
-{
-	size_t     i;
-	
-	if (!token) {
-		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
-		return;
-	}
-	
-	DEBUGC(dbg_class, dbg_lev,
-	       ("NT user token of user %s\n",
-		sid_string_static(&token->user_sids[0]) ));
-	DEBUGADDC(dbg_class, dbg_lev,
-		  ("contains %lu SIDs\n", (unsigned long)token->num_sids));
-	for (i = 0; i < token->num_sids; i++)
-		DEBUGADDC(dbg_class, dbg_lev,
-			  ("SID[%3lu]: %s\n", (unsigned long)i, 
-			   sid_string_static(&token->user_sids[i])));
-
-	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
-}
-
-/****************************************************************************
- prints a UNIX 'token' to debug output.
-****************************************************************************/
-
-void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
-			   int n_groups, gid_t *groups)
-{
-	int     i;
-	DEBUGC(dbg_class, dbg_lev,
-	       ("UNIX token of user %ld\n", (long int)uid));
-
-	DEBUGADDC(dbg_class, dbg_lev,
-		  ("Primary group is %ld and contains %i supplementary "
-		   "groups\n", (long int)gid, n_groups));
-	for (i = 0; i < n_groups; i++)
-		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i, 
-			(long int)groups[i]));
-}
-
 static int server_info_dtor(auth_serversupplied_info *server_info)
 {
 	TALLOC_FREE(server_info->sam_account);

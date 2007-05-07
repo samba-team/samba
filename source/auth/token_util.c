@@ -147,8 +147,8 @@ NT_USER_TOKEN *get_root_nt_token( void )
  * Add alias SIDs from memberships within the partially created token SID list
  */
 
-static NTSTATUS add_aliases(const DOM_SID *domain_sid,
-			    struct nt_user_token *token)
+NTSTATUS add_aliases(const DOM_SID *domain_sid,
+		     struct nt_user_token *token)
 {
 	uint32 *aliases;
 	size_t i, num_aliases;
@@ -453,6 +453,51 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	get_privileges_for_sids(&result->privileges, result->user_sids,
 				result->num_sids);
 	return result;
+}
+
+/****************************************************************************
+ prints a NT_USER_TOKEN to debug output.
+****************************************************************************/
+
+void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
+{
+	size_t     i;
+	
+	if (!token) {
+		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
+		return;
+	}
+	
+	DEBUGC(dbg_class, dbg_lev,
+	       ("NT user token of user %s\n",
+		sid_string_static(&token->user_sids[0]) ));
+	DEBUGADDC(dbg_class, dbg_lev,
+		  ("contains %lu SIDs\n", (unsigned long)token->num_sids));
+	for (i = 0; i < token->num_sids; i++)
+		DEBUGADDC(dbg_class, dbg_lev,
+			  ("SID[%3lu]: %s\n", (unsigned long)i, 
+			   sid_string_static(&token->user_sids[i])));
+
+	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
+}
+
+/****************************************************************************
+ prints a UNIX 'token' to debug output.
+****************************************************************************/
+
+void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
+			   int n_groups, gid_t *groups)
+{
+	int     i;
+	DEBUGC(dbg_class, dbg_lev,
+	       ("UNIX token of user %ld\n", (long int)uid));
+
+	DEBUGADDC(dbg_class, dbg_lev,
+		  ("Primary group is %ld and contains %i supplementary "
+		   "groups\n", (long int)gid, n_groups));
+	for (i = 0; i < n_groups; i++)
+		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i, 
+			(long int)groups[i]));
 }
 
 /* END */
