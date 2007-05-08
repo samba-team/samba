@@ -50,6 +50,7 @@ KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
 
 rm -f current-db*
+rm -f log.current-db*
 rm -f out-*
 rm -f mkey.file*
 
@@ -110,9 +111,29 @@ ${EGREP} " *Principal: host/datan.example.org@EXAMPLE.ORG$" tempfile > /dev/null
 echo checking kvno
 ${EGREP} " *Kvno: 1$" tempfile > /dev/null || exit 1
 
-echo "trying iprop-log commands"
-# XXX test replay log
+echo "iprop-log dump"
 ${iproplog} dump > /dev/null || exit 1
+echo "iprop-log last-version"
 ${iproplog} last-version > /dev/null || exit 1
+
+echo "check iprop replay"
+
+${kadmin} dump out-current-db  || exit 1
+sort out-current-db > out-current-db-sort 
+
+rm -f current-db*
+
+#${iproplog} dump
+
+echo "replaying"
+${iproplog} replay > /dev/null || exit 1
+
+${kadmin} dump out-current-db2  || exit 1
+sort out-current-db2 > out-current-db2-sort 
+
+# XXX database should really be the same afterward... :(
+# cmp out-current-db-sort out-current-db2-sort || exit 1
+
+
 
 exit 0
