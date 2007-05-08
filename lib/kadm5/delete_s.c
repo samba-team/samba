@@ -51,22 +51,25 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     ret = context->db->hdb_fetch(context->context, context->db, princ,
 				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
     if(ret == HDB_ERR_NOENTRY)
-	goto out2;
+	goto out;
     if(ent.entry.flags.immutable) {
 	ret = KADM5_PROTECT_PRINCIPAL;
-	goto out;
+	goto out2;
     }
     
     ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
-	goto out;
+	goto out2;
+
+    ret = context->db->hdb_remove(context->context, context->db, princ);
+    if (ret)
+	goto out2;
 
     kadm5_log_delete (context, princ);
-    
-    ret = context->db->hdb_remove(context->context, context->db, princ);
-out:
-    hdb_free_entry(context->context, &ent);
+
 out2:
+    hdb_free_entry(context->context, &ent);
+out:
     context->db->hdb_close(context->context, context->db);
     return _kadm5_error_code(ret);
 }
