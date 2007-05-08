@@ -1,5 +1,7 @@
 2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-basic.in: test using test_kcred
+
 	* gss/check-ntlm.in: One more test.
 
 	* ldap/check-ldap.in: check in /usr/lib/openldap too for slapd and
