@@ -1,5 +1,12 @@
 2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* iprop-log.8: Document last-version.
+
+	* iprop-log.c: (last_version): print last version of the log.
+	
+	* iprop-commands.in: new command last-version: print last version
+	of the log.
+
 	* log.c (kadm5_log_previous): document assumptions and make less
 	broken.  Bug report from Ronny Blomme.
 	
