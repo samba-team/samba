@@ -44,6 +44,7 @@ EGREP="@EGREP@"
 R=EXAMPLE.ORG
 
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+iproplog="${TESTS_ENVIRONMENT} ../../lib/kadm5/iprop-log"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -108,5 +109,10 @@ echo checking principal
 ${EGREP} " *Principal: host/datan.example.org@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
 echo checking kvno
 ${EGREP} " *Kvno: 1$" tempfile > /dev/null || exit 1
+
+echo "trying iprop-log commands"
+# XXX test replay log
+${iproplog} dump > /dev/null || exit 1
+${iproplog} last-version > /dev/null || exit 1
 
 exit 0
