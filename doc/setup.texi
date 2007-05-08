@@ -610,7 +610,7 @@ slave#  /usr/heimdal/libexec/ipropd-slave master &
 @end example
 
 To manage the iprop log file you should use the @command{iprop-log}
-command. With it you can dump, truncate and reply the logfile.
+command. With it you can dump, truncate and replay the logfile.
 
 @node Salting, Cross realm, Incremental propagation, Setting up a realm
 @section Salting
