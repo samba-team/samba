@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -60,7 +60,7 @@ fi
 
 #search for all ldap tools
 
-PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/libexec:$PATH
+PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/libexec:/usr/lib/openldap:$PATH
 export PATH
 
 oldifs=$IFS
