@@ -50,6 +50,7 @@ CLEANFILES= \
 	mkey.file* \
 	krb5.conf krb5.conf.tmp \
 	tempfile \
+	log.current-db* \
 	messages.log
 
 EXTRA_DIST = \
