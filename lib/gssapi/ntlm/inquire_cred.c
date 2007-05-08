@@ -54,5 +54,5 @@ OM_uint32 _gss_ntlm_inquire_cred
 	*cred_usage = 0;
     if (mechanisms)
 	*mechanisms = GSS_C_NO_OID_SET;
-    return GSS_S_COMPLETE;
+    return GSS_S_FAILURE;
 }
