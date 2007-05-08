@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 OM_uint32 _gss_ntlm_acquire_cred
-           (OM_uint32 * minor_status,
+           (OM_uint32 * min_stat,
             const gss_name_t desired_name,
             OM_uint32 time_req,
             const gss_OID_set desired_mechs,
@@ -46,14 +46,11 @@ OM_uint32 _gss_ntlm_acquire_cred
             OM_uint32 * time_rec
            )
 {
-#if 0
-    OM_uint32 major_status;
-    krb5_error_code ret;
-    ntlm_ctx ctx;
     ntlm_name name = (ntlm_name)desired_name;
-#endif
+    OM_uint32 maj_stat;
+    ntlm_ctx ctx;
 
-    *minor_status = 0;
+    *min_stat = 0;
     if (output_cred_handle)
 	*output_cred_handle = GSS_C_NO_CREDENTIAL;
     if (actual_mechs)
@@ -61,29 +58,15 @@ OM_uint32 _gss_ntlm_acquire_cred
     if (time_rec)
 	*time_rec = GSS_C_INDEFINITE;
 
-#if 0 /* XXX */
-    major_status = _gss_ntlm_allocate_ctx(minor_status, &ctx);
-    if (major_status != GSS_S_COMPLETE)
-	return GSS_S_FAILURE;
-
-    ret = krb5_ntlm_init_request(ctx->context, 
-				 ctx->ntlm,
-				 NULL,
-				 ctx->id,
-				 NTLM_NEG_UNICODE|NTLM_NEG_NTLM,
-				 name->domain,
-				 NULL);
-    if (ret) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
+    maj_stat = _gss_ntlm_allocate_ctx(min_stat, &ctx);
+    if (maj_stat != GSS_S_COMPLETE)
+	return maj_stat;
 
     {
 	gss_ctx_id_t context = (gss_ctx_id_t)ctx;
-	_gss_ntlm_delete_sec_context(minor_status, &context, NULL);
-	*minor_status = 0;
+	_gss_ntlm_delete_sec_context(min_stat, &context, NULL);
+	*min_stat = 0;
     }
-#endif
 
     return (GSS_S_COMPLETE);
 }
