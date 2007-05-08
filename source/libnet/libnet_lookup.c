@@ -59,21 +59,13 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	const char** methods;
 
 	/* allocate context and state structures */
-	c = talloc_zero(NULL, struct composite_context);
+	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct lookup_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return c;
-	}
-	
-	/* prepare event context */
-	c->event_ctx = event_context_find(c);
-	if (c->event_ctx == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return c;
-	}
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data	= s;
 
 	if (io == NULL || io->in.hostname == NULL) {
 		composite_error(c, NT_STATUS_INVALID_PARAMETER);
@@ -92,14 +84,11 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 		methods = ctx->name_res_methods;
 	}
 
-	c->private_data	= s;
-	c->state	= COMPOSITE_STATE_IN_PROGRESS;
-
 	/* send resolve request */
 	cresolve_req = resolve_name_send(&s->hostname, c->event_ctx, methods);
+	if (composite_nomem(cresolve_req, c)) return c;
 
 	composite_continue(c, cresolve_req, continue_name_resolved, c);
-
 	return c;
 }
 
