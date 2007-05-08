@@ -272,8 +272,6 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
-			m->gm_inquire_cred(minor_status, delegated_mc,
-			    0, 0, &dcred->gc_usage, 0);
 			dmc->gmc_mech = m;
 			dmc->gmc_mech_oid = &m->gm_mech_oid;
 			dmc->gmc_cred = delegated_mc;

@@ -29,6 +29,20 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
+#define AUSAGE 1
+#define IUSAGE 2
+
+static void
+updateusage(gss_cred_usage_t usage, int *usagemask)
+{
+    if (usage == GSS_C_BOTH)
+	*usagemask |= AUSAGE | IUSAGE;
+    else if (usage == GSS_C_ACCEPT)
+	*usagemask |= AUSAGE;
+    else if (usage == GSS_C_INITIATE)
+	*usagemask |= IUSAGE;
+}
+
 OM_uint32
 gss_inquire_cred(OM_uint32 *minor_status,
     const gss_cred_id_t cred_handle,
@@ -44,6 +58,8 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 	OM_uint32 min_lifetime;
 	int found = 0;
+	int usagemask = 0;
+	gss_cred_usage_t usage;
 
 	_gss_load_mech();
 
@@ -86,10 +102,11 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			OM_uint32 mc_lifetime;
 
 			major_status = mc->gmc_mech->gm_inquire_cred(minor_status,
-			    mc->gmc_cred, &mc_name, &mc_lifetime, NULL, NULL);
+			    mc->gmc_cred, &mc_name, &mc_lifetime, &usage, NULL);
 			if (major_status)
 				continue;
 
+			updateusage(usage, &usagemask);
 			if (name) {
 				mn = malloc(sizeof(struct _gss_mechanism_name));
 				if (!mn) {
@@ -121,10 +138,11 @@ gss_inquire_cred(OM_uint32 *minor_status,
 
 			major_status = m->gm_mech.gm_inquire_cred(minor_status,
 			    GSS_C_NO_CREDENTIAL, &mc_name, &mc_lifetime,
-			    cred_usage, NULL);
+			    &usage, NULL);
 			if (major_status)
 				continue;
 
+			updateusage(usage, &usagemask);
 			if (name && mc_name) {
 				mn = malloc(
 					sizeof(struct _gss_mechanism_name));
@@ -166,7 +184,13 @@ gss_inquire_cred(OM_uint32 *minor_status,
 		*name_ret = (gss_name_t) name;
 	if (lifetime)
 		*lifetime = min_lifetime;
-	if (cred && cred_usage)
-		*cred_usage = cred->gc_usage;
+	if (cred_usage) {
+		if ((usagemask & (AUSAGE|IUSAGE)) == (AUSAGE|IUSAGE))
+			*cred_usage = GSS_C_BOTH;
+		else if (usagemask & IUSAGE)
+			*cred_usage = GSS_C_INITIATE;
+		else if (usagemask & AUSAGE)
+			*cred_usage = GSS_C_ACCEPT;
+	}
 	return (GSS_S_COMPLETE);
 }

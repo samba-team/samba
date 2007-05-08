@@ -107,7 +107,6 @@ gss_add_cred(OM_uint32 *minor_status,
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
-	new_cred->gc_usage = cred_usage;
 	SLIST_INIT(&new_cred->gc_mc);
 
 	/*

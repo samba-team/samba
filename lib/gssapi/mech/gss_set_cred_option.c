@@ -55,7 +55,6 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		if (cred == NULL)
 		    return GSS_S_FAILURE;
 
-		cred->gc_usage = GSS_C_BOTH; /* XXX */
 		SLIST_INIT(&cred->gc_mc);
 
 		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
