@@ -1,5 +1,20 @@
-2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* delete_s.c: Write log entry after store is successful, rename
+	out goto statments.
+
+	* randkey_s.c: Write log entry after store is successful.
+
+	* modify_s.c: Write log entry after store is successful.
+
+	* rename_s.c: indent.
+
+	* chpass_s.c: Write log entry after store is successful.
+
+	* create_s.c: Write log entry after store is successful.
+	
+2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* iprop-commands.in: Add default values to make this working
 	again.
 
