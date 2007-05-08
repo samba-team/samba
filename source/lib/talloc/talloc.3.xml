@@ -583,11 +583,27 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
         </para>
         <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
     </refsect2>
+    <refsect2><title>char *talloc_append_string(const void *<emphasis role="italic">t</emphasis>, char *<emphasis role="italic">orig</emphasis>, const char *<emphasis role="italic">append</emphasis>);</title>
+        <para>
+	  The talloc_append_string() function appends the given formatted
+	  string to the given string.
+        </para>
+        <para>
+	  This function sets the name of the new pointer to the new
+	  string. This is equivalent to:
+        </para>
+        <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
+    </refsect2>
     <refsect2><title>char *talloc_vasprintf(const void *<emphasis role="italic">t</emphasis>, const char *<emphasis role="italic">fmt</emphasis>, va_list <emphasis role="italic">ap</emphasis>);</title>
         <para>
 	  The talloc_vasprintf() function is the talloc equivalent of the C
 	  library function vasprintf(3).
         </para>
+        <para>
+	  This function sets the name of the new pointer to the new
+	  string. This is equivalent to:
+        </para>
+        <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
     </refsect2>
     <refsect2><title>char *talloc_asprintf(const void *<emphasis role="italic">t</emphasis>, const char *<emphasis role="italic">fmt</emphasis>, ...);</title>
         <para>
@@ -605,6 +621,11 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
 	  The talloc_asprintf_append() function appends the given formatted
 	  string to the given string.
         </para>
+        <para>
+	  This function sets the name of the new pointer to the new
+	  string. This is equivalent to:
+        </para>
+        <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
     </refsect2>
     <refsect2><title>(type *)talloc_array(const void *ctx, type, uint_t count);</title>
         <para>
