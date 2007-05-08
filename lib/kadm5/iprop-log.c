@@ -358,7 +358,6 @@ apply_entry(kadm5_server_context *server_context,
 			    op, ver, len, sp);
     if (ret)
 	krb5_warn (server_context->context, ret, "kadm5_log_replay");
-
     
     printf ("done\n");
 }
@@ -374,7 +373,7 @@ iprop_replay(struct replay_options *opt, int argc, char **argv)
 
     ret = server_context->db->hdb_open(context,
 				       server_context->db,
-				       O_RDWR | O_CREAT, 0);
+				       O_RDWR | O_CREAT, 0600);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
