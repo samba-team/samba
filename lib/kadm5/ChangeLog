@@ -1,5 +1,13 @@
 2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* iprop-commands.in: Add default values to make this working
+	again.
+
+	* iprop-log.c (iprop_replay): create the database with more
+	liberal mode.
+
+	* log.c: make it slightly more working.
+
 	* iprop-log.8: Document last-version.
 
 	* iprop-log.c: (last_version): print last version of the log.
