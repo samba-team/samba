@@ -61,7 +61,7 @@ C:> ksetup /addkdc EXAMPLE.COM kdc.example.com
 
 Set the machine password, i.e.@: create the local keytab:
 @example
-C:> ksetup /setmachpassword password
+C:> ksetup /SetComputerPassword password
 @end example
 
 The password used in @kbd{ksetup /setmachpassword} must be the same
