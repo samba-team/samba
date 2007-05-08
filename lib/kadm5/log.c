@@ -798,6 +798,10 @@ kadm5_log_goto_end (int fd)
 
 /*
  * Return previous log entry.
+ * 
+ * The pointer in `sp´ is assumed to be at the top of the entry before
+ * previous entry. On success, the `sp´ pointer is set to data portion
+ * of previous entry. In case of error, its not changed at all.
  */
 
 kadm5_ret_t
@@ -809,8 +813,10 @@ kadm5_log_previous (krb5_context context,
 		    uint32_t *len)
 {
     krb5_error_code ret;
-    off_t off;
+    off_t off, oldoff;
     int32_t tmp;
+
+    oldoff = krb5_storage_seek(sp, 0, SEEK_CUR);
 
     krb5_storage_seek(sp, -8, SEEK_CUR);
     ret = krb5_ret_int32 (sp, &tmp);
@@ -825,6 +831,7 @@ kadm5_log_previous (krb5_context context,
     if (ret)
 	goto end_of_storage;
     if (tmp != *ver) {
+	krb5_storage_seek(sp, oldoff, SEEK_SET);
 	krb5_set_error_string(context, "kadm5_log_previous: log entry "
 			      "have consistency failure, version number wrong");
 	return KADM5_BAD_DB;
@@ -838,7 +845,8 @@ kadm5_log_previous (krb5_context context,
     ret = krb5_ret_int32 (sp, &tmp);
     if (ret)
 	goto end_of_storage;
-    if (tmp != *ver) {
+    if (tmp != *len) {
+	krb5_storage_seek(sp, oldoff, SEEK_SET);
 	krb5_set_error_string(context, "kadm5_log_previous: log entry "
 			      "have consistency failure, length wrong");
 	return KADM5_BAD_DB;
@@ -846,6 +854,7 @@ kadm5_log_previous (krb5_context context,
     return 0;
 
  end_of_storage:
+    krb5_storage_seek(sp, oldoff, SEEK_SET);
     krb5_set_error_string(context, "kadm5_log_previous: end of storage "
 			  "reached before end");
     return ret;
