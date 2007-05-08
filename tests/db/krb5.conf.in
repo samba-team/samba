@@ -21,6 +21,7 @@
 		dbname = @objdir@/current-db
 		realm = EXAMPLE.ORG
 		mkey_file = @objdir@/mkey.file
+		log_file = @objdir@/log.current-db.log
 	}
 
 [logging]
