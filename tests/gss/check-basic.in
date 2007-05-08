@@ -46,6 +46,7 @@ port=@port@
 
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
+nokeytab="FILE:no-such-keytab"
 cache="FILE:krb5ccfile"
 nocache="FILE:no-such-cache"
 
@@ -54,6 +55,7 @@ kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 acquire_cred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_acquire_cred"
+test_kcred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_kcred"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -129,7 +131,13 @@ ${acquire_cred} \
     --name-type=user-name \
     --ccache=${cache} \
     --acquire-type=initiate \
-    --acquire-name=user 2>/dev/null || exit 1
+    --acquire-name=user >/dev/null || exit 1
+
+KRB5CCNAME=${cache}
+KRB5_KTNAME=${nokeytab}
+
+echo "kcred"
+${test_kcred} || exit 1
 
 trap "" EXIT
 
