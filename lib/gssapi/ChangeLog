@@ -1,4 +1,26 @@
+2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech: dont keep track of gc_usage, just figure it out at
+	gss_inquire_cred() time
+
+	* mech/gss_mech_switch.c (add_builtin): ok for
+	__gss_mech_initialize() to return NULL
+
+	* test_kcred.c: more correct tests
+
+	* spnego/cred_stubs.c (gss_inquire_cred*): wrap the name with a
+	spnego_name.
+
+	* ntlm/inquire_cred.c: make ntlm gss_inquire_cred fail for now,
+	need to find default cred and friends.
+
+	* krb5/inquire_cred_by_mech.c: reimplement
+	
 2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* ntlm/acquire_cred.c: drop unused variable.
+
+	* ntlm/acquire_cred.c: Reimplement.
 
 	* Makefile.am: add ntlm/digest.c
 
