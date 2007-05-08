@@ -68,12 +68,15 @@ modify_principal(void *server_handle,
     if (ret)
 	goto out2;
 
+    ret = context->db->hdb_store(context->context, context->db, 
+			     HDB_F_REPLACE, &ent);
+    if (ret)
+	goto out2;
+
     kadm5_log_modify (context,
 		      &ent.entry,
 		      mask | KADM5_MOD_NAME | KADM5_MOD_TIME);
-		      
-    ret = context->db->hdb_store(context->context, context->db, 
-			     HDB_F_REPLACE, &ent);
+
 out2:
     hdb_free_entry(context->context, &ent);
 out:
