@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003, 2006, 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,39 +45,23 @@ OM_uint32 _gsskrb5_inquire_cred_by_mech (
 	gss_cred_usage_t * cred_usage
     )
 {
-    OM_uint32 ret;
+    gss_cred_usage_t usage;
+    OM_uint32 maj_stat;
     OM_uint32 lifetime;
 
-    if (gss_oid_equal(mech_type, GSS_C_NO_OID) == 0 &&
-	gss_oid_equal(mech_type, GSS_KRB5_MECHANISM) == 0) {
-	*minor_status = EINVAL;
-	return GSS_S_BAD_MECH;
-    }    
-
-    ret = _gsskrb5_inquire_cred (minor_status,
-				 cred_handle,
-				 name,
-				 &lifetime,
-				 cred_usage,
-				 NULL);
+    maj_stat = 
+	_gsskrb5_inquire_cred (minor_status, cred_handle,
+			       name, &lifetime, &usage, NULL);
+    if (maj_stat)
+	return maj_stat;
     
-    if (ret == 0 && cred_handle != GSS_C_NO_CREDENTIAL) {
-	gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
-	gss_cred_usage_t usage;
+    if (initiator_lifetime)
+	if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)
+	    *initiator_lifetime = lifetime;
+   
+    if (acceptor_lifetime)
+	if (usage == GSS_C_ACCEPT || usage == GSS_C_BOTH)
+	    *acceptor_lifetime = lifetime;
 
-	HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
-	usage = cred->usage;
-	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
-
-	if (initiator_lifetime) {
-	    if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)
-		*initiator_lifetime = lifetime;
-	}
-	if (acceptor_lifetime) {
-	    if (usage == GSS_C_ACCEPT || usage == GSS_C_BOTH)
-		*acceptor_lifetime = lifetime;
-	}
-    }
-
-    return ret;
+    return GSS_S_COMPLETE;
 }
