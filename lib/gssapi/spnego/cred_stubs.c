@@ -179,6 +179,7 @@ OM_uint32 _gss_spnego_inquire_cred
            )
 {
     gssspnego_cred cred;
+    spnego_name sname = NULL;
     OM_uint32 ret;
 
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
@@ -186,14 +187,29 @@ OM_uint32 _gss_spnego_inquire_cred
 	return GSS_S_NO_CRED;
     }
 
+    if (name) {
+	sname = calloc(1, sizeof(*sname));
+	if (sname == NULL) {
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+    }
+
     cred = (gssspnego_cred)cred_handle;
 
     ret = gss_inquire_cred(minor_status,
 			   cred->negotiated_cred_id,
-			   name,
+			   sname ? &sname->mech : NULL,
 			   lifetime,
 			   cred_usage,
 			   mechanisms);
+    if (ret) {
+	if (sname)
+	    free(sname);
+	return ret;
+    }
+    if (name)
+	*name = (gss_name_t)sname;
 
     return ret;
 }
@@ -258,6 +274,7 @@ OM_uint32 _gss_spnego_inquire_cred_by_mech (
            )
 {
     gssspnego_cred cred;
+    spnego_name sname = NULL;
     OM_uint32 ret;
 
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
@@ -265,17 +282,33 @@ OM_uint32 _gss_spnego_inquire_cred_by_mech (
 	return GSS_S_NO_CRED;
     }
 
+    if (name) {
+	sname = calloc(1, sizeof(*sname));
+	if (sname == NULL) {
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+    }
+
     cred = (gssspnego_cred)cred_handle;
 
     ret = gss_inquire_cred_by_mech(minor_status,
 				   cred->negotiated_cred_id,
 				   mech_type,
-				   name,
+				   sname ? &sname->mech : NULL,
 				   initiator_lifetime,
 				   acceptor_lifetime,
 				   cred_usage);
 
-    return ret;
+    if (ret) {
+	if (sname)
+	    free(sname);
+	return ret;
+    }
+    if (name)
+	*name = (gss_name_t)sname;
+
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32 _gss_spnego_inquire_cred_by_oid
