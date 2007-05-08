@@ -299,6 +299,33 @@ iprop_truncate(struct truncate_options *opt, int argc, char **argv)
     return 0;
 }
 
+int
+last_version(struct last_version_options *opt, int argc, char **argv)
+{
+    kadm5_server_context *server_context;
+    krb5_error_code ret;
+    uint32_t version;
+
+    server_context = get_kadmin_context(opt->config_file_string, 
+					opt->realm_string);
+
+    ret = kadm5_log_init (server_context);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_init");
+
+    ret = kadm5_log_get_version (server_context, &version);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_get_version");
+
+    ret = kadm5_log_end (server_context);
+    if (ret)
+	krb5_warn(context, ret, "kadm5_log_end");
+
+    printf("version: %lu\n", (unsigned long)version);
+
+    return 0;
+}
+
 /*
  * Replay log
  */
