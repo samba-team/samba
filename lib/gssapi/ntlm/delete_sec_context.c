@@ -45,20 +45,16 @@ OM_uint32 _gss_ntlm_delete_sec_context
 	ntlm_ctx ctx = (ntlm_ctx)*context_handle;
 	*context_handle = GSS_C_NO_CONTEXT;
 
-	if (ctx->id)
-	    krb5_cc_close(ctx->context, ctx->id);
+	if (ctx->server)
+	    (*ctx->server->nsi_destroy)(minor_status, ctx->ictx);
 
-	if (ctx->context) {
-	    krb5_ntlm_free(ctx->context, ctx->ntlm);
-	    krb5_free_context(ctx->context);
+	if (ctx->client.username)
+	    free(ctx->client.username);
+	if (ctx->client.key.data) {
+	    memset(ctx->client.key.data, 0, ctx->client.key.length);
+	    free(ctx->client.key.data);
 	}
-	if (ctx->username)
-	    free(ctx->username);
-	if (ctx->key.data) {
-	    memset(ctx->key.data, 0, ctx->key.length);
-	    free(ctx->key.data);
-	}
-	krb5_data_free(&ctx->opaque);
+
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
     }

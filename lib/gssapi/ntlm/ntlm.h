@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,6 +57,39 @@
 
 #include "crypto-headers.h"
 
+typedef OM_uint32
+(*ntlm_interface_init)(OM_uint32 *, void **);
+
+typedef OM_uint32
+(*ntlm_interface_destroy)(OM_uint32 *, void *);
+
+typedef OM_uint32
+(*ntlm_interface_type2)(OM_uint32 *minor_status,
+			void *ctx,
+			uint32_t flags,
+			const char *hostname,
+			const char *domain,
+			uint32_t *ret_flags,
+			struct ntlm_buf *type2);
+
+typedef OM_uint32
+(*ntlm_interface_type3)(OM_uint32 *minor_status,
+			void *ctx,
+			const struct ntlm_type3 *type3,
+			struct ntlm_buf *sessionkey);
+
+typedef void
+(*ntlm_interface_free_buffer)(struct ntlm_buf *);
+
+struct ntlm_server_interface {
+    ntlm_interface_init nsi_init;
+    ntlm_interface_destroy nsi_destroy;
+    ntlm_interface_type2 nsi_type2;
+    ntlm_interface_type3 nsi_type3;
+    ntlm_interface_free_buffer nsi_free_buffer;
+};
+
+
 struct ntlmv2_key {
     uint32_t seq;
     RC4_KEY sealkey;
@@ -64,19 +97,21 @@ struct ntlmv2_key {
     unsigned char signkey[16];
 };
 
+extern struct ntlm_server_interface ntlmsspi_kdc_digest;
+
 typedef struct {
-    krb5_context context;
-    krb5_ntlm ntlm;
-    krb5_realm kerberos_realm;
-    krb5_ccache id;
-    krb5_data opaque;
-    OM_uint32 flags;
-    OM_uint32 status;
+    struct ntlm_server_interface *server;
+    void *ictx;
+    struct {
+	char *username;
+	struct ntlm_buf key;
+    } client;
+    OM_uint32 gssflags;
+    uint32_t flags;
+    uint32_t status;
 #define STATUS_OPEN 1
 #define STATUS_CLIENT 2
 #define STATUS_SESSIONKEY 4
-    char *username;
-    struct ntlm_buf key;
     krb5_data sessionkey;
 
     union {
@@ -101,5 +136,6 @@ typedef struct {
 } *ntlm_name;
 
 #include <ntlm/ntlm-private.h>
+
 
 #endif /* NTLM_NTLM_H */

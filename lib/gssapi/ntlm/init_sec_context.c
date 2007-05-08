@@ -207,9 +207,11 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = get_user_file(name->domain, &ctx->username, &ctx->key);
+	ret = get_user_file(name->domain, 
+			    &ctx->client.username, &ctx->client.key);
 	if (ret)
-	    ret = get_user_ccache(name->domain, &ctx->username, &ctx->key);
+	    ret = get_user_ccache(name->domain,
+				  &ctx->client.username, &ctx->client.key);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
@@ -272,7 +274,7 @@ _gss_ntlm_init_sec_context
 
 	memset(&type3, 0, sizeof(type3));
 
-	type3.username = ctx->username;
+	type3.username = ctx->client.username;
 	type3.flags = type2.flags;
 	type3.targetname = type2.targetname;
 	type3.ws = rk_UNCONST("workstation");
@@ -317,11 +319,13 @@ _gss_ntlm_init_sec_context
 	    }
 
 
-	    heim_ntlm_calculate_ntlm1(ctx->key.data, ctx->key.length,
+	    heim_ntlm_calculate_ntlm1(ctx->client.key.data, 
+				      ctx->client.key.length,
 				      challange,
 				      &type3.ntlm);
 
-	    ret = heim_ntlm_build_ntlm1_master(ctx->key.data, ctx->key.length,
+	    ret = heim_ntlm_build_ntlm1_master(ctx->client.key.data, 
+					       ctx->client.key.length,
 					       &sessionkey,
 					       &type3.sessionkey);
 	    if (ret) {
@@ -366,8 +370,9 @@ _gss_ntlm_init_sec_context
 		return GSS_S_FAILURE;
 	    }
 
-	    ret = heim_ntlm_calculate_ntlm2(ctx->key.data, ctx->key.length,
-					    ctx->username,
+	    ret = heim_ntlm_calculate_ntlm2(ctx->client.key.data,
+					    ctx->client.key.length,
+					    ctx->client.username,
 					    name->domain,
 					    type2.challange,
 					    &type2.targetinfo,
