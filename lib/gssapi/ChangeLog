@@ -1,3 +1,9 @@
+2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add ntlm/digest.c
+
+	* ntlm: split out backend ntlm server processing
+
 2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/delete_sec_context.c (_gss_ntlm_delete_sec_context): free
