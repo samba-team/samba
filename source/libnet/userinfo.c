@@ -262,24 +262,22 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 
 	if (!p || !io) return NULL;
 	
-	c = talloc_zero(p, struct composite_context);
-	if (c == NULL) goto failure;
+	c = composite_create(p, dcerpc_event_context(p));
+	if (c == NULL) return c;
 	
 	s = talloc_zero(c, struct userinfo_state);
-	if (s == NULL) goto failure;
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
 
 	s->level         = io->in.level;
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;
 	s->monitor_fn    = monitor;
 
-	c->state        = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = s;
-	c->event_ctx    = dcerpc_event_context(p);
-
 	if (io->in.sid) {
 		sid = dom_sid_parse_talloc(s, io->in.sid);
-		if (sid == NULL) goto failure;	
+		if (composite_nomem(sid, c)) return c;
 
 		s->openuser.in.domain_handle  = &s->domain_handle;
 		s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -288,7 +286,7 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		
 		/* send request */
 		s->req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
-		if (s->req == NULL) goto failure;
+		if (composite_nomem(s->req, c)) return c;
 		
 		s->stage = USERINFO_OPENUSER;
 
@@ -303,7 +301,7 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		
 		/* send request */
 		s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
-		if (s->req == NULL) goto failure;
+		if (composite_nomem(s->req, c)) return c;
 		
 		s->stage = USERINFO_LOOKUP;
 	}
@@ -313,10 +311,6 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 	s->req->async.private = c;
 
 	return c;
-	
-failure:
-	talloc_free(c);
-	return NULL;
 }
 
 
