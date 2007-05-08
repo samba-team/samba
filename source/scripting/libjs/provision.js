@@ -453,7 +453,7 @@ function provision_fix_subobj(subobj, message, paths)
 	return true;
 }
 
-function provision_become_dc(subobj, message, paths, session_info)
+function provision_become_dc(subobj, message, erase, paths, session_info)
 {
 	var lp = loadparm_init();
 	var sys = sys_init();
@@ -478,8 +478,10 @@ function provision_become_dc(subobj, message, paths, session_info)
 	message("Setting up " + paths.samdb + " rootDSE\n");
 	setup_add_ldif("provision_rootdse_add.ldif", info, samdb, false);
 
-	message("Erasing data from partitions\n");
-	ldb_erase_partitions(info, samdb, undefined);
+	if (erase) {
+		message("Erasing data from partitions\n");
+		ldb_erase_partitions(info, samdb, undefined);
+	}
 
 	message("Setting up " + paths.samdb + " indexes\n");
 	setup_add_ldif("provision_index.ldif", info, samdb, false);
