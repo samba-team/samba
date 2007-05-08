@@ -142,6 +142,15 @@ ${context} --mech-type=ntlm \
         host@host.test.h5l.se || \
         { exitcode=1 ; echo test failed; }
 
+echo "NTLM initiator krb5 creds (getverifymic, wrapunwrap)"
+${context} --mech-type=ntlm \
+	--mutual \
+        --name-type=hostbased-service \
+        --ret-mech-type=ntlm \
+        --getverifymic --wrapunwrap \
+        host@host.test.h5l.se || \
+        { exitcode=1 ; echo test failed; }
+
 trap "" EXIT
 
 echo "killing kdc (${kdcpid})"
