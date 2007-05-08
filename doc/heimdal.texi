@@ -280,7 +280,7 @@ Setting up a realm
 * Testing clients and servers::  
 * Slave Servers::               
 * Incremental propagation::     
-* Salting::                     
+* Encryption types and salting::                     
 * Cross realm::                 
 * Transit policy::              
 * Setting up DNS::              
