@@ -993,7 +993,7 @@ static bool test_talloc_ptrtype(void)
 	s4 = talloc_array_ptrtype(top, s4, 10);location4 = __location__;
 
 	if (talloc_get_size(s4) != (sizeof(struct struct1 **) * 10)) {
-		printf("failure: TALLOC PTRTYPE [\n"
+		printf("failure: ptrtype [\n"
 		      "talloc_array_ptrtype() allocated the wrong size "
 		       "%lu (should be %lu)\n]\n",
 			   (unsigned long)talloc_get_size(s4),
@@ -1007,6 +1007,45 @@ static bool test_talloc_ptrtype(void)
 	talloc_free(top);
 
 	printf("success: ptrtype\n");
+	return true;
+}
+
+static int _test_talloc_free_in_destructor(void **ptr)
+{
+	talloc_free(*ptr);
+	return 0;
+}
+
+static bool test_talloc_free_in_destructor(void)
+{
+	void *level0;
+	void *level1;
+	void *level2;
+	void *level3;
+	void *level4;
+	void **level5;
+
+	printf("test: free_in_destructor [\nTALLOC FREE IN DESTRUCTOR\n]\n");
+
+	level0 = talloc_new(NULL);
+	level1 = talloc_new(level0);
+	level2 = talloc_new(level1);
+	level3 = talloc_new(level2);
+	level4 = talloc_new(level3);
+	level5 = talloc(level4, void *);
+
+	*level5 = level3;
+	(void)talloc_reference(level0, level3);
+	(void)talloc_reference(level3, level3);
+	(void)talloc_reference(level5, level3);
+
+	talloc_set_destructor(level5, _test_talloc_free_in_destructor);
+
+	talloc_free(level1);
+
+	talloc_free(level0);
+
+	printf("success: free_in_destructor\n");
 	return true;
 }
 
@@ -1055,6 +1094,7 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_loop();
 	ret &= test_free_parent_deny_child(); 
 	ret &= test_talloc_ptrtype();
+	ret &= test_talloc_free_in_destructor();
 
 	if (ret) {
 		ret &= test_speed();
