@@ -1,4 +1,17 @@
+2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-ntlm.in: One more test.
+
+	* ldap/check-ldap.in: check in /usr/lib/openldap too for slapd and
+	slapadd
+	
 2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* db/add-modify-delete.in: Remove comment.
+
+	* db/add-modify-delete.in: try replay
+
+	* db/Makefile.am: clean more files.
 
 	* db/add-modify-delete.in: try iprop-log commands.
 	
