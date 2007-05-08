@@ -173,6 +173,10 @@ add_builtin(gssapi_mech_interface mech)
     struct _gss_mech_switch *m;
     OM_uint32 minor_status;
 
+    /* not registering any mech is ok */
+    if (mech == NULL)
+	return 0;
+
     m = malloc(sizeof(*m));
     if (m == NULL)
 	return 1;
