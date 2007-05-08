@@ -51,7 +51,6 @@ static BOOL send_message(struct server_id pid, int msg_type,
 			 const void *buf, int len,
 			 BOOL duplicates)
 {
-	TDB_CONTEXT *tdb;
 	BOOL ret;
 	int n_sent = 0;
 
@@ -62,20 +61,10 @@ static BOOL send_message(struct server_id pid, int msg_type,
 		return NT_STATUS_IS_OK(message_send_pid(pid, msg_type, buf, len,
 							duplicates));
 
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
-			   TDB_DEFAULT, O_RDWR, 0);
-	if (!tdb) {
-		fprintf(stderr,"Failed to open connections database"
-			": %s\n", strerror(errno));
-		return False;
-	}
-	
-	ret = message_send_all(tdb,msg_type, buf, len, duplicates,
+	ret = message_send_all(msg_type, buf, len, duplicates,
 			       &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
 		  "%d processes\n", n_sent));
-	
-	tdb_close(tdb);
 	
 	return ret;
 }
@@ -247,16 +236,11 @@ cleanup:
 	ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
 
-static int stack_trace_connection(TDB_CONTEXT * tdb, TDB_DATA key,
-	TDB_DATA data, void * priv)
+static int stack_trace_connection(TDB_CONTEXT * tdb, 
+				  const struct connections_key *key,
+				  const struct connections_data *conn,
 {
-	struct connections_data conn;
-
-	if (data.dsize != sizeof(conn))
-		return 0;
-
-	memcpy(&conn, data.dptr, sizeof(conn));
-	print_stack_trace(procid_to_pid(&conn.pid), (int *)priv);
+	print_stack_trace(procid_to_pid(&conn->pid), (int *)priv);
 
 	return 0;
 }
@@ -286,19 +270,7 @@ static BOOL do_daemon_stack_trace(const struct server_id pid,
 		 */
 		print_stack_trace(dest, &count);
 	} else {
-		TDB_CONTEXT * tdb;
-
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
-				   TDB_DEFAULT, O_RDONLY, 0);
-		if (!tdb) {
-			fprintf(stderr,
-				"Failed to open connections database: %s\n",
-				strerror(errno));
-			return False;
-		}
-
-		tdb_traverse(tdb, stack_trace_connection, &count);
-		tdb_close(tdb);
+		connections_traverse(stack_trace_connection, &count);
 	}
 
 	return True;

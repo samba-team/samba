@@ -665,7 +665,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
  *
  * @retval True for success.
  **/
-BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
+BOOL message_send_all(int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent)
@@ -691,7 +691,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	msg_all.duplicates = duplicates_allowed;
 	msg_all.n_sent = 0;
 
-	tdb_traverse(conn_tdb, traverse_fn, &msg_all);
+	connections_traverse(traverse_fn, &msg_all);
 	if (n_sent)
 		*n_sent = msg_all.n_sent;
 	return True;

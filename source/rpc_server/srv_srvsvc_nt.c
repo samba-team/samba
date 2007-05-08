@@ -104,27 +104,22 @@ static WERROR net_enum_pipes( TALLOC_CTX *ctx, struct srvsvc_NetFileInfo3 **info
                               uint32 *count, uint32 *resume )
 {
 	struct file_enum_count fenum;
-	TDB_CONTEXT *conn_tdb = conn_tdb_ctx();
 
-	if ( !conn_tdb ) {
-		DEBUG(0,("net_enum_pipes: Failed to retrieve the connections tdb handle!\n"));
-		return WERR_ACCESS_DENIED;
-	}
-	
 	fenum.ctx = ctx;
 	fenum.info = *info;
 	fenum.count = *count;
 
-	if (tdb_traverse(conn_tdb, pipe_enum_fn, &fenum) == -1) {
-		DEBUG(0,("net_enum_pipes: traverse of connections.tdb failed with error %s.\n",
-			tdb_errorstr(conn_tdb) ));
+	if (connections_traverse(pipe_enum_fn, &fenum) == -1) {
+		DEBUG(0,("net_enum_pipes: traverse of connections.tdb "
+			 "failed\n"));
 		return WERR_NOMEM;
 	}
 	
 	*info  = fenum.info;
 	*count = fenum.count;
 	
-	return WERR_OK;}
+	return WERR_OK;
+}
 
 /*******************************************************************
 ********************************************************************/
@@ -1421,7 +1416,7 @@ static WERROR add_share(const char *share_name, const char *path,
 
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+			message_send_all(MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 
@@ -1517,7 +1512,7 @@ static WERROR delete_share(const char *sharename,
 
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+			message_send_all(MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 
@@ -1575,7 +1570,7 @@ static WERROR change_share(const char *share_name, const char *path,
 			
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+			message_send_all(MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 		

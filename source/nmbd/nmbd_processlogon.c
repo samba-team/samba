@@ -38,24 +38,10 @@ Send a message to smbd to do a sam delta sync
 
 static void send_repl_message(uint32 low_serial)
 {
-        TDB_CONTEXT *tdb;
-
-        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-                           TDB_DEFAULT, O_RDONLY, 0);
-
-        if (!tdb) {
-                DEBUG(3, ("send_repl_message(): failed to open connections "
-                          "database\n"));
-                return;
-        }
-
         DEBUG(3, ("sending replication message, serial = 0x%04x\n", 
                   low_serial));
-        
-        message_send_all(tdb, MSG_SMB_SAM_REPL, &low_serial,
+        message_send_all(MSG_SMB_SAM_REPL, &low_serial,
                          sizeof(low_serial), False, NULL);
-
-        tdb_close(tdb);
 }
 
 /****************************************************************************
