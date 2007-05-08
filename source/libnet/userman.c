@@ -127,16 +127,16 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	struct composite_context *c;
 	struct useradd_state *s;
 
+	if (!p || !io) return NULL;
+
 	/* composite allocation and setup */
-	c = talloc_zero(p, struct composite_context);
+	c = composite_create(p, dcerpc_event_context(p));
 	if (c == NULL) return NULL;
 	
 	s = talloc_zero(c, struct useradd_state);
 	if (composite_nomem(s, c)) return c;
 	
-	c->state        = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx    = dcerpc_event_context(p);
 
 	/* put passed arguments to the state structure */
 	s->domain_handle = io->in.domain_handle;
@@ -145,8 +145,13 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	
 	/* preparing parameters to send rpc request */
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
+
 	s->createuser.in.account_name          = talloc_zero(c, struct lsa_String);
+	if (composite_nomem(s->createuser.in.account_name, c)) return c;
+
 	s->createuser.in.account_name->string  = talloc_strdup(c, io->in.username);
+	if (composite_nomem(s->createuser.in.account_name->string, c)) return c;
+
 	s->createuser.out.user_handle          = &s->user_handle;
 	s->createuser.out.rid                  = &s->user_rid;
 
