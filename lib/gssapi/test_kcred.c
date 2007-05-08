@@ -102,11 +102,15 @@ copy_import(void)
     if (!equal)
 	errx(1, "names not equal");
 	
-    if (lifetime1 != lifetime1)
-	errx(1, "lifetime not equal");
+    if (lifetime1 != lifetime2)
+	errx(1, "lifetime not equal %lu != %lu",
+	     (unsigned long)lifetime1, (unsigned long)lifetime2);
 
-    if (usage1 != usage1)
-	errx(1, "usage not equal");
+    if (usage1 != usage2) {
+	/* as long any of them is both are everything it ok */
+	if (usage1 != GSS_C_BOTH && usage2 != GSS_C_BOTH)
+	    errx(1, "usages disjoined");
+    }
 
     gss_release_cred(&min_stat, &cred1);
     gss_release_cred(&min_stat, &cred2);
