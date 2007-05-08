@@ -20,21 +20,6 @@
 
 #include "includes.h"
 
-static TDB_CONTEXT *tdb;
-
-/****************************************************************************
- Return the connection tdb context (used for message send all).
-****************************************************************************/
-
-TDB_CONTEXT *conn_tdb_ctx(void)
-{
-	if (!tdb)
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
-
-	return tdb;
-}
-
 static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
@@ -62,6 +47,7 @@ BOOL yield_connection(connection_struct *conn, const char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
+	TDB_CONTEXT *tdb = conn_tdb_ctx(True);
 
 	if (!tdb)
 		return False;
@@ -110,7 +96,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
 			procid_str_static(&crec.pid), crec.cnum, crec.servicename));
 		if (tdb_delete(the_tdb, kbuf) != 0)
-			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
+			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(the_tdb) ));
 		return 0;
 	}
 
@@ -127,6 +113,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 int count_current_connections( const char *sharename, BOOL clear  )
 {
 	struct count_stat cs;
+	TDB_CONTEXT *tdb = conn_tdb_ctx(True);
 
 	cs.mypid = sys_getpid();
 	cs.curr_connections = 0;
@@ -156,11 +143,10 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
+	TDB_CONTEXT *tdb = conn_tdb_ctx(True);
 
 	if (!tdb) {
-		if ( (tdb =conn_tdb_ctx()) == NULL ) {
-			return False;
-		}
+		return False;
 	}
 	
 	/*
@@ -217,6 +203,7 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 	struct connections_key key;
 	struct connections_data *pcrec;
 	TDB_DATA kbuf, dbuf;
+	TDB_CONTEXT *tdb = conn_tdb_ctx(True);
 
 	if (!tdb)
 		return False;
@@ -317,7 +304,7 @@ BOOL store_pipe_opendb( smb_np_struct *p )
 	data.dptr = (char*)prec;
 	data.dsize = sizeof(struct pipe_open_rec);
 	
-	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
+	if ( (pipe_tdb = conn_tdb_ctx(True) ) == NULL ) {
 		goto done;
 	}
 	
@@ -348,7 +335,7 @@ BOOL delete_pipe_opendb( smb_np_struct *p )
 		goto done;
 	}
 	
-	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
+	if ( (pipe_tdb = conn_tdb_ctx(True) ) == NULL ) {
 		goto done;
 	}
 

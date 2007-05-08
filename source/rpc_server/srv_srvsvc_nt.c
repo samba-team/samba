@@ -93,27 +93,22 @@ static WERROR net_enum_pipes( TALLOC_CTX *ctx, FILE_INFO_3 **info,
                               uint32 *count, uint32 resume )
 {
 	struct file_enum_count fenum;
-	TDB_CONTEXT *conn_tdb = conn_tdb_ctx();
-
-	if ( !conn_tdb ) {
-		DEBUG(0,("net_enum_pipes: Failed to retrieve the connections tdb handle!\n"));
-		return WERR_ACCESS_DENIED;
-	}
 	
 	fenum.ctx = ctx;
 	fenum.count = *count;
 	fenum.info = *info;
 
-	if (tdb_traverse(conn_tdb, pipe_enum_fn, &fenum) == -1) {
-		DEBUG(0,("net_enum_pipes: traverse of connections.tdb failed with error %s.\n",
-			tdb_errorstr(conn_tdb) ));
+	if (connections_traverse(pipe_enum_fn, &fenum) == -1) {
+		DEBUG(0,("net_enum_pipes: traverse of connections.tdb "
+			 "failed\n"));
 		return WERR_NOMEM;
 	}
 	
 	*info  = fenum.info;
 	*count = fenum.count;
 	
-	return WERR_OK;}
+	return WERR_OK;
+}
 
 /*******************************************************************
 ********************************************************************/
@@ -1608,7 +1603,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 			
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+			message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 		}
 		
 		if ( is_disk_op )
@@ -1770,7 +1765,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 
 	if ( is_disk_op )
@@ -1861,7 +1856,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 
 	if ( is_disk_op )

@@ -1036,7 +1036,7 @@ extern void build_options(BOOL screen);
 	if (!session_init())
 		exit(1);
 
-	if (conn_tdb_ctx() == NULL)
+	if (!connections_init(True))
 		exit(1);
 
 	if (!locking_init(0))
