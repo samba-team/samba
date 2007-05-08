@@ -75,22 +75,8 @@ Send a message to smbd to do a sam synchronisation
 
 static void send_sync_message(void)
 {
-        TDB_CONTEXT *tdb;
-
-        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-                           TDB_DEFAULT, O_RDONLY, 0);
-
-        if (!tdb) {
-                DEBUG(3, ("send_sync_message(): failed to open connections "
-                          "database\n"));
-                return;
-        }
-
         DEBUG(3, ("sending sam synchronisation message\n"));
-        
-        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False, NULL);
-
-        tdb_close(tdb);
+        message_send_all(MSG_SMB_SAM_SYNC, NULL, 0, False, NULL);
 }
 
 /*************************************************************************

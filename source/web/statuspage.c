@@ -167,20 +167,17 @@ static void print_share_mode(const struct share_mode_entry *e,
 
 
 /* kill off any connections chosen by the user */
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
+static int traverse_fn1(TDB_CONTEXT *tdb,
+			const struct connections_key *key,
+			const struct connections_data *crec,
+			void* state)
 {
-	struct connections_data crec;
-
-	if (dbuf.dsize != sizeof(crec))
-		return 0;
-
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum == -1 && process_exists(crec.pid)) {
+	if (crec->cnum == -1 && process_exists(crec->pid)) {
 		char buf[30];
-		slprintf(buf,sizeof(buf)-1,"kill_%s", procid_str_static(&crec.pid));
+		slprintf(buf, sizeof(buf)-1,"kill_%s",
+			 procid_str_static(&crec->pid));
 		if (cgi_variable(buf)) {
-			kill_pid(crec.pid);
+			kill_pid(crec->pid);
 			sleep(SLEEP_TIME);
 		}
 	}
@@ -188,28 +185,24 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 }
 
 /* traversal fn for showing machine connections */
-static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
+static int traverse_fn2(TDB_CONTEXT *tdb,
+			const struct connections_key *key,
+			const struct connections_data *crec,
+			void* state)
 {
-	struct connections_data crec;
-
-	if (dbuf.dsize != sizeof(crec))
+	if (crec->cnum == -1 || !process_exists(crec->pid) ||
+	    procid_equal(&crec->pid, &smbd_pid))
 		return 0;
 
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-	
-	if (crec.cnum == -1 || !process_exists(crec.pid) ||
-	    procid_equal(&crec.pid, &smbd_pid))
-		return 0;
-
-	addPid2Machine (crec.pid, crec.machine);
+	addPid2Machine (crec->pid, crec->machine);
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>\n",
-	       procid_str_static(&crec.pid),
-	       crec.machine,crec.addr,
-	       tstring(crec.start));
+	       procid_str_static(&crec->pid),
+	       crec->machine, crec->addr,
+	       tstring(crec->start));
 	if (geteuid() == 0) {
 		printf("<td><input type=submit value=\"X\" name=\"kill_%s\"></td>\n",
-		       procid_str_static(&crec.pid));
+		       procid_str_static(&crec->pid));
 	}
 	printf("</tr>\n");
 
@@ -217,23 +210,19 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 }
 
 /* traversal fn for showing share connections */
-static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
+static int traverse_fn3(TDB_CONTEXT *tdb,
+			const struct connections_key *key,
+			const struct connections_data *crec,
+			void* state)
 {
-	struct connections_data crec;
-
-	if (dbuf.dsize != sizeof(crec))
-		return 0;
-
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum == -1 || !process_exists(crec.pid))
+	if (crec->cnum == -1 || !process_exists(crec->pid))
 		return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
-	       crec.servicename,uidtoname(crec.uid),
-	       gidtoname(crec.gid),procid_str_static(&crec.pid),
-	       crec.machine,
-	       tstring(crec.start));
+	       crec->servicename, uidtoname(crec->uid),
+	       gidtoname(crec->gid),procid_str_static(&crec->pid),
+	       crec->machine,
+	       tstring(crec->start));
 	return 0;
 }
 
@@ -244,7 +233,6 @@ void status_page(void)
 	const char *v;
 	int autorefresh=0;
 	int refresh_interval=30;
-	TDB_CONTEXT *tdb;
 	int nr_running=0;
 	BOOL waitup = False;
 
@@ -322,8 +310,7 @@ void status_page(void)
 		PID_or_Machine = 0;
 	}
 
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
+	connections_forall(traverse_fn1, NULL);
  
 	initPid2Machine ();
 
@@ -343,12 +330,6 @@ void status_page(void)
 	}
 
 	printf("<p>\n");
-
-	if (!tdb) {
-		/* open failure either means no connections have been
-                   made */
-	}
-
 
 	printf("<table>\n");
 
@@ -419,7 +400,7 @@ void status_page(void)
 	}
 	printf("</tr>\n");
 
-	if (tdb) tdb_traverse(tdb, traverse_fn2, NULL);
+	connections_forall(traverse_fn2, NULL);
 
 	printf("</table><p>\n");
 
@@ -428,7 +409,7 @@ void status_page(void)
 	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n\n",
 		_("Share"), _("User"), _("Group"), _("PID"), _("Client"), _("Date"));
 
-	if (tdb) tdb_traverse(tdb, traverse_fn3, NULL);
+	connections_forall(traverse_fn3, NULL);
 
 	printf("</table><p>\n");
 
@@ -440,8 +421,6 @@ void status_page(void)
 	share_mode_forall(print_share_mode, NULL);
 	locking_end();
 	printf("</table>\n");
-
-	if (tdb) tdb_close(tdb);
 
 	printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"%s\">\n", _("Show Client in col 1"));
 	printf("<input type=submit name=\"show_pid_in_col_1\" value=\"%s\">\n", _("Show PID in col 1"));

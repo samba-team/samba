@@ -84,27 +84,22 @@ static int net_status_sessions(int argc, const char **argv)
 	return 0;
 }
 
-static int show_share(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+static int show_share(TDB_CONTEXT *tdb, 
+		      const struct connections_key *key,
+		      const struct connections_data *crec,
 		      void *state)
 {
-	struct connections_data crec;
-
-	if (dbuf.dsize != sizeof(crec))
+	if (crec->cnum == -1)
 		return 0;
 
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum == -1)
-		return 0;
-
-	if (!process_exists(crec.pid)) {
+	if (!process_exists(crec->pid)) {
 		return 0;
 	}
 
 	d_printf("%-10.10s   %s   %-12s  %s",
-	       crec.servicename, procid_str_static(&crec.pid),
-	       crec.machine,
-	       time_to_asc(crec.start));
+	       crec->servicename, procid_str_static(&crec->pid),
+	       crec->machine,
+	       time_to_asc(crec->start));
 
 	return 0;
 }
@@ -139,41 +134,37 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	return 0;
 }
 
-static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+static int show_share_parseable(TDB_CONTEXT *tdb,
+				const struct connections_key *key,
+				const struct connections_data *crec,
 				void *state)
 {
 	struct sessionids *ids = (struct sessionids *)state;
-	struct connections_data crec;
 	int i;
 	BOOL guest = True;
 
-	if (dbuf.dsize != sizeof(crec))
+	if (crec->cnum == -1)
 		return 0;
 
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum == -1)
-		return 0;
-
-	if (!process_exists(crec.pid)) {
+	if (!process_exists(crec->pid)) {
 		return 0;
 	}
 
 	for (i=0; i<ids->num_entries; i++) {
 		struct server_id id = ids->entries[i].pid;
-		if (procid_equal(&id, &crec.pid)) {
+		if (procid_equal(&id, &crec->pid)) {
 			guest = False;
 			break;
 		}
 	}
 
 	d_printf("%s\\%s\\%s\\%s\\%s\\%s\\%s",
-		 crec.servicename,procid_str_static(&crec.pid),
+		 crec->servicename,procid_str_static(&crec->pid),
 		 guest ? "" : uidtoname(ids->entries[i].uid),
 		 guest ? "" : gidtoname(ids->entries[i].gid),
-		 crec.machine, 
+		 crec->machine, 
 		 guest ? "" : ids->entries[i].hostname,
-		 time_to_asc(crec.start));
+		 time_to_asc(crec->start));
 
 	return 0;
 }
@@ -197,18 +188,7 @@ static int net_status_shares_parseable(int argc, const char **argv)
 	tdb_traverse(tdb, collect_pid, &ids);
 	tdb_close(tdb);
 
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-			   TDB_DEFAULT, O_RDONLY, 0);
-
-	if (tdb == NULL) {
-		d_fprintf(stderr, "%s not initialised\n", lock_path("connections.tdb"));
-		d_fprintf(stderr, "This is normal if no SMB client has ever "
-			 "connected to your server.\n");
-		return -1;
-	}
-
-	tdb_traverse(tdb, show_share_parseable, &ids);
-	tdb_close(tdb);
+	connections_forall(show_share_parseable, &ids);
 
 	SAFE_FREE(ids.entries);
 
@@ -217,8 +197,6 @@ static int net_status_shares_parseable(int argc, const char **argv)
 
 static int net_status_shares(int argc, const char **argv)
 {
-	TDB_CONTEXT *tdb;
-
 	if (argc == 0) {
 
 		d_printf("\nService      pid     machine       "
@@ -226,19 +204,7 @@ static int net_status_shares(int argc, const char **argv)
 		d_printf("-------------------------------------"
 			 "------------------\n");
 
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-				   TDB_DEFAULT, O_RDONLY, 0);
-
-		if (tdb == NULL) {
-			d_fprintf(stderr, "%s not initialised\n",
-				 lock_path("connections.tdb"));
-			d_fprintf(stderr, "This is normal if no SMB client has "
-				 "ever connected to your server.\n");
-			return -1;
-		}
-
-		tdb_traverse(tdb, show_share, NULL);
-		tdb_close(tdb);
+		connections_forall(show_share, NULL);
 
 		return 0;
 	}

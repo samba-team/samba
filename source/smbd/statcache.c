@@ -292,8 +292,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 void send_stat_cache_delete_message(const char *name)
 {
 #ifdef DEVELOPER
-	message_send_all(conn_tdb_ctx(),
-			MSG_SMB_STAT_CACHE_DELETE,
+	message_send_all(MSG_SMB_STAT_CACHE_DELETE,
 			name,
 			strlen(name)+1,
 			True,
