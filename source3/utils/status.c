@@ -188,26 +188,22 @@ static void print_brl(SMB_DEV_T dev,
 	       (double)start, (double)size);
 }
 
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_fn1(TDB_CONTEXT *tdb,
+			const struct connections_key *key,
+			const struct connections_data *crec,
+			void *state)
 {
-	struct connections_data crec;
-
-	if (dbuf.dsize != sizeof(crec))
+	if (crec->cnum == -1)
 		return 0;
 
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum == -1)
-		return 0;
-
-	if (!process_exists(crec.pid) || !Ucrit_checkUid(crec.uid)) {
+	if (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid)) {
 		return 0;
 	}
 
 	d_printf("%-10s   %s   %-12s  %s",
-	       crec.servicename,procid_str_static(&crec.pid),
-	       crec.machine,
-	       time_to_asc(crec.start));
+	       crec->servicename,procid_str_static(&crec->pid),
+	       crec->machine,
+	       time_to_asc(crec->start));
 
 	return 0;
 }
@@ -339,26 +335,19 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	}
   
 	if ( show_shares ) {
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (!tdb) {
-			d_printf("%s not initialised\n", lock_path("connections.tdb"));
-			d_printf("This is normal if an SMB client has never connected to your server.\n");
-		}  else  {
-			if (verbose) {
-				d_printf("Opened %s\n", lock_path("connections.tdb"));
-			}
-
-			if (brief) 
-				exit(0);
-		
-			d_printf("\nService      pid     machine       Connected at\n");
-			d_printf("-------------------------------------------------------\n");
-	
-			tdb_traverse(tdb, traverse_fn1, NULL);
-			tdb_close(tdb);
-
-			d_printf("\n");
+		if (verbose) {
+			d_printf("Opened %s\n", lock_path("connections.tdb"));
 		}
+
+		if (brief) 
+			exit(0);
+		
+		d_printf("\nService      pid     machine       Connected at\n");
+		d_printf("-------------------------------------------------------\n");
+	
+		connections_forall(traverse_fn1, NULL);
+
+		d_printf("\n");
 
 		if ( shares_only )
 			exit(0);
