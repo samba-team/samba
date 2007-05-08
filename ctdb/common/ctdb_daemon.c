@@ -720,6 +720,15 @@ int ctdb_start_daemon(struct ctdb_context *ctdb)
 	ctdb->ev = event_context_init(NULL);
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
+
+	/* start the recovery daemon */
+	if (ctdb->flags & CTDB_FLAG_RECOVERY) {
+		char cmdstr[256];
+
+		sprintf(cmdstr, "ctdb_recoverd --socket=%s &",domain_socket_name); 
+		system(cmdstr);
+	}
+
 	ctdb_main_loop(ctdb);
 
 	return 0;

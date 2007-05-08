@@ -38,6 +38,7 @@ static struct {
 	int torture;
 	const char *logfile;
 	const char *events;
+	int recovery_daemon;
 } ctdb_cmdline = {
 	.nlist = NULL,
 	.transport = "tcp",
@@ -47,6 +48,7 @@ static struct {
 	.db_dir = NULL,
 	.torture = 0,
 	.logfile = NULL,
+	.recovery_daemon = 0,
 };
 
 enum {OPT_EVENTSYSTEM=1};
@@ -71,6 +73,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
 	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
 	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
+	{ "recovery-daemon", 0, POPT_ARG_NONE, &ctdb_cmdline.recovery_daemon, 0, "enable recovery daemon", "boolean" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
 	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
@@ -111,6 +114,9 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	}
 	if (ctdb_cmdline.torture) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
+	}
+	if (ctdb_cmdline.recovery_daemon) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_RECOVERY);
 	}
 
 	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);
