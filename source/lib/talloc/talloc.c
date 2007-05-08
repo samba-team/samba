@@ -1137,6 +1137,8 @@ char *talloc_append_string(const void *t, char *orig, const char *append)
 	/* append the string with the trailing \0 */
 	memcpy(&ret[olen], append, alenz);
 
+	_talloc_set_name_const(ret, ret);
+
 	return ret;
 }
 
