@@ -533,12 +533,25 @@ This functions sets the name of the new pointer to the passed
 string. This is equivalent to:
    talloc_set_name_const(ptr, ptr)
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+char *talloc_append_string(const void *t, char *orig, const char *append);
+
+The talloc_append_string() function appends the given formatted
+string to the given string.
+
+This function sets the name of the new pointer to the new
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 char *talloc_vasprintf(const void *t, const char *fmt, va_list ap);
 
 The talloc_vasprintf() function is the talloc equivalent of the C
 library function vasprintf()
+
+This functions sets the name of the new pointer to the new
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -547,7 +560,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...);
 The talloc_asprintf() function is the talloc equivalent of the C
 library function asprintf()
 
-This functions sets the name of the new pointer to the passed
+This functions sets the name of the new pointer to the new
 string. This is equivalent to:
    talloc_set_name_const(ptr, ptr)
 
@@ -557,6 +570,10 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...);
 
 The talloc_asprintf_append() function appends the given formatted 
 string to the given string. 
+
+This functions sets the name of the new pointer to the new
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
