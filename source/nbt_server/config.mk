@@ -8,14 +8,14 @@ OBJ_FILES = \
 		wins/wins_hook.o
 PRIVATE_PROTO_HEADER = wins/winsdb_proto.h
 PUBLIC_DEPENDENCIES = \
-		ldb
+		LIBLDB
 # End SUBSYSTEM WINSDB
 #######################
 
 #######################
 # Start MODULE ldb_wins_ldb
 [MODULE::ldb_wins_ldb]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 INIT_FUNCTION = wins_ldb_module_init
 OBJ_FILES = \
 		wins/wins_ldb.o

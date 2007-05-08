@@ -9,7 +9,7 @@ OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o
 PRIVATE_DEPENDENCIES = \
-		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
+		LIBLDB KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
 # End SUBSYSTEM KDC
 #######################
 
@@ -22,7 +22,7 @@ OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 PRIVATE_DEPENDENCIES = \
-		ldb auth_sam KERBEROS
+		LIBLDB auth_sam KERBEROS
 # End SUBSYSTEM KDC
 #######################
 
