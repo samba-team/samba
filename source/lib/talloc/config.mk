@@ -11,8 +11,3 @@ DESCRIPTION = A hierarchical pool based memory system with destructors
 #
 # End LIBRARY LIBTALLOC
 ################################################
-
-[BINARY::TALLOC]
-OBJ_FILES = testsuite.o
-PRIVATE_DEPENDENCIES = LIBTALLOC
-INSTALLDIR = TORTUREDIR/LOCAL
