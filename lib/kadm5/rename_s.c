@@ -90,9 +90,7 @@ kadm5_s_rename_principal(void *server_handle,
 	goto out2;
     }
 
-    kadm5_log_rename (context,
-		      source,
-		      &ent.entry);
+    kadm5_log_rename (context, source, &ent.entry);
 
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
     if(ret){
