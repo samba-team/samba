@@ -80,7 +80,7 @@ OM_uint32 _gsskrb5_inquire_cred
 				    NULL,
 				    NULL);
 	if (ret == GSS_S_COMPLETE)
-	    acred = (gsskrb5_cred)aqcred_init;
+	    icred = (gsskrb5_cred)aqcred_init;
 
 	if (icred == NULL && acred == NULL) {
 	    *minor_status = 0;
@@ -98,7 +98,7 @@ OM_uint32 _gsskrb5_inquire_cred
 	if (icred && icred->principal != NULL) {
 	    gss_name_t name;
 	    
-	    if (acred)
+	    if (acred && acred->principal)
 		name = (gss_name_t)acred->principal;
 	    else
 		name = (gss_name_t)icred->principal;
