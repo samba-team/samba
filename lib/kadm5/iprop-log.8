@@ -150,6 +150,21 @@ realm
 .Pp
 Replay the changes from specified entries (or all if none is
 specified) in the transaction log to the database.
+.It last-version
+.Bl -tag -width Ds
+.It Xo
+.Fl c Ar file ,
+.Fl -config-file= Ns Ar file
+.Xc
+configuration file
+.It Xo
+.Fl r Ar string ,
+.Fl -realm= Ns Ar string
+.Xc
+realm
+.El
+.Pp
+prints the version of the last log entry.
 .El
 .Sh SEE ALSO
 .Xr iprop 8
