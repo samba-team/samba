@@ -4,7 +4,7 @@
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
 INIT_FUNCTION = ldb_asq_init
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/asq.o
 # End MODULE ldb_asq
@@ -16,7 +16,7 @@ OBJ_FILES = \
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
 INIT_FUNCTION = ldb_sort_init
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/sort.o
 # End MODULE ldb_sort
@@ -28,7 +28,7 @@ OBJ_FILES = \
 INIT_FUNCTION = ldb_paged_results_init
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/paged_results.o
 # End MODULE ldb_paged_results
@@ -40,7 +40,7 @@ OBJ_FILES = \
 INIT_FUNCTION = ldb_paged_searches_init
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/paged_searches.o
 # End MODULE ldb_paged_results
@@ -49,7 +49,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_operational
 [MODULE::ldb_operational]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_operational_init
@@ -64,7 +64,7 @@ OBJ_FILES = \
 INIT_FUNCTION = ldb_objectclass_init
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/objectclass.o
 # End MODULE ldb_objectclass
@@ -73,7 +73,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_rdn_name
 [MODULE::ldb_rdn_name]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_rdn_name_init
@@ -85,7 +85,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBCLI_LDAP
 INIT_FUNCTION = ldb_ildap_init
@@ -99,19 +99,19 @@ OBJ_FILES = \
 # Start MODULE ldb_map
 [MODULE::ldb_map]
 PRIVATE_DEPENDENCIES = LIBTALLOC
-CFLAGS = -Ilib/ldb/include -Ilib/ldb/modules
-SUBSYSTEM = ldb
+CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_map
+SUBSYSTEM = LIBLDB
 OBJ_FILES = \
-		modules/ldb_map_inbound.o \
-		modules/ldb_map_outbound.o \
-		modules/ldb_map.o
+		ldb_map/ldb_map_inbound.o \
+		ldb_map/ldb_map_outbound.o \
+		ldb_map/ldb_map.o
 # End MODULE ldb_map
 ################################################
 
 ################################################
 # Start MODULE ldb_skel
 [MODULE::ldb_skel]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_skel_init
@@ -122,7 +122,7 @@ OBJ_FILES = modules/skel.o
 ################################################
 # Start MODULE ldb_sqlite3
 [MODULE::ldb_sqlite3]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTALLOC
 INIT_FUNCTION = ldb_sqlite3_init
@@ -134,7 +134,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_tdb
 [MODULE::ldb_tdb]
-SUBSYSTEM = ldb
+SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_tdb
 INIT_FUNCTION = ldb_tdb_init
 OBJ_FILES = \
@@ -155,7 +155,7 @@ PRIVATE_DEPENDENCIES = \
 
 ################################################
 # Start SUBSYSTEM ldb
-[LIBRARY::ldb]
+[LIBRARY::LIBLDB]
 VERSION = 0.0.1
 SO_VERSION = 0
 CFLAGS = -Ilib/ldb/include
@@ -187,23 +187,12 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 ################################################
 
 ################################################
-# Start SUBSYSTEM LDBSAMBA
-[SUBSYSTEM::LDBSAMBA]
-PUBLIC_DEPENDENCIES = ldb
-PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
-PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB
-OBJ_FILES = \
-		samba/ldif_handlers.o
-# End SUBSYSTEM LDBSAMBA
-################################################
-
-################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
 CFLAGS = -Ilib/ldb
 OBJ_FILES= \
 		tools/cmdline.o
-PUBLIC_DEPENDENCIES = ldb LIBPOPT
+PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL POPT_SAMBA POPT_CREDENTIALS gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
@@ -319,8 +308,10 @@ PRIVATE_DEPENDENCIES = \
 #######################
 # Start LIBRARY swig_ldb
 [LIBRARY::swig_ldb]
-PUBLIC_DEPENDENCIES = ldb DYNCONFIG
+PUBLIC_DEPENDENCIES = LIBLDB DYNCONFIG
 LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
 OBJ_FILES = swig/ldb_wrap.o
 # End LIBRARY swig_ldb
 #######################
+
+include samba/config.mk
