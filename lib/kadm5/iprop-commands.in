@@ -77,12 +77,14 @@ command = {
 		type = "integer"
 		help = "start replay with this version"
 		argument = "version-number"
+		default = "-1"
 	}
 	option = {
 		long = "end-version"
 		type = "integer"
 		help = "end replay with this version"
 		argument = "version-number"
+		default = "-1"
 	}
 	option = {
 		long = "config-file"
