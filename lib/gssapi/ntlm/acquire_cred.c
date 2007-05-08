@@ -46,7 +46,6 @@ OM_uint32 _gss_ntlm_acquire_cred
             OM_uint32 * time_rec
            )
 {
-    ntlm_name name = (ntlm_name)desired_name;
     OM_uint32 maj_stat;
     ntlm_ctx ctx;
 
