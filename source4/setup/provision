@@ -29,6 +29,7 @@ options = GetOptions(ARGV,
 		'users=s',
 		'quiet',
 		'blank',
+		'partitions-only',
 		'ldap-base',
 		'ldap-backend=s',
                 'ldap-module=s',
@@ -79,6 +80,7 @@ provision [options]
  --users	GROUPNAME	choose 'users' group
  --quiet			Be quiet
  --blank			do not add users or groups, just the structure
+ --partitions-only              Configure Samba's partitions, but do not modify them (ie, join a BDC)
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
  --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
@@ -118,7 +120,7 @@ var blank = (options["blank"] != undefined);
 var ldapbase = (options["ldap-base"] != undefined);
 var ldapbackend = (options["ldap-backend"] != undefined);
 var ldapmodule = (options["ldap-module"] != undefined);
-
+var partitions_only = (options["partitions-only"] != undefined);
 if (options["aci"] != undefined) {
 	message("set ACI: %s\n", subobj["ACI"]);
 }
@@ -148,6 +150,8 @@ message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
 if (ldapbase) {
 	provision_ldapbase(subobj, message, paths);
+} else if (partitions_only) {
+	provision_become_dc(subobj, message, false, paths, system_session);
 } else {
 	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
 	provision_dns(subobj, message, paths, system_session, creds);

@@ -224,7 +224,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"\n"
 		"var system_session = system_session();\n"
 		"\n"
-		"var ok = provision_become_dc(subobj, message, paths, system_session);\n"
+		"var ok = provision_become_dc(subobj, message, true, paths, system_session);\n"
 		"assert(ok);\n"
 		"\n"
 		"return 0;\n",
