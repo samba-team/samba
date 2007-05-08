@@ -41,6 +41,10 @@ LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
 	$(LDB_TDB_DIR)/ldb_pack.o $(LDB_TDB_DIR)/ldb_search.o $(LDB_TDB_DIR)/ldb_index.o \
 	$(LDB_TDB_DIR)/ldb_cache.o $(LDB_TDB_DIR)/ldb_tdb_wrap.o
 
+LDB_MAP_DIR=ldb_map
+LDB_MAP_OBJ=$(LDB_MAP_DIR)/ldb_map.o $(LDB_MAP_DIR)/ldb_map_inbound.o \
+	    $(LDB_MAP_DIR)/ldb_map_outbound.o
+
 COMDIR=common
 COMMON_OBJ=$(COMDIR)/ldb.o $(COMDIR)/ldb_ldif.o \
 	   $(COMDIR)/ldb_parse.o $(COMDIR)/ldb_msg.o $(COMDIR)/ldb_utf8.o \
@@ -57,7 +61,7 @@ NSSDIR=nssldb
 NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
 NSS_LIB = lib/libnss_ldb.so.2
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 LDB_LIB = lib/libldb.a
 

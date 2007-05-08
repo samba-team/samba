@@ -68,7 +68,7 @@ SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_ldb.o
 PRIVATE_DEPENDENCIES = \
-		ldb
+		LIBLDB	
 # End MODULE registry_ldb
 ################################################
 
