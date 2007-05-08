@@ -1,4 +1,9 @@
-2007-02-17 Love Hörnquist Åstrand <lha@it.su.se>
+2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* log.c (kadm5_log_previous): document assumptions and make less
+	broken.  Bug report from Ronny Blomme.
+	
+2007-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* admin.h: add support to get aliases
 
