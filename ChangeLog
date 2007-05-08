@@ -1,3 +1,8 @@
+2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/win2k.texi: Fix ksetup /SetComputerPassword, from Ronny
+	Blomme
+	
 2007-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/dbinfo.c (hdb_get_dbinfo) If there are no database
