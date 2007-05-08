@@ -123,8 +123,6 @@ sort out-current-db > out-current-db-sort
 
 rm -f current-db*
 
-#${iproplog} dump
-
 echo "replaying"
 ${iproplog} replay > /dev/null || exit 1
 
