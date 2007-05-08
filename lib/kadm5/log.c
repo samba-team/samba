@@ -276,13 +276,18 @@ kadm5_log_replay_create (kadm5_server_context *context,
     memset(&ent, 0, sizeof(ent));
 
     ret = krb5_data_alloc (&data, len);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context->context, "out of memory");
 	return ret;
+    }
     krb5_storage_read (sp, data.data, len);
     ret = hdb_value2entry (context->context, &data, &ent.entry);
     krb5_data_free(&data);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context->context, 
+			      "Unmarshaling hdb entry failed");
 	return ret;
+    }
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
     hdb_free_entry (context->context, &ent);
     return ret;
@@ -678,22 +683,19 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     if ((mask & KADM5_TL_DATA) && log_ent.entry.extensions) {
 	HDB_extensions *es = ent.entry.extensions;
 
-	if (ent.entry.extensions == NULL) {
-	    ent.entry.extensions = calloc(1, sizeof(*ent.entry.extensions));
-	    if (ent.entry.extensions == NULL)
-		goto out;
-	}
+	ent.entry.extensions = calloc(1, sizeof(*ent.entry.extensions));
+	if (ent.entry.extensions == NULL)
+	    goto out;
 
-	ret = copy_HDB_extensions(es, ent.entry.extensions);
+	ret = copy_HDB_extensions(log_ent.entry.extensions,
+				  ent.entry.extensions);
 	if (ret) {
 	    free(ent.entry.extensions);
 	    ent.entry.extensions = es;
 	    goto out;
 	}
-	if (es) {
-	    free_HDB_extensions(es);
-	    free(es);
-	}
+	free_HDB_extensions(es);
+	free(es);
     }
     ret = context->db->hdb_store(context->context, context->db, 
 				 HDB_F_REPLACE, &ent);
