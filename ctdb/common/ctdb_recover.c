@@ -52,12 +52,19 @@ ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 int 
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	if (ctdb->vnn_map) {
-		talloc_free(ctdb->vnn_map);
-		ctdb->vnn_map = NULL;
-	}
+	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
 
-	ctdb->vnn_map = (struct ctdb_vnn_map *)talloc_memdup(ctdb, indata.dptr, indata.dsize);
+	talloc_free(ctdb->vnn_map);
+
+	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
+
+	ctdb->vnn_map->generation = map->generation;
+	ctdb->vnn_map->size       = map->size;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, map->size);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
+
+	memcpy(ctdb->vnn_map->map, map->map, sizeof(uint32_t)*map->size);
 
 	return 0;
 }

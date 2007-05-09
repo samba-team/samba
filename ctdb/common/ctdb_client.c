@@ -990,9 +990,19 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t res;
+	struct ctdb_vnn_map_wire *map;
+	size_t len;
 
-	data.dsize = offsetof(struct ctdb_vnn_map, map) + 4*vnnmap->size;
-	data.dptr  = (unsigned char *)vnnmap;
+	len = offsetof(struct ctdb_vnn_map_wire, map) + sizeof(uint32_t)*vnnmap->size;
+	map = talloc_size(mem_ctx, len);
+	CTDB_NO_MEMORY_VOID(ctdb, map);
+
+	map->generation = vnnmap->generation;
+	map->size = vnnmap->size;
+	memcpy(map->map, vnnmap->map, sizeof(uint32_t)*map->size);
+	
+	data.dsize = len;
+	data.dptr  = (uint8_t *)map;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_SETVNNMAP, 0, data, 
@@ -1001,6 +1011,8 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 		DEBUG(0,(__location__ " ctdb_control for setvnnmap failed\n"));
 		return -1;
 	}
+
+	talloc_free(map);
 
 	return 0;
 }
