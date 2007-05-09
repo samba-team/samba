@@ -495,7 +495,7 @@ static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
 			/* cant let the mem_ctx free hdr below */
 			talloc_steal(retry, hdr);
 
-			event_add_timed(ctdb->ev, hdr, timeval_current_ofs(1,0), retry_client_packet, retry);
+			event_add_timed(ctdb->ev, retry, timeval_current_ofs(1,0), retry_client_packet, retry);
 			break;
 		}
 
