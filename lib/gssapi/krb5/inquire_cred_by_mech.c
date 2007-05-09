@@ -54,14 +54,23 @@ OM_uint32 _gsskrb5_inquire_cred_by_mech (
 			       name, &lifetime, &usage, NULL);
     if (maj_stat)
 	return maj_stat;
-    
-    if (initiator_lifetime)
+
+    if (initiator_lifetime) {
 	if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)
 	    *initiator_lifetime = lifetime;
+	else
+	    *initiator_lifetime = 0;
+    }
    
-    if (acceptor_lifetime)
+    if (acceptor_lifetime) {
 	if (usage == GSS_C_ACCEPT || usage == GSS_C_BOTH)
 	    *acceptor_lifetime = lifetime;
+	else
+	    *acceptor_lifetime = 0;
+    }
+
+    if (cred_usage)
+	*cred_usage = usage;
 
     return GSS_S_COMPLETE;
 }
