@@ -904,28 +904,35 @@ NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 	return pdb->del_groupmem(pdb, mem_ctx, group_rid, member_rid);
 }
 
+BOOL pdb_find_alias(const char *name, DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return NT_STATUS_IS_OK(pdb->find_alias(pdb, name, sid));
+}
+
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->create_alias(pdb, name, rid);
 }
 
-NTSTATUS pdb_delete_alias(const DOM_SID *sid)
+BOOL pdb_delete_alias(const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->delete_alias(pdb, sid);
+	return NT_STATUS_IS_OK(pdb->delete_alias(pdb, sid));
+							    
 }
 
-NTSTATUS pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->get_aliasinfo(pdb, sid, info);
+	return NT_STATUS_IS_OK(pdb->get_aliasinfo(pdb, sid, info));
 }
 
-NTSTATUS pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->set_aliasinfo(pdb, sid, info);
+	return NT_STATUS_IS_OK(pdb->set_aliasinfo(pdb, sid, info));
 }
 
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
