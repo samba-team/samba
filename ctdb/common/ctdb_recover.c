@@ -32,9 +32,19 @@ int
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	CHECK_CONTROL_DATA_SIZE(0);
+	struct ctdb_vnn_map_wire *map;
+	size_t len;
 
-	outdata->dsize = offsetof(struct ctdb_vnn_map, map) + 4*ctdb->vnn_map->size;
-	outdata->dptr  = (unsigned char *)ctdb->vnn_map;
+	len = offsetof(struct ctdb_vnn_map_wire, map) + sizeof(uint32_t)*ctdb->vnn_map->size;
+	map = talloc_size(outdata, len);
+	CTDB_NO_MEMORY_VOID(ctdb, map);
+
+	map->generation = ctdb->vnn_map->generation;
+	map->size = ctdb->vnn_map->size;
+	memcpy(map->map, ctdb->vnn_map->map, sizeof(uint32_t)*map->size);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)map;
 
 	return 0;
 }

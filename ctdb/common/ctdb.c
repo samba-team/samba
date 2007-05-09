@@ -161,15 +161,16 @@ XXX Once we have recovery working we should initialize this always to
 XXX generation==0 (==invalid) and let the recovery tool populate this 
 XXX table for the daemons. 
 */
-	ctdb->vnn_map = talloc_zero_size(ctdb, offsetof(struct ctdb_vnn_map, map) + 4*ctdb->num_nodes);
-	if (ctdb->vnn_map == NULL) {
-		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
-		exit(1);
-	}
+	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
+
 	ctdb->vnn_map->generation = 1;
 	ctdb->vnn_map->size = ctdb->num_nodes;
-	for(i=0;i<ctdb->vnn_map->size;i++){
-		ctdb->vnn_map->map[i] = i%ctdb->num_nodes;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
+
+	for(i=0;i<ctdb->vnn_map->size;i++) {
+		ctdb->vnn_map->map[i] = i;
 	}
 	
 	talloc_free(lines);

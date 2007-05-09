@@ -192,6 +192,15 @@ struct ctdb_status {
 struct ctdb_vnn_map {
 	uint32_t generation;
 	uint32_t size;
+	uint32_t *map;
+};
+
+/* 
+   a wire representation of the vnn map
+ */
+struct ctdb_vnn_map_wire {
+	uint32_t generation;
+	uint32_t size;
 	uint32_t map[1];
 };
 

@@ -808,6 +808,7 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t res;
+	struct ctdb_vnn_map_wire *map;
 
 	ZERO_STRUCT(data);
 	ret = ctdb_control(ctdb, destnode, 0, 
@@ -817,8 +818,22 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
 		return -1;
 	}
+	
+	map = (struct ctdb_vnn_map_wire *)outdata.dptr;
+	if (outdata.dsize < offsetof(struct ctdb_vnn_map_wire, map) ||
+	    outdata.dsize != map->size*sizeof(uint32_t) + offsetof(struct ctdb_vnn_map_wire, map)) {
+		DEBUG(0,("Bad vnn map size received in ctdb_ctrl_getvnnmap\n"));
+		return -1;
+	}
 
-	*vnnmap = (struct ctdb_vnn_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	(*vnnmap) = talloc(mem_ctx, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, *vnnmap);
+	(*vnnmap)->generation = map->generation;
+	(*vnnmap)->size       = map->size;
+	(*vnnmap)->map        = talloc_array(*vnnmap, uint32_t, map->size);
+
+	CTDB_NO_MEMORY(ctdb, (*vnnmap)->map);
+	memcpy((*vnnmap)->map, map->map, sizeof(uint32_t)*map->size);
 		    
 	return 0;
 }
