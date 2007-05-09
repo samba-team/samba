@@ -440,8 +440,9 @@ static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event 
 	ctdb_db->seqnum = new_seqnum;
 
 	/* setup a new timer */
-	event_add_timed(ctdb->ev, ctdb_db, timeval_current_ofs(ctdb->seqnum_frequency, 0),
-			ctdb_ltdb_seqnum_check, ctdb_db);
+	ctdb_db->te = event_add_timed(ctdb->ev, ctdb_db, 
+				      timeval_current_ofs(ctdb->seqnum_frequency, 0),
+				      ctdb_ltdb_seqnum_check, ctdb_db);
 }
 
 /*
@@ -456,8 +457,11 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 		return -1;
 	}
 
-	event_add_timed(ctdb->ev, ctdb_db, timeval_current_ofs(ctdb->seqnum_frequency, 0),
-			ctdb_ltdb_seqnum_check, ctdb_db);
+	if (ctdb_db->te == NULL) {
+		ctdb_db->te = event_add_timed(ctdb->ev, ctdb_db, 
+					      timeval_current_ofs(ctdb->seqnum_frequency, 0),
+					      ctdb_ltdb_seqnum_check, ctdb_db);
+	}
 
 	tdb_enable_seqnum(ctdb_db->ltdb->tdb);
 	ctdb_db->seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);

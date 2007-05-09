@@ -246,6 +246,7 @@ struct ctdb_db_context {
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
+	struct timed_event *te;
 };
 
 
