@@ -163,6 +163,7 @@ enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 	map.sid = &sid;
 	map.xid.id = state->request.data.dual_idmapset.id;
 	map.xid.type = state->request.data.dual_idmapset.type;
+	map.status = ID_MAPPED;
 
 	result = idmap_set_mapping(&map);
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
@@ -272,6 +273,11 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 	int num, i;
 
 	DEBUG(3, ("[%5lu]: sids to unix ids\n", (unsigned long)state->pid));
+
+	if (state->request.extra_len == 0) {
+		DEBUG(0, ("Invalid buffer size!\n"));
+		return WINBINDD_ERROR;
+	}
 
 	sids = (DOM_SID *)state->request.extra_data.data;
 	num = state->request.extra_len / sizeof(DOM_SID);

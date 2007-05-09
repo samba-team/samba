@@ -1025,16 +1025,15 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	DEBUG(10, ("Query backends to map sids->ids\n"));
 
 	/* split list per domain */
-
-	if (num_domains) {
-		dom_ids = TALLOC_ZERO_ARRAY(ctx, struct id_map **, num_domains);
-		IDMAP_CHECK_ALLOC(dom_ids);
-		counters = TALLOC_ZERO_ARRAY(ctx, int, num_domains);
-		IDMAP_CHECK_ALLOC(counters);
-	} else {
-		dom_ids = NULL;
-		counters = NULL;
+	if (num_domains == 0) {
+		DEBUG(1, ("No domains available?\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	dom_ids = TALLOC_ZERO_ARRAY(ctx, struct id_map **, num_domains);
+	IDMAP_CHECK_ALLOC(dom_ids);
+	counters = TALLOC_ZERO_ARRAY(ctx, int, num_domains);
+	IDMAP_CHECK_ALLOC(counters);
 
 	/* partition the requests by domain */
 

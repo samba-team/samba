@@ -2237,6 +2237,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 			exit_server_cleanly("send_file_readbraw sendfile failed");
 		}
 
+		return;
 	}
 
   normal_readbraw:
