@@ -1,4 +1,12 @@
+2007-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/inquire_cred_by_mech.c: Fill in all of the variables if
+	they are passed in. Pointed out by Phil Fisher.
+	
 2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/inquire_cred.c: Fix copy and paste error, bug spotted by
+	from Phil Fisher.
 
 	* mech: dont keep track of gc_usage, just figure it out at
 	gss_inquire_cred() time
