@@ -661,7 +661,7 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+		ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, &recmaster);
 		if (ret != 0) {
 			DEBUG(0, (__location__ "Unable to get recmaster from node %u\n", vnn));
 			goto again;
@@ -683,7 +683,7 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), vnn, &recmode);
+		ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, &recmode);
 		if (ret != 0) {
 			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
 			goto again;
