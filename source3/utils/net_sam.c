@@ -580,7 +580,7 @@ static int net_sam_deletelocalgroup(int argc, const char **argv)
 	DOM_SID sid;
         enum lsa_SidType type;
         const char *dom, *name;
-	NTSTATUS status;
+	int ret;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
@@ -589,7 +589,7 @@ static int net_sam_deletelocalgroup(int argc, const char **argv)
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find %s.\n", argv[0]);
+		d_fprintf(stderr, "Could not find name %s.\n", argv[0]);
 		return -1;
 	}
 
@@ -599,13 +599,12 @@ static int net_sam_deletelocalgroup(int argc, const char **argv)
 		return -1;
 	}
 
-	status = pdb_delete_alias(&sid);
+	ret = pdb_delete_alias(&sid);
 
-	if (!NT_STATUS_IS_OK(status)) {
-                d_fprintf(stderr, "Deleting local group %s failed with %s\n",
-                          argv[0], nt_errstr(status));
-                return -1;
-        }
+	if ( !ret ) {
+		d_fprintf(stderr, "Could not delete local group %s.\n", argv[0]);
+		return -1;
+	}
 
 	d_printf("Deleted local group %s.\n", argv[0]);
 
