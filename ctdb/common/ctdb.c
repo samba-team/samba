@@ -152,6 +152,25 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 			return -1;
 		}
 	}
+
+	/* initialize the vnn mapping table now that we have num_nodes setup */
+/*
+XXX we currently initialize it to the maximum number of nodes to 
+XXX make it behave the same way as previously.  
+XXX Once we have recovery working we should initialize this always to 
+XXX generation==0 (==invalid) and let the recovery tool populate this 
+XXX table for the daemons. 
+*/
+	ctdb->vnn_map = talloc_zero_size(ctdb, offsetof(struct ctdb_vnn_map, map) + 4*ctdb->num_nodes);
+	if (ctdb->vnn_map == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
+		exit(1);
+	}
+	ctdb->vnn_map->generation = 1;
+	ctdb->vnn_map->size = ctdb->num_nodes;
+	for(i=0;i<ctdb->vnn_map->size;i++){
+		ctdb->vnn_map->map[i] = i%ctdb->num_nodes;
+	}
 	
 	talloc_free(lines);
 	return 0;
