@@ -549,6 +549,13 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn, struct ctdb_node_map *nodemap)
 {
 	int ret;
+
+	/* set all nodes to recovery mode to stop all internode traffic */
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	if (ret!=0) {
+		DEBUG(0, (__location__ "Unable to set recovery mode to active on cluster\n"));
+		return;
+	}
 	
 	ret = send_election_request(ctdb, mem_ctx, vnn);
 	if (ret!=0) {
