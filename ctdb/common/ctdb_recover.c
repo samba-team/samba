@@ -32,9 +32,19 @@ int
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	CHECK_CONTROL_DATA_SIZE(0);
+	struct ctdb_vnn_map_wire *map;
+	size_t len;
 
-	outdata->dsize = offsetof(struct ctdb_vnn_map, map) + 4*ctdb->vnn_map->size;
-	outdata->dptr  = (unsigned char *)ctdb->vnn_map;
+	len = offsetof(struct ctdb_vnn_map_wire, map) + sizeof(uint32_t)*ctdb->vnn_map->size;
+	map = talloc_size(outdata, len);
+	CTDB_NO_MEMORY_VOID(ctdb, map);
+
+	map->generation = ctdb->vnn_map->generation;
+	map->size = ctdb->vnn_map->size;
+	memcpy(map->map, ctdb->vnn_map->map, sizeof(uint32_t)*map->size);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)map;
 
 	return 0;
 }
@@ -42,12 +52,19 @@ ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 int 
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	if (ctdb->vnn_map) {
-		talloc_free(ctdb->vnn_map);
-		ctdb->vnn_map = NULL;
-	}
+	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
 
-	ctdb->vnn_map = (struct ctdb_vnn_map *)talloc_memdup(ctdb, indata.dptr, indata.dsize);
+	talloc_free(ctdb->vnn_map);
+
+	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
+
+	ctdb->vnn_map->generation = map->generation;
+	ctdb->vnn_map->size       = map->size;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, map->size);
+	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
+
+	memcpy(ctdb->vnn_map->map, map->map, sizeof(uint32_t)*map->size);
 
 	return 0;
 }

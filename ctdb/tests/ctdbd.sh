@@ -31,4 +31,6 @@ $VALGRIND bin/ctdb_control attach test2.tdb || exit 1
 echo "Testing getdbmap"
 $VALGRIND bin/ctdb_control getdbmap 0 || exit 1
 
+echo "All done"
+
 killall -q ctdbd
