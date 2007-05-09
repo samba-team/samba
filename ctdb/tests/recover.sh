@@ -1,15 +1,13 @@
 #!/bin/sh
 
 killall -q ctdbd
-killall -q recoverd
+killall -q ctdb_recoverd
 
 echo "Starting 4 ctdb daemons"
-bin/ctdbd --nlist direct/4nodes.txt
-bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.2:9001 --socket=/tmp/ctdb.socket.127.0.0.2
-bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.3:9001 --socket=/tmp/ctdb.socket.127.0.0.3
-bin/ctdbd --nlist direct/4nodes.txt --listen=127.0.0.4:9001 --socket=/tmp/ctdb.socket.127.0.0.4
-echo "Starting one recovery daemon on node 0"
-bin/recoverd --socket=/tmp/ctdb.socket >/dev/null 2>/dev/null &
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.2:9001 --socket=/tmp/ctdb.socket.127.0.0.2
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.3:9001 --socket=/tmp/ctdb.socket.127.0.0.3
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.4:9001 --socket=/tmp/ctdb.socket.127.0.0.4
 
 echo
 echo "Attaching to some databases"
