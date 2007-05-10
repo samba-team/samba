@@ -206,7 +206,8 @@ TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o 
 	lib/tdb/common/open.o lib/tdb/common/transaction.o \
 	lib/tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o
+TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o\
+	lib/dbwrap.o lib/dbwrap_tdb.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
