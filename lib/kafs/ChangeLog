@@ -1,5 +1,9 @@
-2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kafs.h: Add VIOCSETTOK2
+	
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: unbreak previous
 	
 	* Makefile.am: split dist and nodist sources
