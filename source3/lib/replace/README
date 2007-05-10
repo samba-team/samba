@@ -55,6 +55,11 @@ strtoull
 socketpair
 strptime
 
+These external declarations are provided for those systems which lack the
+declaration but provide the function:
+
+readahead
+
 Types:
 bool
 socklen_t

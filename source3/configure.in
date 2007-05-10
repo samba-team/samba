@@ -1337,19 +1337,6 @@ AC_CHECK_LIB(exc, trace_back_stack)
 # implicit declaration warnings without failing the test (in developer mode)
 ac_no_error_on_warning_CFLAGS="${CFLAGS}"
 
-# Since --enable-developer causes warnings to be treated as errors during
-# compilation, we should avoid using features that will fail to compile.
-#
-# We don't want to enable this earlier because the built-in functions such as
-# memset fail to configure properly.
-
-if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes" -a \
-        x"$developer" = xyes; then
-  CFLAGS="${CFLAGS} -Werror-implicit-function-declaration"
-  ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-  ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-fi
-
 echo -n "checking for GPFS GPL libs... "
 save_LIBS="$LIBS"
 LIBS="$LIBS -lgpfs_gpl"
