@@ -703,6 +703,7 @@ typedef int BOOL;
 #include "spnego.h"
 #include "rpc_client.h"
 #include "event.h"
+#include "dbwrap.h"
 
 /*
  * Type for wide character dirent structure.
