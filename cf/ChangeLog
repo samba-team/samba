@@ -1,5 +1,11 @@
-2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken-frag.m4: we have a fnmatch.h only if there is a working
+	implementation and a header file. If we do use roken, lets use our
+	own headerfile that does symbol renaming.
+	
+2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* version-script.m4: check if ld supports --version-script
 	
 2007-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
