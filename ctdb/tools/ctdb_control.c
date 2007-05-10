@@ -799,13 +799,19 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	generation = strtoul(argv[1], NULL, 0);
 	num_nodes  = strtoul(argv[2], NULL, 0);
 
-	vnnmap = talloc_zero_size(ctdb, offsetof(struct ctdb_vnn_map, map) + 4*num_nodes);
+	vnnmap = talloc(ctdb, struct ctdb_vnn_map);
 	if (vnnmap == NULL) {
 		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
 		exit(1);
 	}
 	vnnmap->generation = generation;
 	vnnmap->size       = num_nodes;
+	vnnmap->map        = talloc_array(vnnmap, uint32_t, vnnmap->size);
+	if (vnnmap->map == NULL) {
+		DEBUG(0,(__location__ " Unable to allocate vnn_map->map array\n"));
+		exit(1);
+	}
+
 	for (i=0;i<vnnmap->size;i++) {
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}
