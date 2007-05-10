@@ -221,7 +221,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 
 	r->hdr.destnode  = new_dmaster;
 	r->hdr.reqid     = reqid;
-	r->rsn           = header->rsn;
+	r->rsn           = header->rsn + 1;
 	r->keylen        = key.dsize;
 	r->datalen       = data.dsize;
 	r->db_id         = ctdb_db->db_id;
@@ -263,7 +263,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	r->hdr.destnode  = lmaster;
 	r->hdr.reqid     = c->hdr.reqid;
 	r->db_id         = c->db_id;
-	r->rsn           = header->rsn;
+	r->rsn           = header->rsn + 1;
 	r->dmaster       = c->hdr.srcnode;
 	r->keylen        = key->dsize;
 	r->datalen       = data->dsize;
