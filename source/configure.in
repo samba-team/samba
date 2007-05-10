@@ -5140,6 +5140,7 @@ AC_ARG_WITH(acl-support,
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
 		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+		default_static_modules="$default_static_modules vfs_posixacl"
 		;;
 	*linux*)
 		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
