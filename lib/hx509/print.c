@@ -354,7 +354,7 @@ check_xmpp_san(hx509_validate_ctx ctx, heim_any *a)
 }
 
 static int
-check_dnssrv_san(hx509_validate_ctx ctx, heim_any *a)
+check_altnull(hx509_validate_ctx ctx, heim_any *a)
 {
     return 0;
 }
@@ -424,7 +424,9 @@ struct {
 } check_altname[] = {
     { "pk-init", oid_id_pkinit_san, check_pkinit_san },
     { "jabber", oid_id_pkix_on_xmppAddr, check_xmpp_san },
-    { "dns-srv", oid_id_pkix_on_dnsSRV, check_dnssrv_san }
+    { "dns-srv", oid_id_pkix_on_dnsSRV, check_altname },
+    { "card-id", oid_id_uspkicommon_card_id, check_altnull },
+    { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_altnull }
 };
 
 static int
@@ -577,6 +579,15 @@ check_proxyCertInfo(hx509_validate_ctx ctx,
     return 0;
 }
 
+static int
+check_piv(hx509_validate_ctx ctx, 
+	  struct cert_status *status,
+	  enum critical_flag cf, 
+	  const Extension *e)
+{
+    return 0;
+}
+
 
 struct {
     const char *name;
@@ -611,6 +622,7 @@ struct {
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
     { "proxyCertInfo", &oid_id_pe_proxyCertInfo, check_proxyCertInfo, M_C },
+    { "US Fed PKI - PIV Interim", &oid_id_uspkicommon_piv_interim, check_piv },
     { NULL }
 };
 
