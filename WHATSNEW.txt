@@ -135,6 +135,64 @@ Changes since 3.0.25rc3
 -----------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * Fix memory corruption bug during string processing.
+    * Instantiate idiom that malloc/tallocs of array of 0 elements
+      returns NULL.
+    * Fix marshalling bugs in samr code based on incorrect
+      assumptions.
+    * Fix DFS MS-RPC enumeration reply when we have no DFS shares.
+    * Fix memory curruption when enumerating accounts in the 
+      LsaPrivilege database.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix memory corruption when adding/removing members from Local 
+      Groups.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Prevent leaking on full NET_USER_INFO_3 structure memory on each
+      cached login.
+    * Plug memory leak in client SPNEGO session setup code.
+    * Don't clear cached U/SID and UG/SID entries when we want to 
+      logon offline.
+
+
+o   Steve French <sfrench@us.ibm.com> 
+    * Allow prepaths in mount.cifs.
+    * Don't prompt for a password in mount.cifs when sec=none has been 
+      specified.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix memory corruption bug in string_replace().
+    * Fix valgrind error in parse_domain_user().
+    * Fix compilation of explicit --without-winbind.
+    * Fix an uninitialized variable and other compiler warnings.
+    * Fix memory leak in smbd's claim session code.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Add AC_GNU_SOURCE macro in libreplace for systems which don't have it.
+    * Fix libreplace compiler warnings.
+
+
+o   Jens Nissen <jens.nissen@gmx.net>
+    * Fix memory leak on the file/directory ACL processing code.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Memory allocation cleanups and sanity checks after the malloc(0) 
+      == NULL crusade.
+    * Fix socket leak in idmap_ldap.c.
+    * Fix failure in "net idmap restore".
+    * Fix crash bug in idmap_ldap's get_credentials() code.
+
+
+o   Alison Winters <alisonw@sgi.com>
+    * Add missing return calls in sendfilereadbraw.
+
 
 Changes since 3.0.24
 --------------------
