@@ -818,6 +818,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 	talloc_set_destructor(ctx, idmap_ldap_close_destructor);
 
 	dom->private_data = ctx;
+	dom->initialized = True;
 
 	talloc_free(config_option);
 	return NT_STATUS_OK;
