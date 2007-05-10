@@ -583,6 +583,23 @@ command = {
 	help = "Issue a certificate"
 }
 command = {
+	name = "test-crypto"
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "verbose"
+		type = "flag"
+		help = "verbose printing"
+	}
+	min_args="1"
+	argument="certificates..."
+	help = "Test "
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
