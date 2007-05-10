@@ -457,7 +457,7 @@ check_altName(hx509_validate_ctx ctx,
     }
     if (gn.len == 0) {
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
-		       "%sAltName generalName empty, not allowed", name);
+		       "%sAltName generalName empty, not allowed\n", name);
 	return 1;
     }
 
@@ -579,16 +579,6 @@ check_proxyCertInfo(hx509_validate_ctx ctx,
     return 0;
 }
 
-static int
-check_piv(hx509_validate_ctx ctx, 
-	  struct cert_status *status,
-	  enum critical_flag cf, 
-	  const Extension *e)
-{
-    return 0;
-}
-
-
 struct {
     const char *name;
     const heim_oid *(*oid)(void);
@@ -621,8 +611,9 @@ struct {
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
-    { "proxyCertInfo", &oid_id_pe_proxyCertInfo, check_proxyCertInfo, M_C },
-    { "US Fed PKI - PIV Interim", &oid_id_uspkicommon_piv_interim, check_piv },
+    { "proxyCertInfo", oid_id_pe_proxyCertInfo, check_proxyCertInfo, M_C },
+    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, check_Null, D_C },
+    { "Netscape cert comment", oid_id_netscape_cert_comment, check_Null, D_C},
     { NULL }
 };
 
