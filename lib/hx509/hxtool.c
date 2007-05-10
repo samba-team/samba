@@ -1615,6 +1615,68 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     return 0;
 }
 
+static int
+test_one_cert(hx509_context hxcontext, void *ctx, hx509_cert cert)
+{
+    heim_octet_string sd, c;
+    hx509_verify_ctx vctx = ctx;
+    hx509_certs signer = NULL;
+    heim_oid type;
+    int ret;
+
+    if (_hx509_cert_private_key(cert) == NULL)
+	return 0;
+
+    ret = hx509_cms_create_signed_1(context, 0, NULL, NULL, 0,
+				    NULL, cert, NULL, NULL, NULL, &sd);
+    if (ret)
+	errx(1, "hx509_cms_create_signed_1");
+
+    ret = hx509_cms_verify_signed(context, vctx, sd.data, sd.length,
+				  NULL, NULL, &type, &c, &signer);
+    free(sd.data);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_cms_verify_signed");
+
+    printf("create-signature verify-sigature done\n");
+
+    free(c.data);
+
+    return 0;
+}
+
+int
+test_crypto(struct test_crypto_options *opt, int argc, char ** argv)
+{
+    hx509_verify_ctx vctx;
+    hx509_certs certs;
+    hx509_lock lock;
+    int i, ret;
+
+    hx509_lock_init(context, &lock);
+    lock_strings(lock, &opt->pass_strings);
+
+    ret = hx509_certs_init(context, "MEMORY:test-crypto", 0, NULL, &certs);
+
+    for (i = 0; i < argc; i++) {
+	ret = hx509_certs_append(context, certs, lock, argv[i]);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_append");
+    }
+
+    ret = hx509_verify_init_ctx(context, &vctx);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_verify_init_ctx");
+
+    hx509_verify_attach_anchors(vctx, certs);
+
+    ret = hx509_certs_iter(context, certs, test_one_cert, vctx);
+
+    hx509_certs_free(&certs);
+
+    return 0;
+}
+
 
 int
 help(void *opt, int argc, char **argv)
