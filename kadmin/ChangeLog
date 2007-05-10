@@ -1,3 +1,9 @@
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kadmin-commands.in: modify --pkinit-acl
+
+	* mod.c: add pk-init command
+	
 2007-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kadmin.8: document kadmin add_enctype functionallity.
