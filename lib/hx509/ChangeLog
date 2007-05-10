@@ -1,5 +1,12 @@
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool-commands.in: add test-crypto command
+
+	* hxtool.c: test crypto command
+
+	* cms.c (hx509_cms_create_signed_1): if no eContentType is given,
+	use pkcs7-data.
+
 	* print.c: add Netscape cert comment
 
 	* crypto.c: Try both the empty password and the NULL
