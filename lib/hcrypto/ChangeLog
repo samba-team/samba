@@ -1,5 +1,7 @@
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_pkcs12.c: test the difference between "" and NULL password.
+
 	* test_pkcs12.c: one more pkcs12-pbe-s2k check
 	
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
