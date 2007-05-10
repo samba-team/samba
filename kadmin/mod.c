@@ -99,6 +99,45 @@ add_aliases(krb5_context context, kadm5_principal_ent_rec *princ,
     add_tl(princ, KRB5_TL_EXTENSION, &buf);
 }
 
+static void
+add_pkinit_acl(krb5_context context, kadm5_principal_ent_rec *princ,
+	       struct getarg_strings *strings)
+{
+    krb5_error_code ret;
+    HDB_extension ext;
+    krb5_data buf;
+    size_t size;
+    int i;
+    
+    memset(&ext, 0, sizeof(ext));
+    ext.mandatory = FALSE;
+    ext.data.element = choice_HDB_extension_data_pkinit_acl;
+    ext.data.u.aliases.case_insensitive = 0;
+
+    if (strings->num_strings == 1 && strings->strings[0][0] == '\0') {
+	ext.data.u.pkinit_acl.val = NULL;
+	ext.data.u.pkinit_acl.len = 0;
+    } else {
+	ext.data.u.pkinit_acl.val = 
+	    calloc(strings->num_strings, 
+		   sizeof(ext.data.u.pkinit_acl.val[0]));
+	ext.data.u.pkinit_acl.len = strings->num_strings;
+	
+	for (i = 0; i < strings->num_strings; i++) {
+	    ext.data.u.pkinit_acl.val[i].subject = estrdup(strings->strings[i]);
+	}
+    }
+
+    ASN1_MALLOC_ENCODE(HDB_extension, buf.data, buf.length,
+		       &ext, &size, ret);
+    free_HDB_extension(&ext);
+    if (ret)
+	abort();
+    if (buf.length != size)
+	abort();
+    
+    add_tl(princ, KRB5_TL_EXTENSION, &buf);
+}
 
 static int
 do_mod_entry(krb5_principal principal, void *data)
@@ -124,7 +163,8 @@ do_mod_entry(krb5_principal principal, void *data)
        e->attributes_string ||
        e->kvno_integer != -1 ||
        e->constrained_delegation_string ||
-       e->alias_strings.num_strings) {
+       e->alias_strings.num_strings ||
+       e->pkinit_acl_strings.num_strings) {
 	ret = set_entry(context, &princ, &mask, 
 			e->max_ticket_life_string, 
 			e->max_renewable_life_string, 
@@ -167,6 +207,10 @@ do_mod_entry(krb5_principal principal, void *data)
 	}
 	if (e->alias_strings.num_strings) {
 	    add_aliases(context, &princ, &e->alias_strings);
+	    mask |= KADM5_TL_DATA;
+	}
+	if (e->pkinit_acl_strings.num_strings) {
+	    add_pkinit_acl(context, &princ, &e->pkinit_acl_strings);
 	    mask |= KADM5_TL_DATA;
 	}
 
