@@ -436,8 +436,21 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 static void reply_smb2(struct smbsrv_request *req, uint16_t choice)
 {
 	struct smbsrv_connection *smb_conn = req->smb_conn;
+	NTSTATUS status;
+
+	talloc_free(smb_conn->sessions.idtree_vuid);
+	ZERO_STRUCT(smb_conn->sessions);
+	talloc_free(smb_conn->smb_tcons.idtree_tid);
+	ZERO_STRUCT(smb_conn->smb_tcons);
+	ZERO_STRUCT(smb_conn->signing);
 
 	/* reply with a SMB2 packet */
+	status = smbsrv_init_smb2_connection(smb_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
+		talloc_free(req);
+		return;
+	}
 	packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
 	smb2srv_reply_smb_negprot(req);
 	req = NULL;
