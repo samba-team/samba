@@ -613,17 +613,36 @@ static int ctdb_call_destructor(struct ctdb_call_state *state)
 /*
   called when a ctdb_call times out
 */
-void ctdb_call_timeout(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void ctdb_call_timeout(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data)
 {
 	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
-	DEBUG(0,(__location__ " call timeout for reqid %d\n", state->c->hdr.reqid));
-	state->state = CTDB_CALL_ERROR;
-	ctdb_set_error(state->ctdb_db->ctdb, "ctdb_call %u timed out",
-		       state->c->hdr.reqid);
-	if (state->async.fn) {
-		state->async.fn(state);
+	struct ctdb_context *ctdb = state->ctdb_db->ctdb;
+
+	ctdb->status.timeouts.call++;
+
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CALL_TIMEOUT, 0), 
+			ctdb_call_timeout, state);
+
+	if (ctdb->vnn_map->generation == state->generation ||
+	    ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		/* the call is just being slow, or we are curently
+		   recovering, give it more time */
+		return;
 	}
+
+	/* the generation count changed - the call must be re-issued */
+	state->generation = ctdb->vnn_map->generation;
+
+	/* use a new reqid, in case the old reply does eventually come in */
+	ctdb_reqid_remove(ctdb, state->reqid);
+	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->c->hdr.reqid = state->reqid;
+
+	/* send the packet to ourselves, it will be redirected appropriately */
+	state->c->hdr.destnode = ctdb->vnn;
+
+	ctdb_queue_packet(ctdb, &state->c->hdr);
 }
 
 /*
@@ -697,15 +716,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 	state->c->hdr.destnode  = header->dmaster;
 
-#if 0
-	/*always sending the remote call straight to the lmaster
-	   improved performance slightly in some tests.
-	   worth investigating further in the future
-	*/
-	state->c->hdr.destnode  = ctdb_lmaster(ctdb_db->ctdb, &(call->key));
-#endif
-
-
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = state->reqid;
 	state->c->flags         = call->flags;
@@ -723,13 +733,12 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	state->state  = CTDB_CALL_WAIT;
 	state->ctdb_db = ctdb_db;
+	state->generation = ctdb->vnn_map->generation;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 
-#if CTDB_REQ_TIMEOUT
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_REQ_TIMEOUT, 0), 
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CALL_TIMEOUT, 0), 
 			ctdb_call_timeout, state);
-#endif
 	return state;
 }
 

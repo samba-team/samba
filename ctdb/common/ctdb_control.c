@@ -532,6 +532,21 @@ static int ctdb_control_destructor(struct ctdb_control_state *state)
 }
 
 /*
+  handle a timeout of a control
+ */
+static void ctdb_control_timeout(struct event_context *ev, struct timed_event *te, 
+		       struct timeval t, void *private_data)
+{
+	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
+
+	state->ctdb->status.timeouts.control++;
+
+	state->callback(state->ctdb, -1, tdb_null, state->private_data);
+	talloc_free(state);
+}
+
+
+/*
   send a control message to a node
  */
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
@@ -586,8 +601,8 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return 0;
 	}
 
-#if CTDB_REQ_TIMEOUT
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_REQ_TIMEOUT, 0), 
+#if CTDB_CONTROL_TIMEOUT
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CONTROL_TIMEOUT, 0), 
 			ctdb_control_timeout, state);
 #endif
 

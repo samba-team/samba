@@ -147,8 +147,6 @@ struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_context *c
 	struct ctdb_traverse_local_handle *h;
 	int ret;
 
-	ctdb_db->ctdb->status.traverse_calls++;
-
 	h = talloc_zero(ctdb_db, struct ctdb_traverse_local_handle);
 	if (h == NULL) {
 		return NULL;
@@ -223,6 +221,18 @@ struct ctdb_traverse_all {
 	uint32_t vnn;
 };
 
+/* called when a traverse times out */
+static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *private_data)
+{
+	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
+
+	state->ctdb->status.timeouts.traverse++;
+
+	state->callback(state->private_data, tdb_null, tdb_null);
+	talloc_free(state);
+}
+
 /*
   setup a cluster-wide non-blocking traverse of a ctdb. The
   callback function will be called on every record in the local
@@ -268,6 +278,10 @@ struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context
 		talloc_free(state);
 		return NULL;
 	}
+
+	/* timeout the traverse */
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_TRAVERSE_TIMEOUT, 0), 
+			ctdb_traverse_all_timeout, state);
 
 	return state;
 }

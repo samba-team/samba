@@ -175,10 +175,14 @@ struct ctdb_status {
 		uint32_t register_srvid;
 		uint32_t deregister_srvid;
 	} controls;
+	struct {
+		uint32_t call;
+		uint32_t control;
+		uint32_t traverse;
+	} timeouts;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
-	uint32_t traverse_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_status_all */
@@ -279,8 +283,18 @@ struct ctdb_db_context {
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
 
-/* arbitrary maximum timeout for ctdb operations */
-#define CTDB_REQ_TIMEOUT 0
+/* timeout for ctdb call operations. When this timeout expires we
+   check if the generation count has changed, and if it has then
+   re-issue the call */
+#define CTDB_CALL_TIMEOUT 2
+
+/* timeout for ctdb control calls */
+#define CTDB_CONTROL_TIMEOUT 10
+
+/* timeout for ctdb traverse calls. When this is reached we cut short
+   the traverse */
+#define CTDB_TRAVERSE_TIMEOUT 20
+
 
 /* number of consecutive calls from the same node before we give them
    the record */
@@ -356,6 +370,7 @@ struct ctdb_call_state {
 	struct ctdb_db_context *ctdb_db;
 	const char *errmsg;
 	struct ctdb_call call;
+	uint32_t generation;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
