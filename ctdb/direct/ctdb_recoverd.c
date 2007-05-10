@@ -408,13 +408,14 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 
 	/* build a new vnn map with all the currently active nodes */
-	vnnmap = talloc_zero_size(mem_ctx, offsetof(struct ctdb_vnn_map, map) + 4*num_active);
+	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	if (vnnmap == NULL) {
 		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
 		return -1;
 	}
 	vnnmap->generation = generation;
 	vnnmap->size = num_active;
+	vnnmap->map = talloc_array(vnnmap, uint32_t, sizeof(uint32_t)*num_active);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
 			vnnmap->map[j++]=nodemap->nodes[i].vnn;
