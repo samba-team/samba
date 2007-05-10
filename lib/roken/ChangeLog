@@ -1,3 +1,7 @@
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* fnmatch.c: Do recursive call to rk_fnmatch
+	
 2007-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c: Try harder to call res_ndestroy().
