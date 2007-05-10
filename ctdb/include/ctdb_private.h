@@ -175,10 +175,14 @@ struct ctdb_status {
 		uint32_t register_srvid;
 		uint32_t deregister_srvid;
 	} controls;
+	struct {
+		uint32_t call;
+		uint32_t control;
+		uint32_t traverse;
+	} timeouts;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
-	uint32_t traverse_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_status_all */
@@ -260,23 +264,37 @@ struct ctdb_db_context {
 
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return -1; }} while (0)
 
 #define CTDB_NO_MEMORY_VOID(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  }} while (0)
 
 #define CTDB_NO_MEMORY_NULL(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return NULL; }} while (0)
 
 #define CTDB_NO_MEMORY_FATAL(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
 
-/* arbitrary maximum timeout for ctdb operations */
-#define CTDB_REQ_TIMEOUT 0
+/* timeout for ctdb call operations. When this timeout expires we
+   check if the generation count has changed, and if it has then
+   re-issue the call */
+#define CTDB_CALL_TIMEOUT 2
+
+/* timeout for ctdb control calls */
+#define CTDB_CONTROL_TIMEOUT 10
+
+/* timeout for ctdb traverse calls. When this is reached we cut short
+   the traverse */
+#define CTDB_TRAVERSE_TIMEOUT 20
+
 
 /* number of consecutive calls from the same node before we give them
    the record */
@@ -312,7 +330,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_STATUS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
 		    CTDB_CONTROL_SET_CALL,
-		    CTDB_CONTROL_WRITE_RECORD,
 		    CTDB_CONTROL_TRAVERSE_START,
 		    CTDB_CONTROL_TRAVERSE_ALL,
 		    CTDB_CONTROL_TRAVERSE_DATA,
@@ -352,6 +369,8 @@ struct ctdb_call_state {
 	struct ctdb_db_context *ctdb_db;
 	const char *errmsg;
 	struct ctdb_call call;
+	uint32_t generation;
+	uint32_t resend_count;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -710,9 +729,9 @@ struct ctdb_traverse_start {
 };
 
 /*
-  structure used to pass the data between the child and parent
+  structure used to pass record data between the child and parent
  */
-struct ctdb_traverse_data {
+struct ctdb_rec_data {
 	uint32_t length;
 	uint32_t reqid;
 	uint32_t keylen;
@@ -720,6 +739,25 @@ struct ctdb_traverse_data {
 	uint8_t  data[1];
 };
 				   
+
+/* structure used for pulldb control */
+struct ctdb_control_pulldb {
+	uint32_t db_id;
+	uint32_t lmaster;
+};
+
+/* structure used for pulldb control */
+struct ctdb_control_pulldb_reply {
+	uint32_t db_id;
+	uint32_t count;
+	uint8_t data[1];
+};
+
+/* set dmaster control structure */
+struct ctdb_control_set_dmaster {
+	uint32_t db_id;
+	uint32_t dmaster;
+};
 
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
@@ -735,5 +773,12 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
 int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
+
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	TDB_DATA key, TDB_DATA data);
+
+int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

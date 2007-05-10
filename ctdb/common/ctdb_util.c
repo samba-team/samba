@@ -170,3 +170,27 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 		DEBUG(0, ("Removing idr that does not exist\n"));
 	}
 }
+
+
+/*
+  form a ctdb_rec_data record from a key/data pair
+ */
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	TDB_DATA key, TDB_DATA data)
+{
+	size_t length;
+	struct ctdb_rec_data *d;
+
+	length = offsetof(struct ctdb_rec_data, data) + key.dsize + data.dsize;
+	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
+	if (d == NULL) {
+		return NULL;
+	}
+	d->length = length;
+	d->reqid = reqid;
+	d->keylen = key.dsize;
+	d->datalen = data.dsize;
+	memcpy(&d->data[0], key.dptr, key.dsize);
+	memcpy(&d->data[key.dsize], data.dptr, data.dsize);
+	return d;
+}
+

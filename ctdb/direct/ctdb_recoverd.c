@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/filesys.h"
+#include "system/time.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "../include/ctdb.h"
@@ -409,13 +410,10 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 	/* build a new vnn map with all the currently active nodes */
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
-	if (vnnmap == NULL) {
-		DEBUG(0,(__location__ " Unable to allocate vnn_map structure\n"));
-		return -1;
-	}
+	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
 	vnnmap->size = num_active;
-	vnnmap->map = talloc_array(vnnmap, uint32_t, sizeof(uint32_t)*num_active);
+	vnnmap->map = talloc_array(vnnmap, uint32_t, vnnmap->size);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
 			vnnmap->map[j++]=nodemap->nodes[i].vnn;
@@ -511,12 +509,11 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_new(ctdb);
-
 	if (em->vnn==ctdb_get_vnn(ctdb)) {
-		talloc_free(mem_ctx);
 		return;
 	}
+
+	mem_ctx = talloc_new(ctdb);
 		
 	/* someone called an election. check their election data
 	   and if we disagree and we would rather be the elected node, 
@@ -638,13 +635,12 @@ again:
 		goto again;
 	}
 	
-
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].vnn==recmaster) {
 			break;
 		}
-	}	
+	}
 	if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].vnn));
 		force_election(ctdb, mem_ctx, vnn, nodemap);
@@ -746,7 +742,7 @@ again:
 
 
 	/* there better be the same number of lmasters in the vnn map
-	   as there are active nodes or well have to do a recovery
+	   as there are active nodes or we will have to do a recovery
 	 */
 	if (vnnmap->size != num_active) {
 		DEBUG(0, (__location__ "The vnnmap count is different from the number of active nodes. %d vs %d\n", vnnmap->size, num_active));
@@ -865,6 +861,8 @@ int main(int argc, const char *argv[])
 		usage();
 	}
 #endif
+
+	srandom(getpid() ^ time(NULL));
 
 	ev = event_context_init(NULL);
 

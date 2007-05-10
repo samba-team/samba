@@ -361,7 +361,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		talloc_free(ctdb_db);
 		return -1;
 	}
-	
+
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
 	/* 

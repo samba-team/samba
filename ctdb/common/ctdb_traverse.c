@@ -52,7 +52,7 @@ static void ctdb_traverse_local_handler(uint8_t *rawdata, size_t length, void *p
 	TDB_DATA key, data;
 	ctdb_traverse_fn_t callback = h->callback;
 	void *p = h->private_data;
-	struct ctdb_traverse_data *tdata = (struct ctdb_traverse_data *)rawdata;
+	struct ctdb_rec_data *tdata = (struct ctdb_rec_data *)rawdata;
 
 	if (rawdata == NULL || length < 4 || length != tdata->length) {
 		/* end of traverse */
@@ -80,37 +80,13 @@ static int traverse_local_destructor(struct ctdb_traverse_local_handle *h)
 }
 
 /*
-  form a ctdb_traverse_data record from a key/data pair
- */
-static struct ctdb_traverse_data *ctdb_traverse_marshall_record(TALLOC_CTX *mem_ctx, 
-								uint32_t reqid,
-								TDB_DATA key, TDB_DATA data)
-{
-	size_t length;
-	struct ctdb_traverse_data *d;
-
-	length = offsetof(struct ctdb_traverse_data, data) + key.dsize + data.dsize;
-	d = (struct ctdb_traverse_data *)talloc_size(mem_ctx, length);
-	if (d == NULL) {
-		return NULL;
-	}
-	d->length = length;
-	d->reqid = reqid;
-	d->keylen = key.dsize;
-	d->datalen = data.dsize;
-	memcpy(&d->data[0], key.dptr, key.dsize);
-	memcpy(&d->data[key.dsize], data.dptr, data.dsize);
-	return d;
-}
-
-/*
   callback from tdb_traverse_read()
  */
 static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	struct ctdb_traverse_local_handle *h = talloc_get_type(p, 
 							       struct ctdb_traverse_local_handle);
-	struct ctdb_traverse_data *d;
+	struct ctdb_rec_data *d;
 	struct ctdb_ltdb_header *hdr;
 
 	/* filter out non-authoritative and zero-length records */
@@ -120,7 +96,7 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 		return 0;
 	}
 
-	d = ctdb_traverse_marshall_record(h, 0, key, data);
+	d = ctdb_marshall_record(h, 0, key, data);
 	if (d == NULL) {
 		/* error handling is tricky in this child code .... */
 		return -1;
@@ -146,8 +122,6 @@ struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_context *c
 {
 	struct ctdb_traverse_local_handle *h;
 	int ret;
-
-	ctdb_db->ctdb->status.traverse_calls++;
 
 	h = talloc_zero(ctdb_db, struct ctdb_traverse_local_handle);
 	if (h == NULL) {
@@ -223,6 +197,18 @@ struct ctdb_traverse_all {
 	uint32_t vnn;
 };
 
+/* called when a traverse times out */
+static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *private_data)
+{
+	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
+
+	state->ctdb->status.timeouts.traverse++;
+
+	state->callback(state->private_data, tdb_null, tdb_null);
+	talloc_free(state);
+}
+
 /*
   setup a cluster-wide non-blocking traverse of a ctdb. The
   callback function will be called on every record in the local
@@ -269,6 +255,10 @@ struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context
 		return NULL;
 	}
 
+	/* timeout the traverse */
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_TRAVERSE_TIMEOUT, 0), 
+			ctdb_traverse_all_timeout, state);
+
 	return state;
 }
 
@@ -286,9 +276,9 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 {
 	struct traverse_all_state *state = talloc_get_type(p, struct traverse_all_state);
 	int ret;
-	struct ctdb_traverse_data *d;
+	struct ctdb_rec_data *d;
 
-	d = ctdb_traverse_marshall_record(state, state->reqid, key, data);
+	d = ctdb_marshall_record(state, state->reqid, key, data);
 	if (d == NULL) {
 		/* darn .... */
 		DEBUG(0,("Out of memory in traverse_all_callback\n"));
@@ -351,7 +341,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
  */
 int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata)
 {
-	struct ctdb_traverse_data *d = (struct ctdb_traverse_data *)data.dptr;
+	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
 	struct ctdb_traverse_all_handle *state;
 	TDB_DATA key;
 	ctdb_traverse_fn_t callback;
@@ -406,11 +396,11 @@ struct traverse_start_state {
 static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 {
 	struct traverse_start_state *state;
-	struct ctdb_traverse_data *d;
+	struct ctdb_rec_data *d;
 
 	state = talloc_get_type(p, struct traverse_start_state);
 
-	d = ctdb_traverse_marshall_record(state, state->reqid, key, data);
+	d = ctdb_marshall_record(state, state->reqid, key, data);
 	if (d == NULL) {
 		return;
 	}

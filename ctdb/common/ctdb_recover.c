@@ -127,53 +127,243 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	return 0;
 }
 
-int 
-ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+struct getkeys_params {
+	struct ctdb_context *ctdb;
+	uint32_t lmaster;
+	uint32_t rec_count;
+	struct getkeys_rec {
+		TDB_DATA key;
+		TDB_DATA data;
+	} *recs;
+};
+
+static int traverse_getkeys(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
-	struct ctdb_write_record *wr;
+	struct getkeys_params *params = (struct getkeys_params *)p;
+	uint32_t lmaster;
+
+	lmaster = ctdb_lmaster(params->ctdb, &key);
+
+	/* only include this record if the lmaster matches or if
+	   the wildcard lmaster (-1) was specified.
+	*/
+	if ((params->lmaster != CTDB_LMASTER_ANY) && (params->lmaster != lmaster)) {
+		return 0;
+	}
+
+	params->recs = talloc_realloc(NULL, params->recs, struct getkeys_rec, params->rec_count+1);
+	key.dptr = talloc_memdup(params->recs, key.dptr, key.dsize);
+	data.dptr = talloc_memdup(params->recs, data.dptr, data.dsize);
+	params->recs[params->rec_count].key = key;
+	params->recs[params->rec_count].data = data;
+	params->rec_count++;
+
+	return 0;
+}
+
+/*
+  pul a bunch of records from a ltdb, filtering by lmaster
+ */
+int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
+{
+	struct ctdb_control_pulldb *pull;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_ltdb_header header;
-	TDB_DATA key, data;
+	struct getkeys_params params;
+	struct ctdb_control_pulldb_reply *reply;
+	int i;
+	size_t len = 0;
+
+	pull = (struct ctdb_control_pulldb *)indata.dptr;
+	
+	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db\n"));
+		return -1;
+	}
+
+	params.ctdb = ctdb;
+	params.lmaster = pull->lmaster;
+	params.rec_count = 0;
+	params.recs = talloc_array(outdata, struct getkeys_rec, 0);
+	CTDB_NO_MEMORY(ctdb, params.recs);
+
+	if (tdb_lockall_nonblock(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(0,(__location__ " Failed to get nonblock lock on entired db - failing\n"));
+		return -1;
+	}
+
+	tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_getkeys, &params);
+
+	tdb_unlockall(ctdb_db->ltdb->tdb);
+
+	reply = talloc(outdata, struct ctdb_control_pulldb_reply);
+	CTDB_NO_MEMORY(ctdb, reply);
+
+	reply->db_id = pull->db_id;
+	reply->count = params.rec_count;
+
+	len = offsetof(struct ctdb_control_pulldb_reply, data);
+
+	for (i=0;i<reply->count;i++) {
+		struct ctdb_rec_data *rec;
+		rec = ctdb_marshall_record(outdata, 0, params.recs[i].key, params.recs[i].data);
+		reply = talloc_realloc_size(outdata, reply, rec->length + len);
+		memcpy(len+(uint8_t *)reply, rec, rec->length);
+		len += rec->length;
+		talloc_free(rec);
+	}
+
+	talloc_free(params.recs);
+
+	outdata->dptr = (uint8_t *)reply;
+	outdata->dsize = len;
+
+	return 0;
+}
+
+/*
+  push a bunch of records into a ltdb, filtering by rsn
+ */
+int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	int i, ret;
+	struct ctdb_rec_data *rec;
+
+	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+		DEBUG(0,(__location__ " invalid data in pulldb reply\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, reply->db_id);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n", reply->db_id));
+		return -1;
+	}
+
+	if (tdb_lockall_nonblock(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(0,(__location__ " Failed to get nonblock lock on entired db - failing\n"));
+		return -1;
+	}
+
+	rec = (struct ctdb_rec_data *)&reply->data[0];
+
+	for (i=0;i<reply->count;i++) {
+		TDB_DATA key, data;
+		struct ctdb_ltdb_header *hdr, header;
+
+		key.dptr = &rec->data[0];
+		key.dsize = rec->keylen;
+		data.dptr = &rec->data[key.dsize];
+		data.dsize = rec->datalen;
+
+		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+			DEBUG(0,(__location__ " bad ltdb record\n"));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			return -1;
+		}
+		hdr = (struct ctdb_ltdb_header *)data.dptr;
+		data.dptr += sizeof(*hdr);
+		data.dsize -= sizeof(*hdr);
+
+		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, NULL, NULL);
+		if (ret != 0) {
+			DEBUG(0, (__location__ "Unable to fetch record\n"));
+			tdb_unlockall(ctdb_db->ltdb->tdb);
+			return -1;
+		}
+		if (header.rsn < hdr->rsn) {
+			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
+			if (ret != 0) {
+				DEBUG(0, (__location__ "Unable to store record\n"));
+				tdb_unlockall(ctdb_db->ltdb->tdb);
+				return -1;
+			}
+		}
+
+		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+	}	    
+
+	tdb_unlockall(ctdb_db->ltdb->tdb);
+
+	return 0;
+}
+
+
+static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	uint32_t *dmaster = (uint32_t *)p;
+	struct ctdb_ltdb_header *header = (struct ctdb_ltdb_header *)data.dptr;
 	int ret;
 
-	outdata->dsize = 0;
-	outdata->dptr = NULL;
+	header->dmaster = *dmaster;
 
-	wr = (struct ctdb_write_record *)indata.dptr;
+	ret = tdb_store(tdb, key, data, TDB_REPLACE);
+	if (ret) {
+		DEBUG(0,(__location__ "failed to write tdb data back  ret:%d\n",ret));
+		return ret;
+	}
+	return 0;
+}
 
-	ctdb_db = find_ctdb_db(ctdb, wr->dbid);
+int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_set_dmaster *p = (struct ctdb_control_set_dmaster *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, p->db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n", wr->dbid));
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n", p->db_id));
 		return -1;
 	}
 
-	key.dsize  = wr->keylen;
-	key.dptr   = (unsigned char *)talloc_memdup(outdata, &wr->blob[0], wr->keylen);
+	if (tdb_lockall_nonblock(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(0,(__location__ " Failed to get nonblock lock on entired db - failing\n"));
+		return -1;
+	}	
 
-	data.dsize = wr->datalen;
-	data.dptr  = (unsigned char *)talloc_memdup(outdata, &wr->blob[wr->keylen], wr->datalen);
+	tdb_traverse(ctdb_db->ltdb->tdb, traverse_setdmaster, &p->dmaster);
+
+	tdb_unlockall(ctdb_db->ltdb->tdb);
+	
+	return 0;
+}
 
 
-	ret = ctdb_ltdb_lock(ctdb_db, key);
-	if (ret != 0) {
-		DEBUG(0, (__location__ "Unable to lock db\n"));
+static int traverse_cleardb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	int ret;
+
+
+	ret = tdb_delete(tdb, key);
+	if (ret) {
+		DEBUG(0,(__location__ "failed to delete tdb record\n"));
+		return ret;
+	}
+	return 0;
+}
+
+		
+int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	uint32_t dbid = *(uint32_t *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, dbid);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
 		return -1;
 	}
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, outdata, NULL);
-	if (ret != 0) {
-		DEBUG(0, (__location__ "Unable to fetch record\n"));
-		ctdb_ltdb_unlock(ctdb_db, key);
-		return -1;
-	}
-	header.rsn++;
 
-	ret = ctdb_ltdb_store(ctdb_db, key, &header, data);
-	if (ret != 0) {
-		DEBUG(0, (__location__ "Unable to store record\n"));
-		ctdb_ltdb_unlock(ctdb_db, key);
+	if (tdb_lockall_nonblock(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(0,(__location__ " Failed to get nonblock lock on entired db - failing\n"));
 		return -1;
-	}
-	ctdb_ltdb_unlock(ctdb_db, key);
+	}	
+
+	tdb_traverse(ctdb_db->ltdb->tdb, traverse_cleardb, NULL);
+
+	tdb_unlockall(ctdb_db->ltdb->tdb);
 
 	return 0;
 }

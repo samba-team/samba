@@ -328,8 +328,11 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	/* this limits us to 16k outstanding messages - not unreasonable */
-	c->hdr.reqid     = ctdb_reqid_new(ctdb, state);
+	state->reqid     = ctdb_reqid_new(ctdb, state);
+	state->ctdb_db = ctdb_db;
+	talloc_set_destructor(state, ctdb_client_call_destructor);
+
+	c->hdr.reqid     = state->reqid;
 	c->flags         = call->flags;
 	c->db_id         = ctdb_db->db_id;
 	c->callid        = call->call_id;
@@ -344,10 +347,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	state->call.key.dptr       = &c->data[0];
 
 	state->state  = CTDB_CALL_WAIT;
-	state->ctdb_db = ctdb_db;
-	state->reqid = c->hdr.reqid;
 
-	talloc_set_destructor(state, ctdb_client_call_destructor);
 
 	ctdb_client_queue_pkt(ctdb, &c->hdr);
 
@@ -615,6 +615,7 @@ void ctdb_shutdown(struct ctdb_context *ctdb)
 
 
 struct ctdb_client_control_state {
+	struct ctdb_context *ctdb;
 	uint32_t reqid;
 	int32_t status;
 	TDB_DATA outdata;
@@ -665,6 +666,15 @@ static void timeout_func(struct event_context *ev, struct timed_event *te,
 }
 
 /*
+  destroy a ctdb_control in client
+*/
+static int ctdb_control_destructor(struct ctdb_client_control_state *state)	
+{
+	ctdb_reqid_remove(state->ctdb, state->reqid);
+	return 0;
+}
+
+/*
   send a ctdb control message
   timeout specifies how long we should wait for a reply.
   if timeout is NULL we wait indefinitely
@@ -688,8 +698,11 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	state = talloc_zero(ctdb, struct ctdb_client_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
+	state->ctdb  = ctdb;
 	state->reqid = ctdb_reqid_new(ctdb, state);
 	state->state = CTDB_CALL_WAIT;
+
+	talloc_set_destructor(state, ctdb_control_destructor);
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
@@ -1027,6 +1040,9 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	int32_t res;
 	unsigned char *ptr;
 
+	DEBUG(0,("ronnie to fix!\n"));
+	return -1;
+
 	indata.dsize = 2*sizeof(uint32_t);
 	indata.dptr  = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
 
@@ -1164,36 +1180,6 @@ int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *
 			   mem_ctx, &outdata, &res, NULL);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for cleardb failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data)
-{
-	struct ctdb_write_record *wr;
-	TDB_DATA indata, outdata;
-	int32_t res;
-	int ret, len;
-
-	len = offsetof(struct ctdb_write_record, blob)+key.dsize+data.dsize;
-	wr = (struct ctdb_write_record *)talloc_zero_size(mem_ctx, len);
-	wr->dbid    = dbid;
-	wr->keylen  = key.dsize;
-	wr->datalen = data.dsize;
-	memcpy(&wr->blob[0], &key.dptr[0], key.dsize);
-	memcpy(&wr->blob[key.dsize], &data.dptr[0], data.dsize);
-
-
-	indata.dsize = len;
-	indata.dptr = (unsigned char *)wr;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_WRITE_RECORD, 0, indata, 
-			   mem_ctx, &outdata, &res, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for write record failed\n"));
 		return -1;
 	}
 
@@ -1534,7 +1520,7 @@ struct traverse_state {
 static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data, void *p)
 {
 	struct traverse_state *state = (struct traverse_state *)p;
-	struct ctdb_traverse_data *d = (struct ctdb_traverse_data *)data.dptr;
+	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
 	TDB_DATA key;
 
 	if (data.dsize < sizeof(uint32_t) ||
