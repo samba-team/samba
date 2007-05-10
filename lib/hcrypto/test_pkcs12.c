@@ -61,6 +61,15 @@ struct tests {
 
 struct tests p12_pbe_tests[] = {
     { PKCS12_KEY_ID,
+      NULL,
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+      16,
+      100,
+      16,
+      EVP_sha1,
+      "\xd7\x2d\xd4\xcf\x7e\xe1\x89\xc5\xb5\xe5\x31\xa7\x63\x2c\xf0\x4b"
+    },
+    { PKCS12_KEY_ID,
       "foobar",
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
       16,
@@ -94,10 +103,13 @@ static int
 test_pkcs12_pbe(struct tests *t)
 {
     void *key;
+    size_t pwlen = 0;
 
     key = malloc(t->keylen);
+    if (t->password)
+	pwlen = strlen(t->password);
 
-    if (!PKCS12_key_gen(t->password, strlen(t->password), 
+    if (!PKCS12_key_gen(t->password, pwlen, 
 			t->salt, t->saltsize,
 			t->id, t->iterations, t->keylen, 
 			key, t->md()))
