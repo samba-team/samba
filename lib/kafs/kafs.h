@@ -47,6 +47,7 @@
 
 #ifndef _VICEIOCTL
 #define _VICEIOCTL(id)  ((unsigned int ) _IOW('V', id, struct ViceIoctl))
+#define _AFSCIOCTL(id)  ((unsigned int ) _IOW('C', id, struct ViceIoctl))
 #endif /* _VICEIOCTL */
 
 #define VIOCSETAL		_VICEIOCTL(1)
@@ -82,6 +83,9 @@
 #define VIOC_EXPORTAFS		_VICEIOCTL(39)
 #define VIOCGETCACHEPARAMS	_VICEIOCTL(40)
 #define VIOC_GCPAGS		_VICEIOCTL(48) 
+
+#define VIOCGETTOK2		_AFSCIOCTL(7)
+#define VIOCSETTOK2		_AFSCIOCTL(8)
 
 struct ViceIoctl {
   caddr_t in, out;
