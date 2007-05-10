@@ -209,6 +209,8 @@ gen_files_rfc2459 =					\
 	asn1_id_Userid.x				\
 	asn1_id_domainComponent.x			\
 	asn1_id_x509_ce.x				\
+	asn1_id_uspkicommon_card_id.x			\
+	asn1_id_uspkicommon_piv_interim.x		\
 	asn1_AlgorithmIdentifier.x			\
 	asn1_AttributeType.x				\
 	asn1_AttributeValue.x				\
