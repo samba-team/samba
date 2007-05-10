@@ -79,7 +79,7 @@ static char * user_name = NULL;
 static char * mountpassword = NULL;
 char * domain_name = NULL;
 char * prefixpath = NULL;
-
+char * servern = NULL;
 
 /* BB finish BB
 
@@ -128,7 +128,8 @@ static char * getusername(void) {
 	struct passwd *password = getpwuid(getuid());
 
 	if (password) {
-		username = password->pw_name;
+		if(password->pw_name);
+			username = strdup(password->pw_name);
 	}
 	return username;
 }
@@ -419,6 +420,11 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				printf("password too long\n");
 				return 1;
 			}
+		} else if (strncmp(data, "sec", 3) == 0) {
+			if (value) {
+				if (!strcmp(value, "none"))
+					got_password = 1;
+			}
 		} else if (strncmp(data, "ip", 2) == 0) {
 			if (!value || !*value) {
 				printf("target ip address argument missing");
@@ -567,8 +573,6 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			*filesys_flags &= ~MS_NOEXEC;
 		} else if (strncmp(data, "guest", 5) == 0) {
 			got_password=1;
-                        /* remove the parm since it would otherwise be logged by kern */
-			goto nocopy;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
@@ -805,6 +809,9 @@ continue_unc_parsing:
 				if(got_ip == 0) {
 					host_entry = gethostbyname(unc_name);
 				}
+				if(strnlen(unc_name, 16) < 16) {
+					servern = strdup(unc_name);
+				}
 				*(share - 1) = '/'; /* put the slash back */
 				if ((prefixpath = strchr(share, '/'))) {
 					*prefixpath = 0;  /* permanently terminate the string */
@@ -880,7 +887,7 @@ int main(int argc, char ** argv)
 	char * ipaddr = NULL;
 	char * uuid = NULL;
 	char * mountpoint = NULL;
-	char * options;
+	char * options = NULL;
 	char * resolved_path;
 	char * temp;
 	int rc;
@@ -892,6 +899,7 @@ int main(int argc, char ** argv)
 	int optlen = 0;
 	int orgoptlen = 0;
 	int retry = 0; /* set when we have to retry mount with uppercase */
+	int retry_with_rfc1001name = 0; /* set when we have to retry with netbios name */
 	struct stat statbuf;
 	struct utsname sysinfo;
 	struct mntent mountent;
@@ -1152,26 +1160,40 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
-	options = (char *)malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
+	if(options) {
+	        printf("\norg options %s at %p\n", options, options); /* BB removeme BB */
 
+		free(options);
+	}
+	options = malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */) + 9 /* servern=" */ + 16 /* space for maximum RFC1001 name */;
 	if(options == NULL) {
 		printf("Could not allocate memory for mount options\n");
 		return -1;
 	}
-		
 
+	printf("\noptions %s at %p\n", options, options); /* BB removeme BB */		
+	options = realloc(options, 3350); /* BB removeme BB */
+	printf("\nrealloc seems ok\n"); /* BB removeme BB */
 	options[0] = 0;
 	strncat(options,"unc=",4);
 	strcat(options,share_name);
 	/* scan backwards and reverse direction of slash */
 	temp = strrchr(options, '/');
+	options = realloc(options, 980); /* BB removeme BB */
+	printf("\nrealloc seemms very ok\n"); /* BB removeme BB */
 	if(temp > options + 6)
 		*temp = '\\';
 	if(ipaddr) {
 		strncat(options,",ip=",4);
 		strcat(options,ipaddr);
 	}
-
+	if((servern) && retry_with_rfc1001name) {
+		strcat(options, ",servern=");
+		strcat(options, servern);
+	}	
+        printf("\noptions1 %s at %p\n", options, options); /* BB removeme BB */
+        options = realloc(options, 1000); /* BB removeme BB */
+	printf("realloc1 ok\n"); /* BB removeme BB */
 	if(user_name) {
 		/* check for syntax like user=domain\user */
 		if(got_domain == 0)
@@ -1195,6 +1217,7 @@ mount_retry:
 		strncat(options,",pass=",6);
 		strcat(options,mountpassword);
 	}
+        printf("\noptions2 %s at %p\n", options, options); /* BB removeme BB */
 
 	strncat(options,",ver=",5);
 	strcat(options,MOUNT_CIFS_VERSION_MAJOR);
@@ -1203,6 +1226,9 @@ mount_retry:
 		strcat(options,",");
 		strcat(options,orgoptions);
 	}
+
+        printf("\noptions2 at %p\n", options); /* BB removeme BB */
+
 	if(prefixpath) {
 		strncat(options,",prefixpath=",12);
 		strcat(options,prefixpath); /* no need to cat the / */
@@ -1220,6 +1246,22 @@ mount_retry:
 		case ENODEV:
 			printf("mount error: cifs filesystem not supported by the system\n");
 			break;
+		case ENOENT:
+		case EHOSTDOWN:
+			/* If this is so old as to not support *SMBSERVER called
+			   name for RFC1001, we can get this error . We also
+			   need to uppercase the sharename for these old servers
+			   so fall through to retry code below. On retry the
+			   code will add "servern=" */
+			tmp = servern;
+			if((retry == 0) && tmp) {
+				retry_with_rfc1001name = 1;
+				while (*tmp && !(((unsigned char)tmp[0]) & 0x80)) {
+					*tmp = toupper((unsigned char)*tmp);
+					tmp++;
+				}
+				printf("Adding Netbios name of server to mount based on server part of UNC name\n");
+			}
 		case ENXIO:
 			if(retry == 0) {
 				retry = 1;
@@ -1290,7 +1332,9 @@ mount_exit:
 	}
 
 	if(options) {
-		memset(options,0,optlen);
+		options = realloc(options, 1000); /* BB removeme BB */
+		printf("\noptions freed %p\n", options); /* BB removeme BB */
+/* memset(options,0,optlen); */
 		free(options);
 	}
 
@@ -1301,10 +1345,17 @@ mount_exit:
 	if(resolved_path) {
 		free(resolved_path);
 	}
+	
+	if(servern) {
+		free(servern);
+	}
 
 	if(free_share_name) {
 		free(share_name);
-		}
+	}
+	if(user_name)
+		free(user_name);
+
 	return rc;
 }
 
