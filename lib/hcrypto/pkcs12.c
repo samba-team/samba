@@ -77,7 +77,12 @@ PKCS12_key_gen(const void *key, size_t keylen,
 	    I[i] = ((unsigned char*)salt)[i % saltlen];
 	size_I += vlen;
     }
-    if (key && keylen > 0) {
+    /* 
+     * There is a diffrence between the no password string and the
+     * empty string, in the empty string the UTF16 NUL terminator is
+     * included into the string.
+     */
+    if (key && keylen >= 0) {
 	for (i = 0; i < vlen / 2; i++) {
 	    I[(i * 2) + size_I] = 0;
 	    I[(i * 2) + size_I + 1] = ((unsigned char*)key)[i % (keylen + 1)];
