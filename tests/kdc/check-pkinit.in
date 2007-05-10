@@ -95,6 +95,9 @@ ${kadmin} \
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
+${kadmin} add -p baz --use-defaults baz@${R} || exit 1
+${kadmin} modify --pkinit-acl="CN=baz,DC=test,DC=h5l,DC=se" baz@${R} || exit 1
+
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 
 echo "Doing database check"
@@ -109,6 +112,10 @@ ${hxtool} request-create \
 	 --subject="CN=bar,DC=test,DC=h5l,DC=se" \
 	 --key=FILE:${keyfile2} \
 	 req-pkinit.der || exit 1
+${hxtool} request-create \
+	 --subject="CN=baz,DC=test,DC=h5l,DC=se" \
+	 --key=FILE:${keyfile2} \
+	 req-pkinit2.der || exit 1
 
 echo "issue self-signed ca cert"
 ${hxtool} issue-certificate \
@@ -134,6 +141,14 @@ ${hxtool} issue-certificate \
 	  --req="req-pkinit.der" \
 	  --certificate="FILE:pkinit.crt" || exit 1
 
+echo "issue user 2 certificate"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+	  --type="pkinit-client" \
+	  --req="req-pkinit2.der" \
+	  --certificate="FILE:pkinit2.crt" || exit 1
+
+
 echo foo > ${objdir}/foopassword
 
 echo Starting kdc
@@ -156,8 +171,15 @@ ${kinit} -C FILE:${base}/pkinit.crt,${keyfile2} bar@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
-echo "Trying pk-init (principal in pki-mapping) "; > messages.log
+
+echo "Trying pk-init (principal in pki-mapping file) "; > messages.log
 ${kinit} -C FILE:${base}/pkinit.crt,${keyfile2} foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Trying pk-init (principal subject in DB)"; > messages.log
+${kinit} -C FILE:${base}/pkinit2.crt,${keyfile2} baz@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
