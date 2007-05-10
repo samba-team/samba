@@ -2143,10 +2143,12 @@ PBE_string2key(hx509_context context,
 	       const EVP_MD *md)
 {
     PKCS12_PBEParams p12params;
-    int passwordlen = strlen(password);
+    int passwordlen;
     hx509_crypto c;
     int iter, saltlen, ret;
     unsigned char *salt;
+
+    passwordlen = password ? strlen(password) : 0;
 
     if (parameters == NULL)
  	return HX509_ALG_NOT_SUPP;
@@ -2163,10 +2165,6 @@ PBE_string2key(hx509_context context,
 	iter = 1;
     salt = p12params.salt.data;
     saltlen = p12params.salt.length;
-
-    /* XXX It needs to be here, but why ?  */
-    if (passwordlen == 0)
-	password = NULL;
 
     if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
 			 PKCS12_KEY_ID, iter, key->length, key->data, md)) {
@@ -2288,8 +2286,10 @@ _hx509_pbe_decrypt(hx509_context context,
 
 	if (i < pw->len)
 	    password = pw->val[i];
-	else
+	else if (i < pw->len + 1)
 	    password = "";
+	else
+	    password = NULL;
 
 	ret = (*s2k)(context, password, ai->parameters, &crypto, 
 		     &key, &iv, enc_oid, md);
