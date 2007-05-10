@@ -1,3 +1,14 @@
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* print.c: add Netscape cert comment
+
+	* crypto.c: Try both the empty password and the NULL
+	password (nothing vs the octet string \x00\x00).
+
+	* print.c: Add some US Fed PKI oids.
+
+	* ks_p11.c: Add some more hashes.
+	
 2007-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool.c (crypto_select): stop memory leak
