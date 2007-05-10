@@ -381,7 +381,7 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	/* repoint all local and remote database records to an invalid
 	   node as being dmaster to stop the shortcut from working
 	 */
-	ret = update_dmaster_on_all_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
+	ret = update_dmaster_on_all_databases(ctdb, nodemap, 0xffffffff, dbmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(0, (__location__ "Unable to update dmaster on all databases\n"));
 		return -1;
@@ -546,6 +546,13 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn, struct ctdb_node_map *nodemap)
 {
 	int ret;
+
+	/* set all nodes to recovery mode to stop all internode traffic */
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	if (ret!=0) {
+		DEBUG(0, (__location__ "Unable to set recovery mode to active on cluster\n"));
+		return;
+	}
 	
 	ret = send_election_request(ctdb, mem_ctx, vnn);
 	if (ret!=0) {
@@ -657,7 +664,7 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+		ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, &recmaster);
 		if (ret != 0) {
 			DEBUG(0, (__location__ "Unable to get recmaster from node %u\n", vnn));
 			goto again;
@@ -679,7 +686,7 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), vnn, &recmode);
+		ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, &recmode);
 		if (ret != 0) {
 			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
 			goto again;

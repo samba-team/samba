@@ -260,18 +260,22 @@ struct ctdb_db_context {
 
 
 #define CTDB_NO_MEMORY(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return -1; }} while (0)
 
 #define CTDB_NO_MEMORY_VOID(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  }} while (0)
 
 #define CTDB_NO_MEMORY_NULL(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return NULL; }} while (0)
 
 #define CTDB_NO_MEMORY_FATAL(ctdb, p) do { if (!(p)) { \
+          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
 
