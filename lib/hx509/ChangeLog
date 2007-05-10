@@ -1,5 +1,7 @@
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c: Indent.
+
 	* hxtool-commands.in: add test-crypto command
 
 	* hxtool.c: test crypto command
