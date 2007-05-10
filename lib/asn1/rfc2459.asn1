@@ -476,5 +476,10 @@ ProxyCertInfo ::= SEQUENCE {
 id-uspkicommon-card-id OBJECT IDENTIFIER ::= { 2 16 840 1 101 3 6 6 }
 id-uspkicommon-piv-interim OBJECT IDENTIFIER ::= { 2 16 840 1 101 3 6 9 1 }
 
+--- Netscape extentions
+
+id-netscape OBJECT IDENTIFIER ::= 
+    { joint-iso-itu-t(2) country(16) us(840) organization(1) netscape(113730) }
+id-netscape-cert-comment OBJECT IDENTIFIER ::= { id-netscape 1 13 }
 
 END
