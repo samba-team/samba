@@ -1333,10 +1333,6 @@ AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
-# Save the original CFLAGS for a few tests that we want to allow
-# implicit declaration warnings without failing the test (in developer mode)
-ac_no_error_on_warning_CFLAGS="${CFLAGS}"
-
 echo -n "checking for GPFS GPL libs... "
 save_LIBS="$LIBS"
 LIBS="$LIBS -lgpfs_gpl"
@@ -4728,8 +4724,6 @@ if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
 AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-SAVE_CFLAGS="$CFLAGS"
-CFLAGS="${ac_no_error_on_warning_CFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4739,7 +4733,6 @@ AC_TRY_COMPILE([
 #include "${srcdir-.}/lib/sysquotas.c"
 ],[],samba_cv_SYSQUOTA_WORKS=yes,samba_cv_SYSQUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
-CFLAGS="$SAVE_CFLAGS"
 ])
 if test x"$samba_cv_SYSQUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
@@ -4778,8 +4771,6 @@ fi
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-SAVE_CFLAGS="$CFLAGS"
-CFLAGS="${ac_no_error_on_warning_CFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4787,7 +4778,6 @@ AC_TRY_COMPILE([
 #include "${srcdir-.}/smbd/quotas.c"
 ],[],samba_cv_QUOTA_WORKS=yes,samba_cv_QUOTA_WORKS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
-CFLAGS="$SAVE_CFLAGS"
 ])
 if test x"$samba_cv_QUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the old quota support)
@@ -6377,7 +6367,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 dnl Merge in developer cflags from now on
 if test x"$developer" = x"yes"; then
-    CFLAGS="${ac_no_error_on_warning_CFLAGS} ${DEVELOPER_CFLAGS}"
+    CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
 fi
 
 builddir=`pwd`
