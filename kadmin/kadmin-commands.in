@@ -337,6 +337,12 @@ command = {
 		argument = "principal"
 		help = "aliases"
 	}
+	option = {
+		long = "pkinit-acl"
+		type = "strings"
+		argument = "subject dn"
+		help = "aliases"
+	}
 	argument = "principal"
 	min_args = "1"
 	max_args = "1"
