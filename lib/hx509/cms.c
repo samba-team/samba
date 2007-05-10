@@ -979,6 +979,9 @@ hx509_cms_create_signed_1(hx509_context context,
 
     sd.version = CMSVersion_v3;
 
+    if (eContentType == NULL)
+	eContentType = oid_id_pkcs7_data();
+
     der_copy_oid(eContentType, &sd.encapContentInfo.eContentType);
 
     /* */
