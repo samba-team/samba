@@ -288,7 +288,7 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 
 
 /* lock/unlock entire database */
-static int _tdb_lockall(struct tdb_context *tdb, int ltype)
+static int _tdb_lockall(struct tdb_context *tdb, int ltype, int op)
 {
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only || tdb->traverse_read)
@@ -309,9 +309,11 @@ static int _tdb_lockall(struct tdb_context *tdb, int ltype)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 
-	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, ltype, F_SETLKW, 
+	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, ltype, op,
 				     0, 4*tdb->header.hash_size)) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lockall failed (%s)\n", strerror(errno)));
+		if (op == F_SETLKW) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lockall failed (%s)\n", strerror(errno)));
+		}
 		return -1;
 	}
 
@@ -320,6 +322,8 @@ static int _tdb_lockall(struct tdb_context *tdb, int ltype)
 
 	return 0;
 }
+
+
 
 /* unlock entire db */
 static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
@@ -353,7 +357,13 @@ static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
 /* lock entire database with write lock */
 int tdb_lockall(struct tdb_context *tdb)
 {
-	return _tdb_lockall(tdb, F_WRLCK);
+	return _tdb_lockall(tdb, F_WRLCK, F_SETLKW);
+}
+
+/* lock entire database with write lock - nonblocking varient */
+int tdb_lockall_nonblock(struct tdb_context *tdb)
+{
+	return _tdb_lockall(tdb, F_WRLCK, F_SETLK);
 }
 
 /* unlock entire database with write lock */
@@ -365,7 +375,13 @@ int tdb_unlockall(struct tdb_context *tdb)
 /* lock entire database with read lock */
 int tdb_lockall_read(struct tdb_context *tdb)
 {
-	return _tdb_lockall(tdb, F_RDLCK);
+	return _tdb_lockall(tdb, F_RDLCK, F_SETLKW);
+}
+
+/* lock entire database with read lock - nonblock varient */
+int tdb_lockall_read_nonblock(struct tdb_context *tdb)
+{
+	return _tdb_lockall(tdb, F_RDLCK, F_SETLK);
 }
 
 /* unlock entire database with read lock */
