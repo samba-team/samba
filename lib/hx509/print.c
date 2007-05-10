@@ -465,7 +465,9 @@ check_altName(hx509_validate_ctx ctx,
 	switch (gn.val[i].element) {
 	case choice_GeneralName_otherName: {
 	    unsigned j;
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%sAltName otherName ", name);
+
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "%sAltName otherName ", name);
 
 	    for (j = 0; j < sizeof(check_altname)/sizeof(check_altname[0]); j++) {
 		if (der_heim_oid_cmp((*check_altname[j].oid)(), 
@@ -611,9 +613,12 @@ struct {
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
-    { "proxyCertInfo", oid_id_pe_proxyCertInfo, check_proxyCertInfo, M_C },
-    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, check_Null, D_C },
-    { "Netscape cert comment", oid_id_netscape_cert_comment, check_Null, D_C},
+    { "proxyCertInfo", oid_id_pe_proxyCertInfo, 
+      check_proxyCertInfo, M_C },
+    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, 
+      check_Null, D_C },
+    { "Netscape cert comment", oid_id_netscape_cert_comment, 
+      check_Null, D_C },
     { NULL }
 };
 
