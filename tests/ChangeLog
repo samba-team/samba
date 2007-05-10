@@ -1,3 +1,7 @@
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-pkinit.in: try principal subject in DB
+	
 2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-basic.in: test using test_kcred
