@@ -330,7 +330,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_STATUS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
 		    CTDB_CONTROL_SET_CALL,
-		    CTDB_CONTROL_WRITE_RECORD,
 		    CTDB_CONTROL_TRAVERSE_START,
 		    CTDB_CONTROL_TRAVERSE_ALL,
 		    CTDB_CONTROL_TRAVERSE_DATA,
@@ -371,6 +370,7 @@ struct ctdb_call_state {
 	const char *errmsg;
 	struct ctdb_call call;
 	uint32_t generation;
+	uint32_t resend_count;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -729,9 +729,9 @@ struct ctdb_traverse_start {
 };
 
 /*
-  structure used to pass the data between the child and parent
+  structure used to pass record data between the child and parent
  */
-struct ctdb_traverse_data {
+struct ctdb_rec_data {
 	uint32_t length;
 	uint32_t reqid;
 	uint32_t keylen;
@@ -739,6 +739,25 @@ struct ctdb_traverse_data {
 	uint8_t  data[1];
 };
 				   
+
+/* structure used for pulldb control */
+struct ctdb_control_pulldb {
+	uint32_t db_id;
+	uint32_t lmaster;
+};
+
+/* structure used for pulldb control */
+struct ctdb_control_pulldb_reply {
+	uint32_t db_id;
+	uint32_t count;
+	uint8_t data[1];
+};
+
+/* set dmaster control structure */
+struct ctdb_control_set_dmaster {
+	uint32_t db_id;
+	uint32_t dmaster;
+};
 
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
@@ -754,5 +773,12 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
 int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
+
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	TDB_DATA key, TDB_DATA data);
+
+int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

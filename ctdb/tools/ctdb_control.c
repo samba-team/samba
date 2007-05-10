@@ -54,8 +54,6 @@ static void usage(void)
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
 		"  getrecmaster <vnn>                 get recovery master\n"
 		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
-		"  writerecord <vnn> <dbid> <key> <data>\n"
-		"  recover <vnn>                      recover the cluster\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
 	);
@@ -626,34 +624,6 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 	return 0;
 }
 
-/*
-  write a record to a remote tdb
- */
-static int control_writerecord(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t vnn, dbid;
-	TDB_DATA key, data;
-	int ret;
-
-	if (argc < 4) {
-		usage();
-	}
-
-	vnn  = strtoul(argv[0], NULL, 0);
-	dbid = strtoul(argv[1], NULL, 0);
-
-	key.dptr  = discard_const(argv[2]);
-	key.dsize = strlen((const char *)(key.dptr));
-	data.dptr  = discard_const(argv[3]);
-	data.dsize = strlen((const char *)(data.dptr));
-
-	ret = ctdb_ctrl_write_record(ctdb, vnn, ctdb, dbid, key, data);
-	if (ret != 0) {
-		printf("Unable to set vnnmap for node %u\n", vnn);
-		return ret;
-	}
-	return 0;
-}
 
 /*
   set the dmaster for all records in a database
@@ -913,7 +883,6 @@ int main(int argc, const char *argv[])
 		{ "ping", control_ping },
 		{ "debug", control_debug },
 		{ "debuglevel", control_debuglevel },
-		{ "writerecord", control_writerecord },
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
 		{ "getpid", control_getpid },
