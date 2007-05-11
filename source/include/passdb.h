@@ -328,9 +328,6 @@ struct pdb_methods
 				 TALLOC_CTX *mem_ctx,
 				 uint32 group_rid, uint32 member_rid);
 
-	NTSTATUS (*find_alias)(struct pdb_methods *methods,
-			       const char *name, DOM_SID *sid);
-
 	NTSTATUS (*create_alias)(struct pdb_methods *methods,
 				 const char *name, uint32 *rid);
 

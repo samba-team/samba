@@ -1354,7 +1354,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	DOM_SID   sid;
 	struct acct_info info;
 	uint32    acc_granted;
-	BOOL ret;
+	NTSTATUS status;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1368,11 +1368,11 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	}
 
 	become_root();
-	ret = pdb_get_aliasinfo(&sid, &info);
+	status = pdb_get_aliasinfo(&sid, &info);
 	unbecome_root();
 	
-	if ( !ret )
-		return NT_STATUS_NO_SUCH_ALIAS;
+	if ( !NT_STATUS_IS_OK(status))
+		return status;
 
 	if ( !(r_u->ctr = TALLOC_ZERO_P( p->mem_ctx, ALIAS_INFO_CTR )) ) 
 		return NT_STATUS_NO_MEMORY;
@@ -4301,7 +4301,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
+	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
@@ -4340,15 +4340,15 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 		become_root();
 
 	/* Have passdb delete the alias */
-	ret = pdb_delete_alias(&alias_sid);
+	status = pdb_delete_alias(&alias_sid);
 	
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 
-	if ( !ret )
-		return NT_STATUS_ACCESS_DENIED;
+	if ( !NT_STATUS_IS_OK(status))
+		return status;
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -4693,8 +4693,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	struct acct_info info;
 	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
-	BOOL ret;
 	BOOL can_mod_accounts;
+	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted, &disp_info))
@@ -4709,18 +4709,16 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	/* get the current group information */
 
 	become_root();
-	ret = pdb_get_aliasinfo( &group_sid, &info );
+	status = pdb_get_aliasinfo( &group_sid, &info );
 	unbecome_root();
 
-	if ( !ret ) {
-		return NT_STATUS_NO_SUCH_ALIAS;
-	}
+	if ( !NT_STATUS_IS_OK(status))
+		return status;
 
 	switch (ctr->level) {
 		case 2:
 		{
 			fstring group_name, acct_name;
-			NTSTATUS status;
 
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand 
@@ -4776,18 +4774,17 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
         if ( can_mod_accounts )
                 become_root();
 
-        ret = pdb_set_aliasinfo( &group_sid, &info );
+        status = pdb_set_aliasinfo( &group_sid, &info );
 
         if ( can_mod_accounts )
                 unbecome_root();
 
         /******** End SeAddUsers BLOCK *********/
 
-	if (ret) {
+	if (NT_STATUS_IS_OK(status))
 		force_flush_samr_cache(disp_info);
-	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return status;
 }
 
 /*********************************************************************

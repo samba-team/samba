@@ -416,22 +416,6 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-NTSTATUS pdb_default_find_alias(struct pdb_methods *methods,
-				const char *name, DOM_SID *sid)
-{
-	GROUP_MAP map;
-
-	if (!pdb_getgrnam(&map, name))
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	if ((map.sid_name_use != SID_NAME_WKN_GRP) &&
-	    (map.sid_name_use != SID_NAME_ALIAS))
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	sid_copy(sid, &map.sid);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid)
 {
