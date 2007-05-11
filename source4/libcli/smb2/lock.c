@@ -39,7 +39,7 @@ struct smb2_request *smb2_lock_send(struct smb2_tree *tree, struct smb2_lock *io
 	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 	SBVAL(req->out.body, 0x18, io->in.offset);
 	SBVAL(req->out.body, 0x20, io->in.count);
-	SIVAL(req->out.body, 0x28, io->in.unknown5);
+	SIVAL(req->out.body, 0x24, io->in.unknown5);
 	SIVAL(req->out.body, 0x28, io->in.flags);
 
 	smb2_transport_send(req);
