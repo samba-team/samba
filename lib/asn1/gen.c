@@ -167,6 +167,7 @@ init_generate (const char *filename, const char *base)
 	  "    }                                                          \\\n"
 	  "  } while (0)\n\n",
 	  headerfile);
+    fprintf (headerfile, "struct units;\n\n");
     fprintf (headerfile, "#endif\n\n");
     asprintf(&fn, "%s_files", base);
     if (fn == NULL)
