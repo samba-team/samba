@@ -961,6 +961,15 @@ will have the same name.
 </refsect2>
 
 <refsect2>
+<title>SAM UNMAPUNIXGROUP &lt;NAME&gt;</title>
+
+<para>
+Remove an existing group mapping entry.
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>SAM ADDMEM &lt;GROUP&gt; &lt;MEMBER&gt;</title>
 
 <para>
