@@ -4,6 +4,7 @@
    Some Helpful wrappers on LDAP 
 
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Guenther Deschner 2006,2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -157,6 +158,21 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 
 	args.control = ADS_EXTENDED_DN_OID;
 	args.val = flags;
+	args.critical = True;
+
+	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
+					"(objectclass=*)", attrs, &args, res);
+}
+
+ ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
+					 uint32 sd_flags,
+					 const char *dn, 
+					 const char **attrs)
+{
+	ads_control args;
+
+	args.control = ADS_SD_FLAGS_OID;
+	args.val = sd_flags;
 	args.critical = True;
 
 	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
