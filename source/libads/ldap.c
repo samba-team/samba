@@ -650,7 +650,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
-			if ((ber_flatten(ext_be, &extdn_bv)) == -1) {
+			if ((ber_flatten(ext_be, &ext_bv)) == -1) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
