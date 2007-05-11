@@ -32,6 +32,7 @@ struct libnet_context {
 		const char *name;
 		uint32_t access_mask;
 		struct policy_handle handle;
+		int buf_size;
 	} samr;
 
 	/* lsa connection parameters - opened handles and related properties */
