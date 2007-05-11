@@ -46,6 +46,9 @@ static struct perm_mask_str {
 
 	{SEC_RIGHTS_CHANGE_PASSWD,	"[Change Password]"},	
 	{SEC_RIGHTS_RESET_PASSWD,	"[Reset Password]"},
+
+	{SEC_RIGHTS_APPLY_GROUP_POLICY,	"[Apply Group Policy]"},
+
 	{0,				0}
 };
 
@@ -66,7 +69,7 @@ static void ads_disp_perms(uint32 type)
 		if (type & (1 << i)) {
 			for (j = 1; perms[j].str; j ++) {
 				if (perms[j].mask == (((unsigned) 1) << i)) {
-					printf("\n\t%s", perms[j].str);
+					printf("\n\t%s (0x%08x)", perms[j].str, perms[j].mask);
 				}	
 			}
 			type &= ~(1 << i);
