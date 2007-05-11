@@ -343,6 +343,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GET_PID,
 		    CTDB_CONTROL_GET_RECMASTER,
 		    CTDB_CONTROL_SET_RECMASTER,
+		    CTDB_CONTROL_BUMP_RSN,
 };
 
 
@@ -780,5 +781,6 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_bump_rsn(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

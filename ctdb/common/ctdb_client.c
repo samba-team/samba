@@ -1175,6 +1175,31 @@ int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *
 }
 
 /*
+  bump rsn on all records
+ */
+int ctdb_ctrl_bumprsn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid)
+{
+	int ret;
+	TDB_DATA indata, outdata;
+	int32_t res;
+
+	indata.dsize = sizeof(uint32_t);
+	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint32_t, 1);
+
+	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_BUMP_RSN, 0, indata, 
+			   mem_ctx, &outdata, &res, &timeout);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for bumprsn failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   ping a node, return number of clients connected
  */
 int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode)
