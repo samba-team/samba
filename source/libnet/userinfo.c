@@ -31,14 +31,9 @@
 #include "libnet/userinfo.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
-static void userinfo_handler(struct rpc_request *req);
-
-enum userinfo_stage { USERINFO_LOOKUP, USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
 
 struct userinfo_state {
-	enum userinfo_stage       stage;
 	struct dcerpc_pipe        *pipe;
-	struct rpc_request        *req;
 	struct policy_handle      domain_handle;
 	struct policy_handle      user_handle;
 	uint16_t                  level;
@@ -53,23 +48,53 @@ struct userinfo_state {
 };
 
 
+static void continue_userinfo_lookup(struct rpc_request *req);
+static void continue_userinfo_openuser(struct rpc_request *req);
+static void continue_userinfo_getuser(struct rpc_request *req);
+static void continue_userinfo_closeuser(struct rpc_request *req);
+
+
 /**
  * Stage 1 (optional): Look for a username in SAM server.
  */
-static NTSTATUS userinfo_lookup(struct composite_context *c,
-				struct userinfo_state *s)
+static void continue_userinfo_lookup(struct rpc_request *req)
 {
+	struct composite_context *c;
+	struct userinfo_state *s;
+	struct rpc_request *openuser_req;
+	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userinfo_state);
+
 	/* receive samr_Lookup reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
 	
 	/* there could be a problem with name resolving itself */
-	NT_STATUS_NOT_OK_RETURN(s->lookup.out.result);
+	if (!NT_STATUS_IS_OK(s->lookup.out.result)) {
+		composite_error(c, s->lookup.out.result);
+		return;
+	}
+
+	/* issue a monitor message */
+	if (s->monitor_fn) {
+		msg.type = rpc_lookup_name;
+		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+		msg_lookup->rid = s->lookup.out.rids.ids;
+		msg_lookup->count = s->lookup.out.rids.count;
+		msg.data = (void*)msg_lookup;
+		msg.data_size = sizeof(*msg_lookup);
+		
+		s->monitor_fn(&msg);
+	}
+	
 
 	/* have we actually got name resolved
 	   - we're looking for only one at the moment */
 	if (s->lookup.out.rids.count == 0) {
-		return NT_STATUS_NO_SUCH_USER;
+		composite_error(c, NT_STATUS_NO_SUCH_USER);
 	}
 
 	/* TODO: find proper status code for more than one rid found */
@@ -81,168 +106,143 @@ static NTSTATUS userinfo_lookup(struct composite_context *c,
 	s->openuser.out.user_handle   = &s->user_handle;
 
 	/* send request */
-	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
-	if (s->req == NULL) goto failure;
+	openuser_req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
+	if (composite_nomem(openuser_req, c)) return;
 
-	s->req->async.callback = userinfo_handler;
-	s->req->async.private  = c;
-	s->stage = USERINFO_OPENUSER;
-
-	return NT_STATUS_OK;
-
-failure:
-	return NT_STATUS_UNSUCCESSFUL;
+	composite_continue_rpc(c, openuser_req, continue_userinfo_openuser, c);
 }
 
 
 /**
  * Stage 2: Open user policy handle.
  */
-static NTSTATUS userinfo_openuser(struct composite_context *c,
-				  struct userinfo_state *s)
+static void continue_userinfo_openuser(struct rpc_request *req)
 {
-	/* receive samr_OpenUser reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
-	
-	/* prepare parameters for QueryUserInfo call */
-	s->queryuserinfo.in.user_handle = &s->user_handle;
-	s->queryuserinfo.in.level       = s->level;
-	
-	/* queue rpc call, set event handling and new state */
-	s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuserinfo);
-	if (s->req == NULL) goto failure;
-	
-	s->req->async.callback = userinfo_handler;
-	s->req->async.private  = c;
-	s->stage = USERINFO_GETUSER;
-	
-	return NT_STATUS_OK;
-
-failure:
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-/**
- * Stage 3: Get requested user information.
- */
-static NTSTATUS userinfo_getuser(struct composite_context *c,
-				 struct userinfo_state *s)
-{
-	/* receive samr_QueryUserInfo reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
-
-	/* check if queryuser itself went ok */
-	NT_STATUS_NOT_OK_RETURN(s->queryuserinfo.out.result);
-
-	s->info = talloc_steal(s, s->queryuserinfo.out.info);
-	
-	/* prepare arguments for Close call */
-	s->samrclose.in.handle  = &s->user_handle;
-	s->samrclose.out.handle = &s->user_handle;
-	
-	/* queue rpc call, set event handling and new state */
-	s->req = dcerpc_samr_Close_send(s->pipe, c, &s->samrclose);
-	
-	s->req->async.callback = userinfo_handler;
-	s->req->async.private  = c;
-	s->stage = USERINFO_CLOSEUSER;
-
-	return NT_STATUS_OK;
-}
-
-
-/**
- * Stage 4: Close policy handle associated with opened user.
- */
-static NTSTATUS userinfo_closeuser(struct composite_context *c,
-				   struct userinfo_state *s)
-{
-	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
-
-	c->state = COMPOSITE_STATE_DONE;
-
-	return NT_STATUS_OK;
-}
-
-
-/**
- * Event handler for asynchronous request. Handles transition through
- * intermediate stages of the call.
- *
- * @param req rpc call context
- */
-static void userinfo_handler(struct rpc_request *req)
-{
-	struct composite_context *c = req->async.private;
-	struct userinfo_state *s = talloc_get_type(c->private_data, struct userinfo_state);
+	struct composite_context *c;
+	struct userinfo_state *s;
+	struct rpc_request *queryuser_req;
 	struct monitor_msg msg;
-	struct msg_rpc_lookup_name *msg_lookup;
 	struct msg_rpc_open_user *msg_open;
-	struct msg_rpc_query_user *msg_query;
-	struct msg_rpc_close_user *msg_close;
-	
-	/* Stages of the call */
-	switch (s->stage) {
-	case USERINFO_LOOKUP:
-		c->status = userinfo_lookup(c, s);
 
-		msg.type = rpc_lookup_name;
-		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
-		msg_lookup->rid = s->lookup.out.rids.ids;
-		msg_lookup->count = s->lookup.out.rids.count;
-		msg.data = (void*)msg_lookup;
-		msg.data_size = sizeof(*msg_lookup);
-		break;
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userinfo_state);
 
-	case USERINFO_OPENUSER:
-		c->status = userinfo_openuser(c, s);
+	/* receive samr_OpenUser reply */
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
 
+	if (!NT_STATUS_IS_OK(s->queryuserinfo.out.result)) {
+		composite_error(c, s->queryuserinfo.out.result);
+		return;
+	}
+
+	/* issue a monitor message */
+	if (s->monitor_fn) {
 		msg.type = rpc_open_user;
 		msg_open = talloc(s, struct msg_rpc_open_user);
 		msg_open->rid = s->openuser.in.rid;
 		msg_open->access_mask = s->openuser.in.access_mask;
 		msg.data = (void*)msg_open;
 		msg.data_size = sizeof(*msg_open);
-		break;
+		
+		s->monitor_fn(&msg);
+	}
+	
+	/* prepare parameters for QueryUserInfo call */
+	s->queryuserinfo.in.user_handle = &s->user_handle;
+	s->queryuserinfo.in.level       = s->level;
+	
+	/* queue rpc call, set event handling and new state */
+	queryuser_req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuserinfo);
+	if (composite_nomem(queryuser_req, c)) return;
+	
+	composite_continue_rpc(c, queryuser_req, continue_userinfo_getuser, c);
+}
 
-	case USERINFO_GETUSER:
-		c->status = userinfo_getuser(c, s);
 
+/**
+ * Stage 3: Get requested user information.
+ */
+static void continue_userinfo_getuser(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct userinfo_state *s;
+	struct rpc_request *close_req;
+	struct monitor_msg msg;
+	struct msg_rpc_query_user *msg_query;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userinfo_state);
+
+	/* receive samr_QueryUserInfo reply */
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	/* check if queryuser itself went ok */
+	if (!NT_STATUS_IS_OK(s->queryuserinfo.out.result)) {
+		composite_error(c, s->queryuserinfo.out.result);
+		return;
+	}
+
+	s->info = talloc_steal(s, s->queryuserinfo.out.info);
+
+	/* issue a monitor message */
+	if (s->monitor_fn) {
 		msg.type = rpc_query_user;
 		msg_query = talloc(s, struct msg_rpc_query_user);
 		msg_query->level = s->queryuserinfo.in.level;
 		msg.data = (void*)msg_query;
 		msg.data_size = sizeof(*msg_query);
-		break;
 		
-	case USERINFO_CLOSEUSER:
-		c->status = userinfo_closeuser(c, s);
+		s->monitor_fn(&msg);
+	}
+	
+	/* prepare arguments for Close call */
+	s->samrclose.in.handle  = &s->user_handle;
+	s->samrclose.out.handle = &s->user_handle;
+	
+	/* queue rpc call, set event handling and new state */
+	close_req = dcerpc_samr_Close_send(s->pipe, c, &s->samrclose);
+	if (composite_nomem(close_req, c)) return;
+	
+	composite_continue_rpc(c, close_req, continue_userinfo_closeuser, c);
+}
 
+
+/**
+ * Stage 4: Close policy handle associated with opened user.
+ */
+static void continue_userinfo_closeuser(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct userinfo_state *s;
+	struct monitor_msg msg;
+	struct msg_rpc_close_user *msg_close;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userinfo_state);
+
+	/* receive samr_Close reply */
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {
+		composite_error(c, s->samrclose.out.result);
+		return;
+	}
+
+	/* issue a monitor message */
+	if (s->monitor_fn) {
 		msg.type = rpc_close_user;
 		msg_close = talloc(s, struct msg_rpc_close_user);
 		msg_close->rid = s->openuser.in.rid;
 		msg.data = (void*)msg_close;
 		msg.data_size = sizeof(*msg_close);
-		break;
-	}
 
-	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_ERROR;
-	}
-	
-	if (s->monitor_fn) {
 		s->monitor_fn(&msg);
 	}
 
-	if (c->state >= COMPOSITE_STATE_DONE &&
-	    c->async.fn) {
-		c->async.fn(c);
-	}
+	composite_done(c);
 }
 
 
@@ -259,6 +259,7 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 	struct composite_context *c;
 	struct userinfo_state *s;
 	struct dom_sid *sid;
+	struct rpc_request *openuser_req, *lookup_req;
 
 	if (!p || !io) return NULL;
 	
@@ -285,10 +286,10 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		s->openuser.out.user_handle   = &s->user_handle;
 		
 		/* send request */
-		s->req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
-		if (composite_nomem(s->req, c)) return c;
-		
-		s->stage = USERINFO_OPENUSER;
+		openuser_req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
+		if (composite_nomem(openuser_req, c)) return c;
+
+		composite_continue_rpc(c, openuser_req, continue_userinfo_openuser, c);
 
 	} else {
 		/* preparing parameters to send rpc request */
@@ -300,15 +301,11 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		s->lookup.in.names[0].string  = talloc_strdup(s, io->in.username);
 		
 		/* send request */
-		s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
-		if (composite_nomem(s->req, c)) return c;
+		lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
+		if (composite_nomem(lookup_req, c)) return c;
 		
-		s->stage = USERINFO_LOOKUP;
+		composite_continue_rpc(c, lookup_req, continue_userinfo_lookup, c);
 	}
-
-	/* callback handler */
-	s->req->async.callback = userinfo_handler;
-	s->req->async.private = c;
 
 	return c;
 }
