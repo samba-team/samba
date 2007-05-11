@@ -434,6 +434,9 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res, "gPCMachineExtensionNames");
 	gpo->user_extensions = ads_pull_string(ads, mem_ctx, res, "gPCUserExtensionNames");
 
+	ads_pull_sd(ads, mem_ctx, res, "ntSecurityDescriptor", &gpo->security_descriptor);
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->security_descriptor);
+
 	return ADS_ERROR(LDAP_SUCCESS);
 }
 
@@ -455,7 +458,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 	const char *attrs[] = { "cn", "displayName", "flags", "gPCFileSysPath", 
 				"gPCFunctionalityVersion", "gPCMachineExtensionNames", 
 				"gPCUserExtensionNames", "gPCWQLFilter", "name", 
-				"versionNumber", NULL};
+				"versionNumber", "ntSecurityDescriptor", NULL};
 
 	ZERO_STRUCTP(gpo);
 
