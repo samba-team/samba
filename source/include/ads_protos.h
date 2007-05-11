@@ -102,3 +102,13 @@ ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
 			 LDAPMessage *res,
 			 const char *gpo_dn,
 			 struct GROUP_POLICY_OBJECT *gpo);
+ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
+					 uint32 sd_flags,
+					 const char *dn, 
+					 const char **attrs);
+ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
+				       int scope, const char *expr,
+				       const char **attrs, uint32 sd_flags, 
+				       LDAPMessage **res);
+
+
