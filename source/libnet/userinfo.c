@@ -296,9 +296,10 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		s->lookup.in.domain_handle    = &s->domain_handle;
 		s->lookup.in.num_names        = 1;
 		s->lookup.in.names            = talloc_array(s, struct lsa_String, 1);
-		
 		if (composite_nomem(s->lookup.in.names, c)) return c;
+
 		s->lookup.in.names[0].string  = talloc_strdup(s, io->in.username);
+		if (composite_nomem(s->lookup.in.names[0].string, c)) return c;
 		
 		/* send request */
 		lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);

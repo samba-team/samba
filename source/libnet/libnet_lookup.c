@@ -74,6 +74,8 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 
 	/* parameters */
 	s->hostname.name   = talloc_strdup(s, io->in.hostname);
+	if (composite_nomem(s->hostname.name, c)) return c;
+
 	s->hostname.type   = io->in.type;
 	s->hostname.scope  = NULL;
 
