@@ -121,6 +121,7 @@ typedef void **ADS_MODLIST;
 #define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
 #define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
 #define ADS_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
+#define ADS_SD_FLAGS_OID       "1.2.840.113556.1.4.801"
 
 /* ldap attribute oids (Services for Unix) */
 #define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"

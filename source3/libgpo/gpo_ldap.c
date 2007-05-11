@@ -459,6 +459,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 				"gPCFunctionalityVersion", "gPCMachineExtensionNames", 
 				"gPCUserExtensionNames", "gPCWQLFilter", "name", 
 				"versionNumber", "ntSecurityDescriptor", NULL};
+	uint32 sd_flags = DACL_SECURITY_INFORMATION;
 
 	ZERO_STRUCTP(gpo);
 
@@ -472,7 +473,9 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 			gpo_dn = gpo_dn + strlen("LDAP://");
 		}
 
-		status = ads_search_dn(ads, &res, gpo_dn, attrs);
+		status = ads_search_retry_dn_sd_flags(ads, &res, 
+						      sd_flags,
+						      gpo_dn, attrs);
 		
 	} else if (display_name || guid_name) {
 
@@ -482,9 +485,9 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 					 display_name ? display_name : guid_name);
 		ADS_ERROR_HAVE_NO_MEMORY(filter);
 
-		status = ads_do_search_all(ads, ads->config.bind_path,
-					   LDAP_SCOPE_SUBTREE, filter, 
-					   attrs, &res);
+		status = ads_do_search_all_sd_flags(ads, ads->config.bind_path,
+						    LDAP_SCOPE_SUBTREE, filter, 
+						    attrs, sd_flags, &res);
 	}
 
 	if (!ADS_ERR_OK(status)) {
