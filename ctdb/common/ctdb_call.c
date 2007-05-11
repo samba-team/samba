@@ -295,7 +295,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	DEBUG(2,("vnn %u dmaster response %08x\n", ctdb->vnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
-	header.rsn = rsn;
+	header.rsn = rsn + 1;
 	header.dmaster = ctdb->vnn;
 
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {

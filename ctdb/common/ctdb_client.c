@@ -1037,17 +1037,16 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 {
 	int i, ret;
 	TDB_DATA indata, outdata;
+	struct ctdb_control_pulldb pull;
+	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_rec_data *rec;
 	int32_t res;
-	unsigned char *ptr;
 
-	DEBUG(0,("ronnie to fix!\n"));
-	return -1;
+	pull.db_id   = dbid;
+	pull.lmaster = lmaster;
 
-	indata.dsize = 2*sizeof(uint32_t);
-	indata.dptr  = (unsigned char *)talloc_array(mem_ctx, uint32_t, 2);
-
-	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
-	((uint32_t *)(&indata.dptr[0]))[1] = lmaster;
+	indata.dsize = sizeof(struct ctdb_control_pulldb);
+	indata.dptr  = (unsigned char *)&pull;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_PULL_DB, 0, indata, 
@@ -1058,45 +1057,34 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	}
 
 
-	keys->dbid   = ((uint32_t *)(&outdata.dptr[0]))[0];
-	keys->num    = ((uint32_t *)(&outdata.dptr[0]))[1];
-	keys->keys   =talloc_array(mem_ctx, TDB_DATA, keys->num);
-	keys->headers=talloc_array(mem_ctx, struct ctdb_ltdb_header, keys->num);
-	keys->lmasters=talloc_array(mem_ctx, uint32_t, keys->num);
-	keys->data=talloc_array(mem_ctx, TDB_DATA, keys->num);
+	reply = (struct ctdb_control_pulldb_reply *)outdata.dptr;
+	keys->dbid     = reply->db_id;
+	keys->num      = reply->count;
+	
+	keys->keys     = talloc_array(mem_ctx, TDB_DATA, keys->num);
+	keys->headers  = talloc_array(mem_ctx, struct ctdb_ltdb_header, keys->num);
+	keys->lmasters = talloc_array(mem_ctx, uint32_t, keys->num);
+	keys->data     = talloc_array(mem_ctx, TDB_DATA, keys->num);
 
-	/* loop over all key/data pairs */
-	ptr=&outdata.dptr[8];
-	for(i=0;i<keys->num;i++){
-		TDB_DATA *key, *data;
+	rec = (struct ctdb_rec_data *)&reply->data[0];
 
-		keys->lmasters[i] = *((uint32_t *)ptr);
-		ptr += 4;
+	for (i=0;i<reply->count;i++) {
+		keys->keys[i].dptr = talloc_memdup(mem_ctx, &rec->data[0], rec->keylen);
+		keys->keys[i].dsize = rec->keylen;
 
-		key = &keys->keys[i];
-		key->dsize = *((uint32_t *)ptr);
-		key->dptr = talloc_size(mem_ctx, key->dsize);
-		ptr += 4;
+		keys->data[i].dptr = talloc_memdup(mem_ctx, &rec->data[keys->keys[i].dsize], rec->datalen);
+		keys->data[i].dsize = rec->datalen;
 
-		data = &keys->data[i];
-		data->dsize = *((uint32_t *)ptr);
-		data->dptr = talloc_size(mem_ctx, data->dsize);
-		ptr += 4;
+		if (keys->data[i].dsize < sizeof(struct ctdb_ltdb_header)) {
+			DEBUG(0,(__location__ " bad ltdb record\n"));
+			return -1;
+		}
+		memcpy(&keys->headers[i], keys->data[i].dptr, sizeof(struct ctdb_ltdb_header));
+		keys->data[i].dptr += sizeof(struct ctdb_ltdb_header);
+		keys->data[i].dsize -= sizeof(struct ctdb_ltdb_header);
 
-		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
-		memcpy(key->dptr, ptr, key->dsize);
-		ptr += key->dsize;
-
-		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
-		memcpy(&keys->headers[i], ptr, sizeof(struct ctdb_ltdb_header));
-		ptr += sizeof(struct ctdb_ltdb_header);
-
-		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
-		memcpy(data->dptr, ptr, data->dsize);
-		ptr += data->dsize;
-
-		ptr = outdata.dptr+(((ptr-outdata.dptr)+CTDB_DS_ALIGNMENT-1)& ~(CTDB_DS_ALIGNMENT-1));
-	}
+		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+	}	    
 
 	return 0;
 }
