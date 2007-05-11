@@ -426,6 +426,7 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 
 	/* build a new vnn map with all the currently active nodes */
+	generation = random();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;

@@ -891,7 +891,7 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   CTDB_CONTROL_SET_RECMODE, 0, data, 
 			   ctdb, &outdata, &res, &timeout);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for setrecmode failed\n"));
 		return -1;
 	}
 
