@@ -549,14 +549,21 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 			}
 		}
 
-		new_gpo = TALLOC_P(mem_ctx, struct GROUP_POLICY_OBJECT);
+		new_gpo = TALLOC_ZERO_P(mem_ctx, struct GROUP_POLICY_OBJECT);
 		ADS_ERROR_HAVE_NO_MEMORY(new_gpo);
-
-		ZERO_STRUCTP(new_gpo);
 
 		status = ads_get_gpo(ads, mem_ctx, gp_link->link_names[i], NULL, NULL, new_gpo);
 		if (!ADS_ERR_OK(status)) {
+			DEBUG(10,("failed to get gpo: %s\n", gp_link->link_names[i]));
 			return status;
+		}
+
+		status = ADS_ERROR_NT(gpo_apply_security_filtering(new_gpo, token));
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(10,("skipping GPO \"%s\" as object has no access to it\n", 
+				new_gpo->display_name));
+			TALLOC_FREE(new_gpo);
+			continue;
 		}
 
 		new_gpo->link = link_dn;
