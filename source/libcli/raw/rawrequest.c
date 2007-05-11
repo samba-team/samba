@@ -268,6 +268,7 @@ NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
 	SSVAL(req->out.vwv, VWV(wct), buflen);
 
 	req->out.size += new_size;
+	req->out.data_size += new_size;
 
 	return NT_STATUS_OK;
 }
