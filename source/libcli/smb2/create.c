@@ -31,9 +31,9 @@
 /*
   add a blob to a smb2_create attribute blob
 */
-static NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
-				     uint32_t tag,
-				     DATA_BLOB add, BOOL last)
+NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
+			      uint32_t tag,
+			      DATA_BLOB add, BOOL last)
 {
 	NTSTATUS status;
 	uint32_t ofs = blob->length;
