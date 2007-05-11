@@ -1012,11 +1012,14 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 	}
 
 	if (!old_is_subset) {
-		r_do_late_release_demand(state);
+		status = r_do_late_release_demand(state);
 		/* 
-		 * don't free state here, because we pass it down,
+		 * only free state on error, because we pass it down,
 		 * and r_do_late_release_demand() will free it
 		 */
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(state);
+		}
 		return;
 	}
 
