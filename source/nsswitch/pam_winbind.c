@@ -273,6 +273,8 @@ config_from_pam:
 			ctrl |= WINBIND_DEBUG_ARG;
 		else if (!strcasecmp(*v, "debug_state"))
 			ctrl |= WINBIND_DEBUG_STATE;
+		else if (!strcasecmp(*v, "silent"))
+			ctrl |= WINBIND_SILENT;
 		else if (!strcasecmp(*v, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
 		else if (!strcasecmp(*v, "use_first_pass"))
