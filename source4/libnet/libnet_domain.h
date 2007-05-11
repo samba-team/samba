@@ -52,7 +52,6 @@ struct libnet_DomainClose {
 struct libnet_DomainList {
 	struct {
 		const char *hostname;
-		const int buf_size;
 	} in;
 	struct {
 		int count;

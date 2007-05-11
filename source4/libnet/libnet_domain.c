@@ -956,7 +956,7 @@ static void continue_samr_enum_domains(struct rpc_request *req)
 		/* prepare next round of enumeration */
 		s->enumdom.in.connect_handle = &s->connect_handle;
 		s->enumdom.in.resume_handle  = &s->resume_handle;
-		s->enumdom.in.buf_size       = s->buf_size;
+		s->enumdom.in.buf_size       = s->ctx->samr.buf_size;
 		s->enumdom.out.resume_handle = &s->resume_handle;
 
 		/* send the request */
@@ -1072,9 +1072,6 @@ struct composite_context* libnet_DomainList_send(struct libnet_context *ctx,
 	s->ctx      = ctx;
 	s->hostname = talloc_strdup(c, io->in.hostname);
 	if (composite_nomem(s->hostname, c)) return c;
-
-	/* set the default buffer size if not stated explicitly */
-	s->buf_size = (io->in.buf_size == 0) ? 512 : io->in.buf_size;
 
 	/* check whether samr pipe has already been opened */
 	if (ctx->samr.pipe == NULL) {
