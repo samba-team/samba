@@ -524,7 +524,8 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 				  const char *link_dn,
 				  struct GP_LINK *gp_link,
 				  enum GPO_LINK_TYPE link_type,
-				  BOOL only_add_forced_gpos)
+				  BOOL only_add_forced_gpos,
+				  struct GPO_SID_TOKEN *token)
 {
 	ADS_STATUS status;
 	int i;
@@ -646,12 +647,18 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
+	struct GPO_SID_TOKEN *token = NULL;
 	const char *parent_dn, *site_dn, *tmp_dn;
 	BOOL add_only_forced_gpos = False;
 
 	ZERO_STRUCTP(gpo_list);
 
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));
+
+	status = ads_get_gpo_sid_token(ads, mem_ctx, dn, &token);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
 
 	/* (L)ocal */
 	/* not yet... */
@@ -677,7 +684,8 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			
 			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list, 
 							site_dn, &gp_link, GP_LINK_SITE, 
-							add_only_forced_gpos);
+							add_only_forced_gpos,
+							token);
 			if (!ADS_ERR_OK(status)) {
 				return status;
 			}
@@ -717,7 +725,8 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				status = add_gplink_to_gpo_list(ads, mem_ctx, 
 								gpo_list, parent_dn, 
 								&gp_link, GP_LINK_DOMAIN, 
-								add_only_forced_gpos);
+								add_only_forced_gpos,
+								token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
 				}
@@ -756,7 +765,8 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				status = add_gplink_to_gpo_list(ads, mem_ctx, 
 								gpo_list, parent_dn, 
 								&gp_link, GP_LINK_OU, 
-								add_only_forced_gpos);
+								add_only_forced_gpos,
+								token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
 				}
