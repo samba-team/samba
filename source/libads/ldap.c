@@ -3162,4 +3162,108 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return status;
 }
 
+/**
+ * pull all token-sids from an LDAP dn
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param dn of LDAP object
+ * @param user_sid pointer to DOM_SID (objectSid)
+ * @param primary_group_sid pointer to DOM_SID (self composed)
+ * @param sids pointer to sid array to allocate
+ * @param num_sids counter of SIDs pulled
+ * @return status of token query
+ **/
+ ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
+			      TALLOC_CTX *mem_ctx,
+			      const char *dn,
+			      DOM_SID *user_sid,
+			      DOM_SID *primary_group_sid,
+			      DOM_SID **sids,
+			      size_t *num_sids)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	int count = 0;
+	size_t tmp_num_sids;
+	DOM_SID *tmp_sids;
+	DOM_SID tmp_user_sid;
+	DOM_SID tmp_primary_group_sid;
+	uint32 pgid;
+	const char *attrs[] = {
+		"objectSid",
+		"tokenGroups",
+		"primaryGroupID",
+		NULL
+	};
+
+	status = ads_search_retry_dn(ads, &res, dn, attrs);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count != 1) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR_LDAP(LDAP_NO_SUCH_OBJECT);
+	}
+
+	if (!ads_pull_sid(ads, res, "objectSid", &tmp_user_sid)) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	if (!ads_pull_uint32(ads, res, "primaryGroupID", &pgid)) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	{
+		/* hack to compose the primary group sid without knowing the
+		 * domsid */
+
+		DOM_SID domsid;
+		uint32 dummy_rid;
+
+		sid_copy(&domsid, &tmp_user_sid);
+
+		if (!sid_split_rid(&domsid, &dummy_rid)) {
+			ads_msgfree(ads, res);
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+
+		if (!sid_compose(&tmp_primary_group_sid, &domsid, pgid)) {
+			ads_msgfree(ads, res);
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+	}
+
+	tmp_num_sids = ads_pull_sids(ads, mem_ctx, res, "tokenGroups", &tmp_sids);
+
+	if (tmp_num_sids == 0 || !tmp_sids) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	if (num_sids) {
+		*num_sids = tmp_num_sids;
+	}
+
+	if (sids) {
+		*sids = tmp_sids;
+	}
+
+	if (user_sid) {
+		*user_sid = tmp_user_sid;
+	}
+
+	if (primary_group_sid) {
+		*primary_group_sid = tmp_primary_group_sid;
+	}
+
+	DEBUG(10,("ads_get_tokensids: returned %d sids\n", (int)tmp_num_sids + 2));
+
+	ads_msgfree(ads, res);
+	return ADS_ERROR_LDAP(LDAP_SUCCESS);
+}
+
 #endif
