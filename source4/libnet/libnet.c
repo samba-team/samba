@@ -47,7 +47,10 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 
 	/* connected services' params */
 	ZERO_STRUCT(ctx->samr);
-	ZERO_STRUCT(ctx->lsa);
+	ZERO_STRUCT(ctx->lsa);	
+
+	/* default buffer size for various operations requiring specifying a buffer */
+	ctx->samr.buf_size = 128;
 
 	return ctx;
 }
