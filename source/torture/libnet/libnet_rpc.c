@@ -156,6 +156,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *bindstr;
+	const char *domain_name;
 	
 	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
@@ -164,7 +165,11 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 		return False;
 	}
 
-	return torture_rpc_connect(torture, level, NULL, binding->host);
+	/* we're accessing domain controller so the domain name should be
+	   passed (it's going to be resolved to dc name and address) instead
+	   of specific server name. */
+	domain_name = lp_workgroup();
+	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 
 
@@ -174,6 +179,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *bindstr;
+	const char *domain_name;
 	
 	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
@@ -182,7 +188,11 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 		return False;
 	}
 
-	return torture_rpc_connect(torture, level, NULL, binding->host);
+	/* we're accessing domain controller so the domain name should be
+	   passed (it's going to be resolved to dc name and address) instead
+	   of specific server name. */
+	domain_name = lp_workgroup();
+	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 
 
@@ -192,6 +202,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *bindstr;
+	const char *domain_name;
 	
 	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
@@ -200,7 +211,11 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 		return False;
 	}
 
-	return torture_rpc_connect(torture, level, NULL, binding->host);
+	/* we're accessing domain controller so the domain name should be
+	   passed (it's going to be resolved to dc name and address) instead
+	   of specific server name. */
+	domain_name = lp_workgroup();
+	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 
 
