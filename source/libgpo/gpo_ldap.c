@@ -571,6 +571,68 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 }
 
 /****************************************************************
+****************************************************************/
+
+ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				const char *dn,
+				struct GPO_SID_TOKEN **token)
+{
+	ADS_STATUS status;
+	DOM_SID object_sid;
+	DOM_SID primary_group_sid;
+	DOM_SID *ad_token_sids;
+	size_t num_ad_token_sids = 0;
+	DOM_SID *token_sids;
+	size_t num_token_sids = 0;
+	struct GPO_SID_TOKEN *new_token = NULL;
+	int i;
+
+	new_token = TALLOC_ZERO_P(mem_ctx, struct GPO_SID_TOKEN);
+	ADS_ERROR_HAVE_NO_MEMORY(new_token);
+
+	status = ads_get_tokensids(ads, mem_ctx, dn, 
+				   &object_sid, &primary_group_sid,
+				   &ad_token_sids, &num_ad_token_sids);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	new_token->object_sid = object_sid;
+	new_token->primary_group_sid = primary_group_sid;
+
+	token_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, 1);
+	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
+
+	for (i = 0; i < num_ad_token_sids; i++) {
+		
+		if (sid_check_is_in_builtin(&ad_token_sids[i])) {
+			continue;
+		}
+
+		if (!add_sid_to_array_unique(mem_ctx, &ad_token_sids[i], 
+					     &token_sids, &num_token_sids)) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	/* Add S-1-5-11 to token */
+	if (!add_sid_to_array_unique(mem_ctx, &global_sid_Authenticated_Users,
+				     &token_sids, &num_token_sids)) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+
+	new_token->token_sids = token_sids;
+	new_token->num_token_sids = num_token_sids;
+
+	*token = new_token;
+
+	return ADS_ERROR_LDAP(LDAP_SUCCESS);
+}
+
+
+/****************************************************************
  get the full list of GROUP_POLICY_OBJECTs for a given dn
 ****************************************************************/
 
