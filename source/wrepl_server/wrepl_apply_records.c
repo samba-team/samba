@@ -1082,11 +1082,20 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 	return NT_STATUS_OK;
 }
 
+struct r_do_release_demand_state {
+	struct messaging_context *msg_ctx;
+	struct nbtd_proxy_wins_release_demand r;
+};
+
 static void r_do_release_demand_handler(struct irpc_request *ireq)
 {
 	NTSTATUS status;
+	struct r_do_release_demand_state *state = talloc_get_type(ireq->async.private,
+						  struct r_do_release_demand_state);
+
 	status = irpc_call_recv(ireq);
 	/* don't care about the result */
+	talloc_free(state);
 }
 
 static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
@@ -1100,7 +1109,7 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 	struct server_id *nbt_servers;
 	const char **addrs;
 	struct winsdb_addr **addresses;
-	struct nbtd_proxy_wins_release_demand r;
+	struct r_do_release_demand_state *state;
 	uint32_t i;
 
 	/*
@@ -1116,30 +1125,36 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 	DEBUG(4,("release demand record %s\n",
 		 nbt_name_string(mem_ctx, &replica->name)));
 
-	nbt_servers = irpc_servers_byname(partner->service->task->msg_ctx, mem_ctx, "nbt_server");
+	state = talloc_zero(mem_ctx, struct r_do_release_demand_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
+	state->msg_ctx	= partner->service->task->msg_ctx;
+
+	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	r.in.name	= *rec->name;
-	r.in.num_addrs	= winsdb_addr_list_length(addresses);
-	r.in.addrs	= talloc_array(partner, struct nbtd_proxy_wins_addr, r.in.num_addrs);
-	NT_STATUS_HAVE_NO_MEMORY(r.in.addrs);
+	state->r.in.name	= *rec->name;
+	state->r.in.num_addrs	= winsdb_addr_list_length(addresses);
+	state->r.in.addrs	= talloc_array(state, struct nbtd_proxy_wins_addr,
+					       state->r.in.num_addrs);
+	NT_STATUS_HAVE_NO_MEMORY(state->r.in.addrs);
 	/* TODO: fix pidl to handle inline ipv4address arrays */
-	addrs			= winsdb_addr_string_list(r.in.addrs, addresses);
+	addrs			= winsdb_addr_string_list(state->r.in.addrs, addresses);
 	NT_STATUS_HAVE_NO_MEMORY(addrs);
-	for (i=0; i < r.in.num_addrs; i++) {
-		r.in.addrs[i].addr = addrs[i];
+	for (i=0; i < state->r.in.num_addrs; i++) {
+		state->r.in.addrs[i].addr = addrs[i];
 	}
 
-	ireq = IRPC_CALL_SEND(partner->service->task->msg_ctx, nbt_servers[0],
+	ireq = IRPC_CALL_SEND(state->msg_ctx, nbt_servers[0],
 			      irpc, NBTD_PROXY_WINS_RELEASE_DEMAND,
-			      &r, partner);
+			      &state->r, state);
 	NT_STATUS_HAVE_NO_MEMORY(ireq);
 
 	ireq->async.fn		= r_do_release_demand_handler;
-	ireq->async.private	= NULL;
+	ireq->async.private	= state;
 
+	talloc_steal(partner, state);
 	return NT_STATUS_OK;
 }
 
