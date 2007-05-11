@@ -644,7 +644,6 @@ typedef int BOOL;
 
 #include "nt_status.h"
 #include "ads.h"
-#include "gpo.h"
 #include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
@@ -669,6 +668,7 @@ typedef int BOOL;
 #include "mapping.h"
 #include "passdb.h"
 #include "rpc_secdes.h"
+#include "gpo.h"
 #include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
