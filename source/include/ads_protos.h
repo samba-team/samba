@@ -110,5 +110,10 @@ ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 				       int scope, const char *expr,
 				       const char **attrs, uint32 sd_flags, 
 				       LDAPMessage **res);
-
-
+ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
+			      TALLOC_CTX *mem_ctx,
+			      const char *dn,
+			      DOM_SID *user_sid,
+			      DOM_SID *primary_group_sid,
+			      DOM_SID **sids,
+			      size_t *num_sids);
