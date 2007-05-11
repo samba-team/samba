@@ -507,6 +507,61 @@ static int net_sam_policy(int argc, const char **argv)
  * Map a unix group to a domain group
  */
 
+static NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
+{
+	NTSTATUS status;
+	GROUP_MAP map;
+	const char *grpname, *dom, *name;
+	uint32 rid;
+
+	if (pdb_getgrgid(&map, grp->gr_gid)) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	map.gid = grp->gr_gid;
+	grpname = grp->gr_name;
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			&dom, &name, NULL, NULL)) {
+
+		const char *tmp = talloc_asprintf(
+			tmp_talloc_ctx(), "Unix Group %s", grp->gr_name);
+
+		DEBUG(5, ("%s exists as %s\\%s, retrying as \"%s\"\n",
+			  grpname, dom, name, tmp));
+		grpname = tmp;
+	}
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			NULL, NULL, NULL, NULL)) {
+		DEBUG(3, ("\"%s\" exists, can't map it\n", grp->gr_name));
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	fstrcpy(map.nt_name, grpname);
+
+	if (pdb_rid_algorithm()) {
+		rid = algorithmic_pdb_gid_to_group_rid( grp->gr_gid );
+	} else {
+		if (!pdb_new_rid(&rid)) {
+			DEBUG(3, ("Could not get a new RID for %s\n",
+				  grp->gr_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	sid_compose(&map.sid, get_global_sam_sid(), rid);
+	map.sid_name_use = SID_NAME_DOM_GRP;
+	fstrcpy(map.comment, talloc_asprintf(tmp_talloc_ctx(), "Unix Group %s",
+					     grp->gr_name));
+
+	status = pdb_add_group_mapping_entry(&map);
+	if (NT_STATUS_IS_OK(status)) {
+		*pmap = map;
+	}
+	return status;
+}
+
 static int net_sam_mapunixgroup(int argc, const char **argv)
 {
 	NTSTATUS status;
@@ -534,6 +589,67 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 
 	d_printf("Mapped unix group %s to SID %s\n", argv[0],
 		 sid_string_static(&map.sid));
+
+	return 0;
+}
+
+/*
+ * Remove a group mapping
+ */
+
+static NTSTATUS unmap_unix_group(const struct group *grp, GROUP_MAP *pmap)
+{
+        NTSTATUS status;
+        GROUP_MAP map;
+        const char *grpname;
+        DOM_SID dom_sid;
+
+        map.gid = grp->gr_gid;
+        grpname = grp->gr_name;
+
+        if (!lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+                        NULL, NULL, NULL, NULL)) {
+                DEBUG(3, ("\"%s\" does not exist, can't unmap it\n", grp->gr_name));
+                return NT_STATUS_NO_SUCH_GROUP;
+        }
+
+        fstrcpy(map.nt_name, grpname);
+
+        if (!pdb_gid_to_sid(map.gid, &dom_sid)) {
+                return NT_STATUS_UNSUCCESSFUL;
+        }
+
+        status = pdb_delete_group_mapping_entry(dom_sid);
+
+        return status;
+}
+
+static int net_sam_unmapunixgroup(int argc, const char **argv)
+{
+	NTSTATUS status;
+	GROUP_MAP map;
+	struct group *grp;
+
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net sam unmapunixgroup <name>\n");
+		return -1;
+	}
+
+	grp = getgrnam(argv[0]);
+	if (grp == NULL) {
+		d_fprintf(stderr, "Could not find mapping for group %s.\n", argv[0]);
+		return -1;
+	}
+
+	status = unmap_unix_group(grp, &map);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Unmapping group %s failed with %s.\n",
+			  argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("Unmapped unix group %s.\n", argv[0]);
 
 	return 0;
 }
@@ -1386,6 +1502,8 @@ int net_sam(int argc, const char **argv)
 		  "Delete an existing local group" },
 		{ "mapunixgroup", net_sam_mapunixgroup,
 		  "Map a unix group to a domain group" },
+		{ "unmapunixgroup", net_sam_unmapunixgroup,
+		  "Remove a group mapping of an unix group to a domain group" },
 		{ "addmem", net_sam_addmem,
 		  "Add a member to a group" },
 		{ "delmem", net_sam_delmem,
