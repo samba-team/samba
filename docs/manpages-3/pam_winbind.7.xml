@@ -44,6 +44,11 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>debug_state</term>
+		<listitem><para>Gives detailed PAM state debugging output to syslog.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>require_membership_of=[SID or NAME]</term>
 		<listitem><para>
 		If this option is set, pam_winbind will only succeed if the user is a member of the given SID or NAME. A SID
