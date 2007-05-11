@@ -1,5 +1,10 @@
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen.c: Add struct units; as a forward declaration. Pointed out
+	by Marcus Watts.
+
+	* rfc2459.asn1: Netscape extentions
+
 	* Makefile.am: add U.S. Federal PKI Common Policy Framework
 
 	* rfc2459.asn1: add U.S. Federal PKI Common Policy Framework
