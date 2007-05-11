@@ -129,16 +129,13 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct libnet_DomainOpen r;
 	struct lsa_Close lsa_close;
-	struct dcerpc_binding *binding;
 	struct policy_handle h;
-	const char *bindstr;
-	
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
-		return False;
-	}
+	const char *domain_name;
+
+	/* we're accessing domain controller so the domain name should be
+	   passed (it's going to be resolved to dc name and address) instead
+	   of specific server name. */
+	domain_name = lp_workgroup();
 
 	ctx = libnet_context_init(NULL);
 	if (ctx == NULL) {
@@ -150,7 +147,7 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
-	r.in.domain_name = binding->host;
+	r.in.domain_name = domain_name;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
 	status = libnet_DomainOpen(ctx, torture, &r);
@@ -229,7 +226,7 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 	ctx->lsa.access_mask = access_mask;
 	ctx->lsa.handle      = h;
 	/* we have to use pipe's event context, otherwise the call will
-	   hang indefinately */
+	   hang indefinitely */
 	ctx->event_ctx       = p->conn->event_ctx;
 
 	ZERO_STRUCT(r);
@@ -257,9 +254,9 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	struct event_context *evt_ctx=NULL;
 	TALLOC_CTX *mem_ctx;
 	struct policy_handle domain_handle, handle;
-	struct lsa_String name;
 	struct libnet_DomainOpen io;
 	struct samr_Close r;
+	const char *domain_name;
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_domainopen_lsa");
@@ -268,7 +265,10 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	ctx = libnet_context_init(evt_ctx);
 	ctx->cred = cmdline_credentials;
 
-	name.string = lp_workgroup();
+	/* we're accessing domain controller so the domain name should be
+	   passed (it's going to be resolved to dc name and address) instead
+	   of specific server name. */
+	domain_name = lp_workgroup();
 
 	/*
 	 * Testing synchronous version
@@ -276,7 +276,7 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	printf("opening domain\n");
 	
 	io.in.type         = DOMAIN_SAMR;
-	io.in.domain_name  = name.string;
+	io.in.domain_name  = domain_name;
 	io.in.access_mask  = SEC_FLAG_MAXIMUM_ALLOWED;
 
 	status = libnet_DomainOpen(ctx, mem_ctx, &io);
@@ -411,6 +411,10 @@ BOOL torture_domain_list(struct torture_context *torture)
 	
 	mem_ctx = talloc_init("torture_domain_close_samr");
 
+	/*
+	 * querying the domain list using default buffer size
+	 */
+
 	ZERO_STRUCT(r);
 	r.in.hostname = binding->host;
 
@@ -420,7 +424,28 @@ BOOL torture_domain_list(struct torture_context *torture)
 		goto done;
 	}
 
-	d_printf("Received list or domains:\n");
+	d_printf("Received list or domains (everything in one piece):\n");
+	
+	for (i = 0; i < r.out.count; i++) {
+		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
+	}
+
+	/*
+	 * querying the domain list using specified (much smaller) buffer size
+	 */
+
+	ctx->samr.buf_size = 32;
+
+	ZERO_STRUCT(r);
+	r.in.hostname = binding->host;
+
+	status = libnet_DomainList(ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto done;
+	}
+
+	d_printf("Received list or domains (collected in more than one round):\n");
 	
 	for (i = 0; i < r.out.count; i++) {
 		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
