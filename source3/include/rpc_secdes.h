@@ -38,6 +38,7 @@
 #define SEC_RIGHTS_EXTENDED		0x100 /* change/reset password, receive/send as*/
 #define	SEC_RIGHTS_CHANGE_PASSWD	SEC_RIGHTS_EXTENDED
 #define	SEC_RIGHTS_RESET_PASSWD		SEC_RIGHTS_EXTENDED
+#define SEC_RIGHTS_APPLY_GROUP_POLICY	SEC_RIGHTS_EXTENDED
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
 
 #define SEC_ACE_OBJECT_PRESENT           0x00000001 /* thanks for Jim McDonough <jmcd@us.ibm.com> */
