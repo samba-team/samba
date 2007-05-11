@@ -570,11 +570,11 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 {
 	int rc, i, version;
 	char *utf8_expr, *utf8_path, **search_attrs;
-	LDAPControl PagedResults, NoReferrals, ExtendedDn, *controls[4], **rcontrols;
+	LDAPControl PagedResults, NoReferrals, ExternalCtrl, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
-	BerElement *extdn_be = NULL;
-	struct berval *extdn_bv= NULL;
+	BerElement *ext_be = NULL;
+	struct berval *ext_bv= NULL;
 
 	TALLOC_CTX *ctx;
 	ads_control *external_control = (ads_control *) args;
@@ -604,7 +604,6 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 		}
 	}
 		
-		
 	/* Paged results only available on ldap v3 or later */
 	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (version < LDAP_VERSION3) {
@@ -631,40 +630,42 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
 
-	if (external_control && strequal(external_control->control, ADS_EXTENDED_DN_OID)) {
+	if (external_control && 
+	    (strequal(external_control->control, ADS_EXTENDED_DN_OID) || 
+	     strequal(external_control->control, ADS_SD_FLAGS_OID))) {
 
-		ExtendedDn.ldctl_oid = CONST_DISCARD(char *, external_control->control);
-		ExtendedDn.ldctl_iscritical = (char) external_control->critical;
+		ExternalCtrl.ldctl_oid = CONST_DISCARD(char *, external_control->control);
+		ExternalCtrl.ldctl_iscritical = (char) external_control->critical;
 
 		/* win2k does not accept a ldctl_value beeing passed in */
 
 		if (external_control->val != 0) {
 
-			if ((extdn_be = ber_alloc_t(LBER_USE_DER)) == NULL ) {
+			if ((ext_be = ber_alloc_t(LBER_USE_DER)) == NULL ) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
 
-			if ((ber_printf(extdn_be, "{i}", (ber_int_t) external_control->val)) == -1) {
+			if ((ber_printf(ext_be, "{i}", (ber_int_t) external_control->val)) == -1) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
-			if ((ber_flatten(extdn_be, &extdn_bv)) == -1) {
+			if ((ber_flatten(ext_be, &extdn_bv)) == -1) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
 
-			ExtendedDn.ldctl_value.bv_len = extdn_bv->bv_len;
-			ExtendedDn.ldctl_value.bv_val = extdn_bv->bv_val;
+			ExternalCtrl.ldctl_value.bv_len = ext_bv->bv_len;
+			ExternalCtrl.ldctl_value.bv_val = ext_bv->bv_val;
 
 		} else {
-			ExtendedDn.ldctl_value.bv_len = 0;
-			ExtendedDn.ldctl_value.bv_val = NULL;
+			ExternalCtrl.ldctl_value.bv_len = 0;
+			ExternalCtrl.ldctl_value.bv_val = NULL;
 		}
 
 		controls[0] = &NoReferrals;
 		controls[1] = &PagedResults;
-		controls[2] = &ExtendedDn;
+		controls[2] = &ExternalCtrl;
 		controls[3] = NULL;
 
 	} else {
@@ -725,12 +726,12 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 done:
 	talloc_destroy(ctx);
 
-	if (extdn_be) {
-		ber_free(extdn_be, 1);
+	if (ext_be) {
+		ber_free(ext_be, 1);
 	}
 
-	if (extdn_bv) {
-		ber_bvfree(extdn_bv);
+	if (ext_bv) {
+		ber_bvfree(ext_bv);
 	}
  
 	/* if/when we decide to utf8-encode attrs, take out this next line */
@@ -809,6 +810,21 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 {
 	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, NULL, res);
 }
+
+ ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
+				       int scope, const char *expr,
+				       const char **attrs, uint32 sd_flags, 
+				       LDAPMessage **res)
+{
+	ads_control args;
+
+	args.control = ADS_SD_FLAGS_OID;
+	args.val = sd_flags;
+	args.critical = True;
+
+	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, &args, res);
+}
+
 
 /**
  * Run a function on all results for a search.  Uses ads_do_paged_search() and
