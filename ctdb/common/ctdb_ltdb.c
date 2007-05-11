@@ -145,6 +145,17 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	TDB_DATA rec;
 	int ret;
 
+	if (ctdb->flags & CTDB_FLAG_TORTURE) {
+		struct ctdb_ltdb_header *h2;
+		rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
+		h2 = (struct ctdb_ltdb_header *)rec.dptr;
+		if (rec.dptr && rec.dsize >= sizeof(h2) && h2->rsn > header->rsn) {
+			DEBUG(0,("RSN regression! %llu %llu\n",
+				 (unsigned long long)h2->rsn, (unsigned long long)header->rsn));
+		}
+		if (rec.dptr) free(rec.dptr);
+	}
+
 	rec.dsize = sizeof(*header) + data.dsize;
 	rec.dptr = talloc_size(ctdb, rec.dsize);
 	CTDB_NO_MEMORY(ctdb, rec.dptr);
