@@ -287,6 +287,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		status = map_nt_error_from_unix(errno);
 	}
 
+	notify_fname(conn, NOTIFY_ACTION_REMOVED,
+		     FILE_NOTIFY_CHANGE_FILE_NAME,
+		     fsp->fsp_name);
+
 	/* As we now have POSIX opens which can unlink
  	 * with other open files we may have taken
  	 * this code path with more than one share mode
