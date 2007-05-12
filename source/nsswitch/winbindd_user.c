@@ -662,7 +662,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 {
 	struct getent_state *ent;
 	struct winbindd_pw *user_list;
-	int num_users, user_list_ndx = 0, i;
+	int num_users, user_list_ndx;
 
 	DEBUG(3, ("[%5lu]: getpwent\n", (unsigned long)state->pid));
 
@@ -676,6 +676,11 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 	/* Allocate space for returning a chunk of users */
 
 	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
+
+	if (num_users == 0) {
+		request_error(state);
+		return;
+	}
 	
 	if ((state->response.extra_data.data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
 		request_error(state);
@@ -697,7 +702,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 
 	/* Start sending back users */
 
-	for (i = 0; i < num_users; i++) {
+	for (user_list_ndx = 0; user_list_ndx < num_users; ) {
 		struct getpwent_user *name_list = NULL;
 		uint32 result;
 
@@ -740,8 +745,6 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 			name_list[ent->sam_entry_index].shell,
 			&user_list[user_list_ndx]);
 		
-		ent->sam_entry_index++;
-		
 		/* Add user to return list */
 		
 		if (result) {
@@ -754,6 +757,9 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		} else
 			DEBUG(1, ("could not lookup domain user %s\n",
 				  name_list[ent->sam_entry_index].name));
+
+		ent->sam_entry_index++;
+		
 	}
 
 	/* Out of domains */
