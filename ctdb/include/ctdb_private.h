@@ -136,6 +136,8 @@ struct ctdb_daemon_data {
  */
 struct ctdb_status {
 	uint32_t num_clients;
+	uint32_t frozen;
+	uint32_t recovering;
 	uint32_t client_packets_sent;
 	uint32_t client_packets_recv;
 	uint32_t node_packets_sent;

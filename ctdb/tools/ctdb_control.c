@@ -102,6 +102,8 @@ static void show_status(struct ctdb_status *s)
 	} fields[] = {
 #define STATUS_FIELD(n) { #n, offsetof(struct ctdb_status, n) }
 		STATUS_FIELD(num_clients),
+		STATUS_FIELD(frozen),
+		STATUS_FIELD(recovering),
 		STATUS_FIELD(client_packets_sent),
 		STATUS_FIELD(client_packets_recv),
 		STATUS_FIELD(node_packets_sent),
