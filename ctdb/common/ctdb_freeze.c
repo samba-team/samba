@@ -43,34 +43,6 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb)
 }
 
 /*
-  lock all databases - mark only
- */
-static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb)
-{
-	struct ctdb_db_context *ctdb_db;
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
-  lock all databases - unmark only
- */
-static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb)
-{
-	struct ctdb_db_context *ctdb_db;
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
   a list of control requests waiting for a freeze lock child to get
   the database locks
  */
@@ -94,9 +66,6 @@ struct ctdb_freeze_handle {
  */	
 static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 {
-	if (h->ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
-		ctdb_lock_all_databases_unmark(h->ctdb);
-	}
 	h->ctdb->freeze_mode = CTDB_FREEZE_NONE;
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
@@ -112,7 +81,6 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	struct ctdb_freeze_handle *h = talloc_get_type(private_data, struct ctdb_freeze_handle);
 	int32_t status;
 	struct ctdb_freeze_waiter *w;
-	int ret;
 
 	if (read(h->fd, &status, sizeof(status)) != sizeof(status)) {
 		DEBUG(0,("read error from freeze lock child\n"));
@@ -122,13 +90,6 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	if (status == -1) {
 		DEBUG(0,("Failed to get locks in ctdb_freeze_child\n"));
 		/* we didn't get the locks - destroy the handle */
-		talloc_free(h);
-		return;
-	}
-
-	ret = ctdb_lock_all_databases_mark(h->ctdb);
-	if (ret == -1) {
-		DEBUG(0,("Failed to mark locks in ctdb_freeze\n"));
 		talloc_free(h);
 		return;
 	}
