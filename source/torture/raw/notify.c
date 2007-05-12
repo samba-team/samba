@@ -489,13 +489,26 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		    ((expected) & FILE_NOTIFY_CHANGE_ATTRIBUTES) && \
 		    Action == NOTIFY_ACTION_OLD_NAME) { \
 			printf("(rename file special handling OK)\n"); \
-		} else if (nchanges != notify.nttrans.out.num_changes || \
-		    notify.nttrans.out.changes[0].action != Action || \
-		    strcmp(notify.nttrans.out.changes[0].name.s, "tname1") != 0) { \
-			printf("ERROR: nchanges=%d action=%d filter=0x%08x\n", \
+		} else if (nchanges != notify.nttrans.out.num_changes) { \
+			printf("ERROR: nchanges=%d expected=%d action=%d filter=0x%08x\n", \
 			       notify.nttrans.out.num_changes, \
+			       nchanges, \
 			       notify.nttrans.out.changes[0].action, \
 			       notify.nttrans.in.completion_filter); \
+			ret = False; \
+		} else if (notify.nttrans.out.changes[0].action != Action) { \
+			printf("ERROR: nchanges=%d action=%d expectedAction=%d filter=0x%08x\n", \
+			       notify.nttrans.out.num_changes, \
+			       notify.nttrans.out.changes[0].action, \
+			       Action, \
+			       notify.nttrans.in.completion_filter); \
+			ret = False; \
+		} else if (strcmp(notify.nttrans.out.changes[0].name.s, "tname1") != 0) { \
+			printf("ERROR: nchanges=%d action=%d filter=0x%08x name=%s\n", \
+			       notify.nttrans.out.num_changes, \
+			       notify.nttrans.out.changes[0].action, \
+			       notify.nttrans.in.completion_filter, \
+			       notify.nttrans.out.changes[0].name.s);	\
 			ret = False; \
 		} \
 		mask |= (1<<i); \
