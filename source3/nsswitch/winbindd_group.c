@@ -902,7 +902,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 {
 	struct getent_state *ent;
 	struct winbindd_gr *group_list = NULL;
-	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
+	int num_groups, group_list_ndx, gr_mem_list_len = 0;
 	char *gr_mem_list = NULL;
 
 	DEBUG(3, ("[%5lu]: getgrent\n", (unsigned long)state->pid));
@@ -915,6 +915,11 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	}
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
+
+	if (num_groups == 0) {
+		request_error(state);
+		return;
+	}
 
 	if ((state->response.extra_data.data = SMB_MALLOC_ARRAY(struct winbindd_gr, num_groups)) == NULL) {
 		request_error(state);
@@ -938,7 +943,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 
 	/* Start sending back groups */
 
-	for (i = 0; i < num_groups; i++) {
+	for (group_list_ndx = 0; group_list_ndx < num_groups; ) {
 		struct acct_info *name_list = NULL;
 		fstring domain_group_name;
 		uint32 result;
