@@ -600,8 +600,13 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
-		ctdb->daemon.sd = -1;
 		return -1;
+	}
+
+	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
+	    fchmod(ctdb->daemon.sd, 0700) != 0) {
+		DEBUG(0,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
 	}
 
 	set_non_blocking(ctdb->daemon.sd);
@@ -611,13 +616,20 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		close(ctdb->daemon.sd);
-		ctdb->daemon.sd = -1;
-		return -1;
+		DEBUG(0,("Unable to bind on ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
 	}	
-	listen(ctdb->daemon.sd, 1);
+	if (listen(ctdb->daemon.sd, 10) != 0) {
+		DEBUG(0,("Unable to listen on ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
+	}
 
 	return 0;
+
+failed:
+	close(ctdb->daemon.sd);
+	ctdb->daemon.sd = -1;
+	return -1;	
 }
 
 /*
