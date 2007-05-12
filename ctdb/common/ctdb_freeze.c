@@ -82,6 +82,12 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	int32_t status;
 	struct ctdb_freeze_waiter *w;
 
+	if (h->ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+		DEBUG(0,("freeze child died - unfreezing\n"));
+		talloc_free(h);
+		return;
+	}
+
 	if (read(h->fd, &status, sizeof(status)) != sizeof(status)) {
 		DEBUG(0,("read error from freeze lock child\n"));
 		status = -1;

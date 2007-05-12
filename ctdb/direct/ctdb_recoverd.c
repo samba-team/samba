@@ -330,6 +330,13 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 
 	DEBUG(0, (__location__ " Recovery initiated\n"));
 
+	/* set recovery mode to active on all nodes */
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	if (ret!=0) {
+		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
+		return -1;
+	}
+
 	/* pick a new generation number */
 	generation = random();
 
@@ -349,15 +356,6 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 		DEBUG(0, (__location__ " Unable to set vnnmap for node %u\n", vnn));
 		return -1;
 	}
-
-
-	/* set recovery mode to active on all nodes */
-	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
-	if (ret!=0) {
-		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
-		return -1;
-	}
-
 
 	/* get a list of all databases */
 	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &dbmap);
