@@ -390,6 +390,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 
+	/* use the rsn from the sending node */
+	header.rsn = c->rsn;
+
 	/* check if the new dmaster is the lmaster, in which case we
 	   skip the dmaster reply */
 	if (c->dmaster == ctdb->vnn) {
@@ -649,6 +652,7 @@ static void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 	state->c->hdr.destnode = ctdb->vnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
+	DEBUG(0,("requeued ctdb_call after timeout\n"));
 }
 
 /*
