@@ -261,8 +261,12 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
-		/* verify that the remote node that sent us the call
-		   is running in the same generation instance as this node
+	case CTDB_REPLY_CALL:
+	case CTDB_REQ_DMASTER:
+	case CTDB_REPLY_DMASTER:
+		/* for ctdb_call inter-node operations verify that the
+		   remote node that sent us the call is running in the
+		   same generation instance as this node
 		*/
 		if (ctdb->vnn_map->generation != hdr->generation) {
 			DEBUG(0,(__location__ " ctdb request %d"
@@ -273,20 +277,12 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 				hdr->srcnode, hdr->destnode, 
 				ctdb->vnn_map->generation, 
 				hdr->generation));
-			break;
+			goto done;
 		}
-		/* if we are in recovery mode we discard all traffic
-		   until the cluster has recovered.
-		*/
-		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0,(__location__ " ctdb request %d"
-				" length %d from node %d to %d"
-				" while we are in recovery mode\n", 
-				hdr->reqid, hdr->length, 
-				 hdr->srcnode, hdr->destnode));
-			break;
-		}
+	}
 
+	switch (hdr->operation) {
+	case CTDB_REQ_CALL:
 		ctdb->status.node.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
@@ -302,63 +298,11 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		break;
 
 	case CTDB_REQ_DMASTER:
-		/* verify that the remote node that sent us dmaster req
-		   is running in the same generation instance as this node
-		*/
-		if (ctdb->vnn_map->generation != hdr->generation) {
-			DEBUG(0,(__location__ " ctdb dmaster request %d"
-				" length %d from node %d to %d had an"
-				" invalid generation id:%d while our"
-				" generation id is:%d\n", 
-				hdr->reqid, hdr->length, 
-				hdr->srcnode, hdr->destnode, 
-				ctdb->vnn_map->generation, 
-				hdr->generation));
-			break;
-		}
-		/* if we are in recovery mode we discard all traffic
-		   until the cluster has recovered.
-		*/
-		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0,(__location__ " ctdb dmaster request %d"
-				" length %d from node %d to %d"
-				" while we are in recovery mode\n", 
-				hdr->reqid, hdr->length, 
-				 hdr->srcnode, hdr->destnode));
-			break;
-		}
-
 		ctdb->status.node.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_DMASTER:
-		/* verify that the remote node that sent us dmaster reply
-		   is running in the same generation instance as this node
-		*/
-		if (ctdb->vnn_map->generation != hdr->generation) {
-			DEBUG(0,(__location__ " ctdb dmaster reply %d"
-				" length %d from node %d to %d had an"
-				" invalid generation id:%d while our"
-				" generation id is:%d\n", 
-				hdr->reqid, hdr->length, 
-				hdr->srcnode, hdr->destnode, 
-				ctdb->vnn_map->generation, 
-				hdr->generation));
-			break;
-		}
-		/* if we are in recovery mode we discard all traffic
-		   until the cluster has recovered.
-		*/
-		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0,(__location__ " ctdb dmaster reply %d "
-				" length %d from node %d to %d"
-				" while we are in recovery mode\n", 
-				hdr->reqid, hdr->length, 
-				 hdr->srcnode, hdr->destnode));
-			break;
-		}
-
 		ctdb->status.node.reply_dmaster++;
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
