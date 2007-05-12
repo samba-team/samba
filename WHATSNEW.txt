@@ -165,6 +165,10 @@ o   Steve French <sfrench@us.ibm.com>
       specified.
 
 
+o   Steve Langasek <vorlon@debian.org>
+    * BUG 4600: Fix compilation of --with-python.
+
+
 o   Volker Lendecke <vl@samba.org>
     * Fix memory corruption bug in string_replace().
     * Fix valgrind error in parse_domain_user().
@@ -586,9 +590,9 @@ o   Gomati Mohanan <gomati.mohanan@in.ibm.com>
     * Work on NFSv4 ACL VFS plugin.
 
 
-o   Lars Mueller <lmuelle@samba.org>
+o   Lars Mueller <lars@samba.org>
     * Provide better feedback about deprecated use of multiple passdb
-      backends.
+      backends.  Use the first backend to have at least this one working.
     * Fix make install to include smbmount, et. al. docs.
     * Merge more proto_exists dependency fixes from SAMBA_3_0.
     * Makefile cleanups.

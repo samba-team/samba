@@ -60,7 +60,7 @@ BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace)
 
 	*dict = Py_BuildValue("{sisisi}", "type", ace->type,
 	    			"flags", ace->flags,
-				"mask", ace->info.mask);
+				"mask", ace->access_mask);
 
 	if (py_from_SID(&obj, &ace->trustee)) {
 		PyDict_SetItemString(*dict, "trustee", obj);
@@ -103,7 +103,7 @@ BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict)
 	    !PyInt_Check(obj))
 		return False;
 
-	sec_access.mask = PyInt_AsLong(obj);
+	sec_access = PyInt_AsLong(obj);
 
 	init_sec_ace(ace, &trustee, ace_type, sec_access, ace_flags);
 
@@ -130,7 +130,7 @@ BOOL py_from_ACL(PyObject **dict, SEC_ACL *acl)
 	for (i = 0; i < acl->num_aces; i++) {
 		PyObject *obj;
 
-		if (py_from_ACE(&obj, &acl->ace[i]))
+		if (py_from_ACE(&obj, &acl->aces[i]))
 			PyList_SetItem(ace_list, i, obj);
 	}
 
@@ -157,16 +157,16 @@ BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict, TALLOC_CTX *mem_ctx)
 	
 	acl->num_aces = PyList_Size(obj);
 
-	acl->ace = _talloc(mem_ctx, acl->num_aces * sizeof(SEC_ACE));
+	acl->aces = _talloc(mem_ctx, acl->num_aces * sizeof(SEC_ACE));
 	acl->size = SEC_ACL_HEADER_SIZE;
 
 	for (i = 0; i < acl->num_aces; i++) {
 		PyObject *py_ace = PyList_GetItem(obj, i);
 
-		if (!py_to_ACE(&acl->ace[i], py_ace))
+		if (!py_to_ACE(&acl->aces[i], py_ace))
 			return False;
 
-		acl->size += acl->ace[i].size;
+		acl->size += acl->aces[i].size;
 	}
 
 	return True;
@@ -191,7 +191,7 @@ BOOL py_from_SECDESC(PyObject **dict, SEC_DESC *sd)
 		Py_DECREF(obj);
 	}
 
-	if (py_from_SID(&obj, sd->grp_sid)) {
+	if (py_from_SID(&obj, sd->group_sid)) {
 		PyDict_SetItemString(*dict, "group_sid", obj);
 		Py_DECREF(obj);
 	}
