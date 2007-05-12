@@ -318,7 +318,9 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			DEBUG(0, (__location__ " Unable to fetch record\n"));
 			goto failed;
 		}
-		if (header.rsn < hdr->rsn) {
+		/* the <= is to cope with just-created records, which
+		   have a rsn of zero */
+		if (header.rsn <= hdr->rsn) {
 			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to store record\n"));

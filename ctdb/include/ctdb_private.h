@@ -556,12 +556,12 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
 			   TDB_DATA key, struct ctdb_req_header *hdr,
 			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-			   void *recv_context);
+			   void *recv_context, bool ignore_generation);
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
 				 struct ctdb_req_header *hdr, TDB_DATA *data,
 				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-				 void *recv_context);
+				 void *recv_context, bool ignore_generation);
 void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 

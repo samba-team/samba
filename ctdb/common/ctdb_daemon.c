@@ -413,7 +413,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
 					   (struct ctdb_req_header *)c, &data,
-					   daemon_incoming_packet, client);
+					   daemon_incoming_packet, client, True);
 	if (ret == -2) {
 		/* will retry later */
 		ctdb->status.pending_calls--;

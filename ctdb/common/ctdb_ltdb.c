@@ -195,6 +195,8 @@ struct lock_fetch_state {
 	void (*recv_pkt)(void *, uint8_t *, uint32_t);
 	void *recv_context;
 	struct ctdb_req_header *hdr;
+	uint32_t generation;
+	bool ignore_generation;
 };
 
 /*
@@ -203,6 +205,12 @@ struct lock_fetch_state {
 static void lock_fetch_callback(void *p)
 {
 	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
+	if (!state->ignore_generation &&
+	    state->generation != state->ctdb->vnn_map->generation) {
+		DEBUG(0,("Discarding previous generation lockwait packet\n"));
+		talloc_free(state->hdr);
+		return;
+	}
 	state->recv_pkt(state->recv_context, (uint8_t *)state->hdr, state->hdr->length);
 	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
 }
@@ -235,7 +243,7 @@ static void lock_fetch_callback(void *p)
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
 			   TDB_DATA key, struct ctdb_req_header *hdr,
 			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-			   void *recv_context)
+			   void *recv_context, bool ignore_generation)
 {
 	int ret;
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
@@ -267,6 +275,8 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 	state->hdr = hdr;
 	state->recv_pkt = recv_pkt;
 	state->recv_context = recv_context;
+	state->generation = ctdb_db->ctdb->vnn_map->generation;
+	state->ignore_generation = ignore_generation;
 
 	/* now the contended path */
 	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, state);
@@ -291,11 +301,12 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
 				 struct ctdb_req_header *hdr, TDB_DATA *data,
 				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-				 void *recv_context)
+				 void *recv_context, bool ignore_generation)
 {
 	int ret;
 
-	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr, recv_pkt, recv_context);
+	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr, recv_pkt, 
+				     recv_context, ignore_generation);
 	if (ret == 0) {
 		ret = ctdb_ltdb_fetch(ctdb_db, key, header, hdr, data);
 		if (ret != 0) {
