@@ -431,12 +431,14 @@ int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata)
 /*
   set the recovery mode
  */
-int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata, 
+				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(0,("Attempt to change recovery mode to %u when not frozen\n", 
 			 recmode));
+		(*errormsg) = "Cannot change recovery mode while not frozen";
 		return -1;
 	}
 	ctdb->recovery_mode = recmode;

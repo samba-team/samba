@@ -825,6 +825,7 @@ struct daemon_control_state {
  */
 static void daemon_control_callback(struct ctdb_context *ctdb,
 				    uint32_t status, TDB_DATA data, 
+				    const char *errormsg,
 				    void *private_data)
 {
 	struct daemon_control_state *state = talloc_get_type(private_data, 
@@ -835,6 +836,9 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
+	if (errormsg) {
+		len += strlen(errormsg);
+	}
 	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len, 
 			       struct ctdb_reply_control);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
@@ -842,7 +846,12 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	r->hdr.reqid     = state->reqid;
 	r->status        = status;
 	r->datalen       = data.dsize;
+	r->errorlen = 0;
 	memcpy(&r->data[0], data.dptr, data.dsize);
+	if (errormsg) {
+		r->errorlen = strlen(errormsg);
+		memcpy(&r->data[r->datalen], errormsg, r->errorlen);
+	}
 
 	daemon_queue_send(client, &r->hdr);
 

@@ -177,7 +177,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 {
 	DLIST_REMOVE(w->ctdb->freeze_handle->waiters, w);
-	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status);
+	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status, NULL);
 	return 0;
 }
 

@@ -96,7 +96,7 @@ static void show_status(struct ctdb_status *s)
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int i;
 	const char *prefix=NULL;
-	size_t preflen=0;
+	int preflen=0;
 	const struct {
 		const char *name;
 		uint32_t offset;
@@ -488,7 +488,9 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 			keystr  = hex_encode(ctdb, keys.keys[i].dptr, keys.keys[i].dsize);
 			datastr = hex_encode(ctdb, keys.data[i].dptr, keys.data[i].dsize);
 
-			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", keys.headers[i].rsn, keys.lmasters[i], keys.headers[i].dmaster, keystr, datastr); 
+			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", 
+			       (unsigned long long)keys.headers[i].rsn, keys.lmasters[i], 
+			       keys.headers[i].dmaster, keystr, datastr); 
 			ret++;
 		}
 	}
@@ -702,7 +704,7 @@ static int control_createdb(struct ctdb_context *ctdb, int argc, const char **ar
 	timeout = timeval_current_ofs(timelimit, 0);
 	ret = ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb, &data, &res, 
-			   &timeout);
+			   &timeout, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Failed to attach to database '%s'\n", dbname));
 		return -1;
@@ -921,7 +923,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DUMP_MEMORY,
-		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL);
+		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL, NULL);
 
 	return 0;
 }
