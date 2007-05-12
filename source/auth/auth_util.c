@@ -1484,6 +1484,30 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (!pdb_set_pass_last_set_time(
+		    sam_account,
+		    nt_time_to_unix(info3->pass_last_set_time),
+		    PDB_CHANGED)) {
+		TALLOC_FREE(sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_pass_can_change_time(
+		    sam_account,
+		    nt_time_to_unix(info3->pass_can_change_time),
+		    PDB_CHANGED)) {
+		TALLOC_FREE(sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_pass_must_change_time(
+		    sam_account,
+		    nt_time_to_unix(info3->pass_must_change_time),
+		    PDB_CHANGED)) {
+		TALLOC_FREE(sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	result = make_server_info(NULL);
 	if (result == NULL) {
 		DEBUG(4, ("make_server_info failed!\n"));
