@@ -334,29 +334,8 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 }
 
 
-struct ctdb_client_retry {
-	struct ctdb_client *client;
-	struct ctdb_req_call *call;
-};
-
 static void daemon_request_call_from_client(struct ctdb_client *client, 
 					    struct ctdb_req_call *c);
-
-/*
-  triggered after a one second delay, retrying a client packet
-  that was deferred because of the daemon being in recovery mode
- */
-static void retry_client_packet(struct event_context *ev, struct timed_event *te, 
-				struct timeval t, void *private_data)
-{
-	struct ctdb_client_retry *retry = talloc_get_type(private_data, struct ctdb_client_retry);
-
-	daemon_request_call_from_client(retry->client, retry->call);
-
-	talloc_free(retry);
-}
-
-
 
 /*
   this is called when the ctdb daemon received a ctdb request call
@@ -373,29 +352,6 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	TDB_DATA key, data;
 	int ret;
 	struct ctdb_context *ctdb = client->ctdb;
-
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		struct ctdb_client_retry *retry;
-		
-		DEBUG(0,(__location__ " ctdb call %u from client"
-			 " while we are in recovery mode. Deferring it\n", 
-			 c->hdr.reqid)); 
-
-		/* hang the event and the structure off client */
-		retry = talloc(client, struct ctdb_client_retry);
-		CTDB_NO_MEMORY_VOID(ctdb, retry);
-		retry->client = client;
-		retry->call   = c;
-		
-		/* this ensures that after the retry happens we
-		   eventually free this request */
-		talloc_steal(retry, c);
-		
-		event_add_timed(ctdb->ev, retry, timeval_current_ofs(1,0), retry_client_packet, retry);
-		return;
-	}
-
-
 
 	ctdb->status.total_calls++;
 	ctdb->status.pending_calls++;
