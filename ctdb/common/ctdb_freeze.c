@@ -102,8 +102,6 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 		DLIST_REMOVE(h->ctdb->freeze_handle->waiters, w);
 		talloc_free(w);
 	}
-
-	talloc_free(fde);
 }
 
 /*
