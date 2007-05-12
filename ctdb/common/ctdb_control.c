@@ -38,11 +38,15 @@ struct ctdb_control_state {
   process a control request
  */
 static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb, 
-				     uint32_t opcode, 
-				     uint64_t srvid, uint32_t client_id,
+				     struct ctdb_req_control *c,
 				     TDB_DATA indata,
-				     TDB_DATA *outdata, uint32_t srcnode)
+				     TDB_DATA *outdata, uint32_t srcnode,
+				     bool *async_reply)
 {
+	uint32_t opcode = c->opcode;
+	uint64_t srvid = c->srvid;
+	uint32_t client_id = c->client_id;
+
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
 		CHECK_CONTROL_DATA_SIZE(sizeof(pid_t));
@@ -110,11 +114,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_PUSH_DB:
 		return ctdb_control_push_db(ctdb, indata);
-
-	case CTDB_CONTROL_SET_RECMODE: {
-		ctdb->recovery_mode = ((uint32_t *)(&indata.dptr[0]))[0];
-		return 0;
-	}
 
 	case CTDB_CONTROL_GET_RECMODE: {
 		return ctdb->recovery_mode;
@@ -221,6 +220,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_set_seqnum_frequency(ctdb, *(uint32_t *)indata.dptr);
 
+	case CTDB_CONTROL_FREEZE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_freeze(ctdb, c, async_reply);
+
+	case CTDB_CONTROL_THAW:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_thaw(ctdb);
+
+	case CTDB_CONTROL_SET_RECMODE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		return ctdb_control_set_recmode(ctdb, indata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -267,21 +278,18 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
 	TDB_DATA data, *outdata;
 	int32_t status;
+	bool async_reply = False;
 
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
 	outdata = talloc_zero(c, TDB_DATA);
 
-	if (c->opcode == CTDB_CONTROL_SET_RECMODE) {
-		/* this function operates asynchronously */
-		ctdb_control_set_recmode(ctdb, c, data);
-		return;
-	}
+	status = ctdb_control_dispatch(ctdb, c, data, outdata, hdr->srcnode, &async_reply);
 
-	status = ctdb_control_dispatch(ctdb, c->opcode, c->srvid, c->client_id,
-				       data, outdata, hdr->srcnode);
-	ctdb_request_control_reply(ctdb, c, outdata, status);
+	if (!async_reply) {
+		ctdb_request_control_reply(ctdb, c, outdata, status);
+	}
 }
 
 /*

@@ -937,7 +937,7 @@ int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, ui
 			   CTDB_CONTROL_SET_RECMASTER, 0, data, 
 			   ctdb, &outdata, &res, &timeout);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for setrecmaster failed\n"));
 		return -1;
 	}
 
@@ -1640,3 +1640,41 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 	return 0;
 }
 
+
+/*
+  freeze a node
+ */
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
+			   NULL, NULL, &res, &timeout);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control freeze failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  thaw a node
+ */
+int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_THAW, 0, tdb_null, 
+			   NULL, NULL, &res, &timeout);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control thaw failed\n"));
+		return -1;
+	}
+
+	return 0;
+}

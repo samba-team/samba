@@ -218,12 +218,14 @@ struct ctdb_write_record {
 	unsigned char blob[1];
 };
 
+enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
-	struct ctdb_recovery_handle *recovery_handle;
+	enum ctdb_freeze_mode freeze_mode;
+	struct ctdb_freeze_handle *freeze_handle;
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
@@ -345,6 +347,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GET_PID,
 		    CTDB_CONTROL_GET_RECMASTER,
 		    CTDB_CONTROL_SET_RECMASTER,
+		    CTDB_CONTROL_FREEZE,
+		    CTDB_CONTROL_THAW,
 };
 
 
@@ -783,8 +787,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 
-void ctdb_control_set_recmode(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data);
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA data);
 void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
 				TDB_DATA *outdata, int32_t status);
+
+int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 #endif

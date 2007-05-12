@@ -56,6 +56,8 @@ static void usage(void)
 		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+		"  freeze <vnn|all>                   freeze a node\n"
+		"  thaw <vnn|all>                     thaw a node\n"
 	);
 	exit(1);
 }
@@ -800,6 +802,79 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 /*
+  freeze a node
+ */
+static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret=0;
+	uint32_t vnn, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(5, 0), vnn);
+		if (ret != 0) {
+			printf("Unable to freeze node %u\n", vnn);
+		}		
+		return 0;
+	}
+
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		int res = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(5, 0), nodes[i]);
+		if (res != 0) {
+			printf("Warning: Unable to freeze node %u\n", nodes[i]);
+		}
+		ret |= res;
+	}
+	talloc_free(nodes);
+	return 0;
+}
+
+/*
+  thaw a node
+ */
+static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret=0;
+	uint32_t vnn, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(5, 0), vnn);
+		if (ret != 0) {
+			printf("Unable to thaw node %u\n", vnn);
+		}		
+		return 0;
+	}
+
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		int res = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(5, 0), nodes[i]);
+		if (res != 0) {
+			printf("Warning: Unable to thaw node %u\n", nodes[i]);
+		}
+		ret |= res;
+	}
+	talloc_free(nodes);
+	return 0;
+}
+
+
+/*
   attach to a database
  */
 static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -886,6 +961,8 @@ int main(int argc, const char *argv[])
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
 		{ "getpid", control_getpid },
+		{ "freeze", control_freeze },
+		{ "thaw", control_thaw },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);

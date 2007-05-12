@@ -57,10 +57,26 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 			continue;
 		}
 
+		if (rec_mode == CTDB_RECOVERY_ACTIVE) {
+			ret = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(5, 0), nodemap->nodes[j].vnn);
+			if (ret != 0) {
+				DEBUG(0, (__location__ " Unable to freeze node %u\n", nodemap->nodes[j].vnn));
+				return -1;
+			}
+		}
+
 		ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[j].vnn, rec_mode);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to set recmode on node %u\n", nodemap->nodes[j].vnn));
 			return -1;
+		}
+
+		if (rec_mode == CTDB_RECOVERY_NORMAL) {
+			ret = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(5, 0), nodemap->nodes[j].vnn);
+			if (ret != 0) {
+				DEBUG(0, (__location__ " Unable to thaw node %u\n", nodemap->nodes[j].vnn));
+				return -1;
+			}
 		}
 	}
 
