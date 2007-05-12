@@ -227,6 +227,38 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 }
 
+
+/*
+  send a reply for a ctdb control
+ */
+void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
+				TDB_DATA *outdata, int32_t status)
+{
+	struct ctdb_reply_control *r;
+	size_t len;
+
+	/* some controls send no reply */
+	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
+		return;
+	}
+
+	len = offsetof(struct ctdb_reply_control, data) + (outdata?outdata->dsize:0);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control);
+	CTDB_NO_MEMORY_VOID(ctdb, r);
+
+	r->hdr.destnode     = c->hdr.srcnode;
+	r->hdr.reqid        = c->hdr.reqid;
+	r->status           = status;
+	r->datalen          = outdata?outdata->dsize:0;
+	if (outdata && outdata->dsize) {
+		memcpy(&r->data[0], outdata->dptr, outdata->dsize);
+	}
+	
+	ctdb_queue_packet(ctdb, &r->hdr);	
+
+	talloc_free(r);
+}
+
 /*
   called when a CTDB_REQ_CONTROL packet comes in
 */
@@ -234,37 +266,22 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 {
 	struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
 	TDB_DATA data, *outdata;
-	struct ctdb_reply_control *r;
 	int32_t status;
-	size_t len;
 
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 
 	outdata = talloc_zero(c, TDB_DATA);
-	status = ctdb_control_dispatch(ctdb, c->opcode, c->srvid, c->client_id,
-				       data, outdata, hdr->srcnode);
 
-	/* some controls send no reply */
-	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
+	if (c->opcode == CTDB_CONTROL_SET_RECMODE) {
+		/* this function operates asynchronously */
+		ctdb_control_set_recmode(ctdb, c, data);
 		return;
 	}
 
-	len = offsetof(struct ctdb_reply_control, data) + outdata->dsize;
-	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control);
-	CTDB_NO_MEMORY_VOID(ctdb, r);
-
-	r->hdr.destnode     = hdr->srcnode;
-	r->hdr.reqid        = hdr->reqid;
-	r->status           = status;
-	r->datalen          = outdata->dsize;
-	if (outdata->dsize) {
-		memcpy(&r->data[0], outdata->dptr, outdata->dsize);
-	}
-	
-	ctdb_queue_packet(ctdb, &r->hdr);	
-
-	talloc_free(r);
+	status = ctdb_control_dispatch(ctdb, c->opcode, c->srvid, c->client_id,
+				       data, outdata, hdr->srcnode);
+	ctdb_request_control_reply(ctdb, c, outdata, status);
 }
 
 /*
@@ -312,11 +329,14 @@ static void ctdb_control_timeout(struct event_context *ev, struct timed_event *t
 		       struct timeval t, void *private_data)
 {
 	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
 	state->ctdb->status.timeouts.control++;
 
+	talloc_steal(tmp_ctx, state);
+
 	state->callback(state->ctdb, -1, tdb_null, state->private_data);
-	talloc_free(state);
+	talloc_free(tmp_ctx);
 }
 
 

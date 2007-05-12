@@ -87,7 +87,7 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	outdata->dsize = offsetof(struct ctdb_dbid_map, dbids) + 4*len;
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
 	if (!outdata->dptr) {
-		DEBUG(0, (__location__ "Failed to allocate dbmap array\n"));
+		DEBUG(0, (__location__ " Failed to allocate dbmap array\n"));
 		exit(1);
 	}
 
@@ -113,7 +113,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
 	if (!outdata->dptr) {
-		DEBUG(0, (__location__ "Failed to allocate nodemap array\n"));
+		DEBUG(0, (__location__ " Failed to allocate nodemap array\n"));
 		exit(1);
 	}
 
@@ -269,14 +269,14 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, NULL, NULL);
 		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to fetch record\n"));
+			DEBUG(0, (__location__ " Unable to fetch record\n"));
 			tdb_unlockall(ctdb_db->ltdb->tdb);
 			return -1;
 		}
 		if (header.rsn < hdr->rsn) {
 			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 			if (ret != 0) {
-				DEBUG(0, (__location__ "Unable to store record\n"));
+				DEBUG(0, (__location__ " Unable to store record\n"));
 				tdb_unlockall(ctdb_db->ltdb->tdb);
 				return -1;
 			}
@@ -301,7 +301,7 @@ static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA d
 
 	ret = tdb_store(tdb, key, data, TDB_REPLACE);
 	if (ret) {
-		DEBUG(0,(__location__ "failed to write tdb data back  ret:%d\n",ret));
+		DEBUG(0,(__location__ " failed to write tdb data back  ret:%d\n",ret));
 		return ret;
 	}
 	return 0;
@@ -338,7 +338,7 @@ static int traverse_cleardb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 
 	ret = tdb_delete(tdb, key);
 	if (ret) {
-		DEBUG(0,(__location__ "failed to delete tdb record\n"));
+		DEBUG(0,(__location__ " failed to delete tdb record\n"));
 		return ret;
 	}
 	return 0;
@@ -367,3 +367,232 @@ int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	return 0;
 }
+
+
+/*
+  lock all databases
+ */
+static int ctdb_lock_all_databases(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/*
+  lock all databases - mark only
+ */
+static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/*
+  lock all databases - unmark only
+ */
+static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/*
+  a list of control requests waiting for a recovery lock child to gets
+  the database locks
+ */
+struct ctdb_recovery_waiter {
+	struct ctdb_recovery_waiter *next, *prev;
+	struct ctdb_context *ctdb;
+	struct ctdb_req_control *c;
+	int32_t status;
+};
+
+/* a handle to a recovery lock child process */
+struct ctdb_recovery_handle {
+	struct ctdb_context *ctdb;
+	pid_t child;
+	int fd;
+	struct ctdb_recovery_waiter *waiters;
+};
+
+/*
+  destroy a recovery handle
+ */	
+static int ctdb_recovery_handle_destructor(struct ctdb_recovery_handle *h)
+{
+	if (h->ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		ctdb_lock_all_databases_unmark(h->ctdb);
+	}
+	kill(h->child, SIGKILL);
+	waitpid(h->child, NULL, 0);
+	return 0;
+}
+
+/*
+  called when the child writes its status to us
+ */
+static void ctdb_recovery_lock_handler(struct event_context *ev, struct fd_event *fde, 
+				       uint16_t flags, void *private_data)
+{
+	struct ctdb_recovery_handle *h = talloc_get_type(private_data, struct ctdb_recovery_handle);
+	int32_t status;
+	struct ctdb_recovery_waiter *w;
+	int ret;
+
+	if (read(h->fd, &status, sizeof(status)) != sizeof(status)) {
+		DEBUG(0,("read error from recovery lock child\n"));
+		status = -1;
+	}
+
+	if (status == -1) {
+		DEBUG(0,("Failed to get locks in ctdb_recovery_child\n"));
+		/* we didn't get the locks - destroy the handle */
+		talloc_free(h);
+		return;
+	}
+
+	ret = ctdb_lock_all_databases_mark(h->ctdb);
+	if (ret == -1) {
+		DEBUG(0,("Failed to mark locks in ctdb_recovery\n"));
+		talloc_free(h);
+		return;
+	}
+
+	h->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;	
+
+	/* notify the waiters */
+	while ((w = h->ctdb->recovery_handle->waiters)) {
+		w->status = status;
+		DLIST_REMOVE(h->ctdb->recovery_handle->waiters, w);
+		talloc_free(w);
+	}
+
+	talloc_free(fde);
+}
+
+/*
+  create a child which gets locks on all the open databases, then calls the callback telling the parent
+  that it is done
+ */
+static struct ctdb_recovery_handle *ctdb_recovery_lock(struct ctdb_context *ctdb)
+{
+	struct ctdb_recovery_handle *h;
+	int fd[2];
+	struct fd_event *fde;
+
+	h = talloc_zero(ctdb, struct ctdb_recovery_handle);
+	CTDB_NO_MEMORY_VOID(ctdb, h);
+
+	h->ctdb = ctdb;
+
+	/* use socketpair() instead of pipe() so we have bi-directional fds */
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd) != 0) {
+		DEBUG(0,("Failed to create pipe for ctdb_recovery_lock\n"));
+		talloc_free(h);
+		return NULL;
+	}
+	
+	h->child = fork();
+	if (h->child == -1) {
+		DEBUG(0,("Failed to fork child for ctdb_recovery_lock\n"));
+		talloc_free(h);
+		return NULL;
+	}
+
+	if (h->child == 0) {
+		int ret;
+		/* in the child */
+		close(fd[0]);
+		ret = ctdb_lock_all_databases(ctdb);
+		if (ret != 0) {
+			_exit(0);
+		}
+		write(fd[1], &ret, sizeof(ret));
+		/* the read here means we will die if the parent exits */
+		read(fd[1], &ret, sizeof(ret));
+		_exit(0);
+	}
+
+	talloc_set_destructor(h, ctdb_recovery_handle_destructor);
+
+	close(fd[1]);
+
+	h->fd = fd[0];
+
+	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+			   ctdb_recovery_lock_handler, h);
+	if (fde == NULL) {
+		DEBUG(0,("Failed to setup fd event for ctdb_recovery_lock\n"));
+		close(fd[0]);
+		talloc_free(h);
+		return NULL;
+	}
+
+	return h;
+}
+
+/*
+  destroy a waiter for a recovery mode change
+ */
+static int ctdb_recovery_waiter_destructor(struct ctdb_recovery_waiter *w)
+{
+	DLIST_REMOVE(w->ctdb->recovery_handle->waiters, w);
+	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status);
+	return 0;
+}
+
+/*
+  set the recovery mode
+ */
+void ctdb_control_set_recmode(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data)
+{
+	uint32_t recmode = *(uint32_t *)data.dptr;
+	struct ctdb_recovery_waiter *w;
+
+	if (recmode == CTDB_RECOVERY_NORMAL) {
+		/* switching to normal mode is easy */
+		talloc_free(ctdb->recovery_handle);
+		ctdb->recovery_handle = NULL;
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_request_control_reply(ctdb, c, NULL, 0);
+		return;
+	}
+
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		/* we're already active */
+		ctdb_request_control_reply(ctdb, c, NULL, 0);
+		return;
+	}
+
+	/* if there isn't a recovery lock child then create one */
+	if (!ctdb->recovery_handle) {
+		ctdb->recovery_handle = ctdb_recovery_lock(ctdb);
+		CTDB_NO_MEMORY_VOID(ctdb, ctdb->recovery_handle);
+	}
+
+	/* add ourselves to list of waiters */
+	w = talloc(ctdb->recovery_handle, struct ctdb_recovery_waiter);
+	CTDB_NO_MEMORY_VOID(ctdb, w);
+	w->ctdb   = ctdb;
+	w->c      = talloc_steal(w, c);
+	w->status = -1;
+	talloc_set_destructor(w, ctdb_recovery_waiter_destructor);
+	DLIST_ADD(ctdb->recovery_handle->waiters, w);
+}
+
+

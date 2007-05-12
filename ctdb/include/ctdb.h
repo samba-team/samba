@@ -285,6 +285,7 @@ int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_
 
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
+
 /*
   get the recovery mode of a remote node
  */

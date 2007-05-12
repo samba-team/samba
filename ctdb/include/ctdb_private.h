@@ -217,11 +217,13 @@ struct ctdb_write_record {
 	uint32_t datalen;
 	unsigned char blob[1];
 };
-	
+
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
+	struct ctdb_recovery_handle *recovery_handle;
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
@@ -780,5 +782,9 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
+
+void ctdb_control_set_recmode(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data);
+void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
+				TDB_DATA *outdata, int32_t status);
 
 #endif

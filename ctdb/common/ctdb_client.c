@@ -883,7 +883,6 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 	TDB_DATA data, outdata;
 	int32_t res;
 
-	ZERO_STRUCT(data);
 	data.dsize = sizeof(uint32_t);
 	data.dptr = (unsigned char *)&recmode;
 
