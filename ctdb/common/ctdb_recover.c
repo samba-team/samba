@@ -225,6 +225,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 
 	params.ctdb = ctdb;
 	params.lmaster = pull->lmaster;
+
 	params.rec_count = 0;
 	params.recs = talloc_array(outdata, struct getkeys_rec, 0);
 	CTDB_NO_MEMORY(ctdb, params.recs);
@@ -318,9 +319,10 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			DEBUG(0, (__location__ " Unable to fetch record\n"));
 			goto failed;
 		}
-		/* the <= is to cope with just-created records, which
-		   have a rsn of zero */
-		if (header.rsn <= hdr->rsn) {
+		/* The check for dmaster gives priority to the dmaster
+		   if the rsn values are equal */
+		if (header.rsn < hdr->rsn ||
+		    (header.dmaster != ctdb->vnn && header.rsn == hdr->rsn)) {
 			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to store record\n"));
