@@ -290,6 +290,10 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 /* lock/unlock entire database */
 static int _tdb_lockall(struct tdb_context *tdb, int ltype, int op)
 {
+	bool mark_lock = ((ltype & TDB_MARK_LOCK) == TDB_MARK_LOCK);
+
+	ltype &= ~TDB_MARK_LOCK;
+
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only || tdb->traverse_read)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
@@ -309,7 +313,8 @@ static int _tdb_lockall(struct tdb_context *tdb, int ltype, int op)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 
-	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, ltype, op,
+	if (!mark_lock &&
+	    tdb->methods->tdb_brlock(tdb, FREELIST_TOP, ltype, op,
 				     0, 4*tdb->header.hash_size)) {
 		if (op == F_SETLKW) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lockall failed (%s)\n", strerror(errno)));
@@ -328,6 +333,10 @@ static int _tdb_lockall(struct tdb_context *tdb, int ltype, int op)
 /* unlock entire db */
 static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
 {
+	bool mark_lock = ((ltype & TDB_MARK_LOCK) == TDB_MARK_LOCK);
+
+	ltype &= ~TDB_MARK_LOCK;
+
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only || tdb->traverse_read) {
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
@@ -342,7 +351,8 @@ static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
 		return 0;
 	}
 
-	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 
+	if (!mark_lock &&
+	    tdb->methods->tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 
 				     0, 4*tdb->header.hash_size)) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlockall failed (%s)\n", strerror(errno)));
 		return -1;
@@ -358,6 +368,18 @@ static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
 int tdb_lockall(struct tdb_context *tdb)
 {
 	return _tdb_lockall(tdb, F_WRLCK, F_SETLKW);
+}
+
+/* lock entire database with write lock - mark only */
+int tdb_lockall_mark(struct tdb_context *tdb)
+{
+	return _tdb_lockall(tdb, F_WRLCK | TDB_MARK_LOCK, F_SETLKW);
+}
+
+/* unlock entire database with write lock - unmark only */
+int tdb_lockall_unmark(struct tdb_context *tdb)
+{
+	return _tdb_unlockall(tdb, F_WRLCK | TDB_MARK_LOCK);
 }
 
 /* lock entire database with write lock - nonblocking varient */
