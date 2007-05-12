@@ -806,7 +806,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret=0;
+	int ret=0, count=0;
 	uint32_t vnn, i;
 	uint32_t *nodes;
 	uint32_t num_nodes;
@@ -830,9 +830,12 @@ static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv
 		int res = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(5, 0), nodes[i]);
 		if (res != 0) {
 			printf("Warning: Unable to freeze node %u\n", nodes[i]);
+		} else {
+			count++;
 		}
 		ret |= res;
 	}
+	printf("Froze %u nodes\n", count);
 	talloc_free(nodes);
 	return 0;
 }
@@ -842,7 +845,7 @@ static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret=0;
+	int ret=0, count=0;
 	uint32_t vnn, i;
 	uint32_t *nodes;
 	uint32_t num_nodes;
@@ -866,9 +869,12 @@ static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
 		int res = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(5, 0), nodes[i]);
 		if (res != 0) {
 			printf("Warning: Unable to thaw node %u\n", nodes[i]);
+		} else {
+			count++;
 		}
 		ret |= res;
 	}
+	printf("Thawed %u nodes\n", count);
 	talloc_free(nodes);
 	return 0;
 }
