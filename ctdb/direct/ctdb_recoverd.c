@@ -392,18 +392,6 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	}
 
 
-
-	/* repoint all local and remote database records to an invalid
-	   node as being dmaster to stop the shortcut from working
-	 */
-	ret = update_dmaster_on_all_databases(ctdb, nodemap, 0xffffffff, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
-		return -1;
-	}
-
-
-
 	/* pull all remote databases onto the local node */
 	ret = pull_all_remote_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
 	if (ret != 0) {
