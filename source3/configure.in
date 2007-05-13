@@ -2645,13 +2645,13 @@ if test x$enable_fam != xno; then
         # On IRIX, libfam requires libC, but other FAM implementations
 	# might not need it.
         AC_CHECK_LIB(fam, FAMOpen2,
-            [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
+            [samba_cv_HAVE_LIBFAM=yes; SMB_FAM_LIBS="-lfam"],
             [samba_cv_HAVE_LIBFAM=no])
 
         if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
             samba_fam_xtra=-lC
             AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
-                [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
+                [samba_cv_HAVE_LIBFAM=yes; SMB_FAM_LIBS="-lfam -lC"],
                 [samba_cv_HAVE_LIBFAM=no])
             unset samba_fam_xtra
         fi
@@ -2670,6 +2670,8 @@ if test x$enable_fam != xno; then
         AC_MSG_ERROR(FAM support requested but FAM library not available )
     fi
 fi
+
+AC_SUBST(SMB_FAM_LIBS)
 
 #################################################
 # Check for DMAPI interfaces in libdm/libjfsdm/libxsdm
@@ -6376,7 +6378,7 @@ AC_SUBST(builddir)
 
 # Stuff the smbd-only libraries at the end of the smbd link
 # path (if we have them).
-SMBD_LIBS="$samba_fam_libs $samba_dmapi_libs"
+SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
 AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
