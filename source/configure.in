@@ -2216,12 +2216,11 @@ fi
 AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ,[
 AC_TRY_LINK([
 #include <sys/time.h>
-#include <unistd.h>], [
-int main() { struct timeval tv; return gettimeofday(&tv, NULL);}],
+#include <unistd.h>], [struct timeval tv; return gettimeofday(&tv, NULL);],
            samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,
 	   samba_cv_HAVE_GETTIMEOFDAY_TZ=no)])
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
-    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
+    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday takes a tz argument])
 fi
 
 if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
