@@ -1209,7 +1209,7 @@ int ctdb_ctrl_bumprsn(struct ctdb_context *ctdb, struct timeval timeout, uint32_
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_BUMP_RSN, 0, indata, 
-			   mem_ctx, &outdata, &res, &timeout);
+			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for bumprsn failed\n"));
 		return -1;
