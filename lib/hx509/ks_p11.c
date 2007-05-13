@@ -1140,10 +1140,17 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_RSA_X_509, "rsa-x-509");
 		MECHNAME(CKM_MD5_RSA_PKCS, "md5-rsa-pkcs");
 		MECHNAME(CKM_SHA1_RSA_PKCS, "sha1-rsa-pkcs");
+		MECHNAME(CKM_RIPEMD160_RSA_PKCS, "ripemd160-rsa-pkcs");
+		MECHNAME(CKM_RSA_PKCS_OAEP, "rsa-pkcs-oaep");
 		MECHNAME(CKM_SHA_1, "sha1");
 		MECHNAME(CKM_MD5, "md5");
 		MECHNAME(CKM_MD2, "md2");
 		MECHNAME(CKM_RIPEMD160, "ripemd-160");
+		MECHNAME(CKM_DES_ECB, "des-ecb");
+		MECHNAME(CKM_DES_CBC, "des-cbc");
+		MECHNAME(CKM_AES_ECB, "aes-ecb");
+		MECHNAME(CKM_AES_CBC, "aes-cbc");
+		MECHNAME(CKM_DH_PKCS_PARAMETER_GEN, "dh-pkcs-parameter-gen");
 	    default:
 		snprintf(unknownname, sizeof(unknownname),
 			 "unknown-mech-%lu", 
