@@ -1620,7 +1620,7 @@ bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 
 bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_NOTIFY_FAM_OBJ)
+	@$(SHLD_MODULE) $(VFS_NOTIFY_FAM_OBJ) @SMB_FAM_LIBS@
 
 bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
