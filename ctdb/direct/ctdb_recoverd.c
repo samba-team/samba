@@ -271,23 +271,6 @@ static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctd
 }
 
 
-static int bump_rsn_on_all_databases(struct ctdb_context *ctdb, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
-{
-	int i, ret;
-
-	/* bump rsn for all records in all databases */
-	for (i=0;i<dbmap->num;i++) {
-		ret = ctdb_ctrl_bumprsn(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, dbmap->dbids[i]);
-		if (ret != 0) {
-			DEBUG(0, (__location__ "Unable to bump rsn for db:0x%08x\n", dbmap->dbids[i]));
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-
 static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, ret;
@@ -464,15 +447,6 @@ static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
 	ret = update_dmaster_on_all_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
-		return -1;
-	}
-
-
-	/* bump the rsn number on all databases
-	 */
-	ret = bump_rsn_on_all_databases(ctdb, vnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ "Unable to bump the rsn on all databases\n"));
 		return -1;
 	}
 
