@@ -603,7 +603,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
-	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
+	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
+	pkt.u.bind_ack.assoc_group_id = 0x12345678;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
