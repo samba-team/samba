@@ -96,7 +96,7 @@ static int export_database (struct pdb_methods *in,
 				return 1;
 			}
 
-			printf("Importing accout for %s...", user->username);
+			printf("Importing account for %s...", user->username);
 			if ( !NT_STATUS_IS_OK(out->getsampwnam( out, account, user->username )) ) {
 				status = out->add_sam_account(out, user);
 			} else {
