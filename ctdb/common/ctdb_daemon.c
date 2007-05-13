@@ -326,7 +326,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 
 	res = daemon_queue_send(client, &r->hdr);
 	if (res != 0) {
-		DEBUG(0, (__location__ "Failed to queue packet from daemon to client\n"));
+		DEBUG(0, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
 	ctdb_latency(&client->ctdb->status.max_call_latency, dstate->start_time);
 	talloc_free(dstate);
@@ -334,29 +334,8 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 }
 
 
-struct ctdb_client_retry {
-	struct ctdb_client *client;
-	struct ctdb_req_call *call;
-};
-
 static void daemon_request_call_from_client(struct ctdb_client *client, 
 					    struct ctdb_req_call *c);
-
-/*
-  triggered after a one second delay, retrying a client packet
-  that was deferred because of the daemon being in recovery mode
- */
-static void retry_client_packet(struct event_context *ev, struct timed_event *te, 
-				struct timeval t, void *private_data)
-{
-	struct ctdb_client_retry *retry = talloc_get_type(private_data, struct ctdb_client_retry);
-
-	daemon_request_call_from_client(retry->client, retry->call);
-
-	talloc_free(retry);
-}
-
-
 
 /*
   this is called when the ctdb daemon received a ctdb request call
@@ -374,29 +353,6 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	int ret;
 	struct ctdb_context *ctdb = client->ctdb;
 
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		struct ctdb_client_retry *retry;
-		
-		DEBUG(0,(__location__ " ctdb call %u from client"
-			 " while we are in recovery mode. Deferring it\n", 
-			 c->hdr.reqid)); 
-
-		/* hang the event and the structure off client */
-		retry = talloc(client, struct ctdb_client_retry);
-		CTDB_NO_MEMORY_VOID(ctdb, retry);
-		retry->client = client;
-		retry->call   = c;
-		
-		/* this ensures that after the retry happens we
-		   eventually free this request */
-		talloc_steal(retry, c);
-		
-		event_add_timed(ctdb->ev, retry, timeval_current_ofs(1,0), retry_client_packet, retry);
-		return;
-	}
-
-
-
 	ctdb->status.total_calls++;
 	ctdb->status.pending_calls++;
 
@@ -413,7 +369,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
 					   (struct ctdb_req_header *)c, &data,
-					   daemon_incoming_packet, client);
+					   daemon_incoming_packet, client, True);
 	if (ret == -2) {
 		/* will retry later */
 		ctdb->status.pending_calls--;
@@ -644,8 +600,13 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
-		ctdb->daemon.sd = -1;
 		return -1;
+	}
+
+	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
+	    fchmod(ctdb->daemon.sd, 0700) != 0) {
+		DEBUG(0,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
 	}
 
 	set_non_blocking(ctdb->daemon.sd);
@@ -655,13 +616,20 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		close(ctdb->daemon.sd);
-		ctdb->daemon.sd = -1;
-		return -1;
+		DEBUG(0,("Unable to bind on ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
 	}	
-	listen(ctdb->daemon.sd, 1);
+	if (listen(ctdb->daemon.sd, 10) != 0) {
+		DEBUG(0,("Unable to listen on ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
+	}
 
 	return 0;
+
+failed:
+	close(ctdb->daemon.sd);
+	ctdb->daemon.sd = -1;
+	return -1;	
 }
 
 /*
@@ -869,6 +837,7 @@ struct daemon_control_state {
  */
 static void daemon_control_callback(struct ctdb_context *ctdb,
 				    uint32_t status, TDB_DATA data, 
+				    const char *errormsg,
 				    void *private_data)
 {
 	struct daemon_control_state *state = talloc_get_type(private_data, 
@@ -879,6 +848,9 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
+	if (errormsg) {
+		len += strlen(errormsg);
+	}
 	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len, 
 			       struct ctdb_reply_control);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
@@ -886,7 +858,12 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	r->hdr.reqid     = state->reqid;
 	r->status        = status;
 	r->datalen       = data.dsize;
+	r->errorlen = 0;
 	memcpy(&r->data[0], data.dptr, data.dsize);
+	if (errormsg) {
+		r->errorlen = strlen(errormsg);
+		memcpy(&r->data[r->datalen], errormsg, r->errorlen);
+	}
 
 	daemon_queue_send(client, &r->hdr);
 

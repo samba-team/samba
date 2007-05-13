@@ -290,6 +290,7 @@ int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_
 
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
+
 /*
   get the recovery mode of a remote node
  */
@@ -326,5 +327,8 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
   get the pid of a ctdb daemon
  */
 int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
+
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 #endif

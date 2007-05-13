@@ -26,6 +26,7 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
+static int timelimit = 3;
 
 /*
   show usage message
@@ -56,6 +57,8 @@ static void usage(void)
 		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+		"  freeze <vnn|all>                   freeze a node\n"
+		"  thaw <vnn|all>                     thaw a node\n"
 	);
 	exit(1);
 }
@@ -93,13 +96,15 @@ static void show_status(struct ctdb_status *s)
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int i;
 	const char *prefix=NULL;
-	size_t preflen=0;
+	int preflen=0;
 	const struct {
 		const char *name;
 		uint32_t offset;
 	} fields[] = {
 #define STATUS_FIELD(n) { #n, offsetof(struct ctdb_status, n) }
 		STATUS_FIELD(num_clients),
+		STATUS_FIELD(frozen),
+		STATUS_FIELD(recovering),
 		STATUS_FIELD(client_packets_sent),
 		STATUS_FIELD(client_packets_recv),
 		STATUS_FIELD(node_packets_sent),
@@ -175,7 +180,7 @@ static int control_status_all(struct ctdb_context *ctdb)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	
 	ZERO_STRUCT(status);
@@ -245,7 +250,7 @@ static int control_status_reset_all(struct ctdb_context *ctdb)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	
 	for (i=0;i<num_nodes;i++) {
@@ -300,7 +305,7 @@ static int control_getvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(timelimit, 0), vnn, ctdb, &vnnmap);
 	if (ret != 0) {
 		printf("Unable to get vnnmap from node %u\n", vnn);
 		return ret;
@@ -328,7 +333,7 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 
 	vnn     = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getpid(ctdb, timeval_current_ofs(1, 0), vnn, &pid);
+	ret = ctdb_ctrl_getpid(ctdb, timeval_current_ofs(timelimit, 0), vnn, &pid);
 	if (ret != 0) {
 		printf("Unable to get daemon pid from node %u\n", vnn);
 		return ret;
@@ -353,7 +358,7 @@ static int control_getrecmode(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn     = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(1, 0), vnn, &recmode);
+	ret = ctdb_ctrl_getrecmode(ctdb, timeval_current_ofs(timelimit, 0), vnn, &recmode);
 	if (ret != 0) {
 		printf("Unable to get recmode from node %u\n", vnn);
 		return ret;
@@ -379,7 +384,7 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	vnn     = strtoul(argv[0], NULL, 0);
 	recmode = strtoul(argv[1], NULL, 0);
 
-	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(1, 0), vnn, recmode);
+	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(timelimit, 0), vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
 		return ret;
@@ -403,7 +408,7 @@ static int control_getrecmaster(struct ctdb_context *ctdb, int argc, const char 
 
 	vnn     = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, timeval_current_ofs(timelimit, 0), vnn, &recmaster);
 	if (ret != 0) {
 		printf("Unable to get recmaster from node %u\n", vnn);
 		return ret;
@@ -429,7 +434,7 @@ static int control_setrecmaster(struct ctdb_context *ctdb, int argc, const char 
 	vnn       = strtoul(argv[0], NULL, 0);
 	recmaster = strtoul(argv[1], NULL, 0);
 
-	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(1, 0), vnn, recmaster);
+	ret = ctdb_ctrl_setrecmaster(ctdb, timeval_current_ofs(timelimit, 0), vnn, recmaster);
 	if (ret != 0) {
 		printf("Unable to set recmaster on node %u\n", vnn);
 		return ret;
@@ -483,7 +488,9 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 			keystr  = hex_encode(ctdb, keys.keys[i].dptr, keys.keys[i].dsize);
 			datastr = hex_encode(ctdb, keys.data[i].dptr, keys.data[i].dsize);
 
-			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", keys.headers[i].rsn, keys.lmasters[i], keys.headers[i].dmaster, keystr, datastr); 
+			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", 
+			       (unsigned long long)keys.headers[i].rsn, keys.lmasters[i], 
+			       keys.headers[i].dmaster, keystr, datastr); 
 			ret++;
 		}
 	}
@@ -512,7 +519,7 @@ static int control_cpdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	dbid     = strtoul(argv[2], NULL, 0);
 
 	mem_ctx = talloc_new(ctdb);
-	ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(1, 0), fromvnn, tovnn, dbid, CTDB_LMASTER_ANY, mem_ctx);
+	ret = ctdb_ctrl_copydb(ctdb, timeval_current_ofs(timelimit, 0), fromvnn, tovnn, dbid, CTDB_LMASTER_ANY, mem_ctx);
 	if (ret != 0) {
 		printf("Unable to copy db from node %u to node %u\n", fromvnn, tovnn);
 		return ret;
@@ -537,7 +544,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(timelimit, 0), vnn, ctdb, &dbmap);
 	if (ret != 0) {
 		printf("Unable to get dbids from node %u\n", vnn);
 		return ret;
@@ -548,8 +555,8 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		const char *path;
 		const char *name;
 
-		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
-		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
+		ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(timelimit, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &path);
+		ctdb_ctrl_getdbname(ctdb, timeval_current_ofs(timelimit, 0), CTDB_CURRENT_NODE, dbmap->dbids[i], ctdb, &name);
 		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
@@ -571,7 +578,7 @@ static int control_getnodemap(struct ctdb_context *ctdb, int argc, const char **
 
 	vnn = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, timeval_current_ofs(timelimit, 0), vnn, ctdb, &nodemap);
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", vnn);
 		return ret;
@@ -616,7 +623,7 @@ static int control_setvnnmap(struct ctdb_context *ctdb, int argc, const char **a
 		vnnmap->map[i] = strtoul(argv[3+i], NULL, 0);
 	}
 
-	ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, vnnmap);
+	ret = ctdb_ctrl_setvnnmap(ctdb, timeval_current_ofs(timelimit, 0), vnn, ctdb, vnnmap);
 	if (ret != 0) {
 		printf("Unable to set vnnmap for node %u\n", vnn);
 		return ret;
@@ -641,7 +648,7 @@ static int control_setdmaster(struct ctdb_context *ctdb, int argc, const char **
 	dbid    = strtoul(argv[1], NULL, 0);
 	dmaster = strtoul(argv[2], NULL, 0);
 
-	ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(1, 0), vnn, ctdb, dbid, dmaster);
+	ret = ctdb_ctrl_setdmaster(ctdb, timeval_current_ofs(timelimit, 0), vnn, ctdb, dbid, dmaster);
 	if (ret != 0) {
 		printf("Unable to set dmaster for node %u db:0x%08x\n", vnn, dbid);
 		return ret;
@@ -694,10 +701,10 @@ static int control_createdb(struct ctdb_context *ctdb, int argc, const char **ar
 	/* tell ctdb daemon to attach */
 	data.dptr = discard_const(dbname);
 	data.dsize = strlen(dbname)+1;
-	timeout = timeval_current_ofs(1, 0);
+	timeout = timeval_current_ofs(timelimit, 0);
 	ret = ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb, &data, &res, 
-			   &timeout);
+			   &timeout, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Failed to attach to database '%s'\n", dbname));
 		return -1;
@@ -715,7 +722,7 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 
 	for (i=0;i<num_nodes;i++) {
@@ -742,7 +749,7 @@ static int control_debuglevel(struct ctdb_context *ctdb, int argc, const char **
 	uint32_t *nodes;
 	uint32_t num_nodes;
 
-	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 
 	for (i=0;i<num_nodes;i++) {
@@ -785,7 +792,7 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 		return 0;
 	}
 
-	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(1, 0), ctdb, &num_nodes);
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
 	CTDB_NO_MEMORY(ctdb, nodes);
 	for (i=0;i<num_nodes;i++) {
 		ret = ctdb_ctrl_set_debuglevel(ctdb, nodes[i], level);
@@ -794,6 +801,85 @@ static int control_debug(struct ctdb_context *ctdb, int argc, const char **argv)
 			break;
 		}
 	}
+	talloc_free(nodes);
+	return 0;
+}
+
+
+/*
+  freeze a node
+ */
+static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret=0, count=0;
+	uint32_t vnn, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(timelimit, 0), vnn);
+		if (ret != 0) {
+			printf("Unable to freeze node %u\n", vnn);
+		}		
+		return 0;
+	}
+
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		int res = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(timelimit, 0), nodes[i]);
+		if (res != 0) {
+			printf("Warning: Unable to freeze node %u\n", nodes[i]);
+		} else {
+			count++;
+		}
+		ret |= res;
+	}
+	printf("Froze %u nodes\n", count);
+	talloc_free(nodes);
+	return 0;
+}
+
+/*
+  thaw a node
+ */
+static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret=0, count=0;
+	uint32_t vnn, i;
+	uint32_t *nodes;
+	uint32_t num_nodes;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (strcmp(argv[0], "all") != 0) {
+		vnn = strtoul(argv[0], NULL, 0);
+		ret = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(timelimit, 0), vnn);
+		if (ret != 0) {
+			printf("Unable to thaw node %u\n", vnn);
+		}		
+		return 0;
+	}
+
+	nodes = ctdb_get_connected_nodes(ctdb, timeval_current_ofs(timelimit, 0), ctdb, &num_nodes);
+	CTDB_NO_MEMORY(ctdb, nodes);
+	for (i=0;i<num_nodes;i++) {
+		int res = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(timelimit, 0), nodes[i]);
+		if (res != 0) {
+			printf("Warning: Unable to thaw node %u\n", nodes[i]);
+		} else {
+			count++;
+		}
+		ret |= res;
+	}
+	printf("Thawed %u nodes\n", count);
 	talloc_free(nodes);
 	return 0;
 }
@@ -837,7 +923,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	ctdb_control(ctdb, vnn, 0, CTDB_CONTROL_DUMP_MEMORY,
-		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL);
+		     CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL, NULL);
 
 	return 0;
 }
@@ -851,6 +937,7 @@ int main(int argc, const char *argv[])
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
+		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -886,6 +973,8 @@ int main(int argc, const char *argv[])
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
 		{ "getpid", control_getpid },
+		{ "freeze", control_freeze },
+		{ "thaw", control_thaw },
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);

@@ -75,6 +75,7 @@ typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
 /* used for callbacks in ctdb_control requests */
 typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
 					   uint32_t status, TDB_DATA data, 
+					   const char *errormsg,
 					   void *private_data);
 
 /*
@@ -136,6 +137,8 @@ struct ctdb_daemon_data {
  */
 struct ctdb_status {
 	uint32_t num_clients;
+	uint32_t frozen;
+	uint32_t recovering;
 	uint32_t client_packets_sent;
 	uint32_t client_packets_recv;
 	uint32_t node_packets_sent;
@@ -217,11 +220,15 @@ struct ctdb_write_record {
 	uint32_t datalen;
 	unsigned char blob[1];
 };
-	
+
+enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
+	enum ctdb_freeze_mode freeze_mode;
+	struct ctdb_freeze_handle *freeze_handle;
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
@@ -344,6 +351,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_GET_RECMASTER,
 		    CTDB_CONTROL_SET_RECMASTER,
 		    CTDB_CONTROL_BUMP_RSN,
+		    CTDB_CONTROL_FREEZE,
+		    CTDB_CONTROL_THAW,
 };
 
 
@@ -519,6 +528,7 @@ struct ctdb_reply_control {
 	struct ctdb_req_header hdr;
 	int32_t  status;
 	uint32_t datalen;
+	uint32_t errorlen;
 	uint8_t data[1];
 };
 
@@ -549,12 +559,12 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
 			   TDB_DATA key, struct ctdb_req_header *hdr,
 			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-			   void *recv_context);
+			   void *recv_context, bool ignore_generation);
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
 				 struct ctdb_req_header *hdr, TDB_DATA *data,
 				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
-				 void *recv_context);
+				 void *recv_context, bool ignore_generation);
 void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length);
 
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
@@ -703,7 +713,7 @@ int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
-		 struct timeval *timeout);
+		 struct timeval *timeout, char **errormsg);
 
 
 
@@ -782,5 +792,12 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_bump_rsn(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA data, const char **);
+void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
+				TDB_DATA *outdata, int32_t status, const char *errormsg);
+
+int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 #endif
