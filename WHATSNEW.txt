@@ -8,10 +8,10 @@ base and is the version that servers should be run for for all
 current bug fixes.  
 
 The 3.0.25 release is an upgrade release over the 3.0.23/3.0.24 
-series which means that a substancial amount of development has 
-occured and many new features have been added since the last
+series which means that a substantial amount of development has 
+occurred and many new features have been added since the last
 Samba production release.  We would like to thank everyone in 
-the Samba commnunity that help to test the preview snapshots and 
+the Samba community that help to test the preview snapshots and 
 release candidates.  We believe that the this production release 
 is in much better shape due to your help.  
 
@@ -142,7 +142,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix marshalling bugs in samr code based on incorrect
       assumptions.
     * Fix DFS MS-RPC enumeration reply when we have no DFS shares.
-    * Fix memory curruption when enumerating accounts in the 
+    * Fix memory corruption when enumerating accounts in the 
       LsaPrivilege database.
 
 
@@ -175,6 +175,8 @@ o   Volker Lendecke <vl@samba.org>
     * Fix compilation of explicit --without-winbind.
     * Fix an uninitialized variable and other compiler warnings.
     * Fix memory leak in smbd's claim session code.
+    * BUG 4613: Fix incorrect password expiration caused by stomping on 
+      the time values in the NET_USER_INFO_3 for remote users.
 
 
 o   Stefan Metzmacher <metze@samba.org>
