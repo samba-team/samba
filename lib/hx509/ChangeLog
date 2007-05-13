@@ -1,5 +1,9 @@
-2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c: add more mechtypes
+	
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* print.c: Indent.
 
 	* hxtool-commands.in: add test-crypto command
