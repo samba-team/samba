@@ -7,6 +7,7 @@
    Copyright (C) Gerald Carter   2003-2007
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Guenther Deschner 2005
+   Copyright (C) Michael Adam    2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2764,9 +2765,16 @@ BOOL get_global_winbindd_state_offline(void)
  Validate functions for all possible cache tdb keys.
 ***********************************************************************/
 
-static BOOL bad_cache_entry;
+struct validation_status {
+	BOOL tdb_error;
+	BOOL bad_freelist;
+	BOOL bad_entry;
+	BOOL unknown_key;
+	BOOL success;
+};
 
-static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA data)
+static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA data, 
+						  struct validation_status *state)
 {
 	struct cache_entry *centry;
 
@@ -2781,9 +2789,10 @@ static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA dat
 
 	if (centry->len < 8) {
 		/* huh? corrupt cache? */
-		DEBUG(0,("validate_create_centry: Corrupt cache for key %s (len < 8) ?\n", kstr));
+		DEBUG(0,("create_centry_validate: Corrupt cache for key %s (len < 8) ?\n", kstr));
 		centry_free(centry);
-		bad_cache_entry = True;
+		state->bad_entry = True;
+		state->success = False;
 		return NULL;
 	}
 
@@ -2792,20 +2801,22 @@ static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA dat
 	return centry;
 }
 
-static int validate_seqnum(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_seqnum(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			   struct validation_status *state)
 {
 	if (dbuf.dsize != 8) {
 		DEBUG(0,("validate_seqnum: Corrupt cache for key %s (len %u != 8) ?\n",
 				keystr, (unsigned int)dbuf.dsize ));
-		bad_cache_entry = True;
+		state->bad_entry = True;
 		return 1;
 	}
 	return 0;
 }
 
-static int validate_ns(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_ns(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	if (!centry) {
 		return 1;
 	}
@@ -2818,16 +2829,17 @@ static int validate_ns(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_ns: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_sn(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_sn(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	if (!centry) {
 		return 1;
 	}
@@ -2840,16 +2852,17 @@ static int validate_sn(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_sn: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		      struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	DOM_SID sid;
 
 	if (!centry) {
@@ -2866,16 +2879,17 @@ static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_u: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_loc_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_loc_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			    struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 
 	if (!centry) {
 		return 1;
@@ -2887,16 +2901,17 @@ static int validate_loc_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA db
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_loc_pol: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			    struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 
 	if (!centry) {
 		return 1;
@@ -2910,16 +2925,17 @@ static int validate_pwd_pol(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA db
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_pwd_pol: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			 struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 
 	if (!centry) {
 		return 1;
@@ -2935,16 +2951,17 @@ static int validate_cred(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_cred: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_entries, i;
 
 	if (!centry) {
@@ -2965,16 +2982,17 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_ul: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_entries, i;
 
 	if (!centry) {
@@ -2991,16 +3009,17 @@ static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_gl: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_groups, i;
 
 	if (!centry) {
@@ -3016,16 +3035,17 @@ static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_ug: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_aliases, i;
 
 	if (!centry) {
@@ -3040,16 +3060,17 @@ static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_ua: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_names, i;
 
 	if (!centry) {
@@ -3067,20 +3088,22 @@ static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_gm: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
 	/* Can't say anything about this other than must be nonzero. */
 	if (dbuf.dsize == 0) {
 		DEBUG(0,("validate_dr: Corrupt cache for key %s (len == 0) ?\n",
 				keystr));
-		bad_cache_entry = True;
+		state->bad_entry = True;
+		state->success = False;
 		return 1;
 	}
 
@@ -3088,13 +3111,15 @@ static int validate_dr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 	return 0;
 }
 
-static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct validation_status *state)
 {
 	/* Can't say anything about this other than must be nonzero. */
 	if (dbuf.dsize == 0) {
 		DEBUG(0,("validate_de: Corrupt cache for key %s (len == 0) ?\n",
 				keystr));
-		bad_cache_entry = True;
+		state->bad_entry = True;
+		state->success = False;
 		return 1;
 	}
 
@@ -3102,9 +3127,10 @@ static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
 	return 0;
 }
 
-static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			      struct validation_status *state)
 {
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf);
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
 	int32 num_domains, i;
 
 	if (!centry) {
@@ -3122,22 +3148,57 @@ static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA 
 
 	centry_free(centry);
 
-	if (bad_cache_entry) {
+	if (!(state->success)) {
 		return 1;
 	}
 	DEBUG(10,("validate_trustdoms: %s ok\n", keystr));
 	return 0;
 }
 
-static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf)
+static int validate_trustdomcache(TALLOC_CTX *mem_ctx, const char *keystr, 
+				  TDB_DATA dbuf,
+				  struct validation_status *state)
+{
+	if (dbuf.dsize == 0) {
+		DEBUG(0, ("validate_trustdomcache: Corrupt cache for "
+			  "key %s (len ==0) ?\n", keystr));
+		state->bad_entry = True;
+		state->success = False;
+		return 1;
+	}
+
+	DEBUG(10,    ("validate_trustdomcache: %s ok\n", keystr));
+	DEBUGADD(10, ("  Don't trust me, I am a DUMMY!\n"));
+	return 0;
+}
+
+static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			    struct validation_status *state)
 {
 	if (dbuf.dsize != 4) {
 		DEBUG(0,("validate_offline: Corrupt cache for key %s (len %u != 4) ?\n",
 				keystr, (unsigned int)dbuf.dsize ));
-		bad_cache_entry = True;
+		state->bad_entry = True;
+		state->success = False;
 		return 1;
 	}
 	DEBUG(10,("validate_offline: %s ok\n", keystr));
+	return 0;
+}
+
+static int validate_cache_version(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+				  struct validation_status *state)
+{
+	if (dbuf.dsize != 4) {
+		DEBUG(0, ("validate_cache_version: Corrupt cache for "
+			  "key %s (len %u != 4) ?\n", 
+			  keystr, (unsigned int)dbuf.dsize));
+		state->bad_entry = True;
+		state->success = False;
+		return 1;
+	}
+
+	DEBUG(10, ("validate_cache_version: %s ok\n", keystr));
 	return 0;
 }
 
@@ -3148,7 +3209,7 @@ static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA db
 
 struct key_val_struct {
 	const char *keyname;
-	int (*validate_data_fn)(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf);
+	int (*validate_data_fn)(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf, struct validation_status* state);
 } key_val[] = {
 	{"SEQNUM/", validate_seqnum},
 	{"NS/", validate_ns},
@@ -3165,7 +3226,9 @@ struct key_val_struct {
 	{"DR/", validate_dr},
 	{"DE/", validate_de},
 	{"TRUSTDOMS/", validate_trustdoms},
+	{"TRUSTDOMCACHE/", validate_trustdomcache},
 	{"WINBINDD_OFFLINE", validate_offline},
+	{WINBINDD_CACHE_VERSION_KEYSTR, validate_cache_version},
 	{NULL, NULL}
 };
 
@@ -3177,6 +3240,7 @@ struct key_val_struct {
 static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	int i;
+	struct validation_status *v_state = (struct validation_status *)state;
 
 	/* Paranoia check. */
 	if (kbuf.dsize > 1024) {
@@ -3206,7 +3270,8 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 				return 1;
 			}
 
-			ret = key_val[i].validate_data_fn(mem_ctx, keystr, dbuf);
+			ret = key_val[i].validate_data_fn(mem_ctx, keystr, dbuf, 
+							  v_state);
 
 			SAFE_FREE(keystr);
 			talloc_destroy(mem_ctx);
@@ -3218,40 +3283,17 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 	dump_data(0, (uint8 *)kbuf.dptr, kbuf.dsize);
 	DEBUG(0,("data :\n"));
 	dump_data(0, (uint8 *)dbuf.dptr, dbuf.dsize);
+	v_state->unknown_key = True;
+	v_state->success = False;
 	return 1; /* terminate. */
 }
 
 static void validate_panic(const char *const why)
 {
-	DEBUG(0,("validating cache: would panic %s\n", why ));
-	bad_cache_entry = True;
+        DEBUG(0,("validating cache: would panic %s\n", why ));
+	DEBUGADD(0, ("exiting instead (cache validation mode)\n"));
+	exit(47);
 }
-
-/* Handle any signals generated when validating a possibly
-   bad cache tdb. */
-
-static jmp_buf jmpbuf;
-
-#ifdef SIGSEGV
-static void sig_segv(int sig)
-{
-	longjmp(jmpbuf, SIGSEGV);
-}
-#endif
-
-#ifdef SIGBUS
-static void sig_bus(int sig)
-{
-	longjmp(jmpbuf, SIGBUS);
-}
-#endif
-
-#ifdef SIGABRT
-static void sig_abrt(int sig)
-{
-	longjmp(jmpbuf, SIGABRT);
-}
-#endif
 
 /***********************************************************************
  Try and validate every entry in the winbindd cache. If we fail here,
@@ -3259,102 +3301,206 @@ static void sig_abrt(int sig)
  function) will restart us as we don't know if we crashed or not.
 ***********************************************************************/
 
-int winbindd_validate_cache(void)
+/* 
+ * internal validation function, executed by the child.  
+ */
+static int winbindd_validate_cache_child(const char *cache_path, int pfd)
 {
-	BOOL ret = -1;
-	int fd = -1;
+	int ret = -1;
+	int tfd = -1;
 	int num_entries = 0;
 	TDB_CONTEXT *tdb = NULL;
-	const char *cache_path = lock_path("winbindd_cache.tdb");
-
-#ifdef SIGSEGV
-	void (*old_segv_handler)(int) = CatchSignal(SIGSEGV,SIGNAL_CAST sig_segv);
-#endif
-#ifdef SIGBUS
-	void (*old_bus_handler)(int) = CatchSignal(SIGBUS,SIGNAL_CAST sig_bus);
-#endif
-#ifdef SIGABRT
-	void (*old_abrt_handler)(int) = CatchSignal(SIGABRT,SIGNAL_CAST sig_abrt);
-#endif
-
-	switch((ret = setjmp(jmpbuf))) {
-		case 0:
-			ret = -1;
-			break;
-		case SIGSEGV:
-		case SIGBUS:
-		case SIGABRT:
-		default:
-			goto out;
-	}
-
-	/* Doh ! Volker is very smart :-). Use TDB_NOMMAP to prevent
-	 * any wild pointer references when reading a corrupt tdb file. */
+	struct validation_status v_status;
+	
+	v_status.tdb_error = False;
+	v_status.bad_freelist = False;
+	v_status.bad_entry = False;
+	v_status.unknown_key = False;
+	v_status.success = True;
 
 	tdb = tdb_open_log(cache_path,
 			WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-			lp_winbind_offline_logon() ? TDB_NOMMAP : (TDB_NOMMAP | TDB_CLEAR_IF_FIRST),
+			lp_winbind_offline_logon() 
+				?  TDB_DEFAULT 
+				: (TDB_DEFAULT | TDB_CLEAR_IF_FIRST),
 			O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
+		v_status.tdb_error = True;
+		v_status.success = False;
 		goto out;
 	}
 
-	fd = tdb_fd(tdb);
+	tfd = tdb_fd(tdb);
 
 	/* Check the cache freelist is good. */
 	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
-		DEBUG(0,("winbindd_validate_cache: bad freelist in cache %s\n",
+		DEBUG(0,("winbindd_validate_cache_child: bad freelist in cache %s\n",
 			cache_path));
+		v_status.bad_freelist = True;
+		v_status.success = False;
 		goto out;
 	}
 
-	DEBUG(10,("winbindd_validate_cache: cache %s freelist has %d entries\n",
+	DEBUG(10,("winbindd_validate_cache_child: cache %s freelist has %d entries\n",
 		cache_path, num_entries));
 
-	smb_panic_fn = validate_panic;
-
 	/* Now traverse the cache to validate it. */
-	num_entries = tdb_traverse(tdb, cache_traverse_validate_fn, NULL);
-	if (num_entries == -1 || bad_cache_entry) {
-		DEBUG(0,("winbindd_validate_cache: cache %s traverse failed\n",
+	num_entries = tdb_traverse(tdb, cache_traverse_validate_fn, (void *)&v_status);
+	if (num_entries == -1 || !(v_status.success)) {
+		DEBUG(0,("winbindd_validate_cache_child: cache %s traverse failed\n",
 			cache_path));
+		if (!(v_status.success)) {
+			if (v_status.bad_entry) {
+				DEBUGADD(0, (" -> bad entry found\n"));
+			}
+			if (v_status.unknown_key) {
+				DEBUGADD(0, (" -> unknown key encountered\n"));
+			}
+		}
 		goto out;
 	}
 
-	DEBUG(10,("winbindd_validate_cache: cache %s is good "
+	DEBUG(10,("winbindd_validate_cache_child: cache %s is good "
 		"with %d entries\n", cache_path, num_entries));
 	ret = 0; /* Cache is good. */
 
-  out:
-
-	bad_cache_entry = False;
-	smb_panic_fn = smb_panic;
-
-	/* Ensure if we segv on exit we use the original
-	   handlers to avoid a loop. */
-
-#ifdef SIGSEGV
-	CatchSignal(SIGSEGV,SIGNAL_CAST old_segv_handler);
-#endif
-#ifdef SIGBUS
-	CatchSignal(SIGBUS,SIGNAL_CAST old_bus_handler);
-#endif
-#ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST old_abrt_handler);
-#endif
-
+out:
 	if (tdb) {
 		if (ret == 0) {
 			tdb_close(tdb);
-		} else if (fd != -1) {
-			close(fd);
+		} 
+		else if (tfd != -1) {
+			close(tfd);
 		}
 	}
 
-	if (ret) {
+	DEBUG(10, ("winbindd_validate_cache_child: writing status to pipe\n"));
+	write (pfd, (const char *)&v_status, sizeof(v_status));
+	close(pfd);
+
+	return ret;
+}
+
+int winbindd_validate_cache(void)
+{
+	pid_t child_pid = -1;
+	int child_status = 0;
+	int wait_pid = 0;
+	int ret = -1;
+	int pipe_fds[2];
+	struct validation_status v_status;
+	int bytes_read = 0;
+	const char *cache_path = lock_path("winbindd_cache.tdb");
+	
+	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
+	smb_panic_fn = validate_panic;
+
+	/* fork and let the child do the validation. 
+	 * benefit: no need to twist signal handlers and panic functions.
+	 * just let the child panic. we catch the signal. 
+	 * communicate the extended status struct over a pipe. */
+
+	if (pipe(pipe_fds) != 0) {
+		DEBUG(0, ("winbindd_validate_cache: unable to create pipe, "
+			  "error %s", strerror(errno)));
+		smb_panic("winbind_validate_cache: unable to create pipe.");
+	}
+
+	DEBUG(10, ("winbindd_validate_cache: forking to let child do validation.\n"));
+	child_pid = sys_fork();
+	if (child_pid == 0) {
+		DEBUG(10, ("winbindd_validate_cache (validation child): created\n"));
+		close(pipe_fds[0]); /* close reading fd */
+		DEBUG(10, ("winbindd_validate_cache (validation child): "
+			   "calling winbindd_validate_cache_child\n"));
+		exit(winbindd_validate_cache_child(cache_path, pipe_fds[1]));
+	}
+	else if (child_pid < 0) {
+		smb_panic("winbindd_validate_cache: fork for validation failed.");
+	}
+
+	/* parent */
+
+	DEBUG(10, ("winbindd_validate_cache: fork succeeded, child PID = %d\n", 
+		   child_pid));
+	close(pipe_fds[1]); /* close writing fd */
+
+	v_status.success = True;
+	v_status.bad_entry = False;
+	v_status.unknown_key = False;
+
+	DEBUG(10, ("winbindd_validate_cache: reading from pipe.\n"));
+	bytes_read = read(pipe_fds[0], (void *)&v_status, sizeof(v_status));
+	close(pipe_fds[0]);
+
+	if (bytes_read != sizeof(v_status)) {
+		DEBUG(10, ("winbindd_validate_cache: read %d bytes from pipe "
+			   "but expected %d", bytes_read, sizeof(v_status)));
+		DEBUGADD(10, (" -> assuming child crashed\n"));
+		v_status.success = False;
+	}
+	else {
+		DEBUG(10,    ("winbindd_validate_cache: read status from child\n"));
+		DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
+		DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
+		DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
+		DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
+		DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
+	}
+
+	if (!v_status.success) {
+		DEBUG(10, ("winbindd_validate_cache: validation not successful.\n"));
+		DEBUGADD(10, ("removing tdb %s.\n", cache_path));
 		unlink(cache_path);
 	}
 
+	DEBUG(10, ("winbindd_validate_cache: waiting for child to finish...\n"));
+	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
+		if (errno == EINTR) {
+			DEBUG(10, ("winbindd_validate_cache: got signal during "
+				   "waitpid, retrying\n"));
+			errno = 0;
+			continue;
+		}
+		DEBUG(0, ("winbindd_validate_cache: waitpid failed with "
+                          "errno %s\n", strerror(errno)));
+		smb_panic("winbindd_validate_cache: waitpid failed.");
+	}
+	if (wait_pid != child_pid) {
+		DEBUG(0, ("winbindd_validate_cache: waitpid returned pid %d, "
+			  "but %d was expexted\n", wait_pid, child_pid));
+		smb_panic("winbindd_validate_cache: waitpid returned "
+			     "unexpected PID.");
+	}
+
+		
+	DEBUG(10, ("winbindd_validate_cache: validating child returned.\n"));
+	if (WIFEXITED(child_status)) {
+		DEBUG(10, ("winbindd_validate_cache: child exited, code %d.\n",
+			   WEXITSTATUS(child_status)));
+		ret = WEXITSTATUS(child_status);
+	}
+	if (WIFSIGNALED(child_status)) {
+		DEBUG(10, ("winbindd_validate_cache: child terminated "
+			   "by signal %d%s\n",
+			   WTERMSIG(child_status),
+#if defined(WCOREDUMP)
+			   WCOREDUMP(child_status)?" (core dumped)":""
+#else
+			   ""
+#endif
+			   ));
+		ret = WTERMSIG(child_status);
+	}
+	if (WIFSTOPPED(child_status)) {
+		DEBUG(10, ("winbindd_validate_cache: child was stopped "
+			   "by signal %d\n",
+			   WSTOPSIG(child_status)));
+		ret = WSTOPSIG(child_status);
+	}
+
+	DEBUG(10, ("winbindd_validate_cache: restoring panic function\n"));
+	smb_panic_fn = smb_panic;
 	return ret;
 }
 
