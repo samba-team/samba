@@ -56,6 +56,13 @@ struct smb2srv_request {
 	/* the id that can be used to cancel the request */
 	uint32_t pending_id;
 
+	/* the offset to the next SMB2 Header for chained requests */
+	uint32_t chain_offset;
+
+	/* chained file handle */
+	uint8_t _chained_file_handle[16];
+	uint8_t *chained_file_handle;
+
 	struct smb2_request_buffer in;
 	struct smb2_request_buffer out;
 };

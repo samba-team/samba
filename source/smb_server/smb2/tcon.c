@@ -45,6 +45,17 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 	uint32_t tid;
 	uint32_t pad;
 
+	/*
+	 * if there're chained requests used the cached handle
+	 *
+	 * TODO: check if this also correct when the given handle
+	 *       isn't all 0xFF.
+	 */
+	if (req->chained_file_handle) {
+		base = req->chained_file_handle;
+		offset = 0;
+	}
+
 	hid = BVAL(base, offset);
 	tid = IVAL(base, offset + 8);
 	pad = IVAL(base, offset + 12);
