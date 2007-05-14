@@ -156,6 +156,7 @@ static void smb2srv_read_send(struct ntvfs_request *ntvfs)
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_read);
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, True, io->smb2.out.data.length));
 
+	/* TODO: avoid the memcpy */
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, io->smb2.out.data));
 	SBVAL(req->out.body,	0x08,	io->smb2.out.unknown1);
 
@@ -224,9 +225,39 @@ void smb2srv_write_recv(struct smb2srv_request *req)
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
+static void smb2srv_lock_send(struct ntvfs_request *ntvfs)
+{
+	struct smb2srv_request *req;
+	union smb_lock *io;
+
+	SMB2SRV_CHECK_ASYNC_STATUS_ERR(io, union smb_lock);
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
+
+	SSVAL(req->out.body,	0x02,	io->smb2.out.unknown1);
+
+	smb2srv_send_reply(req);
+}
+
 void smb2srv_lock_recv(struct smb2srv_request *req)
 {
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+	union smb_lock *io;
+
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, False);
+	SMB2SRV_TALLOC_IO_PTR(io, union smb_lock);
+	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_lock_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
+	io->smb2.level			= RAW_LOCK_SMB2;
+
+	io->smb2.in.unknown1		= SVAL(req->in.body, 0x02);
+	io->smb2.in.unknown2		= IVAL(req->in.body, 0x04);
+	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
+	io->smb2.in.offset		= BVAL(req->in.body, 0x18);
+	io->smb2.in.count		= BVAL(req->in.body, 0x20);
+	io->smb2.in.unknown5		= IVAL(req->in.body, 0x24);
+	io->smb2.in.flags		= IVAL(req->in.body, 0x28);
+
+	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
+	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, io));
 }
 
 static void smb2srv_ioctl_send(struct ntvfs_request *ntvfs)
