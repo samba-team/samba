@@ -34,6 +34,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_simple_test(suite, "BENCH-OPEN", torture_bench_open);
 	torture_suite_add_simple_test(suite, "QFSINFO", torture_raw_qfsinfo);
 	torture_suite_add_simple_test(suite, "QFILEINFO", torture_raw_qfileinfo);
+	torture_suite_add_simple_test(suite, "QFILEINFO-IPC", torture_raw_qfileinfo_pipe);
 	torture_suite_add_simple_test(suite, "SFILEINFO", torture_raw_sfileinfo);
 	torture_suite_add_simple_test(suite, "SFILEINFO-BUG", torture_raw_sfileinfo_bug);
 	torture_suite_add_simple_test(suite, "SEARCH", torture_raw_search);

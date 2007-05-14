@@ -289,7 +289,7 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 #define STR_CHECK(sname, stype, field, flags) do { \
 	s1 = find(sname); \
 	if (s1) { \
-		if (s1->stype.out.field.s && wire_bad_flags(&s1->stype.out.field, flags, cli)) { \
+		if (s1->stype.out.field.s && wire_bad_flags(&s1->stype.out.field, flags, cli->transport)) { \
 			printf("(%d) incorrect string termination in %s/%s\n", \
 			       __LINE__, #stype, #field); \
 			ret = False; \

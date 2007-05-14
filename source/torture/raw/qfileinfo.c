@@ -23,6 +23,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "librpc/rpc/dcerpc.h"
+#include "torture/rpc/rpc.h"
 
 static struct {
 	const char *name;
@@ -67,6 +69,8 @@ static struct {
 	{ NULL, }
 };
 
+static bool is_ipc;
+
 /*
   compare a dos time (2 second resolution) to a nt time
 */
@@ -100,6 +104,9 @@ static union smb_fileinfo *fnum_find(const char *name)
 static union smb_fileinfo *fname_find(const char *name)
 {
 	int i;
+	if (is_ipc) {
+		return NULL;
+	}
 	for (i=0; levels[i].name; i++) {
 		if (NT_STATUS_IS_OK(levels[i].fname_status) &&
 		    strcmp(name, levels[i].name) == 0 && 
@@ -153,56 +160,39 @@ static union smb_fileinfo *fname_find(const char *name)
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_raw_qfileinfo(struct torture_context *torture)
+static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TALLOC_CTX *mem_ctx, 	
+					    struct smbcli_tree *tree, int fnum, const char *fname)
 {
-	struct smbcli_state *cli;
 	int i;
 	BOOL ret = True;
 	int count;
 	union smb_fileinfo *s1, *s2;	
-	TALLOC_CTX *mem_ctx;
-	int fnum;
-	const char *fname = "\\torture_qfileinfo.txt";
 	NTTIME correct_time;
 	uint64_t correct_size;
 	uint32_t correct_attrib;
 	const char *correct_name;
 	BOOL skip_streams = False;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_qfileinfo");
-
-	fnum = create_complex_file(cli, mem_ctx, fname);
-	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
-		goto done;
-	}
-	
-	
 	/* scan all the fileinfo and pathinfo levels */
 	for (i=0; levels[i].name; i++) {
 		if (!levels[i].only_paths) {
 			levels[i].fnum_finfo.generic.level = levels[i].level;
 			levels[i].fnum_finfo.generic.in.file.fnum = fnum;
-			levels[i].fnum_status = smb_raw_fileinfo(cli->tree, mem_ctx, 
+			levels[i].fnum_status = smb_raw_fileinfo(tree, mem_ctx, 
 								 &levels[i].fnum_finfo);
 		}
 
 		if (!levels[i].only_handles) {
 			levels[i].fname_finfo.generic.level = levels[i].level;
 			levels[i].fname_finfo.generic.in.file.path = talloc_strdup(mem_ctx, fname);
-			levels[i].fname_status = smb_raw_pathinfo(cli->tree, mem_ctx, 
+			levels[i].fname_status = smb_raw_pathinfo(tree, mem_ctx, 
 								  &levels[i].fname_finfo);
 		}
 	}
 
 	/* check for completely broken levels */
 	for (count=i=0; levels[i].name; i++) {
-		uint32_t cap = cli->transport->negotiate.capabilities;
+		uint32_t cap = tree->session->transport->negotiate.capabilities;
 		/* see if this server claims to support this level */
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
 			continue;
@@ -213,7 +203,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 			       levels[i].name, nt_errstr(levels[i].fnum_status));
 			count++;
 		}
-		if (!levels[i].only_handles && !NT_STATUS_IS_OK(levels[i].fname_status)) {
+		if (!(is_ipc || levels[i].only_handles) && !NT_STATUS_IS_OK(levels[i].fname_status)) {
 			printf("ERROR: level %s failed - %s\n", 
 			       levels[i].name, nt_errstr(levels[i].fname_status));
 			count++;
@@ -232,8 +222,10 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 	/* see if we can do streams */
 	s1 = fnum_find("STREAM_INFO");
 	if (!s1 || s1->stream_info.out.num_streams == 0) {
-		printf("STREAM_INFO broken (%d) - skipping streams checks\n",
-		       s1 ? s1->stream_info.out.num_streams : -1);
+		if (!is_ipc) {
+			printf("STREAM_INFO broken (%d) - skipping streams checks\n",
+			       s1 ? s1->stream_info.out.num_streams : -1);
+		}
 		skip_streams = True;
 	}	
 
@@ -511,14 +503,14 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 #define NAME_CHECK(sname, stype, tfield, flags) do { \
 	s1 = fnum_find(sname); \
 	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags, tree->session->transport))) { \
 		printf("(%d) handle %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
-	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
+	    		wire_bad_flags(&s1->stype.out.tfield, flags, tree->session->transport))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
@@ -546,42 +538,44 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 				ret = False;
 			}
 		}
-		if (wire_bad_flags(&s1->all_info.out.fname, STR_UNICODE, cli)) {
+		if (wire_bad_flags(&s1->all_info.out.fname, STR_UNICODE, tree->session->transport)) {
 			printf("Should not null terminate all_info/fname\n");
 			ret = False;
 		}
 	}
 
 	s1 = fnum_find("ALT_NAME_INFO");
-	correct_name = s1->alt_name_info.out.fname.s;
-	printf("alt_name: %s\n", correct_name);
-
-	NAME_CHECK("ALT_NAME_INFO",        alt_name_info, fname, STR_UNICODE);
-	NAME_CHECK("ALT_NAME_INFORMATION", alt_name_info, fname, STR_UNICODE);
-
-	/* and make sure we can open by alternate name */
-	smbcli_close(cli->tree, fnum);
-	fnum = smbcli_nt_create_full(cli->tree, correct_name, 0, 
-				     SEC_RIGHTS_FILE_ALL,
-				     FILE_ATTRIBUTE_NORMAL,
-				     NTCREATEX_SHARE_ACCESS_DELETE|
-				     NTCREATEX_SHARE_ACCESS_READ|
-				     NTCREATEX_SHARE_ACCESS_WRITE, 
-				     NTCREATEX_DISP_OVERWRITE_IF, 
-				     0, 0);
-	if (fnum == -1) {
-		printf("Unable to open by alt_name - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+	if (s1) {
+		correct_name = s1->alt_name_info.out.fname.s;
+		printf("alt_name: %s\n", correct_name);
+		
+		NAME_CHECK("ALT_NAME_INFO",        alt_name_info, fname, STR_UNICODE);
+		NAME_CHECK("ALT_NAME_INFORMATION", alt_name_info, fname, STR_UNICODE);
+		
+		/* and make sure we can open by alternate name */
+		smbcli_close(tree, fnum);
+		fnum = smbcli_nt_create_full(tree, correct_name, 0, 
+					     SEC_RIGHTS_FILE_ALL,
+					     FILE_ATTRIBUTE_NORMAL,
+					     NTCREATEX_SHARE_ACCESS_DELETE|
+					     NTCREATEX_SHARE_ACCESS_READ|
+					     NTCREATEX_SHARE_ACCESS_WRITE, 
+					     NTCREATEX_DISP_OVERWRITE_IF, 
+					     0, 0);
+		if (fnum == -1) {
+			printf("Unable to open by alt_name - %s\n", smbcli_errstr(tree));
+			ret = False;
+		}
+		
+		if (!skip_streams) {
+			correct_name = "::$DATA";
+			printf("stream_name: %s\n", correct_name);
+			
+			NAME_CHECK("STREAM_INFO",        stream_info, streams[0].stream_name, STR_UNICODE);
+			NAME_CHECK("STREAM_INFORMATION", stream_info, streams[0].stream_name, STR_UNICODE);
+		}
 	}
-
-	if (!skip_streams) {
-		correct_name = "::$DATA";
-		printf("stream_name: %s\n", correct_name);
-
-		NAME_CHECK("STREAM_INFO",        stream_info, streams[0].stream_name, STR_UNICODE);
-		NAME_CHECK("STREAM_INFORMATION", stream_info, streams[0].stream_name, STR_UNICODE);
-	}
-
+		
 	/* make sure the EAs look right */
 	s1 = fnum_find("ALL_EAS");
 	s2 = fnum_find("ALL_INFO");
@@ -714,10 +708,85 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 	
 
 done:
+
+	return ret;
+}
+
+/* basic testing of all RAW_FILEINFO_* calls 
+   for each call we test that it succeeds, and where possible test 
+   for consistency between the calls. 
+*/
+BOOL torture_raw_qfileinfo(struct torture_context *torture)
+{
+	struct smbcli_state *cli;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx;
+	int fnum;
+	const char *fname = "\\torture_qfileinfo.txt";
+
+	is_ipc = 0;
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	mem_ctx = talloc_init("torture_qfileinfo");
+
+	fnum = create_complex_file(cli, mem_ctx, fname);
+	if (fnum == -1) {
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+
+	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, cli->tree, fnum, fname);
+	
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
+done:
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+BOOL torture_raw_qfileinfo_pipe(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	int fnum;
+	const char *fname = "\\lsass";
+	struct smbcli_state *cli;
+	struct dcerpc_pipe *p;
+	struct smbcli_tree *ipc_tree;
+	NTSTATUS status;
+
+	is_ipc = True;
+	
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	mem_ctx = talloc_init("torture_qfileinfo_pipe");
+
+	if (!(p = dcerpc_pipe_init(mem_ctx, 
+				   cli->tree->session->transport->socket->event.ctx))) {
+		return False;
+	}
+
+	status = dcerpc_pipe_open_smb(p, cli->tree, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(p);
+		return False;
+	}
+
+	ipc_tree = dcerpc_smb_tree(p->conn);
+	fnum = dcerpc_smb_fnum(p->conn);
+
+	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, ipc_tree, fnum, fname);
+	
+	talloc_free(p);
 	return ret;
 }

@@ -45,7 +45,7 @@
 	}} while (0)
 
 #define CHECK_WSTR(field, value, flags) do { \
-	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags, cli)) { \
+	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags, cli->transport)) { \
 		printf("(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
 			ret = False; \
 		goto done; \
@@ -278,7 +278,7 @@ static BOOL check_rename_reply(struct smbcli_state *cli,
 			if ((actions[i].name.s == NULL)
 			    || (strcmp(actions[i].name.s, name) != 0)
 			    || (wire_bad_flags(&actions[i].name, STR_UNICODE,
-					       cli))) {
+					       cli->transport))) {
 				printf("(%d) name [%s] != %s\n", line,
 				       actions[i].name.s, name);
 				return False;
