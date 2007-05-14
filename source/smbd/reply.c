@@ -2415,7 +2415,8 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
-	br_lck = do_lock(fsp,
+	br_lck = do_lock(smbd_messaging_context(),
+			fsp,
 			(uint32)SVAL(inbuf,smb_pid), 
 			(SMB_BIG_UINT)numtoread,
 			(SMB_BIG_UINT)startpos,
@@ -2917,7 +2918,8 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 
 	if (numtowrite) {
-		status = do_unlock(fsp,
+		status = do_unlock(smbd_messaging_context(),
+				fsp,
 				(uint32)SVAL(inbuf,smb_pid),
 				(SMB_BIG_UINT)numtowrite, 
 				(SMB_BIG_UINT)startpos,
@@ -3420,7 +3422,8 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
-	br_lck = do_lock(fsp,
+	br_lck = do_lock(smbd_messaging_context(),
+			fsp,
 			(uint32)SVAL(inbuf,smb_pid),
 			count,
 			offset,
@@ -3458,7 +3461,8 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 	
-	status = do_unlock(fsp,
+	status = do_unlock(smbd_messaging_context(),
+			fsp,
 			(uint32)SVAL(inbuf,smb_pid),
 			count,
 			offset,
@@ -4144,7 +4148,8 @@ static void rename_open_files(connection_struct *conn, struct share_mode_lock *l
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
-	rename_share_filename(lck, conn->connectpath, newname);
+	rename_share_filename(smbd_messaging_context(), lck, conn->connectpath,
+			      newname);
 }
 
 /****************************************************************************
@@ -5453,7 +5458,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			  "pid %u, file %s\n", (double)offset, (double)count,
 			  (unsigned int)lock_pid, fsp->fsp_name ));
 		
-		status = do_unlock(fsp,
+		status = do_unlock(smbd_messaging_context(),
+				fsp,
 				lock_pid,
 				count,
 				offset,
@@ -5526,7 +5532,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			BOOL defer_lock = False;
 			struct byte_range_lock *br_lck;
 
-			br_lck = do_lock(fsp,
+			br_lck = do_lock(smbd_messaging_context(),
+					fsp,
 					lock_pid,
 					count,
 					offset, 
@@ -5612,7 +5619,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 				return ERROR_DOS(ERRDOS,ERRnoaccess);
 			}
 			
-			do_unlock(fsp,
+			do_unlock(smbd_messaging_context(),
+				fsp,
 				lock_pid,
 				count,
 				offset,

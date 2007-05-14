@@ -352,7 +352,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 		release_file_oplock(fsp);
 	}
 
-	locking_close_file(fsp);
+	locking_close_file(smbd_messaging_context(), fsp);
 
 	status = fd_close(conn, fsp);
 

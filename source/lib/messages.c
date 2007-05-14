@@ -834,7 +834,7 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 */
 NTSTATUS messaging_send(struct messaging_context *msg,
 			struct server_id server, 
-			uint32_t msg_type, DATA_BLOB *data)
+			uint32_t msg_type, const DATA_BLOB *data)
 {
 	return message_send_pid_internal(server, msg_type, data->data,
 					 data->length, True, 0);
